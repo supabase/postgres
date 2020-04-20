@@ -1,0 +1,20 @@
+{
+  "variables": {
+    "name": "",
+    "do_token": "",
+    "region": ""
+  },
+  "builders": [{
+    "type": "digitalocean",
+    "api_token": "{{user `do_token`}}",
+    "image": "ubuntu-18-04-x64",
+    "region": "{{user `region`}}",
+    "size": "512mb",
+    "ssh_username": "root",
+    "snapshot_name": "{{user `name`}}"
+  }],
+  "provisioners": [{
+    "type": "ansible",
+    "playbook_file": "ansible/playbook.yml"
+  }]
+}

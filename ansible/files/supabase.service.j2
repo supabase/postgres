@@ -1,0 +1,24 @@
+[Unit]
+Description=Supabase Realtime server
+{% if install_postgresql|bool %}
+Requires=postgresql.service
+After=postgresql.service
+{% endif %}
+
+[Service]
+Type=simple
+ExecStart=/opt/supabase/server/_build/prod/rel/realtime/bin/realtime start
+Restart=always
+
+# User for the build, and service
+User=supabase
+EnvironmentFile=/etc/supabase.env
+
+# Not specified in the supabase server docs but startup will fail if the HOME environmental
+# variable is not set.
+Environment="HOME=/home/supabase"
+
+Slice=services.slice
+
+[Install]
+WantedBy=multi-user.target

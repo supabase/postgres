@@ -1,0 +1,43 @@
+- name: Install postgis for postgreSQL versions < 10
+  apt:
+    pkg:
+    - libgeos-c1v5
+    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
+    - "postgresql-{{ postgresql_version }}-postgis-scripts"
+    update_cache: yes
+    cache_valid_time: 3600
+  when: postgresql_version < 10
+
+- name: Install postgis for postgreSQL versions >= 10
+  apt:
+    pkg:
+    - libgeos-c1v5
+    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
+    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}-scripts"
+    update_cache: yes
+    cache_valid_time: 3600
+  when: postgresql_version >= 10
+  
+- name: Enable pgcrypto extension
+  become: yes
+  become_user: postgres
+  postgresql_ext:
+    name: pgcrypto
+    db: postgres
+    schema: public
+
+- name: Enable pg_stat_statements extension
+  become: yes
+  become_user: postgres
+  postgresql_ext:
+    name: pg_stat_statements
+    db: postgres
+    schema: public
+
+- name: Enable postgis extension
+  become: yes 
+  become_user: postgres
+  postgresql_ext:
+    name: postgis
+    db: postgres
+    schema: public

@@ -1,0 +1,17 @@
+[Unit]
+Description=PostgREST
+{% if install_postgresql|bool %}
+Requires=postgresql.service
+After=postgresql.service
+{% endif %}
+
+[Service]
+Type=simple
+ExecStart=/opt/postgrest /etc/postgrest.conf
+Restart=always
+User=postgrest
+
+Slice=services.slice
+
+[Install]
+WantedBy=multi-user.target

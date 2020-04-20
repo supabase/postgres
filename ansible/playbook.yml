@@ -1,0 +1,21 @@
+- hosts: all
+  become: yes
+
+  pre_tasks:
+    - include_tasks: tasks/setup-system.yml
+  
+  vars_files:
+    - ./vars.yml
+  
+  roles:
+    - role: anxs.postgresql
+
+  tasks:
+    - include_tasks: tasks/setup-extensions.yml
+
+    - name: Set up password for superadmin postgres
+      become: yes
+      become_user: postgres
+      postgresql_user:
+        name: postgres
+        password: "{{ postgres_superadmin_password }}"
