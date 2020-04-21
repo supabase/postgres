@@ -31,7 +31,8 @@ $ export REGION=your_chosen_region
 # Name is now also mandatory
 $ packer build \
   -var "do_token=$DO_TOKEN" \
-  -var "name=kps-postgresql" \
+  -var "name=$SNAPSHOT_NAME" \
+  -var "$REGION" \
   packer.json
 ```
 A list of available Digital Ocean regions can be found [here](https://www.digitalocean.com/docs/platform/availability-matrix/).
