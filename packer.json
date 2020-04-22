@@ -13,8 +13,19 @@
     "ssh_username": "root",
     "snapshot_name": "{{user `name`}}"
   }],
-  "provisioners": [{
-    "type": "ansible",
-    "playbook_file": "ansible/playbook.yml"
-  }]
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "ansible/playbook.yml"
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/01-test",
+        "scripts/90-cleanup.sh",
+        "scripts/91-log_cleanup.sh",
+        "scripts/99-img_check.sh"
+      ]
+    }
+  ]
 }

@@ -4,11 +4,12 @@
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
-- name: Install Python3 and pip
+- name: Install essentials
   apt:
     pkg:
       - python3
       - python3-pip
+      - ufw
     update_cache: yes
     cache_valid_time: 3600
 

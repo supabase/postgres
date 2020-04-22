@@ -19,3 +19,19 @@
       postgresql_user:
         name: postgres
         password: "{{ postgres_superadmin_password }}"
+    
+    - name: UFW - Allow SSH connections
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Allow connections to postgreSQL (5432)
+      ufw:
+        rule: allow
+        port: '5432'
+
+    - name: UFW - Deny all other incoming traffix by default
+      ufw: 
+        state: enabled
+        policy: deny
+        direction: incoming
