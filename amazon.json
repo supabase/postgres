@@ -1,0 +1,44 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "region": "",
+    "name": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "{{user `region`}}",
+    "source_ami": "ami-0f7719e8b7ba25c61",
+    "instance_type": "t2.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "{{user `name`}}",
+    "launch_block_device_mappings": [{
+      "device_name": "/dev/sda1",
+      "encrypted": true,
+      "kms_key_id": "44e7e739-21f1-4678-829e-d1ac63d121b4",
+      "iops": 400,
+      "volume_type": "io1",
+      "volume_size": 8,
+      "delete_on_termination": true
+
+    }]
+  }],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "ansible/playbook.yml"
+    },
+    {
+      "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
+      "type": "shell",
+      "scripts": [
+        "scripts/01-test",
+        "scripts/90-cleanup.sh",
+        "scripts/91-log_cleanup.sh",
+        "scripts/99-img_check.sh"
+      ]
+    }
+  ]
+}

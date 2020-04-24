@@ -2,7 +2,9 @@
 
 Unmodified Postgres with some opinionated defaults and plugins.
 
-Packer & Ansible template that sets up a Digital Ocean snapshot of a PostgreSQL server with pre-installed and enabled goodies.
+Packer & Ansible templates that sets up a PostgreSQL server with pre-installed and enabled goodies in either of the following providers:
+- AWS (AMIs)
+- Digital Ocean (Snapshots)
 
 ## Supported Images
 - Ubuntu 18.04 Bionic (LTS)
@@ -26,25 +28,45 @@ Packer & Ansible template that sets up a Digital Ocean snapshot of a PostgreSQL 
 
 ## Walkthrough
 
-1. Install the Ansible role `ANXS.postgresql`.
+### Install the Ansible role `ANXS.postgresql`.
 ```
 $ ansible-galaxy install ANXS.postgresql -r tasks/install_roles.yml --force
 ```
 
-2. `DO_TOKEN`, `SNAPSHOT_NAME` and `REGION` all need to be defined. A list of valid Digital Ocean regions can be found [here](https://www.digitalocean.com/docs/platform/availability-matrix/).
+### For **Digital Ocean**
+- `DO_TOKEN`, `SNAPSHOT_NAME` and `REGION` all need to be defined. A list of valid Digital Ocean regions can be found [here](https://www.digitalocean.com/docs/platform/availability-matrix/).
 ```
 $ export DO_TOKEN=your_digital_ocean_token
 $ export SNAPSHOT_NAME=your_snapshot_name
 $ export REGION=your_chosen_region
 ```
 
-3. Create the Digital Ocean snapshot
+- Create the Digital Ocean snapshot
 ```
 $ packer build \
   -var "do_token=$DO_TOKEN" \
   -var "name=$SNAPSHOT_NAME" \
   -var "region=$REGION" \
-  packer.json
+  digitalOcean.json
+```
+
+### For **AWS**
+- `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, `SNAPSHOT_NAME` and `REGION` all need to be defined. A list of valid AWS regions can be found [here](https://docs.aws.amazon.com/general/latest/gr/ec2-service.html).
+```
+$ export AWS_ACCESS_KEY=your_aws_access_key
+$ export AWS_SECRET_KEY=your_aws_secret_key
+$ export SNAPSHOT_NAME=your_snapshot_name
+$ export REGION=your_chosen_region
+```
+
+- Create the AWS AMI
+```
+$ packer build \
+  -var "aws_access_key=$AWS_ACCESS_KEY" \
+  -var "aws_secret_key=$AWS_SECRET_KEY" \
+  -var "name=$SNAPSHOT_NAME" \
+  -var "region=$REGION" \
+  amazon.json
 ```
 
 Once this is complete, you now have a snapshot available to use for any of your droplets.
