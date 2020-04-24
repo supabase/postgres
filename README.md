@@ -1,3 +1,7 @@
+# Supabase Postgres 
+
+Unmodified Postgres with some opinionated defaults and plugins.
+
 Packer & Ansible template that sets up a Digital Ocean snapshot of a PostgreSQL server with pre-installed and enabled goodies.
 
 ## Supported Images
