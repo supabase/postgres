@@ -12,6 +12,7 @@
 - name: Install essentials
   apt:
     pkg:
+      - build-essential
       - python3
       - python3-pip
       - ufw

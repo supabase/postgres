@@ -17,7 +17,34 @@
     update_cache: yes
     cache_valid_time: 3600
   when: postgresql_version >= 10
+
+- name: pgTAP - download latest releas
+  get_url:
+    url: "https://github.com/theory/pgtap/archive/{{ pgtap_release }}.tar.gz"
+    dest: /tmp
+    checksum: "{{ pgtap_release_checksum }}"
+
+- name: pgTAP - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgtap-1.1.0.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pgTAP - install
+  make:
+    chdir: /tmp/pgtap-1.1.0
+    target: install
+  become: yes
   
+- name: Enable pgTAP extension
+  become: yes
+  become_user: postgres
+  postgresql_ext:
+    name: pgtap
+    db: postgres
+    schema: public
+
 - name: Enable pgcrypto extension
   become: yes
   become_user: postgres

@@ -20,6 +20,7 @@ Packer & Ansible templates that sets up a PostgreSQL server with pre-installed a
 
 ✅ `postgis` enabled
 
+✅ `pgTAP` enabled
 
 ## Requirements
 🗹 [Packer](https://www.packer.io/intro/getting-started/install.html)
@@ -69,7 +70,7 @@ $ packer build \
   amazon.json
 ```
 
-Once this is complete, you now have a snapshot available to use for any of your droplets.
+Once this is complete, you now have a snapshot or AMI available to use for any of your droplets or EC2 instances respectively.
 
 ## Notes on provisioning
 1. The PostgreSQL server can be further customised. Available provisioning variables that can be manipulated are found in `ansible/vars.yml`
@@ -77,4 +78,4 @@ Once this is complete, you now have a snapshot available to use for any of your 
 3. To be in line with the standards of images found in the Digital Ocean Marketplace, scripts found in `scripts` are also ran to clean up the snapshot and make it compatible with the Marketplace. They are taken from [here](https://github.com/digitalocean/marketplace-partners/tree/master/scripts). More information on what these scripts achieve can be found [here](https://github.com/digitalocean/marketplace-partners/blob/master/getting-started.md).
 
 ## Roadmap
-🗹 Template for setting up a snapshot on AWS.
+🗹 tbc

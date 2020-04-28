@@ -15,3 +15,6 @@ postgresql_pg_hba_custom:
   - {type: "host", database: "all", user: "all", address: "0.0.0.0/0", method: "md5" }
 
 postgres_superadmin_password: "a1b2c3d4e5f6g7"
+
+pgtap_release: v1.1.0
+pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
