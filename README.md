@@ -4,12 +4,13 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 
 ## Features
 
-✅ Postgres 12
-✅ `wal_level` = `logical`
-✅ `pgcrypto` 
-✅ `pg_stat_statements` 
-✅ `postgis`
-✅ `pgTAP` 
+- ✅ Postgres 12
+- ✅ `wal_level` = [logical](https://www.postgresql.org/docs/current/runtime-config-wal.html)
+- ✅ [PostGIS](https://postgis.net/)
+- ✅ [pgTAP](https://pgtap.org/)
+- ✅ [pgTAP](https://pgtap.org/)
+- ✅ plv8 - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129147)
+- ✅ PL/python - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129797)
 
 ## Install
 
