@@ -1,0 +1,49 @@
+name: CD
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install essentials
+      run: |
+        apt update -y
+        apt install software-properties-common -y
+        apt install unzip -y
+        apt install git -y
+        # apt install python3 -y
+        # apt install python3-pip -y
+    
+    - name: Install Packer
+      run: |
+        # python3 --version
+        # pip3 --version
+        export VER="1.5.5"
+        wget https://releases.hashicorp.com/packer/${VER}/packer_${VER}_linux_amd64.zip
+        unzip packer_${VER}_linux_amd64.zip
+        mv packer /usr/local/bin
+     
+    - name: Install Ansible
+      run: |
+        apt-add-repository --yes ppa:ansible/ansible
+        apt install ansible -y
+        ansible --version
+
+    - name: Install Ansible role
+      run:  |
+        ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
+        ansible-galaxy list anxs.postgresql
+        
+    - name: Build Snapshot
+      run: |
+        export REGION=sgp1
+        packer build \
+        -var "do_token=${{ secrets.DO_TOKEN }}" \
+        -var "region=$REGION" \
+        digitalOcean.json
