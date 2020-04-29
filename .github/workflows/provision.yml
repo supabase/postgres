@@ -11,19 +11,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Change to root user
+      run: sudo su -
+
     - name: Install essentials
       run: |
-        apt update -y
-        apt install software-properties-common -y
-        apt install unzip -y
-        apt install git -y
-        # apt install python3 -y
-        # apt install python3-pip -y
+        apt-get update -y
+        apt-get install software-properties-common -y
+        apt-get install unzip -y
+        apt-get install git -y
     
     - name: Install Packer
       run: |
-        # python3 --version
-        # pip3 --version
         export VER="1.5.5"
         wget https://releases.hashicorp.com/packer/${VER}/packer_${VER}_linux_amd64.zip
         unzip packer_${VER}_linux_amd64.zip
@@ -32,7 +31,7 @@ jobs:
     - name: Install Ansible
       run: |
         apt-add-repository --yes ppa:ansible/ansible
-        apt install ansible -y
+        apt-get install ansible -y
         ansible --version
 
     - name: Install Ansible role
