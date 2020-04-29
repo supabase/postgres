@@ -1,6 +1,5 @@
 {
   "variables": {
-    "name": "",
     "do_token": "",
     "region": ""
   },
@@ -11,9 +10,15 @@
     "region": "{{user `region`}}",
     "size": "512mb",
     "ssh_username": "root",
-    "snapshot_name": "{{user `name`}}"
+    "snapshot_name": "supabase-postgresql-0.0.8"
   }],
   "provisioners": [
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/00-python_install.sh"
+      ]
+    },
     {
       "type": "ansible",
       "playbook_file": "ansible/playbook.yml"

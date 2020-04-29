@@ -1,4 +1,5 @@
-roles:
-  - src: https://github.com/ANXS/postgresql
-    version: v1.12.0
-    name: ANXS.postgresql
+---
+
+- name: anxs.postgresql
+  src: https://github.com/anxs/postgresql
+  version: v1.12.0

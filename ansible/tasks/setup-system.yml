@@ -13,8 +13,6 @@
   apt:
     pkg:
       - build-essential
-      - python3
-      - python3-pip
       - ufw
     update_cache: yes
     cache_valid_time: 3600

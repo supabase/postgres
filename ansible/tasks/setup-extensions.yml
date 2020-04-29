@@ -36,35 +36,3 @@
     chdir: /tmp/pgtap-1.1.0
     target: install
   become: yes
-  
-- name: Enable pgTAP extension
-  become: yes
-  become_user: postgres
-  postgresql_ext:
-    name: pgtap
-    db: postgres
-    schema: public
-
-- name: Enable pgcrypto extension
-  become: yes
-  become_user: postgres
-  postgresql_ext:
-    name: pgcrypto
-    db: postgres
-    schema: public
-
-- name: Enable pg_stat_statements extension
-  become: yes
-  become_user: postgres
-  postgresql_ext:
-    name: pg_stat_statements
-    db: postgres
-    schema: public
-
-- name: Enable postgis extension
-  become: yes 
-  become_user: postgres
-  postgresql_ext:
-    name: postgis
-    db: postgres
-    schema: public
