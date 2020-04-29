@@ -24,11 +24,11 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 ## Motivation
 
-After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it quick and simple to get started with Postgres, so that we never hear that excuse again. 
+After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again. 
 
-Our secondary goal is to show off some of the features that are particularly exciting about Postgres to convince new developers to choose it over other database (a decision which we hope they will appreciate when they start scaling).
+Our secondary goal is to show off a few of Postgres' most exciting features. This is to convince new developers to choose it over other database (a decision we hope they'll appreciate once they start scaling).
 
-This is also the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to *install* Postgres, Supabase makes it easy to *use* Postgres.
+Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to *install* Postgres, Supabase makes it easy to *use* Postgres.
 
 ## Roadmap
 
