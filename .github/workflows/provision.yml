@@ -11,38 +11,35 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Change to root user
-      run: sudo su -
-
     - name: Install essentials
       run: |
-        apt-get update -y
-        apt-get install software-properties-common -y
-        apt-get install unzip -y
-        apt-get install git -y
+        sudo apt-get update -y
+        sudo apt-get install software-properties-common -y
+        sudo apt-get install unzip -y
+        sudo apt-get install git -y
     
     - name: Install Packer
       run: |
         export VER="1.5.5"
         wget https://releases.hashicorp.com/packer/${VER}/packer_${VER}_linux_amd64.zip
-        unzip packer_${VER}_linux_amd64.zip
-        mv packer /usr/local/bin
+        sudo unzip packer_${VER}_linux_amd64.zip
+        sudo mv packer /usr/local/bin
      
     - name: Install Ansible
       run: |
-        apt-add-repository --yes ppa:ansible/ansible
-        apt-get install ansible -y
+        sudo apt-add-repository --yes ppa:ansible/ansible
+        sudo apt-get install ansible -y
         ansible --version
 
     - name: Install Ansible role
       run:  |
-        ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
+        sudo ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
         ansible-galaxy list anxs.postgresql
         
     - name: Build Snapshot
       run: |
         export REGION=sgp1
-        packer build \
+        sudo packer build \
         -var "do_token=${{ secrets.DO_TOKEN }}" \
         -var "region=$REGION" \
         digitalOcean.json
