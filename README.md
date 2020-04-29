@@ -17,7 +17,9 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 
 See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
 
-[Docker](https://github.com/supabase/postgres/wiki/Docker) | [EC2](https://github.com/supabase/postgres/wiki/AWS-EC2) | [Digital Ocean](https://github.com/supabase/postgres/wiki/Digital-Ocean)
+[![Docker](https://github.com/supabase/postgres/blob/master/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
+[![Digital Ocean](https://github.com/supabase/postgres/blob/master/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
+[![AWS](https://github.com/supabase/postgres/blob/master/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
 ## Motivation
 
