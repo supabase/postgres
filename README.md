@@ -7,11 +7,12 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ Postgres 12
 - ✅ Ubuntu 18.04 (Bionic) 
 - ✅ [pg-contrib-12](https://www.postgresql.org/docs/12/contrib.html)
-- ✅ `wal_level` = [logical](https://www.postgresql.org/docs/current/runtime-config-wal.html)
+- ✅ [wal_level]((https://www.postgresql.org/docs/current/runtime-config-wal.html)) = logical
 - ✅ [PostGIS](https://postgis.net/)
 - ✅ [pgTAP](https://pgtap.org/)
-- ✅ plv8 - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129147)
-- ✅ PL/python - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129797)
+- ⏳ [plv8](https://github.com/plv8/plv8) - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129147)
+- ⏳ PL/python - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129797)
+- ⏳ `readonly` role - a readonly user set up by default for the public schema
 
 ## Install
 
