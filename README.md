@@ -22,6 +22,8 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 After talking to a lot of people, we've found that most techies believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it quick and simple to get started with Postgres, so that we never hear that excuse again. 
 
+This is also the same build we offer for [Supabase](https://supabase.io), and everything we do is opensource.
+
 ## Roadmap
 
 - [Support for more images](https://github.com/supabase/postgres/issues/4)
