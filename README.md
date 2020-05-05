@@ -8,7 +8,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ Ubuntu 18.04 (Bionic) 
 - ✅ [pg-contrib-12](https://www.postgresql.org/docs/12/contrib.html). Because everyone should enable `pg_stat_statements`.
 - ⏳ **readonly** role. A readonly role set up by default for the public schema.
-- ⏳ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
+- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [PostGIS](https://postgis.net/). Postgres' most popular extension - support for geographic objects.
 - ✅ [pgTAP](https://pgtap.org/). Unit Testing for Postgres
 - ⏳ [plv8](https://github.com/plv8/plv8) - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129147). Write in Javascript functions in Postgres.
