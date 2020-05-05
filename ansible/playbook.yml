@@ -13,6 +13,23 @@
   tasks:
     - include_tasks: tasks/setup-extensions.yml
 
+    - name: Dump SQL script
+      copy:
+        dest: /tmp/00-schema.sql
+        src: ../docker/mnt/00-schema.sql
+
+    - name: Set up readonly user for the public schema
+      become: yes
+      become_user: postgres
+      postgresql_query:
+        db: postgres
+        path_to_script: /tmp/00-schema.sql
+
+    - name: Delete SQL script
+      file:
+        path: /tmp/00-schema.sql
+        state: absent
+
     - name: Set up password for superadmin postgres
       become: yes
       become_user: postgres
