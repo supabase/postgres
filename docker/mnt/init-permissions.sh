@@ -7,4 +7,4 @@ echo "pg_stat_statements.max = 10000" >> $PGDATA/postgresql.conf
 echo "pg_stat_statements.track = all" >> $PGDATA/postgresql.conf
 echo "wal_level=logical" >> $PGDATA/postgresql.conf
 echo "max_replication_slots=5" >> $PGDATA/postgresql.conf
-echo "max_wal_senders=5" >> $PGDATA/postgresql.conf
+echo "max_wal_senders=10" >> $PGDATA/postgresql.conf
