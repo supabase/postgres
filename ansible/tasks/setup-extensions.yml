@@ -36,3 +36,9 @@
     chdir: /tmp/pgtap-1.1.0
     target: install
   become: yes
+
+- name: Install plpython
+  apt:
+    pkg: postgresql-plpython3-12
+    update_cache: yes
+    cache_valid_time: 3600
