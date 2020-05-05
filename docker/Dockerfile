@@ -19,5 +19,9 @@ RUN git clone git://github.com/theory/pgtap.git \
     && cd pgtap && git checkout tags/$PGTAP_VERSION \
     && make install
 
+# install plpython3
+RUN apt-get update \ 
+      && apt-get install postgresql-plpython3-12 -y
+
 RUN mkdir -p /docker-entrypoint-initdb.d
 ADD ./mnt /docker-entrypoint-initdb.d/
