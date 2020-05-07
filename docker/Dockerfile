@@ -24,8 +24,7 @@ RUN apt-get update \
       && apt-get install postgresql-plpython3-12 -y
 
 # install plv8
-ENV PLV8_VERSION=2.3.13 \
-    PLV8_SHASUM="1a96c559d98ad757e7494bf7301f0e6b0dd2eec6066ad76ed36cc13fec4f2390"
+ENV PLV8_VERSION=r3.0alpha
 
 RUN buildDependencies="build-essential \
     ca-certificates \
@@ -46,14 +45,12 @@ RUN buildDependencies="build-essential \
   && apt-get update \
   && apt-get install -y --no-install-recommends ${buildDependencies} ${runtimeDependencies} \
   && mkdir -p /tmp/build \
-  && curl -o /tmp/build/v$PLV8_VERSION.tar.gz -SL "https://github.com/plv8/plv8/archive/v${PLV8_VERSION}.tar.gz" \
   && cd /tmp/build \
-  && echo $PLV8_SHASUM v$PLV8_VERSION.tar.gz | sha256sum -c \
-  && tar -xzf /tmp/build/v$PLV8_VERSION.tar.gz -C /tmp/build/ \
-  && cd /tmp/build/plv8-$PLV8_VERSION \
+  && git clone https://github.com/plv8/plv8.git \
+  && cd plv8 \
+  && git checkout ${PLV8_VERSION} \
   && make static \
   && make install \
-  && strip /usr/lib/postgresql/${PG_MAJOR}/lib/plv8-${PLV8_VERSION}.so \
   && rm -rf /root/.vpython_cipd_cache /root/.vpython-root \
   && apt-get clean \
   && apt-get remove -y ${buildDependencies} \
