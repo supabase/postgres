@@ -18,7 +18,7 @@
     cache_valid_time: 3600
   when: postgresql_version >= 10
 
-- name: pgTAP - download latest releas
+- name: pgTAP - download latest release
   get_url:
     url: "https://github.com/theory/pgtap/archive/{{ pgtap_release }}.tar.gz"
     dest: /tmp
@@ -42,3 +42,59 @@
     pkg: postgresql-plpython3-12
     update_cache: yes
     cache_valid_time: 3600
+
+- name: plv8 - download & install dependencies
+  apt:
+    pkg:
+      - build-essential
+      - ca-certificates
+      - curl
+      - git-core
+      - python
+      - gpp
+      - cpp
+      - pkg-config
+      - apt-transport-https
+      - cmake
+      - libc++-dev
+      - libc++abi-dev
+      - postgresql-server-dev-12
+      - libc++1
+      - libtinfo5
+      - libc++abi1
+    update_cache: yes
+    install_recommends: no
+
+- name: plv8 - download latest release
+  git:
+    repo: https://github.com/plv8/plv8.git
+    dest: /tmp/plv8
+    version: r3.0alpha
+  become: yes
+
+- name: plv8 - build
+  make: 
+    chdir: /tmp/plv8
+  become: yes
+
+- name: plv8 - install
+  make:
+    chdir: /tmp/plv8
+    target: install
+  become: yes
+
+- name: plv8 - remove build dependencies
+  apt:
+    pkg:
+      - ca-certificates
+      - curl
+      - git-core
+      - python
+      - gpp
+      - cpp
+      - pkg-config
+      - apt-transport-https
+      - cmake
+      - libc++-dev
+      - libc++abi-dev
+      - postgresql-server-dev-12

@@ -8,9 +8,9 @@
     "api_token": "{{user `do_token`}}",
     "image": "ubuntu-18-04-x64",
     "region": "{{user `region`}}",
-    "size": "512mb",
+    "size": "s-1vcpu-1gb",
     "ssh_username": "root",
-    "snapshot_name": "supabase-postgresql-0.0.8"
+    "snapshot_name": "supabase-postgresql-0.0.11"
   }],
   "provisioners": [
     {
