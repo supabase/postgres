@@ -1,4 +1,4 @@
-# Supabase Postgres 
+# Postgres + goodies
 
 Unmodified Postgres with some useful plugins. Our goal with this repo is not to modify Postgres, but to provide some of the most common extensions with a one-click install.
 
@@ -7,12 +7,12 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ Postgres [12](https://www.postgresql.org/about/news/1976/). Includes [generated columns](https://www.postgresql.org/docs/12/ddl-generated-columns.html) and [JSON path](https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-SQLJSON-PATH) support
 - ✅ Ubuntu 18.04 (Bionic) 
 - ✅ [pg-contrib-12](https://www.postgresql.org/docs/12/contrib.html). Because everyone should enable `pg_stat_statements`.
-- ⏳ **readonly** role. A readonly role set up by default for the public schema.
-- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical. Ready for replication.
+- ✅ **readonly** role. A readonly role set up by default for the public schema.
+- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [PostGIS](https://postgis.net/). Postgres' most popular extension - support for geographic objects.
 - ✅ [pgTAP](https://pgtap.org/). Unit Testing for Postgres
-- ⏳ [plv8](https://github.com/plv8/plv8) - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129147). Write in Javascript functions in Postgres.
-- ⏳ [plpython3u](https://www.postgresql.org/docs/current/plpython-python23.html) - [coming soon](https://github.com/supabase/postgres/issues/5#issuecomment-621129797). Python3 enabled by default. Write in Python functions in Postgres.
+- ✅ [plv8](https://github.com/plv8/plv8) - Write in Javascript functions in Postgres.
+- ✅ [plpython3u](https://www.postgresql.org/docs/current/plpython-python23.html) - Python3 enabled by default. Write in Python functions in Postgres.
 
 ## Install
 
@@ -24,11 +24,11 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 ## Motivation
 
-After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it quick and simple to get started with Postgres, so that we never hear that excuse again. 
+After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again. 
 
-Our secondary goal is to show off some of the features that are particularly exciting about Postgres to convince new developers to choose it over other database (a decision which we hope they will appreciate when they start scaling).
+Our secondary goal is to show off a few of Postgres' most exciting features. This is to convince new developers to choose it over other database (a decision we hope they'll appreciate once they start scaling).
 
-This is also the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to *install* Postgres, Supabase makes it easy to *use* Postgres.
+Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to *install* Postgres, Supabase makes it easy to *use* Postgres.
 
 ## Roadmap
 

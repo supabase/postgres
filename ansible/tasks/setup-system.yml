@@ -4,15 +4,9 @@
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
-- name: add universe repository for bionic
-  apt_repository: 
-    repo: deb http://archive.ubuntu.com/ubuntu bionic universe
-    state: present
-
 - name: Install essentials
   apt:
     pkg:
-      - build-essential
       - ufw
     update_cache: yes
     cache_valid_time: 3600

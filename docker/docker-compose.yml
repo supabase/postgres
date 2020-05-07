@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  db:
+    image: supabase/postgres
+    ports:
+      - "6543:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
