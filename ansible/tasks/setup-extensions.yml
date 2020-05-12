@@ -50,7 +50,6 @@
       - ca-certificates
       - curl
       - git-core
-      - python
       - gpp
       - cpp
       - pkg-config

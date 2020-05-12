@@ -4,15 +4,23 @@
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
+- name: add universe repository for bionic
+  apt_repository: 
+    repo: deb http://archive.ubuntu.com/ubuntu bionic universe
+    state: present
+
 - name: Install essentials
   apt:
     pkg:
       - ufw
+      - python3
+      - python3-pip
     update_cache: yes
     cache_valid_time: 3600
 
 - name: Install psycopg2 to enable ansible postgreSQL features
-  pip: name=psycopg2-binary
+  pip: 
+    name: psycopg2-binary
 
 - name: System - Create services.slice
   template:
