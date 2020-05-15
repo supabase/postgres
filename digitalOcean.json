@@ -10,7 +10,7 @@
     "region": "{{user `region`}}",
     "size": "s-1vcpu-1gb",
     "ssh_username": "root",
-    "snapshot_name": "supabase-postgresql-0.0.11"
+    "snapshot_name": "supabase-postgresql-0.12.0"
   }],
   "provisioners": [
     {
