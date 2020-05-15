@@ -23,6 +23,20 @@ RUN git clone git://github.com/theory/pgtap.git \
 RUN apt-get update \ 
       && apt-get install postgresql-plpython3-12 -y
 
+# install pgAudit
+RUN pgAuditDependencies="postgresql-server-dev-$PG_MAJOR \
+    libssl-dev \
+    libkrb5-dev \
+    git-core" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ${pgAuditDependencies} \
+    && cd /tmp \
+    && git clone https://github.com/pgaudit/pgaudit.git \
+    && cd pgaudit \
+    && git checkout master \ 
+    && make check USE_PGXS=1 \
+    && make install USE_PGXS=1 
+
 # install plv8
 ENV PLV8_VERSION=r3.0alpha
 
