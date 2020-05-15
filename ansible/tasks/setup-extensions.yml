@@ -43,6 +43,37 @@
     update_cache: yes
     cache_valid_time: 3600
 
+- name: pgAudit - download & install dependencies
+  apt:
+    pkg:
+      - postgresql-server-dev-12
+      - libssl-dev
+      - libkrb5-dev
+    update_cache: yes
+    install_recommends: no
+
+- name: pgAudit - download latest release
+  git:
+    repo: https://github.com/pgaudit/pgaudit.git
+    dest: /tmp/pgaudit
+  become: yes
+
+- name: pgAudit - build
+  make: 
+    chdir: /tmp/pgaudit
+    target: check
+    params:
+      USE_PGXS: 1
+  become: yes
+
+- name: pgAudit - install
+  make:
+    chdir: /tmp/pgaudit
+    target: install
+    params:
+      USE_PGXS: 1
+  become: yes
+
 - name: plv8 - download & install dependencies
   apt:
     pkg:
@@ -50,7 +81,6 @@
       - ca-certificates
       - curl
       - git-core
-      - python
       - gpp
       - cpp
       - pkg-config

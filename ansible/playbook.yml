@@ -29,14 +29,12 @@
       file:
         path: /tmp/00-schema.sql
         state: absent
-
-    - name: Set up password for superadmin postgres
-      become: yes
-      become_user: postgres
-      postgresql_user:
-        name: postgres
-        password: "{{ postgres_superadmin_password }}"
     
+    - name: Adjust APT update intervals
+      copy: 
+        src: files/apt_periodic
+        dest: /etc/apt/apt.conf.d/10periodic
+
     - name: UFW - Allow SSH connections
       ufw:
         rule: allow
