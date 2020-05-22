@@ -1,13 +1,15 @@
 {
   "variables": {
     "do_token": "",
-    "region": ""
+    "region": "sgp1",
+    "snapshot_regions": "sgp1"
   },
   "builders": [{
     "type": "digitalocean",
     "api_token": "{{user `do_token`}}",
     "image": "ubuntu-18-04-x64",
     "region": "{{user `region`}}",
+    "snapshot_regions": "{{user `snapshot_regions`}}",
     "size": "s-1vcpu-1gb",
     "ssh_username": "root",
     "snapshot_name": "supabase-postgresql-0.12.0"
