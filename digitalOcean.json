@@ -1,13 +1,15 @@
 {
   "variables": {
     "do_token": "",
-    "region": "sgp1",
-    "snapshot_regions": "sgp1"
+    "image_name": "ubuntu-18-04-x64",
+    "region": "",
+    "snapshot_regions": "sgp1",
+    "ansible_arguments": ""
   },
   "builders": [{
     "type": "digitalocean",
     "api_token": "{{user `do_token`}}",
-    "image": "ubuntu-18-04-x64",
+    "image": "{{user `image_name`}}",
     "region": "{{user `region`}}",
     "snapshot_regions": "{{user `snapshot_regions`}}",
     "size": "s-1vcpu-1gb",
@@ -16,14 +18,9 @@
   }],
   "provisioners": [
     {
-      "type": "shell",
-      "scripts": [
-        "scripts/00-python_install.sh"
-      ]
-    },
-    {
       "type": "ansible",
-      "playbook_file": "ansible/playbook.yml"
+      "playbook_file": "ansible/playbook.yml",
+      "extra_arguments": "{{user `ansible_arguments`}}"
     },
     {
       "type": "shell",
