@@ -2,32 +2,27 @@
   "variables": {
     "aws_access_key": "",
     "aws_secret_key": "",
-    "region": "",
-    "ami": "",
-    "name": ""
+    "region": "ap-southeast-1",
+    "ami_regions": "ap-southeast-1",
+    "ami": "--skip-tags,update-only",
+    "ansible_arguments": ""
   },
   "builders": [{
     "type": "amazon-ebs",
     "access_key": "{{user `aws_access_key`}}",
     "secret_key": "{{user `aws_secret_key`}}",
     "region": "{{user `region`}}",
+    "ami_regions": "{{user `ami_regions`}}",
     "source_ami": "{{user `ami`}}",
     "instance_type": "t2.large",
     "ssh_username": "ubuntu",
-    "ami_name": "{{user `name`}}",
-    "launch_block_device_mappings": [{
-      "device_name": "/dev/sda1",
-      "iops": 400,
-      "volume_type": "io1",
-      "volume_size": 8,
-      "delete_on_termination": true
-
-    }]
+    "ami_name": "supabase-postgresql-0.13.0"
   }],
   "provisioners": [
     {
       "type": "ansible",
-      "playbook_file": "ansible/playbook.yml"
+      "playbook_file": "ansible/playbook.yml",
+      "extra_arguments": "{{user `ansible_arguments`}}"
     },
     {
       "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
