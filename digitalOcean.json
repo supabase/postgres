@@ -2,9 +2,9 @@
   "variables": {
     "do_token": "",
     "image_name": "ubuntu-18-04-x64",
-    "region": "",
+    "region": "sgp1",
     "snapshot_regions": "sgp1",
-    "ansible_arguments": ""
+    "ansible_arguments": "--skip-tags,update-only"
   },
   "builders": [{
     "type": "digitalocean",
@@ -14,7 +14,7 @@
     "snapshot_regions": "{{user `snapshot_regions`}}",
     "size": "s-1vcpu-1gb",
     "ssh_username": "root",
-    "snapshot_name": "supabase-postgresql-0.12.0"
+    "snapshot_name": "supabase-postgresql-0.13.0"
   }],
   "provisioners": [
     {
