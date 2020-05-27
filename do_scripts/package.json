@@ -1,0 +1,15 @@
+{
+  "name": "supabase-provision",
+  "version": "1.0.0",
+  "description": "Create droplet from a custom image/snapshot",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.662.0",
+    "do-wrapper": "^3.25.4",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
