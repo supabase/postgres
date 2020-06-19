@@ -2,7 +2,7 @@
   become: yes
 
   pre_tasks:
-    - include_tasks: tasks/setup-system.yml
+    - import_tasks: tasks/setup-system.yml
   
   vars_files:
     - ./vars.yml
@@ -11,7 +11,7 @@
     - role: anxs.postgresql
 
   tasks:
-    - include_tasks: tasks/setup-extensions.yml
+    - import_tasks: tasks/setup-extensions.yml
 
     - name: Dump SQL script
       copy:
