@@ -14,11 +14,12 @@
     "snapshot_regions": "{{user `snapshot_regions`}}",
     "size": "s-1vcpu-1gb",
     "ssh_username": "root",
-    "snapshot_name": "supabase-postgresql-0.13.0"
+    "snapshot_name": "supabase-postgresql-0.12.0"
   }],
   "provisioners": [
     {
       "type": "ansible",
+      "user": "root",
       "playbook_file": "ansible/playbook.yml",
       "extra_arguments": "{{user `ansible_arguments`}}"
     },

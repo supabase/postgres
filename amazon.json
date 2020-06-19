@@ -4,8 +4,8 @@
     "aws_secret_key": "",
     "region": "ap-southeast-1",
     "ami_regions": "ap-southeast-1",
-    "ami": "--skip-tags,update-only",
-    "ansible_arguments": ""
+    "ami": "ami-0f7719e8b7ba25c61",
+    "ansible_arguments": "--skip-tags,update-only"
   },
   "builders": [{
     "type": "amazon-ebs",
@@ -14,13 +14,14 @@
     "region": "{{user `region`}}",
     "ami_regions": "{{user `ami_regions`}}",
     "source_ami": "{{user `ami`}}",
-    "instance_type": "t2.large",
+    "instance_type": "t2.2xlarge",
     "ssh_username": "ubuntu",
-    "ami_name": "supabase-postgresql-0.13.0"
+    "ami_name": "supabase-postgresql-0.12.0"
   }],
   "provisioners": [
     {
       "type": "ansible",
+      "user": "ubuntu",
       "playbook_file": "ansible/playbook.yml",
       "extra_arguments": "{{user `ansible_arguments`}}"
     },
