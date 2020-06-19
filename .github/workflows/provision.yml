@@ -36,10 +36,28 @@ jobs:
         sudo ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
         ansible-galaxy list anxs.postgresql
         
-    - name: Build Snapshot
+    - name: Build Digital Ocean Snapshot
       run: |
         export REGION=sgp1
+        export SNAPSHOT_REGIONS="nyc1,nyc3,ams3,sfo2,sfo3,sgp1,lon1,fra1,tor1"
+        export IMAGE_NAME="supabase-supabasepostgres-18-04"
+        export ARGS="--tags,update"
         sudo packer build \
         -var "do_token=${{ secrets.DO_TOKEN }}" \
         -var "region=$REGION" \
+        -var "snapshot_regions=$SNAPSHOT_REGIONS" \
+        -var "image_name=$IMAGE_NAME" \
+        -var "ansible_arguments=$ARGS" \
+        digitalOcean.json
+
+    - name: Build Digital Ocean Snapshot for Marketplace
+      run: |
+        export REGION=sgp1
+        export IMAGE_NAME="supabase-supabasepostgres-18-04"
+        export ARGS="--tags,update"
+        sudo packer build \
+        -var "do_token=${{ secrets.DO_TOKEN }}" \
+        -var "region=$REGION" \
+        -var "image_name=$IMAGE_NAME" \
+        -var "ansible_arguments=$ARGS" \
         digitalOcean.json
