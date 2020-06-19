@@ -20,20 +20,20 @@
 
 - name: pgTAP - download latest release
   get_url:
-    url: "https://github.com/theory/pgtap/archive/{{ pgtap_release }}.tar.gz"
+    url: "https://github.com/theory/pgtap/archive/v{{ pgtap_release }}.tar.gz"
     dest: /tmp
     checksum: "{{ pgtap_release_checksum }}"
 
 - name: pgTAP - unpack archive
   unarchive:
     remote_src: yes
-    src: /tmp/pgtap-1.1.0.tar.gz
+    src: /tmp/pgtap-{{ pgtap_release }}.tar.gz
     dest: /tmp
   become: yes
 
 - name: pgTAP - install
   make:
-    chdir: /tmp/pgtap-1.1.0
+    chdir: /tmp/pgtap-{{ pgtap_release }}
     target: install
   become: yes
 
@@ -53,14 +53,21 @@
     install_recommends: no
 
 - name: pgAudit - download latest release
-  git:
-    repo: https://github.com/pgaudit/pgaudit.git
-    dest: /tmp/pgaudit
+  get_url:
+    url: "https://github.com/pgaudit/pgaudit/archive/{{ pgaudit_release }}.tar.gz"
+    dest: /tmp
+    checksum: "{{ pgaudit_release_checksum }}"
+
+- name: pgAudit - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgaudit-{{ pgaudit_release }}.tar.gz
+    dest: /tmp
   become: yes
 
 - name: pgAudit - build
   make: 
-    chdir: /tmp/pgaudit
+    chdir: /tmp/pgaudit-{{ pgaudit_release }}
     target: check
     params:
       USE_PGXS: 1
@@ -68,7 +75,7 @@
 
 - name: pgAudit - install
   make:
-    chdir: /tmp/pgaudit
+    chdir: /tmp/pgaudit-{{ pgaudit_release }}
     target: install
     params:
       USE_PGXS: 1
