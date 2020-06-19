@@ -4,22 +4,46 @@
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
+- name: Wait for /var/lib/apt/lists/lock
+  become: yes
+  shell:  while sudo fuser /var/lib/apt/lists/lock; do sleep 10; done;
+  tags: 
+    - update
+    - update-only
+
+- name: Wait for /var/lib/dpkg/lock-frontend
+  become: yes
+  shell:  while sudo fuser /var/lib/dpkg/lock-frontend; do sleep 10; done;
+  tags: 
+    - update
+    - update-only
+
 - name: add universe repository for bionic
   apt_repository: 
     repo: deb http://archive.ubuntu.com/ubuntu bionic universe
     state: present
 
-- name: Install essentials
+- name: Install python
+  become: yes   
   apt:
     pkg:
-      - ufw
-      - fail2ban
-      - unattended-upgrades
+      - python
+      - python-pip
       - python3
       - python3-pip
     update_cache: yes
     cache_valid_time: 3600
 
+- name: Install security tools
+  become: yes  
+  apt:
+    pkg:
+      - ufw
+      - fail2ban
+      - unattended-upgrades
+    update_cache: yes
+    cache_valid_time: 3600
+  
 - name: Adjust APT update intervals
   copy: 
     src: files/apt_periodic
