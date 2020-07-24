@@ -14,9 +14,17 @@
     "region": "{{user `region`}}",
     "ami_regions": "{{user `ami_regions`}}",
     "source_ami": "{{user `ami`}}",
-    "instance_type": "t2.2xlarge",
+    "instance_type": "m5.2xlarge",
     "ssh_username": "ubuntu",
-    "ami_name": "supabase-postgresql-0.12.0"
+    "ami_name": "supabase-postgres-0.13.0",
+    "launch_block_device_mappings": [
+      {
+        "device_name": "/dev/sda1",
+        "volume_size": 16,
+        "volume_type": "gp2",
+        "delete_on_termination": true
+      }
+    ]
   }],
   "provisioners": [
     {
