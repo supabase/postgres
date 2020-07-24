@@ -7,13 +7,16 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ Postgres [12](https://www.postgresql.org/about/news/1976/). Includes [generated columns](https://www.postgresql.org/docs/12/ddl-generated-columns.html) and [JSON path](https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-SQLJSON-PATH) support.
 - ✅ Ubuntu 18.04 (Bionic). 
 - ✅ [pg-contrib-12](https://www.postgresql.org/docs/12/contrib.html). Because everyone should enable `pg_stat_statements`.
-- ✅ **readonly** role. A readonly role set up by default for the public schema.
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [PostGIS](https://postgis.net/). Postgres' most popular extension - support for geographic objects.
 - ✅ [pgTAP](https://pgtap.org/). Unit Testing for Postgres.
 - ✅ [pgAudit](https://www.pgaudit.org/). Generate highly compliant audit logs.
+- ✅ [pgjwt](https://github.com/michelp/pgjwt). Generate JSON Web Tokens (JWT) in Postgres.
+- ✅ [pgsql-http](https://github.com/pramsey/pgsql-http). HTTP client for Postgres.
+- ✅ [plpgsql_check](https://github.com/okbob/plpgsql_check). Linter tool for PL/pgSQL.
 - ✅ [plv8](https://github.com/plv8/plv8). Write in Javascript functions in Postgres.
 - ✅ [plpython3u](https://www.postgresql.org/docs/current/plpython-python23.html). Python3 enabled by default. Write in Python functions in Postgres.
+- ✅ [PL/Java](https://github.com/tada/pljaval). Write in Java functions in Postgres.
 
 ## Install
 
