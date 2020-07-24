@@ -13,3 +13,4 @@ echo "logging_collector=on" >> $PGDATA/postgresql.conf
 echo "log_filename='postgresql.log'" >> $PGDATA/postgresql.conf
 echo "log_rotation_age=0" >> $PGDATA/postgresql.conf
 echo "log_rotation_size=0" >> $PGDATA/postgresql.conf
+echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so'" >> $PGDATA/postgresql.conf
