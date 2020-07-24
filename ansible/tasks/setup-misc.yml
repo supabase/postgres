@@ -1,0 +1,24 @@
+# WAL-G
+- name: Install daemontools
+  become: yes
+  apt:
+    pkg:
+      - daemontools
+
+- name: WAL-G - download latest release
+  get_url:
+    url: https://github.com/wal-g/wal-g/releases/download/v{{ wal_g_release }}/wal-g.linux-amd64.tar.gz
+    dest: /tmp
+    checksum: "{{ wal_g_release_checksum }}"
+
+- name: WAL-G - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/wal-g.linux-amd64.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: WAL-G - install
+  become: yes
+  shell:  
+    cmd: mv /tmp/wal-g /usr/local/bin/

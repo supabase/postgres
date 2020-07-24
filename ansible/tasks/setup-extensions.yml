@@ -1,3 +1,4 @@
+# postgis
 - name: Install postgis for postgreSQL versions < 10
   apt:
     pkg:
@@ -18,6 +19,7 @@
     cache_valid_time: 3600
   when: postgresql_version >= 10
 
+# pgTAP
 - name: pgTAP - download latest release
   get_url:
     url: "https://github.com/theory/pgtap/archive/v{{ pgtap_release }}.tar.gz"
@@ -37,12 +39,14 @@
     target: install
   become: yes
 
+# plpython
 - name: Install plpython
   apt:
     pkg: postgresql-plpython3-12
     update_cache: yes
     cache_valid_time: 3600
 
+# pgAudit
 - name: pgAudit - download & install dependencies
   apt:
     pkg:
@@ -81,6 +85,152 @@
       USE_PGXS: 1
   become: yes
 
+# pgjwt
+- name: pgjwt - download from master branch
+  git:
+    repo: https://github.com/michelp/pgjwt.git
+    dest: /tmp/pgjwt
+    version: master
+
+- name: pgjwt - install
+  make:
+    chdir: /tmp/pgjwt
+    target: install
+  become: yes
+
+- name: Remove libcurl4 package
+  apt:
+    pkg: 
+      - libcurl4
+    state: absent
+
+# pgsql-http
+- name: pgsql-http - download & install dependencies
+  apt:
+    pkg:
+      - libcurl4-gnutls-dev
+    update_cache: yes
+    install_recommends: yes
+
+- name: pgsql-http - download latest release
+  get_url:
+    url: "https://github.com/pramsey/pgsql-http/archive/v{{ pgsql_http_release }}.tar.gz"
+    dest: /tmp
+    checksum: "{{ pgsql_http_release_checksum }}"
+
+- name: pgsql-http - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgsql-http-{{ pgsql_http_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pgsql-http - build
+  make: 
+    chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
+  become: yes
+
+- name: pgsql-http - install
+  make:
+    chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
+    target: install
+  become: yes
+
+# plpgsql_check
+- name: plpgsql_check - download & install dependencies
+  apt:
+    pkg:
+      - libicu-dev
+    update_cache: yes
+    install_recommends: no
+
+- name: plpgsql_check - download latest release
+  get_url:
+    url: https://github.com/okbob/plpgsql_check/archive/v{{ plpgsql_check_release }}.tar.gz
+    dest: /tmp
+    checksum: "{{ plpgsql_check_release_checksum }}"
+
+- name: plpgsql_check - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: plpgsql_check - clean
+  make: 
+    chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
+    target: clean
+  become: yes
+
+- name: plpgsql_check - install
+  make:
+    chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
+    target: install
+  become: yes
+
+# pljava
+- name: pljava - download & install dependencies
+  apt:
+    pkg:
+      - maven
+      - default-jre
+      - default-jdk
+    update_cache: yes
+    install_recommends: yes
+
+- name: pljava - download latest release
+  get_url:
+    url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
+    dest: /tmp
+    checksum: "{{ pljava_release_checksum }}"
+
+- name: pljava - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pljava-{{ pljava_release }}.tar.gz 
+    dest: /tmp
+  become: yes
+
+- name: pljava - build
+  become: yes
+  shell:  
+    cmd: mvn clean install
+    chdir: /tmp/pljava-{{ pljava_release }}
+
+- name: pljava - install
+  become: yes
+  shell:  
+    cmd: java -jar pljava-packaging/target/pljava-pg12.3-amd64-Linux-gpp.jar
+    chdir: /tmp/pljava-{{ pljava_release }}
+
+- name: pljava - remove build dependencies
+  apt:
+    pkg:
+      - maven
+      - default-jre
+      - default-jdk
+    state: absent
+
+- name: pljava - install headless jdk
+  apt:
+    pkg:
+      - default-jdk-headless
+    update_cache: yes
+    install_recommends: no
+
+- name: pljava - set pljava.libjvm_location
+  become: yes
+  shell:  
+    cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so'" >> /etc/postgresql/12/main/postgresql.conf
+
+- name: pljava - remove ~/.m2 directory
+  become: yes
+  file:
+    path: ~/.m2
+    state: absent
+
+# plv8
 - name: plv8 - download & install dependencies
   apt:
     pkg:
@@ -119,19 +269,3 @@
     chdir: /tmp/plv8
     target: install
   become: yes
-
-- name: plv8 - remove build dependencies
-  apt:
-    pkg:
-      - ca-certificates
-      - curl
-      - git-core
-      - python
-      - gpp
-      - cpp
-      - pkg-config
-      - apt-transport-https
-      - cmake
-      - libc++-dev
-      - libc++abi-dev
-      - postgresql-server-dev-12

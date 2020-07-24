@@ -11,25 +11,12 @@
     - role: anxs.postgresql
 
   tasks:
-    - import_tasks: tasks/setup-extensions.yml
+    - name: Install non-Postgres extensions
+      import_tasks: tasks/setup-misc.yml
 
-    - name: Dump SQL script
-      copy:
-        dest: /tmp/00-schema.sql
-        src: ../docker/mnt/00-schema.sql
+    - name: Install Postgres extensions
+      import_tasks: tasks/setup-extensions.yml
 
-    - name: Set up readonly user for the public schema
-      become: yes
-      become_user: postgres
-      postgresql_query:
-        db: postgres
-        path_to_script: /tmp/00-schema.sql
-
-    - name: Delete SQL script
-      file:
-        path: /tmp/00-schema.sql
-        state: absent
-    
     - name: Adjust APT update intervals
       copy: 
         src: files/apt_periodic
