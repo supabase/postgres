@@ -5,6 +5,7 @@
     "region": "ap-southeast-1",
     "ami_regions": "ap-southeast-1",
     "ami": "ami-0f7719e8b7ba25c61",
+    "environment": "testing",
     "ansible_arguments": "--skip-tags,update-only"
   },
   "builders": [{
@@ -17,6 +18,10 @@
     "instance_type": "m5.2xlarge",
     "ssh_username": "ubuntu",
     "ami_name": "supabase-postgres-0.13.0",
+    "tags":{
+      "environment":"{{user `environment`}}",
+      "appType":"postgres"
+    },
     "launch_block_device_mappings": [
       {
         "device_name": "/dev/sda1",
