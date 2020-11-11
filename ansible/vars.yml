@@ -36,8 +36,8 @@ pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
 plpgsql_check_release: "1.11.0"
 plpgsql_check_release_checksum: sha1:395313b6ef9c10c4fc182817d6f0040b171147b8
 
-pljava_release: "1_5_5"
-pljava_release_checksum: sha1:5277433030fdeed8528c7c0154163b54aedbd842
+pljava_release: "1_6_0"
+pljava_release_checksum: sha1:43b99b8d175c2d4fc9abef96ee3c751dfea610e2
 
 postgresql_log_destination: "csvlog"
 postgresql_logging_collector: on
