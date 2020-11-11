@@ -249,6 +249,7 @@
       - libc++1
       - libtinfo5
       - libc++abi1
+      - clang
     update_cache: yes
     install_recommends: no
 
