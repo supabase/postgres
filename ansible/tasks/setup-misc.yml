@@ -20,5 +20,5 @@
 
 - name: WAL-G - install
   become: yes
-  shell:  
+  shell:
     cmd: mv /tmp/wal-g /usr/local/bin/

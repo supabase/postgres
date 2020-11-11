@@ -8,29 +8,31 @@
     "environment": "testing",
     "ansible_arguments": "--skip-tags,update-only"
   },
-  "builders": [{
-    "type": "amazon-ebs",
-    "access_key": "{{user `aws_access_key`}}",
-    "secret_key": "{{user `aws_secret_key`}}",
-    "region": "{{user `region`}}",
-    "ami_regions": "{{user `ami_regions`}}",
-    "source_ami": "{{user `ami`}}",
-    "instance_type": "m5.2xlarge",
-    "ssh_username": "ubuntu",
-    "ami_name": "supabase-postgres-0.13.0",
-    "tags":{
-      "environment":"{{user `environment`}}",
-      "appType":"postgres"
-    },
-    "launch_block_device_mappings": [
-      {
-        "device_name": "/dev/sda1",
-        "volume_size": 16,
-        "volume_type": "gp2",
-        "delete_on_termination": true
-      }
-    ]
-  }],
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `region`}}",
+      "ami_regions": "{{user `ami_regions`}}",
+      "source_ami": "{{user `ami`}}",
+      "instance_type": "m5.2xlarge",
+      "ssh_username": "ubuntu",
+      "ami_name": "supabase-postgres-0.13.0",
+      "tags": {
+        "environment": "{{user `environment`}}",
+        "appType": "postgres"
+      },
+      "launch_block_device_mappings": [
+        {
+          "device_name": "/dev/sda1",
+          "volume_size": 16,
+          "volume_type": "gp2",
+          "delete_on_termination": true
+        }
+      ]
+    }
+  ],
   "provisioners": [
     {
       "type": "ansible",

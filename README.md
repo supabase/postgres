@@ -5,7 +5,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 ## Features
 
 - ✅ Postgres [12](https://www.postgresql.org/about/news/1976/). Includes [generated columns](https://www.postgresql.org/docs/12/ddl-generated-columns.html) and [JSON path](https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-SQLJSON-PATH) support.
-- ✅ Ubuntu 18.04 (Bionic). 
+- ✅ Ubuntu 18.04 (Bionic).
 - ✅ [pg-contrib-12](https://www.postgresql.org/docs/12/contrib.html). Because everyone should enable `pg_stat_statements`.
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [PostGIS](https://postgis.net/). Postgres' most popular extension - support for geographic objects.
@@ -28,11 +28,11 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 ## Motivation
 
-After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they *still* choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again. 
+After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they _still_ choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again.
 
 Our secondary goal is to show off a few of Postgres' most exciting features. This is to convince new developers to choose it over other database (a decision we hope they'll appreciate once they start scaling).
 
-Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to *install* Postgres, Supabase makes it easy to *use* Postgres.
+Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to _install_ Postgres, Supabase makes it easy to _use_ Postgres.
 
 ## Roadmap
 
@@ -50,4 +50,3 @@ We are building the features of Firebase using enterprise-grade, open source pro
 
 [![Worklife VC](https://user-images.githubusercontent.com/10214025/90451355-34d71200-e11e-11ea-81f9-1592fd1e9146.png)](https://www.worklife.vc)
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
-

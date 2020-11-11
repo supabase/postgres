@@ -12,10 +12,17 @@ postgresql_ext_install_dev_headers: yes
 # Warning: Make sure the postgresql & postgis versions are compatible with one another
 postgresql_ext_postgis_version: 3
 
-postgresql_shared_preload_libraries: [pg_stat_statements, pgaudit, plpgsql, plpgsql_check ]
+postgresql_shared_preload_libraries:
+  [pg_stat_statements, pgaudit, plpgsql, plpgsql_check]
 
 postgresql_pg_hba_custom:
-  - {type: "host", database: "all", user: "all", address: "0.0.0.0/0", method: "md5" }
+  - {
+      type: "host",
+      database: "all",
+      user: "all",
+      address: "0.0.0.0/0",
+      method: "md5",
+    }
 
 pgtap_release: "1.1.0"
 pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e

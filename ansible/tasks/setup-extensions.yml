@@ -2,9 +2,9 @@
 - name: Install postgis for postgreSQL versions < 10
   apt:
     pkg:
-    - libgeos-c1v5
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
-    - "postgresql-{{ postgresql_version }}-postgis-scripts"
+      - libgeos-c1v5
+      - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
+      - "postgresql-{{ postgresql_version }}-postgis-scripts"
     update_cache: yes
     cache_valid_time: 3600
   when: postgresql_version < 10
@@ -12,9 +12,9 @@
 - name: Install postgis for postgreSQL versions >= 10
   apt:
     pkg:
-    - libgeos-c1v5
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}-scripts"
+      - libgeos-c1v5
+      - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
+      - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}-scripts"
     update_cache: yes
     cache_valid_time: 3600
   when: postgresql_version >= 10
@@ -70,7 +70,7 @@
   become: yes
 
 - name: pgAudit - build
-  make: 
+  make:
     chdir: /tmp/pgaudit-{{ pgaudit_release }}
     target: check
     params:
@@ -100,7 +100,7 @@
 
 - name: Remove libcurl4 package
   apt:
-    pkg: 
+    pkg:
       - libcurl4
     state: absent
 
@@ -126,7 +126,7 @@
   become: yes
 
 - name: pgsql-http - build
-  make: 
+  make:
     chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
   become: yes
 
@@ -158,7 +158,7 @@
   become: yes
 
 - name: plpgsql_check - clean
-  make: 
+  make:
     chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
     target: clean
   become: yes
@@ -188,19 +188,19 @@
 - name: pljava - unpack archive
   unarchive:
     remote_src: yes
-    src: /tmp/pljava-{{ pljava_release }}.tar.gz 
+    src: /tmp/pljava-{{ pljava_release }}.tar.gz
     dest: /tmp
   become: yes
 
 - name: pljava - build
   become: yes
-  shell:  
+  shell:
     cmd: mvn clean install
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - install
   become: yes
-  shell:  
+  shell:
     cmd: java -jar pljava-packaging/target/pljava-pg12.3-amd64-Linux-gpp.jar
     chdir: /tmp/pljava-{{ pljava_release }}
 
@@ -221,7 +221,7 @@
 
 - name: pljava - set pljava.libjvm_location
   become: yes
-  shell:  
+  shell:
     cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so'" >> /etc/postgresql/12/main/postgresql.conf
 
 - name: pljava - remove ~/.m2 directory
@@ -260,7 +260,7 @@
   become: yes
 
 - name: plv8 - build
-  make: 
+  make:
     chdir: /tmp/plv8
   become: yes
 
