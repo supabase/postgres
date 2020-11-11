@@ -201,7 +201,7 @@
 - name: pljava - install
   become: yes
   shell:
-    cmd: java -jar pljava-packaging/target/pljava-pg12.3-amd64-Linux-gpp.jar
+    cmd: java -jar pljava-packaging/target/pljava-pg12.jar
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - remove build dependencies
