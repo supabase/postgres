@@ -46,6 +46,13 @@
     update_cache: yes
     cache_valid_time: 3600
 
+# pgcron
+- name: Install pgcron
+  apt:
+    pkg: postgresql-12-cron
+    update_cache: yes
+    cache_valid_time: 3600
+
 # pgAudit
 - name: pgAudit - download & install dependencies
   apt:
