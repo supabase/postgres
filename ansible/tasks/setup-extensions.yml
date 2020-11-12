@@ -257,6 +257,7 @@
       - libtinfo5
       - libc++abi1
       - clang
+      - ninja-build
     update_cache: yes
     install_recommends: no
 
