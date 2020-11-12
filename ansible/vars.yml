@@ -45,5 +45,6 @@ postgresql_log_filename: "postgresql.log"
 postgresql_log_rotation_age: 0
 postgresql_log_rotation_size: 0
 
+golang_version: "1.15.4"
 wal_g_release: "0.2.15"
 wal_g_release_checksum: sha1:e82d405121e0ccc322a323b9824e60c102b14004

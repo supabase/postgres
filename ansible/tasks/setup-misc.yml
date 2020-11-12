@@ -5,20 +5,46 @@
     pkg:
       - daemontools
 
-- name: WAL-G - download latest release
-  get_url:
-    url: https://github.com/wal-g/wal-g/releases/download/v{{ wal_g_release }}/wal-g.linux-amd64.tar.gz
-    dest: /tmp
-    checksum: "{{ wal_g_release_checksum }}"
+- name: wal-g system dependencies
+  apt:
+    pkg:
+      - liblzo2-dev
+      - cmake
+      - build-essential
 
-- name: WAL-G - unpack archive
+# find platform architecture
+- name: finding platform architecture
+  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
+  register: platform_output
+- set_fact:
+    platform: "{{ platform_output.stdout }}"
+
+# install go dependency for WAL-G
+- name: wal-g go dependency
+  get_url:
+    url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+    dest: /tmp
+- name: unpack go archive
   unarchive:
     remote_src: yes
-    src: /tmp/wal-g.linux-amd64.tar.gz
-    dest: /tmp
-  become: yes
+    src: "/tmp/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+    dest: /usr/local
 
-- name: WAL-G - install
+# Download WAL-G
+- name: download wal-g
+  shell:
+    cmd: go get github.com/wal-g/wal-g;
+  environment:
+    PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+  ignore_errors: yes
+  # ignore error https://github.com/wal-g/wal-g/issues/343#issuecomment-514544288
+
+# Install WAL-G
+- name: install wal-g
   become: yes
   shell:
-    cmd: mv /tmp/wal-g /usr/local/bin/
+    cmd: make install && make deps && make pg_install
+    chdir: "{{ ansible_env.HOME }}/go/src/github.com/wal-g/wal-g"
+  environment:
+    GOBIN: "/usr/local/bin"
+    PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
