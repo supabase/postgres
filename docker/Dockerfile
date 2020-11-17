@@ -1,5 +1,9 @@
 FROM postgres:12
 
+# install pgcron
+RUN apt-get update \ 
+      && apt-get install postgresql-12-cron -y
+
 # install postgis
 ENV POSTGIS_MAJOR 3
 ENV POSTGIS_VERSION 3.0.0+dfsg-2~exp1.pgdg100+1
@@ -147,7 +151,7 @@ RUN plv8Dependencies="build-essential \
   && rm -rf /tmp/build /var/lib/apt/lists/* /var/tmp/*
 
 # install pljava
-ENV PLJAVA_VERSION=V1_5_5
+ENV PLJAVA_VERSION=V1_6_0
 
 RUN pljavaDependencies="git \
     ca-certificates \
@@ -166,7 +170,7 @@ RUN pljavaDependencies="git \
     && cd pljava \
     && git checkout ${PLJAVA_VERSION} \
     && mvn clean install \
-    && java -jar pljava-packaging/target/pljava-pg12.3-amd64-Linux-gpp.jar \
+    && java -jar pljava-packaging/target/pljava-pg12.jar \
     && apt-get clean \
     && apt-get remove -y ${pljavaDependencies} \
     && apt-get autoremove -y \
