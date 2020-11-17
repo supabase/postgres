@@ -236,7 +236,6 @@
   file:
     path: ~/.m2
     state: absent
-
 # plv8
 - name: plv8 - download & install dependencies
   apt:
@@ -256,7 +255,6 @@
       - libc++1
       - libtinfo5
       - libc++abi1
-      - clang
       - ninja-build
     update_cache: yes
     install_recommends: no
