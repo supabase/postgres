@@ -18,7 +18,7 @@
       "source_ami": "{{user `ami`}}",
       "instance_type": "m5.2xlarge",
       "ssh_username": "ubuntu",
-      "ami_name": "supabase-postgres-0.13.0",
+      "ami_name": "supabase-postgres-0.14.0",
       "tags": {
         "environment": "{{user `environment`}}",
         "appType": "postgres"
