@@ -13,7 +13,7 @@ postgresql_ext_install_dev_headers: yes
 postgresql_ext_postgis_version: 3
 
 postgresql_shared_preload_libraries:
-  [pg_stat_statements, pgaudit, plpgsql, plpgsql_check]
+  [pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron]
 
 postgresql_pg_hba_custom:
   - {
