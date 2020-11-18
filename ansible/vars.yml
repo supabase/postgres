@@ -15,13 +15,46 @@ postgresql_ext_postgis_version: 3
 postgresql_shared_preload_libraries:
   [pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron]
 
-postgresql_pg_hba_custom:
+postgresql_pg_hba_default:
+  - { 
+      type: local, 
+      database: all, 
+      user: all,
+      address: "",
+      method: "{{ postgresql_default_auth_method }}",
+      comment: '"local" is for Unix domain socket connections only'
+    }
+  - { 
+      type: host,  
+      database: all, 
+      user: all, 
+      address: "127.0.0.1/32", 
+      method: "trust", 
+      comment: "IPv4 local connections:" 
+    }
+  - { 
+      type: host,  
+      database: all, 
+      user: all, 
+      address: "::1/128",      
+      method: "{{ postgresql_default_auth_method_hosts }}", 
+      comment: "IPv6 local connections:" 
+    }
+  - { 
+      type: local, 
+      database: all, 
+      user: "{{ postgresql_admin_user }}", 
+      address: "", 
+      method: "peer map=root_as_{{ postgresql_admin_user }}", 
+      comment: "Local root Unix user, passwordless access" 
+    }
   - {
       type: "host",
       database: "all",
       user: "all",
       address: "0.0.0.0/0",
-      method: "md5",
+      method: "{{ postgresql_default_auth_method_hosts }}",
+      comment: "IPv4 external connections"
     }
 
 pgtap_release: "1.1.0"
