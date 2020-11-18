@@ -5,6 +5,7 @@
     "region": "ap-northeast-1",
     "ami_regions": "ap-northeast-1",
     "ami": "ami-034efdc866e4b4fd7",
+    "ami_name": "supabase-postgres-0.14.0",
     "environment": "testing",
     "ansible_arguments": "--skip-tags,update-only -v"
   },
@@ -18,7 +19,7 @@
       "source_ami": "{{user `ami`}}",
       "instance_type": "c6g.2xlarge",
       "ssh_username": "ubuntu",
-      "ami_name": "supabase-postgres-arm-0.14.0",
+      "ami_name": "{{user `ami_name`}}",
       "tags": {
         "environment": "{{user `environment`}}",
         "appType": "postgres"
