@@ -6,25 +6,20 @@
 
 - name: Wait for /var/lib/apt/lists/lock
   become: yes
-  shell:  while sudo fuser /var/lib/apt/lists/lock; do sleep 10; done;
-  tags: 
+  shell: while sudo fuser /var/lib/apt/lists/lock; do sleep 10; done;
+  tags:
     - update
     - update-only
 
 - name: Wait for /var/lib/dpkg/lock-frontend
   become: yes
-  shell:  while sudo fuser /var/lib/dpkg/lock-frontend; do sleep 10; done;
-  tags: 
+  shell: while sudo fuser /var/lib/dpkg/lock-frontend; do sleep 10; done;
+  tags:
     - update
     - update-only
 
-- name: add universe repository for bionic
-  apt_repository: 
-    repo: deb http://archive.ubuntu.com/ubuntu bionic universe
-    state: present
-
 - name: Install python
-  become: yes   
+  become: yes
   apt:
     pkg:
       - python
@@ -35,7 +30,7 @@
     cache_valid_time: 3600
 
 - name: Install security tools
-  become: yes  
+  become: yes
   apt:
     pkg:
       - ufw
@@ -43,15 +38,36 @@
       - unattended-upgrades
     update_cache: yes
     cache_valid_time: 3600
-  
+
 - name: Adjust APT update intervals
-  copy: 
+  copy:
     src: files/apt_periodic
     dest: /etc/apt/apt.conf.d/10periodic
 
-- name: Install psycopg2 to enable ansible postgreSQL features
-  pip: 
-    name: psycopg2-binary
+# Install psycopg2 to enable ansible postgreSQL features
+- name: Installing psycopg2 dependencies
+  become: yes
+  apt:
+    pkg:
+      - libpq-dev
+
+- name: Cloning psycopg2
+  git:
+    repo: https://github.com/psycopg/psycopg2.git
+    dest: /tmp/psycopg2
+    version: "2_8_6"
+  become: yes
+
+- name: psycopg2 - build
+  shell:
+    cmd: python setup.py build
+    chdir: /tmp/psycopg2
+
+- name: psycopg2 - install
+  shell:
+    cmd: python setup.py install
+    chdir: /tmp/psycopg2
+  become: yes
 
 - name: System - Create services.slice
   template:
@@ -60,4 +76,3 @@
 
 - name: System - systemd reload
   systemd: daemon_reload=yes
-

@@ -3,10 +3,10 @@
 
   pre_tasks:
     - import_tasks: tasks/setup-system.yml
-  
+
   vars_files:
     - ./vars.yml
-  
+
   roles:
     - role: anxs.postgresql
 
@@ -18,7 +18,7 @@
       import_tasks: tasks/setup-extensions.yml
 
     - name: Adjust APT update intervals
-      copy: 
+      copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
 
@@ -30,10 +30,10 @@
     - name: UFW - Allow connections to postgreSQL (5432)
       ufw:
         rule: allow
-        port: '5432'
+        port: "5432"
 
     - name: UFW - Deny all other incoming traffix by default
-      ufw: 
+      ufw:
         state: enabled
         policy: deny
         direction: incoming
