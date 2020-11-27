@@ -32,10 +32,6 @@ RUN pgtapDependencies="git \
     && apt-get autoremove -y \
     && rm -rf /tmp/pgtap /var/lib/apt/lists/* /var/tmp/*
 
-# install plpython3
-RUN apt-get update \ 
-      && apt-get install postgresql-plpython3-12 -y
-
 # install pgAudit
 ENV PGAUDIT_VERSION=1.4.0
 
