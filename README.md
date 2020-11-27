@@ -15,7 +15,6 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ [pgsql-http](https://github.com/pramsey/pgsql-http). HTTP client for Postgres.
 - ✅ [plpgsql_check](https://github.com/okbob/plpgsql_check). Linter tool for PL/pgSQL.
 - ✅ [plv8](https://github.com/plv8/plv8). Write in Javascript functions in Postgres.
-- ✅ [plpython3u](https://www.postgresql.org/docs/current/plpython-python23.html). Python3 enabled by default. Write in Python functions in Postgres.
 - ✅ [PL/Java](https://github.com/tada/pljaval). Write in Java functions in Postgres.
 
 ## Install
