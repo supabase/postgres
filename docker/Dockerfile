@@ -112,6 +112,24 @@ RUN plpgsqlCheckDependencies="git \
     && apt-get autoremove -y \
     && rm -rf /tmp/plpgsql_check /var/lib/apt/lists/* /var/tmp/*
 
+# install pg-safeupdate
+ENV PGSAFEUPDATE_VERSION=1.3
+
+RUN pgSafeUpdateDependencies="pgxnclient \
+postgresql-server-dev-12" \ 
+&& apt-get update \
+&& apt-get install -y --no-install-recommends ${pgSafeUpdateDependencies} \
+&& cd /tmp \
+&& git clone https://github.com/eradman/pg-safeupdate.git \
+&& cd pg-safeupdate \
+&& git checkout ${PGSAFEUPDATE_VERSION} \
+&& make \
+&& make install \
+&& apt-get clean \
+&& apt-get remove -y ${pgSafeUpdateDependencies} \
+&& apt-get autoremove -y \
+&& rm -rf /tmp/pg-safeupdate /var/lib/apt/lists/* /var/tmp/*
+
 # install plv8
 ENV PLV8_VERSION=r3.0alpha
 

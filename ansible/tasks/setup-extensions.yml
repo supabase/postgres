@@ -169,6 +169,28 @@
     target: install
   become: yes
 
+# pg-safeupdate
+- name: pg-safeupdate - download & install dependencies
+  apt:
+    pkg:
+      - pgxnclient
+      - postgresql-server-dev-12
+    update_cache: yes
+    install_recommends: yes
+
+- name: pg-safeupdate - download & install via pgxn
+  shell:
+    cmd: pgxn install safeupdate
+  become: yes
+  ignore_errors: yes
+
+- name: pg-safeupdate - remove dependencies
+  apt:
+    pkg:
+      - pgxnclient
+      - postgresql-server-dev-12
+    state: absent
+
 # pljava
 - name: pljava - download & install dependencies
   apt:
@@ -229,6 +251,7 @@
   file:
     path: ~/.m2
     state: absent
+
 # plv8
 - name: plv8 - download & install dependencies
   apt:
