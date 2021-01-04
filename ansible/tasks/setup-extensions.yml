@@ -188,7 +188,6 @@
   apt:
     pkg:
       - pgxnclient
-      - postgresql-server-dev-12
     state: absent
 
 # pljava
@@ -198,6 +197,7 @@
       - maven
       - default-jre
       - default-jdk
+      - postgresql-server-dev-12
     update_cache: yes
     install_recommends: yes
 
