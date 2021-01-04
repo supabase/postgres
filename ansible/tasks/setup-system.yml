@@ -1,22 +1,17 @@
 # DigitalOcean's ubuntu droplet isn't up to date with installed packages, and on
 # a fresh install I see 71 security upgrades available.
+- name: Terminate any ongoing updates
+  become: yes
+  shell: killall apt apt-get
+  ignore_errors: yes
+  tags:
+    - update
+    - update-only
+
 - name: System - apt update and apt upgrade
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
-- name: Wait for /var/lib/apt/lists/lock
-  become: yes
-  shell: while sudo fuser /var/lib/apt/lists/lock; do sleep 10; done;
-  tags:
-    - update
-    - update-only
-
-- name: Wait for /var/lib/dpkg/lock-frontend
-  become: yes
-  shell: while sudo fuser /var/lib/dpkg/lock-frontend; do sleep 10; done;
-  tags:
-    - update
-    - update-only
 
 - name: Install python
   become: yes
