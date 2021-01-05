@@ -3,7 +3,7 @@
     "aws_access_key": "",
     "aws_secret_key": "",
     "region": "ap-southeast-1",
-    "ami_regions": "ap-southeast-1,ca-central-1,sa-east-1",
+    "ami_regions": "ap-southeast-1,us-west-1,us-east-1,ca-central-1,sa-east-1",
     "ami": "ami-0f7719e8b7ba25c61",
     "ami_name": "supabase-postgres-0.14.0",
     "environment": "testing",
