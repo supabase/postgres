@@ -553,6 +553,11 @@ function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$
 
 
 clear
+
+echo "Installing Security Update"
+sudo apt-get update
+sudo apt-get install libp11-kit0
+
 echo "DigitalOcean Marketplace Image Validation Tool ${VERSION}"
 echo "Executed on: ${RUNDATE}"
 echo "Checking local system for Marketplace compatibility..."
