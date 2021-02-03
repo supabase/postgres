@@ -5,7 +5,7 @@
     "region": "ap-northeast-1",
     "ami_regions": "us-east-1,eu-central-1,eu-west-1,eu-west-2,ap-south-1,ap-southeast-1,ap-southeast-2,us-west-1,us-east-1,ca-central-1,sa-east-1",
     "ami": "ami-03345e027f391e3dc",
-    "ami_name": "supabase-postgres-arm-0.14.1",
+    "ami_name": "supabase-postgres-arm-0.14.2",
     "environment": "prod",
     "ansible_arguments": "--skip-tags,update-only -v"
   },
