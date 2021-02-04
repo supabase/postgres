@@ -1,0 +1,10 @@
+/var/lib/postgresql/12/main/pg_log/postgresql.csv {
+    daily
+    size 50M 
+    rotate 3  
+    copytruncate
+    delaycompress
+    compress
+    notifempty
+    missingok
+}
