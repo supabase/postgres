@@ -2,10 +2,10 @@
   "variables": {
     "aws_access_key": "",
     "aws_secret_key": "",
-    "region": "ap-southeast-1",
-    "ami_regions": "",
-    "ami": "ami-0f7719e8b7ba25c61",
-    "ami_name": "supabase-postgres-0.14.1",
+    "region": "af-south-1",
+    "ami_regions": "af-south-1",
+    "ami": "ami-07d30d5bf2d29a582",
+    "ami_name": "supabase-postgres-0.14.2",
     "environment": "prod",
     "ansible_arguments": "--skip-tags,update-only"
   },
