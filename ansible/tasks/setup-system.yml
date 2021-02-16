@@ -37,7 +37,7 @@
 - name: Adjust APT update intervals
   copy:
     src: files/apt_periodic
-    dest: /etc/apt/apt.conf.d/10periodic
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
 
 # Install psycopg2 to enable ansible postgreSQL features
 - name: Installing psycopg2 dependencies
