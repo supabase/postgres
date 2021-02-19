@@ -34,10 +34,15 @@
     update_cache: yes
     cache_valid_time: 3600
 
-- name: Adjust APT update intervals
+- name: Adjust 10periodic
   copy:
-    src: files/apt_periodic
-    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    src: files/10periodic
+    dest: /etc/apt/apt.conf.d/10periodic
+
+- name: Adjust 20auto-upgrades
+  copy:
+    src: files/20auto-upgrades
+    dest: /etc/apt/apt.conf.d/20auto-upgrades   
 
 # Install psycopg2 to enable ansible postgreSQL features
 - name: Installing psycopg2 dependencies
