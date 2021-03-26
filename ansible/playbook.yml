@@ -38,13 +38,6 @@
         policy: deny
         direction: incoming
 
-    # reference
-    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html    
-    - name: Add blocking of AWS instance metadata to UFW before rules
-      become: yes
-      shell:
-        cmd: sed -i "/#\sdon't\sdelete\sthe\s'COMMIT'/ i -I OUTPUT 1 --proto tcp --destination 169.254.169.254 --match owner --uid-owner postgres --jump REJECT\n" /etc/ufw/before.rules
-
     - name: Setup logrotate for postgres logs
       copy:
         src: files/logrotate-postgres
