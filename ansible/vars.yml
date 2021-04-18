@@ -16,6 +16,14 @@ postgresql_shared_preload_libraries:
   [pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron]
 
 postgresql_pg_hba_default:
+  - {
+      type: host,
+      database: all,
+      user: "pgbouncer",
+      address: "127.0.0.1/32",
+      method: "md5",
+      comment: "Allow connection by pgbouncer user"
+  }
   - { 
       type: local, 
       database: all, 

@@ -22,6 +22,26 @@
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
 
+    - name: Dump PgBouncer auth schema
+      copy:
+        src: files/pgbouncer_auth_schema.sql
+        dest: /tmp/00-schema.sql
+
+    - name: Set up readonly user for the public schema
+      become_user: postgres
+      shell: 
+        cmd: psql -f /tmp/00-schema.sql
+
+    - name: Delete SQL script
+      file:
+        path: /tmp/00-schema.sql
+        state: absent
+
+    - name: Adjust pgbouncer.ini
+      copy:
+        src: files/pgbouncer.ini
+        dest: /etc/pgbouncer/pgbouncer.ini
+
     - name: UFW - Allow SSH connections
       ufw:
         rule: allow
@@ -31,6 +51,11 @@
       ufw:
         rule: allow
         port: "5432"
+
+    - name: UFW - Allow connections to postgreSQL (6543)
+      ufw:
+        rule: allow
+        port: "6543"
 
     - name: UFW - Deny all other incoming traffix by default
       ufw:

@@ -48,3 +48,10 @@
   environment:
     GOBIN: "/usr/local/bin"
     PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+
+# Install PgBouncer
+- name: install PgBouncer
+  become: yes
+  apt:
+    pkg:
+      - pgbouncer
