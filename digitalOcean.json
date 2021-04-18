@@ -4,7 +4,7 @@
     "image_name": "ubuntu-18-04-x64",
     "region": "sgp1",
     "snapshot_regions": "sgp1",
-    "snapshot_name": "supabase-postgres-0.14.0",
+    "snapshot_name": "supabase-postgres-0.15.0",
     "ansible_arguments": "--skip-tags,update-only,--skip-tags,aws-only"
   },
   "builders": [
