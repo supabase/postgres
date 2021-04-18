@@ -1,10 +1,10 @@
 #!/bin/bash
-#
+
 # DigitalOcean Marketplace Image Validation Tool
-# © 2018 DigitalOcean LLC.
-# This code is licensed under MIT license (see LICENSE.txt for details)
-#
-VERSION="v. 1.2"
+# © 2021 DigitalOcean LLC.
+# This code is licensed under Apache 2.0 license (see LICENSE.md for details)
+
+VERSION="v. 1.6"
 RUNDATE=$( date )
 
 # Script should be run with SUDO
@@ -110,18 +110,12 @@ function checkLogs {
       [[ -e $f ]] || break
       if [[ "${f}" = '/var/log/lfd.log' && "$( cat "${f}" | egrep -v '/var/log/messages has been reset| Watching /var/log/messages' | wc -c)" -gt 50 ]]; then
         if [ $f != $cp_ignore ]; then
-          echo -en "\e[93m[WARN]\e[0m un-cleared log file, ${f} found\n"
-          ((WARN++))
-          if [[ $STATUS != 2 ]]; then
-              STATUS=1
-          fi
+        echo -en "\e[93m[WARN]\e[0m un-cleared log file, ${f} found\n"
+        ((WARN++))
+        if [[ $STATUS != 2 ]]; then
+            STATUS=1
         fi
-      elif [[ "${f}" == '/var/log/cloud-init-output.log' ]]; then
-        if cat '/var/log/cloud-init-output.log' | grep -q SHA256; then
-          echo -en "\e[41m[FAIL]\e[0m log containing SHA256 value found in log file ${f}\n"
-          ((FAIL++))
-          STATUS=1
-        fi
+      fi
       elif [[ "${f}" != '/var/log/lfd.log' && "$( cat "${f}" | wc -c)" -gt 50 ]]; then
       if [ $f != $cp_ignore ]; then
         echo -en "\e[93m[WARN]\e[0m un-cleared log file, ${f} found\n"
@@ -252,7 +246,7 @@ function checkUsers {
                   echo -en "\e[32m[PASS]\e[0m User ${user} has no password set.\n"
                   ((PASS++))
               else
-                  echo -en "\e[41m[FAIL]\e[0m User ${user} has a password set on their account.\n"
+                  echo -en "\e[41m[FAIL]\e[0m User ${user} has a password set on their account. Only system users are allowed on the image.\n"
                   ((FAIL++))
                   STATUS=2
               fi
@@ -385,7 +379,7 @@ function checkFirewall {
       # we will check some of the most common
       if cmdExists 'ufw'; then
         fw="ufw"
-        ufwa=$(ufw status | sed -e "s/^Status:\ //")
+        ufwa=$(ufw status |head -1| sed -e "s/^Status:\ //")
         if [[ $ufwa == "active" ]]; then
         FW_VER="\e[32m[PASS]\e[0m Firewall service (${fw}) is active\n"
         ((PASS++))
@@ -418,6 +412,14 @@ function checkFirewall {
 }
 function checkUpdates {
     if [[ $OS == "Ubuntu" ]] || [[ "$OS" =~ Debian.* ]]; then
+        # Ensure /tmp exists and has the proper permissions before
+        # checking for security updates
+        # https://github.com/digitalocean/marketplace-partners/issues/94
+        if [[ ! -d /tmp ]]; then
+          mkdir /tmp
+        fi
+        chmod 1777 /tmp
+
         echo -en "\nUpdating apt package database to check for security updates, this may take a minute...\n\n"
         apt-get -y update > /dev/null
 
@@ -441,11 +443,11 @@ function checkUpdates {
             echo -en "\e[32m[PASS]\e[0m There are no pending security updates for this image.\n\n"
         fi
     elif [[ $OS == "CentOS Linux" ]]; then
-        echo -en "\nChecking for available updates with yum, this may take a minute...\n\n"
+        echo -en "\nChecking for available security updates, this may take a minute...\n\n"
 
-        update_count=$(yum list updates -q | grep -vc "Updated Packages")
+        update_count=$(yum check-update --security --quiet | wc -l)
          if [[ $update_count -gt 0 ]]; then
-            echo -en "\e[41m[FAIL]\e[0m There are ${update_count} updates available for this image that have not been installed.\n"
+            echo -en "\e[41m[FAIL]\e[0m There are ${update_count} security updates available for this image that have not been installed.\n"
             ((FAIL++))
             STATUS=2
         else
@@ -553,11 +555,6 @@ function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$
 
 
 clear
-
-echo "Installing Security Update"
-sudo apt-get update
-sudo apt-get install libp11-kit0
-
 echo "DigitalOcean Marketplace Image Validation Tool ${VERSION}"
 echo "Executed on: ${RUNDATE}"
 echo "Checking local system for Marketplace compatibility..."
@@ -572,7 +569,9 @@ osv=0
 
 if [[ $OS == "Ubuntu" ]]; then
         ost=1
-    if [[ $VER == "18.04" ]]; then
+    if [[ $VER == "20.04" ]]; then
+        osv=1
+    elif [[ $VER == "18.04" ]]; then
         osv=1
     elif [[ $VER == "16.04" ]]; then
         osv=1
@@ -596,7 +595,9 @@ elif [[ "$OS" =~ Debian.* ]]; then
 
 elif [[ $OS == "CentOS Linux" ]]; then
         ost=1
-     if [[ $VER == "7" ]]; then
+    if [[ $VER == "8" ]]; then
+        osv=1
+    elif [[ $VER == "7" ]]; then
         osv=1
     elif [[ $VER == "6" ]]; then
         osv=1
@@ -674,8 +675,8 @@ if [[ $STATUS == 0 ]]; then
     exit 0
 elif [[ $STATUS == 1 ]]; then
     echo -en "Please review all [WARN] items above and ensure they are intended or resolved.  If you do not have a specific requirement, we recommend resolving these items before image submission\n\n"
-    exit 1
+    exit 0
 else
-    echo -en "Some critical tests failed.  These items must be resolved and this scan re-run before you submit your image to the marketplace.\n\n"
+    echo -en "Some critical tests failed.  These items must be resolved and this scan re-run before you submit your image to the DigitalOcean Marketplace.\n\n"
     exit 1
 fi

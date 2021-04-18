@@ -12,6 +12,12 @@
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
+- name: Install required security updates
+  become: yes
+  apt:
+    pkg:
+      - tzdata
+      - linux-libc-dev
 
 - name: Install python
   become: yes
