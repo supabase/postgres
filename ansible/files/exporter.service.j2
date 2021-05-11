@@ -1,0 +1,17 @@
+[Unit]
+Description=Postgres Exporter
+
+[Service]
+Type=simple
+ExecStart=/opt/postgres_exporter/postgres_exporter --auto-discover-databases --disable-settings-metrics --extend.query-path="/opt/postgres_exporter/queries.yml" --disable-default-metrics
+User=root
+StandardOutput=file:/var/log/postgres_exporter.stdout
+StandardError=file:/var/log/postgres_exporter.error
+Restart=always
+RestartSec=3
+Environment="DATA_SOURCE_URI=localhost/postgres"
+Environment="DATA_SOURCE_USER=supabase_admin"
+Environment="DATA_SOURCE_PASS_FILE=/opt/postgres_exporter/password_file"
+
+[Install]
+WantedBy=multi-user.target

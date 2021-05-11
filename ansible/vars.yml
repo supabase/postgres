@@ -92,3 +92,6 @@ postgresql_log_rotation_size: 0
 golang_version: "1.15.4"
 wal_g_release: "0.2.15"
 wal_g_release_checksum: sha1:e82d405121e0ccc322a323b9824e60c102b14004
+
+postgres_exporter_release: "0.9.0"
+postgres_exporter_release_checksum: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182

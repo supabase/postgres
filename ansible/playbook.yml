@@ -57,6 +57,11 @@
         rule: allow
         port: "6543"
 
+    - name: UFW - Allow connections to exporter for prometheus
+      ufw:
+        rule: allow
+        port: "9187"
+
     - name: UFW - Deny all other incoming traffix by default
       ufw:
         state: enabled
