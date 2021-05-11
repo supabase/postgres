@@ -95,3 +95,18 @@
     enabled: yes
     name: postgres_exporter
     daemon_reload: yes
+
+- name: AWS CLI
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
+    dest: "/tmp/awscliv2.zip"
+
+- name: AWS CLI - expand
+  unarchive:
+    remote_src: yes
+    src: "/tmp/awscliv2.zip"
+    dest: "/tmp"
+
+- name: AWS CLI - install
+  shell: "/tmp/aws/install"
+  become: true
