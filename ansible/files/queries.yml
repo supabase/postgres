@@ -19,12 +19,12 @@ pg_stat_database:
         description: "The number of active backends"
 
 pg_stat_statements:
-  query: "SELECT sum(calls) as total_calls, sum(total_time / 1000) as total_time_seconds FROM pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid)"
+  query: "SELECT sum(calls) as total_queries, sum(total_time / 1000) as total_time_seconds FROM pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid)"
   master: true
   metrics:
-    - total_calls:
+    - total_queries:
         usage: "COUNTER"
         description: "Number of times executed"
     - total_time_seconds:
         usage: "COUNTER"
-        description: "Total time spent in the statement, in milliseconds"
+        description: "Total time spent, in seconds"
