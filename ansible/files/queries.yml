@@ -1,12 +1,9 @@
 pg_database:
-  query: "SELECT pg_database.datname, pg_database_size(pg_database.datname) as size_bytes FROM pg_database"
+  query: "SELECT SUM(pg_database_size(pg_database.datname)) / (1024 * 1024) as size_mb FROM pg_database"
   master: true
   cache_seconds: 30
   metrics:
-    - datname:
-        usage: "LABEL"
-        description: "Name of the database"
-    - size_bytes:
+    - size_mb:
         usage: "GAUGE"
         description: "Disk space used by the database"
 
