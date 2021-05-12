@@ -1,4 +1,4 @@
-supabase_internal: false
+supabase_internal: true
 
 postgresql_version: 12
 postgresql_wal_level: "logical"

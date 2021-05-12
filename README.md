@@ -27,6 +27,16 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 [![Digital Ocean](https://github.com/supabase/postgres/blob/master/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
 [![AWS](https://github.com/supabase/postgres/blob/master/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
+### Building
+
+Set the `supabase_internal` flag to `false` to avoid baking in components that are specific to Supabase's hosted offering.
+
+```bash
+$ time packer build -timestamp-ui \
+  -var "ansible_arguments=--skip-tags,update-only,-v,-e,supabase_internal='false'" \
+  amazon-arm.json
+```
+
 ## Motivation
 
 After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they _still_ choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again.
