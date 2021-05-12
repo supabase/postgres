@@ -7,6 +7,11 @@
   vars_files:
     - ./vars.yml
 
+  vars:
+    sql_files:
+      - { source: "pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
+      - { source: "stat_extension.sql", dest: "01-extension.sql" }
+
   roles:
     - role: anxs.postgresql
 
@@ -17,25 +22,32 @@
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
 
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      when: supabase_internal == true
+
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
 
-    - name: Dump PgBouncer auth schema
+    - name: Transfer init SQL files
       copy:
-        src: files/pgbouncer_auth_schema.sql
-        dest: /tmp/00-schema.sql
+        src: files/{{ item.source }}
+        dest: /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
 
-    - name: Set up readonly user for the public schema
+    - name: Execute init SQL files
       become_user: postgres
-      shell: 
-        cmd: psql -f /tmp/00-schema.sql
+      shell:
+        cmd: psql -f /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
 
-    - name: Delete SQL script
+    - name: Delete SQL scripts
       file:
-        path: /tmp/00-schema.sql
+        path: /tmp/{{ item.dest }}
         state: absent
+      loop: "{{ sql_files }}"
 
     - name: Adjust pgbouncer.ini
       copy:
@@ -57,7 +69,7 @@
         rule: allow
         port: "6543"
 
-    - name: UFW - Deny all other incoming traffix by default
+    - name: UFW - Deny all other incoming traffic by default
       ufw:
         state: enabled
         policy: deny
