@@ -1,3 +1,5 @@
+supabase_internal: false
+
 postgresql_version: 12
 postgresql_wal_level: "logical"
 postgresql_max_wal_senders: 10

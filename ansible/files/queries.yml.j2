@@ -7,24 +7,6 @@ pg_database:
         usage: "GAUGE"
         description: "Disk space used by the database"
 
-auth_users:
-  query: "select count(id) as user_count from auth.users"
-  master: true
-  cache_seconds: 30
-  metrics:
-    - user_count:
-        usage: "GAUGE"
-        description: "Number of users in the project db"
-
-storage:
-  query: "select sum(size) / (1024 * 1024) as storage_size_mb from storage.get_size_by_bucket()"
-  master: true
-  cache_seconds: 30
-  metrics:
-    - storage_size_mb:
-        usage: "GAUGE"
-        description: "The total size used for all storage buckets, in mb"
-
 pg_stat_database:
   query: "SELECT sum(numbackends) as num_backends FROM pg_stat_database"
   master: true
@@ -43,3 +25,21 @@ pg_stat_statements:
     - total_time_seconds:
         usage: "COUNTER"
         description: "Total time spent, in seconds"
+
+auth_users:
+  query: "select count(id) as user_count from auth.users"
+  master: true
+  cache_seconds: 30
+  metrics:
+    - user_count:
+        usage: "GAUGE"
+        description: "Number of users in the project db"
+
+storage:
+  query: "select sum(size) / (1024 * 1024) as storage_size_mb from storage.get_size_by_bucket()"
+  master: true
+  cache_seconds: 30
+  metrics:
+    - storage_size_mb:
+        usage: "GAUGE"
+        description: "The total size used for all storage buckets, in mb"
