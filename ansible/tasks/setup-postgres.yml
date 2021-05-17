@@ -1,0 +1,62 @@
+
+- name: Postgres dependencies
+  become: yes
+  apt:
+    pkg:
+      - build-essential
+      - libreadline-dev 
+      - zlib1g-dev 
+      - flex 
+      - bison 
+      - libxml2-dev 
+      - libxslt-dev 
+      - libssl-dev 
+      - libxml2-utils 
+      - xsltproc
+
+- name: Download GCC 10
+  become: yes
+  apt:
+    pkg:
+      - gcc-10
+      - g++-10
+
+- name: Switch to GCC 10
+  shell:
+    cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+  become: yes
+
+- name: Postgres - download latest release
+  get_url:
+    url: https://github.com/okbob/plpgsql_check/archive/v{{ postgres_release }}.tar.gz
+    dest: /tmp
+    checksum: "{{ postgres_release_checksum }}"
+
+- name: Postgres - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/postgresql-{{ postgres_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: Postgres - configure
+  shell:
+    cmd: CFLAGS='-moutline-atomics -mtune=neoverse-n1 -fsigned-char' ./configure --with-openssl --with-uuid=bsd --exec-prefix=/usr/lib/postgresql/13/main --datarootdir=/var/lib/postgresql/13/main
+    chdir: /tmp/postgresql-{{ postgres_release }}
+  become: yes
+
+
+- name: Postgres - build
+  make:
+    target: world
+  become: yes
+
+- name: Postgres - install
+  make:
+    target: install
+  become: yes
+
+# to do
+## replicate directories
+## create postgres user
+## move files to appropriate places
