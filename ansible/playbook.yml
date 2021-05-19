@@ -12,9 +12,6 @@
       - { source: "pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
-  # roles:
-  #   - role: anxs.postgresql
-
   tasks:
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
