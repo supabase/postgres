@@ -19,6 +19,13 @@
       - tzdata
       - linux-libc-dev
 
+# SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
+# Without this, a similar error is faced
+- name: Install Ansible dependencies
+  become: yes
+  apt:
+    pkg:
+      - acl
 
 - name: Install security tools
   become: yes

@@ -1,4 +1,4 @@
-
+# Downloading dependencies
 - name: Postgres dependencies
   become: yes
   apt:
@@ -11,8 +11,18 @@
       - libxml2-dev 
       - libxslt-dev 
       - libssl-dev 
+      - libsystemd-dev
+      - libpq-dev
       - libxml2-utils 
+      - uuid-dev
       - xsltproc
+
+- name: Download LLVM & Clang
+  become: yes
+  apt:
+    pkg:
+      - llvm-11-dev
+      - clang-11
 
 - name: Download GCC 10
   become: yes
@@ -26,37 +36,117 @@
     cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
   become: yes
 
+# Building Postgres from source
 - name: Postgres - download latest release
   get_url:
-    url: https://github.com/okbob/plpgsql_check/archive/v{{ postgres_release }}.tar.gz
+    url: https://ftp.postgresql.org/pub/source/v{{ postgresql_release }}/postgresql-{{ postgresql_release }}.tar.gz
     dest: /tmp
-    checksum: "{{ postgres_release_checksum }}"
+    checksum: "{{ postgresql_release_checksum }}"
 
 - name: Postgres - unpack archive
   unarchive:
     remote_src: yes
-    src: /tmp/postgresql-{{ postgres_release }}.tar.gz
+    src: /tmp/postgresql-{{ postgresql_release }}.tar.gz
     dest: /tmp
   become: yes
 
+## TODO
+## Should have a  separate configuration for x86 builds
 - name: Postgres - configure
   shell:
-    cmd: CFLAGS='-moutline-atomics -mtune=neoverse-n1 -fsigned-char' ./configure --with-openssl --with-uuid=bsd --exec-prefix=/usr/lib/postgresql/13/main --datarootdir=/var/lib/postgresql/13/main
-    chdir: /tmp/postgresql-{{ postgres_release }}
+    cmd: CFLAGS='-moutline-atomics -mtune=neoverse-n1 -fsigned-char' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
 
 
 - name: Postgres - build
   make:
     target: world
+    chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
 
 - name: Postgres - install
   make:
-    target: install
+    target: install-world
+    chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
 
-# to do
-## replicate directories
-## create postgres user
-## move files to appropriate places
+## TODO
+## [NOT NEEDED, GOOD TO HAVE] add binaries to $PATH
+
+# Create postgres user
+- name: Create postgres user
+  ansible.builtin.user:
+    name: postgres
+    shell: /bin/bash
+    comment: Postgres user
+
+- name: Recursively change ownership of a directory
+  file:
+    path: /var/lib/postgresql
+    state: directory
+    recurse: yes
+    owner: postgres
+    group: postgres
+
+# Create /etc/postgresql directory and make sure postgres group owns it
+- name: Create a directory if it does not exist
+  file:
+    path: /etc/postgresql
+    state: directory
+    group: postgres
+
+# Move Postgres configuration files into /etc/postgresql
+# Add postgresql.conf
+- name: import postgresql.conf
+  template:
+    src: files/postgresql_config/postgresql.conf.j2
+    dest: /etc/postgresql/postgresql.conf
+    group: postgres
+
+# Add pg_hba.conf
+- name: import pg_hba.conf
+  template:
+    src: files/postgresql_config/pg_hba.conf.j2
+    dest: /etc/postgresql/pg_hba.conf
+    group: postgres
+
+# Add pg_ident.conf
+- name: import pg_ident.conf
+  template:
+    src: files/postgresql_config/pg_ident.conf.j2
+    dest: /etc/postgresql/pg_ident.conf
+    group: postgres
+
+# init DB
+- name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+  vars:
+      ansible_command_timeout: 60
+      # Circumvents the following error:
+      # "Timeout (12s) waiting for privilege escalation prompt"
+
+
+# Add systemd file for Postgres
+- name: import postgresql.service
+  template:
+    src: files/postgresql_config/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+  become: yes
+
+# Reload
+- name: System - systemd reload
+  systemd: 
+    enabled: yes
+    name: postgresql
+    daemon_reload: yes
+
+## TODO
+## Checks to ensure:
+### Postgres installed correctly
+### Verify that LSE is enabled (for ARM)
+### Directories actually owned by postgres
+### Database can be activated
