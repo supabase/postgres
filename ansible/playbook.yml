@@ -12,19 +12,25 @@
       - { source: "pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
+  environment:
+    PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
+
   tasks:
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
     
-    # - name: Install non-Postgres extensions
-    #   import_tasks: tasks/setup-misc.yml
+    - name: Install non-Postgres extensions
+      import_tasks: tasks/setup-misc.yml
 
-    # - name: Install Postgres extensions
-    #   import_tasks: tasks/setup-extensions.yml
+    - name: Install Postgres extensions
+      import_tasks: tasks/setup-extensions.yml
 
-    # - name: Install Supabase specific content
-    #   import_tasks: tasks/setup-supabase-internal.yml
-    #   when: supabase_internal == true
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      when: supabase_internal == true
+
+    - name: Start Postgres and perform checks
+      import_tasks: tasks/setup-postgres-init.yml
 
     - name: Adjust APT update intervals
       copy:
@@ -38,9 +44,10 @@
       loop: "{{ sql_files }}"
 
     - name: Execute init SQL files
+      become: yes
       become_user: postgres
       shell:
-        cmd: psql -f /tmp/{{ item.dest }}
+        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
       loop: "{{ sql_files }}"
 
     - name: Delete SQL scripts
@@ -49,10 +56,10 @@
         state: absent
       loop: "{{ sql_files }}"
 
-    # - name: Adjust pgbouncer.ini
-    #   copy:
-    #     src: files/pgbouncer.ini
-    #     dest: /etc/pgbouncer/pgbouncer.ini
+    - name: Adjust pgbouncer.ini
+      copy:
+        src: files/pgbouncer.ini
+        dest: /etc/pgbouncer/pgbouncer.ini
 
     - name: UFW - Allow SSH connections
       ufw:
@@ -75,7 +82,7 @@
         policy: deny
         direction: incoming
 
-    # - name: Setup logrotate for postgres logs
-    #   copy:
-    #     src: files/logrotate-postgres
-    #     dest: /etc/logrotate.d/postgres
+    - name: Setup logrotate for postgres logs
+      copy:
+        src: files/logrotate-postgres
+        dest: /etc/logrotate.d/postgres
