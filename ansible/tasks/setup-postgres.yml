@@ -50,14 +50,18 @@
     dest: /tmp
   become: yes
 
-## TODO
-## Should have a  separate configuration for x86 builds
+# Determine platform architecture
+- name: Setting CFLAGS
+  shell: if [ $(arch) = "aarch64" ]; then echo "-moutline-atomics -mtune=neoverse-n1 -fsigned-char";  else echo ""; fi
+  register: cflags_configuration
+- set_fact:
+    cflags: "{{ cflags_configuration.stdout }}"
+
 - name: Postgres - configure
   shell:
-    cmd: CFLAGS='-moutline-atomics -mtune=neoverse-n1 -fsigned-char' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
     chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
-
 
 - name: Postgres - build
   make:
@@ -71,12 +75,9 @@
     chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
 
-## TODO
-## [NOT NEEDED, GOOD TO HAVE] add binaries to $PATH
-
 # Create postgres user
 - name: Create postgres user
-  ansible.builtin.user:
+  user:
     name: postgres
     shell: /bin/bash
     comment: Postgres user
@@ -143,10 +144,3 @@
     enabled: yes
     name: postgresql
     daemon_reload: yes
-
-## TODO
-## Checks to ensure:
-### Postgres installed correctly
-### Verify that LSE is enabled (for ARM)
-### Directories actually owned by postgres
-### Database can be activated
