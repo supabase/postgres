@@ -49,9 +49,49 @@
     GOBIN: "/usr/local/bin"
     PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
 
-# Install PgBouncer
-- name: install PgBouncer
-  become: yes
+# PgBouncer
+- name: PgBouncer - download & install dependencies
   apt:
     pkg:
-      - pgbouncer
+      - libssl-dev
+      - pkg-config
+      - libevent-dev
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: PgBouncer - download latest release
+  get_url:
+    url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
+    dest: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    checksum: "{{ pgbouncer_release_checksum }}"
+
+- name: PgBouncer - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: PgBouncer - configure
+  shell:
+    cmd: "./configure --prefix=/usr/local --with-systemd"
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - build
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - install
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+    target: install
+  become: yes
+
+# Create /etc/postgresql directory and make sure postgres group owns it
+- name: Create a directory if it does not exist
+  file:
+    path: /etc/pgbouncer
+    state: directory
+    group: postgres
