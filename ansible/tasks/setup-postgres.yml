@@ -50,12 +50,15 @@
     dest: /tmp
   become: yes
 
-# Determine platform architecture
-- name: Setting CFLAGS
-  shell: if [ $(arch) = "aarch64" ]; then echo "-moutline-atomics -mtune=neoverse-n1 -fsigned-char";  else echo ""; fi
-  register: cflags_configuration
-- set_fact:
-    cflags: "{{ cflags_configuration.stdout }}"
+- name: Setting CFLAGS (arm)
+  set_fact:
+    cflags: "-moutline-atomics -mtune=neoverse-n1 -fsigned-char"
+    when: platform == "arm64"
+
+- name: Setting CFLAGS (x86)
+  set_fact:
+    cflags: "-fsigned-char"
+    when: platform == "amd64"
 
 - name: Postgres - configure
   shell:
@@ -129,7 +132,6 @@
       ansible_command_timeout: 60
       # Circumvents the following error:
       # "Timeout (12s) waiting for privilege escalation prompt"
-
 
 # Add systemd file for Postgres
 - name: import postgresql.service

@@ -287,17 +287,10 @@
     update_cache: yes
     install_recommends: no
 
-# Determine platform architecture
-- name: pljava - set architecture for jvm
-  shell: if [ $(arch) = "aarch64" ]; then echo "arm";  else echo "amd"; fi
-  register: jvm_configuration
-- set_fact:
-    jvm: "{{ jvm_configuration.stdout }}"
-
 - name: pljava - set pljava.libjvm_location
   become: yes
   shell:
-    cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ jvm }}64/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
+    cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
 
 - name: pljava - remove ~/.m2 directory
   become: yes
@@ -336,11 +329,12 @@
     version: 3656177d384e3e02b74faa8e2931600f3690ab59
   become: yes
 
-# This might just be a arm64 thing
-- name: plv8 - create symlink for libc++
-  become: yes
-  shell:
-    cmd: ln -s /lib/aarch64-linux-gnu/libc++.so.1 /lib/aarch64-linux-gnu/libc++.so
+- name: Create a symbolic link
+  file:
+    src: /lib/aarch64-linux-gnu/libc++.so.1
+    dest: /lib/aarch64-linux-gnu/libc++.so
+    state: link
+  when: platform == "arm64"
 
 - name: plv8 - build
   make:

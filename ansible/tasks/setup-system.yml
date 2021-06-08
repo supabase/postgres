@@ -52,6 +52,13 @@
   tags:
     - aws-only
 
+# Find platform architecture and set as a variable
+- name: finding platform architecture
+  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
+  register: platform_output
+- set_fact:
+    platform: "{{ platform_output.stdout }}"
+
 - name: System - Create services.slice
   template:
     src: files/services.slice.j2

@@ -12,13 +12,6 @@
       - cmake
       - build-essential
 
-# find platform architecture
-- name: finding platform architecture
-  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
-  register: platform_output
-- set_fact:
-    platform: "{{ platform_output.stdout }}"
-
 # install go dependency for WAL-G
 - name: wal-g go dependency
   get_url:
