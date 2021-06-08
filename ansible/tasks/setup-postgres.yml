@@ -122,6 +122,13 @@
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
 
+- name: Create symbolic links for Postgres binaries to /usr/bin/
+  file:
+    src: /usr/lib/postgresql/bin/*
+    dest: /usr/bin/
+    state: link
+    force: yes
+
 # init DB
 - name: Initialize the database
   become: yes
