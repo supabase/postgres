@@ -19,8 +19,16 @@
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
     
-    - name: Install non-Postgres extensions
-      import_tasks: tasks/setup-misc.yml
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
+
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      when: install_pgbouncer == true
+
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      when: install_postgrest == true
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
