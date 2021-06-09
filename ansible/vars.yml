@@ -40,6 +40,8 @@ plpgsql_check_release_checksum: sha1:626553fc2746fe10aa5a776a1229baf2af3365fc
 pg_safeupdate_release: "1.3"
 pg_safeupdate_release_checksum: sha1:34a0353611bfd63f7ea760aac2afcb518bf3ba7c
 
+timescaledb_release: "2.3.0"
+
 pljava_release: "1_6_2"
 pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
 
