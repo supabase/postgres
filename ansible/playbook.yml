@@ -24,11 +24,13 @@
 
     - name: Install PgBouncer
       import_tasks: tasks/setup-pgbouncer.yml
-      when: install_pgbouncer == true
+      tags:
+        - install-pgbouncer
 
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
-      when: install_postgrest == true
+      tags:
+        - install-postgrest
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
@@ -37,8 +39,10 @@
       import_tasks: tasks/setup-supabase-internal.yml
       when: supabase_internal == true
 
-    - name: Start Postgres and perform checks
-      import_tasks: tasks/setup-postgres-init.yml
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
 
     - name: Adjust APT update intervals
       copy:
