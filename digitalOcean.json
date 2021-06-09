@@ -35,7 +35,7 @@
     {
       "type": "shell",
       "scripts": [
-        "scripts/01-test",
+        "scripts/01-postgres_check.sh",
         "scripts/90-cleanup.sh",
         "scripts/91-log_cleanup.sh",
         "scripts/99-img_check.sh"
