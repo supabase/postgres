@@ -98,6 +98,7 @@
   file:
     path: /etc/postgresql
     state: directory
+    owner: postgres
     group: postgres
 
 # Move Postgres configuration files into /etc/postgresql
