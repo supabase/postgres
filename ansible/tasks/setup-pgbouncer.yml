@@ -8,6 +8,13 @@
     update_cache: yes
     cache_valid_time: 3600
 
+- name: Create directory for pgbouncer.pid
+  file:
+    path: /var/run/pgbouncer
+    state: directory
+    owner: postgres
+    group: postgres
+
 - name: PgBouncer - download latest release
   get_url:
     url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
@@ -39,8 +46,24 @@
   become: yes
 
 # Create /etc/postgresql directory and make sure postgres group owns it
-- name: Create a directory if it does not exist
+- name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer
     state: directory
     group: postgres
+
+- name: PgBouncer - adjust pgbouncer.ini
+  copy:
+    src: files/pgbouncer_config/pgbouncer.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+
+# Add systemd file for PgBouncer
+- name: PgBouncer - import postgresql.service
+  template:
+    src: files/pgbouncer_config/pgbouncer.service.j2
+    dest: /etc/systemd/system/pgbouncer.service
+  become: yes
+
+- name: PgBouncer - reload systemd
+  systemd:
+    daemon_reload: yes

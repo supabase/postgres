@@ -9,7 +9,7 @@
 
   vars:
     sql_files:
-      - { source: "pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
+      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
   environment:
@@ -67,11 +67,6 @@
         path: /tmp/{{ item.dest }}
         state: absent
       loop: "{{ sql_files }}"
-
-    - name: Adjust pgbouncer.ini
-      copy:
-        src: files/pgbouncer.ini
-        dest: /etc/pgbouncer/pgbouncer.ini
 
     - name: UFW - Allow SSH connections
       ufw:
