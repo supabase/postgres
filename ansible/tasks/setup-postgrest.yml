@@ -37,7 +37,3 @@
 - name: PostgREST - reload systemd
   systemd:
     daemon_reload: yes
-
-- name: PostgREST - restart service
-  service: name=postgrest state=restarted
-  when: restart_services
