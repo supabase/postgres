@@ -238,6 +238,13 @@
   become: yes
 
 # timescaledb
+- name: timescaledb - download & install dependencies
+  apt:
+    pkg:
+      - cmake
+    update_cache: yes
+    install_recommends: yes
+
 - name: timescaledb - download latest release
   git:
     repo: https://github.com/timescale/timescaledb.git
