@@ -98,3 +98,13 @@
       copy:
         src: files/logrotate-postgres
         dest: /etc/logrotate.d/postgres
+
+    # Install EC2 instance connect
+    # Only for AWS images
+    - name: install EC2 instance connect
+      become: yes
+      apt:
+        pkg:
+          - ec2-instance-connect
+      tags:
+        - aws-only

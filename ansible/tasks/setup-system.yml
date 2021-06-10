@@ -42,16 +42,6 @@
     src: files/apt_periodic
     dest: /etc/apt/apt.conf.d/10periodic
 
-# Install EC2 instance connect
-# Only for AWS images
-- name: install EC2 instance connect
-  become: yes
-  apt:
-    pkg:
-      - ec2-instance-connect
-  tags:
-    - aws-only
-
 # Find platform architecture and set as a variable
 - name: finding platform architecture
   shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
