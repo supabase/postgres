@@ -428,7 +428,7 @@ effective_cache_size = 128MB
 
 # - Where to Log -
 
-log_destination = 'csvlog'		# Valid values are combinations of
+log_destination = 'stderr'		# Valid values are combinations of
 					# stderr, csvlog, syslog, and eventlog,
 					# depending on platform.  csvlog
 					# requires logging_collector to be on.
@@ -537,7 +537,7 @@ log_rotation_size = 0		# Automatic rotation of logfiles will
 #log_duration = off
 #log_error_verbosity = default		# terse, default, or verbose messages
 #log_hostname = off
-#log_line_prefix = '%m [%p] '		# special values:
+log_line_prefix = '%h %m [%p] %q%u@%d '		# special values:
 					#   %a = application name
 					#   %u = user name
 					#   %d = database name

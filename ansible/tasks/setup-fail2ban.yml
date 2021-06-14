@@ -1,0 +1,17 @@
+- name: import jail.d/postgresql.conf
+  template:
+    src: files/fail2ban_config/jail-postgresql.conf.j2
+    dest: /etc/fail2ban/jail.d/postgresql.conf
+  become: yes
+
+- name: import filter.d/postgresql.conf
+  template:
+    src: files/fail2ban_config/filter-postgresql.conf.j2
+    dest: /etc/fail2ban/filter.d/postgresql.conf
+  become: yes
+
+# Restart
+- name: fail2ban - restart
+  systemd:
+    name: fail2ban
+    state: restarted
