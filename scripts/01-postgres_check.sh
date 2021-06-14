@@ -43,7 +43,7 @@ function check_lse_enabled {
     if [ $ARCH = "aarch64" ]; then
         echo -e "\nArchitecture is $ARCH. Checking for LSE:"
 
-        LSE_COUNT=$(nm /usr/lib/postgresql/bin/postgres | grep __aarch64_have_lse_atomics | wc -l)
+        LSE_COUNT=$(objdump -d /usr/lib/postgresql/bin/postgres | grep -i 'ldxr\|ldaxr\|stxr\|stlxr' | wc -l)
         MOUTLINE_ATOMICS_COUNT=$(nm /usr/lib/postgresql/bin/postgres | grep __aarch64_have_lse_atomics | wc -l)
 
         # Checking for load and store exclusives    
