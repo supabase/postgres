@@ -16,6 +16,7 @@
       - libxml2-utils 
       - uuid-dev
       - xsltproc
+      - ssl-cert
 
 - name: Download LLVM & Clang
   become: yes
@@ -84,6 +85,7 @@
     name: postgres
     shell: /bin/bash
     comment: Postgres user
+    groups: ssl-cert
 
 - name: Recursively change ownership of a directory
   file:
