@@ -1,8 +1,17 @@
+# Downloading dependencies
+- name: Postgres dependencies
+  become: yes
+  apt:
+    pkg:
+      - liblzo2-dev
+      - cmake
+
 # install go dependency for WAL-G
 - name: wal-g go dependency
   get_url:
     url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
     dest: /tmp
+
 - name: unpack go archive
   unarchive:
     remote_src: yes
