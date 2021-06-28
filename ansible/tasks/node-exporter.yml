@@ -1,0 +1,46 @@
+- name: UFW - Allow connections to node exporter ports
+  ufw:
+    rule: allow
+    port: "9100"
+
+- name: Node Exporter - download binary archive
+  get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_release }}/node_exporter-{{ node_exporter_release }}.linux-arm64.tar.gz"
+    dest: /tmp/node_exporter.tar.gz
+    checksum: "{{ node_exporter_release_checksum }}"
+
+- name: create directories
+  file:
+    state: directory
+    owner: root
+    path: "/opt/node_exporter"
+
+- name: node_exporter - unpack archives in /opt
+  unarchive:
+    remote_src: yes
+    src: "/tmp/node_exporter.tar.gz"
+    dest: /opt/node_exporter
+    owner: root
+    extra_opts: [--strip-components=1]
+
+- name: node_exporter - create service files
+  template:
+    src: files/node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+  vars:
+    collectors:
+      - cpu
+      - diskstats
+      - filesystem
+      - filesystem.ignored-mount-points='^/.+'
+      - loadavg
+      - meminfo
+      - netdev
+      - netdev.device-exclude='lo'
+
+- name: node_exporter - reload systemd
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
+    name: node_exporter
