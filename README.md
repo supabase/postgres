@@ -29,6 +29,12 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 ### Building
 
+Install the anxs.postgresql role
+
+```bash
+ansible-galaxy install anxs.postgresql
+```
+
 Set the `supabase_internal` flag to `false` to avoid baking in components that are specific to Supabase's hosted offering.
 
 ```bash
@@ -57,6 +63,6 @@ Finally, this is the same build we offer at [Supabase](https://supabase.io), and
 
 ## Sponsors
 
-We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves. 
+We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves.
 
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
