@@ -6,7 +6,7 @@
 
 - name: AWS CLI
   get_url:
-    url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ platform_aws }}-{{ aws_cli_release }}.zip"
     dest: "/tmp/awscliv2.zip"
 
 - name: AWS CLI - expand
