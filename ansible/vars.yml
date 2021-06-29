@@ -42,6 +42,9 @@ pg_safeupdate_release_checksum: sha1:34a0353611bfd63f7ea760aac2afcb518bf3ba7c
 
 timescaledb_release: "2.3.0"
 
+supautils_release: "1.1.0"
+supautils_release_checksum: sha1:326ac5c1933bd30d4a50da7568b27629a9ec544b
+
 pljava_release: "1_6_2"
 pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
 
