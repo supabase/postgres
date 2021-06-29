@@ -7,8 +7,43 @@
       - libgdal-dev
       - libjson-c-dev
       - libxml2-dev
+      - libboost-all-dev
+      - libcgal-dev
+      - libmpfr-dev
+      - libgmp-dev
+      - cmake
     update_cache: yes
     cache_valid_time: 3600
+
+- name: postgis - download SFCGAL dependency
+  get_url:
+    url: "https://gitlab.com/Oslandia/SFCGAL/-/archive/v{{ sfcgal_release }}/SFCGAL-v{{ sfcgal_release }}.tar.gz"
+    dest: /tmp/SFCGAL-v{{ sfcgal_release }}.tar.gz
+    checksum: "{{ sfcgal_release_checksum }}"
+
+- name: postgis - unpack SFCGAL
+  unarchive:
+    remote_src: yes
+    src: /tmp/SFCGAL-v{{ sfcgal_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: postgis - compile SFCGAL
+  shell:
+    cmd: "cmake ."
+    chdir: /tmp/SFCGAL-v{{ sfcgal_release }}
+  become: yes
+
+- name: postgis - build SFCGAL
+  make:
+    chdir: /tmp/SFCGAL-v{{ sfcgal_release }}
+  become: yes
+
+- name: postgis - install SFCGAL
+  make:
+    chdir: /tmp/SFCGAL-v{{ sfcgal_release }}
+    target: install
+  become: yes
 
 - name: postgis - download latest release
   get_url:
@@ -25,7 +60,7 @@
 
 - name: postgis - configure
   shell:
-    cmd: "./configure --without-protobuf"
+    cmd: "./configure --without-protobuf --with-sfcgal"
     chdir: /tmp/postgis-{{ postgis_release }}
   become: yes
 
@@ -268,7 +303,7 @@
     chdir: /tmp/timescaledb/build
     target: install
   become: yes
-  
+
 # pljava
 - name: pljava - download & install dependencies
   apt:
