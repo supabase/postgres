@@ -16,8 +16,9 @@
 
 - name: download postgres exporter
   get_url:
-    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
+    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-{{ platform }}.tar.gz"
     dest: /tmp/postgres_exporter.tar.gz
+    checksum: "{{ postgres_exporter_release_checksum[platform] }}"
 
 - name: expand postgres exporter
   unarchive:

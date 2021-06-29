@@ -5,9 +5,9 @@
 
 - name: Node Exporter - download binary archive
   get_url:
-    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_release }}/node_exporter-{{ node_exporter_release }}.linux-arm64.tar.gz"
+    url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_release }}/node_exporter-{{ node_exporter_release }}.linux-{{ platform }}.tar.gz"
     dest: /tmp/node_exporter.tar.gz
-    checksum: "{{ node_exporter_release_checksum }}"
+    checksum: "{{ node_exporter_release_checksum[platform] }}"
 
 - name: create directories
   file:
