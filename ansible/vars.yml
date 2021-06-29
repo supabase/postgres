@@ -22,6 +22,9 @@ aws_cli_release: "2.0.30"
 postgis_release: "3.1.2"
 postgis_release_checksum: sha1:622f52f3bf338c8e51ea6d73d30d6a5d3140c517
 
+pgrouting_release: "3.2.0"
+pgrouting_release_checksum: sha1:d902d449ebc96b6cdcb2fac09434d0098467cda5
+
 pgtap_release: "1.1.0"
 pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
 

@@ -75,6 +75,51 @@
     target: install
   become: yes
 
+# pgRouting
+- name: pgRouting - download & install dependencies
+  apt:
+    pkg:
+      - perl
+      - python3-sphinx
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: pgRouting - download latest release
+  get_url:
+    url: "https://github.com/pgRouting/pgrouting/releases/download/v{{ pgrouting_release }}/pgrouting-{{ pgrouting_release }}.tar.gz"
+    dest: /tmp/pgrouting-{{ pgrouting_release }}.tar.gz
+    checksum: "{{ pgrouting_release_checksum }}"
+
+- name: pgRouting - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgrouting-{{ pgrouting_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pgRouting - create build directory
+  file:
+    path: /tmp/pgrouting-{{ pgrouting_release }}/build
+    state: directory
+  become: yes
+
+- name: pgRouting - compile
+  shell:
+    cmd: "cmake .."
+    chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
+  become: yes
+
+- name: pgRouting - build
+  make:
+    chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
+  become: yes
+
+- name: pgRouting - install
+  make:
+    chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
+    target: install
+  become: yes
+
 # pgTAP
 - name: pgTAP - download latest release
   get_url:
