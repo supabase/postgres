@@ -19,6 +19,12 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
+- name: finding platform architecture - aws
+  shell: if [ $(uname -m) = "aarch64" ]; then echo "aarch64";  else echo "x86_64"; fi
+  register: platform_output
+- set_fact:
+    platform_aws: "{{ platform_output.stdout }}"
+
 # install go dependency for WAL-G
 - name: wal-g go dependency
   get_url:
