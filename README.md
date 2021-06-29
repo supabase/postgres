@@ -32,7 +32,7 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 Install the anxs.postgresql role
 
 ```bash
-ansible-galaxy install anxs.postgresql
+ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
 ```
 
 Set the `supabase_internal` flag to `false` to avoid baking in components that are specific to Supabase's hosted offering.
