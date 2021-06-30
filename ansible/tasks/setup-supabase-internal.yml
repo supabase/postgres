@@ -98,20 +98,21 @@
 
 - name: supautils - set supautils.reserved_roles
   become: yes
-  shell:
-    cmd: printf "supautils.reserved_roles = 'supabase_admin, supabase_auth_admin, supabase_storage_admin, dashboard_user, pgbouncer, service_role, authenticator, authenticated, anon'" >> /etc/postgresql/postgresql.conf
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.reserved_roles = 'supabase_admin, supabase_auth_admin, supabase_storage_admin, dashboard_user, pgbouncer, service_role, authenticator, authenticated, anon'
 
 - name: supautils - set supautils.reserved_memberships
   become: yes
-  shell:
-    cmd: printf "supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'" >> /etc/postgresql/postgresql.conf
-
-- name: supautils - set supautils.reserved_memberships
-  become: yes
-  shell:
-    cmd: printf "supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'" >> /etc/postgresql/postgresql.conf
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'
 
 - name: supautils - add supautils to shared_preload_libraries
   become: yes
-  shell:
-    cmd: sed -i "s/shared_preload_libraries = '/shared_preload_libraries ='supautils,/" /etc/postgresql/postgresql.conf
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: shared_preload_libraries = '
+    replace: shared_preload_libraries = 'supautils,

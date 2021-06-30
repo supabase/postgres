@@ -167,8 +167,10 @@
 
 - name: pg_cron - set cron.database_name
   become: yes
-  shell:
-    cmd: echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: cron.database_name = 'postgres'
 
 # pgAudit
 - name: pgAudit - download & install dependencies
@@ -401,8 +403,10 @@
 
 - name: pljava - set pljava.libjvm_location
   become: yes
-  shell:
-    cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'
 
 - name: pljava - remove ~/.m2 directory
   become: yes
