@@ -5,7 +5,7 @@
     "region": "af-south-1",
     "ami_regions": "af-south-1",
     "ami": "ami-07d30d5bf2d29a582",
-    "ami_name": "supabase-postgres-0.15.0",
+    "ami_name": "supabase-postgres-0.16.0",
     "environment": "prod",
     "ansible_arguments": "--skip-tags,update-only"
   },
