@@ -1,0 +1,31 @@
+# timescaledb
+- name: timescaledb - download & install dependencies
+  apt:
+    pkg:
+      - cmake
+    update_cache: yes
+    install_recommends: yes
+
+- name: timescaledb - download latest release
+  git:
+    repo: https://github.com/timescale/timescaledb.git
+    dest: /tmp/timescaledb
+    version: "{{ timescaledb_release }}"
+  become: yes
+
+- name: timescaledb - bootstrap
+  shell:
+    cmd: "./bootstrap -DAPACHE_ONLY=1 -DREGRESS_CHECKS=OFF"
+    chdir: /tmp/timescaledb
+  become: yes
+
+- name: timescaledb - build
+  make:
+    chdir: /tmp/timescaledb/build
+  become: yes
+
+- name: timescaledb - install
+  make:
+    chdir: /tmp/timescaledb/build
+    target: install
+  become: yes
