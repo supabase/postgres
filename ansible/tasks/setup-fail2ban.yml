@@ -1,3 +1,12 @@
+# set default bantime to 30 minutes
+- name: supautils - add supautils to shared_preload_libraries
+  become: yes
+  replace:
+    path: /etc/fail2ban/jail.conf
+    regexp: bantime  = 10m
+    replace: bantime  = 1800
+
+# postgresql
 - name: import jail.d/postgresql.conf
   template:
     src: files/fail2ban_config/jail-postgresql.conf.j2
@@ -8,6 +17,33 @@
   template:
     src: files/fail2ban_config/filter-postgresql.conf.j2
     dest: /etc/fail2ban/filter.d/postgresql.conf
+  become: yes
+
+- name: add in supabase specific ignore filters
+  lineinfile:
+    path: /etc/fail2ban/filter.d/postgresql.conf
+    state: present
+    line: "{{ item.line }}"
+  loop:
+    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_admin"$' }
+    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_auth_admin"$' }
+    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_storage_admin"$' }
+    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "authenticator"$' }
+    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "pgbouncer"$' }
+  become: yes
+  when: supabase_internal == true
+
+# pgbouncer
+- name: import jail.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/jail-pgbouncer.conf.j2
+    dest: /etc/fail2ban/jail.d/pgbouncer.conf
+  become: yes
+
+- name: import filter.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/filter-pgbouncer.conf.j2
+    dest: /etc/fail2ban/filter.d/pgbouncer.conf
   become: yes
 
 # Restart
