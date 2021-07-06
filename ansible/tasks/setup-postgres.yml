@@ -4,16 +4,16 @@
   apt:
     pkg:
       - build-essential
-      - libreadline-dev 
-      - zlib1g-dev 
-      - flex 
-      - bison 
-      - libxml2-dev 
-      - libxslt-dev 
-      - libssl-dev 
+      - libreadline-dev
+      - zlib1g-dev
+      - flex
+      - bison
+      - libxml2-dev
+      - libxslt-dev
+      - libssl-dev
       - libsystemd-dev
       - libpq-dev
-      - libxml2-utils 
+      - libxml2-utils
       - uuid-dev
       - xsltproc
       - ssl-cert
@@ -83,7 +83,7 @@
 - name: Create postgres user
   user:
     name: postgres
-    shell: /bin/bash
+    shell: /bin/false
     comment: Postgres user
     groups: ssl-cert
 
@@ -146,9 +146,9 @@
   shell:
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
   vars:
-      ansible_command_timeout: 60
-      # Circumvents the following error:
-      # "Timeout (12s) waiting for privilege escalation prompt"
+    ansible_command_timeout: 60
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
 
 # Add systemd file for Postgres
 - name: import postgresql.service
@@ -159,7 +159,7 @@
 
 # Reload
 - name: System - systemd reload
-  systemd: 
+  systemd:
     enabled: yes
     name: postgresql
     daemon_reload: yes
