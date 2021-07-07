@@ -27,53 +27,10 @@
   become: true
 
 - name: Install Postgres exporter
-  import_tasks: postgres-exporter.yml
+  import_tasks: internal/postgres-exporter.yml
 
 - name: Install node exporter
-  import_tasks: node-exporter.yml
+  import_tasks: internal/node-exporter.yml
 
-# supautils
-- name: supautils - download latest release
-  get_url:
-    url: "https://github.com/supabase/supautils/archive/refs/tags/v{{ supautils_release }}.tar.gz"
-    dest: /tmp/supautils-{{ supautils_release }}.tar.gz
-    checksum: "{{ supautils_release_checksum }}"
-
-- name: supautils - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/supautils-{{ supautils_release }}.tar.gz
-    dest: /tmp
-  become: yes
-
-- name: supautils - build
-  make:
-    chdir: /tmp/supautils-{{ supautils_release }}
-  become: yes
-
-- name: supautils - install
-  make:
-    chdir: /tmp/supautils-{{ supautils_release }}
-    target: install
-  become: yes
-
-- name: supautils - set supautils.reserved_roles
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: supautils.reserved_roles = 'supabase_admin, supabase_auth_admin, supabase_storage_admin, dashboard_user, pgbouncer, service_role, authenticator, authenticated, anon'
-
-- name: supautils - set supautils.reserved_memberships
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'
-
-- name: supautils - add supautils to shared_preload_libraries
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: shared_preload_libraries = '
-    replace: shared_preload_libraries = 'supautils,
+- name: Install supautils
+  import_tasks: internal/supautils.yml
