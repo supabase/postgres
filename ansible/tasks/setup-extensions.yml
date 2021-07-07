@@ -25,8 +25,8 @@
 - name: Install pg-safeupdate
   import_tasks: tasks/postgres-extensions/09-pg-safeupdate.yml
 
-- name: Install timescaledb
-  import_tasks: tasks/postgres-extensions/10-timescaledb.yml
+# - name: Install timescaledb
+#   import_tasks: tasks/postgres-extensions/10-timescaledb.yml
 
 - name: Install pljava
   import_tasks: tasks/postgres-extensions/11-pljava.yml
