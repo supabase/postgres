@@ -2,18 +2,18 @@
 
 Unmodified Postgres with some useful plugins. Our goal with this repo is not to modify Postgres, but to provide some of the most common extensions with a one-click install.
 
-## Features
-
+## Primary Features
 - ✅ Postgres [13](https://www.postgresql.org/about/news/postgresql-13-released-2077/).
 - ✅ Ubuntu 20.04 (Focal Fossa).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
+- ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
 
 ## Extensions 
-|  |  |
+| Extension | Description |
 | ------------- | ------------- |
 | [Postgres contrib modules](https://www.postgresql.org/docs/current/contrib.html) | Because everyone should enable `pg_stat_statements`. |
 | [PostGIS](https://postgis.net/) | Postgres' most popular extension - support for geographic objects. |
-| [pgRouting](https://pgrouting.org/) | Extension of PostGIS - provides geospatial routing functionalities  |
+| [pgRouting](https://pgrouting.org/) | Extension of PostGIS - provides geospatial routing functionalities. |
 | [pgTAP](https://pgtap.org/) | Unit Testing for Postgres. |
 | [pg_cron](https://github.com/citusdata/pg_cron) | Run CRON jobs inside Postgres. |
 | [pgAudit](https://www.pgaudit.org/) | Generate highly compliant audit logs. |
@@ -26,6 +26,20 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 
 Can't find your favorite extension? Suggest for it to be added into future versions [here](https://github.com/supabase/supabase/discussions/679)!
 
+## Enhanced Security
+Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page), and [unattended-upgrades](https://wiki.debian.org/UnattendedUpgrades) installed, we also have the following enhancements in place: 
+| Enhancement | Description |
+| ------------- | ------------- |
+| fail2ban filter for PostgreSQL access | Monitors for brute force attempts over at port `5432`. |
+| fail2ban filter for PgBouncer access | Monitors for brute force attempts over at port `6543`. |
+
+## Additional Goodies
+| Goodie | Description |
+| ------------- | ------------- |
+| [PgBouncer](https://postgis.net/) | Set up Connection Pooling. |
+| [PostgREST](https://postgrest.org/en/stable/) | Instantly transform your database into an RESTful API. |
+| [WAL-G](https://github.com/wal-g/wal-g#wal-g) | Tool for physical database backup and recovery. |
+
 ## Install
 
 See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
@@ -34,13 +48,23 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 [![Digital Ocean](https://github.com/supabase/postgres/blob/master/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
 [![AWS](https://github.com/supabase/postgres/blob/master/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
-### Building
+### Marketplace Images
+|   | Postgres & Extensions | PgBouncer | PostgREST | WAL-G |
+|---|:---:|:---:|:---:|:---:|
+| Supabase Postgres |  ✔️   | ❌    | ❌   |  ✔️   |
+| Supabase Postgres: PgBouncer Bundle  |  ✔️   |  ✔️  | ❌    |   ✔️ |
+| Supabase Postgres: PostgREST Bundle |  ✔️   |  ❌  |  ✔️   |   ✔️ |
+| Supabase Postgres: Complete Bundle |  ✔️  |  ✔️   | ✔️   | ✔️   |
 
-Install the anxs.postgresql role
+#### Availability
+|   | AWS ARM | AWS x86 | Digital Ocean x86 |
+|---|:---:|:---:|:---:|
+| Supabase Postgres | Coming Soon | Coming Soon | Coming Soon |
+| Supabase Postgres: PgBouncer Bundle  | Coming Soon | Coming Soon | Coming Soon |
+| Supabase Postgres: PostgREST Bundle | Coming Soon | Coming Soon | Coming Soon |
+| Supabase Postgres: Complete Bundle | Coming Soon | Coming Soon | Coming Soon |
 
-```bash
-ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
-```
+### Quick Build
 
 Set the `supabase_internal` flag to `false` to avoid baking in components that are specific to Supabase's hosted offering.
 
