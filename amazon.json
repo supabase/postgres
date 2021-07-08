@@ -7,7 +7,7 @@
     "ami": "ami-08a4b40f2fe1e4b35",
     "ami_name": "supabase-postgres-13.3.0",
     "environment": "prod",
-    "ansible_arguments": "--skip-tags,update-only,--skip-tags,install-postgrest,-v"
+    "ansible_arguments": "--skip-tags,update-only,--skip-tags,install-postgrest"
   },
   "builders": [
     {
