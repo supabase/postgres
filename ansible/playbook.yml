@@ -82,6 +82,8 @@
       ufw:
         rule: allow
         port: "6543"
+      tags:
+        - install-pgbouncer
 
     - name: UFW - Deny all other incoming traffic by default
       ufw:

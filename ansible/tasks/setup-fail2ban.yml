@@ -33,19 +33,6 @@
   become: yes
   when: supabase_internal == true
 
-# pgbouncer
-- name: import jail.d/pgbouncer.conf
-  template:
-    src: files/fail2ban_config/jail-pgbouncer.conf.j2
-    dest: /etc/fail2ban/jail.d/pgbouncer.conf
-  become: yes
-
-- name: import filter.d/pgbouncer.conf
-  template:
-    src: files/fail2ban_config/filter-pgbouncer.conf.j2
-    dest: /etc/fail2ban/filter.d/pgbouncer.conf
-  become: yes
-
 # Restart
 - name: fail2ban - restart
   systemd:
