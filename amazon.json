@@ -4,8 +4,8 @@
     "aws_secret_key": "",
     "region": "af-south-1",
     "ami_regions": "af-south-1",
-    "ami": "ami-07d30d5bf2d29a582",
-    "ami_name": "supabase-postgres-0.16.2",
+    "ami": "ami-08a4b40f2fe1e4b35",
+    "ami_name": "supabase-postgres-13.3.0",
     "environment": "prod",
     "ansible_arguments": "--skip-tags,update-only"
   },
