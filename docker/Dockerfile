@@ -4,6 +4,10 @@ FROM postgres:12
 RUN apt-get update \ 
       && apt-get install postgresql-12-cron -y
 
+# install wal2json
+RUN apt-get update \
+    && apt-get install postgresql-$PG_MAJOR-wal2json -y
+
 # install postgis
 ENV POSTGIS_MAJOR 3
 ENV POSTGIS_VERSION 3.0.0+dfsg-2~exp1.pgdg100+1
