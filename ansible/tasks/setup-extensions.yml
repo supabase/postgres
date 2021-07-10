@@ -1,3 +1,11 @@
+# wal2json
+- name: Install wal2json
+  apt:
+    pkg:
+      - "postgresql-{{ postgresql_version }}-wal2json"
+    update_cache: yes
+    cache_valid_time: 3600
+
 # postgis
 - name: Install postgis for postgreSQL versions < 10
   apt:

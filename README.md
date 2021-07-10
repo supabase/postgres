@@ -18,6 +18,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ [PL/Java](https://github.com/tada/pljava). Write in Java functions in Postgres.
 - ✅ [pg_cron](https://github.com/citusdata/pg_cron). Run CRON jobs inside Postgres.
 - ✅ [pg-safeupdate](https://github.com/eradman/pg-safeupdate). Protect your data from accidental updates or deletes.
+- ✅ [wal2json](https://github.com/eulerto/wal2json). JSON output plugin for logical replication decoding
 
 ## Install
 
