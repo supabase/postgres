@@ -1,5 +1,6 @@
 supabase_internal: true
 
+postgresql_major: "13"
 postgresql_release: "13.3"
 postgresql_release_checksum: sha1:aeb645988b1ec9ffbb2fc0a49d9055d3ab17affa
 
