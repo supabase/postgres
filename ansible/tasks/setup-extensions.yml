@@ -28,7 +28,7 @@
 - name: Install wal2json
   apt:
     pkg:
-      - "postgresql-{{ postgresql_version }}-wal2json"
+      - "postgresql-{{ postgresql_major }}-wal2json"
     update_cache: yes
     cache_valid_time: 3600
     install_recommends: no

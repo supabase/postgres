@@ -6,7 +6,7 @@
       - default-jre
       - default-jdk
     update_cache: yes
-    install_recommends: yes
+    install_recommends: no
 
 - name: pljava - download latest release
   get_url:

@@ -14,6 +14,7 @@
       - cmake
     update_cache: yes
     cache_valid_time: 3600
+    install_recommends: no
 
 - name: postgis - download SFCGAL dependency
   get_url:

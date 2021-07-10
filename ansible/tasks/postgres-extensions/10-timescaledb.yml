@@ -4,7 +4,7 @@
     pkg:
       - cmake
     update_cache: yes
-    install_recommends: yes
+    install_recommends: no
 
 - name: timescaledb - download latest release
   git:

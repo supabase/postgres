@@ -10,7 +10,7 @@
     pkg:
       - libcurl4-gnutls-dev
     update_cache: yes
-    install_recommends: yes
+    install_recommends: no
 
 - name: pgsql-http - download latest release
   get_url:
