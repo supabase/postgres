@@ -49,6 +49,20 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
+# Disables overcommiting of memory
+- name: Adjust setting for vm.overcommit_memory 
+  sysctl:
+    name: vm.overcommit_memory
+    value: 2
+    state: present
+
+# Set overcommit ratio to 75
+- name: Adjust setting for vm.overcommit_ratio
+  sysctl:
+    name: vm.overcommit_ratio
+    value: 75
+    state: present
+
 - name: System - Create services.slice
   template:
     src: files/services.slice.j2
