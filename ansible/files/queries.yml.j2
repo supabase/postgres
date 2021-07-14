@@ -174,12 +174,15 @@ auth_users:
         description: "Number of users in the project db"
 
 replication:
-  query: "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) as realtime_lag_bytes FROM pg_replication_slots where slot_name = 'realtime'"
+  query: "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) AS realtime_lag_bytes, active AS realtime_slot_status FROM pg_replication_slots where slot_name = 'realtime'"
   master: true
   metrics:
     - realtime_lag_bytes:
         usage: "GAUGE"
         description: "Replication Lag for Realtime"
+    - realtime_slot_status:
+        usage: "GAUGE"
+        description: "Replication Slot active status"
 
 storage:
   query: "select sum(size) / (1024 * 1024) as storage_size_mb from storage.get_size_by_bucket()"
