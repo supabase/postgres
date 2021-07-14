@@ -174,13 +174,10 @@ auth_users:
         description: "Number of users in the project db"
 
 replication:
-  query: "SELECT slot_name, pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) as replication_lag FROM pg_replication_slots"
+  query: "SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) as realtime_lag_bytes FROM pg_replication_slots where slot_name = 'realtime'"
   master: true
   metrics:
-    - slot_name:
-        usage: "LABEL"
-        description: "Replication slot name"
-    - realtime_lag:
+    - realtime_lag_bytes:
         usage: "GAUGE"
         description: "Replication Lag for Realtime"
 
