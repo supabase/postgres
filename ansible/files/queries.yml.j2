@@ -7,13 +7,151 @@ pg_database:
         usage: "GAUGE"
         description: "Disk space used by the database"
 
+pg_stat_bgwriter:
+  query: |
+    select checkpoints_timed     as checkpoints_timed_total,
+           checkpoints_req       as checkpoints_req_total,
+           checkpoint_write_time as checkpoint_write_time_total,
+           checkpoint_sync_time  as checkpoint_sync_time_total,
+           buffers_checkpoint    as buffers_checkpoint_total,
+           buffers_clean         as buffers_clean_total,
+           maxwritten_clean      as maxwritten_clean_total,
+           buffers_backend       as buffers_backend_total,
+           buffers_backend_fsync as buffers_backend_fsync_total,
+           buffers_alloc         as buffers_alloc_total,
+           stats_reset
+    from pg_stat_bgwriter
+  cache_seconds: 30
+  master: true
+  metrics:
+    - checkpoints_timed_total:
+        usage: "COUNTER"
+        description: "Scheduled checkpoints performed"
+    - checkpoints_req_total:
+        usage: "COUNTER"
+        description: "Requested checkpoints performed"
+    - checkpoint_write_time_total:
+        usage: "COUNTER"
+        description: "Time spent writing checkpoint files to disk"
+    - checkpoint_sync_time_total:
+        usage: "COUNTER"
+        description: "Time spent synchronizing checkpoint files to disk"
+    - buffers_checkpoint_total:
+        usage: "COUNTER"
+        description: "Buffers written during checkpoints"
+    - buffers_clean_total:
+        usage: "COUNTER"
+        description: "Buffers written by bg writter"
+    - maxwritten_clean_total:
+        usage: "COUNTER"
+        description: "Number of times bg writer stopped a cleaning scan because it had written too many buffers"
+    - buffers_backend_total:
+        usage: "COUNTER"
+        description: "Buffers written directly by a backend"
+    - buffers_backend_fsync_total:
+        usage: "COUNTER"
+        description: "fsync calls executed by a backend directly"
+    - buffers_alloc_total:
+        usage: "COUNTER"
+        description: "Buffers allocated"
+    - stats_reset:
+        usage: "COUNTER"
+        description: "Most recent stat reset time"
+
+
 pg_stat_database:
-  query: "SELECT sum(numbackends) as num_backends FROM pg_stat_database"
+  cache_seconds: 30
+  query: |
+    SELECT sum(numbackends)           as num_backends,
+           sum(xact_commit)           as xact_commit_total,
+           sum(xact_rollback)         as xact_rollback_total,
+           sum(blks_read)             as blks_read_total,
+           sum(blks_hit)              as blks_hit_total,
+           sum(tup_returned)          as tup_returned_total,
+           sum(tup_fetched)           as tup_fetched_total,
+           sum(tup_inserted)          as tup_inserted_total,
+           sum(tup_updated)           as tup_updated_total,
+           sum(tup_deleted)           as tup_deleted_total,
+           sum(conflicts)             as conflicts_total,
+           sum(temp_files)            as temp_files_total,
+           sum(temp_bytes)            as temp_bytes_total,
+           sum(deadlocks)             as deadlocks_total,
+           max(stats_reset)           as most_recent_reset
+    FROM pg_stat_database
   master: true
   metrics:
     - num_backends:
         usage: "GAUGE"
         description: "The number of active backends"
+    - xact_commit_total:
+        usage: "COUNTER"
+        description: "Transactions committed"
+    - xact_rollback_total:
+        usage: "COUNTER"
+        description: "Transactions rolled back"
+    - blks_read_total:
+        usage: "COUNTER"
+        description: "Number of disk blocks read"
+    - blks_hit_total:
+        usage: "COUNTER"
+        description: "Disk blocks found in buffer cache"
+    - tup_returned_total:
+        usage: "COUNTER"
+        description: "Rows returned by queries"
+    - tup_fetched_total:
+        usage: "COUNTER"
+        description: "Rows fetched by queries"
+    - tup_inserted_total:
+        usage: "COUNTER"
+        description: "Rows inserted"
+    - tup_updated_total:
+        usage: "COUNTER"
+        description: "Rows updated"
+    - tup_deleted_total:
+        usage: "COUNTER"
+        description: "Rows deleted"
+    - conflicts_total:
+        usage: "COUNTER"
+        description: "Queries canceled due to conflicts with recovery"
+    - temp_files_total:
+        usage: "COUNTER"
+        description: "Temp files created by queries"
+    - temp_bytes_total:
+        usage: "COUNTER"
+        description: "Temp data written by queries"
+    - deadlocks_total:
+        usage: "COUNTER"
+        description: "Deadlocks detected"
+    - most_recent_reset:
+        usage: "COUNTER"
+        description: "The most recent time one of the databases had its statistics reset"
+
+pg_stat_database_conflicts:
+  query: |
+    SELECT sum(confl_tablespace) as confl_tablespace_total,
+           sum(confl_lock)       as confl_lock_total,
+           sum(confl_snapshot)   as confl_snapshot_total,
+           sum(confl_bufferpin)  as confl_bufferpin_total,
+           sum(confl_deadlock)   as confl_deadlock_total
+    from pg_stat_database_conflicts
+  cache_seconds: 30
+  master: true
+  metrics:
+    - confl_tablespace_total:
+        usage: "COUNTER"
+        description: "Queries cancelled due to dropped tablespaces"
+    - confl_lock_total:
+        usage: "COUNTER"
+        description: "Queries cancelled due to lock timeouts"
+    - confl_snapshot_total:
+        usage: "COUNTER"
+        description: "Queries cancelled due to old snapshots"
+    - confl_bufferpin_total:
+        usage: "COUNTER"
+        description: "Queries cancelled due to pinned buffers"
+    - confl_deadlock_total:
+        usage: "COUNTER"
+        description: "Queries cancelled due to deadlocks"
 
 pg_stat_statements:
   query: "SELECT sum(calls) as total_queries, sum(total_time / 1000) as total_time_seconds FROM extensions.pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid)"
@@ -34,6 +172,17 @@ auth_users:
     - user_count:
         usage: "GAUGE"
         description: "Number of users in the project db"
+
+replication:
+  query: "SELECT slot_name, pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) as replication_lag FROM pg_replication_slots"
+  master: true
+  metrics:
+    - slot_name:
+        usage: "LABEL"
+        description: "Replication slot name"
+    - realtime_lag:
+        usage: "GAUGE"
+        description: "Replication Lag for Realtime"
 
 storage:
   query: "select sum(size) / (1024 * 1024) as storage_size_mb from storage.get_size_by_bucket()"
