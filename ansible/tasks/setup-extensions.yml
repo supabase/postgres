@@ -25,19 +25,14 @@
 - name: Install pg-safeupdate
   import_tasks: tasks/postgres-extensions/09-pg-safeupdate.yml
 
-- name: Install wal2json
-  apt:
-    pkg:
-      - "postgresql-{{ postgresql_major }}-wal2json"
-    update_cache: yes
-    cache_valid_time: 3600
-    install_recommends: no
-
 # - name: Install timescaledb
 #   import_tasks: tasks/postgres-extensions/10-timescaledb.yml
 
+- name: Install wal2json
+  import_tasks: tasks/postgres-extensions/11-wal2json.yml
+
 - name: Install pljava
-  import_tasks: tasks/postgres-extensions/11-pljava.yml
+  import_tasks: tasks/postgres-extensions/12-pljava.yml
 
 - name: Install plv8
-  import_tasks: tasks/postgres-extensions/12-plv8.yml
+  import_tasks: tasks/postgres-extensions/13-plv8.yml
