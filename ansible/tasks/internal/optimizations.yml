@@ -12,4 +12,5 @@
     - snapd
     - postgresql
     - postgrest
+    - pgbouncer
     - fail2ban
