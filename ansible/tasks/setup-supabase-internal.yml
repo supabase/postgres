@@ -35,3 +35,6 @@
 
 - name: Install supautils
   import_tasks: internal/supautils.yml
+
+- name: Boot time optimizations
+  import_tasks: internal/optimizations.yml

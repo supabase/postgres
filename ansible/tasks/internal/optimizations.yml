@@ -1,0 +1,15 @@
+- name: ensure services are stopped
+  community.general.snap:
+    name: amazon-ssm-agent
+    state: absent
+
+- name: ensure services are stopped and disabled for first boot
+  systemd:
+    enabled: no
+    name: '{{ item }}'
+    state: stopped
+  with_items:
+    - snapd
+    - postgresql
+    - postgrest
+    - fail2ban
