@@ -2,6 +2,7 @@
   apt:
     pkg:
       - unzip
+      - jq
     install_recommends: no
 
 - name: AWS CLI (arm)
