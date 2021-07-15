@@ -57,6 +57,17 @@
     group: postgres
     owner: postgres
 
+- name: PgBouncer - add permissions for pgbouncer user
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/pg_hba.conf
+    state: present
+    insertafter: '# Default:'
+    line: "{{ item }}"
+  with_items:
+    - "host  all  pgbouncer  127.0.0.1/32  md5"
+    - "# Allow connection by pgbouncer user"
+      
 - name: import /etc/tmpfiles.d/pgbouncer.conf
   template:
     src: files/pgbouncer_config/tmpfiles.d-pgbouncer.conf.j2
