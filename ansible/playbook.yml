@@ -9,7 +9,6 @@
 
   vars:
     sql_files:
-      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
   environment:
@@ -18,7 +17,15 @@
   tasks:
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
-    
+
+    - name: Install Postgres extensions
+      import_tasks: tasks/setup-extensions.yml
+
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
+
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
 
@@ -31,18 +38,11 @@
       import_tasks: tasks/setup-postgrest.yml
       tags:
         - install-postgrest
-
-    - name: Install Postgres extensions
-      import_tasks: tasks/setup-extensions.yml
-
+        
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
-      when: supabase_internal == true
-
-    - name: Start Postgres Database
-      systemd:
-        name: postgresql
-        state: started
+      tags:
+        - install-supabase-internal
 
     - name: Adjust APT update intervals
       copy:

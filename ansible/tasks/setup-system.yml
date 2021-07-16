@@ -46,8 +46,15 @@
 - name: finding platform architecture
   shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
   register: platform_output
+  tags:
+    - update
+    - update-only
 - set_fact:
     platform: "{{ platform_output.stdout }}"
+  tags:
+    - update
+    - update-only
+
 
 - name: System - Create services.slice
   template:
