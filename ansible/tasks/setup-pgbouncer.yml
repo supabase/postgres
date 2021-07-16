@@ -56,6 +56,12 @@
     state: touch
     group: postgres
     owner: postgres
+      
+- name: import /etc/tmpfiles.d/pgbouncer.conf
+  template:
+    src: files/pgbouncer_config/tmpfiles.d-pgbouncer.conf.j2
+    dest: /etc/tmpfiles.d/pgbouncer.conf
+  become: yes
 
 - name: PgBouncer - add permissions for pgbouncer user
   become: yes
@@ -67,12 +73,18 @@
   with_items:
     - "host  all  pgbouncer  127.0.0.1/32  md5"
     - "# Allow connection by pgbouncer user"
-      
-- name: import /etc/tmpfiles.d/pgbouncer.conf
-  template:
-    src: files/pgbouncer_config/tmpfiles.d-pgbouncer.conf.j2
-    dest: /etc/tmpfiles.d/pgbouncer.conf
+
+# Run PgBouncer SQL script
+- name: Transfer init SQL files
+  copy:
+    src: files/pgbouncer_config/pgbouncer_auth_schema.sql
+    dest: /tmp/00-schema.sql
+
+- name: Execute init SQL files
   become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/psql -f /tmp/00-schema.sql
 
 # Add fail2ban filter
 - name: import jail.d/pgbouncer.conf
