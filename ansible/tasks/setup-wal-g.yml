@@ -1,35 +1,17 @@
-# WAL-G
-- name: Install daemontools
+# Downloading dependencies
+- name: Postgres dependencies
   become: yes
-  apt:
-    pkg:
-      - daemontools
-
-- name: wal-g system dependencies
   apt:
     pkg:
       - liblzo2-dev
       - cmake
-      - build-essential
-
-# find platform architecture
-- name: finding platform architecture
-  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
-  register: platform_output
-- set_fact:
-    platform: "{{ platform_output.stdout }}"
-
-- name: finding platform architecture - aws
-  shell: if [ $(uname -m) = "aarch64" ]; then echo "aarch64";  else echo "x86_64"; fi
-  register: platform_output
-- set_fact:
-    platform_aws: "{{ platform_output.stdout }}"
 
 # install go dependency for WAL-G
 - name: wal-g go dependency
   get_url:
     url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
     dest: /tmp
+
 - name: unpack go archive
   unarchive:
     remote_src: yes
@@ -55,9 +37,9 @@
     GOBIN: "/usr/local/bin"
     PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
 
-# Install PgBouncer
-- name: install PgBouncer
+# Clean up Go
+- name: Uninstall Go
   become: yes
-  apt:
-    pkg:
-      - pgbouncer
+  file:
+    path: /usr/local/go
+    state: absent  

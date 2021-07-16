@@ -1,0 +1,12 @@
+# pgjwt
+- name: pgjwt - download from master branch
+  git:
+    repo: https://github.com/michelp/pgjwt.git
+    dest: /tmp/pgjwt
+    version: master
+
+- name: pgjwt - install
+  make:
+    chdir: /tmp/pgjwt
+    target: install
+  become: yes

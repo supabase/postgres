@@ -38,9 +38,9 @@
     src: files/queries.yml.j2
     dest: /opt/postgres_exporter/queries.yml
 
-- name: exporter enable service
+- name: exporter ensure service is present
   systemd:
-    enabled: yes
+    enabled: no
     name: postgres_exporter
     daemon_reload: yes
-    state: restarted
+    state: stopped

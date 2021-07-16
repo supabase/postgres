@@ -31,11 +31,6 @@ jobs:
         sudo apt-get install ansible -y
         ansible --version
 
-    - name: Install Ansible role
-      run:  |
-        sudo ansible-galaxy install anxs.postgresql -r ansible/install_roles.yml --force -vvv
-        ansible-galaxy list anxs.postgresql
-        
     - name: Build Digital Ocean Snapshot
       run: |
         export REGION=sgp1

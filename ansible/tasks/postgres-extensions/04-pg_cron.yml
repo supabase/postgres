@@ -1,0 +1,31 @@
+# pg_cron
+- name: pg_cron - download latest release
+  get_url:
+    url: "https://github.com/citusdata/pg_cron/archive/refs/tags/v{{ pg_cron_release }}.tar.gz"
+    dest: /tmp/pg_cron-{{ pg_cron_release }}.tar.gz
+    checksum: "{{ pg_cron_release_checksum }}"
+
+- name: pg_cron - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pg_cron-{{ pg_cron_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pg_cron - build
+  make:
+    chdir: /tmp/pg_cron-{{ pg_cron_release }}
+  become: yes
+
+- name: pg_cron - install
+  make:
+    chdir: /tmp/pg_cron-{{ pg_cron_release }}
+    target: install
+  become: yes
+
+- name: pg_cron - set cron.database_name
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: cron.database_name = 'postgres'

@@ -1,0 +1,67 @@
+
+
+- name: Cleanup - remove build dependencies
+  apt:
+    pkg:
+      - python3
+      - rsync
+      - ca-certificates
+      - build-essential
+      - postgresql-server-dev-13
+      - curl
+      - git-core
+      - gpp
+      - cpp
+      - pkg-config
+      - apt-transport-https
+      - cmake
+      - ninja-build
+      - python
+    state: absent
+
+- name: Cleanup - apt update and apt upgrade
+  apt: update_cache=yes upgrade=yes
+  # SEE http://archive.vn/DKJjs#parameter-upgrade
+
+- name: Cleanup - remove dependencies that are no longer required
+  apt:
+    autoremove: yes
+
+- name: Cleanup - remove useless packages from the cache
+  apt:
+    autoclean: yes
+
+- name: Cleanup - reinstall headless jdk
+  apt:
+    pkg:
+      - default-jdk-headless
+    update_cache: yes
+    install_recommends: no
+
+- name: Cleanup - find all files in /tmp
+  find:
+    paths: /tmp
+    file_type: any
+  register: tmp_items_to_delete
+
+- name: Cleanup - delete all items in /tmp
+  file:
+    path: "/tmp/{{ item.path | basename }}"
+    state: absent
+    force: yes
+  with_items: "{{ tmp_items_to_delete.files }}"
+
+- name: Cleanup - find all files in /var/lib/apt/lists/*
+  find:
+    paths: /var/lib/apt/lists
+    file_type: any
+  register: var_items_to_delete
+
+- name: Cleanup - delete all items in /tmp
+  file:
+    path: "/var/lib/apt/lists/{{ item.path | basename }}"
+    state: absent
+    force: yes
+  with_items: "{{ var_items_to_delete.files }}"
+
+  
