@@ -1,6 +1,5 @@
-/var/lib/postgresql/12/main/pg_log/postgresql.csv {
-    daily
-    size 50M 
+/var/lib/postgresql/data/pg_log/postgresql.log {
+    size 50M
     rotate 3  
     copytruncate
     delaycompress
