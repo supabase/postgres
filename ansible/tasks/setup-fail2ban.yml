@@ -31,7 +31,8 @@
     - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "authenticator"$' }
     - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "pgbouncer"$' }
   become: yes
-  when: supabase_internal == true
+  tags:
+    - install-supabase-internal
 
 # Restart
 - name: fail2ban - restart
