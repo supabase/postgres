@@ -96,6 +96,17 @@
         src: files/logrotate-postgres
         dest: /etc/logrotate.d/postgres
 
+    - name: Configure logrotation to run every hour
+      shell:
+        cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/
+      become: yes
+
+    - name: restart crond
+      systemd:
+        state: restarted
+        name: cron
+      become: yes
+
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
 
