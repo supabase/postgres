@@ -40,7 +40,7 @@
   hosts: localhost
   tasks:
     - name: Commit Docker image
-      command: docker commit "supabase-postgres-build" "supabase/postgres"
+      command: docker commit --change='CMD ["postgres"]' "supabase-postgres-build" "supabase/postgres"
 
 - name: Clean Up Postgres Image
   hosts: localhost

@@ -32,15 +32,36 @@
     src: files/postgresql_config/postgresql.conf.j2
     dest: etc/postgresql/postgresql.conf
 
-- name: Setup - import pg_hba.conf
-  template:
-    src: files/postgresql_config/pg_hba.conf.j2
-    dest: etc/postgresql/pg_hba.conf
+- set_fact:
+    regex_string: "#unix_socket_directories = '/tmp'"
 
-- name: Setup - import pg_ident.conf
-  template:
-    src: files/postgresql_config/pg_ident.conf.j2
-    dest: etc/postgresql/pg_ident.conf
+- name: Setup - modify unix_socket_directories
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: '{{ regex_string }}'
+    replace: unix_socket_directories = '/var/run/postgresql'
+
+- name: Setup - modify unix_socket_directories
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: '{{ regex_string }}'
+    replace: unix_socket_directories = '/var/run/postgresql'
+
+- name: Setup - modify hba_file directory
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: hba_file = '/etc/postgresql/pg_hba.conf'
+    replace: hba_file = '/var/lib/postgresql/data/pg_hba.conf'
+
+- name: Setup - modify ident_file directory
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: ident_file = '/etc/postgresql/pg_ident.conf'
+    replace: ident_file = '/var/lib/postgresql/data/pg_ident.conf'
 
 - name: Setup - add init script to /docker-entrypoint-initdb.d
   synchronize:
