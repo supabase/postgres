@@ -67,11 +67,11 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 
 ### Quick Build
 
-Set the `supabase_internal` flag to `false` to avoid baking in components that are specific to Supabase's hosted offering.
-
 ```bash
 $ time packer build -timestamp-ui \
-  -var "ansible_arguments=--skip-tags,update-only,-v,-e,supabase_internal='false'" \
+  --var "aws_access_key=<insert aws access key>" \
+  --var "aws_secret_key=<insert aws secret key>" \
+  --var "ami_regions=<insert desired regions>" \
   amazon-arm.json
 ```
 
