@@ -1,0 +1,62 @@
+# pljava
+- name: pljava - download & install dependencies
+  apt:
+    pkg:
+      - maven
+      - default-jre
+      - default-jdk
+    update_cache: yes
+    install_recommends: no
+
+- name: pljava - download latest release
+  get_url:
+    url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
+    dest: /tmp/pljava-{{ pljava_release }}.tar.gz
+    checksum: "{{ pljava_release_checksum }}"
+
+- name: pljava - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pljava-{{ pljava_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pljava - build
+  become: yes
+  shell:
+    cmd: mvn clean install
+    chdir: /tmp/pljava-{{ pljava_release }}
+
+- name: pljava - install
+  become: yes
+  shell:
+    cmd: java -jar pljava-packaging/target/pljava-pg13.jar
+    chdir: /tmp/pljava-{{ pljava_release }}
+
+- name: pljava - remove build dependencies
+  apt:
+    pkg:
+      - maven
+      - default-jre
+      - default-jdk
+    state: absent
+
+- name: pljava - install headless jdk
+  apt:
+    pkg:
+      - default-jdk-headless
+    update_cache: yes
+    install_recommends: no
+
+- name: pljava - set pljava.libjvm_location
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'
+
+- name: pljava - remove ~/.m2 directory
+  become: yes
+  file:
+    path: ~/.m2
+    state: absent

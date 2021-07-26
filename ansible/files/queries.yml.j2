@@ -154,7 +154,7 @@ pg_stat_database_conflicts:
         description: "Queries cancelled due to deadlocks"
 
 pg_stat_statements:
-  query: "SELECT sum(calls) as total_queries, sum(total_time / 1000) as total_time_seconds FROM extensions.pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid)"
+  query: "SELECT sum(calls) as total_queries, sum(total_exec_time / 1000) as total_time_seconds FROM extensions.pg_stat_statements t1 JOIN pg_database t3 ON (t1.dbid=t3.oid)"
   master: true
   metrics:
     - total_queries:

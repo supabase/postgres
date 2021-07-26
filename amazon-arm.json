@@ -4,10 +4,10 @@
     "aws_secret_key": "",
     "region": "ap-northeast-1",
     "ami_regions": "eu-central-1,eu-west-1,eu-west-2,ap-south-1,ap-southeast-1,ap-southeast-2,us-west-1,us-east-1,ca-central-1,sa-east-1,ap-northeast-1",
-    "ami": "ami-0d24b4f369844fc54",
-    "ami_name": "supabase-postgres-0.16.2",
+    "ami": "ami-076d8ebdd0e1ec091",
+    "ami_name": "supabase-postgres-13.3.0",
     "environment": "prod",
-    "ansible_arguments": "--skip-tags,update-only -v"
+    "ansible_arguments": "--skip-tags,update-only,--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
   },
   "builders": [
     {
@@ -17,7 +17,7 @@
       "region": "{{user `region`}}",
       "ami_regions": "{{user `ami_regions`}}",
       "source_ami": "{{user `ami`}}",
-      "instance_type": "c6g.2xlarge",
+      "instance_type": "r6g.2xlarge",
       "ssh_username": "ubuntu",
       "ami_name": "{{user `ami_name`}}",
       "tags": {
@@ -51,7 +51,6 @@
       "execute_command": "echo 'packer' | sudo -S sh -c '{{ .Vars }} {{ .Path }}'",
       "type": "shell",
       "scripts": [
-        "scripts/01-test",
         "scripts/02-credentials_cleanup.sh",
         "scripts/90-cleanup.sh",
         "scripts/91-log_cleanup.sh"

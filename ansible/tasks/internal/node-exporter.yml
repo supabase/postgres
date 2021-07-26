@@ -41,6 +41,6 @@
 - name: node_exporter - reload systemd
   systemd:
     daemon_reload: yes
-    enabled: yes
-    state: restarted
+    enabled: no
+    state: stopped
     name: node_exporter

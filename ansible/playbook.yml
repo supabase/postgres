@@ -9,22 +9,40 @@
 
   vars:
     sql_files:
-      - { source: "pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
-  roles:
-    - role: anxs.postgresql
+  environment:
+    PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
   tasks:
-    - name: Install non-Postgres extensions
-      import_tasks: tasks/setup-misc.yml
+    - name: Install Postgres from source
+      import_tasks: tasks/setup-postgres.yml
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
 
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
+
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
+
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      tags:
+        - install-pgbouncer
+
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      tags:
+        - install-postgrest
+        
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
-      when: supabase_internal == true
+      tags:
+        - install-supabase-internal
 
     - name: Adjust APT update intervals
       copy:
@@ -38,9 +56,10 @@
       loop: "{{ sql_files }}"
 
     - name: Execute init SQL files
+      become: yes
       become_user: postgres
       shell:
-        cmd: psql -f /tmp/{{ item.dest }}
+        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
       loop: "{{ sql_files }}"
 
     - name: Delete SQL scripts
@@ -48,11 +67,6 @@
         path: /tmp/{{ item.dest }}
         state: absent
       loop: "{{ sql_files }}"
-
-    - name: Adjust pgbouncer.ini
-      copy:
-        src: files/pgbouncer.ini
-        dest: /etc/pgbouncer/pgbouncer.ini
 
     - name: UFW - Allow SSH connections
       ufw:
@@ -68,6 +82,8 @@
       ufw:
         rule: allow
         port: "6543"
+      tags:
+        - install-pgbouncer
 
     - name: UFW - Deny all other incoming traffic by default
       ufw:
@@ -79,6 +95,20 @@
       copy:
         src: files/logrotate-postgres
         dest: /etc/logrotate.d/postgres
+
+    - name: Configure logrotation to run every hour
+      shell:
+        cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/
+      become: yes
+
+    - name: restart crond
+      systemd:
+        state: restarted
+        name: cron
+      become: yes
+
+    - name: Enhance fail2ban
+      import_tasks: tasks/setup-fail2ban.yml
 
     # Install EC2 instance connect
     # Only for AWS images

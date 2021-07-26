@@ -1,0 +1,69 @@
+- name: Install Python3
+  raw: apt update && apt upgrade -y && apt install python3 -y
+
+- name: Setup - install common dependencies
+  apt:
+    pkg:
+      - rsync
+      - ca-certificates
+      - build-essential
+      - postgresql-server-dev-13
+      - curl
+      - git-core
+      - gpp
+      - cpp
+      - pkg-config
+      - apt-transport-https
+      - cmake
+      - ninja-build
+      - python
+    update_cache: yes
+    install_recommends: no
+
+# Find platform architecture and set as a variable
+- name: Setup - finding platform architecture
+  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
+  register: platform_output
+- set_fact:
+    platform: "{{ platform_output.stdout }}"
+
+- name: Setup - import postgresql.conf
+  synchronize:
+    src: files/postgresql_config/postgresql.conf.j2
+    dest: etc/postgresql/postgresql.conf
+
+- set_fact:
+    regex_string: "#unix_socket_directories = '/tmp'"
+
+- name: Setup - modify unix_socket_directories
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: '{{ regex_string }}'
+    replace: unix_socket_directories = '/var/run/postgresql'
+
+- name: Setup - modify unix_socket_directories
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: '{{ regex_string }}'
+    replace: unix_socket_directories = '/var/run/postgresql'
+
+- name: Setup - modify hba_file directory
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: hba_file = '/etc/postgresql/pg_hba.conf'
+    replace: hba_file = '/var/lib/postgresql/data/pg_hba.conf'
+
+- name: Setup - modify ident_file directory
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: ident_file = '/etc/postgresql/pg_ident.conf'
+    replace: ident_file = '/var/lib/postgresql/data/pg_ident.conf'
+
+- name: Setup - add init script to /docker-entrypoint-initdb.d
+  synchronize:
+    src: files/docker_mnt/init.sh
+    dest: /docker-entrypoint-initdb.d/init.sh

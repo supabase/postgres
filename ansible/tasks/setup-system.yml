@@ -19,16 +19,13 @@
       - tzdata
       - linux-libc-dev
 
-- name: Install python
+# SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
+# Without this, a similar error is faced
+- name: Install Ansible dependencies
   become: yes
   apt:
     pkg:
-      - python
-      - python-pip
-      - python3
-      - python3-pip
-    update_cache: yes
-    cache_valid_time: 3600
+      - acl
 
 - name: Install security tools
   become: yes
@@ -45,30 +42,18 @@
     src: files/apt_periodic
     dest: /etc/apt/apt.conf.d/10periodic
 
-# Install psycopg2 to enable ansible postgreSQL features
-- name: Installing psycopg2 dependencies
-  become: yes
-  apt:
-    pkg:
-      - libpq-dev
-
-- name: Cloning psycopg2
-  git:
-    repo: https://github.com/psycopg/psycopg2.git
-    dest: /tmp/psycopg2
-    version: "2_8_6"
-  become: yes
-
-- name: psycopg2 - build
-  shell:
-    cmd: python setup.py build
-    chdir: /tmp/psycopg2
-
-- name: psycopg2 - install
-  shell:
-    cmd: python setup.py install
-    chdir: /tmp/psycopg2
-  become: yes
+# Find platform architecture and set as a variable
+- name: finding platform architecture
+  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
+  register: platform_output
+  tags:
+    - update
+    - update-only
+- set_fact:
+    platform: "{{ platform_output.stdout }}"
+  tags:
+    - update
+    - update-only
 
 - name: System - Create services.slice
   template:

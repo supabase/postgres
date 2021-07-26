@@ -1,0 +1,41 @@
+# set default bantime to 30 minutes
+- name: supautils - add supautils to shared_preload_libraries
+  become: yes
+  replace:
+    path: /etc/fail2ban/jail.conf
+    regexp: bantime  = 10m
+    replace: bantime  = 1800
+
+# postgresql
+- name: import jail.d/postgresql.conf
+  template:
+    src: files/fail2ban_config/jail-postgresql.conf.j2
+    dest: /etc/fail2ban/jail.d/postgresql.conf
+  become: yes
+
+- name: import filter.d/postgresql.conf
+  template:
+    src: files/fail2ban_config/filter-postgresql.conf.j2
+    dest: /etc/fail2ban/filter.d/postgresql.conf
+  become: yes
+
+- name: add in supabase specific ignore filters
+  lineinfile:
+    path: /etc/fail2ban/filter.d/postgresql.conf
+    state: present
+    line: "{{ item.line }}"
+  loop:
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""pgbouncer".*$' }
+  become: yes
+  tags:
+    - install-supabase-internal
+
+# Restart
+- name: fail2ban - restart
+  systemd:
+    name: fail2ban
+    state: restarted
