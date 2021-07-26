@@ -55,7 +55,6 @@
     - update
     - update-only
 
-
 - name: System - Create services.slice
   template:
     src: files/services.slice.j2

@@ -25,11 +25,11 @@
     state: present
     line: "{{ item.line }}"
   loop:
-    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_admin"$' }
-    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_auth_admin"$' }
-    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "supabase_storage_admin"$' }
-    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "authenticator"$' }
-    - { line: '              ^<HOST>.+FATAL:  password authentication failed for user "pgbouncer"$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""pgbouncer".*$' }
   become: yes
   tags:
     - install-supabase-internal
