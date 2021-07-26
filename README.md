@@ -31,8 +31,8 @@ Can't find your favorite extension? Suggest for it to be added into future versi
 Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page), and [unattended-upgrades](https://wiki.debian.org/UnattendedUpgrades) installed, we also have the following enhancements in place: 
 | Enhancement | Description |
 | ------------- | ------------- |
-| fail2ban filter for PostgreSQL access | Monitors for brute force attempts over at port `5432`. |
-| fail2ban filter for PgBouncer access | Monitors for brute force attempts over at port `6543`. |
+| [fail2ban filter](https://github.com/supabase/postgres/blob/develop/ansible/files/fail2ban_config/filter-postgresql.conf.j2) for PostgreSQL access | Monitors for brute force attempts over at port `5432`. |
+| [fail2ban filter](https://github.com/supabase/postgres/blob/develop/ansible/files/fail2ban_config/filter-pgbouncer.conf.j2) for PgBouncer access | Monitors for brute force attempts over at port `6543`. |
 
 ## Additional Goodies
 | Goodie | Description |
