@@ -1,0 +1,111 @@
+# PgBouncer
+- name: PgBouncer - download & install dependencies
+  apt:
+    pkg:
+      - libssl-dev
+      - pkg-config
+      - libevent-dev
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: PgBouncer - download latest release
+  get_url:
+    url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
+    dest: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    checksum: "{{ pgbouncer_release_checksum }}"
+
+- name: PgBouncer - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: PgBouncer - configure
+  shell:
+    cmd: "./configure --prefix=/usr/local --with-systemd"
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - build
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - install
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+    target: install
+  become: yes
+
+# Create /etc/postgresql directory and make sure postgres group owns it
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    path: /etc/pgbouncer
+    state: directory
+    group: postgres
+
+- name: PgBouncer - adjust pgbouncer.ini
+  copy:
+    src: files/pgbouncer_config/pgbouncer.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    path: /etc/pgbouncer/userlist.txt
+    state: touch
+    group: postgres
+    owner: postgres
+      
+- name: import /etc/tmpfiles.d/pgbouncer.conf
+  template:
+    src: files/pgbouncer_config/tmpfiles.d-pgbouncer.conf.j2
+    dest: /etc/tmpfiles.d/pgbouncer.conf
+  become: yes
+
+- name: PgBouncer - add permissions for pgbouncer user
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/pg_hba.conf
+    state: present
+    insertafter: '# Default:'
+    line: "{{ item }}"
+  with_items:
+    - "host  all  pgbouncer  127.0.0.1/32  md5"
+    - "# Allow connection by pgbouncer user"
+
+# Run PgBouncer SQL script
+- name: Transfer init SQL files
+  copy:
+    src: files/pgbouncer_config/pgbouncer_auth_schema.sql
+    dest: /tmp/00-schema.sql
+
+- name: Execute init SQL files
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/psql -f /tmp/00-schema.sql
+
+# Add fail2ban filter
+- name: import jail.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/jail-pgbouncer.conf.j2
+    dest: /etc/fail2ban/jail.d/pgbouncer.conf
+  become: yes
+
+- name: import filter.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/filter-pgbouncer.conf.j2
+    dest: /etc/fail2ban/filter.d/pgbouncer.conf
+  become: yes
+
+# Add systemd file for PgBouncer
+- name: PgBouncer - import postgresql.service
+  template:
+    src: files/pgbouncer_config/pgbouncer.service.j2
+    dest: /etc/systemd/system/pgbouncer.service
+  become: yes
+
+- name: PgBouncer - reload systemd
+  systemd:
+    daemon_reload: yes

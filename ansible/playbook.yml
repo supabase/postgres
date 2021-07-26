@@ -3,24 +3,70 @@
 
   pre_tasks:
     - import_tasks: tasks/setup-system.yml
-  
+
   vars_files:
     - ./vars.yml
-  
-  roles:
-    - role: anxs.postgresql
+
+  vars:
+    sql_files:
+      - { source: "stat_extension.sql", dest: "01-extension.sql" }
+
+  environment:
+    PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
   tasks:
-    - name: Install non-Postgres extensions
-      import_tasks: tasks/setup-misc.yml
+    - name: Install Postgres from source
+      import_tasks: tasks/setup-postgres.yml
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
 
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
+
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
+
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      tags:
+        - install-pgbouncer
+
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      tags:
+        - install-postgrest
+        
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
+
     - name: Adjust APT update intervals
-      copy: 
+      copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
+
+    - name: Transfer init SQL files
+      copy:
+        src: files/{{ item.source }}
+        dest: /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
+
+    - name: Execute init SQL files
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
+
+    - name: Delete SQL scripts
+      file:
+        path: /tmp/{{ item.dest }}
+        state: absent
+      loop: "{{ sql_files }}"
 
     - name: UFW - Allow SSH connections
       ufw:
@@ -30,10 +76,46 @@
     - name: UFW - Allow connections to postgreSQL (5432)
       ufw:
         rule: allow
-        port: '5432'
+        port: "5432"
 
-    - name: UFW - Deny all other incoming traffix by default
-      ufw: 
+    - name: UFW - Allow connections to postgreSQL (6543)
+      ufw:
+        rule: allow
+        port: "6543"
+      tags:
+        - install-pgbouncer
+
+    - name: UFW - Deny all other incoming traffic by default
+      ufw:
         state: enabled
         policy: deny
         direction: incoming
+
+    - name: Setup logrotate for postgres logs
+      copy:
+        src: files/logrotate-postgres
+        dest: /etc/logrotate.d/postgres
+
+    - name: Configure logrotation to run every hour
+      shell:
+        cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/
+      become: yes
+
+    - name: restart crond
+      systemd:
+        state: restarted
+        name: cron
+      become: yes
+
+    - name: Enhance fail2ban
+      import_tasks: tasks/setup-fail2ban.yml
+
+    # Install EC2 instance connect
+    # Only for AWS images
+    - name: install EC2 instance connect
+      become: yes
+      apt:
+        pkg:
+          - ec2-instance-connect
+      tags:
+        - aws-only

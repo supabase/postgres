@@ -1,0 +1,40 @@
+- name: AWS CLI dep
+  apt:
+    pkg:
+      - unzip
+      - jq
+    install_recommends: no
+
+- name: AWS CLI (arm)
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
+    dest: "/tmp/awscliv2.zip"
+  when: platform == "arm64"
+
+- name: AWS CLI (x86)
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
+    dest: "/tmp/awscliv2.zip"
+  when: platform == "amd64"
+
+- name: AWS CLI - expand
+  unarchive:
+    remote_src: yes
+    src: "/tmp/awscliv2.zip"
+    dest: "/tmp"
+
+- name: AWS CLI - install
+  shell: "/tmp/aws/install"
+  become: true
+
+- name: Install Postgres exporter
+  import_tasks: internal/postgres-exporter.yml
+
+- name: Install node exporter
+  import_tasks: internal/node-exporter.yml
+
+- name: Install supautils
+  import_tasks: internal/supautils.yml
+
+- name: Boot time optimizations
+  import_tasks: internal/optimizations.yml

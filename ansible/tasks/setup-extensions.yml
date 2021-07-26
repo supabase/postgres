@@ -1,271 +1,38 @@
-# postgis
-- name: Install postgis for postgreSQL versions < 10
-  apt:
-    pkg:
-    - libgeos-c1v5
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
-    - "postgresql-{{ postgresql_version }}-postgis-scripts"
-    update_cache: yes
-    cache_valid_time: 3600
-  when: postgresql_version < 10
+- name: Install postgis
+  import_tasks: tasks/postgres-extensions/01-postgis.yml
 
-- name: Install postgis for postgreSQL versions >= 10
-  apt:
-    pkg:
-    - libgeos-c1v5
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}"
-    - "postgresql-{{ postgresql_version }}-postgis-{{ postgresql_ext_postgis_version }}-scripts"
-    update_cache: yes
-    cache_valid_time: 3600
-  when: postgresql_version >= 10
+- name: Install pgrouting
+  import_tasks: tasks/postgres-extensions/02-pgrouting.yml
 
-# pgTAP
-- name: pgTAP - download latest release
-  get_url:
-    url: "https://github.com/theory/pgtap/archive/v{{ pgtap_release }}.tar.gz"
-    dest: /tmp
-    checksum: "{{ pgtap_release_checksum }}"
+- name: Install pgtap
+  import_tasks: tasks/postgres-extensions/03-pgtap.yml
 
-- name: pgTAP - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/pgtap-{{ pgtap_release }}.tar.gz
-    dest: /tmp
-  become: yes
+- name: Install pg_cron
+  import_tasks: tasks/postgres-extensions/04-pg_cron.yml
 
-- name: pgTAP - install
-  make:
-    chdir: /tmp/pgtap-{{ pgtap_release }}
-    target: install
-  become: yes
+- name: Install pgaudit
+  import_tasks: tasks/postgres-extensions/05-pgaudit.yml
 
-# plpython
-- name: Install plpython
-  apt:
-    pkg: postgresql-plpython3-12
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Install pgjwt
+  import_tasks: tasks/postgres-extensions/06-pgjwt.yml
 
-# pgAudit
-- name: pgAudit - download & install dependencies
-  apt:
-    pkg:
-      - postgresql-server-dev-12
-      - libssl-dev
-      - libkrb5-dev
-    update_cache: yes
-    install_recommends: no
+- name: Install pgsql-http
+  import_tasks: tasks/postgres-extensions/07-pgsql-http.yml
 
-- name: pgAudit - download latest release
-  get_url:
-    url: "https://github.com/pgaudit/pgaudit/archive/{{ pgaudit_release }}.tar.gz"
-    dest: /tmp
-    checksum: "{{ pgaudit_release_checksum }}"
+- name: Install plpgsql_check
+  import_tasks: tasks/postgres-extensions/08-plpgsql_check.yml
 
-- name: pgAudit - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/pgaudit-{{ pgaudit_release }}.tar.gz
-    dest: /tmp
-  become: yes
+- name: Install pg-safeupdate
+  import_tasks: tasks/postgres-extensions/09-pg-safeupdate.yml
 
-- name: pgAudit - build
-  make: 
-    chdir: /tmp/pgaudit-{{ pgaudit_release }}
-    target: check
-    params:
-      USE_PGXS: 1
-  become: yes
+# - name: Install timescaledb
+#   import_tasks: tasks/postgres-extensions/10-timescaledb.yml
 
-- name: pgAudit - install
-  make:
-    chdir: /tmp/pgaudit-{{ pgaudit_release }}
-    target: install
-    params:
-      USE_PGXS: 1
-  become: yes
+- name: Install wal2json
+  import_tasks: tasks/postgres-extensions/11-wal2json.yml
 
-# pgjwt
-- name: pgjwt - download from master branch
-  git:
-    repo: https://github.com/michelp/pgjwt.git
-    dest: /tmp/pgjwt
-    version: master
+- name: Install pljava
+  import_tasks: tasks/postgres-extensions/12-pljava.yml
 
-- name: pgjwt - install
-  make:
-    chdir: /tmp/pgjwt
-    target: install
-  become: yes
-
-- name: Remove libcurl4 package
-  apt:
-    pkg: 
-      - libcurl4
-    state: absent
-
-# pgsql-http
-- name: pgsql-http - download & install dependencies
-  apt:
-    pkg:
-      - libcurl4-gnutls-dev
-    update_cache: yes
-    install_recommends: yes
-
-- name: pgsql-http - download latest release
-  get_url:
-    url: "https://github.com/pramsey/pgsql-http/archive/v{{ pgsql_http_release }}.tar.gz"
-    dest: /tmp
-    checksum: "{{ pgsql_http_release_checksum }}"
-
-- name: pgsql-http - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/pgsql-http-{{ pgsql_http_release }}.tar.gz
-    dest: /tmp
-  become: yes
-
-- name: pgsql-http - build
-  make: 
-    chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
-  become: yes
-
-- name: pgsql-http - install
-  make:
-    chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
-    target: install
-  become: yes
-
-# plpgsql_check
-- name: plpgsql_check - download & install dependencies
-  apt:
-    pkg:
-      - libicu-dev
-    update_cache: yes
-    install_recommends: no
-
-- name: plpgsql_check - download latest release
-  get_url:
-    url: https://github.com/okbob/plpgsql_check/archive/v{{ plpgsql_check_release }}.tar.gz
-    dest: /tmp
-    checksum: "{{ plpgsql_check_release_checksum }}"
-
-- name: plpgsql_check - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
-    dest: /tmp
-  become: yes
-
-- name: plpgsql_check - clean
-  make: 
-    chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
-    target: clean
-  become: yes
-
-- name: plpgsql_check - install
-  make:
-    chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
-    target: install
-  become: yes
-
-# pljava
-- name: pljava - download & install dependencies
-  apt:
-    pkg:
-      - maven
-      - default-jre
-      - default-jdk
-    update_cache: yes
-    install_recommends: yes
-
-- name: pljava - download latest release
-  get_url:
-    url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
-    dest: /tmp
-    checksum: "{{ pljava_release_checksum }}"
-
-- name: pljava - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/pljava-{{ pljava_release }}.tar.gz 
-    dest: /tmp
-  become: yes
-
-- name: pljava - build
-  become: yes
-  shell:  
-    cmd: mvn clean install
-    chdir: /tmp/pljava-{{ pljava_release }}
-
-- name: pljava - install
-  become: yes
-  shell:  
-    cmd: java -jar pljava-packaging/target/pljava-pg12.3-amd64-Linux-gpp.jar
-    chdir: /tmp/pljava-{{ pljava_release }}
-
-- name: pljava - remove build dependencies
-  apt:
-    pkg:
-      - maven
-      - default-jre
-      - default-jdk
-    state: absent
-
-- name: pljava - install headless jdk
-  apt:
-    pkg:
-      - default-jdk-headless
-    update_cache: yes
-    install_recommends: no
-
-- name: pljava - set pljava.libjvm_location
-  become: yes
-  shell:  
-    cmd: echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so'" >> /etc/postgresql/12/main/postgresql.conf
-
-- name: pljava - remove ~/.m2 directory
-  become: yes
-  file:
-    path: ~/.m2
-    state: absent
-
-# plv8
-- name: plv8 - download & install dependencies
-  apt:
-    pkg:
-      - build-essential
-      - ca-certificates
-      - curl
-      - git-core
-      - gpp
-      - cpp
-      - pkg-config
-      - apt-transport-https
-      - cmake
-      - libc++-dev
-      - libc++abi-dev
-      - postgresql-server-dev-12
-      - libc++1
-      - libtinfo5
-      - libc++abi1
-    update_cache: yes
-    install_recommends: no
-
-- name: plv8 - download latest release
-  git:
-    repo: https://github.com/plv8/plv8.git
-    dest: /tmp/plv8
-    version: r3.0alpha
-  become: yes
-
-- name: plv8 - build
-  make: 
-    chdir: /tmp/plv8
-  become: yes
-
-- name: plv8 - install
-  make:
-    chdir: /tmp/plv8
-    target: install
-  become: yes
+- name: Install plv8
+  import_tasks: tasks/postgres-extensions/13-plv8.yml

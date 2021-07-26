@@ -1,0 +1,52 @@
+- name: Preparing Docker container
+  hosts: localhost
+  tasks:
+  - name: Pull Postgres Image
+    docker_container:
+      name: "supabase-postgres-build"
+      image: "postgres:13.3"
+      env:
+        LANGUAGE: "en_US.UTF-8"
+        LANG: "en_US.UTF-8"
+        LC_ALL: "en_US.UTF-8"
+      state: started
+      memory: 4G
+      memory_swap: 6G
+      command: tail -f /dev/null
+  - name: Add Postgres Image to Ansible Hosts
+    add_host:
+      name: "supabase-postgres-build"
+      ansible_connection: docker
+      ansible_ssh_user: root
+
+- name: Build Supabase Postgres
+  hosts: "supabase-postgres-build"
+  gather_facts: false
+
+  vars_files:
+    - ./vars.yml
+
+  tasks:
+    - name: Setup container
+      import_tasks: tasks/docker/setup.yml
+
+    - name: Install Postgres extensions
+      import_tasks: tasks/setup-extensions.yml
+
+    - name: Cleanup container
+      import_tasks: tasks/docker/cleanup.yml
+
+- name: Create supabase/postgres docker image
+  hosts: localhost
+  tasks:
+    - name: Commit Docker image
+      command: docker commit --change='CMD ["postgres"]' "supabase-postgres-build" "supabase/postgres"
+
+- name: Clean Up Postgres Image
+  hosts: localhost
+  tasks:
+    - name: Remove Running Base Image
+      docker_container:
+        name: supabase-postgres-build
+        state: absent
+        force_kill: yes

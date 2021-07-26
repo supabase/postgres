@@ -1,0 +1,165 @@
+# Downloading dependencies
+- name: Postgres dependencies
+  become: yes
+  apt:
+    pkg:
+      - build-essential
+      - libreadline-dev
+      - zlib1g-dev
+      - flex
+      - bison
+      - libxml2-dev
+      - libxslt-dev
+      - libssl-dev
+      - libsystemd-dev
+      - libpq-dev
+      - libxml2-utils
+      - uuid-dev
+      - xsltproc
+      - ssl-cert
+
+- name: Download LLVM & Clang
+  become: yes
+  apt:
+    pkg:
+      - llvm-11-dev
+      - clang-11
+
+- name: Download GCC 10
+  become: yes
+  apt:
+    pkg:
+      - gcc-10
+      - g++-10
+
+- name: Switch to GCC 10
+  shell:
+    cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+  become: yes
+
+# Building Postgres from source
+- name: Postgres - download latest release
+  get_url:
+    url: https://ftp.postgresql.org/pub/source/v{{ postgresql_release }}/postgresql-{{ postgresql_release }}.tar.gz
+    dest: /tmp
+    checksum: "{{ postgresql_release_checksum }}"
+
+- name: Postgres - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/postgresql-{{ postgresql_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: Setting CFLAGS (arm)
+  set_fact:
+    cflags: "-moutline-atomics -mtune=neoverse-n1 -fsigned-char"
+    when: platform == "arm64"
+
+- name: Setting CFLAGS (x86)
+  set_fact:
+    cflags: "-fsigned-char"
+    when: platform == "amd64"
+
+- name: Postgres - configure
+  shell:
+    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    chdir: /tmp/postgresql-{{ postgresql_release }}
+  become: yes
+
+- name: Postgres - build
+  make:
+    target: world
+    chdir: /tmp/postgresql-{{ postgresql_release }}
+  become: yes
+
+- name: Postgres - install
+  make:
+    target: install-world
+    chdir: /tmp/postgresql-{{ postgresql_release }}
+  become: yes
+
+# Create postgres user
+- name: Create postgres user
+  user:
+    name: postgres
+    shell: /bin/false
+    comment: Postgres user
+    groups: ssl-cert
+
+- name: Recursively change ownership of a directory
+  file:
+    path: /var/lib/postgresql
+    state: directory
+    recurse: yes
+    owner: postgres
+    group: postgres
+
+# Create /etc/postgresql directory and make sure postgres group owns it
+- name: Create a directory if it does not exist
+  file:
+    path: /etc/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+
+# Move Postgres configuration files into /etc/postgresql
+# Add postgresql.conf
+- name: import postgresql.conf
+  template:
+    src: files/postgresql_config/postgresql.conf.j2
+    dest: /etc/postgresql/postgresql.conf
+    group: postgres
+
+# Add pg_hba.conf
+- name: import pg_hba.conf
+  template:
+    src: files/postgresql_config/pg_hba.conf.j2
+    dest: /etc/postgresql/pg_hba.conf
+    group: postgres
+
+# Add pg_ident.conf
+- name: import pg_ident.conf
+  template:
+    src: files/postgresql_config/pg_ident.conf.j2
+    dest: /etc/postgresql/pg_ident.conf
+    group: postgres
+
+- name: Find all files in /usr/lib/postgresql/bin
+  find:
+    paths: /usr/lib/postgresql/bin
+  register: postgresql_bin
+
+- name: Create symbolic links for Postgres binaries to /usr/bin/
+  become: True
+  file:
+    src: "{{ item.path }}"
+    path: "/usr/bin/{{ item.path | basename }}"
+    state: link
+    force: yes
+  with_items: "{{ postgresql_bin.files }}"
+
+# init DB
+- name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+  vars:
+    ansible_command_timeout: 60
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
+
+# Add systemd file for Postgres
+- name: import postgresql.service
+  template:
+    src: files/postgresql_config/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+  become: yes
+
+# Reload
+- name: System - systemd reload
+  systemd:
+    enabled: yes
+    name: postgresql
+    daemon_reload: yes

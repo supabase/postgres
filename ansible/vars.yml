@@ -1,42 +1,71 @@
-postgresql_version: 12
-postgresql_wal_level: "logical"
-postgresql_max_wal_senders: 10
-postgresql_max_replication_slots: 5
-postgresql_row_security: on
-postgresql_listen_addresses:
-  - "*"
+supabase_internal: true
 
-postgresql_ext_install_contrib: yes
-postgresql_ext_install_dev_headers: yes
+postgresql_major: "13"
+postgresql_release: "13.3"
+postgresql_release_checksum: sha1:aeb645988b1ec9ffbb2fc0a49d9055d3ab17affa
 
-# Warning: Make sure the postgresql & postgis versions are compatible with one another
-postgresql_ext_postgis_version: 3
+# Non Postgres Extensions
+pgbouncer_release: "1.15.0"
+pgbouncer_release_checksum: sha1:ea7e9dbcab178f439a0fa402a78a7f1e4f43e6d4
 
-postgresql_shared_preload_libraries: [pg_stat_statements, pgaudit, plpgsql, plpgsql_check ]
+postgrest_arm_release: 2021-03-05-19-03-d3a8b5f-ubuntu-aarch64
+postgrest_arm_release_checksum: sha1:b9e9b06ead7230b75033e8ae17912714bf463a33
 
-postgresql_pg_hba_custom:
-  - {type: "host", database: "all", user: "all", address: "0.0.0.0/0", method: "md5" }
+postgrest_x86_release: 2021-03-05-19-03-d3a8b5f-linux-x64-static
+postgrest_x86_release_checksum: sha1:4b4adde15f0d41d65a9136d1f8c0d9cd6fe79326
+
+aws_cli_release: "2.2.7"
+
+golang_version: "1.15.4"
+wal_g_release: "0.2.15"
+wal_g_release_checksum: sha1:e82d405121e0ccc322a323b9824e60c102b14004
+
+sfcgal_release: "1.3.10"
+sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
+
+postgres_exporter_release: "0.9.0"
+postgres_exporter_release_checksum:
+  arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
+  amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
+
+node_exporter_release: 1.1.2
+node_exporter_release_checksum:
+  arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
+  amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
+
+# Postgres Extensions
+postgis_release: "3.1.2"
+postgis_release_checksum: sha1:622f52f3bf338c8e51ea6d73d30d6a5d3140c517
+
+pgrouting_release: "3.2.0"
+pgrouting_release_checksum: sha1:d902d449ebc96b6cdcb2fac09434d0098467cda5
 
 pgtap_release: "1.1.0"
 pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
 
-pgaudit_release: "1.4.0"
-pgaudit_release_checksum: sha1:ea085fbf227b5c461331ab33b99579f37db299a6
+pg_cron_release: "1.3.1"
+pg_cron_release_checksum: sha1:679b6ff54e0b1070a5fd713c5d25c3378f371fac
+
+pgaudit_release: "1.5.0"
+pgaudit_release_checksum: sha1:8429125e8f70fcaa2c2f5a0e22b910a4afb821a4
 
 pgsql_http_release: "1.3.1"
 pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
 
-plpgsql_check_release: "1.11.0"
-plpgsql_check_release_checksum: sha1:395313b6ef9c10c4fc182817d6f0040b171147b8
+plpgsql_check_release: "1.16.0"
+plpgsql_check_release_checksum: sha1:626553fc2746fe10aa5a776a1229baf2af3365fc
 
-pljava_release: "1_5_5"
-pljava_release_checksum: sha1:5277433030fdeed8528c7c0154163b54aedbd842
+pg_safeupdate_release: "1.3"
+pg_safeupdate_release_checksum: sha1:34a0353611bfd63f7ea760aac2afcb518bf3ba7c
 
-postgresql_log_destination: "csvlog"
-postgresql_logging_collector: on
-postgresql_log_filename: "postgresql.log"
-postgresql_log_rotation_age: 0
-postgresql_log_rotation_size: 0
+timescaledb_release: "2.3.0"
 
-wal_g_release: "0.2.15"
-wal_g_release_checksum: sha1:e82d405121e0ccc322a323b9824e60c102b14004
+wal2json_release: "2_3"
+wal2json_release_checksum: sha1:923f9bbcd0505a1f0b6eac1d371e4ff2d266a958
+
+supautils_release: "1.1.0"
+supautils_release_checksum: sha1:326ac5c1933bd30d4a50da7568b27629a9ec544b
+
+pljava_release: "1_6_2"
+pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
+
