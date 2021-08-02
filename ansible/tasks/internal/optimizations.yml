@@ -13,3 +13,21 @@
     - postgresql
     - pgbouncer
     - fail2ban
+    - man-db
+    - motd-news
+
+- name: Setup - install common dependencies
+  apt:
+    state: absent
+    pkg:
+      - snapd
+
+- name: ensure services are stopped and disabled for first boot
+  systemd:
+    enabled: no
+    name: '{{ item }}'
+    state: stopped
+    masked: yes
+  with_items:
+    - lvm2-monitor
+    - man-db
