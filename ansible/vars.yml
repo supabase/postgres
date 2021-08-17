@@ -1,12 +1,12 @@
 supabase_internal: true
 
 postgresql_major: "13"
-postgresql_release: "13.3"
-postgresql_release_checksum: sha1:aeb645988b1ec9ffbb2fc0a49d9055d3ab17affa
+postgresql_release: "13.4"
+postgresql_release_checksum: sha1:100ab62f9ef5dbd90f83c5da284e24ab0070ddb4
 
 # Non Postgres Extensions
-pgbouncer_release: "1.15.0"
-pgbouncer_release_checksum: sha1:ea7e9dbcab178f439a0fa402a78a7f1e4f43e6d4
+pgbouncer_release: "1.16.0"
+pgbouncer_release_checksum: sha1:7d4b7e1110387df2245b22de3168884fdc8092c4
 
 postgrest_arm_release: 2021-03-05-19-03-d3a8b5f-ubuntu-aarch64
 postgrest_arm_release_checksum: sha1:b9e9b06ead7230b75033e8ae17912714bf463a33
