@@ -84,11 +84,11 @@ local  all  all    peer
 # IPv4 local connections:
 host  all  all  127.0.0.1/32  trust
 # IPv6 local connections:
-host  all  all  ::1/128  md5
+host  all  all  ::1/128  scram-sha-256
 # Local root Unix user, passwordless access
 local  all  postgres    peer map=root_as_postgres
 # IPv4 external connections
-host  all  all  0.0.0.0/0  md5
+host  all  all  0.0.0.0/0  scram-sha-256
 
 # MD5 hashed password hosts
 

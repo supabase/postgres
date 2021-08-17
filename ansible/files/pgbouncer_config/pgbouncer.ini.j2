@@ -113,7 +113,7 @@ unix_socket_dir = /tmp
 ;;;
 
 ;; any, trust, plain, md5, cert, hba, pam
-auth_type = md5
+auth_type = scram-sha-256
 auth_file = /etc/pgbouncer/userlist.txt
 
 ;; Path to HBA-style auth config
