@@ -37,6 +37,14 @@
     update_cache: yes
     cache_valid_time: 3600
 
+- name: Install other useful tools
+  become: yes
+  apt:
+    pkg:
+      - magic-wormhole
+      - sysstat
+    update_cache: yes
+
 - name: Adjust APT update intervals
   copy:
     src: files/apt_periodic
