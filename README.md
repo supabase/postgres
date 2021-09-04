@@ -37,7 +37,7 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 ## Additional Goodies
 | Goodie | Description |
 | ------------- | ------------- |
-| [PgBouncer](https://postgis.net/) | Set up Connection Pooling. |
+| [PgBouncer](https://www.pgbouncer.org/) | Set up Connection Pooling. |
 | [PostgREST](https://postgrest.org/en/stable/) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | Tool for physical database backup and recovery. |
 
