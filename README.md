@@ -77,11 +77,9 @@ $ time packer build -timestamp-ui \
 
 ## Motivation
 
-After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they _still_ choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again.
-
-Our secondary goal is to show off a few of Postgres' most exciting features. This is to convince new developers to choose it over other database (a decision we hope they'll appreciate once they start scaling).
-
-Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to _install_ Postgres, Supabase makes it easy to _use_ Postgres.
+- Make it fast and simple to get started with Postgres.
+- Show off a few of Postgres' most exciting features.
+- This is the same build we offer at [Supabase](https://supabase.io).
 
 ## Roadmap
 
