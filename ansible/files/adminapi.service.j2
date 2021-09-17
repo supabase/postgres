@@ -1,0 +1,16 @@
+[Unit]
+Description=AdminAPI
+
+[Service]
+Type=simple
+ExecStart=/opt/supabase-admin-api
+User=adminapi
+StandardOutput=append:/var/log/adminapi.stdout
+StandardError=append:/var/log/adminapi.error
+Restart=always
+RestartSec=3
+
+EnvironmentFile=/etc/adminapi.env
+
+[Install]
+WantedBy=multi-user.target
