@@ -10,7 +10,7 @@ StandardError=append:/var/log/postgres_exporter.error
 Restart=always
 RestartSec=3
 Environment="DATA_SOURCE_URI=localhost/postgres?sslmode=disable"
-Environment="DATA_SOURCE_USER=supabase_admin"
+Environment="DATA_SOURCE_USER=supabase_metrics"
 
 [Install]
 WantedBy=multi-user.target
