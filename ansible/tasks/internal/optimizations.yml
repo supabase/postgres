@@ -39,3 +39,12 @@
     - man-db
     - popularity-contest
     - ubuntu-advantage-tools
+
+- name: remove docs, package archives
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - /usr/share/doc
+    - /usr/share/man
+    - /var/cache/apt/archives
