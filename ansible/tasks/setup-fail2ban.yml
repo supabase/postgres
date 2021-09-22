@@ -26,6 +26,7 @@
     line: "{{ item.line }}"
   loop:
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_admin".*$' }
+    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_metrics".*$' }
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$' }
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$' }
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$' }
