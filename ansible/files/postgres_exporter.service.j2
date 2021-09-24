@@ -9,8 +9,7 @@ StandardOutput=append:/var/log/postgres_exporter.stdout
 StandardError=append:/var/log/postgres_exporter.error
 Restart=always
 RestartSec=3
-Environment="DATA_SOURCE_URI=localhost/postgres?sslmode=disable"
-Environment="DATA_SOURCE_USER=supabase_metrics"
+Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_statements.track=none"
 
 [Install]
 WantedBy=multi-user.target

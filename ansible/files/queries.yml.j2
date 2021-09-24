@@ -201,9 +201,7 @@ supabase_usage_metrics:
   query: |
       select sum(calls) as user_queries_total
       from extensions.pg_stat_statements
-               join pg_roles on userid = oid
-      where rolname <> 'supabase_metrics'
-        and query not like 'SELECT%FROM net.http_request_queue%'
+      where query not like 'SELECT%FROM net.http_request_queue%'
         and query not like 'DELETE FROM net.http_request_queue%'
         and query <> 'SELECT version()'
         -- the rest of these would get removed once we implement a more minimal healthcheck endpoint for postgrest
