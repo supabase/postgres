@@ -3,13 +3,13 @@ Description=Postgres Exporter
 
 [Service]
 Type=simple
-ExecStart=/opt/postgres_exporter/postgres_exporter --auto-discover-databases --disable-settings-metrics --extend.query-path="/opt/postgres_exporter/queries.yml" --disable-default-metrics
+ExecStart=/opt/postgres_exporter/postgres_exporter --disable-settings-metrics --extend.query-path="/opt/postgres_exporter/queries.yml" --disable-default-metrics
 User=root
 StandardOutput=append:/var/log/postgres_exporter.stdout
 StandardError=append:/var/log/postgres_exporter.error
 Restart=always
 RestartSec=3
-Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_statements.track=none"
+Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_statements.track=none application_name=postgres_exporter"
 
 [Install]
 WantedBy=multi-user.target
