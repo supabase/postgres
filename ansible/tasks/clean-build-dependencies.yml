@@ -1,0 +1,34 @@
+- name: Remove build dependencies
+  apt:
+    pkg:
+      - bison
+      - build-essential
+      - clang-11
+      - cmake
+      - cpp
+      - flex
+      - g++
+      - g++-10
+      - g++-9
+      - gcc-10
+      - libc++-dev
+      - libcgal-dev
+      - libgeos-dev
+      - libgmp-dev
+      - libjson-c-dev
+      - libkrb5-dev
+      - libmpfr-dev
+      - libpq-dev
+      - libproj-dev
+      - libreadline-dev
+      - libssl-dev
+      - libsystemd-dev
+      - libtinfo5
+      - libxml2-dev
+      - libxslt-dev
+      - llvm-11-dev
+      - ninja-build
+      - python2
+      - zlib1g-dev
+    state: absent
+    autoremove: yes

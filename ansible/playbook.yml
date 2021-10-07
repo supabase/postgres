@@ -44,6 +44,9 @@
       tags:
         - install-supabase-internal
 
+    - name: Clean out build dependencies
+      import_tasks: tasks/clean-build-dependencies.yml
+
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic
