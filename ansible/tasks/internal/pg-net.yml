@@ -1,0 +1,17 @@
+- name: build pg_net
+  shell:
+    cmd: |
+      cd /tmp
+      git clone --depth 1 --branch v0.2 https://github.com/supabase/pg_net.git
+      cd pg_net
+      make
+
+- name: install pg_net
+  become: yes
+  shell:
+    cmd: |
+      cd /tmp/pg_net
+      make install
+      cd ../
+      rm -rf pg_net
+      sed -i "s/shared_preload_libraries = '/shared_preload_libraries = 'pg_net,/" /etc/postgresql/postgresql.conf
