@@ -1,0 +1,18 @@
+- name: install ansible
+  shell:
+    cmd: |
+      sudo apt install -y software-properties-common
+      sudo add-apt-repository --yes --update ppa:ansible/ansible
+      sudo apt install -y ansible
+
+- name: ansible pull systemd units
+  copy:
+    src: files/{{ item }}
+    dest: /etc/systemd/system/{{ item }}
+  with_items:
+    - ansible-pull.service
+    - ansible-pull.timer
+
+- name: enable systemd
+  systemd:
+    daemon_reload: yes

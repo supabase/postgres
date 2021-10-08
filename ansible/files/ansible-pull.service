@@ -1,0 +1,16 @@
+[Unit]
+Description=Ansible pull
+
+[Service]
+Type=simple
+User=ubuntu
+
+ExecStart=/usr/bin/ansible-pull --private-key "$SSH_READ_KEY_FILE" -U "$REPO" --accept-host-key -t $REGION,$AZ,pg13,all -i localhost --clean --full "$PLAYBOOK" -v -o -C "$REPO_BRANCH"
+
+MemoryAccounting=true
+MemoryMax=30%
+
+StandardOutput=append:/var/log/ansible-pull.stdout
+StandardError=append:/var/log/ansible-pull.error
+
+TimeoutStopSec=600
