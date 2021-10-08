@@ -33,11 +33,6 @@
     src: files/postgres_exporter.service.j2
     dest: /etc/systemd/system/postgres_exporter.service
 
-- name: exporter copy over queries
-  template:
-    src: files/queries.yml.j2
-    dest: /opt/postgres_exporter/queries.yml
-
 - name: exporter ensure service is present
   systemd:
     enabled: no
