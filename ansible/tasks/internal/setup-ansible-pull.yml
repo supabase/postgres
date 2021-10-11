@@ -13,6 +13,16 @@
     - ansible-pull.service
     - ansible-pull.timer
 
-- name: enable systemd
+- name: create facts dir
+  file:
+    path: /etc/ansible/facts.d
+    state: directory
+
+- name: ansible facts
+  copy:
+    src: files/supabase_facts.ini
+    dest: /etc/ansible/facts.d/supabase.fact
+
+- name: reload systemd
   systemd:
     daemon_reload: yes

@@ -5,7 +5,7 @@ Description=Ansible pull
 Type=simple
 User=ubuntu
 
-ExecStart=/usr/bin/ansible-pull --private-key "$SSH_READ_KEY_FILE" -U "$REPO" --accept-host-key -t $REGION,$AZ,pg13,all -i localhost --clean --full "$PLAYBOOK" -v -o -C "$REPO_BRANCH"
+ExecStart=/usr/bin/ansible-pull --private-key "$SSH_READ_KEY_FILE" -U "$REPO" --accept-host-key -t "$REGION,$AZ,db-all" -i localhost --clean --full "$PLAYBOOK" -v -o -C "$REPO_BRANCH" --verify-commit
 
 MemoryAccounting=true
 MemoryMax=30%
