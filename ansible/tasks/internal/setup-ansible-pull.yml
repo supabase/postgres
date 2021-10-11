@@ -1,9 +1,10 @@
 - name: install ansible
   shell:
     cmd: |
-      sudo apt install -y software-properties-common
-      sudo add-apt-repository --yes --update ppa:ansible/ansible
-      sudo apt install -y ansible
+      apt install -y software-properties-common
+      add-apt-repository --yes --update ppa:ansible/ansible
+      apt install -y ansible
+      sed -i -e 's/#callback_whitelist.*/callback_whitelist = profile_tasks/' /etc/ansible/ansible.cfg
 
 - name: ansible pull systemd units
   copy:
