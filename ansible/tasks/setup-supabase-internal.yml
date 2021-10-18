@@ -27,6 +27,18 @@
   shell: "/tmp/aws/install"
   become: true
 
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_x86_deb }}"
+  when: platform == "amd64"
+
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_arm_deb }}"
+  when: platform == "arm64"
+
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
