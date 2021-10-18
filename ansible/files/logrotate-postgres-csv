@@ -1,0 +1,11 @@
+/var/lib/postgresql/data/pg_log/postgresql.csv {
+    size 50M
+    rotate 9
+    compress
+    delaycompress
+    notifempty
+    missingok
+    postrotate
+        sudo -u postgres pg_ctl -D /var/lib/postgresql/data logrotate
+    endscript
+}

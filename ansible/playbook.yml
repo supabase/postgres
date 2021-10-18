@@ -96,6 +96,11 @@
         src: files/logrotate-postgres
         dest: /etc/logrotate.d/postgres
 
+    - name: Setup logrotate for postgres CSV logs
+      copy:
+        src: files/logrotate-postgres-csv
+        dest: /etc/logrotate.d/postgres-csv
+
     - name: Configure logrotation to run every hour
       shell:
         cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/
