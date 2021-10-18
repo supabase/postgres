@@ -74,3 +74,6 @@ supautils_release_checksum: sha1:326ac5c1933bd30d4a50da7568b27629a9ec544b
 pljava_release: "1_6_2"
 pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
 
+
+vector_x86_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-amd64.deb'
+vector_arm_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-arm64.deb'
