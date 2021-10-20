@@ -440,11 +440,11 @@ logging_collector = on		# Enable capturing of stderr and csvlog
 					# (change requires restart)
 
 # These are only used if logging_collector is on:
-log_directory = 'pg_log'			# directory where log files are written,
+log_directory = '/var/log/postgresql'			# directory where log files are written,
 					# can be absolute or relative to PGDATA
 log_filename = 'postgresql.log'	# log file name pattern,
 					# can include strftime() escapes
-# log_file_mode = 0600			# creation mode for log files,
+log_file_mode = 0640			# creation mode for log files,
 					# begin with 0 to use octal notation
 log_rotation_age = 0			# Automatic rotation of logfiles will
 					# happen after that time.  0 disables.

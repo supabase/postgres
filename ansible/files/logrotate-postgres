@@ -1,4 +1,4 @@
-/var/lib/postgresql/data/pg_log/postgresql.log {
+/var/log/postgresql/postgresql.log {
     size 50M
     rotate 3  
     copytruncate

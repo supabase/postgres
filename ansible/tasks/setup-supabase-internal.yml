@@ -39,6 +39,12 @@
     deb: "{{ vector_arm_deb }}"
   when: platform == "arm64"
 
+- name: add Vector to postgres group
+  become: yes
+  shell:
+    cmd: |
+      usermod -a -G postgres vector
+
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
