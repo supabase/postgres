@@ -45,6 +45,13 @@
     cmd: |
       usermod -a -G postgres vector
 
+- name: Create checkpoints dir
+  become: yes
+  file:
+    path: /var/lib/vector
+    state: directory
+    owner: vector
+
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
