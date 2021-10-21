@@ -127,3 +127,12 @@
           - ec2-instance-connect
       tags:
         - aws-only
+
+    # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
+    - name: Install security tools
+      become: yes
+      apt:
+        pkg:
+          - unattended-upgrades
+        update_cache: yes
+        cache_valid_time: 3600
