@@ -6,7 +6,7 @@
     "ami": "",
     "ami_name": "",
     "environment": "prod",
-    "ansible_arguments": "--skip-tags,update-only,--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
+    "ansible_arguments": "--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
   },
   "builders": [
     {
