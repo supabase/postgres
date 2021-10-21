@@ -41,5 +41,5 @@
   become: yes
   replace:
     path: /etc/postgresql/postgresql.conf
-    regexp: session_preload_libraries = '
-    replace: session_preload_libraries = 'supautils,
+    regexp: session_preload_libraries = ''
+    replace: session_preload_libraries = 'supautils'
