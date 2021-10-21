@@ -37,9 +37,9 @@
     state: present
     line: supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'
 
-- name: supautils - add supautils to shared_preload_libraries
+- name: supautils - add supautils to session_preload_libraries
   become: yes
   replace:
     path: /etc/postgresql/postgresql.conf
-    regexp: shared_preload_libraries = '
-    replace: shared_preload_libraries = 'supautils,
+    regexp: session_preload_libraries = '
+    replace: session_preload_libraries = 'supautils,
