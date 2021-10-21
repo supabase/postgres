@@ -5,7 +5,7 @@
     dest: /tmp/pg_net-{{ pg_net_release }}.tar.gz
     checksum: "{{ pg_net_release_checksum }}"
 
-  - name: pg_net - unpack archive
+- name: pg_net - unpack archive
   unarchive:
     remote_src: yes
     src: /tmp/pg_net-{{ pg_net_release }}.tar.gz
