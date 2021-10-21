@@ -24,6 +24,8 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [wal2json](https://github.com/eulerto/wal2json) | JSON output plugin for logical replication decoding. |
 | [PL/Java](https://github.com/tada/pljava) | Write in Java functions in Postgres. |
 | [plv8](https://github.com/plv8/plv8) | Write in Javascript functions in Postgres. |
+| [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | Only allow statements that fulfill set criteria to be executed. |
+| [pg_net](https://github.com/supabase/pg_net) | Expose the SQL interface for async networking. |
 
 Can't find your favorite extension? Suggest for it to be added into future versions [here](https://github.com/supabase/supabase/discussions/679)!
 
