@@ -36,3 +36,9 @@
 
 - name: Install plv8
   import_tasks: tasks/postgres-extensions/13-plv8.yml
+
+- name: Install pg_plan_filter
+  import_tasks: tasks/postgres-extensions/14-pg_plan_filter.yml
+
+- name: Install pg_net
+  import_tasks: tasks/postgres-extensions/15-pg_net.yml
