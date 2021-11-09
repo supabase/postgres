@@ -103,6 +103,14 @@
     owner: postgres
     group: postgres
 
+- name: Create logs dir
+  become: yes
+  file:
+    path: /var/log/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+
 # Move Postgres configuration files into /etc/postgresql
 # Add postgresql.conf
 - name: import postgresql.conf
