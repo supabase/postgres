@@ -39,47 +39,47 @@ adminapi_release_checksum:
   amd64: sha256:a15eb38d633aaf8d227c1d1a82cdf1359b85624a96f80cf826c664d779767dd7
 
 # Postgres Extensions
-postgis_release: "3.1.2"
-postgis_release_checksum: sha1:622f52f3bf338c8e51ea6d73d30d6a5d3140c517
+postgis_release: "3.1.4"
+postgis_release_checksum: sha1:3077da5136841d9d51a4325a233be8eccf763c38
 
-pgrouting_release: "3.2.0"
-pgrouting_release_checksum: sha1:d902d449ebc96b6cdcb2fac09434d0098467cda5
+pgrouting_release: "3.2.2"
+pgrouting_release_checksum: sha1:56596fa6e22104572d61296e1fa25e7918c79671
 
 pgtap_release: "1.1.0"
 pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
 
-pg_cron_release: "1.3.1"
-pg_cron_release_checksum: sha1:679b6ff54e0b1070a5fd713c5d25c3378f371fac
+pg_cron_release: "1.4.1"
+pg_cron_release_checksum: sha1:411cb25b64a3aefc26e9b0c9d9de205cbeefe631
 
-pgaudit_release: "1.5.0"
-pgaudit_release_checksum: sha1:8429125e8f70fcaa2c2f5a0e22b910a4afb821a4
+pgaudit_release: "1.6.1"
+pgaudit_release_checksum: sha1:2fae2690d38a1822b6e8f40ad6b2bd8669498659
 
 pgsql_http_release: "1.3.1"
 pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
 
-plpgsql_check_release: "1.16.0"
-plpgsql_check_release_checksum: sha1:626553fc2746fe10aa5a776a1229baf2af3365fc
+plpgsql_check_release: "2.0.5"
+plpgsql_check_release_checksum: sha1:7fc9181f291bb0b24a7886681ab8bb837041ab62
 
 pg_safeupdate_release: "1.3"
 pg_safeupdate_release_checksum: sha1:34a0353611bfd63f7ea760aac2afcb518bf3ba7c
 
 timescaledb_release: "2.3.0"
 
-wal2json_release: "2_3"
-wal2json_release_checksum: sha1:923f9bbcd0505a1f0b6eac1d371e4ff2d266a958
+wal2json_release: "2_4"
+wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
 
 supautils_release: "1.1.1"
 supautils_release_checksum: sha1:431e1be36011026c7765dc365fa36cd5d6162f11
 
-pljava_release: "1_6_2"
-pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
+pljava_release: "1_6_3"
+pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
 
 plv8_commit_version: 3656177d384e3e02b74faa8e2931600f3690ab59
 
 pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
-pg_net_release: "0.2"
-pg_net_release_checksum: sha1:22c40ae9039778a6bf7344e4357640edf8620a7e
+pg_net_release: "0.3"
+pg_net_release_checksum: sha1:0695ad2e4e9b2a35a77dfa89bd4c5a90c622eb24
 
 vector_x86_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-amd64.deb'
 vector_arm_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-arm64.deb'
