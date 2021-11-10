@@ -27,6 +27,31 @@
   shell: "/tmp/aws/install"
   become: true
 
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_x86_deb }}"
+  when: platform == "amd64"
+
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_arm_deb }}"
+  when: platform == "arm64"
+
+- name: add Vector to postgres group
+  become: yes
+  shell:
+    cmd: |
+      usermod -a -G postgres vector
+
+- name: Create checkpoints dir
+  become: yes
+  file:
+    path: /var/lib/vector
+    state: directory
+    owner: vector
+
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
@@ -35,6 +60,12 @@
 
 - name: Install supautils
   import_tasks: internal/supautils.yml
+
+- name: Install adminapi
+  import_tasks: internal/admin-api.yml
+
+- name: Install Ansible Pull
+  import_tasks: internal/setup-ansible-pull.yml
 
 - name: Boot time optimizations
   import_tasks: internal/optimizations.yml

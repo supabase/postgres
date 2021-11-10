@@ -44,6 +44,9 @@
       tags:
         - install-supabase-internal
 
+    - name: Clean out build dependencies
+      import_tasks: tasks/clean-build-dependencies.yml
+
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic
@@ -96,9 +99,17 @@
         src: files/logrotate-postgres
         dest: /etc/logrotate.d/postgres
 
+    - name: Setup logrotate for postgres CSV logs
+      copy:
+        src: files/logrotate-postgres-csv
+        dest: /etc/logrotate.d/postgres-csv
+
     - name: Configure logrotation to run every hour
       shell:
-        cmd: mv /etc/cron.daily/logrotate /etc/cron.hourly/
+        cmd: |
+            cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
+            sed -i -e 's/daily/hourly/' /etc/systemd/system/logrotate.timer
+            systemctl reenable logrotate.timer
       become: yes
 
     - name: restart crond
@@ -119,3 +130,12 @@
           - ec2-instance-connect
       tags:
         - aws-only
+
+    # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
+    - name: Install security tools
+      become: yes
+      apt:
+        pkg:
+          - unattended-upgrades
+        update_cache: yes
+        cache_valid_time: 3600

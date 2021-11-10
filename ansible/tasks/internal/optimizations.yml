@@ -15,7 +15,7 @@
     - fail2ban
     - motd-news
 
-- name: Setup - install common dependencies
+- name: Remove snapd
   apt:
     state: absent
     pkg:

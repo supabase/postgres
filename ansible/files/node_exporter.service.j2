@@ -7,8 +7,8 @@ Type=simple
 ExecStart=/opt/node_exporter/node_exporter --web.disable-exporter-metrics --collector.disable-defaults {% for collector in collectors %} --collector.{{ collector }} {% endfor %}
 
 User=root
-StandardOutput=file:/var/log/node_exporter.stdout
-StandardError=file:/var/log/node_exporter.error
+StandardOutput=append:/var/log/node_exporter.stdout
+StandardError=append:/var/log/node_exporter.error
 Restart=on-failure
 RestartSec=3
 

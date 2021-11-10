@@ -103,6 +103,14 @@
     owner: postgres
     group: postgres
 
+- name: Create logs dir
+  become: yes
+  file:
+    path: /var/log/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+
 # Move Postgres configuration files into /etc/postgresql
 # Add postgresql.conf
 - name: import postgresql.conf
@@ -131,7 +139,7 @@
   register: postgresql_bin
 
 - name: Create symbolic links for Postgres binaries to /usr/bin/
-  become: True
+  become: yes
   file:
     src: "{{ item.path }}"
     path: "/usr/bin/{{ item.path | basename }}"

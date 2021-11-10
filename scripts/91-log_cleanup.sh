@@ -8,4 +8,5 @@ rm -rf /var/log/*
 touch /var/log/auth.log
 
 touch /var/log/pgbouncer.log
-chown postgres:postgres /var/log/pgbouncer.log
+mkdir /var/log/postgresql
+chown postgres:postgres /var/log/pgbouncer.log /var/log/postgresql

@@ -33,6 +33,11 @@ node_exporter_release_checksum:
   arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
   amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
 
+adminapi_release: v0.8.0
+adminapi_release_checksum:
+  arm64: sha256:08c4c149f06080b5b9fffc37164b0ab1f11ae8fd447a7ec9fd45a81a7bf1680f
+  amd64: sha256:a15eb38d633aaf8d227c1d1a82cdf1359b85624a96f80cf826c664d779767dd7
+
 # Postgres Extensions
 postgis_release: "3.1.2"
 postgis_release_checksum: sha1:622f52f3bf338c8e51ea6d73d30d6a5d3140c517
@@ -63,9 +68,18 @@ timescaledb_release: "2.3.0"
 wal2json_release: "2_3"
 wal2json_release_checksum: sha1:923f9bbcd0505a1f0b6eac1d371e4ff2d266a958
 
-supautils_release: "1.1.0"
-supautils_release_checksum: sha1:326ac5c1933bd30d4a50da7568b27629a9ec544b
+supautils_release: "1.1.1"
+supautils_release_checksum: sha1:431e1be36011026c7765dc365fa36cd5d6162f11
 
 pljava_release: "1_6_2"
 pljava_release_checksum: sha1:9610b80cbd13d4d43bcdaa2928365dbfd1bf6e94
 
+plv8_commit_version: 3656177d384e3e02b74faa8e2931600f3690ab59
+
+pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
+
+pg_net_release: "0.2"
+pg_net_release_checksum: sha1:22c40ae9039778a6bf7344e4357640edf8620a7e
+
+vector_x86_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-amd64.deb'
+vector_arm_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-arm64.deb'

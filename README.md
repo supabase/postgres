@@ -24,10 +24,14 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [wal2json](https://github.com/eulerto/wal2json) | JSON output plugin for logical replication decoding. |
 | [PL/Java](https://github.com/tada/pljava) | Write in Java functions in Postgres. |
 | [plv8](https://github.com/plv8/plv8) | Write in Javascript functions in Postgres. |
+| [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | Only allow statements that fulfill set criteria to be executed. |
+| [pg_net](https://github.com/supabase/pg_net) | Expose the SQL interface for async networking. |
 
 Can't find your favorite extension? Suggest for it to be added into future versions [here](https://github.com/supabase/supabase/discussions/679)!
 
 ## Enhanced Security
+*This is only available for our AWS EC2/ DO Droplet images*
+
 Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page), and [unattended-upgrades](https://wiki.debian.org/UnattendedUpgrades) installed, we also have the following enhancements in place: 
 | Enhancement | Description |
 | ------------- | ------------- |
@@ -35,9 +39,11 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 | [fail2ban filter](https://github.com/supabase/postgres/blob/develop/ansible/files/fail2ban_config/filter-pgbouncer.conf.j2) for PgBouncer access | Monitors for brute force attempts over at port `6543`. |
 
 ## Additional Goodies
+*This is only available for our AWS EC2/ DO Droplet images*
+
 | Goodie | Description |
 | ------------- | ------------- |
-| [PgBouncer](https://postgis.net/) | Set up Connection Pooling. |
+| [PgBouncer](https://www.pgbouncer.org/) | Set up Connection Pooling. |
 | [PostgREST](https://postgrest.org/en/stable/) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | Tool for physical database backup and recovery. |
 
@@ -77,11 +83,9 @@ $ time packer build -timestamp-ui \
 
 ## Motivation
 
-After talking to a lot of techies, we've found that most believe Postgres is the best (operational) database but they _still_ choose other databases. This is overwhelmingly because "the other one was quicker/easier". Our goal is to make it fast and simple to get started with Postgres, so that we never hear that excuse again.
-
-Our secondary goal is to show off a few of Postgres' most exciting features. This is to convince new developers to choose it over other database (a decision we hope they'll appreciate once they start scaling).
-
-Finally, this is the same build we offer at [Supabase](https://supabase.io), and everything we do is opensource. This repo makes it easy to _install_ Postgres, Supabase makes it easy to _use_ Postgres.
+- Make it fast and simple to get started with Postgres.
+- Show off a few of Postgres' most exciting features.
+- This is the same build we offer at [Supabase](https://supabase.io).
 
 ## Roadmap
 

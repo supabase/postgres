@@ -1,0 +1,55 @@
+- name: adminapi - system user
+  user:
+    name: adminapi
+    groups: root,admin
+    append: yes
+
+- name: disk script
+  copy:
+    src: files/grow_fs.sh
+    dest: /root/grow_fs.sh
+    mode: '0700'
+    owner: root
+
+- name: give adminapi user permissions
+  copy:
+    content: |
+      %adminapi ALL= NOPASSWD: /root/grow_fs.sh
+    dest: /etc/sudoers.d/adminapi
+
+- name: Setting arch (x86)
+  set_fact:
+    arch: "x86"
+    when: platform == "amd64"
+
+- name: Setting arch (arm)
+  set_fact:
+    arch: "arm64"
+    when: platform == "arm64"
+
+- name: adminapi - download commit archive
+  get_url:
+    url: "https://github.com/supabase/supabase-admin-api/releases/download/{{ adminapi_release }}/supabase-admin-api-{{ adminapi_release }}-{{ arch }}.tar.gz"
+    dest: /tmp/adminapi.tar.gz
+    checksum: "{{ adminapi_release_checksum[platform] }}"
+
+- name: adminapi - unpack archive in /opt
+  unarchive:
+    remote_src: yes
+    src: /tmp/adminapi.tar.gz
+    dest: /opt
+    owner: adminapi
+
+- name: adminapi - create service file
+  template:
+    src: files/adminapi.service.j2
+    dest: /etc/systemd/system/adminapi.service
+
+- name: UFW - Allow connections to adminapi ports
+  ufw:
+    rule: allow
+    port: "8085"
+
+- name: adminapi - reload systemd
+  systemd:
+    daemon_reload: yes
