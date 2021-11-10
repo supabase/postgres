@@ -1,8 +1,8 @@
 supabase_internal: true
 
-postgresql_major: "13"
-postgresql_release: "13.4"
-postgresql_release_checksum: sha1:100ab62f9ef5dbd90f83c5da284e24ab0070ddb4
+postgresql_major: "14"
+postgresql_release: "14.0"
+postgresql_release_checksum: sha1:a58a5492b25d89c79e7a3727e09dd2847b2b3f33
 
 # Non Postgres Extensions
 pgbouncer_release: "1.16.0"
