@@ -1,0 +1,8 @@
+{
+  "ami_regions": "ap-southeast-1",
+  "arch": "arm64",
+  "environment": "dev",
+  "instance-type": "t4g.2xlarge",
+  "region": "ap-southeast-1",
+  "ubuntu-2004": "ami-077adae4d983338da"
+}
