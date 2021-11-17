@@ -1,0 +1,20 @@
+name: Run CI checks
+
+on:
+  push:
+    branches:
+      - develop
+      - da/ci
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Build AMI
+        run: |
+          packer build -timestamp-ui -color=false -on-error=abort -var "ansible_arguments=--tags,update-only,--tags,install-pgbouncer,--tags,install-supabase-internal" -var-file common.vars.json -var-file development-arm.vars.json amazon.json
