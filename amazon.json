@@ -25,7 +25,7 @@
       },
       "run_volume_tags": {
         "creator": "packer"
-      }
+      },
       "launch_block_device_mappings": [
         {
           "device_name": "/dev/sda1",
