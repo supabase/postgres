@@ -8,7 +8,7 @@
       "profile": "{{user `profile`}}",
       "region": "{{user `region`}}",
       "ami_regions": "{{user `ami_regions`}}",
-      "source_ami": "{{user `ami`}}",
+      "source_ami": "{{user `ubuntu-2004`}}",
       "instance_type": "{{user `instance-type`}}",
       "ssh_username": "ubuntu",
       "ami_name": "supabase-postgres-{{user `postgres-version`}}",
