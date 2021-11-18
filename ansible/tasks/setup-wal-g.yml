@@ -1,9 +1,10 @@
 # Downloading dependencies
-- name: Postgres dependencies
+- name: wal-g dependencies
   become: yes
   apt:
     pkg:
       - liblzo2-dev
+      - libsodium-dev
       - cmake
 
 # install go dependency for WAL-G
@@ -11,6 +12,7 @@
   get_url:
     url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
     dest: /tmp
+    checksum: "{{ golang_version_checksum[platform] }}"
 
 - name: unpack go archive
   unarchive:
@@ -19,23 +21,43 @@
     dest: /usr/local
 
 # Download WAL-G
-- name: download wal-g
-  shell:
-    cmd: go get github.com/wal-g/wal-g;
-  environment:
-    PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-  ignore_errors: yes
-  # ignore error https://github.com/wal-g/wal-g/issues/343#issuecomment-514544288
-
-# Install WAL-G
-- name: install wal-g
+- name: wal-g - download latest version
+  git:
+    repo: https://github.com/wal-g/wal-g.git
+    dest: /tmp/wal-g
+    version: "{{ wal_g_release }}"
   become: yes
-  shell:
-    cmd: make install && make deps && make pg_install
-    chdir: "{{ ansible_env.HOME }}/go/src/github.com/wal-g/wal-g"
-  environment:
-    GOBIN: "/usr/local/bin"
-    PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+
+- name: wal-g - additional go dependencies
+  make:
+    chdir: /tmp/wal-g
+    target: deps
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
+  ignore_errors: yes
+
+- name: wal-g - build
+  make:
+    chdir: /tmp/wal-g
+    target: pg_build
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
+
+- name: wal-g - install
+  make:
+    chdir: /tmp/wal-g
+    target: pg_install
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
 
 # Clean up Go
 - name: Uninstall Go
