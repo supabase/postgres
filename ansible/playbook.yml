@@ -26,6 +26,25 @@
         name: postgresql
         state: started
 
+    - name: Transfer init SQL files
+      copy:
+        src: files/{{ item.source }}
+        dest: /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
+
+    - name: Execute init SQL files
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
+
+    - name: Delete SQL scripts
+      file:
+        path: /tmp/{{ item.dest }}
+        state: absent
+      loop: "{{ sql_files }}"
+
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
 
@@ -51,25 +70,6 @@
       copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
-
-    - name: Transfer init SQL files
-      copy:
-        src: files/{{ item.source }}
-        dest: /tmp/{{ item.dest }}
-      loop: "{{ sql_files }}"
-
-    - name: Execute init SQL files
-      become: yes
-      become_user: postgres
-      shell:
-        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
-      loop: "{{ sql_files }}"
-
-    - name: Delete SQL scripts
-      file:
-        path: /tmp/{{ item.dest }}
-        state: absent
-      loop: "{{ sql_files }}"
 
     - name: UFW - Allow SSH connections
       ufw:
