@@ -1,0 +1,28 @@
+# rum
+- name: rum - download latest release
+  get_url:
+    url: "https://github.com/postgrespro/rum/archive/refs/tags/{{rum_release}}.tar.gz"
+    dest: /tmp/rum-{{ rum_release }}.tar.gz
+    checksum: "{{ rum_release_checksum }}"
+
+- name: rum - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/rum-{{ rum_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: rum - build
+  make:
+    chdir: /tmp/rum-{{ rum_release }}
+    params:
+      USE_PGXS: 1
+  become: yes
+
+- name: rum - install
+  make:
+    chdir: /tmp/rum-{{ rum_release }}
+    target: install
+    params:
+      USE_PGXS: 1
+  become: yes

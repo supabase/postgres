@@ -42,3 +42,9 @@
 
 - name: Install pg_net
   import_tasks: tasks/postgres-extensions/15-pg_net.yml
+
+- name: Install rum
+  import_tasks: tasks/postgres-extensions/16-rum.yml
+
+- name: Install pg_hashids
+  import_tasks: tasks/postgres-extensions/17-pg_hashids.yml
