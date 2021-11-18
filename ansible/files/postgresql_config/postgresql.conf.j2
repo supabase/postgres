@@ -298,7 +298,7 @@ max_wal_senders = 10		# max number of walsender processes
 max_replication_slots = 5	# max number of replication slots
 				# (change requires restart)
 #wal_keep_size = 0		# in megabytes; 0 disables
-#max_slot_wal_keep_size = -1	# in megabytes; -1 disables
+max_slot_wal_keep_size = 1024   # in megabytes; -1 disables
 #wal_sender_timeout = 60s	# in milliseconds; 0 disables
 #track_commit_timestamp = off	# collect timestamp of transaction commit
 				# (change requires restart)
