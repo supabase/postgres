@@ -7,7 +7,7 @@
       - rsync
       - ca-certificates
       - build-essential
-      - postgresql-server-dev-13
+      - postgresql-server-dev-{{ postgresql_major }}
       - curl
       - git-core
       - gpp
