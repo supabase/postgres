@@ -35,3 +35,10 @@
     params:
       USE_PGXS: 1
   become: yes
+
+- name: pgAudit - remove build dependencies
+  apt:
+    pkg:
+      - libssl-dev
+      - libkrb5-dev
+    state: absent  

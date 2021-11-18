@@ -35,3 +35,9 @@
     chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
     target: install
   become: yes
+
+- name: pgsql-http - remove build dependencies
+  apt:
+    pkg:
+      - libcurl4-gnutls-dev
+    state: absent

@@ -75,3 +75,17 @@
     chdir: /tmp/postgis-{{ postgis_release }}
     target: install
   become: yes
+
+- name: postgis - remove build dependencies
+  apt:
+    pkg:
+      - libgeos-dev
+      - libproj-dev
+      - libgdal-dev
+      - libjson-c-dev
+      - libxml2-dev
+      - libboost-all-dev
+      - libcgal-dev
+      - libmpfr-dev
+      - libgmp-dev
+    state: absent
