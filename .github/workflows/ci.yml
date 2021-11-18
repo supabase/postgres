@@ -3,7 +3,7 @@ name: Run CI checks
 on:
   push:
     branches:
-      - master
+      - develop
       - da/ci
 
 jobs:
