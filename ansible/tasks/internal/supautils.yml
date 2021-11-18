@@ -1,4 +1,12 @@
 # supautils
+- name: supautils - download & install dependencies
+  apt:
+    pkg:
+      - build-essential
+      - clang-11
+    update_cache: yes
+    cache_valid_time: 3600
+
 - name: supautils - download latest release
   get_url:
     url: "https://github.com/supabase/supautils/archive/refs/tags/v{{ supautils_release }}.tar.gz"
@@ -43,3 +51,10 @@
     path: /etc/postgresql/postgresql.conf
     regexp: session_preload_libraries = ''
     replace: session_preload_libraries = 'supautils'
+
+- name: supautils - remove build dependencies
+  apt:
+    pkg:
+      - build-essential
+      - clang-11
+    state: absent
