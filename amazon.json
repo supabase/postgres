@@ -47,6 +47,12 @@
       "type": "ansible",
       "user": "ubuntu",
       "playbook_file": "ansible/playbook.yml",
+      "extra_arguments": "--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
+    },
+    {
+      "type": "ansible",
+      "user": "ubuntu",
+      "playbook_file": "ansible/playbook.yml",
       "extra_arguments": "{{user `ansible_arguments`}}"
     },
     {
