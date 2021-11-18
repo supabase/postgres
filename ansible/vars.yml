@@ -16,9 +16,12 @@ postgrest_x86_release_checksum: sha1:4b4adde15f0d41d65a9136d1f8c0d9cd6fe79326
 
 aws_cli_release: "2.2.7"
 
-golang_version: "1.15.4"
-wal_g_release: "0.2.15"
-wal_g_release_checksum: sha1:e82d405121e0ccc322a323b9824e60c102b14004
+golang_version: "1.17.3"
+golang_version_checksum:
+  arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
+  amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
+
+wal_g_release: "v1.1.1"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
@@ -60,16 +63,16 @@ pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
 plpgsql_check_release: "2.0.5"
 plpgsql_check_release_checksum: sha1:7fc9181f291bb0b24a7886681ab8bb837041ab62
 
-pg_safeupdate_release: "1.3"
-pg_safeupdate_release_checksum: sha1:34a0353611bfd63f7ea760aac2afcb518bf3ba7c
+pg_safeupdate_release: "1.4"
+pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
 timescaledb_release: "2.3.0"
 
 wal2json_release: "2_4"
 wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
 
-supautils_release: "1.1.1"
-supautils_release_checksum: sha1:431e1be36011026c7765dc365fa36cd5d6162f11
+supautils_release: "1.1.2"
+supautils_release_checksum: sha1:2f224207b08bf629b21a0d7f4c236360821ee5c6
 
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
@@ -80,6 +83,9 @@ pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
 pg_net_release: "0.3"
 pg_net_release_checksum: sha1:0695ad2e4e9b2a35a77dfa89bd4c5a90c622eb24
+
+rum_release: "1.3.9"
+rum_release_checksum: sha1:71901640ccf9e2e1886aad37703a9fd07ced9e53
 
 vector_x86_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-amd64.deb'
 vector_arm_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-arm64.deb'
