@@ -2,6 +2,7 @@
 - name: PgBouncer - download & install dependencies
   apt:
     pkg:
+      - build-essential
       - libssl-dev
       - pkg-config
       - libevent-dev
@@ -72,7 +73,7 @@
     insertafter: '# Default:'
     line: "{{ item }}"
   with_items:
-    - "host  all  pgbouncer  127.0.0.1/32  md5"
+    - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
     - "# Allow connection by pgbouncer user"
 
 # Run PgBouncer SQL script
@@ -114,7 +115,9 @@
 - name: PgBouncer - remove build dependencies
   apt:
     pkg:
+      - build-essential
       - libssl-dev
       - pkg-config
       - libevent-dev
       - libsystemd-dev
+    state: absent
