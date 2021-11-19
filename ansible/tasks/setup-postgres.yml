@@ -12,7 +12,6 @@
       - libxslt-dev
       - libssl-dev
       - libsystemd-dev
-      - libpq-dev
       - libxml2-utils
       - uuid-dev
       - xsltproc
