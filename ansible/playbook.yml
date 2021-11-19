@@ -139,3 +139,18 @@
           - unattended-upgrades
         update_cache: yes
         cache_valid_time: 3600
+
+    # Put PG binaries in a directory under $PATH
+    - name: Find all files in /usr/lib/postgresql/bin
+      find:
+        paths: /usr/lib/postgresql/bin
+      register: postgresql_bin
+
+    - name: Create symbolic links for Postgres binaries to /usr/bin/
+      become: yes
+      file:
+        src: "{{ item.path }}"
+        path: "/usr/bin/{{ item.path | basename }}"
+        state: link
+        force: yes
+      with_items: "{{ postgresql_bin.files }}"
