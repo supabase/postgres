@@ -3,7 +3,7 @@
   get_url:
     url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
     dest: /tmp/libsodium-{{ libsodium_release }}.tar.gz
-    checksum: "{{ pg_sodium_release_checksum }}"
+    checksum: "{{ libsodium_release_checksum }}"
 
 - name: libsodium - unpack archive
   unarchive:
@@ -33,7 +33,7 @@
   get_url:
     url: "https://github.com/michelp/pgsodium/archive/refs/tags/v1.3.0.tar.gz"
     dest: /tmp/pgsodium-{{ pgsodium_release }}.tar.gz
-#    checksum: "{{ pg_sodium_release_checksum }}"
+    checksum: "{{ pgsodium_release_checksum }}"
 
 - name: pgsodium - unpack archive
   unarchive:
