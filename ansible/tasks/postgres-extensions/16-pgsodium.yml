@@ -1,0 +1,55 @@
+# libsodium and pgsodium
+- name: libsodium - download libsodium
+  get_url:
+    url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
+    dest: /tmp/libsodium-{{ libsodium_release }}.tar.gz
+    checksum: "{{ pg_sodium_release_checksum }}"
+
+- name: libsodium - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/libsodium-{{ libsodium_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: libsodium - configure
+  shell:
+    cmd: ./configure
+    chdir: /tmp/libsodium-{{ libsodium_release }}
+  become: yes
+
+- name: libsodium - build
+  make:
+    chdir: /tmp/libsodium-{{ libsodium_release }}
+  become: yes
+
+- name: libsodium - install
+  make:
+    chdir: /tmp/libsodium-{{ libsodium_release }}
+    target: install
+  become: yes
+
+- name: pgsodium - download pgsodium
+  get_url:
+    url: "https://github.com/michelp/pgsodium/archive/refs/tags/v1.3.0.tar.gz"
+    dest: /tmp/pgsodium-{{ pgsodium_release }}.tar.gz
+#    checksum: "{{ pg_sodium_release_checksum }}"
+
+- name: pgsodium - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgsodium-{{ pgsodium_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pgsodium - build
+  make:
+    chdir: /tmp/pgsodium-{{ pgsodium_release }}
+  become: yes
+
+- name: pgsodium - install
+  make:
+    chdir: /tmp/pgsodium-{{ pgsodium_release }}
+    target: install
+  become: yes
+  
