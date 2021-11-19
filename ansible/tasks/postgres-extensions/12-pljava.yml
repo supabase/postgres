@@ -5,7 +5,6 @@
       - maven
       - default-jre
       - default-jdk
-      - libssl-dev
     update_cache: yes
     install_recommends: no
 
@@ -31,7 +30,7 @@
 - name: pljava - install
   become: yes
   shell:
-    cmd: java -jar pljava-packaging/target/pljava-pg{{ postgresql_major }}.jar
+    cmd: java -jar pljava-packaging/target/pljava-pg13.jar
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - remove build dependencies
@@ -40,7 +39,6 @@
       - maven
       - default-jre
       - default-jdk
-      - libssl-dev
     state: absent
 
 - name: pljava - install headless jdk

@@ -46,11 +46,3 @@
     chdir: /tmp/plv8
     target: install
   become: yes
-
-- name: plv8 - remove build dependencies
-  apt:
-    pkg:
-      - libc++-dev
-      - libc++abi-dev
-      - libglib2.0-dev
-    state: absent

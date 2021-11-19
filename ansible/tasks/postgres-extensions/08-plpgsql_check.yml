@@ -30,9 +30,3 @@
     chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
     target: install
   become: yes
-
-- name: plpgsql_check - remove build dependencies
-  apt:
-    pkg:
-      - libicu-dev
-    state: absent

@@ -79,20 +79,6 @@
     chdir: /tmp/postgresql-{{ postgresql_release }}
   become: yes
 
-# Cleanup build dependencies
-- name: Initialize the database
-  apt:
-    pkg:
-      - libreadline-dev
-      - zlib1g-dev
-      - libxml2-dev
-      - libxslt-dev
-      - libssl-dev
-      - libsystemd-dev
-      - libpq-dev
-      - uuid-dev
-    state: absent
-
 # Create postgres user
 - name: Create postgres user
   user:

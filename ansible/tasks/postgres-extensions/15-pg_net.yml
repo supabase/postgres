@@ -1,11 +1,4 @@
 # pg_net
-- name: pg_net - download & install dependencies
-  apt:
-    pkg:
-      - libcurl4-gnutls-dev
-    update_cache: yes
-    install_recommends: no
-
 - name: pg_net - download latest release
   get_url:
     url: "https://github.com/supabase/pg_net/archive/refs/tags/v{{pg_net_release}}.tar.gz"
@@ -29,9 +22,3 @@
     chdir: /tmp/pg_net-{{ pg_net_release }}
     target: install
   become: yes
-
-- name: pg_net - remove build dependencies
-  apt:
-    pkg:
-      - libcurl4-gnutls-dev
-    state: absent

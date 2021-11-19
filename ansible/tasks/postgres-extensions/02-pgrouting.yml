@@ -1,12 +1,4 @@
 # pgRouting
-- name: pgRouting - download & install dependencies
-  apt:
-    pkg:
-      - libboost-all-dev
-    update_cache: yes
-    cache_valid_time: 3600
-    install_recommends: no
-
 - name: pgRouting - download latest release
   get_url:
     url: "https://github.com/pgRouting/pgrouting/releases/download/v{{ pgrouting_release }}/pgrouting-{{ pgrouting_release }}.tar.gz"
@@ -42,9 +34,3 @@
     chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
     target: install
   become: yes
-
-- name: pgRouting - remove build dependencies
-  apt:
-    pkg:
-      - libboost-all-dev
-    state: absent

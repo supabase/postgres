@@ -6,7 +6,6 @@
       - libssl-dev
       - pkg-config
       - libevent-dev
-      - libsystemd-dev
     update_cache: yes
     cache_valid_time: 3600
 
@@ -111,13 +110,3 @@
 - name: PgBouncer - reload systemd
   systemd:
     daemon_reload: yes
-
-- name: PgBouncer - remove build dependencies
-  apt:
-    pkg:
-      - build-essential
-      - libssl-dev
-      - pkg-config
-      - libevent-dev
-      - libsystemd-dev
-    state: absent
