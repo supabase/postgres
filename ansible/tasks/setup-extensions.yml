@@ -42,3 +42,6 @@
 
 - name: Install pg_net
   import_tasks: tasks/postgres-extensions/15-pg_net.yml
+
+- name: Install pgsodium
+  import_tasks: tasks/postgres-extensions/16-pgsodium.yml
