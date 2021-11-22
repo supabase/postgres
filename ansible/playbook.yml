@@ -104,18 +104,17 @@
         src: files/logrotate-postgres-csv
         dest: /etc/logrotate.d/postgres-csv
 
+    - name: Disable cron access
+      copy:
+        src: files/cron.deny
+        dest: /etc/cron.deny
+
     - name: Configure logrotation to run every hour
       shell:
         cmd: |
             cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
             sed -i -e 's/daily/hourly/' /etc/systemd/system/logrotate.timer
             systemctl reenable logrotate.timer
-      become: yes
-
-    - name: restart crond
-      systemd:
-        state: restarted
-        name: cron
       become: yes
 
     - name: Enhance fail2ban
