@@ -49,7 +49,7 @@
   become: yes
   replace:
     path: /etc/postgresql/postgresql.conf
-    regexp: session_preload_libraries = ''
+    regexp: "#session_preload_libraries = ''"
     replace: session_preload_libraries = 'supautils'
 
 - name: supautils - remove build dependencies
