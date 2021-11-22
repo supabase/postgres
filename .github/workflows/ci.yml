@@ -17,4 +17,4 @@ jobs:
 
       - name: Build AMI
         run: |
-          packer build -timestamp-ui -color=false -on-error=abort -var "ansible_arguments=--tags,update-only,--tags,install-pgbouncer,--tags,install-supabase-internal" -var-file common.vars.json -var-file development-arm.vars.json amazon.json
+          packer build -timestamp-ui -color=false -on-error=abort -var-file common.vars.json -var-file development-arm.vars.json amazon.json
