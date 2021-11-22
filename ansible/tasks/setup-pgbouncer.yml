@@ -40,24 +40,35 @@
     target: install
   become: yes
 
+# Create pgbouncer user
+- name: Create pgbouncer user
+  user:
+    name: pgbouncer
+    shell: /bin/false
+    comment: PgBouncer user
+    groups: postgres,ssl-cert
+
 # Create /etc/postgresql directory and make sure postgres group owns it
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer
     state: directory
-    group: postgres
+    owner: pgbouncer
+    mode: '0700'
 
 - name: PgBouncer - adjust pgbouncer.ini
   copy:
     src: files/pgbouncer_config/pgbouncer.ini.j2
     dest: /etc/pgbouncer/pgbouncer.ini
+    owner: pgbouncer
+    mode: '0700'
 
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer/userlist.txt
     state: touch
-    group: postgres
-    owner: postgres
+    owner: pgbouncer
+    mode: '0700'
       
 - name: import /etc/tmpfiles.d/pgbouncer.conf
   template:
