@@ -5,14 +5,12 @@ postgresql_release: "14.1"
 postgresql_release_checksum: sha1:f6c114a4be41ca876deeb462e9d02237b186743c
 
 # Non Postgres Extensions
-pgbouncer_release: "1.16.0"
-pgbouncer_release_checksum: sha1:7d4b7e1110387df2245b22de3168884fdc8092c4
+pgbouncer_release: "1.16.1"
+pgbouncer_release_checksum: sha1:14c75af0b5a11b0363b6146170b516db498fc998
 
-postgrest_arm_release: 2021-03-05-19-03-d3a8b5f-ubuntu-aarch64
-postgrest_arm_release_checksum: sha1:b9e9b06ead7230b75033e8ae17912714bf463a33
-
-postgrest_x86_release: 2021-03-05-19-03-d3a8b5f-linux-x64-static
-postgrest_x86_release_checksum: sha1:4b4adde15f0d41d65a9136d1f8c0d9cd6fe79326
+postgrest_release: "8.0.0"
+postgrest_arm_release_checksum: sha1:dfd3b88b3acddd0ede52c6bed2bb7c02cbcac5dd
+postgrest_x86_release_checksum: sha1:29a49bb898d5008b746822acdbaa4fabb51b5c44
 
 aws_cli_release: "2.2.7"
 
@@ -21,7 +19,7 @@ golang_version_checksum:
   arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
   amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
 
-wal_g_release: "v1.1.1"
+wal_g_release: "v1.1"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
@@ -45,8 +43,8 @@ adminapi_release_checksum:
 postgis_release: "3.1.4"
 postgis_release_checksum: sha1:3077da5136841d9d51a4325a233be8eccf763c38
 
-pgrouting_release: "3.2.2"
-pgrouting_release_checksum: sha1:56596fa6e22104572d61296e1fa25e7918c79671
+pgrouting_release: "3.3.0"
+pgrouting_release_checksum: sha1:7475189f334bc97e1b3587b2f456a573c8aa811a
 
 pgtap_release: "1.1.0"
 pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
@@ -60,8 +58,8 @@ pgaudit_release_checksum: sha1:2fae2690d38a1822b6e8f40ad6b2bd8669498659
 pgsql_http_release: "1.3.1"
 pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
 
-plpgsql_check_release: "2.0.5"
-plpgsql_check_release_checksum: sha1:7fc9181f291bb0b24a7886681ab8bb837041ab62
+plpgsql_check_release: "2.0.6"
+plpgsql_check_release_checksum: sha1:3f3ca49e38ee87392fd62f1a62a481c445e1c6c2
 
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
