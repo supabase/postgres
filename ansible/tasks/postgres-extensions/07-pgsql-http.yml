@@ -17,6 +17,7 @@
     url: "https://github.com/pramsey/pgsql-http/archive/refs/tags/v{{ pgsql_http_release }}.tar.gz"
     dest: /tmp/pgsql_http-{{ pgsql_http_release }}.tar.gz
     checksum: "{{ pgsql_http_release_checksum }}"
+    timeout: 60
 
 - name: pgsql-http - unpack archive
   unarchive:

@@ -4,6 +4,7 @@
     url: "https://github.com/eradman/pg-safeupdate/archive/refs/tags/{{ pg_safeupdate_release }}.tar.gz"
     dest: /tmp/pg_safeupdate-{{ pg_safeupdate_release }}.tar.gz
     checksum: "{{ pg_safeupdate_release_checksum }}"
+    timeout: 60
 
 - name: pg-safeupdate - unpack archive
   unarchive:

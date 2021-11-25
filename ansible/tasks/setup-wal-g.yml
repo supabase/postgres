@@ -13,6 +13,7 @@
     url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
     dest: /tmp
     checksum: "{{ golang_version_checksum[platform] }}"
+    timeout: 60
 
 - name: unpack go archive
   unarchive:

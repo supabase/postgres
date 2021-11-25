@@ -42,6 +42,7 @@
     url: https://ftp.postgresql.org/pub/source/v{{ postgresql_release }}/postgresql-{{ postgresql_release }}.tar.gz
     dest: /tmp
     checksum: "{{ postgresql_release_checksum }}"
+    timeout: 60
 
 - name: Postgres - unpack archive
   unarchive:

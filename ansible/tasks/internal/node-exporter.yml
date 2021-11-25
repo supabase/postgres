@@ -8,6 +8,7 @@
     url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_release }}/node_exporter-{{ node_exporter_release }}.linux-{{ platform }}.tar.gz"
     dest: /tmp/node_exporter.tar.gz
     checksum: "{{ node_exporter_release_checksum[platform] }}"
+    timeout: 60
 
 - name: create directories
   file:

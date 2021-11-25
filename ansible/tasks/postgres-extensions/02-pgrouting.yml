@@ -12,6 +12,7 @@
     url: "https://github.com/pgRouting/pgrouting/releases/download/v{{ pgrouting_release }}/pgrouting-{{ pgrouting_release }}.tar.gz"
     dest: /tmp/pgrouting-{{ pgrouting_release }}.tar.gz
     checksum: "{{ pgrouting_release_checksum }}"
+    timeout: 60
 
 - name: pgRouting - unpack archive
   unarchive:

@@ -12,6 +12,7 @@
     url: "https://github.com/supabase/supautils/archive/refs/tags/v{{ supautils_release }}.tar.gz"
     dest: /tmp/supautils-{{ supautils_release }}.tar.gz
     checksum: "{{ supautils_release_checksum }}"
+    timeout: 60
 
 - name: supautils - unpack archive
   unarchive:

@@ -9,12 +9,14 @@
   get_url:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
     dest: "/tmp/awscliv2.zip"
+    timeout: 60
   when: platform == "arm64"
 
 - name: AWS CLI (x86)
   get_url:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
     dest: "/tmp/awscliv2.zip"
+    timeout: 60
   when: platform == "amd64"
 
 - name: AWS CLI - expand

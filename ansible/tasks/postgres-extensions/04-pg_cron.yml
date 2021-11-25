@@ -4,6 +4,7 @@
     url: "https://github.com/citusdata/pg_cron/archive/refs/tags/v{{ pg_cron_release }}.tar.gz"
     dest: /tmp/pg_cron-{{ pg_cron_release }}.tar.gz
     checksum: "{{ pg_cron_release_checksum }}"
+    timeout: 60
 
 - name: pg_cron - unpack archive
   unarchive:

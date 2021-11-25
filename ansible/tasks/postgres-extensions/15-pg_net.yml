@@ -11,6 +11,7 @@
     url: "https://github.com/supabase/pg_net/archive/refs/tags/v{{pg_net_release}}.tar.gz"
     dest: /tmp/pg_net-{{ pg_net_release }}.tar.gz
     checksum: "{{ pg_net_release_checksum }}"
+    timeout: 60
 
 - name: pg_net - unpack archive
   unarchive:

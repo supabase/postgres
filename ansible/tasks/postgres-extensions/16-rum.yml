@@ -4,6 +4,7 @@
     url: "https://github.com/postgrespro/rum/archive/refs/tags/{{rum_release}}.tar.gz"
     dest: /tmp/rum-{{ rum_release }}.tar.gz
     checksum: "{{ rum_release_checksum }}"
+    timeout: 60
 
 - name: rum - unpack archive
   unarchive:
