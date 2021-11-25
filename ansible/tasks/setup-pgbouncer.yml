@@ -15,6 +15,7 @@
     url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
     dest: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
     checksum: "{{ pgbouncer_release_checksum }}"
+    timeout: 60
 
 - name: PgBouncer - unpack archive
   unarchive:
@@ -84,8 +85,9 @@
     insertafter: '# Default:'
     line: "{{ item }}"
   with_items:
+    - "host  all  pgbouncer  0.0.0.0/0  reject"
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
-    - "# Allow connection by pgbouncer user"
+    - "# Connection configuration for pgbouncer user"
 
 # Run PgBouncer SQL script
 - name: Transfer init SQL files
