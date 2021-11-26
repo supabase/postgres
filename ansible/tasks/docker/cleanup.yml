@@ -17,19 +17,6 @@
     update_cache: yes
     install_recommends: no
 
-- name: Cleanup - find all files in /tmp
-  find:
-    paths: /tmp
-    file_type: any
-  register: tmp_items_to_delete
-
-- name: Cleanup - delete all items in /tmp
-  file:
-    path: "/tmp/{{ item.path | basename }}"
-    state: absent
-    force: yes
-  with_items: "{{ tmp_items_to_delete.files }}"
-
 - name: Cleanup - find all files in /var/lib/apt/lists/*
   find:
     paths: /var/lib/apt/lists
