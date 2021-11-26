@@ -3,12 +3,18 @@ ARG VERSION
 
 FROM --platform=$PLATFORM postgres:$VERSION
 
-# install dependencies
-RUN apt update && apt install --yes ansible
-
 COPY ansible/ /tmp/ansible/
-RUN cd /tmp/ansible && ansible-playbook playbook-docker.yml
-RUN rm -rf /tmp/*
+
+RUN apt update && \
+    apt install -y ansible && \
+    cd /tmp/ansible && \
+    ansible-playbook playbook-docker.yml && \
+    apt -y update && \
+    apt -y upgrade && \
+    apt -y autoremove && \
+    apt -y autoclean && \
+    apt install -y default-jdk-headless && \
+    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* 
 
 ENV LANGUAGE=en_US.UTF-8
 ENV LANG=en_US.UTF-8
