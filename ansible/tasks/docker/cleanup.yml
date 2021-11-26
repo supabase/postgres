@@ -1,24 +1,3 @@
-
-
-- name: Cleanup - remove build dependencies
-  apt:
-    pkg:
-      - python3
-      - rsync
-      - ca-certificates
-      - build-essential
-      - postgresql-server-dev-{{ postgresql_major }}
-      - curl
-      - git-core
-      - gpp
-      - cpp
-      - pkg-config
-      - apt-transport-https
-      - cmake
-      - ninja-build
-      - python
-    state: absent
-
 - name: Cleanup - apt update and apt upgrade
   apt: update_cache=yes upgrade=yes
   # SEE http://archive.vn/DKJjs#parameter-upgrade
@@ -64,4 +43,21 @@
     force: yes
   with_items: "{{ var_items_to_delete.files }}"
 
-  
+- name: Cleanup - remove build dependencies
+  apt:
+    pkg:
+      - python3
+      - rsync
+      - ca-certificates
+      - build-essential
+      - postgresql-server-dev-{{ postgresql_major }}
+      - curl
+      - git-core
+      - gpp
+      - cpp
+      - pkg-config
+      - apt-transport-https
+      - cmake
+      - ninja-build
+      - python
+    state: absent
