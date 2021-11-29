@@ -35,6 +35,7 @@
     dest: /lib/aarch64-linux-gnu/libc++.so
     state: link
   when: platform == "arm64"
+  ignore_errors: yes # not needed for docker build
 
 - name: plv8 - build
   make:
