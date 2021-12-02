@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - docker_ci
+      - chore/docker_ci
   workflow_dispatch:
 
 jobs:
