@@ -1,0 +1,5 @@
+{
+    "docker-version":"14.1.0",
+    "platforms":"linux/arm64/v8,linux/amd64"
+  }
+  
