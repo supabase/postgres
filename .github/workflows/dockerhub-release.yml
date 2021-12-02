@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      version: ${{ steps.step1.outputs.test }}
-      platforms: ${{ steps.step2.outputs.test }}
+      version: ${{ steps.step1.outputs }}
+      platforms: ${{ steps.step2.outputs }}
     steps:
       - id: step1
-        run: echo "::set-output name=test::$(cat docker.vars.json | jq '.[\"docker-version\"]')"
+        run: echo $(cat docker.vars.json | jq '.["docker-version"]')
       - id: step2
-        run: echo "::set-output name=test::$(cat common.vars.json | jq '.[\"postgres-version\"]')"  
+        run: echo $(cat common.vars.json | jq '.["postgres-version"]')
 
   job2:
     runs-on: ubuntu-latest
