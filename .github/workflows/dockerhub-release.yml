@@ -15,7 +15,7 @@ jobs:
       platforms: ${{ steps.step2.outputs.test }}
     steps:
       - id: step1
-        run: echo "::set-output name=test::$(cat docker.vars.json | jq '.[\"docker-version\"]'"
+        run: echo "::set-output name=test::$(cat docker.vars.json | jq '.[\"docker-version\"]')"
       - id: step2
         run: echo "::set-output name=test::$(cat common.vars.json | jq '.[\"postgres-version\"]')"  
 
