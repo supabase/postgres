@@ -2,9 +2,11 @@
 - name: PgBouncer - download & install dependencies
   apt:
     pkg:
+      - build-essential
       - libssl-dev
       - pkg-config
       - libevent-dev
+      - libsystemd-dev
     update_cache: yes
     cache_valid_time: 3600
 
@@ -13,6 +15,7 @@
     url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
     dest: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
     checksum: "{{ pgbouncer_release_checksum }}"
+    timeout: 60
 
 - name: PgBouncer - unpack archive
   unarchive:
@@ -38,24 +41,35 @@
     target: install
   become: yes
 
+# Create pgbouncer user
+- name: Create pgbouncer user
+  user:
+    name: pgbouncer
+    shell: /bin/false
+    comment: PgBouncer user
+    groups: postgres,ssl-cert
+
 # Create /etc/postgresql directory and make sure postgres group owns it
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer
     state: directory
-    group: postgres
+    owner: pgbouncer
+    mode: '0700'
 
 - name: PgBouncer - adjust pgbouncer.ini
   copy:
     src: files/pgbouncer_config/pgbouncer.ini.j2
     dest: /etc/pgbouncer/pgbouncer.ini
+    owner: pgbouncer
+    mode: '0700'
 
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer/userlist.txt
     state: touch
-    group: postgres
-    owner: postgres
+    owner: pgbouncer
+    mode: '0700'
       
 - name: import /etc/tmpfiles.d/pgbouncer.conf
   template:
@@ -71,8 +85,9 @@
     insertafter: '# Default:'
     line: "{{ item }}"
   with_items:
-    - "host  all  pgbouncer  127.0.0.1/32  md5"
-    - "# Allow connection by pgbouncer user"
+    - "host  all  pgbouncer  0.0.0.0/0  reject"
+    - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
+    - "# Connection configuration for pgbouncer user"
 
 # Run PgBouncer SQL script
 - name: Transfer init SQL files

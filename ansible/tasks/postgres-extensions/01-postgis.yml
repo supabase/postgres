@@ -21,6 +21,7 @@
     url: "https://gitlab.com/Oslandia/SFCGAL/-/archive/v{{ sfcgal_release }}/SFCGAL-v{{ sfcgal_release }}.tar.gz"
     dest: /tmp/SFCGAL-v{{ sfcgal_release }}.tar.gz
     checksum: "{{ sfcgal_release_checksum }}"
+    timeout: 60
 
 - name: postgis - unpack SFCGAL
   unarchive:
@@ -51,6 +52,7 @@
     url: "https://download.osgeo.org/postgis/source/postgis-{{ postgis_release }}.tar.gz"
     dest: /tmp/postgis-{{ postgis_release }}.tar.gz
     checksum: "{{ postgis_release_checksum }}"
+    timeout: 60
 
 - name: postgis - unpack archive
   unarchive:

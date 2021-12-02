@@ -32,6 +32,7 @@
     url: "https://github.com/supabase/supabase-admin-api/releases/download/{{ adminapi_release }}/supabase-admin-api-{{ adminapi_release }}-{{ arch }}.tar.gz"
     dest: /tmp/adminapi.tar.gz
     checksum: "{{ adminapi_release_checksum[platform] }}"
+    timeout: 60
 
 - name: adminapi - unpack archive in /opt
   unarchive:

@@ -12,6 +12,7 @@
     url: "https://github.com/pgaudit/pgaudit/archive/refs/tags/{{ pgaudit_release }}.tar.gz"
     dest: /tmp/pgaudit-{{ pgaudit_release }}.tar.gz
     checksum: "{{ pgaudit_release_checksum }}"
+    timeout: 60
 
 - name: pgAudit - unpack archive
   unarchive:

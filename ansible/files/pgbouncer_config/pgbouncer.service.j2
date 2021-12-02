@@ -30,7 +30,7 @@ After=network.target
 
 [Service]
 Type=notify
-User=postgres
+User=pgbouncer
 ExecStart=/usr/local/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini
 ExecReload=/bin/kill -HUP $MAINPID
 KillSignal=SIGINT

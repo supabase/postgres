@@ -11,6 +11,7 @@
     url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
     dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
     checksum: "{{ plpgsql_check_release_checksum }}"
+    timeout: 60
 
 - name: plpgsql_check - unpack archive
   unarchive:

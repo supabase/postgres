@@ -4,6 +4,7 @@
     url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
     dest: /tmp/libsodium-{{ libsodium_release }}.tar.gz
     checksum: "{{ libsodium_release_checksum }}"
+    timeout: 60
 
 - name: libsodium - unpack archive
   unarchive:
@@ -34,6 +35,7 @@
     url: "https://github.com/michelp/pgsodium/archive/refs/tags/v1.3.0.tar.gz"
     dest: /tmp/pgsodium-{{ pgsodium_release }}.tar.gz
     checksum: "{{ pgsodium_release_checksum }}"
+    timeout: 60
 
 - name: pgsodium - unpack archive
   unarchive:

@@ -19,6 +19,7 @@
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-{{ platform }}.tar.gz"
     dest: /tmp/postgres_exporter.tar.gz
     checksum: "{{ postgres_exporter_release_checksum[platform] }}"
+    timeout: 60
 
 - name: expand postgres exporter
   unarchive:
