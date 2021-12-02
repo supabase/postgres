@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      version: ${{ steps.step1.outputs. }}
+      version: ${{ steps.step1.outputs.test }}
       platforms: ${{ steps.step2.outputs.test }}
     steps:
       - id: step1
