@@ -41,4 +41,6 @@ jobs:
           push: true
           tags: supabase/postgres:latest,supabase/postgres:${{ steps.settings.outputs.docker_version }}
           platforms: linux/amd64,linux/arm64
-          build-args: PLATFORM=${{steps.settings.outputs.platform}},VERSION=${{steps.settings.outputs.postgres_version}}
+          build-args: |
+            "PLATFORM=${{steps.settings.outputs.platform}}"
+            "VERSION=${{steps.settings.outputs.postgres_version}}"
