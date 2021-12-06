@@ -3,7 +3,7 @@ name: Release on Dockerhub
 on:
   push:
     branches:
-      - chore/docker_ci
+      - develop
     paths:
       - docker.vars*
 
