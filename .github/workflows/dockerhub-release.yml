@@ -1,10 +1,11 @@
-name: Release
+name: Release on Dockerhub
 
 on:
   push:
     branches:
       - chore/docker_ci
-  workflow_dispatch:
+    paths:
+      - docker.vars*
 
 jobs:
   docker_release:
