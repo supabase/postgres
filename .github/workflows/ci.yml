@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - common.vars*
 
 jobs:
   build:
