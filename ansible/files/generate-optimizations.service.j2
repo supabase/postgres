@@ -1,0 +1,11 @@
+[Unit]
+Description=Postgresql optimizations
+
+[Service]
+Type=oneshot
+# we don't want failures from this command to cause PG startup to fail
+ExecStart=/bin/bash -c "/opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf ; exit 0"
+User=adminapi
+
+[Install]
+WantedBy=multi-user.target
