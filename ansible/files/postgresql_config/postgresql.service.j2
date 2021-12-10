@@ -1,6 +1,8 @@
 [Unit]
 Description=PostgreSQL database server
 Documentation=man:postgres(1)
+Requires=generate-optimizations.service
+After=generate-optimizations.service
 
 [Service]
 Type=notify
