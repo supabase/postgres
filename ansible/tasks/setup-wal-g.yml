@@ -24,7 +24,7 @@
 # Download WAL-G
 - name: wal-g - download latest version
   git:
-    repo: https://github.com/wal-g/wal-g.git
+    repo: https://github.com/darora/wal-g.git
     dest: /tmp/wal-g
     version: "{{ wal_g_release }}"
   become: yes
@@ -65,4 +65,4 @@
   become: yes
   file:
     path: /usr/local/go
-    state: absent  
+    state: absent

@@ -19,7 +19,7 @@ golang_version_checksum:
   arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
   amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
 
-wal_g_release: "v1.1"
+wal_g_release: "v1.1-backports"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
@@ -34,10 +34,10 @@ node_exporter_release_checksum:
   arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
   amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
 
-adminapi_release: 0.12.1
+adminapi_release: 0.12.2
 adminapi_release_checksum:
-  arm64: sha256:ac252173aae967d3d8aa961588e5d4b8b3c7a10d616e8ce19da9b0199370b55f
-  amd64: sha256:8d640b7486b4bc006ec8a29793d2f22f4aa065aaae9ebb6724b73ca570266646
+  arm64: sha256:a667845ba76854dbd8ce5166b182cd435fa5da0f3705b17b278d461ed56449c4
+  amd64: sha256:fc8fe25cf461189b327d7875cb5f18f9718e3c751f7c093636ad47c2879ba41f
 
 # Postgres Extensions
 postgis_release: "3.1.4"
