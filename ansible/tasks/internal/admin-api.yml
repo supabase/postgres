@@ -15,6 +15,8 @@
   copy:
     content: |
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
+      %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
+      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
     dest: /etc/sudoers.d/adminapi
 
 - name: Setting arch (x86)
@@ -29,7 +31,7 @@
 
 - name: adminapi - download commit archive
   get_url:
-    url: "https://github.com/supabase/supabase-admin-api/releases/download/{{ adminapi_release }}/supabase-admin-api-{{ adminapi_release }}-{{ arch }}.tar.gz"
+    url: "https://github.com/supabase/supabase-admin-api/releases/download/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
     dest: /tmp/adminapi.tar.gz
     checksum: "{{ adminapi_release_checksum[platform] }}"
     timeout: 60

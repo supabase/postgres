@@ -34,7 +34,7 @@ node_exporter_release_checksum:
   arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
   amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
 
-adminapi_release: v0.12.1
+adminapi_release: 0.12.1
 adminapi_release_checksum:
   arm64: sha256:ac252173aae967d3d8aa961588e5d4b8b3c7a10d616e8ce19da9b0199370b55f
   amd64: sha256:8d640b7486b4bc006ec8a29793d2f22f4aa065aaae9ebb6724b73ca570266646
