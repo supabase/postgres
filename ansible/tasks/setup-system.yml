@@ -69,3 +69,13 @@
 
 - name: System - systemd reload
   systemd: daemon_reload=yes
+
+- name: Configure journald
+  copy:
+    src: files/journald.conf
+    dest: /etc/systemd/journald.conf
+
+- name: reload systemd-journald
+  systemd:
+   name: systemd-journald
+   state: restarted
