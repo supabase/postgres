@@ -17,7 +17,12 @@
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
+      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service
     dest: /etc/sudoers.d/adminapi
+
+- name: perms for adminapi
+  shell: |
+    chmod g+w /etc
 
 - name: Setting arch (x86)
   set_fact:
