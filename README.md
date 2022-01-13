@@ -28,7 +28,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [pg_net](https://github.com/supabase/pg_net) | [v0.3](https://github.com/supabase/pg_net/releases/tag/v0.3) | Expose the SQL interface for async networking. |
 | [rum](https://github.com/postgrespro/rum) | [1.3.9](https://github.com/postgrespro/rum/releases/tag/1.3.9) | An alternative to the GIN index. |
 | [pg_hashids](https://github.com/iCyberon/pg_hashids) | [commit](https://github.com/iCyberon/pg_hashids/commit/83398bcbb616aac2970f5e77d93a3200f0f28e74) | Generate unique identifiers from numbers. |
-| [pg_sodium](https://github.com/michelp/pgsodium) | [v1.3.0](https://github.com/michelp/pgsodium/releases/tag/v1.3.0) | Modern encryption API using libsodium. |
+| [pgsodium](https://github.com/michelp/pgsodium) | [2.0.0](https://github.com/michelp/pgsodium/releases/tag/2.0.0) | Modern encryption API using libsodium. |
 
 
 Can't find your favorite extension? Suggest for it to be added into future releases [here](https://github.com/supabase/supabase/discussions/679)!
