@@ -719,10 +719,12 @@ default_text_search_config = 'pg_catalog.english'
 
 #local_preload_libraries = ''
 #session_preload_libraries = ''
-shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, safeupdate'	# (change requires restart)
+shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, safeupdate, pgsodium'	# (change requires restart)
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
+
+pgsodium.getkey_script= '/usr/lib/postgresql/14/bin/pgsodium_getkey_urandom.sh'
 
 #dynamic_library_path = '$libdir'
 #gin_fuzzy_search_limit = 0

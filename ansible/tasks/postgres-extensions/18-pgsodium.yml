@@ -55,3 +55,12 @@
     target: install
   become: yes
   
+# Add pgsodium_getkey_urandom.sh
+- name: import pgsodium_getkey_urandom.sh
+  template:
+    src: files/pgsodium_getkey_urandom.sh.j2
+    dest: /usr/lib/postgresql/14/bin/pgsodium_getkey_urandom.sh
+    owner: postgres
+    group: postgres
+    mode: 0700
+
