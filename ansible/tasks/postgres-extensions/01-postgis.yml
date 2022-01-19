@@ -16,6 +16,11 @@
     cache_valid_time: 3600
     install_recommends: no
 
+- name: postgis - ensure dependencies do not get autoremoved
+  shell:
+    cmd: "apt-mark manual libgeos* libproj* libgdal* libjson-c* libxml2* libboost* libcgal* libmpfr* libgmp*"
+  become: yes
+
 - name: postgis - download SFCGAL dependency
   get_url:
     url: "https://gitlab.com/Oslandia/SFCGAL/-/archive/v{{ sfcgal_release }}/SFCGAL-v{{ sfcgal_release }}.tar.gz"
