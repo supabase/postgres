@@ -49,7 +49,7 @@
     dest: /opt
     owner: adminapi
 
-- name: adminapi: config dir
+- name: adminapi - config dir
   file:
     path: /etc/adminapi
     owner: adminapi
