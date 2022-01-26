@@ -18,6 +18,7 @@
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service
+      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart pgbouncer.service
     dest: /etc/sudoers.d/adminapi
 
 - name: perms for adminapi
@@ -47,6 +48,12 @@
     src: /tmp/adminapi.tar.gz
     dest: /opt
     owner: adminapi
+
+- name: adminapi: config dir
+  file:
+    path: /etc/adminapi
+    owner: adminapi
+    state: directory
 
 - name: adminapi - create service file
   template:
