@@ -17,9 +17,14 @@
     install_recommends: no
 
 - name: postgis - ensure dependencies do not get autoremoved
-  shell:
-    cmd: "apt-mark manual libgeos* libproj* libgdal* libjson-c* libxml2* libboost* libcgal* libmpfr* libgmp*"
+  shell: |
+    set -e
+    apt-mark manual libgeos* libproj* libgdal* libjson-c* libxml2* libboost* libcgal* libmpfr* libgmp*
+    apt-mark auto libgeos*-dev libproj*-dev libgdal*-dev libjson-c*-dev libxml2*-dev libboost*-dev libcgal*-dev libmpfr*-dev libgmp*-dev
+
   become: yes
+  args:
+    executable: /bin/bash
 
 - name: postgis - download SFCGAL dependency
   get_url:
