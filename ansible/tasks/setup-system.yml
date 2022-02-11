@@ -10,6 +10,7 @@
 
 - name: System - apt update and apt upgrade
   apt: update_cache=yes upgrade=yes
+  when: not ebssurrogate_mode
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
 - name: Install required security updates
@@ -35,6 +36,7 @@
       - fail2ban
     update_cache: yes
     cache_valid_time: 3600
+  when: not ebssurrogate_mode
 
 - name: Install other useful tools
   become: yes
@@ -66,6 +68,7 @@
   template:
     src: files/services.slice.j2
     dest: /etc/systemd/system/services.slice
+  when: not ebssurrogate_mode
 
 - include_tasks: tasks/setup-osquery.yml
 

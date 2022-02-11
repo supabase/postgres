@@ -11,6 +11,7 @@
       - libxslt-dev
       - libssl-dev
       - libsystemd-dev
+      - libpq-dev
       - libxml2-utils
       - uuid-dev
       - xsltproc
@@ -31,6 +32,15 @@
 - name: Switch to GCC 10
   shell:
     cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+
+# Setup permissions
+- name: Update permissions for /var/tmp directory
+  file:
+    path: /var/tmp/
+    owner: root
+    group: root
+    mode: '1777'
+  become: yes
 
 # Building Postgres from source
 - name: Postgres - download latest release
@@ -141,6 +151,20 @@
     src: files/postgresql_config/pg_ident.conf.j2
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
+
+- name: Find all files in /usr/lib/postgresql/bin
+  find:
+    paths: /usr/lib/postgresql/bin
+  register: postgresql_bin
+
+- name: Create symbolic links for Postgres binaries to /usr/bin/
+  become: yes
+  file:
+    src: "{{ item.path }}"
+    path: "/usr/bin/{{ item.path | basename }}"
+    state: link
+    force: yes
+  with_items: "{{ postgresql_bin.files }}"
 
 # init DB
 - name: Initialize the database
