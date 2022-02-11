@@ -1,4 +1,5 @@
 supabase_internal: true
+ebssurrogate_mode: true
 
 postgresql_major: "14"
 postgresql_release: "14.1"
