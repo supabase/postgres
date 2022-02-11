@@ -3,7 +3,7 @@ name: Run CI checks
 on:
   push:
     branches:
-      - develop
+      - wip/fastboot
 
 jobs:
   build:
@@ -16,4 +16,4 @@ jobs:
 
       - name: Build AMI
         run: |
-          packer build -timestamp-ui -color=false -on-error=cleanup -var-file common.vars.json -var-file development-arm.vars.json amazon.json
+          packer build -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
