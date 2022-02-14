@@ -1,0 +1,22 @@
+- name: download deb package
+  get_url:
+    url: '{{ osquery_deb }}'
+    dest: /tmp/osquery.deb
+    checksum: "{{ osquery_deb_checksum }}"
+
+- name: deb installation
+  apt: deb=file:///tmp/osquery.deb
+
+- name: filter out audit logs from journald # c.f. https://osquery.readthedocs.io/en/stable/installation/install-linux/
+  shell: |
+    systemctl mask --now systemd-journald-audit.socket
+
+- name: install systemd service
+  template:
+    src: files/osqueryd.service.j2
+    dest: /etc/systemd/system/osqueryd.service
+
+- name: create overrides dir
+  file:
+    path: "/etc/system.d/system/osqueryd.service.d"
+    state: directory

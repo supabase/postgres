@@ -1,0 +1,15 @@
+[Unit]
+Description=OSQuery Daemon
+
+[Service]
+Type=simple
+Environment="INTERVAL=300"
+ExecStart=/usr/bin/osqueryd --enroll_secret_path ${ENROLL_SECRET_PATH} --tls_server_certs ${CA_CERT} --tls_client_cert=${CLIENT_CERT} --tls_client_key=${CLIENT_KEY}  --tls_hostname=${CONFIG_HOSTNAME} --host_identifier=${HOST_IDENTIFIER} --enroll_tls_endpoint=/fleet/api/v1/osquery/enroll --config_plugin=tls --config_tls_endpoint=/fleet/api/v1/osquery/config --config_refresh=${INTERVAL} --disable_distributed=false --distributed_plugin=tls --distributed_interval=${INTERVAL} --distributed_tls_max_attempts=3 --distributed_tls_read_endpoint=/fleet/api/v1/osquery/distributed/read --distributed_tls_write_endpoint=/fleet/api/v1/osquery/distributed/write
+Restart=always
+RestartSec=120
+
+CPUQuota=25%
+CPUWeight=50
+
+[Install]
+WantedBy=multi-user.target
