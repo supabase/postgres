@@ -9,8 +9,8 @@ pgbouncer_release: "1.16.1"
 pgbouncer_release_checksum: sha1:14c75af0b5a11b0363b6146170b516db498fc998
 
 postgrest_release: "8.0.0"
-postgrest_arm_release_checksum: sha1:dfd3b88b3acddd0ede52c6bed2bb7c02cbcac5dd
-postgrest_x86_release_checksum: sha1:29a49bb898d5008b746822acdbaa4fabb51b5c44
+postgrest_arm_release_checksum: sha1:29a49bb898d5008b746822acdbaa4fabb51b5c44
+postgrest_x86_release_checksum: sha1:dfd3b88b3acddd0ede52c6bed2bb7c02cbcac5dd
 
 aws_cli_release: "2.2.7"
 
@@ -93,3 +93,6 @@ libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 
 pgsodium_release: "2.0.2"
 pgsodium_release_checksum: sha1:24d3348c09d9945f5a27762af41bf8203f82ad8a
+
+osquery_deb: 'https://pkg.osquery.io/deb/osquery_5.1.0-1.linux_arm64.deb'
+osquery_deb_checksum: sha1:6b6fa49edcfad5d77aa1e59c75b8708de2f634ac
