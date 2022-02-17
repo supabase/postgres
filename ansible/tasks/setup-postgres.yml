@@ -85,7 +85,7 @@
     name: postgres
     shell: /bin/false
     comment: Postgres user
-    groups: ssl-cert
+    groups: postgres,ssl-cert
 
 - name: Recursively change ownership of a directory
   file:
@@ -138,7 +138,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb --allow-group-access
   vars:
     ansible_command_timeout: 60
     # Circumvents the following error:
