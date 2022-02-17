@@ -60,6 +60,20 @@
       USE_LIBSODIUM: true
   become: yes
 
+# Create pgbouncer user
+- name: Create wal-g user
+  user:
+    name: wal-g
+    shell: /bin/false
+    comment: WAL-G user
+    groups: postgres
+
+- name: Give postgres access to execute wal-g binary as wal-g user
+  copy:
+    content: |
+      postgres   ALL=(wal-g) NOPASSWD: /usr/local/bin/wal-g
+    dest: /etc/sudoers.d/postgres
+
 # Clean up Go
 - name: Uninstall Go
   become: yes
