@@ -6,15 +6,39 @@
 
 - name: disk script
   copy:
-    src: files/grow_fs.sh
+    src: files/admin_api_scripts/grow_fs.sh
     dest: /root/grow_fs.sh
-    mode: '0700'
+    mode: "0700"
+    owner: root
+
+- name: backup script
+  copy:
+    src: files/admin_api_scripts/commence_walg_backup.sh
+    dest: /root/commence_walg_backup.sh
+    mode: "0700"
+    owner: root
+
+- name: restoration script
+  copy:
+    src: files/admin_api_scripts/commence_walg_restore.sh
+    dest: /root/commence_walg_restore.sh
+    mode: "0700"
+    owner: root
+
+- name: disable script
+  copy:
+    src: files/admin_api_scripts/disable_walg_restore.sh
+    dest: /root/disable_walg_restore.sh
+    mode: "0700"
     owner: root
 
 - name: give adminapi user permissions
   copy:
     content: |
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
+      %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
+      %adminapi ALL= NOPASSWD: /root/commence_walg_restore.sh
+      %adminapi ALL= NOPASSWD: /root/disable_walg_restore.sh
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service
