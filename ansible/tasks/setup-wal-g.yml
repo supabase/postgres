@@ -74,6 +74,20 @@
       postgres   ALL=(wal-g) NOPASSWD: /usr/local/bin/wal-g
     dest: /etc/sudoers.d/postgres
 
+- name: Create a config directory owned by wal-g
+  file:
+    path: /etc/wal-g
+    state: directory
+    owner: wal-g
+    mode: '0700'
+
+- name: Create /etc/wal-g/config.json
+  file:
+    path: /etc/wal-g/config.json
+    state: touch
+    owner: wal-g
+    mode: '0700'
+
 # Clean up Go
 - name: Uninstall Go
   become: yes
