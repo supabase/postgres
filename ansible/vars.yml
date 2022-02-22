@@ -96,3 +96,6 @@ pgsodium_release_checksum: sha1:b6ef733c9bbae590c1eee676fd0a97fd129893e0
 
 osquery_deb: 'https://pkg.osquery.io/deb/osquery_5.1.0-1.linux_arm64.deb'
 osquery_deb_checksum: sha1:6b6fa49edcfad5d77aa1e59c75b8708de2f634ac
+
+scws_release: "1.2.3"
+scws_release_checksum: sha1:cf8366ecbf533ffb1f20983f0149feb0b8756d92

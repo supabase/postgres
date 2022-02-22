@@ -1,0 +1,57 @@
+# scws and zhparser
+- name: scws - download scws
+  get_url:
+    url: "http://www.xunsearch.com/scws/down/scws-{{ scws_release }}.tar.bz2"
+    dest: /tmp/scws-{{ scws_release }}.tar.bz2
+    checksum: "{{ scws_release_checksum }}"
+    timeout: 60
+
+- name: scws - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/scws-{{ scws_release }}.tar.bz2
+    dest: /tmp
+  become: yes
+
+- name: scws - configure
+  shell:
+    cmd: ./configure
+    chdir: /tmp/scws-{{ scws_release }}
+  become: yes
+
+- name: scws - build
+  make:
+    chdir: /tmp/scws-{{ scws_release }}
+  become: yes
+
+- name: scws - install
+  make:
+    chdir: /tmp/scws-{{ scws_release }}
+    target: install
+  become: yes
+
+- name: zhparser - download zhparser
+  get_url:
+    url: "https://github.com/amutu/zhparser/archive/master.tar.gz"
+    dest: /tmp/zhparser-master.tar.gz
+    checksum: "2c9d1c134bbf07979ef5c5f9a386fd2ea4ac3d63"
+    timeout: 60
+
+- name: zhparser - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/zhparser-master.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: zhparser - build
+  make:
+    chdir: /tmp/zhparser-master
+  become: yes
+
+- name: zhparser - install
+  make:
+    chdir: /tmp/zhparser-master
+    target: install
+  become: yes
+
