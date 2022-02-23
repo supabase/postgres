@@ -46,6 +46,20 @@
     state: present
     line: supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'
 
+- name: supautils - set supautils.placeholders
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.placeholders = 'response.headers'
+    
+- name: supautils - set supautils.placeholders_disallowed_values
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.placeholders_disallowed_values = 'content-type'
+
 - name: supautils - add supautils to session_preload_libraries
   become: yes
   replace:
