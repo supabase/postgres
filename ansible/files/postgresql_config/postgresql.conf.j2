@@ -244,7 +244,7 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 
 #archive_mode = on		# enables archiving; off, on, or always
 				# (change requires restart)
-#archive_command = 'sudo -u wal-g wal-g wal-push %p --config /etc/wal-g/config.json'		# command to use to archive a logfile segment
+#archive_command = 'sudo -u wal-g wal-g wal-push %p --config /etc/wal-g/config.json >> /var/log/wal-g/wal-push.log 2>&1'		# command to use to archive a logfile segment
 				# placeholders: %p = path of file to archive
 				#               %f = file name only
 				# e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
@@ -255,7 +255,7 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 
 # These are only used in recovery mode.
 
-#restore_command = 'sudo -u wal-g wal-g wal-fetch "%f" "%p" --config /etc/wal-g/config.json'		# command to use to restore an archived logfile segment
+#restore_command = 'sudo -u wal-g wal-g wal-fetch "%f" "%p" --config /etc/wal-g/config.json >> /var/log/wal-g/wal-fetch.log 2>&1'		# command to use to restore an archived logfile segment
 				# placeholders: %p = path of file to restore
 				#               %f = file name only
 				# e.g. 'cp /mnt/server/archivedir/%f %p'

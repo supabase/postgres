@@ -8,7 +8,7 @@ recovery_target_time=$2
 systemctl stop postgresql
 rm -rf /var/lib/postgresql/data
 
-wal-g backup-fetch /var/lib/postgresql/data $backup_name --config /etc/wal-g/config.json
+wal-g backup-fetch /var/lib/postgresql/data $backup_name --config /etc/wal-g/config.json >> /var/log/wal-g/backup-fetch 2>&1
 
 # Enable restoration upon start
 sed -i "s/#restore_command/restore_command/" /etc/postgresql/postgresql.conf

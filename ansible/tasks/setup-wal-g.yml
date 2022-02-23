@@ -88,6 +88,41 @@
     owner: wal-g
     mode: '0700'
 
+- name: Create logs dir
+  become: yes
+  file:
+    path: /var/log/wal-g
+    state: directory
+    owner: wal-g
+
+- name: Create backup-push.log
+  file:
+    path: /var/log/wal-g/backup-push.log
+    state: touch
+    owner: wal-g
+    mode: '0700'
+
+- name: Create backup-fetch.log
+  file:
+    path: /var/log/wal-g/backup-fetch.log
+    state: touch
+    owner: wal-g
+    mode: '0700'
+
+- name: Create wal-push.log
+  file:
+    path: /var/log/wal-g/wal-push.log
+    state: touch
+    owner: wal-g
+    mode: '0700'
+
+- name: Create wal-fetch.log
+  file:
+    path: /var/log/wal-g/wal-fetch.log
+    state: touch
+    owner: wal-g
+    mode: '0700'
+
 # Clean up Go
 - name: Uninstall Go
   become: yes
