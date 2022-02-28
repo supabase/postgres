@@ -85,3 +85,6 @@
 
 - name: Install adminapi
   import_tasks: internal/admin-api.yml
+
+- name: Init nftabless
+  import_tasks: internal/setup-nftables.yml

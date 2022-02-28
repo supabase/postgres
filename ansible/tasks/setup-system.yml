@@ -1,7 +1,6 @@
 # DigitalOcean's ubuntu droplet isn't up to date with installed packages, and on
 # a fresh install I see 71 security upgrades available.
 - name: Terminate any ongoing updates
-  become: yes
   shell: killall apt apt-get
   ignore_errors: yes
   tags:
@@ -14,7 +13,6 @@
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
 - name: Install required security updates
-  become: yes
   apt:
     pkg:
       - tzdata
@@ -23,26 +21,29 @@
 # SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
 # Without this, a similar error is faced
 - name: Install Ansible dependencies
-  become: yes
   apt:
     pkg:
       - acl
 
 - name: Install security tools
-  become: yes
   apt:
     pkg:
-      - ufw
+      - nftables
       - fail2ban
     update_cache: yes
     cache_valid_time: 3600
-  when: not ebssurrogate_mode
+
+- name: Use nftables backend
+  shell: |
+    update-alternatives --set iptables /usr/sbin/iptables-nft
+    update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
+    update-alternatives --set arptables /usr/sbin/arptables-nft
+    update-alternatives --set ebtables /usr/sbin/ebtables-nft
+    systemctl restart ufw
 
 - name: Install other useful tools
-  become: yes
   apt:
     pkg:
-      - magic-wormhole
       - sysstat
     update_cache: yes
 
