@@ -1,4 +1,13 @@
 # pg_graphql
+- name: pg_graphql - download & install dependencies
+  apt:
+    pkg:
+      - clang-11
+      - build-essential
+      - python
+    update_cache: yes
+    install_recommends: no
+
 - name: pg_graphql - download libgraphqlparser
   git:
     repo: https://github.com/graphql/libgraphqlparser.git
