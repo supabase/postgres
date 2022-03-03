@@ -1,0 +1,24 @@
+# pg_graphql
+- name: pg_graphql - download libgraphqlparser
+  git:
+    repo: https://github.com/graphql/libgraphqlparser.git
+    dest: /tmp/libgraphqlparser
+    version: master
+  become: yes
+
+- name: pg_graphql - build libgraphqlparser
+  make:
+    chdir: /tmp/libgraphqlparser
+  become: yes
+
+- name: pg_graphql - download latest release
+  git:
+    repo: https://github.com/supabase/pg_graphql.git
+    dest: /tmp/pg_graphql
+    version: "{{ pg_graphql_release }}"
+  become: yes
+
+- name: pg_graphql - build
+  make:
+    chdir: /tmp/pg_graphql
+  become: yes
