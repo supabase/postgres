@@ -37,12 +37,6 @@
     version: "{{ pg_graphql_release }}"
   become: yes
 
-- name: pg_graphql - execute ./bin/pgc build
-  shell:
-    cmd: "./bin/pgc build"
-    chdir: /tmp/pg_graphql
-  become: yes
-
 - name: pg_graphql - build
   make:
     chdir: /tmp/pg_graphql
