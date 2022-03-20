@@ -1,8 +1,10 @@
 [Unit]
 Description=PostgreSQL database server
 Documentation=man:postgres(1)
+{% if supabase_internal is defined %}
 Requires=generate-optimizations.service
 After=generate-optimizations.service
+{% endif %}
 
 [Service]
 Type=notify

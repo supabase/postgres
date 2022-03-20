@@ -15,11 +15,21 @@
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
   tasks:
+    - set_fact:
+        supabase_internal: true
+      tags:
+        - install-supabase-internal
+
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
+
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
 
     - name: Start Postgres Database
       systemd:
@@ -57,11 +67,6 @@
       import_tasks: tasks/setup-postgrest.yml
       tags:
         - install-postgrest
-        
-    - name: Install Supabase specific content
-      import_tasks: tasks/setup-supabase-internal.yml
-      tags:
-        - install-supabase-internal
 
     - name: Clean out build dependencies
       import_tasks: tasks/clean-build-dependencies.yml
