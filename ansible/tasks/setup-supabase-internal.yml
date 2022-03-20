@@ -65,9 +65,3 @@
 
 - name: Install adminapi
   import_tasks: internal/admin-api.yml
-
-- name: Install Ansible Pull
-  import_tasks: internal/setup-ansible-pull.yml
-
-- name: Boot time optimizations
-  import_tasks: internal/optimizations.yml
