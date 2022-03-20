@@ -122,6 +122,11 @@
             systemctl reenable logrotate.timer
       become: yes
 
+    - name: First boot optimizations
+      import_tasks: tasks/internal/optimizations.yml
+      tags:
+        - install-supabase-internal
+
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
 
