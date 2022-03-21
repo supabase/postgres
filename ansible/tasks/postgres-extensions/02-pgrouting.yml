@@ -36,6 +36,7 @@
 - name: pgRouting - build
   make:
     chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
+    jobs: 16
   become: yes
 
 - name: pgRouting - install

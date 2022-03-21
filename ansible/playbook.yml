@@ -157,9 +157,5 @@
 
     - name: Create symbolic links for Postgres binaries to /usr/bin/
       become: yes
-      file:
-        src: "{{ item.path }}"
-        path: "/usr/bin/{{ item.path | basename }}"
-        state: link
-        force: yes
-      with_items: "{{ postgresql_bin.files }}"
+      shell:
+        cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
