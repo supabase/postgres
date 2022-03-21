@@ -51,3 +51,6 @@
 
 - name: Install pgsodium
   import_tasks: tasks/postgres-extensions/18-pgsodium.yml
+
+- name: Install pg_graphql
+  import_tasks: tasks/postgres-extensions/19-pg_graphql.yml
