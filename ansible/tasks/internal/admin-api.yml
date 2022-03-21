@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin
+    groups: root,admin,postgres
     append: yes
 
 - name: disk script

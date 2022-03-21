@@ -26,7 +26,7 @@
 - name: pljava - build
   become: yes
   shell:
-    cmd: mvn clean install
+    cmd: mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - install

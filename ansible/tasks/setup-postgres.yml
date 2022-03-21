@@ -63,12 +63,12 @@
 
 - name: Postgres - build
   make:
-    target: world
+    target: world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
 - name: Postgres - install
   make:
-    target: install-world
+    target: install-world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
 # Create postgres user
@@ -99,7 +99,7 @@
     state: directory
     owner: postgres
     group: postgres
-    mode: 0664
+    mode: 0775
   with_items:
     - '/etc/postgresql-custom'
 
@@ -109,6 +109,7 @@
     state: touch
     owner: postgres
     group: postgres
+    mode: 0664
   with_items:
     - 'generated-optimizations.conf'
     - 'custom-overrides.conf'
