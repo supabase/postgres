@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - fix/docker_build
     paths:
       - docker.vars*
 
@@ -41,7 +40,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: supabase/postgres:${{ steps.settings.outputs.docker_version }}
+          tags: supabase/postgres:latest,supabase/postgres:${{ steps.settings.outputs.docker_version }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             "PLATFORM=${{steps.settings.outputs.platform}}"
