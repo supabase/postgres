@@ -44,7 +44,7 @@
   make:
     chdir: /tmp/wal-g
     target: pg_build
-    jobs: 16
+    jobs: "{{ parallel_jobs | default(omit) }}"
     params:
       GOBIN: "/usr/local/bin"
       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
