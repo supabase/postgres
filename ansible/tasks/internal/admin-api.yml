@@ -4,13 +4,12 @@
     groups: root,admin,postgres
     append: yes
 
-# Put PG binaries in a directory under $PATH
 - name: Find all files in files/admin_api_scripts
   find:
     paths: files/admin_api_scripts
   register: admin_api_dir
 
-- name: Create symbolic links for Postgres binaries to /usr/bin/
+- name: Move shell scripts to /root dir
   copy:
     src: "{{ item.path }}"
     dest: "/root/{{ item.path | basename }}"
