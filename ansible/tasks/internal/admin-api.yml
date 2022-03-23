@@ -4,41 +4,27 @@
     groups: root,admin
     append: yes
 
-- name: disk script
-  copy:
-    src: files/admin_api_scripts/grow_fs.sh
-    dest: /root/grow_fs.sh
-    mode: "0700"
-    owner: root
+# Put PG binaries in a directory under $PATH
+- name: Find all files in files/admin_api_scripts
+  find:
+    paths: files/admin_api_scripts
+  register: admin_api_dir
 
-- name: backup script
+- name: Create symbolic links for Postgres binaries to /usr/bin/
   copy:
-    src: files/admin_api_scripts/commence_walg_backup.sh
-    dest: /root/commence_walg_backup.sh
+    src: "{{ item.path }}"
+    dest: "/root/{{ item.path | basename }}"
     mode: "0700"
     owner: root
-
-- name: restoration script
-  copy:
-    src: files/admin_api_scripts/commence_walg_restore.sh
-    dest: /root/commence_walg_restore.sh
-    mode: "0700"
-    owner: root
-
-- name: disable script
-  copy:
-    src: files/admin_api_scripts/disable_walg_restore.sh
-    dest: /root/disable_walg_restore.sh
-    mode: "0700"
-    owner: root
+  with_items: "{{ admin_api_dir.files }}"
 
 - name: give adminapi user permissions
   copy:
     content: |
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
       %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
-      %adminapi ALL= NOPASSWD: /root/commence_walg_restore.sh
-      %adminapi ALL= NOPASSWD: /root/disable_walg_restore.sh
+      %adminapi ALL= NOPASSWD: /root/disable_walg.sh
+      %adminapi ALL= NOPASSWD: /root/enable_walg.sh
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service
