@@ -6,6 +6,8 @@
     - ./vars.yml
 
   tasks:
+    - set_fact: postgres_bin_dir: "postgresql/14/bin"
+
     - name: Setup container
       import_tasks: tasks/docker/setup.yml
 

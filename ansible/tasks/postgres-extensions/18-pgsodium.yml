@@ -59,8 +59,14 @@
 - name: import pgsodium_getkey_urandom.sh
   template:
     src: files/pgsodium_getkey_urandom.sh.j2
-    dest: /usr/lib/postgresql/bin/pgsodium_getkey_urandom.sh
+    dest: /usr/lib/{{ postgres_bin_dir | default("postgresql/bin") }}/pgsodium_getkey_urandom.sh
     owner: postgres
     group: postgres
     mode: 0700
 
+- name: pgsodium - set pgsodium.getkey_script
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pgsodium.getkey_script= '/usr/lib/{{ postgres_bin_dir | default("postgresql/bin") }}/pgsodium_getkey_urandom.sh'
