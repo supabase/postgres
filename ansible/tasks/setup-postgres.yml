@@ -1,6 +1,5 @@
 # Downloading dependencies
 - name: Postgres dependencies
-  become: yes
   apt:
     pkg:
       - build-essential
@@ -18,14 +17,12 @@
       - ssl-cert
 
 - name: Download LLVM & Clang
-  become: yes
   apt:
     pkg:
       - llvm-11-dev
       - clang-11
 
 - name: Download GCC 10
-  become: yes
   apt:
     pkg:
       - gcc-10
@@ -34,7 +31,6 @@
 - name: Switch to GCC 10
   shell:
     cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
-  become: yes
 
 # Building Postgres from source
 - name: Postgres - download latest release
@@ -49,7 +45,6 @@
     remote_src: yes
     src: /tmp/postgresql-{{ postgresql_release }}.tar.gz
     dest: /tmp
-  become: yes
 
 - name: Setting CFLAGS (arm)
   set_fact:
@@ -65,19 +60,16 @@
   shell:
     cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
     chdir: /tmp/postgresql-{{ postgresql_release }}
-  become: yes
 
 - name: Postgres - build
   make:
-    target: world
+    target: world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
-  become: yes
 
 - name: Postgres - install
   make:
-    target: install-world
+    target: install-world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
-  become: yes
 
 # Create postgres user
 - name: Create postgres user
@@ -87,29 +79,40 @@
     comment: Postgres user
     groups: postgres,ssl-cert
 
-- name: Recursively change ownership of a directory
+- name: Create relevant directories
   file:
-    path: /var/lib/postgresql
-    state: directory
+    path: '{{ item }}'
     recurse: yes
-    owner: postgres
-    group: postgres
-
-# Create /etc/postgresql directory and make sure postgres group owns it
-- name: Create a directory if it does not exist
-  file:
-    path: /etc/postgresql
     state: directory
     owner: postgres
     group: postgres
+  with_items:
+    - '/etc/postgresql'
+    - '/etc/postgresql-custom'
+    - '/var/log/postgresql'
+    - '/var/lib/postgresql'
 
-- name: Create logs dir
-  become: yes
+- name: Allow adminapi to write custom config
   file:
-    path: /var/log/postgresql
+    path: '{{ item }}'
+    recurse: yes
     state: directory
     owner: postgres
     group: postgres
+    mode: 0775
+  with_items:
+    - '/etc/postgresql-custom'
+
+- name: create placeholder files
+  file:
+    path: '/etc/postgresql-custom/{{ item }}'
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: 0664
+  with_items:
+    - 'generated-optimizations.conf'
+    - 'custom-overrides.conf'
 
 # Move Postgres configuration files into /etc/postgresql
 # Add postgresql.conf
@@ -144,12 +147,15 @@
     # Circumvents the following error:
     # "Timeout (12s) waiting for privilege escalation prompt"
 
-# Add systemd file for Postgres
-- name: import postgresql.service
+- name: copy PG systemd unit
   template:
     src: files/postgresql_config/postgresql.service.j2
     dest: /etc/systemd/system/postgresql.service
-  become: yes
+
+- name: copy optimizations systemd unit
+  template:
+    src: files/generate-optimizations.service.j2
+    dest: /etc/systemd/system/generate-optimizations.service
 
 # Reload
 - name: System - systemd reload

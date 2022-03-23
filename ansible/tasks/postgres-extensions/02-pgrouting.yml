@@ -36,6 +36,7 @@
 - name: pgRouting - build
   make:
     chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: pgRouting - install

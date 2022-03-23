@@ -34,10 +34,10 @@ node_exporter_release_checksum:
   arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
   amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
 
-adminapi_release: 0.15.0
+adminapi_release: 0.16.2
 adminapi_release_checksum:
-  arm64: sha256:ab00f98b632f49f57cff9932b75f3a97ee97351a9fc1440689cd59ffe67cbb52
-  amd64: sha256:d26de514a66e07f553366282305953f9ea7ca00d8db869dea366e848a924a0be
+  arm64: sha256:94fc9d916ce7b54c20e4cb9e0898a2aed205436ee604663636f38a40183163f3
+  amd64: sha256:134be79a98416e8fcefe2bebf85c6fad56d23c0f99252c8566889c879b9651b5
 
 # Postgres Extensions
 postgis_release: "3.1.4"
@@ -69,8 +69,8 @@ timescaledb_release: "2.3.0"
 wal2json_release: "2_4"
 wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
 
-supautils_release: "1.1.2"
-supautils_release_checksum: sha1:2f224207b08bf629b21a0d7f4c236360821ee5c6
+supautils_release: "1.2.0"
+supautils_release_checksum: sha1:7a86d7068905e41cc6b1eab71a0095845de15a75
 
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
@@ -93,6 +93,10 @@ libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 
 pgsodium_release: "2.0.1"
 pgsodium_release_checksum: sha1:b6ef733c9bbae590c1eee676fd0a97fd129893e0
+
+libgraphqlparser_release: "v0.7.0"
+
+pg_graphql_release: "v0.1.2"
 
 osquery_deb: 'https://pkg.osquery.io/deb/osquery_5.1.0-1.linux_arm64.deb'
 osquery_deb_checksum: sha1:6b6fa49edcfad5d77aa1e59c75b8708de2f634ac
