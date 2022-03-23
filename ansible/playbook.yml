@@ -102,15 +102,18 @@
         policy: deny
         direction: incoming
 
-    - name: Setup logrotate for postgres logs
-      copy:
-        src: files/logrotate-postgres
-        dest: /etc/logrotate.d/postgres
+    - name: Find all files in files/logrotate_config
+      find:
+        paths: files/logrotate_config
+      register: logrotate_config_dir
 
-    - name: Setup logrotate for postgres CSV logs
+    - name: Move logrotate configs to /etc/logrotate.d/
       copy:
-        src: files/logrotate-postgres-csv
-        dest: /etc/logrotate.d/postgres-csv
+        src: "{{ item.path }}"
+        dest: "/etc/logrotate.d/{{ item.path | basename }}"
+        mode: "0700"
+        owner: root
+      with_items: "{{ logrotate_config_dir.files }}"
 
     - name: Disable cron access
       copy:
