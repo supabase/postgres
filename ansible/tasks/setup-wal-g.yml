@@ -96,33 +96,18 @@
     state: directory
     owner: wal-g
 
-- name: Create backup-push.log
+- name: Create log files
+  become: yes
   file:
-    path: /var/log/wal-g/backup-push.log
+    path: "/var/log/wal-g/{{ item }}.log"
     state: touch
     owner: wal-g
     mode: '0700'
-
-- name: Create backup-fetch.log
-  file:
-    path: /var/log/wal-g/backup-fetch.log
-    state: touch
-    owner: wal-g
-    mode: '0700'
-
-- name: Create wal-push.log
-  file:
-    path: /var/log/wal-g/wal-push.log
-    state: touch
-    owner: wal-g
-    mode: '0700'
-
-- name: Create wal-fetch.log
-  file:
-    path: /var/log/wal-g/wal-fetch.log
-    state: touch
-    owner: wal-g
-    mode: '0700'
+  with_items:
+    - backup-push
+    - backup-fetch
+    - wal-push
+    - wal-fetch
 
 # Clean up Go
 - name: Uninstall Go
