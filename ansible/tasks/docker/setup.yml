@@ -27,7 +27,7 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
-- name: pgsodium - store postgres bin directory
+- name: Setup - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
 - set_fact: 

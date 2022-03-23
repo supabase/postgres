@@ -64,3 +64,9 @@
     group: postgres
     mode: 0700
 
+- name: pgsodium - set pgsodium.getkey_script
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey_urandom.sh'
