@@ -723,8 +723,7 @@ shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check,
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
-
-pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey_urandom.sh'
+pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey_urandom.sh'
 
 #dynamic_library_path = '$libdir'
 #gin_fuzzy_search_limit = 0
