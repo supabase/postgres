@@ -27,12 +27,6 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
-- name: Setup - determine postgres bin directory
-  shell: pg_config --bindir
-  register: pg_bindir_output
-- set_fact: 
-    pg_bindir: "{{ pg_bindir_output.stdout }}"
-
 - name: Setup - import postgresql.conf
   template:
     src: files/postgresql_config/postgresql.conf.j2

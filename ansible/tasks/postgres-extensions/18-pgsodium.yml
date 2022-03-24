@@ -1,4 +1,10 @@
 # libsodium and pgsodium
+- name: determine postgres bin directory
+  shell: pg_config --bindir
+  register: pg_bindir_output
+- set_fact: 
+    pg_bindir: "{{ pg_bindir_output.stdout }}"
+
 - name: libsodium - download libsodium
   get_url:
     url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
