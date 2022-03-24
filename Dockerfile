@@ -1,7 +1,6 @@
-ARG PLATFORM
 ARG VERSION
 
-FROM --platform=$PLATFORM postgres:$VERSION
+FROM postgres:$VERSION
 
 COPY ansible/ /tmp/ansible/
 
