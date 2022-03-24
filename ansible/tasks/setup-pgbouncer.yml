@@ -109,18 +109,6 @@
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
     - "# Connection configuration for pgbouncer user"
 
-# Run PgBouncer SQL script
-- name: Transfer init SQL files
-  copy:
-    src: files/pgbouncer_config/pgbouncer_auth_schema.sql
-    dest: /tmp/00-schema.sql
-
-- name: Execute init SQL files
-  become: yes
-  become_user: postgres
-  shell:
-    cmd: /usr/lib/postgresql/bin/psql -f /tmp/00-schema.sql
-
 # Add fail2ban filter
 - name: import jail.d/pgbouncer.conf
   template:
