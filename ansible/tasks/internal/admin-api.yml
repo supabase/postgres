@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,postgres
+    groups: root,admin,postgres,pgbouncer
     append: yes
 
 - name: disk script

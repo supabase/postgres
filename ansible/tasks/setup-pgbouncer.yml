@@ -41,7 +41,6 @@
     target: install
   become: yes
 
-# Create pgbouncer user
 - name: Create pgbouncer user
   user:
     name: pgbouncer
@@ -49,13 +48,34 @@
     comment: PgBouncer user
     groups: postgres,ssl-cert
 
-# Create /etc/postgresql directory and make sure postgres group owns it
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer
     state: directory
     owner: pgbouncer
+    group: pgbouncer
     mode: '0700'
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    state: directory
+    owner: pgbouncer
+    group: pgbouncer
+    path: '{{ item }}'
+    mode: '0775'
+  with_items:
+    - '/etc/pgbouncer-custom'
+
+- name: create placeholder config files
+  file:
+    path: '/etc/pgbouncer-custom/{{ item }}'
+    state: touch
+    owner: pgbouncer
+    group: pgbouncer
+    mode: 0664
+  with_items:
+    - 'generated-optimizations.ini'
+    - 'custom-overrides.ini'
 
 - name: PgBouncer - adjust pgbouncer.ini
   copy:
