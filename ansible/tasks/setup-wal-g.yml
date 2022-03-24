@@ -80,14 +80,16 @@
     path: /etc/wal-g
     state: directory
     owner: wal-g
-    mode: '0700'
+    group: wal-g
+    mode: '0760'
 
 - name: Create /etc/wal-g/config.json
   file:
     path: /etc/wal-g/config.json
     state: touch
     owner: wal-g
-    mode: '0700'
+    group: wal-g
+    mode: '0760'
 
 - name: Create logs dir
   become: yes
