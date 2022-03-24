@@ -1,6 +1,4 @@
 {
-    "docker-version": "14.1.0.15",
-    "postgres-version": "14.1",
-    "platform": "linux/amd64"
-  }
-  
+  "docker-version": "14.1.0.15",
+  "postgres-version": "14.1"
+}
