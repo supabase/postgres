@@ -62,12 +62,6 @@
     - update
     - update-only
 
-- name: determine postgres bin directory
-  shell: pg_config --bindir
-  register: pg_bindir_output
-- set_fact: 
-    pg_bindir: "{{ pg_bindir_output.stdout }}"
-
 - name: System - Create services.slice
   template:
     src: files/services.slice.j2
