@@ -108,7 +108,7 @@
   with_items:
     - '/etc/postgresql-custom'
 
-- name: create placeholder files
+- name: create placeholder config files
   file:
     path: '/etc/postgresql-custom/{{ item }}'
     state: touch

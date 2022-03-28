@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,postgres,wal-g
+    groups: root,admin,postgres,pgbouncer,wal-g
     append: yes
 
 - name: Find all files in files/admin_api_scripts

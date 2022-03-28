@@ -9,6 +9,7 @@
 
   vars:
     sql_files:
+      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
 
   environment:
@@ -28,6 +29,11 @@
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
+
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      tags:
+        - install-pgbouncer
 
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
@@ -60,11 +66,6 @@
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
-
-    - name: Install PgBouncer
-      import_tasks: tasks/setup-pgbouncer.yml
-      tags:
-        - install-pgbouncer
 
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
