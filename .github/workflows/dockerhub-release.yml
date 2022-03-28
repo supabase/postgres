@@ -9,7 +9,9 @@ on:
 
 jobs:
   docker_release:
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 360
+
     steps:
       - uses: actions/checkout@v2
       
