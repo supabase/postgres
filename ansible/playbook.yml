@@ -35,6 +35,9 @@
       tags:
         - install-pgbouncer
 
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
+
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
       tags:
@@ -63,9 +66,6 @@
         path: /tmp/{{ item.dest }}
         state: absent
       loop: "{{ sql_files }}"
-
-    - name: Install WAL-G
-      import_tasks: tasks/setup-wal-g.yml
 
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml

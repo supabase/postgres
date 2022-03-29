@@ -61,13 +61,17 @@
       USE_LIBSODIUM: true
   become: yes
 
-# Create pgbouncer user
+- name: Create wal-g group
+  group:
+    name: wal-g
+    state: present
+
 - name: Create wal-g user
   user:
     name: wal-g
     shell: /bin/false
     comment: WAL-G user
-    groups: postgres
+    groups: postgres, wal-g
 
 - name: Give postgres access to execute wal-g binary as wal-g user
   copy:
