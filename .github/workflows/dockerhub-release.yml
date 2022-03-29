@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - test_dockerfile
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'docker.vars*'
