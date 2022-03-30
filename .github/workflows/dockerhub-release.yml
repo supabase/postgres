@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'docker.vars*'
+      - 'Dockerfile'
 
 jobs:
   docker_release:
