@@ -95,26 +95,6 @@
     group: wal-g
     mode: '0760'
 
-- name: Create logs dir
-  become: yes
-  file:
-    path: /var/log/wal-g
-    state: directory
-    owner: wal-g
-
-- name: Create log files
-  become: yes
-  file:
-    path: "/var/log/wal-g/{{ item }}.log"
-    state: touch
-    owner: wal-g
-    mode: '0700'
-  with_items:
-    - backup-push
-    - backup-fetch
-    - wal-push
-    - wal-fetch
-
 # Clean up Go
 - name: Uninstall Go
   become: yes
