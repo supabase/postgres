@@ -103,18 +103,16 @@
         policy: deny
         direction: incoming
 
-    - name: Find all files in files/logrotate_config
-      find:
-        paths: files/logrotate_config
-      register: logrotate_config_dir
-
-    - name: Move logrotate configs to /etc/logrotate.d/
+    - name: Move logrotate files to /etc/logrotate.d/ 
       copy:
-        src: "{{ item.path }}"
-        dest: "/etc/logrotate.d/{{ item.path | basename }}"
+        src: "files/logrotate_config/{{ item.file }}"
+        dest: "/etc/logrotate.d/{{ item.file }}"
         mode: "0700"
         owner: root
-      with_items: "{{ logrotate_config_dir.files }}"
+      loop:
+        - { file: "logrotate-postgres-csv.conf" }
+        - { file: "logrotate-postgres.conf" }
+        - { file: "logrotate-walg.conf" }
 
     - name: Disable cron access
       copy:
