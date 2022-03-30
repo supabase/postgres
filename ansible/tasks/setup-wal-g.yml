@@ -71,7 +71,8 @@
     name: wal-g
     shell: /bin/false
     comment: WAL-G user
-    groups: postgres, wal-g
+    group: wal-g
+    groups: wal-g, postgres
 
 - name: Give postgres access to execute wal-g binary as wal-g user
   copy:

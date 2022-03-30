@@ -82,6 +82,7 @@
     name: postgres
     shell: /bin/false
     comment: Postgres user
+    group: postgres
     groups: postgres,ssl-cert
 
 - name: Create relevant directories
@@ -151,15 +152,6 @@
     ansible_command_timeout: 60
     # Circumvents the following error:
     # "Timeout (12s) waiting for privilege escalation prompt"
-
-- name: Ensure /var/lib/postgresql/data is owned by postgres:postgres
-  become: yes
-  file:
-    path: /var/lib/postgresql/data
-    owner: postgres
-    group: postgres
-    state: directory
-    recurse: yes
 
 - name: copy PG systemd unit
   template:
