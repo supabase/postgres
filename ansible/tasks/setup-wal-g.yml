@@ -96,6 +96,21 @@
     group: wal-g
     mode: '0760'
 
+- name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
+  template:
+    src: "files/postgresql_config/custom_walg.conf.j2"
+    dest: /etc/postgresql-custom/wal-g.conf
+    mode: 0664
+    owner: postgres
+    group: postgres
+
+- name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
+    replace: "include = '/etc/postgresql-custom/wal-g.conf'"
+
 # Clean up Go
 - name: Uninstall Go
   become: yes
