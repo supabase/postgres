@@ -1,0 +1,16 @@
+# - Archiving -
+
+#archive_mode = on
+#archive_command = 'sudo -u wal-g wal-g wal-push %p --config /etc/wal-g/config.json >> /var/log/wal-g/wal-push.log 2>&1'
+#archive_timeout = 120
+
+
+# - Archive Recovery -
+
+#restore_command = 'sudo -u wal-g wal-g wal-fetch "%f" "%p" --config /etc/wal-g/config.json >> /var/log/wal-g/wal-fetch.log 2>&1'
+
+
+# - Recovery Target -
+
+#recovery_target_time = ''
+#recovery_target_action = 'promote'

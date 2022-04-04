@@ -1,20 +1,30 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,postgres,pgbouncer
+    groups: root,admin,postgres,pgbouncer,wal-g
     append: yes
 
-- name: disk script
+- name: Move shell scripts to /root dir
   copy:
-    src: files/grow_fs.sh
-    dest: /root/grow_fs.sh
-    mode: '0700'
+    src: "files/admin_api_scripts/{{ item.file }}"
+    dest: "/root/{{ item.file }}"
+    mode: "0700"
     owner: root
+  loop:
+    - { file: "commence_walg_backup.sh" }
+    - { file: "complete_walg_restore.sh" }
+    - { file: "disable_walg.sh" }
+    - { file: "enable_walg.sh" }
+    - { file: "grow_fs.sh" }
 
 - name: give adminapi user permissions
   copy:
     content: |
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
+      %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
+      %adminapi ALL= NOPASSWD: /root/complete_walg_restore.sh
+      %adminapi ALL= NOPASSWD: /root/disable_walg.sh
+      %adminapi ALL= NOPASSWD: /root/enable_walg.sh
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service

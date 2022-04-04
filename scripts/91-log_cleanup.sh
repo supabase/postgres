@@ -12,3 +12,9 @@ chown pgbouncer:postgres /var/log/pgbouncer.log
 
 mkdir /var/log/postgresql
 chown postgres:postgres /var/log/postgresql
+
+mkdir /var/log/wal-g
+cd /var/log/wal-g
+touch backup-push.log backup-fetch.log wal-push.log wal-fetch.log
+chown -R wal-g:wal-g /var/log/wal-g
+chmod -R 0700 /var/log/wal-g

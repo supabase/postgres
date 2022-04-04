@@ -71,13 +71,19 @@
     target: install-world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
+- name: Create postgres group
+  group:
+    name: postgres
+    state: present
+
 # Create postgres user
 - name: Create postgres user
   user:
     name: postgres
     shell: /bin/false
     comment: Postgres user
-    groups: ssl-cert
+    group: postgres
+    groups: postgres,ssl-cert
 
 - name: Create relevant directories
   file:
@@ -141,7 +147,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
   vars:
     ansible_command_timeout: 60
     # Circumvents the following error:

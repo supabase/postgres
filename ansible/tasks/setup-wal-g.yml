@@ -24,7 +24,7 @@
 # Download WAL-G
 - name: wal-g - download latest version
   git:
-    repo: https://github.com/darora/wal-g.git
+    repo: https://github.com/wal-g/wal-g.git
     dest: /tmp/wal-g
     version: "{{ wal_g_release }}"
   become: yes
@@ -60,6 +60,56 @@
       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
       USE_LIBSODIUM: true
   become: yes
+
+- name: Create wal-g group
+  group:
+    name: wal-g
+    state: present
+
+- name: Create wal-g user
+  user:
+    name: wal-g
+    shell: /bin/false
+    comment: WAL-G user
+    group: wal-g
+    groups: wal-g, postgres
+
+- name: Give postgres access to execute wal-g binary as wal-g user
+  copy:
+    content: |
+      postgres   ALL=(wal-g) NOPASSWD: /usr/local/bin/wal-g
+    dest: /etc/sudoers.d/postgres
+
+- name: Create a config directory owned by wal-g
+  file:
+    path: /etc/wal-g
+    state: directory
+    owner: wal-g
+    group: wal-g
+    mode: '0760'
+
+- name: Create /etc/wal-g/config.json
+  file:
+    path: /etc/wal-g/config.json
+    state: touch
+    owner: wal-g
+    group: wal-g
+    mode: '0760'
+
+- name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
+  template:
+    src: "files/postgresql_config/custom_walg.conf.j2"
+    dest: /etc/postgresql-custom/wal-g.conf
+    mode: 0664
+    owner: postgres
+    group: postgres
+
+- name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
+    replace: "include = '/etc/postgresql-custom/wal-g.conf'"
 
 # Clean up Go
 - name: Uninstall Go

@@ -19,7 +19,7 @@ golang_version_checksum:
   arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
   amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
 
-wal_g_release: "v1.1-backports"
+wal_g_release: "v1.1"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
