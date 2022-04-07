@@ -114,21 +114,20 @@ source "amazon-ebssurrogate" "source" {
   }
 
   run_tags = {
-    Name = "Supabase AMI Builder(arm64-ext4-10G)"
     creator = "packer"
+    appType = "postgres"
   }
   run_volume_tags = {
-    Name = "Supabase AMI Builder(arm64-ext4-10G)"
     creator = "packer"
+    appType = "postgres"
   }
   snapshot_tags = {
     creator = "packer"
+    appType = "postgres"
   }
   tags = {
-    appType = "postgres"
     creator = "packer"
-    environment = "${var.environment}"
-    Name = "Supabase AMI (arm64-ext4-10G)"
+    appType = "postgres"
   }
 
   communicator = "ssh"
