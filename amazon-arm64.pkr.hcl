@@ -10,7 +10,7 @@ variable "profile" {
 
 variable "ami_name" {
   type    = string
-  default = "supabase-postgres-fastboot"
+  default = "supabase-postgres"
 }
 
 variable "ami_regions" {
@@ -72,13 +72,17 @@ locals {
   creator = "packer"
 }
 
+variable "postgres-version" {
+  type = string
+  default = ""
+}
 
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
   #access_key    = "${var.aws_access_key}"
-  ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  ami_description = "Supabase AMI (arm64-ext4-10g)"
+  #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  ami_name = "${var.ami_name}-${var.postgres-version}"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
@@ -101,8 +105,7 @@ source "amazon-ebssurrogate" "source" {
     device_name = "/dev/xvdf"
     delete_on_termination = true
     volume_size = 10
-    volume_type = "gp2"
-    encrypted = true
+    volume_type = "gp3"
    }
 
   launch_block_device_mappings {

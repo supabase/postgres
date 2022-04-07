@@ -35,7 +35,6 @@ elif [ -n "$(command -v apt-get)" ]; then
 	git-man  \
 	ansible \
 	libasound2 \
-	llvm-11-dev \
 	libicu-dev \
 	libcgal-dev \
 	libc6-dev  \
