@@ -3,7 +3,7 @@ name: Run CI checks
 on:
   push:
     branches:
-      - wip/fastboot
+      - develop
 
 jobs:
   build:
