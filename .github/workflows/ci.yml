@@ -3,7 +3,7 @@ name: Run CI checks
 on:
   push:
     branches:
-      - develop
+      - da/upgrade-adminapi
 
 jobs:
   build:
