@@ -70,8 +70,8 @@ timescaledb_release: "2.3.0"
 wal2json_release: "2_4"
 wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
 
-supautils_release: "1.2.0"
-supautils_release_checksum: sha1:7a86d7068905e41cc6b1eab71a0095845de15a75
+supautils_release: "1.2.1"
+supautils_release_checksum: sha1:23ec7bb2323f9f4c81fd8dfdb1de5811918a1d30
 
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
