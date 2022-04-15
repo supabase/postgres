@@ -86,7 +86,7 @@
     state: directory
     owner: wal-g
     group: wal-g
-    mode: '0760'
+    mode: '0770'
 
 - name: Create /etc/wal-g/config.json
   file:
@@ -94,7 +94,7 @@
     state: touch
     owner: wal-g
     group: wal-g
-    mode: '0760'
+    mode: '0664'
 
 - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
   template:
