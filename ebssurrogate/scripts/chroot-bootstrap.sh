@@ -98,6 +98,9 @@ function install_packages_for_build {
 	 maven default-jre default-jdk \
 	 curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
 	 liblzo2-dev
+
+	# Mark llvm as manual to prevent auto removal
+	apt-mark manual libllvm11:arm64
 }
 
 function setup_grub_conf_arm64 {
