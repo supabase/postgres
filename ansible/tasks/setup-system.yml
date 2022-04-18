@@ -84,3 +84,12 @@
   systemd:
    name: systemd-journald
    state: restarted
+
+- name: enable timestamps for shell history
+  copy:
+    content: |
+      export HISTTIMEFORMAT='%d/%m/%y %T '
+    dest: /etc/profile.d/09-history-timestamps.sh
+    mode: 0644
+    owner: root
+    group: root
