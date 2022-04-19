@@ -67,8 +67,7 @@ pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
 timescaledb_release: "2.3.0"
 
-wal2json_release: "2_4"
-wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
+wal2json_commit_sha: 53b548a29ebd6119323b6eb2f6013d7c5fe807ec
 
 supautils_release: "1.2.1"
 supautils_release_checksum: sha1:23ec7bb2323f9f4c81fd8dfdb1de5811918a1d30
