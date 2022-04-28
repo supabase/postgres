@@ -66,7 +66,8 @@ function update_install_packages {
 		fail2ban \
 		locales \
 		at \
-		less 
+		less \
+		python3-systemd
 
 	if [ "${ARCH}" = "arm64" ]; then
 		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools
