@@ -7,8 +7,7 @@
 
 # - Archive Recovery -
 
-#restore_command = 'sudo -u wal-g wal-g wal-fetch "%f" "%p" --config /etc/wal-g/config.json >> /var/log/wal-g/wal-fetch.log 2>&1'
-
+#restore_command = '/home/postgres/wal-fetch.sh %p %f >> /var/log/wal-g/wal-fetch.log 2>&1'
 
 # - Recovery Target -
 
