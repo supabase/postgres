@@ -78,7 +78,7 @@
   copy:
     content: |
       postgres   ALL=(wal-g) NOPASSWD: /usr/local/bin/wal-g
-      postgres   ALL=(root) NOPASSWD: /usr/bin/chown
+      postgres   ALL=(root) NOPASSWD: /usr/bin/chown postgres:postgres /tmp/*
     dest: /etc/sudoers.d/postgres
 
 - name: Create a config directory owned by wal-g
