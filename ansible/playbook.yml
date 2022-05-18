@@ -121,6 +121,7 @@
         - { file: "logrotate-postgres-csv.conf" }
         - { file: "logrotate-postgres.conf" }
         - { file: "logrotate-walg.conf" }
+        - { file: "logrotate-postgres-auth.conf" }
 
     - name: Disable cron access
       copy:

@@ -217,6 +217,12 @@ function clean_system {
 	mkdir -p /mnt/var/log/postgresql
 	chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
 
+	# Setup wal-g logs
+	mkdir /mnt/var/log/wal-g
+	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log}
+	chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
+	chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
+
 	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*
 	rm -rf /mnt/root/.cache
