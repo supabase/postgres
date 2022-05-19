@@ -1,10 +1,15 @@
 # set default bantime to 30 minutes
-- name: supautils - add supautils to shared_preload_libraries
+- name: extend bantime
   become: yes
   replace:
     path: /etc/fail2ban/jail.conf
     regexp: bantime  = 10m
     replace: bantime  = 1800
+
+- name: Configure journald
+  copy:
+    src: files/fail2ban_config/jail-ssh.conf
+    dest: /etc/fail2ban/jail.d/sshd.local
 
 # postgresql
 - name: import jail.d/postgresql.conf

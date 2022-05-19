@@ -10,6 +10,15 @@
 - name: filter out audit logs from journald # c.f. https://osquery.readthedocs.io/en/stable/installation/install-linux/
   shell: |
     systemctl mask --now systemd-journald-audit.socket
+  when: not ebssurrogate_mode
+
+- name: filter out audit logs from journald without Systemd
+  ansible.builtin.file:
+    src: /dev/null
+    dest: /etc/systemd/system/systemd-journald-audit.socket
+    state: link
+  become: yes
+  when: ebssurrogate_mode
 
 - name: install systemd service
   template:

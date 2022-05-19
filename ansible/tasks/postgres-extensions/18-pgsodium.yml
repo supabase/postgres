@@ -1,4 +1,10 @@
 # libsodium and pgsodium
+- name: determine postgres bin directory
+  shell: pg_config --bindir
+  register: pg_bindir_output
+- set_fact: 
+    pg_bindir: "{{ pg_bindir_output.stdout }}"
+
 - name: libsodium - download libsodium
   get_url:
     url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
@@ -59,8 +65,14 @@
 - name: import pgsodium_getkey_urandom.sh
   template:
     src: files/pgsodium_getkey_urandom.sh.j2
-    dest: /usr/lib/postgresql/bin/pgsodium_getkey_urandom.sh
+    dest: "{{ pg_bindir }}/pgsodium_getkey_urandom.sh"
     owner: postgres
     group: postgres
     mode: 0700
 
+- name: pgsodium - set pgsodium.getkey_script
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey_urandom.sh'

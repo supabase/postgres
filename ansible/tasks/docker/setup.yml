@@ -28,7 +28,7 @@
     platform: "{{ platform_output.stdout }}"
 
 - name: Setup - import postgresql.conf
-  synchronize:
+  template:
     src: files/postgresql_config/postgresql.conf.j2
     dest: /etc/postgresql/postgresql.conf
 

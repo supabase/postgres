@@ -41,7 +41,6 @@
     target: install
   become: yes
 
-# Create pgbouncer user
 - name: Create pgbouncer user
   user:
     name: pgbouncer
@@ -49,13 +48,34 @@
     comment: PgBouncer user
     groups: postgres,ssl-cert
 
-# Create /etc/postgresql directory and make sure postgres group owns it
 - name: PgBouncer - create a directory if it does not exist
   file:
     path: /etc/pgbouncer
     state: directory
     owner: pgbouncer
+    group: pgbouncer
     mode: '0700'
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    state: directory
+    owner: pgbouncer
+    group: pgbouncer
+    path: '{{ item }}'
+    mode: '0775'
+  with_items:
+    - '/etc/pgbouncer-custom'
+
+- name: create placeholder config files
+  file:
+    path: '/etc/pgbouncer-custom/{{ item }}'
+    state: touch
+    owner: pgbouncer
+    group: pgbouncer
+    mode: 0664
+  with_items:
+    - 'generated-optimizations.ini'
+    - 'custom-overrides.ini'
 
 - name: PgBouncer - adjust pgbouncer.ini
   copy:
@@ -88,18 +108,6 @@
     - "host  all  pgbouncer  0.0.0.0/0  reject"
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
     - "# Connection configuration for pgbouncer user"
-
-# Run PgBouncer SQL script
-- name: Transfer init SQL files
-  copy:
-    src: files/pgbouncer_config/pgbouncer_auth_schema.sql
-    dest: /tmp/00-schema.sql
-
-- name: Execute init SQL files
-  become: yes
-  become_user: postgres
-  shell:
-    cmd: /usr/lib/postgresql/bin/psql -f /tmp/00-schema.sql
 
 # Add fail2ban filter
 - name: import jail.d/pgbouncer.conf

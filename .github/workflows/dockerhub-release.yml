@@ -5,7 +5,8 @@ on:
     branches:
       - develop
     paths:
-      - docker.vars*
+      - '.github/workflows/dockerhub-release.yml'
+      - 'docker.vars*'
 
 jobs:
   docker_release:
@@ -41,7 +42,6 @@ jobs:
           context: .
           push: true
           tags: supabase/postgres:latest,supabase/postgres:${{ steps.settings.outputs.docker_version }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           build-args: |
-            "PLATFORM=${{steps.settings.outputs.platform}}"
             "VERSION=${{steps.settings.outputs.postgres_version}}"

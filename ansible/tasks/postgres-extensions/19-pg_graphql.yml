@@ -1,0 +1,50 @@
+# pg_graphql
+- name: pg_graphql - download & install dependencies
+  apt:
+    pkg:
+      - bison
+      - build-essential
+      - clang-11
+      - cmake
+      - flex
+      - python2
+    update_cache: yes
+    install_recommends: no
+
+- name: pg_graphql - download libgraphqlparser
+  git:
+    repo: https://github.com/graphql/libgraphqlparser.git
+    dest: /tmp/libgraphqlparser
+    version: "{{ libgraphqlparser_release }}"
+  become: yes
+
+- name: pg_graphql - compile libgraphqlparser
+  shell:
+    cmd: "cmake ."
+    chdir: /tmp/libgraphqlparser
+  become: yes
+
+- name: pg_graphql - build libgraphqlparser
+  make:
+    chdir: /tmp/libgraphqlparser
+    target: install
+  become: yes
+
+- name: pg_graphql - download latest release
+  git:
+    repo: https://github.com/supabase/pg_graphql.git
+    dest: /tmp/pg_graphql
+    version: "{{ pg_graphql_release }}"
+  become: yes
+
+- name: pg_graphql - build
+  make:
+    chdir: /tmp/pg_graphql
+    target: install
+  become: yes
+
+- name: pg_graphql - update links and cache for shared libraries
+  shell:
+    cmd: "/sbin/ldconfig -v"
+    chdir: /tmp/pg_graphql
+  become: yes

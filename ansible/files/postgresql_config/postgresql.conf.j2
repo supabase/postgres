@@ -724,8 +724,6 @@ jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
 
-pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey_urandom.sh'
-
 #dynamic_library_path = '$libdir'
 #gin_fuzzy_search_limit = 0
 
@@ -788,6 +786,13 @@ pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey_urandom.sh'
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
 
+# Automatically generated optimizations
+#include = '/etc/postgresql-custom/generated-optimizations.conf'
+# User-supplied custom parameters, override any automatically generated ones
+#include = '/etc/postgresql-custom/custom-overrides.conf'
+
+# WAL-G specific configurations
+#include = '/etc/postgresql-custom/wal-g.conf'
 
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS

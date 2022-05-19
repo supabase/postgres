@@ -46,6 +46,42 @@
     state: present
     line: supautils.reserved_memberships = 'pg_read_server_files, pg_write_server_files, pg_execute_server_program'
 
+- name: supautils - set supautils.placeholders
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.placeholders = 'response.headers'
+    
+- name: supautils - set supautils.placeholders_disallowed_values
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.placeholders_disallowed_values = 'content-type'
+
+- name: supautils - set supautils.privileged_extensions
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    # full list: supautils.privileged_extensions = 'address_standardizer, address_standardizer_data_us, adminpack, amcheck, autoinc, bloom, btree_gin, btree_gist, citext, cube, dblink, dict_int, dict_xsyn, earthdistance, file_fdw, fuzzystrmatch, hstore, http, insert_username, intagg, intarray, isn, lo, ltree, moddatetime, old_snapshot, pageinspect, pg_buffercache, pg_cron, pg_freespacemap, pg_graphql, pg_hashids, pg_net, pg_prewarm, pg_stat_statements, pg_surgery, pg_trgm, pg_visibility, pgaudit, pgcrypto, pgjwt, pgrouting, pgrowlocks, pgsodium, pgstattuple, pgtap, plcoffee, pljava, plls, plpgsql, plpgsql_check, plv8, postgis, postgis_raster, postgis_sfcgal, postgis_tiger_geocoder, postgis_topology, postgres_fdw, refint, rum, seg, sslinfo, supautils, tablefunc, tcn, tsm_system_rows, tsm_system_time, unaccent, uuid-ossp'
+    #
+    # omitted because may be unsafe: adminpack, amcheck, file_fdw, lo, old_snapshot, pageinspect, pg_buffercache, pg_freespacemap, pg_prewarm, pg_surgery, pg_visibility, pgstattuple
+    #
+    # omitted because doesn't require superuser: pgjwt, pgtap, postgis_tiger_geocoder
+    #
+    # omitted because deprecated: intagg
+    #
+    line: supautils.privileged_extensions = 'address_standardizer, address_standardizer_data_us, autoinc, bloom, btree_gin, btree_gist, citext, cube, dblink, dict_int, dict_xsyn, earthdistance, fuzzystrmatch, hstore, http, insert_username, intarray, isn, ltree, moddatetime, pg_cron, pg_graphql, pg_hashids, pg_net, pg_stat_statements, pg_trgm, pgaudit, pgcrypto, pgrouting, pgrowlocks, pgsodium, plcoffee, pljava, plls, plpgsql, plpgsql_check, plv8, postgis, postgis_raster, postgis_sfcgal, postgis_topology, postgres_fdw, refint, rum, seg, sslinfo, supautils, tablefunc, tcn, tsm_system_rows, tsm_system_time, unaccent, uuid-ossp'
+
+- name: supautils - set supautils.privileged_extensions_superuser
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: supautils.privileged_extensions_superuser = 'supabase_admin'
+
 - name: supautils - add supautils to session_preload_libraries
   become: yes
   replace:

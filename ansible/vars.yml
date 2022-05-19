@@ -1,4 +1,5 @@
 supabase_internal: true
+ebssurrogate_mode: true
 
 postgresql_major: "14"
 postgresql_release: "14.1"
@@ -19,7 +20,7 @@ golang_version_checksum:
   arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
   amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
 
-wal_g_release: "v1.1-backports"
+wal_g_release: "v1.1"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
@@ -34,10 +35,10 @@ node_exporter_release_checksum:
   arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
   amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
 
-adminapi_release: 0.15.0
+adminapi_release: 0.20.1
 adminapi_release_checksum:
-  arm64: sha256:ab00f98b632f49f57cff9932b75f3a97ee97351a9fc1440689cd59ffe67cbb52
-  amd64: sha256:d26de514a66e07f553366282305953f9ea7ca00d8db869dea366e848a924a0be
+  arm64: sha256:e2c25c2cd56c16824b749ad298a988bab794b0adffd4ea2f171100598b3ec834
+  amd64: sha256:c8879bf6f40697754a034da100fb260763c6fb44d36c5cbe92c8f616dc3a7ca6
 
 # Postgres Extensions
 postgis_release: "3.1.4"
@@ -66,11 +67,10 @@ pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
 timescaledb_release: "2.3.0"
 
-wal2json_release: "2_4"
-wal2json_release_checksum: sha1:9f5c8dec3c0a5c19b1b77273f67fd9b0b0ab6664
+wal2json_commit_sha: 53b548a29ebd6119323b6eb2f6013d7c5fe807ec
 
-supautils_release: "1.1.2"
-supautils_release_checksum: sha1:2f224207b08bf629b21a0d7f4c236360821ee5c6
+supautils_release: "1.3.0"
+supautils_release_checksum: sha1:932d35a49c08c32e3fc0b7c39601328319f3e416
 
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
@@ -93,6 +93,10 @@ libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 
 pgsodium_release: "2.0.2"
 pgsodium_release_checksum: sha1:24d3348c09d9945f5a27762af41bf8203f82ad8a
+
+libgraphqlparser_release: "v0.7.0"
+
+pg_graphql_release: "v0.3.1"
 
 osquery_deb: 'https://pkg.osquery.io/deb/osquery_5.1.0-1.linux_arm64.deb'
 osquery_deb_checksum: sha1:6b6fa49edcfad5d77aa1e59c75b8708de2f634ac
