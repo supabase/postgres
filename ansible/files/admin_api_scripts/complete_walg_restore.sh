@@ -6,6 +6,7 @@ set -euo pipefail
 sed -i "s/.*restore_command/#restore_command/" /etc/postgresql-custom/wal-g.conf
 sed -i "s/.*recovery_target_time/#recovery_target_time/" /etc/postgresql-custom/wal-g.conf
 sed -i "s/.*recovery_target_action/#recovery_target_action/" /etc/postgresql-custom/wal-g.conf
+sed -i "s/.*recovery_target_timeline/#recovery_target_timeline/" /etc/postgresql-custom/wal-g.conf
 
 # Cleanup /tmp
 rm -rf /tmp/walg_data/ /tmp/.wal-g/
