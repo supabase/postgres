@@ -15,7 +15,7 @@
   git:
     repo: https://github.com/graphql/libgraphqlparser.git
     dest: /tmp/libgraphqlparser
-    version: "{{ libgraphqlparser_release }}"
+    version: "{{ libgraphqlparser_commit_sha }}"
   become: yes
 
 - name: pg_graphql - compile libgraphqlparser
