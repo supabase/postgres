@@ -4,13 +4,39 @@ set -euo pipefail
 
 string=$1
 
-# conditions
-# no space that could lead to multiple files
-# no form of slashes or two dots that leads to a relative path
-if [[ $string =~ \ |\'|\.{2}|\/|\\ ]]; then
-    echo "Invalid string. Exiting."
-    exit 1
+if [[ $string = "" ]]; then
+	echo "Nothing supplied. Exiting."
+	exit 1
+fi
+
+full_path=/tmp/$string
+
+num_paths=$(readlink -f $full_path | wc -l)
+
+# Checks if supplied string contains multiple paths
+# For example, "correct/path /var/lib/injected/path /var/lib/etc"
+if [ $num_paths -gt 1 ]; then
+	echo "Multiple paths supplied. Exiting."
+	exit 1
+fi
+
+base_dir=$(readlink -f $full_path | cut -d'/' -f2)
+
+# Checks if directory/ file to be manipulated 
+# is indeed within the /tmp directory
+# For example, "/tmp/../var/lib/postgresql/..." 
+# will return "var" as the value for $base_dir
+if [ $base_dir != "tmp" ]; then
+	echo "Attempt to manipulate a file not in /tmp. Exiting."
+	exit 1
+fi
+
+# Checks if change of ownership will be applied to a file
+# If not, exit
+if [[ ! -f $full_path ]]; then
+	echo "Either file does not exist or is a directory.  Exiting."
+	exit 1
 fi
 
 # once valid, proceed to change ownership
-chown postgres:postgres  /tmp/$string
+chown postgres:postgres $full_path
