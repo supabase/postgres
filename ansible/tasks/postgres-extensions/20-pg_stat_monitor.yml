@@ -1,7 +1,18 @@
 # pg_stat_monitor
 - name: pg_stat_monitor - download and install dependencies
-  apt:
-    pkg:
-      - percona-pg-stat-monitor14
-    update_cache: yes
-    install_recommends: no
+  git:
+    repo: https://github.com/percona/pg_stat_monitor.git
+    dest: /tmp/pg_stat_monitor
+    version: "{{ pg_stat_monitor_release }}"
+    become: yes
+
+- name: pg_stat_monitor build and install
+  make:
+    chdir: /tmp/pg_stat_monitor
+    params: USE_PGXS=1
+
+- name: pg_stat_monitor build and install
+  make:
+    chdir: /tmp/pg_stat_monitor
+    target: install
+    params: USE_PGXS=1
