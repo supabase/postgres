@@ -1,0 +1,7 @@
+# pg_stat_monitor
+- name: pg_stat_monitor - download and install dependencies
+  apt:
+    pkg:
+      - percona-pg-stat-monitor14
+    update_cache: yes
+    install_recommends: no
