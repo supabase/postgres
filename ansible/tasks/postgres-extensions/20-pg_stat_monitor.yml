@@ -6,12 +6,12 @@
     version: "{{ pg_stat_monitor_release }}"
     become: yes
 
-- name: pg_stat_monitor build and install
+- name: pg_stat_monitor build 
   make:
     chdir: /tmp/pg_stat_monitor
     params: USE_PGXS=1
 
-- name: pg_stat_monitor build and install
+- name: pg_stat_monitor install
   make:
     chdir: /tmp/pg_stat_monitor
     target: install
