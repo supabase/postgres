@@ -9,6 +9,6 @@ sed -i "s/.*recovery_target_action/#recovery_target_action/" /etc/postgresql-cus
 sed -i "s/.*recovery_target_timeline/#recovery_target_timeline/" /etc/postgresql-custom/wal-g.conf
 
 # Cleanup /tmp
-rm -rf /tmp/walg_data/ /tmp/.wal-g/
+rm -rf /tmp/walg_data/ /tmp/.wal-g/ /tmp/wal_fetch_dir/
 
 echo "Cleanup post WAL-G restoration complete"

@@ -1,17 +1,26 @@
 #! /usr/bin/env bash
 
-function commence_walg_restore {
+function commence_walg_restore {    
+    # Clear everything beforehand
+    if [[ -d /tmp/wal_fetch_dir ]]; then
+        rm -rf /tmp/wal_fetch_dir
+    fi
+    
+    mkdir /tmp/wal_fetch_dir
+    chown postgres:postgres /tmp/wal_fetch_dir
+    chmod 770 /tmp/wal_fetch_dir
+    
     backup_name=$1
     recovery_target_time=$2
 
-    echo $recovery_target_time
+    echo "$recovery_target_time"
     
     # Stop database and empty it
     systemctl stop postgresql
     rm -rf /var/lib/postgresql/data/*
 
     # Download base backup
-    wal-g backup-fetch /var/lib/postgresql/data $backup_name --config /etc/wal-g/config.json
+    wal-g backup-fetch /var/lib/postgresql/data "$backup_name" --config /etc/wal-g/config.json
 
     # Signal for PITR upon restarting the DB
     touch /var/lib/postgresql/data/recovery.signal
