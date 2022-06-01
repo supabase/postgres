@@ -7,10 +7,10 @@
 
 # - Archive Recovery -
 
-#restore_command = 'sudo -u wal-g wal-g wal-fetch "%f" "%p" --config /etc/wal-g/config.json >> /var/log/wal-g/wal-fetch.log 2>&1'
-
+#restore_command = '/home/postgres/wal_fetch.sh %f %p >> /var/log/wal-g/wal-fetch.log 2>&1'
 
 # - Recovery Target -
 
 #recovery_target_time = ''
 #recovery_target_action = 'promote'
+#recovery_target_timeline = 'current'

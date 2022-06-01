@@ -78,6 +78,7 @@
   copy:
     content: |
       postgres   ALL=(wal-g) NOPASSWD: /usr/local/bin/wal-g
+      postgres   ALL=(root)  NOPASSWD: /root/wal_change_ownership.sh
     dest: /etc/sudoers.d/postgres
 
 - name: Create a config directory owned by wal-g
@@ -103,6 +104,21 @@
     mode: 0664
     owner: postgres
     group: postgres
+
+- name: Add script to be run for restore_command
+  template:
+    src: "files/walg_helper_scripts/wal_fetch.sh"
+    dest: /home/postgres/wal_fetch.sh
+    mode: 0500
+    owner: postgres
+    group: postgres
+
+- name: Add helper script for wal_fetch.sh
+  template:
+    src: "files/walg_helper_scripts/wal_change_ownership.sh"
+    dest: /root/wal_change_ownership.sh
+    mode: 0700
+    owner: root
 
 - name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
   become: yes

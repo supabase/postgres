@@ -12,6 +12,7 @@
     owner: root
   loop:
     - { file: "commence_walg_backup.sh" }
+    - { file: "commence_walg_restore.sh" }
     - { file: "complete_walg_restore.sh" }
     - { file: "disable_walg.sh" }
     - { file: "enable_walg.sh" }
@@ -22,6 +23,7 @@
     content: |
       %adminapi ALL= NOPASSWD: /root/grow_fs.sh
       %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
+      %adminapi ALL= NOPASSWD: /root/commence_walg_restore.sh
       %adminapi ALL= NOPASSWD: /root/complete_walg_restore.sh
       %adminapi ALL= NOPASSWD: /root/disable_walg.sh
       %adminapi ALL= NOPASSWD: /root/enable_walg.sh
