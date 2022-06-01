@@ -9,7 +9,7 @@ StandardOutput=append:/var/log/postgres_exporter.stdout
 StandardError=append:/var/log/postgres_exporter.error
 Restart=always
 RestartSec=3
-Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_statements.track=none application_name=postgres_exporter"
+Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_monitor.track=none application_name=postgres_exporter"
 
 [Install]
 WantedBy=multi-user.target
