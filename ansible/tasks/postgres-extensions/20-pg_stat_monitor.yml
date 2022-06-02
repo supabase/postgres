@@ -4,7 +4,7 @@
     repo: https://github.com/percona/pg_stat_monitor.git
     dest: /tmp/pg_stat_monitor
     version: "{{ pg_stat_monitor_release }}"
-    become: yes
+  become: yes
 
 - name: pg_stat_monitor build 
   make:
