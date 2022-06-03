@@ -58,7 +58,7 @@
   lineinfile:
     path: /etc/postgresql/postgresql.conf
     state: present
-    line: supautils.placeholders_disallowed_values = 'content-type'
+    line: supautils.placeholders_disallowed_values = '"content-type"'
 
 - name: supautils - set supautils.privileged_extensions
   become: yes
