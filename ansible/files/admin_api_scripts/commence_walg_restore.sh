@@ -34,7 +34,7 @@ function commence_walg_restore {
     sed -i "s/#restore_command/restore_command/" /etc/postgresql-custom/wal-g.conf 
 
     # Set up parameters for PITR
-    sed -i "s/.*recovery_target_time=.*/recovery_target_time = '$recovery_target_time'/" /etc/postgresql-custom/wal-g.conf
+    sed -i "s/.*recovery_target_time =.*/recovery_target_time = '$recovery_target_time'/" /etc/postgresql-custom/wal-g.conf
     sed -i "s/.*recovery_target_action/recovery_target_action/" /etc/postgresql-custom/wal-g.conf
     sed -i "s/.*recovery_target_timeline/recovery_target_timeline/" /etc/postgresql-custom/wal-g.conf
 
