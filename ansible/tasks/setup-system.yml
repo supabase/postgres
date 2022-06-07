@@ -70,8 +70,6 @@
     dest: /etc/systemd/system/services.slice
   when: not ebssurrogate_mode
 
-- include_tasks: tasks/setup-osquery.yml
-
 - name: System - systemd reload
   systemd: daemon_reload=yes
 
