@@ -21,7 +21,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [pgsql-http](https://github.com/pramsey/pgsql-http) | [1.3.1](https://github.com/pramsey/pgsql-http/releases/tag/v1.3.1) | HTTP client for Postgres. |
 | [plpgsql_check](https://github.com/okbob/plpgsql_check) | [2.0.6](https://github.com/okbob/plpgsql_check/releases/tag/v2.0.6) | Linter tool for PL/pgSQL. |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate) | [1.4](https://github.com/eradman/pg-safeupdate/releases/tag/1.4) | Protect your data from accidental updates or deletes. |
-| [wal2json](https://github.com/eulerto/wal2json) | [2.4](https://github.com/eulerto/wal2json/releases/tag/wal2json_2_4) | JSON output plugin for logical replication decoding. |
+| [wal2json](https://github.com/eulerto/wal2json) | [commit](https://github.com/eulerto/wal2json/commit/53b548a29ebd6119323b6eb2f6013d7c5fe807ec) | JSON output plugin for logical replication decoding. |
 | [PL/Java](https://github.com/tada/pljava) | [1.6.3](https://github.com/tada/pljava/releases/tag/V1_6_3) | Write in Java functions in Postgres. |
 | [plv8](https://github.com/plv8/plv8) | [commit](https://github.com/plv8/plv8/commit/3656177d384e3e02b74faa8e2931600f3690ab59) | Write in Javascript functions in Postgres. |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | [commit](https://github.com/pgexperts/pg_plan_filter/commit/5081a7b5cb890876e67d8e7486b6a64c38c9a492) | Only allow statements that fulfill set criteria to be executed. |

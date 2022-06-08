@@ -70,8 +70,6 @@
     dest: /etc/systemd/system/services.slice
   when: not ebssurrogate_mode
 
-- include_tasks: tasks/setup-osquery.yml
-
 - name: System - systemd reload
   systemd: daemon_reload=yes
 
@@ -90,6 +88,15 @@
     content: |
       export HISTTIMEFORMAT='%d/%m/%y %T '
     dest: /etc/profile.d/09-history-timestamps.sh
+    mode: 0644
+    owner: root
+    group: root
+
+- name: set hosts file
+  copy:
+    content: |
+      127.0.0.1   localhost
+    dest: /etc/hosts
     mode: 0644
     owner: root
     group: root
