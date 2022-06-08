@@ -37,6 +37,7 @@ function commence_walg_restore {
     sed -i "s/.*recovery_target_time =.*/recovery_target_time = '$recovery_target_time'/" /etc/postgresql-custom/wal-g.conf
     sed -i "s/.*recovery_target_action/recovery_target_action/" /etc/postgresql-custom/wal-g.conf
     sed -i "s/.*recovery_target_timeline/recovery_target_timeline/" /etc/postgresql-custom/wal-g.conf
+    sed -i "s/.*recovery_target_inclusive/recovery_target_inclusive/" /etc/postgresql-custom/wal-g.conf
 
     # Restart the DB
     systemctl start postgresql
