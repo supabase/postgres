@@ -3,11 +3,12 @@ name: Release on Dockerhub
 on:
   push:
     branches:
-      - develop
+      # - develop
+      - drag/test_docker_14_june
     paths:
-      - '.github/workflows/dockerhub-release.yml'
-      - 'docker.vars*'
-      - 'Dockerfile'
+      - ".github/workflows/dockerhub-release.yml"
+      - "docker.vars*"
+      - "Dockerfile"
 
 jobs:
   docker_release:
@@ -16,7 +17,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - id: settings
-        run:  |
+        run: |
           apt update --yes && apt install --yes jq
           DOCKER_VERSION=$(cat docker.vars.json | jq -r '.["docker-version"]')
           echo "::set-output name=docker_version::$DOCKER_VERSION"
@@ -45,7 +46,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: supabase/postgres:latest,supabase/postgres:${{ steps.settings.outputs.docker_version }}
+          tags: supabase/postgres:${{ steps.settings.outputs.docker_version }}
           platforms: linux/amd64
           build-args: |
             "VERSION=${{steps.settings.outputs.postgres_version}}"
