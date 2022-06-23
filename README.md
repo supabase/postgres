@@ -14,7 +14,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [Postgres contrib modules](https://www.postgresql.org/docs/current/contrib.html) | - | Because everyone should enable `pg_stat_statements`. |
 | [PostGIS](https://postgis.net/) | [3.1.4](https://git.osgeo.org/gitea/postgis/postgis/raw/tag/3.1.4/NEWS) | Postgres' most popular extension - support for geographic objects. |
 | [pgRouting](https://pgrouting.org/) | [v3.3.0](https://github.com/pgRouting/pgrouting/releases/tag/v3.3.0) | Extension of PostGIS - provides geospatial routing functionalities. |
-| [pgTAP](https://pgtap.org/) | [v1.1.0](https://github.com/theory/pgtap/releases/tag/v1.1.0) | Unit Testing for Postgres. |
+| [pgTAP](https://pgtap.org/) | [v1.2.0](https://github.com/theory/pgtap/releases/tag/v1.2.0) | Unit Testing for Postgres. |
 | [pg_cron](https://github.com/citusdata/pg_cron) | [v1.4.1](https://github.com/citusdata/pg_cron/releases/tag/v1.4.1) | Run CRON jobs inside Postgres. |
 | [pgAudit](https://www.pgaudit.org/) | [1.6.1](https://github.com/pgaudit/pgaudit/releases/tag/1.6.1) | Generate highly compliant audit logs. |
 | [pgjwt](https://github.com/michelp/pgjwt) | [commit](https://github.com/michelp/pgjwt/commit/9742dab1b2f297ad3811120db7b21451bca2d3c9) | Generate JSON Web Tokens (JWT) in Postgres. |

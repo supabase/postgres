@@ -47,8 +47,8 @@ postgis_release_checksum: sha1:3077da5136841d9d51a4325a233be8eccf763c38
 pgrouting_release: "3.3.0"
 pgrouting_release_checksum: sha1:7475189f334bc97e1b3587b2f456a573c8aa811a
 
-pgtap_release: "1.1.0"
-pgtap_release_checksum: sha1:cca57708e723de18735a723b774577dc52f6f31e
+pgtap_release: "1.2.0"
+pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
 
 pg_cron_release: "1.4.1"
 pg_cron_release_checksum: sha1:411cb25b64a3aefc26e9b0c9d9de205cbeefe631
