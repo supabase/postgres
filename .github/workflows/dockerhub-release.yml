@@ -13,6 +13,7 @@ on:
 jobs:
   docker_release:
     runs-on: [self-hosted, linux]
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v2
 
