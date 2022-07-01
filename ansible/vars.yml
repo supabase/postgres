@@ -15,12 +15,12 @@ postgrest_x86_release_checksum: sha1:dfd3b88b3acddd0ede52c6bed2bb7c02cbcac5dd
 
 aws_cli_release: "2.2.7"
 
-golang_version: "1.17.3"
+golang_version: "1.18.3"
 golang_version_checksum:
-  arm64: sha256:06f505c8d27203f78706ad04e47050b49092f1b06dc9ac4fbee4f0e4d015c8d4
-  amd64: sha256:550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
+  arm64: sha256:beacbe1441bee4d7978b900136d1d6a71d150f0a9bb77e9d50c822065623a35a
+  amd64: sha256:956f8507b302ab0bb747613695cdae10af99bbd39a90cae522b7c0302cc27245
 
-wal_g_release: "v1.1"
+wal_g_release: "v2.0.0"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha1:f4add34a00afb0b5f594685fc646565a2bda259b
