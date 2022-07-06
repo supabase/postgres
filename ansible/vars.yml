@@ -85,8 +85,8 @@ pg_net_release_checksum: sha1:0695ad2e4e9b2a35a77dfa89bd4c5a90c622eb24
 rum_release: "1.3.9"
 rum_release_checksum: sha1:71901640ccf9e2e1886aad37703a9fd07ced9e53
 
-vector_x86_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-amd64.deb'
-vector_arm_deb: 'https://packages.timber.io/vector/0.17.0/vector-0.17.0-arm64.deb'
+vector_x86_deb: 'https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb' 
+vector_arm_deb: 'https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb'
 
 libsodium_release: "1.0.18"
 libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
