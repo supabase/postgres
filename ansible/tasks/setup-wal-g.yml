@@ -30,21 +30,24 @@
     version: "{{ wal_g_release }}"
   become: yes
 
-- name: wal-g - additional go dependencies
+- name: wal-g - pg_clean
+  make:
+    chdir: /tmp/wal-g
+    target: pg_clean
+  become: yes
+  ignore_errors: yes
+
+- name: wal-g - deps
   make:
     chdir: /tmp/wal-g
     target: deps
-    params:
-      GOBIN: "/usr/local/bin"
-      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-      USE_LIBSODIUM: true
   become: yes
   ignore_errors: yes
 
 - name: wal-g - build and install
   make:
     chdir: /tmp/wal-g
-    target: pg_build
+    target: pg_install
     jobs: "{{ parallel_jobs | default(omit) }}"
     params:
       GOBIN: "/usr/local/bin"
