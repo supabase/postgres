@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-growpart /dev/nvme0n1 2
-resize2fs /dev/nvme0n1p2
+resize2fs /dev/nvme1n1
 
 echo "Done resizing disk"
