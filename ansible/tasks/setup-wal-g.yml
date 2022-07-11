@@ -3,6 +3,7 @@
   become: yes
   apt:
     pkg:
+      - libbrotli-dev
       - liblzo2-dev
       - libsodium-dev
       - cmake
@@ -40,21 +41,11 @@
   become: yes
   ignore_errors: yes
 
-- name: wal-g - build
+- name: wal-g - build and install
   make:
     chdir: /tmp/wal-g
     target: pg_build
     jobs: "{{ parallel_jobs | default(omit) }}"
-    params:
-      GOBIN: "/usr/local/bin"
-      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-      USE_LIBSODIUM: true
-  become: yes
-
-- name: wal-g - install
-  make:
-    chdir: /tmp/wal-g
-    target: pg_install
     params:
       GOBIN: "/usr/local/bin"
       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
