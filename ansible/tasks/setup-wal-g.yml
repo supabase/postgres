@@ -34,6 +34,10 @@
   make:
     chdir: /tmp/wal-g
     target: pg_clean
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
   become: yes
   ignore_errors: yes
 
@@ -41,6 +45,10 @@
   make:
     chdir: /tmp/wal-g
     target: deps
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
   become: yes
   ignore_errors: yes
 
