@@ -5,7 +5,7 @@ FROM postgres:$VERSION
 COPY ansible/ /tmp/ansible/
 
 RUN apt update && \
-    apt install -y ansible && \
+    apt install -y ansible python3 && \
     cd /tmp/ansible && \
     ansible-playbook playbook-docker.yml && \
     apt -y update && \

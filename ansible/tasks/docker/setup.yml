@@ -1,6 +1,3 @@
-- name: Install Python3
-  raw: apt update && apt upgrade -y && apt install python3 -y
-
 - name: Setup - install common dependencies
   apt:
     pkg:
