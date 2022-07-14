@@ -450,10 +450,10 @@ log_file_mode = 0640			# creation mode for log files,
 					# begin with 0 to use octal notation
 log_rotation_age = 1440			# Automatic rotation of logfiles will
 					# happen after that time.  0 disables.
-log_rotation_size = 10240		# Automatic rotation of logfiles will
+log_rotation_size = 0 # Automatic rotation of logfiles will
 					# happen after that much log output.
 					# 0 disables.
-#log_truncate_on_rotation = off		# If on, an existing log file with the
+log_truncate_on_rotation = on # If on, an existing log file with the
 					# same name as the new log file will be
 					# truncated rather than appended to.
 					# But such truncation only occurs on
