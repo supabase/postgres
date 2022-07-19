@@ -160,6 +160,10 @@ function setup_chroot_environment {
 	mount /dev/xvdc /mnt/tmp
 	chmod 777 /mnt/tmp
 
+	# Copy apparmor profiles
+	chmod 644 /tmp/apparmor_profiles/*
+	cp -r /tmp/apparmor_profiles /mnt/tmp/
+
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
 	chroot /mnt /tmp/chroot-bootstrap.sh
@@ -199,7 +203,10 @@ function update_systemd_services {
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/vector.service
 	ln -s /etc/systemd/system/vector.timer /mnt/etc/systemd/system/multi-user.target.wants/vector.timer
 
-	# Uncomment below to Disable postgresql service during first boot.
+	# Disable apparmor during first boot
+	rm -f /mnt/etc/systemd/system/sysinit.target.wants/apparmor.service
+
+	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
 }
 

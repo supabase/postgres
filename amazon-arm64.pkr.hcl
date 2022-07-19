@@ -188,6 +188,11 @@ build {
     destination = "/tmp/vector.timer"
   }
 
+  provisioner "file" {
+    source = "ebssurrogate/files/apparmor_profiles"
+    destination = "/tmp"
+  }
+
   # Copy ansible playbook
   provisioner "shell" {
     inline = ["mkdir /tmp/ansible-playbook"]
