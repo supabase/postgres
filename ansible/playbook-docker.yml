@@ -12,5 +12,8 @@
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
 
+    - name: Finalize docker
+      import_tasks: tasks/docker/finalize.yml
+
     - name: Cleanup container
       import_tasks: tasks/docker/cleanup.yml
