@@ -33,7 +33,7 @@
       - cpu
       - diskstats
       - filesystem
-      - filesystem.ignored-mount-points='^/.+'
+      - filesystem.ignored-mount-points='^/(boot|sys|dev|run).*'
       - loadavg
       - meminfo
       - netdev
