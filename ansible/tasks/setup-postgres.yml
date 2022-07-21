@@ -167,6 +167,24 @@
   with_items: "{{ postgresql_bin.files }}"
 
 # init DB
+- name: Create directory on data volume
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0750
+  with_items:
+    - '/data/pgdata'
+
+- name: Link database data_dir to data volume directory
+  file:
+    src: "/data/pgdata"
+    path: "/var/lib/postgresql/data"
+    state: link
+    force: yes
+
 - name: Initialize the database
   become: yes
   become_user: postgres
