@@ -254,8 +254,8 @@ function umount_reset_mappings {
 	if [ "${ARCH}" = "arm64" ]; then
 		umount /mnt/boot/efi
 	fi
-		umount /mnt/data
-        umount /mnt
+	umount /mnt/data
+	umount /mnt
 
 	# Reset device mappings
 	for dev_link in "${blkdev_mappings[@]}" "${partdev_mappings[@]}"; do
