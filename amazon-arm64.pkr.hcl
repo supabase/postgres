@@ -77,6 +77,11 @@ variable "postgres-version" {
   default = ""
 }
 
+variable "github_token" {
+  type    = string
+  default = "${env("GITHUB_TOKEN")}"
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -209,7 +214,8 @@ build {
       "DOCKER_USER=${var.docker_user}",
       "DOCKER_PASSWD=${var.docker_passwd}",
       "DOCKER_IMAGE=${var.docker_image}",
-      "DOCKER_IMAGE_TAG=${var.docker_image_tag}"
+      "DOCKER_IMAGE_TAG=${var.docker_image_tag}",
+      "GITHUB_TOKEN=${var.github_token}",
     ]
     script = "ebssurrogate/scripts/surrogate-bootstrap.sh"
     execute_command = "sudo -S sh -c '{{ .Vars }} {{ .Path }}'"

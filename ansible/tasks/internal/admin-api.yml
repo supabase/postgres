@@ -49,9 +49,11 @@
 
 - name: adminapi - download commit archive
   get_url:
-    url: "https://github.com/supabase/supabase-admin-api/releases/download/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+    url: "https://api.github.com/repos/supabase/supabase-admin-api/releases/assets/{{ adminapi_release_asset_id[platform] }} "
     dest: /tmp/adminapi.tar.gz
     checksum: "{{ adminapi_release_checksum[platform] }}"
+    headers:
+      Authorization: "token {{ lookup('env','GITHUB_TOKEN') }}"
     timeout: 60
 
 - name: adminapi - unpack archive in /opt
