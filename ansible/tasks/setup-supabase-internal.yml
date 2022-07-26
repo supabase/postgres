@@ -47,6 +47,19 @@
     cmd: |
       usermod -a -G postgres vector
 
+- name: create vector overrides dir
+  file:
+    state: directory
+    owner: root
+    group: root
+    path: /etc/systemd/system/vector.service.d
+    mode: '0700'
+
+- name: Custom systemd overrides - ensure Vector gets restarted
+  copy:
+    src: files/vector.service.conf
+    dest: /etc/systemd/system/vector.service.d/overrides.conf
+
 - name: Create checkpoints dir
   become: yes
   file:
