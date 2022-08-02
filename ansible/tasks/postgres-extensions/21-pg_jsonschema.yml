@@ -19,18 +19,18 @@
 - name: download rust/cargo installer
   when: cargo_exists is failed
   get_url:
-	url: https://sh.rustup.rs
-	dest: /tmp/sh.rustup.rs
-	mode: '0755'
-	force: 'yes'
+    url: https://sh.rustup.rs
+    dest: /tmp/sh.rustup.rs
+    mode: '0755'
+    force: 'yes'
   tags:
-	- rust
+    - rust
 
 - name: install rust/cargo
   when: cargo_exists is failed
   shell: /tmp/sh.rustup.rs -y
   tags:
-	- rust
+    - rust
 
 - name: install cargo-pgx
   shell:
