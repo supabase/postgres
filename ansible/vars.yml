@@ -98,4 +98,7 @@ libgraphqlparser_commit_sha: 3b64cd52d13621921990a5801ba019e8a9402599
 
 pg_graphql_release: "v0.3.2"
 
+pgx_version: "0.4.5"
+pg_jsonschema_release: "v0.1.0"
+
 pg_stat_monitor_release: "1.0.1"
