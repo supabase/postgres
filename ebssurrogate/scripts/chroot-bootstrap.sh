@@ -104,6 +104,13 @@ function install_packages_for_build {
 	apt-mark manual libllvm11:arm64
 }
 
+function setup_apparmor {
+	apt-get install -y apparmor auditd
+
+	# Copy apparmor profiles
+	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
+}
+
 function setup_grub_conf_arm64 {
 cat << EOF > /etc/default/grub
 GRUB_DEFAULT=0
@@ -194,6 +201,7 @@ update_install_packages
 setup_locale
 install_packages_for_build
 install_configure_grub
+setup_apparmor
 setup_hostname
 create_admin_account
 set_default_target

@@ -105,56 +105,13 @@
         state: absent
       loop: "{{ sql_files }}"
 
-    - name: UFW - Allow SSH connections
-      ufw:
-        rule: allow
-        name: OpenSSH
-
-    - name: UFW - Allow connections to postgreSQL (5432)
-      ufw:
-        rule: allow
-        port: "5432"
-
-    - name: UFW - Allow connections to postgreSQL (6543)
-      ufw:
-        rule: allow
-        port: "6543"
-      tags:
-        - install-pgbouncer
-
-    - name: UFW - Deny all other incoming traffic by default
-      ufw:
-        state: enabled
-        policy: deny
-        direction: incoming
-
-    - name: Move logrotate files to /etc/logrotate.d/ 
-      copy:
-        src: "files/logrotate_config/{{ item.file }}"
-        dest: "/etc/logrotate.d/{{ item.file }}"
-        mode: "0700"
-        owner: root
-      loop:
-        - { file: "logrotate-postgres-csv.conf" }
-        - { file: "logrotate-postgres.conf" }
-        - { file: "logrotate-walg.conf" }
-        - { file: "logrotate-postgres-auth.conf" }
-
-    - name: Disable cron access
-      copy:
-        src: files/cron.deny
-        dest: /etc/cron.deny
-
-    - name: Configure logrotation to run every hour
-      shell:
-        cmd: |
-            cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
-            sed -i -e 's;daily;*:0/10;' /etc/systemd/system/logrotate.timer
-            systemctl reenable logrotate.timer
-      become: yes
-
     - name: First boot optimizations
       import_tasks: tasks/internal/optimizations.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Finalize AMI
+      import_tasks: tasks/finalize-ami.yml
       tags:
         - install-supabase-internal
 

@@ -110,6 +110,10 @@ function format_and_mount_rootfs {
 		sleep 2
 		mount /dev/xvdf1 /mnt/boot/efi
 	fi
+	
+	mkfs.ext4 /dev/xvdh
+	mkdir -p /mnt/data
+	mount -o defaults,discard /dev/xvdh /mnt/data
 }
 
 function format_build_partition {
@@ -127,6 +131,7 @@ cat > "/mnt/etc/fstab" << EOF
 $(printf "${FMT}" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK")
 $(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
 $(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
+$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
 EOF
 	unset FMT
 }
@@ -154,6 +159,10 @@ function setup_chroot_environment {
 	mkdir -p /mnt/tmp
 	mount /dev/xvdc /mnt/tmp
 	chmod 777 /mnt/tmp
+
+	# Copy apparmor profiles
+	chmod 644 /tmp/apparmor_profiles/*
+	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
@@ -194,7 +203,10 @@ function update_systemd_services {
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/vector.service
 	ln -s /etc/systemd/system/vector.timer /mnt/etc/systemd/system/multi-user.target.wants/vector.timer
 
-	# Uncomment below to Disable postgresql service during first boot.
+	# Disable apparmor during first boot
+	rm -f /mnt/etc/systemd/system/sysinit.target.wants/apparmor.service
+
+	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
 }
 
@@ -249,7 +261,8 @@ function umount_reset_mappings {
 	if [ "${ARCH}" = "arm64" ]; then
 		umount /mnt/boot/efi
 	fi
-        umount /mnt
+	umount /mnt/data
+	umount /mnt
 
 	# Reset device mappings
 	for dev_link in "${blkdev_mappings[@]}" "${partdev_mappings[@]}"; do

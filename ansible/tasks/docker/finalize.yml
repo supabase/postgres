@@ -1,0 +1,5 @@
+- name: PG logging conf
+  template:
+    src: files/postgresql_config/postgresql-stdout-log.conf
+    dest: /etc/postgresql/logging.conf
+    group: postgres
