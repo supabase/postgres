@@ -1,7 +1,7 @@
 [Unit]
 Description=Kong server
-After=realtime.service postgrest.service gotrue.service adminapi.service
-Wants=realtime.service postgrest.service gotrue.service adminapi.service
+After=postgrest.service gotrue.service adminapi.service
+Wants=postgrest.service gotrue.service adminapi.service
 
 [Service]
 Type=forking
