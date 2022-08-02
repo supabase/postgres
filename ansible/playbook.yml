@@ -76,6 +76,11 @@
       tags:
         - install-supabase-internal
 
+    - namee: Install nginx
+      import_tasks: tasks/setup-nginx.yml
+      tags:
+        - install-supabase-internal
+
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic

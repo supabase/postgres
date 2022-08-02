@@ -27,6 +27,9 @@ kong_release_target: xenial # if it works, it works
 kong_deb: kong_2.8.1_arm64.deb
 kong_deb_checksum: sha1:e61882d652d1f41bc3b7d179163b8a7abfe41d94
 
+nginx_release: 1.22.0
+nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
+
 wal_g_release: "v2.0.0"
 
 sfcgal_release: "1.3.10"
