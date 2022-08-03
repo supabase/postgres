@@ -76,7 +76,7 @@
       tags:
         - install-supabase-internal
 
-    - namee: Install nginx
+    - name: Install nginx
       import_tasks: tasks/setup-nginx.yml
       tags:
         - install-supabase-internal
