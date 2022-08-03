@@ -59,10 +59,27 @@
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
 
+    - name: Install Gotrue
+      import_tasks: tasks/setup-gotrue.yml
+      tags:
+        - install-gotrue
+        - install-supabase-internal
+
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
       tags:
         - install-postgrest
+        - install-supabase-internal
+    
+    - name: Install Kong
+      import_tasks: tasks/setup-kong.yml
+      tags:
+        - install-supabase-internal
+
+    - namee: Install nginx
+      import_tasks: tasks/setup-nginx.yml
+      tags:
+        - install-supabase-internal
 
     - name: Adjust APT update intervals
       copy:
