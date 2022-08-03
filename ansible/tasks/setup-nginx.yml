@@ -26,14 +26,14 @@
   shell:
     chdir: /tmp/nginx-{{ nginx_release }}
     cmd: |
-    set -e
+      set -e
 
-    ./configure \
-    --prefix=/usr/local/nginx \
-    --conf-path=/etc/nginx/nginx.conf \
-    --with-http_ssl_module \
-    --with-http_realip_module \
-    --with-threads
+      ./configure \
+      --prefix=/usr/local/nginx \
+      --conf-path=/etc/nginx/nginx.conf \
+      --with-http_ssl_module \
+      --with-http_realip_module \
+      --with-threads
   become: yes
 
 - name: nginx - build
