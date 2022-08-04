@@ -34,27 +34,7 @@
       import_tasks: tasks/setup-pgbouncer.yml
       tags:
         - install-pgbouncer
-
-    - name: Install WAL-G
-      import_tasks: tasks/setup-wal-g.yml
-
-    - name: Install Supabase specific content
-      import_tasks: tasks/setup-supabase-internal.yml
-      tags:
         - install-supabase-internal
-
-    - name: Start Postgres Database
-      systemd:
-        name: postgresql
-        state: started
-      when: not ebssurrogate_mode
-
-    - name: Start Postgres Database without Systemd
-      become: yes
-      become_user: postgres
-      shell:
-        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
-      when: ebssurrogate_mode
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
@@ -80,6 +60,24 @@
       import_tasks: tasks/setup-nginx.yml
       tags:
         - install-supabase-internal
+
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
+      when: not ebssurrogate_mode
+
+    - name: Start Postgres Database without Systemd
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
+      when: ebssurrogate_mode
 
     - name: Adjust APT update intervals
       copy:

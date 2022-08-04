@@ -20,7 +20,7 @@
   unarchive:
     remote_src: yes
     src: /tmp/nginx-{{ nginx_release }}.tar.gz
-    dest: /tmp/nginx-{{ nginx_release }}
+    dest: /tmp
 
 - name: nginx - configure
   shell:
@@ -78,7 +78,3 @@
 # - name: nginx - reload systemd
 #   systemd:
 #     daemon_reload: yes
-
-# - name: nginx - restart service
-#   service: name=nginx state=restarted
-#   when: restart_services
