@@ -55,7 +55,3 @@
     name: kong
     state: stopped
     daemon_reload: yes
-
-- name: Kong - restart service
-  service: name=kong state=restarted
-  when: restart_services

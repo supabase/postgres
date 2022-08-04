@@ -27,7 +27,7 @@
 - name: PostgREST - unpack archive in /opt
   unarchive:
     remote_src: yes
-    src: /tmp/postgrest.{{ postgrest_archive }}
+    src: /tmp/postgrest.tar.xz
     dest: /opt
     owner: postgrest
     mode: '0755'
@@ -75,7 +75,3 @@
 - name: PostgREST - reload systemd
   systemd:
     daemon_reload: yes
-
-- name: PostgREST - restart service
-  service: name=postgrest state=restarted
-  when: restart_services
