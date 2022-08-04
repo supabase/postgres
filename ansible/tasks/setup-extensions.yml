@@ -60,5 +60,3 @@
 
 - name: Install auto_explain
   import_tasks: tasks/postgres-extensions/21-auto_explain.yml
-
-  
