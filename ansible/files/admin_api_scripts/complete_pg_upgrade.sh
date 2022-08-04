@@ -4,5 +4,8 @@ set -euo pipefail
 
 mount -a -v
 
-vacuumdb --all --analyze-in-stages
+# copying custom configurations
+cp /data/conf/* /etc/postgresql-custom/
+
 service postgresql start
+vacuumdb --all --analyze-in-stages

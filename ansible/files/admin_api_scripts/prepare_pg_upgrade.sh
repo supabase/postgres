@@ -2,5 +2,5 @@
 
 set -euo pipefail
 
-service postgresql stop
-unmount /data
+systemctl stop postgresql
+umount /data

@@ -157,6 +157,11 @@
     paths: /usr/lib/postgresql/bin
   register: postgresql_bin
 
+- name: Find all files in /usr/lib/postgresql/lib
+  find:
+    paths: /usr/lib/postgresql/lib
+  register: postgresql_lib
+
 - name: Create symbolic links for Postgres binaries to /usr/bin/
   become: yes
   file:
@@ -178,6 +183,7 @@
   with_items:
     - "/data/pgdata"
     - "/data/bin"
+    - "/data/lib"
 
 - name: Link database data_dir to data volume directory
   file:
@@ -194,6 +200,13 @@
     force: yes
   with_items: "{{ postgresql_bin.files }}"
 
+- name: Copy library files to data volume
+  become: yes
+  file:
+    src: "{{ item.path }}"
+    path: "/data/lib/{{ item.path | basename }}"
+    force: yes
+  with_items: "{{ postgresql_lib.files }}"
 
 - name: Initialize the database
   become: yes

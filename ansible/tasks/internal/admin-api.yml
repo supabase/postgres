@@ -25,6 +25,9 @@
       %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
       %adminapi ALL= NOPASSWD: /root/commence_walg_restore.sh
       %adminapi ALL= NOPASSWD: /root/complete_walg_restore.sh
+      %adminapi ALL= NOPASSWD: /root/prepare_pg_upgrade.sh
+      %adminapi ALL= NOPASSWD: /root/initiate_pg_upgrade.sh
+      %adminapi ALL= NOPASSWD: /root/complete_pg_upgrade.sh
       %adminapi ALL= NOPASSWD: /root/disable_walg.sh
       %adminapi ALL= NOPASSWD: /root/enable_walg.sh
       %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
