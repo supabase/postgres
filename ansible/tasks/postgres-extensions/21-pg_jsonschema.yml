@@ -34,7 +34,7 @@
 
 - name: install cargo-pgx
   shell:
-    cmd: "cargo install --version '={{ pgx_version }}' cargo-pgx && cargo pgx init --pg{{ postgres_major }} pg_config"
+    cmd: "~/.cargo/bin/cargo install --version '={{ pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgres_major }} pg_config"
   become: yes
 
 - name: pg_jsonschema - download release
