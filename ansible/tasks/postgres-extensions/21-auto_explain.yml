@@ -1,0 +1,7 @@
+
+- name: auto_explain - set auto_explain.log_min_duration
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: auto_explain.log_min_duration = 10s
