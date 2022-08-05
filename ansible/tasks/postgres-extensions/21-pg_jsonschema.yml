@@ -46,6 +46,6 @@
 
 - name: pg_jsonschema - install
   shell:
-    cmd: "cargo pgx install --release"
+    cmd: "~/.cargo/bin/cargo pgx install --release"
     chdir: /tmp/pg_jsonschema
   become: yes
