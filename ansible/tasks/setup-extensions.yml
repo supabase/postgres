@@ -62,4 +62,4 @@
   import_tasks: tasks/postgres-extensions/21-auto_explain.yml
 
 - name: Install pg_jsonschema
-  import_tasks: tasks/postgres-extensions/21-pg_jsonschema.yml
+  import_tasks: tasks/postgres-extensions/22-pg_jsonschema.yml

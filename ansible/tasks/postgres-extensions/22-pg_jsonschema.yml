@@ -11,26 +11,15 @@
     update_cache: yes
     install_recommends: no
 
-- name: check if cargo is installed
-  shell: command -v cargo
-  register: cargo_exists
-  ignore_errors: yes
-
 - name: download rust/cargo installer
-  when: cargo_exists is failed
   get_url:
     url: https://sh.rustup.rs
     dest: /tmp/sh.rustup.rs
     mode: '0755'
     force: 'yes'
-  tags:
-    - rust
 
 - name: install rust/cargo
-  when: cargo_exists is failed
   shell: /tmp/sh.rustup.rs -y
-  tags:
-    - rust
 
 - name: install cargo-pgx
   shell:
