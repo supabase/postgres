@@ -38,7 +38,7 @@
 
 - name: pgsodium - download pgsodium
   get_url:
-    url: "https://github.com/michelp/pgsodium/archive/refs/tags/{{ pgsodium_release }}.tar.gz"
+    url: "https://github.com/michelp/pgsodium/archive/refs/tags/v{{ pgsodium_release }}.tar.gz"
     dest: /tmp/pgsodium-{{ pgsodium_release }}.tar.gz
     checksum: "{{ pgsodium_release_checksum }}"
     timeout: 60
