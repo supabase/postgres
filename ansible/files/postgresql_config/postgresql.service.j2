@@ -14,6 +14,8 @@ ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGINT
 TimeoutSec=0
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
