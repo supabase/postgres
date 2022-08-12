@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-KEY_FILE=/var/lib/postgresql/pgsodium_root.key
+KEY_FILE=/etc/postgresql-custom/pgsodium_root.key
 
 # On the hosted platform, the root key is generated and managed for each project
 # If for some reason the key is missing, we want to fail loudly,
