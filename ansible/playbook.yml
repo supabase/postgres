@@ -11,6 +11,7 @@
     sql_files:
       - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
+      - { source: "sodium_extension.sql", dest: "02-sodium-extension.sql" }
 
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
