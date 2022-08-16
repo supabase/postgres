@@ -16,6 +16,7 @@
   /usr/bin/vector mrix,
   /var/lib/vector/** rw,
   /var/log/postgresql/** r,
+  /var/log/postgresql/ r,
   /var/run/systemd/notify rw,
   owner /proc/*/cgroup r,
 }
