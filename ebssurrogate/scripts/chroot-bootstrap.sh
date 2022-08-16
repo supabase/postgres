@@ -105,7 +105,7 @@ function install_packages_for_build {
 }
 
 function setup_apparmor {
-	apt-get install -y apparmor auditd
+	apt-get install -y apparmor apparmor-utils auditd
 
 	# Copy apparmor profiles
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
