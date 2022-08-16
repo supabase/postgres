@@ -95,7 +95,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
+        cmd: /usr/lib/postgresql/bin/psql -b -v ON_ERROR_STOP=1 -f /tmp/{{ item.dest }}
       loop: "{{ sql_files }}"
 
     - name: Delete SQL scripts

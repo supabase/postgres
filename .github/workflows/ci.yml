@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - da/test-psql
 
 jobs:
   build:
