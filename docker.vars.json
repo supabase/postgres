@@ -1,5 +1,5 @@
 {
-  "docker-version": "14.1.0.60",
+  "docker-version": "14.1.0.61",
   "postgres-version": "14.1"
 }
 
