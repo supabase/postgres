@@ -112,3 +112,7 @@ pgx_version: "0.4.5"
 pg_jsonschema_release: "v0.1.0"
 
 pg_stat_monitor_release: "1.0.1"
+
+vault_release: "0.0.1"
+vault_release_checksum: sha1:a5ea3356c6f41985b2bef67b6a0491d4ffa99816
+
