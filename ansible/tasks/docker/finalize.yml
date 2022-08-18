@@ -11,3 +11,14 @@
     owner: postgres
     group: postgres
     mode: 0700
+
+- name: allow pgsodium key generation
+  become: yes
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    owner: postgres
+    group: postgres
+    mode: '0774'
+  with_items:
+    - /etc/postgresql-custom
