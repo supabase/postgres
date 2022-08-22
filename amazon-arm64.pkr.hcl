@@ -20,7 +20,12 @@ variable "ami_regions" {
 
 variable "ansible_arguments" {
   type    = string
-  default = "--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal,ebssurrogate_mode='true'"
+  default = "ebssurrogate_mode='true'"
+}
+
+variable "skip_tags" {
+  type    = string
+  default = "install-postgrest,install-pgbouncer,install-supabase-internal"
 }
 
 variable "aws_access_key" {
@@ -211,6 +216,7 @@ build {
   provisioner "shell" {
     environment_vars = [
       "ARGS=${var.ansible_arguments}",
+      "SKIP_TAGS=${var.skip_tags}",
       "DOCKER_USER=${var.docker_user}",
       "DOCKER_PASSWD=${var.docker_passwd}",
       "DOCKER_IMAGE=${var.docker_image}",

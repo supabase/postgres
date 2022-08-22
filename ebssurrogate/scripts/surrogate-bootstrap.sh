@@ -21,6 +21,7 @@ function waitfor_boot_finished {
 	export DEBIAN_FRONTEND=noninteractive
 
 	echo "args: ${ARGS}"
+	echo "skip tags: ${SKIP_TAGS}"
 	# Wait for cloudinit on the surrogate to complete before making progress
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
 	    echo 'Waiting for cloud-init...'
@@ -194,7 +195,7 @@ function execute_playbook {
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars " $ARGS"
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --skip-tags "$SKIP_TAGS" --extra-vars "$ARGS"
 }
 
 function update_systemd_services {
