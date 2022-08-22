@@ -7,6 +7,7 @@
   apt:
     pkg:
       - libpq5
+      - libnuma-dev
 
 - name: PostgREST - download ubuntu binary archive (arm)
   get_url:

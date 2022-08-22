@@ -13,6 +13,5 @@
       - gcc-10
       - ninja-build
       - python2
-      - zlib1g-dev
     state: absent
     autoremove: yes
