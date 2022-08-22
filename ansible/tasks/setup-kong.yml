@@ -19,6 +19,9 @@
 - name: Kong - deb installation
   apt: deb=file:///tmp/kong.deb
 
+- name: Kong - ensure it is NOT autoremovd
+  shell: apt-mark manual kong
+
 - name: Kong - configuration
   template:
     src: files/kong_config/kong.conf.j2
