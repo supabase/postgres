@@ -1,5 +1,6 @@
 - name: Install Python3
-  raw: apt update && apt upgrade -y && apt install python3 -y
+  raw: export DEBIAN_FRONTEND=noninteractive ; sh -c "apt update && apt upgrade -y && apt install python3 -y"
+  timeout: 300
 
 - name: Setup - install common dependencies
   apt:

@@ -11,9 +11,11 @@ on:
 jobs:
   docker_release:
     runs-on: ubuntu-20.04
+    timeout-minutes: 100
+
     steps:
       - uses: actions/checkout@v2
-      
+
       - id: settings
         run:  |
           apt update --yes && apt install --yes jq
