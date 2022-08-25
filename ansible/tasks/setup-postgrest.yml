@@ -9,6 +9,12 @@
       - libpq5
       - libnuma-dev
 
+- name: postgis - ensure dependencies do not get autoremoved
+  shell: |
+    set -e
+    apt-mark manual libnuma*
+    apt-mark auto libnuma*-dev
+
 - name: PostgREST - download ubuntu binary archive (arm)
   get_url:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"

@@ -19,8 +19,11 @@
 - name: Kong - deb installation
   apt: deb=file:///tmp/kong.deb
 
-- name: Kong - ensure it is NOT autoremovd
-  shell: apt-mark manual kong
+- name: Kong - ensure it is NOT autoremoved
+  shell: |
+    set -e
+    apt-mark manual kong zlib1g*
+    apt-mark auto zlib1g*-dev
 
 - name: Kong - configuration
   template:
