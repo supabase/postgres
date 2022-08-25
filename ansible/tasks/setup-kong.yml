@@ -23,7 +23,6 @@
   shell: |
     set -e
     apt-mark manual kong zlib1g*
-    apt-mark auto zlib1g*-dev
 
 - name: Kong - configuration
   template:
