@@ -2,8 +2,8 @@ supabase_internal: true
 ebssurrogate_mode: true
 
 postgresql_major: "14"
-postgresql_release: "14.1"
-postgresql_release_checksum: sha1:f6c114a4be41ca876deeb462e9d02237b186743c
+postgresql_release: "14.5"
+postgresql_release_checksum: sha256:90ead393dbc654cb0075eaaf0ec2058e6b9866ced478fed3cf2b68a5bc04eb24
 
 # Non Postgres Extensions
 pgbouncer_release: "1.16.1"
