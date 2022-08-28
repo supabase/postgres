@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - da/pg14-5
 
 jobs:
   build:
