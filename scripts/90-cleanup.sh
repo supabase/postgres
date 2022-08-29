@@ -37,7 +37,6 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libasound2 \
 	libicu-dev \
 	libcgal-dev \
-	libc6-dev  \
 	libgcc-9-dev \
 	libgcc-8-dev \
 	linux-headers-5.11.0-1021-aws
