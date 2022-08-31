@@ -21,6 +21,20 @@
   tags:
     - install-pgbouncer
 
+- name: UFW - Allow connections to http (80)
+  ufw:
+    rule: allow
+    port: http
+  tags:
+  - install-supabase-internal 
+
+- name: UFW - Allow connections to https (443)
+  ufw:
+    rule: allow
+    port: https
+  tags:
+  - install-supabase-internal 
+
 - name: UFW - Deny all other incoming traffic by default
   ufw:
     state: enabled
