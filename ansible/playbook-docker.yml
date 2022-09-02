@@ -5,12 +5,24 @@
   vars_files:
     - ./vars.yml
 
+  vars:
+    sql_files:
+      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
+      - { source: "stat_extension.sql", dest: "01-extension.sql" }
+      - { source: "sodium_extension.sql", dest: "02-sodium-extension.sql" }
+
   tasks:
     - name: Setup container
       import_tasks: tasks/docker/setup.yml
 
     - name: Install Postgres extensions
       import_tasks: tasks/setup-extensions.yml
+
+    - name: Transfer init SQL files
+      copy:
+        src: files/{{ item.source }}
+        dest: /docker-entrypoint-initdb.d/{{ item.dest }}
+      loop: "{{ sql_files }}"
 
     - name: Finalize docker
       import_tasks: tasks/docker/finalize.yml
