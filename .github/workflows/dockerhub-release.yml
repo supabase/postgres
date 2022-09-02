@@ -35,7 +35,7 @@ jobs:
             supabase/postgres
             public.ecr.aws/t3w2s2c9/postgres
           tags: |
-            type=raw,value=v${{ steps.settings.outputs.docker_version }}
+            type=raw,value=${{ steps.settings.outputs.docker_version }}
 
       - uses: docker/setup-qemu-action@v2
         with:
