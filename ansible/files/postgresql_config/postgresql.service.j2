@@ -13,7 +13,7 @@ ExecStart=/usr/lib/postgresql/bin/postgres -D /etc/postgresql
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGINT
-TimeoutSec=0
+TimeoutSec=90
 Restart=always
 RestartSec=5
 
