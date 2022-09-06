@@ -13,8 +13,8 @@ postgrest_release: "9.0.1.20220717"
 postgrest_arm_release_checksum: sha1:4d62e6adbd1f15eee735deae778650a1ec2cbbf6
 postgrest_x86_release_checksum: sha1:41b2c3ab6288dc0e3ab9bcd1c76cedf7b66f1d5e
 
-gotrue_release: v2.7.2
-gotrue_release_checksum: sha1:37f0c72961ee32cf6276f6384d6b17d5d2368837
+gotrue_release: v2.15.3
+gotrue_release_checksum: sha1:24d0f09f918bb950430cd326c333692cbd3c45db
 
 aws_cli_release: "2.2.7"
 
