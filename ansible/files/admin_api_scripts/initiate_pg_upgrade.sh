@@ -33,7 +33,7 @@ function initiate_upgrade {
     tar zxvf "$MOUNT_POINT/binaries/$PGVERSION.tar.gz" -C "$MOUNT_POINT/binaries"
     chown -R postgres:postgres "$MOUNT_POINT/binaries/$PGVERSION"
 
-    run_sql "DROP EXTENSION IF EXISTS pg_graphql;"
+    run_sql "DROP EXTENSION IF EXISTS pg_graphql CASCADE;"
     run_sql "ALTER USER postgres WITH SUPERUSER;"
 
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/");
