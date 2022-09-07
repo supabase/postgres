@@ -192,22 +192,6 @@
     state: link
     force: yes
 
-- name: Copy binaries to data volume
-  become: yes
-  file:
-    src: "{{ item.path }}"
-    path: "/data/bin/{{ item.path | basename }}"
-    force: yes
-  with_items: "{{ postgresql_bin.files }}"
-
-- name: Copy library files to data volume
-  become: yes
-  file:
-    src: "{{ item.path }}"
-    path: "/data/lib/{{ item.path | basename }}"
-    force: yes
-  with_items: "{{ postgresql_lib.files }}"
-
 - name: Initialize the database
   become: yes
   become_user: postgres
