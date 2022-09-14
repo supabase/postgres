@@ -40,11 +40,6 @@ postgres_exporter_release_checksum:
   arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
   amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
 
-node_exporter_release: 1.1.2
-node_exporter_release_checksum:
-  arm64: sha256:eb5e7d16f18bb3272d0d832986fc8ac6cb0b6c42d487c94e15dabb10feae8e04
-  amd64: sha256:8c1f6a317457a658e0ae68ad710f6b4098db2cad10204649b51e3c043aa3e70d
-
 adminapi_release: 0.26.2
 adminapi_release_checksum:
   arm64: sha256:940ee8268782ad23763cd0e8f3d36b56140c6924d663f1207b63df1fe821dfec

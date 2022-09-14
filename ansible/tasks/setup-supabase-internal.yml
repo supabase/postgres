@@ -80,9 +80,6 @@
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
-- name: Install node exporter
-  import_tasks: internal/node-exporter.yml
-
 - name: Install supautils
   import_tasks: internal/supautils.yml
 
