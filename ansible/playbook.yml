@@ -9,7 +9,10 @@
 
   vars:
     sql_files:
-      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
+      - {
+          source: "pgbouncer_config/pgbouncer_auth_schema.sql",
+          dest: "00-schema.sql",
+        }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
       - { source: "sodium_extension.sql", dest: "02-sodium-extension.sql" }
 
@@ -51,7 +54,7 @@
       tags:
         - install-postgrest
         - install-supabase-internal
-    
+
     - name: Install Kong
       import_tasks: tasks/setup-kong.yml
       tags:
@@ -149,6 +152,9 @@
       become: yes
       shell:
         cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
+
+    - name: Run unit tests
+      import_tasks: tasks/test-image.yml
 
     - name: Stop Postgres Database without Systemd
       become: yes
