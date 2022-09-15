@@ -1,0 +1,14 @@
+- name: Enable pgTAP extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
+  when: ebssurrogate_mode
+
+- name: Run Unit tests on Postgres Database
+  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/*.sql
+  register: retval
+  failed_when: retval.rc != 0
+  when: ebssurrogate_mode
+
+- name: Drop pgTap extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
+  when: ebssurrogate_mode
+

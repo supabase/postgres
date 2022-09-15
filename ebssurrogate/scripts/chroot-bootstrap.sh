@@ -67,7 +67,8 @@ function update_install_packages {
 		locales \
 		at \
 		less \
-		python3-systemd
+		python3-systemd \
+		pgtap
 
 	if [ "${ARCH}" = "arm64" ]; then
 		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools

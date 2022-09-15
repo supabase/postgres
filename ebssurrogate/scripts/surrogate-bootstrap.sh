@@ -164,6 +164,9 @@ function setup_chroot_environment {
 	chmod 644 /tmp/apparmor_profiles/*
 	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
+	# Copy unit tests
+	cp -r /tmp/unit-tests /mnt/tmp/
+
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
 	chroot /mnt /tmp/chroot-bootstrap.sh
