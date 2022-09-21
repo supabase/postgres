@@ -1,3 +1,8 @@
+- name: install pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+
 - name: Enable pgTAP extension
   shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
   when: ebssurrogate_mode
@@ -12,3 +17,9 @@
   shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
   when: ebssurrogate_mode
 
+- name: remove pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+    state: absent
+    autoremove: yes
