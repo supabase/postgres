@@ -19,5 +19,3 @@ touch backup-push.log backup-fetch.log wal-push.log wal-fetch.log
 chown -R postgres:postgres /var/log/wal-g
 chmod -R 0300 /var/log/wal-g
 
-# audit logs directory for apparmor
-mkdir /var/log/audit

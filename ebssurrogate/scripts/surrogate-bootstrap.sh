@@ -238,6 +238,9 @@ function clean_system {
 	chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
 	chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
 
+        # audit logs directory for apparmor
+        mkdir /mnt/var/log/audit
+
 	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*
 	rm -rf /mnt/root/.cache
