@@ -23,3 +23,13 @@
       - libtap-parser-sourcehandler-pgtap-perl
     state: absent
     autoremove: yes
+
+- name: Get pg_config file details
+  ansible.builtin.stat:
+    path: /usr/bin/pg_config
+  register: st
+
+- name: Ensure pg_config points to our install of PG
+  ansible.builtin.fail:
+    msg: "Incorrect symlink for pg_config"
+  when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'
