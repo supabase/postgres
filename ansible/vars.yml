@@ -80,7 +80,7 @@ supautils_release_checksum: sha1:54d96cf1f96d2a16d1f9d8a8ac6fd632bd402154
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
 
-plv8_commit_version: 3656177d384e3e02b74faa8e2931600f3690ab59
+plv8_release: v3.1.4
 
 pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
