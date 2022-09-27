@@ -211,6 +211,9 @@ function update_systemd_services {
 
 	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
+
+	# Disable auditd
+	rm -f /mnt/etc/systemd/system/multi-user.target.wants/auditd.service
 }
 
 
