@@ -3,8 +3,8 @@ name: Release on Dockerhub
 on:
   push:
     branches:
-      - develop
-      # - da/reupload-x86-image
+      # - develop
+      - da/reupload-x86-image
 
 jobs:
   docker_release:
