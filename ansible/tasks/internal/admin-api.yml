@@ -17,6 +17,7 @@
     - { file: "disable_walg.sh" }
     - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
+    - { file: "set_readonly_mode.sh" }
 
 - name: give adminapi user permissions
   copy:
@@ -61,6 +62,11 @@
   template:
     src: files/adminapi.service.j2
     dest: /etc/systemd/system/adminapi.service
+
+- name: adminapi - create monitor service file
+  template:
+    src: files/adminapi-monitoring.service.j2
+    dest: /etc/systemd/system/adminapi-monitoring.service
 
 - name: UFW - Allow connections to adminapi ports
   ufw:
