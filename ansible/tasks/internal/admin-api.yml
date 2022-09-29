@@ -63,11 +63,6 @@
     src: files/adminapi.service.j2
     dest: /etc/systemd/system/adminapi.service
 
-- name: adminapi - create monitor service file
-  template:
-    src: files/adminapi-monitoring.service.j2
-    dest: /etc/systemd/system/adminapi-monitoring.service
-
 - name: UFW - Allow connections to adminapi ports
   ufw:
     rule: allow
