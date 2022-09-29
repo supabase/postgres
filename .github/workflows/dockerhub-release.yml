@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - develop
-    paths:
-      - '.github/workflows/dockerhub-release.yml'
-      - 'docker.vars*'
+      # - da/reupload-x86-image
 
 jobs:
   docker_release:
