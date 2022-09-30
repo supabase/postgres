@@ -127,7 +127,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Merge multi-arch manifests
-        run: docker buildx imagetools create -t supabase/postgres:${{ needs.settings.outputs.docker_version }} supabase/postgres@${{ needs.docker_x86_release.outputs.image_digest }} supabase/postgres@${{ needs.docker_arm_release.outputs.image_digest }}
+        run: |
+          docker buildx imagetools create -t supabase/postgres:${{ needs.settings.outputs.docker_version }} \
+          supabase/postgres@${{ needs.docker_x86_release.outputs.image_digest }} \
+          supabase/postgres@${{ needs.docker_arm_release.outputs.image_digest }}
 
       - name: Login to ECR
         uses: docker/login-action@v2
