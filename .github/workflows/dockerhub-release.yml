@@ -9,15 +9,16 @@ on:
       - 'docker.vars*'
 
 jobs:
-  docker_x86_release:
+  settings:
     runs-on: ubuntu-20.04
-    timeout-minutes: 120
-
+    outputs:
+      docker_version: ${{ steps.settings.outputs.docker_version }}
+      postgres_version: ${{ steps.settings.outputs.postgres_version }}
     steps:
       - uses: actions/checkout@v3
 
       - id: settings
-        run:  |
+        run: |
           apt update --yes && apt install --yes jq
           DOCKER_VERSION=$(cat docker.vars.json | jq -r '.["docker-version"]')
           echo "::set-output name=docker_version::$DOCKER_VERSION"
@@ -25,9 +26,15 @@ jobs:
           POSTGRES_VERSION=$(cat docker.vars.json | jq -r '.["postgres-version"]')
           echo "::set-output name=postgres_version::$POSTGRES_VERSION"
 
-          PLATFORM=$(cat docker.vars.json | jq -r '.["platform"]')
-          echo "::set-output name=platform::$PLATFORM"
-
+  docker_x86_release:
+    needs: settings
+    runs-on: ubuntu-20.04
+    timeout-minutes: 120
+    env:
+      arch: amd64
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
       - id: meta
         uses: docker/metadata-action@v4
         with:
@@ -35,11 +42,7 @@ jobs:
             supabase/postgres
             public.ecr.aws/t3w2s2c9/postgres
           tags: |
-            type=raw,value=${{ steps.settings.outputs.docker_version }}
-
-      - uses: docker/setup-qemu-action@v2
-        with:
-          platforms: amd64
+            type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
 
       - uses: docker/setup-buildx-action@v2
 
@@ -55,37 +58,26 @@ jobs:
           username: ${{ secrets.PROD_ACCESS_KEY_ID }}
           password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
-      - uses: docker/build-push-action@v3
+      - id: build
+        uses: docker/build-push-action@v3
         with:
-          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          platforms: linux/amd64
+          platforms: linux/${{ env.arch }}
           build-args: |
-            "VERSION=${{steps.settings.outputs.postgres_version}}"
+            "VERSION=${{ needs.settings.outputs.postgres_version }}"
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-
   docker_arm_release:
+    needs: settings
     runs-on: [arm-runner]
     timeout-minutes: 120
-
+    env:
+      arch: arm64
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v3
-
-      - id: settings
-        run:  |
-          apt update --yes && apt install --yes jq
-          DOCKER_VERSION=$(cat docker.vars.json | jq -r '.["docker-version"]')
-          echo "::set-output name=docker_version::$DOCKER_VERSION"
-
-          POSTGRES_VERSION=$(cat docker.vars.json | jq -r '.["postgres-version"]')
-          echo "::set-output name=postgres_version::$POSTGRES_VERSION"
-
-          PLATFORM=$(cat docker.vars.json | jq -r '.["platform"]')
-          echo "::set-output name=platform::$PLATFORM"
-
       - id: meta
         uses: docker/metadata-action@v4
         with:
@@ -93,7 +85,7 @@ jobs:
             supabase/postgres
             public.ecr.aws/t3w2s2c9/postgres
           tags: |
-            type=raw,value=${{ steps.settings.outputs.docker_version }}
+            type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
 
       - uses: docker/login-action@v2
         with:
@@ -107,10 +99,7 @@ jobs:
           username: ${{ secrets.PROD_ACCESS_KEY_ID }}
           password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v2
         with:
           driver: docker
           driver-opts: |
@@ -119,10 +108,36 @@ jobs:
 
       - uses: docker/build-push-action@v3
         with:
-          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          platforms: linux/arm64
+          platforms: linux/${{ env.arch }}
           build-args: |
-            "VERSION=${{steps.settings.outputs.postgres_version}}"
+            "VERSION=${{ needs.settings.outputs.postgres_version }}"
           no-cache: true
+
+  merge_manifest:
+    needs: [settings, docker_x86_release, docker_arm_release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v2
+
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Merge multi-arch manifests
+        run: docker buildx imagetools create -t supabase/postgres:${{ needs.settings.outputs.docker_version }} supabase/postgres@${{ needs.docker_x86_release.outputs.image_digest }} supabase/postgres@${{ needs.docker_arm_release.outputs.image_digest }}
+
+      - name: Login to ECR
+        uses: docker/login-action@v2
+        with:
+          registry: public.ecr.aws
+          username: ${{ secrets.PROD_ACCESS_KEY_ID }}
+          password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
+
+      - name: Mirror to ECR
+        uses: akhilerm/tag-push-action@v2.0.0
+        with:
+          src: docker.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
+          dst: public.ecr.aws/t3w2s2c9/postgres:${{ needs.settings.outputs.docker_version }}
