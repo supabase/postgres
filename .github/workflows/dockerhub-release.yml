@@ -78,6 +78,8 @@ jobs:
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
     steps:
+      - uses: actions/checkout@v3
+
       - id: meta
         uses: docker/metadata-action@v4
         with:
@@ -108,6 +110,7 @@ jobs:
 
       - uses: docker/build-push-action@v3
         with:
+          context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
