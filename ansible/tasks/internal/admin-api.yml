@@ -17,7 +17,7 @@
     - { file: "disable_walg.sh" }
     - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
-    - { file: "set_readonly_mode.sh" }
+    - { file: "manage_readonly_mode.sh" }
 
 - name: give adminapi user permissions
   copy:
