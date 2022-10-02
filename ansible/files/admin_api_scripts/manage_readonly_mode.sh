@@ -26,7 +26,7 @@ SELECT
 FROM role_comment;
 EOF
 )
-    RESULT=$(psql -h localhost -U supabase_admin -d postgres -t -c "$COMMAND")
+    RESULT=$(psql -h localhost -U supabase_admin -d postgres -At -c "$COMMAND")
     echo $RESULT
 }
 
