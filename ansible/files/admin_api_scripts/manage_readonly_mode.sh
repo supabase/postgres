@@ -31,7 +31,7 @@ EOF
 }
 
 case $SUBCOMMAND in
-    "override_exists")
+    "check_override")
         check_override
         ;;
     "set")
