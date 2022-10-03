@@ -1,0 +1,10 @@
+/opt/gotrue/gotrue {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  /proc/sys/net/core/somaxconn r,
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+  owner /opt/gotrue/gotrue r,
+  owner /opt/gotrue/migrations/ r,
+
+}
