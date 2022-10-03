@@ -108,7 +108,8 @@ jobs:
             image=moby/buildkit:master
             network=host
 
-      - uses: docker/build-push-action@v3
+      - id: build
+        uses: docker/build-push-action@v3
         with:
           context: .
           push: true
