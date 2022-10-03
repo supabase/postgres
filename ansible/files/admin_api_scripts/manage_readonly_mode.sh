@@ -27,7 +27,7 @@ FROM role_comment;
 EOF
 )
     RESULT=$(psql -h localhost -U supabase_admin -d postgres -At -c "$COMMAND")
-    echo $RESULT
+    echo -n $RESULT
 }
 
 case $SUBCOMMAND in
