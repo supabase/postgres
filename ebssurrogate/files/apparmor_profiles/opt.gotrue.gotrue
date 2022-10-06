@@ -1,3 +1,5 @@
+#include <tunables/global>
+
 /opt/gotrue/gotrue {
   #include <abstractions/base>
   #include <abstractions/nameservice>
