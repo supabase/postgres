@@ -1,0 +1,35 @@
+- name: install pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+
+- name: Enable pgTAP extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
+  when: ebssurrogate_mode
+
+- name: Run Unit tests on Postgres Database
+  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/*.sql
+  register: retval
+  failed_when: retval.rc != 0
+  when: ebssurrogate_mode
+
+- name: Drop pgTap extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
+  when: ebssurrogate_mode
+
+- name: remove pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+    state: absent
+    autoremove: yes
+
+- name: Get pg_config file details
+  ansible.builtin.stat:
+    path: /usr/bin/pg_config
+  register: st
+
+- name: Ensure pg_config points to our install of PG
+  ansible.builtin.fail:
+    msg: "Incorrect symlink for pg_config"
+  when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'

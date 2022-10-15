@@ -51,7 +51,7 @@ pidfile = /var/run/pgbouncer/pgbouncer.pid
 ;;;
 
 ;; IP address or * which means all IPs
-listen_addr = *
+listen_addr = 0.0.0.0
 listen_port = 6543
 
 ;; Unix socket is also used for -R.
@@ -113,7 +113,7 @@ unix_socket_dir = /tmp
 ;;;
 
 ;; any, trust, plain, md5, cert, hba, pam
-auth_type = md5
+auth_type = scram-sha-256
 auth_file = /etc/pgbouncer/userlist.txt
 
 ;; Path to HBA-style auth config
@@ -358,3 +358,6 @@ default_pool_size = 15
 
 ;; Read additional config from other file
 ;%include /etc/pgbouncer/pgbouncer-other.ini
+
+%include /etc/pgbouncer-custom/generated-optimizations.ini
+%include /etc/pgbouncer-custom/custom-overrides.ini

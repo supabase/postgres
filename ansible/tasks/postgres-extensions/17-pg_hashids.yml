@@ -1,0 +1,17 @@
+# pg_hashids
+- name: pg_hashids - download from master branch
+  git:
+    repo: https://github.com/iCyberon/pg_hashids.git
+    dest: /tmp/pg_hashids
+    version: master
+
+- name: pg_hashids - build
+  make:
+    chdir: /tmp/pg_hashids
+  become: yes
+
+- name: pg_hashids - install
+  make:
+    chdir: /tmp/pg_hashids
+    target: install
+  become: yes

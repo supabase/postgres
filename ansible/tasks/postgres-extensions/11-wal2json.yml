@@ -1,24 +1,12 @@
 # wal2json
-- name: wal2json - download latest release
-  get_url:
-    url: "https://github.com/eulerto/wal2json/archive/refs/tags/wal2json_{{ wal2json_release }}.tar.gz"
-    dest: /tmp/wal2json-{{ wal2json_release }}.tar.gz
-    checksum: "{{ wal2json_release_checksum }}"
-
-- name: wal2json - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/wal2json-{{ wal2json_release }}.tar.gz
-    dest: /tmp
-  become: yes
-
-- name: wal2json - build
-  make:
-    chdir: /tmp/wal2json-wal2json_{{ wal2json_release }}
-  become: yes
+- name: wal2json - download by commit sha
+  git:
+    repo: https://github.com/eulerto/wal2json.git
+    dest: /tmp/wal2json
+    version: "{{ wal2json_commit_sha }}"
 
 - name: wal2json - install
   make:
-    chdir: /tmp/wal2json-wal2json_{{ wal2json_release }}
+    chdir: /tmp/wal2json
     target: install
   become: yes

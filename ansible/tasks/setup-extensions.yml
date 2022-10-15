@@ -25,8 +25,8 @@
 - name: Install pg-safeupdate
   import_tasks: tasks/postgres-extensions/09-pg-safeupdate.yml
 
-# - name: Install timescaledb
-#   import_tasks: tasks/postgres-extensions/10-timescaledb.yml
+- name: Install timescaledb
+  import_tasks: tasks/postgres-extensions/10-timescaledb.yml
 
 - name: Install wal2json
   import_tasks: tasks/postgres-extensions/11-wal2json.yml
@@ -36,3 +36,33 @@
 
 - name: Install plv8
   import_tasks: tasks/postgres-extensions/13-plv8.yml
+
+- name: Install pg_plan_filter
+  import_tasks: tasks/postgres-extensions/14-pg_plan_filter.yml
+
+- name: Install pg_net
+  import_tasks: tasks/postgres-extensions/15-pg_net.yml
+
+- name: Install rum
+  import_tasks: tasks/postgres-extensions/16-rum.yml
+
+- name: Install pg_hashids
+  import_tasks: tasks/postgres-extensions/17-pg_hashids.yml
+
+- name: Install pgsodium
+  import_tasks: tasks/postgres-extensions/18-pgsodium.yml
+
+- name: Install pg_graphql
+  import_tasks: tasks/postgres-extensions/19-pg_graphql.yml
+
+- name: Install pg_stat_monitor
+  import_tasks: tasks/postgres-extensions/20-pg_stat_monitor.yml
+
+- name: Install auto_explain
+  import_tasks: tasks/postgres-extensions/21-auto_explain.yml
+
+- name: Install pg_jsonschema
+  import_tasks: tasks/postgres-extensions/22-pg_jsonschema.yml
+
+# - name: Install vault
+#   import_tasks: tasks/postgres-extensions/23-vault.yml

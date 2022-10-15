@@ -19,6 +19,7 @@
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-{{ platform }}.tar.gz"
     dest: /tmp/postgres_exporter.tar.gz
     checksum: "{{ postgres_exporter_release_checksum[platform] }}"
+    timeout: 60
 
 - name: expand postgres exporter
   unarchive:
@@ -32,11 +33,6 @@
   template:
     src: files/postgres_exporter.service.j2
     dest: /etc/systemd/system/postgres_exporter.service
-
-- name: exporter copy over queries
-  template:
-    src: files/queries.yml.j2
-    dest: /opt/postgres_exporter/queries.yml
 
 - name: exporter ensure service is present
   systemd:

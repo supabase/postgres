@@ -1,5 +1,6 @@
 - name: Install Python3
-  raw: apt update && apt upgrade -y && apt install python3 -y
+  raw: export DEBIAN_FRONTEND=noninteractive ; sh -c "apt update && apt upgrade -y && apt install python3 -y"
+  timeout: 300
 
 - name: Setup - install common dependencies
   apt:
@@ -7,7 +8,7 @@
       - rsync
       - ca-certificates
       - build-essential
-      - postgresql-server-dev-13
+      - postgresql-server-dev-{{ postgresql_major }}
       - curl
       - git-core
       - gpp
@@ -28,9 +29,19 @@
     platform: "{{ platform_output.stdout }}"
 
 - name: Setup - import postgresql.conf
-  synchronize:
+  template:
     src: files/postgresql_config/postgresql.conf.j2
-    dest: etc/postgresql/postgresql.conf
+    dest: /etc/postgresql/postgresql.conf
+
+- name: Setup - import postgresql.conf
+  synchronize:
+    src: files/postgresql_config/pg_hba.conf.j2
+    dest: /etc/postgresql/pg_hba.conf
+
+- name: Setup - import postgresql.conf
+  synchronize:
+    src: files/postgresql_config/pg_ident.conf.j2
+    dest: /etc/postgresql/pg_ident.conf
 
 - set_fact:
     regex_string: "#unix_socket_directories = '/tmp'"
@@ -48,22 +59,3 @@
     path: /etc/postgresql/postgresql.conf
     regexp: '{{ regex_string }}'
     replace: unix_socket_directories = '/var/run/postgresql'
-
-- name: Setup - modify hba_file directory
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: hba_file = '/etc/postgresql/pg_hba.conf'
-    replace: hba_file = '/var/lib/postgresql/data/pg_hba.conf'
-
-- name: Setup - modify ident_file directory
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: ident_file = '/etc/postgresql/pg_ident.conf'
-    replace: ident_file = '/var/lib/postgresql/data/pg_ident.conf'
-
-- name: Setup - add init script to /docker-entrypoint-initdb.d
-  synchronize:
-    src: files/docker_mnt/init.sh
-    dest: /docker-entrypoint-initdb.d/init.sh

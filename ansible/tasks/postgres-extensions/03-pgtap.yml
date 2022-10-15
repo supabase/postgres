@@ -4,6 +4,7 @@
     url: "https://github.com/theory/pgtap/archive/v{{ pgtap_release }}.tar.gz"
     dest: /tmp/pgtap-{{ pgtap_release }}.tar.gz
     checksum: "{{ pgtap_release_checksum }}"
+    timeout: 60
 
 - name: pgTAP - unpack archive
   unarchive:

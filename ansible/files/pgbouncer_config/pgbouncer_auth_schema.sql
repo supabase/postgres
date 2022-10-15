@@ -1,5 +1,7 @@
 CREATE USER pgbouncer;
 
+REVOKE ALL PRIVILEGES ON SCHEMA public FROM pgbouncer;
+
 CREATE SCHEMA pgbouncer AUTHORIZATION pgbouncer;
 
 CREATE OR REPLACE FUNCTION pgbouncer.get_auth(p_usename TEXT)

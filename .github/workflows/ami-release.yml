@@ -1,0 +1,19 @@
+name: Release AMI
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Build AMI
+        run: |
+          packer build -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl

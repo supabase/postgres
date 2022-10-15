@@ -24,7 +24,8 @@
 # "postgres -c log_connections=on".  Some parameters can be changed at run time
 # with the "SET" SQL command.
 #
-# Memory units:  kB = kilobytes        Time units:  ms  = milliseconds
+# Memory units:  B  = bytes            Time units:  us  = microseconds
+#                kB = kilobytes                     ms  = milliseconds
 #                MB = megabytes                     s   = seconds
 #                GB = gigabytes                     min = minutes
 #                TB = terabytes                     h   = hours
@@ -92,7 +93,7 @@ listen_addresses = '*'		# what IP address(es) to listen on;
 # - Authentication -
 
 authentication_timeout = 1min		# 1s-600s
-password_encryption = md5	# scram-sha-256 or md5
+password_encryption = scram-sha-256	# scram-sha-256 or md5
 db_user_namespace = off
 
 # GSSAPI using Kerberos
@@ -105,6 +106,7 @@ ssl = off
 ssl_ca_file = ''
 ssl_cert_file = ''
 ssl_crl_file = ''
+ssl_crl_dir = ''
 ssl_key_file = ''
 ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL' # allowed SSL ciphers
 ssl_prefer_server_ciphers = on
@@ -124,28 +126,28 @@ ssl_passphrase_command_supports_reload = off
 
 shared_buffers = 128MB			# min 128kB
 					# (change requires restart)
-# huge_pages = try			# on, off, or try
+#huge_pages = try			# on, off, or try
 					# (change requires restart)
-# huge_page_size = 0			# zero for system default
+#huge_page_size = 0			# zero for system default
 					# (change requires restart)
-# temp_buffers = 8MB			# min 800kB
-# max_prepared_transactions = 0		# zero disables the feature
+#temp_buffers = 8MB			# min 800kB
+#max_prepared_transactions = 0		# zero disables the feature
 					# (change requires restart)
 # Caution: it is not advisable to set max_prepared_transactions nonzero unless
 # you actively intend to use prepared transactions.
-# work_mem = 4MB				# min 64kB
-# hash_mem_multiplier = 1.0		# 1-1000.0 multiplier on hash table work_mem
-# maintenance_work_mem = 64MB		# min 1MB
-# autovacuum_work_mem = -1		# min 1MB, or -1 to use maintenance_work_mem
-# logical_decoding_work_mem = 64MB	# min 64kB
-# max_stack_depth = 2MB			# min 100kB
-# shared_memory_type = mmap		# the default is the first option
+#work_mem = 4MB				# min 64kB
+#hash_mem_multiplier = 1.0		# 1-1000.0 multiplier on hash table work_mem
+#maintenance_work_mem = 64MB		# min 1MB
+#autovacuum_work_mem = -1		# min 1MB, or -1 to use maintenance_work_mem
+#logical_decoding_work_mem = 64MB	# min 64kB
+#max_stack_depth = 2MB			# min 100kB
+#shared_memory_type = mmap		# the default is the first option
 					# supported by the operating system:
 					#   mmap
 					#   sysv
 					#   windows
 					# (change requires restart)
-# dynamic_shared_memory_type = posix	# the default is the first option
+#dynamic_shared_memory_type = posix	# the default is the first option
 					# supported by the operating system:
 					#   posix
 					#   sysv
@@ -298,7 +300,7 @@ max_wal_senders = 10		# max number of walsender processes
 max_replication_slots = 5	# max number of replication slots
 				# (change requires restart)
 #wal_keep_size = 0		# in megabytes; 0 disables
-#max_slot_wal_keep_size = -1	# in megabytes; -1 disables
+max_slot_wal_keep_size = 1024   # in megabytes; -1 disables
 #wal_sender_timeout = 60s	# in milliseconds; 0 disables
 #track_commit_timestamp = off	# collect timestamp of transaction commit
 				# (change requires restart)
@@ -426,39 +428,7 @@ effective_cache_size = 128MB
 # REPORTING AND LOGGING
 #------------------------------------------------------------------------------
 
-# - Where to Log -
-
-log_destination = 'csvlog'		# Valid values are combinations of
-					# stderr, csvlog, syslog, and eventlog,
-					# depending on platform.  csvlog
-					# requires logging_collector to be on.
-
-# This is used when logging to stderr:
-logging_collector = on		# Enable capturing of stderr and csvlog
-					# into log files. Required to be on for
-					# csvlogs.
-					# (change requires restart)
-
-# These are only used if logging_collector is on:
-log_directory = 'pg_log'			# directory where log files are written,
-					# can be absolute or relative to PGDATA
-log_filename = 'postgresql.log'	# log file name pattern,
-					# can include strftime() escapes
-# log_file_mode = 0600			# creation mode for log files,
-					# begin with 0 to use octal notation
-log_rotation_age = 0			# Automatic rotation of logfiles will
-					# happen after that time.  0 disables.
-log_rotation_size = 0		# Automatic rotation of logfiles will
-					# happen after that much log output.
-					# 0 disables.
-#log_truncate_on_rotation = off		# If on, an existing log file with the
-					# same name as the new log file will be
-					# truncated rather than appended to.
-					# But such truncation only occurs on
-					# time-driven rotation, not on restarts
-					# or size-driven rotation.  Default is
-					# off, meaning append to existing files
-					# in all cases.
+include = '/etc/postgresql/logging.conf'
 
 # These are relevant when logging to syslog:
 #syslog_facility = 'LOCAL0'
@@ -570,7 +540,7 @@ log_line_prefix = '%h %m [%p] %q%u@%d '		# special values:
 #log_parameter_max_length_on_error = 0	# when logging an error, limit logged
 					# bind-parameter values to N bytes;
 					# -1 means print in full, 0 disables
-#log_statement = 'none'			# none, ddl, mod, all
+log_statement = 'none'			# none, ddl, mod, all
 #log_replication_commands = off
 #log_temp_files = -1			# log temporary files equal or larger
 					# than the specified size in kilobytes;
@@ -717,7 +687,8 @@ default_text_search_config = 'pg_catalog.english'
 
 #local_preload_libraries = ''
 #session_preload_libraries = ''
-shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron'	# (change requires restart)
+
+shared_preload_libraries = 'pg_stat_statements, pg_stat_monitor, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, pgsodium, timescaledb, auto_explain'	# (change requires restart)
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
@@ -765,8 +736,6 @@ jit_provider = 'llvmjit'		# JIT library to use
 
 #exit_on_error = off			# terminate session on any error?
 #restart_after_crash = on		# reinitialize after backend crash?
-#remove_temp_files_after_crash = on	# remove temporary files after
-					# backend crash?
 #data_sync_retry = off			# retry or panic on failure to fsync
 					# data?
 					# (change requires restart)
@@ -786,6 +755,16 @@ jit_provider = 'llvmjit'		# JIT library to use
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
 
+# Automatically generated optimizations
+#include = '/etc/postgresql-custom/generated-optimizations.conf'
+# User-supplied custom parameters, override any automatically generated ones
+#include = '/etc/postgresql-custom/custom-overrides.conf'
+
+# WAL-G specific configurations
+#include = '/etc/postgresql-custom/wal-g.conf'
+
+# supautils specific configurations
+#include = '/etc/postgresql-custom/supautils.conf'
 
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS

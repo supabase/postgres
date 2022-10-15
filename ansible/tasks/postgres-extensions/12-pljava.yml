@@ -5,6 +5,7 @@
       - maven
       - default-jre
       - default-jdk
+      - libssl-dev
     update_cache: yes
     install_recommends: no
 
@@ -13,6 +14,7 @@
     url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
     dest: /tmp/pljava-{{ pljava_release }}.tar.gz
     checksum: "{{ pljava_release_checksum }}"
+    timeout: 60
 
 - name: pljava - unpack archive
   unarchive:
@@ -24,13 +26,13 @@
 - name: pljava - build
   become: yes
   shell:
-    cmd: mvn clean install
+    cmd: mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - install
   become: yes
   shell:
-    cmd: java -jar pljava-packaging/target/pljava-pg13.jar
+    cmd: java -jar pljava-packaging/target/pljava-pg{{ postgresql_major }}.jar
     chdir: /tmp/pljava-{{ pljava_release }}
 
 - name: pljava - remove build dependencies

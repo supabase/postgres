@@ -1,19 +1,17 @@
 {
   "variables": {
-    "aws_access_key": "",
-    "aws_secret_key": "",
+    "profile": "{{env `AWS_PROFILE`}}",
     "region": "ap-northeast-1",
-    "ami_regions": "eu-central-1,eu-west-1,eu-west-2,ap-south-1,ap-southeast-1,ap-southeast-2,us-west-1,us-east-1,ca-central-1,sa-east-1,ap-northeast-1",
-    "ami": "ami-076d8ebdd0e1ec091",
-    "ami_name": "supabase-postgres-13.3.0",
+    "ami_regions": "eu-central-1,eu-west-1,eu-west-2,ap-south-1,ap-southeast-1,ap-southeast-2,us-west-1,us-east-1,ca-central-1,sa-east-1,ap-northeast-1,ap-northeast-2",
+    "ami": "",
+    "ami_name": "",
     "environment": "prod",
-    "ansible_arguments": "--skip-tags,update-only,--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
+    "ansible_arguments": "--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal"
   },
   "builders": [
     {
       "type": "amazon-ebs",
-      "access_key": "{{user `aws_access_key`}}",
-      "secret_key": "{{user `aws_secret_key`}}",
+      "profile": "{{user `profile`}}",
       "region": "{{user `region`}}",
       "ami_regions": "{{user `ami_regions`}}",
       "source_ami": "{{user `ami`}}",

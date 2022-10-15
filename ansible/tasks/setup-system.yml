@@ -10,6 +10,7 @@
 
 - name: System - apt update and apt upgrade
   apt: update_cache=yes upgrade=yes
+  when: not ebssurrogate_mode
   # SEE http://archive.vn/DKJjs#parameter-upgrade
 
 - name: Install required security updates
@@ -33,9 +34,17 @@
     pkg:
       - ufw
       - fail2ban
-      - unattended-upgrades
     update_cache: yes
     cache_valid_time: 3600
+  when: not ebssurrogate_mode
+
+- name: Install other useful tools
+  become: yes
+  apt:
+    pkg:
+      - magic-wormhole
+      - sysstat
+    update_cache: yes
 
 - name: Adjust APT update intervals
   copy:
@@ -59,6 +68,35 @@
   template:
     src: files/services.slice.j2
     dest: /etc/systemd/system/services.slice
+  when: not ebssurrogate_mode
 
 - name: System - systemd reload
   systemd: daemon_reload=yes
+
+- name: Configure journald
+  copy:
+    src: files/journald.conf
+    dest: /etc/systemd/journald.conf
+
+- name: reload systemd-journald
+  systemd:
+   name: systemd-journald
+   state: restarted
+
+- name: enable timestamps for shell history
+  copy:
+    content: |
+      export HISTTIMEFORMAT='%d/%m/%y %T '
+    dest: /etc/profile.d/09-history-timestamps.sh
+    mode: 0644
+    owner: root
+    group: root
+
+- name: set hosts file
+  copy:
+    content: |
+      127.0.0.1   localhost
+    dest: /etc/hosts
+    mode: 0644
+    owner: root
+    group: root

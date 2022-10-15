@@ -1,0 +1,76 @@
+- name: adminapi - system user
+  user:
+    name: adminapi
+    groups: root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
+    append: yes
+
+- name: Move shell scripts to /root dir
+  copy:
+    src: "files/admin_api_scripts/{{ item.file }}"
+    dest: "/root/{{ item.file }}"
+    mode: "0700"
+    owner: root
+  loop:
+    - { file: "commence_walg_backup.sh" }
+    - { file: "commence_walg_restore.sh" }
+    - { file: "complete_walg_restore.sh" }
+    - { file: "disable_walg.sh" }
+    - { file: "enable_walg.sh" }
+    - { file: "grow_fs.sh" }
+    - { file: "manage_readonly_mode.sh" }
+
+- name: give adminapi user permissions
+  copy:
+    src: files/adminapi.sudoers.conf
+    dest: /etc/sudoers.d/adminapi
+
+- name: perms for adminapi
+  shell: |
+    chmod g+w /etc
+
+- name: Setting arch (x86)
+  set_fact:
+    arch: "x86"
+  when: platform == "amd64"
+
+- name: Setting arch (arm)
+  set_fact:
+    arch: "arm64"
+  when: platform == "arm64"
+
+- name: adminapi - download commit archive
+  get_url:
+    url: "https://github.com/supabase/supabase-admin-api/releases/download/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+    dest: /tmp/adminapi.tar.gz
+    checksum: "{{ adminapi_release_checksum[platform] }}"
+    timeout: 60
+
+- name: adminapi - unpack archive in /opt
+  unarchive:
+    remote_src: yes
+    src: /tmp/adminapi.tar.gz
+    dest: /opt
+    owner: adminapi
+
+- name: adminapi - config dir
+  file:
+    path: /etc/adminapi
+    owner: adminapi
+    state: directory
+
+- name: adminapi - create service file
+  template:
+    src: files/adminapi.service.j2
+    dest: /etc/systemd/system/adminapi.service
+
+- name: UFW - Allow connections to adminapi ports
+  ufw:
+    rule: allow
+    port: "8085"
+
+- name: adminapi - reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: adminapi - grant extra priviliges to user
+  shell: chmod 775 /etc && chmod 775 /etc/kong

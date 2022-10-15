@@ -1,0 +1,18 @@
+# pg_plan_filter
+- name: pg_plan_filter - download latest release
+  git:
+    repo: https://github.com/pgexperts/pg_plan_filter.git
+    dest: /tmp/pg_plan_filter
+    version: "{{ pg_plan_filter_commit_version }}"
+  become: yes
+
+- name: pg_plan_filter - build
+  make:
+    chdir: /tmp/pg_plan_filter
+  become: yes
+
+- name: pg_plan_filter - install
+  make:
+    chdir: /tmp/pg_plan_filter
+    target: install
+  become: yes
