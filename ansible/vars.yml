@@ -110,3 +110,10 @@ pg_stat_monitor_release: "1.0.1"
 
 vault_release: "0.0.1"
 vault_release_checksum: sha1:a5ea3356c6f41985b2bef67b6a0491d4ffa99816
+
+groonga_release: "12.0.8"
+groonga_release_checksum: sha1:32aee787efffc2a22760fde946fb6462286074e2
+
+pgroonga_release: "2.4.0"
+pgroonga_release_checksum: sha1:235d67e8487b318e656d4d3016a49c14fae0512d
+

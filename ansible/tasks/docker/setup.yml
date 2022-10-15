@@ -18,6 +18,13 @@
       - cmake
       - ninja-build
       - python
+      - groonga-normalizer-mysql
+      - zlib1g-dev
+      - liblzo2-dev
+      - libmsgpack-dev
+      - libzmq3-dev
+      - libevent-dev
+      - libmecab-dev
     update_cache: yes
     install_recommends: no
 
