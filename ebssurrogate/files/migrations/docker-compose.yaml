@@ -1,0 +1,47 @@
+# Usage
+#   Start:          docker-compose up
+#   Stop:           docker-compose down -v
+
+version: "3.8"
+
+services:
+  db:
+    image: supabase/postgres:14.1.0.66
+    restart: unless-stopped
+    ports:
+      - 5478:5432
+    healthcheck:
+      test: pg_isready -h localhost -p 5432
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  dbmate:
+    image: ghcr.io/amacneil/dbmate:1
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db:/db
+    environment:
+      USE_DBMATE: 1
+      POSTGRES_HOST: db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ./db/migrate.sh
+
+  pg_prove:
+    image: horrendo/pg_prove
+    depends_on:
+      dbmate:
+        condition: service_started
+    environment:
+      PGHOST: db
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./tests:/tests
+    command: pg_prove /tests/test.sql
