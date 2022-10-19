@@ -6,7 +6,7 @@ version: "3.8"
 
 services:
   db:
-    image: supabase/postgres:14.1.0.66
+    image: supabase/postgres:14.1.0.71
     restart: unless-stopped
     ports:
       - 5478:5432
@@ -36,7 +36,7 @@ services:
     image: horrendo/pg_prove
     depends_on:
       dbmate:
-        condition: service_started
+        condition: service_completed_successfully
     environment:
       PGHOST: db
       PGDATABASE: postgres

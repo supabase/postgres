@@ -1,5 +1,0 @@
--- migrate:up
-
-
--- migrate:down
-

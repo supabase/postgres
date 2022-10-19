@@ -194,7 +194,7 @@ build {
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/migrations"
+    source = "migrations"
     destination = "/tmp"
   }
 

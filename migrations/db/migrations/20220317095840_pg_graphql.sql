@@ -86,6 +86,7 @@ AS $func$
     END;
 $func$;
 
+DROP EVENT TRIGGER IF EXISTS issue_pg_graphql_access;
 CREATE EVENT TRIGGER issue_pg_graphql_access ON ddl_command_end WHEN TAG in ('CREATE FUNCTION')
 EXECUTE PROCEDURE extensions.grant_pg_graphql_access();
 COMMENT ON FUNCTION extensions.grant_pg_graphql_access IS 'Grants access to pg_graphql';
@@ -138,6 +139,7 @@ AS $func$
     END;
 $func$;
 
+DROP EVENT TRIGGER IF EXISTS issue_graphql_placeholder;
 CREATE EVENT TRIGGER issue_graphql_placeholder ON sql_drop WHEN TAG in ('DROP EXTENSION')
 EXECUTE PROCEDURE extensions.set_graphql_placeholder();
 COMMENT ON FUNCTION extensions.set_graphql_placeholder IS 'Reintroduces placeholder function for graphql_public.graphql';

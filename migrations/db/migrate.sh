@@ -1,6 +1,5 @@
 #!/bin/sh
-exec > /tmp/migrate-sh.log 2>&1
-set -eux
+set -eu
 
 #######################################
 # Used by both ami and docker builds to initialise database schema.
@@ -56,4 +55,4 @@ if [ -e "$postinit" ]; then
 fi
 
 # once done with everything, reset stats from init
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();' || true
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' || true

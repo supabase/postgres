@@ -20,7 +20,7 @@ For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that
 
 1. Run all `db/init-scripts` with `postgres` superuser role.
 2. Run all `db/migrations` with `supabase_admin` superuser role.
-3. Finalise role passwords with `/etc/postgres.schema.sql` if present.
+3. Finalize role passwords with `/etc/postgres.schema.sql` if present.
 
 Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/develop/ansible/playbook-docker.yml#L9) image contains several migration scripts to configure default extensions. These are run first by docker entrypoint and included in ami by ansible.
 

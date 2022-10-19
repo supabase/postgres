@@ -56,10 +56,12 @@ BEGIN
   END LOOP;
 END; $$ LANGUAGE plpgsql;
 
+DROP EVENT TRIGGER IF EXISTS pgrst_ddl_watch;
 CREATE EVENT TRIGGER pgrst_ddl_watch
   ON ddl_command_end
   EXECUTE PROCEDURE extensions.pgrst_ddl_watch();
 
+DROP EVENT TRIGGER IF EXISTS pgrst_drop_watch;
 CREATE EVENT TRIGGER pgrst_drop_watch
   ON sql_drop
   EXECUTE PROCEDURE extensions.pgrst_drop_watch();
