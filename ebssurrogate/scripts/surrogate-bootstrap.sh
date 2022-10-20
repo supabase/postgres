@@ -164,7 +164,10 @@ function setup_chroot_environment {
 	chmod 644 /tmp/apparmor_profiles/*
 	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
-	# Copy unit tests
+	# Copy migrations
+	cp -r /tmp/migrations /mnt/tmp/
+
+	# Copy unit tests 
 	cp -r /tmp/unit-tests /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
@@ -194,6 +197,11 @@ function download_ccache {
 }
 
 function execute_playbook {
+
+tee /etc/ansible/ansible.cfg <<EOF
+[defaults]
+callbacks_enabled = timer, profile_tasks, profile_roles
+EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 

@@ -194,6 +194,11 @@ build {
   }
 
   provisioner "file" {
+    source = "migrations"
+    destination = "/tmp"
+  }
+
+  provisioner "file" {
     source = "ebssurrogate/files/unit-tests"
     destination = "/tmp"
   }
