@@ -64,5 +64,5 @@
 - name: Install pg_jsonschema
   import_tasks: tasks/postgres-extensions/22-pg_jsonschema.yml
 
-# - name: Install vault
-#   import_tasks: tasks/postgres-extensions/23-vault.yml
+- name: Install vault
+  import_tasks: tasks/postgres-extensions/23-vault.yml

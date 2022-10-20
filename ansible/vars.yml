@@ -108,5 +108,5 @@ pg_jsonschema_release: "v0.1.0"
 
 pg_stat_monitor_release: "1.0.1"
 
-vault_release: "0.0.1"
-vault_release_checksum: sha1:a5ea3356c6f41985b2bef67b6a0491d4ffa99816
+vault_release: "0.1.7"
+vault_release_checksum: sha1:75793d5e09ab56ebc4ccac0a4c0d312816ea4442
