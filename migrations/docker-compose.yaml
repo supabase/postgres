@@ -45,3 +45,14 @@ services:
     volumes:
       - ./tests:/tests
     command: pg_prove /tests/test.sql
+
+  dbmate:
+    image: ghcr.io/amacneil/dbmate:1
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./schema.sql:/db/schema.sql
+    environment:
+      DATABASE_URL: postgres://supabase_admin:${POSTGRES_PASSWORD}@db/postgres?sslmode=disable
+    command: dump
