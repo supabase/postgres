@@ -24,7 +24,7 @@ jobs:
           - 5478:5432
         # Set health checks to wait until postgres has started
         options: >-
-          --health-cmd pg_isready -U postgres -h localhost
+          --health-cmd "pg_isready -U postgres -h localhost"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -53,7 +53,7 @@ jobs:
           SHELL: /bin/bash
 
       - name: run tests
-        run: pg_prove tests/test.sql
+        run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
           PGPORT: 5478
@@ -74,7 +74,7 @@ jobs:
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
       - name: run tests
-        run: pg_prove tests/test.sql
+        run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
           PGPORT: 5478
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: verify schema.sql is committed
         run: |
-          docker compose up db dbmate --abort-on-container-exit
+          docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
           if ! git diff --ignore-space-at-eol --exit-code --quiet migrations/schema.sql; then
             echo "Detected uncommitted changes after build. See status below:"
             git diff
