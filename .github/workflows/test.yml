@@ -80,3 +80,16 @@ jobs:
           PGPORT: 5478
           PGUSER: postgres
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: verify schema.sql is committed
+        run: |
+          docker compose up db dbmate --abort-on-container-exit
+          if ! git diff --ignore-space-at-eol --exit-code --quiet migrations/schema.sql; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff
+            exit 1
+          fi
