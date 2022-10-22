@@ -45,5 +45,5 @@ services:
     volumes:
       - ./schema.sql:/db/schema.sql
     environment:
-      DATABASE_URL: postgres://supabase_admin:${POSTGRES_PASSWORD}@db/postgres?sslmode=disable
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/postgres?sslmode=disable
     command: dump
