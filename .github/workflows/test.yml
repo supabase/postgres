@@ -3,10 +3,16 @@ name: test
 on:
   push:
     branches:
-      - master
+      - develop
   pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: docker compose up --abort-on-container-exit
+
   migrate:
     runs-on: ubuntu-latest
     env:
