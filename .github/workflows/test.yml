@@ -11,7 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - id: settings
+        run: |
+          apt update --yes && apt install --yes jq
+          POSTGRES_VERSION=$(cat docker.vars.json | jq -r '.["postgres-version"]')
+          echo "postgres_version=$POSTGRES_VERSION" >> $GITHUB_OUTPUT
+
       - run: docker compose up --abort-on-container-exit
+        env:
+          POSTGRES_VERSION: ${{ steps.settings.outputs.postgres_version }}
 
   migrate:
     runs-on: ubuntu-latest
