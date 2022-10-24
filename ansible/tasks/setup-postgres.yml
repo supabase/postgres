@@ -74,6 +74,7 @@
   make:
     target: world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
 
 - name: Postgres - install
   make:
