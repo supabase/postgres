@@ -41,9 +41,7 @@
   make:
     chdir: /tmp/plv8
   become: yes
+  async: 1000
+  poll: 0
+  register: plv8_build
 
-- name: plv8 - install
-  make:
-    chdir: /tmp/plv8
-    target: install
-  become: yes
