@@ -39,6 +39,7 @@
 - name: nginx - build
   make:
     chdir: /tmp/nginx-{{ nginx_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: nginx - install
