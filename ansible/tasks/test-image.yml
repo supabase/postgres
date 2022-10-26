@@ -27,6 +27,14 @@
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
 
+- name: Run migrations tests
+  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v tests/test.sql
+  register: retval
+  failed_when: retval.rc != 0
+  when: ebssurrogate_mode
+  args:
+    chdir: /tmp/migrations
+
 - name: Re-enable PG Sodium references in config
   become: yes
   become_user: postgres
