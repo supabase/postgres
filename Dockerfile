@@ -10,7 +10,7 @@ RUN apt update && \
     apt install -y ansible sudo git && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade && \
     cd /tmp/ansible && \
-    ansible-playbook playbook-docker.yml -e async_mode=false && \
+    ansible-playbook -e async_mode=false playbook-docker.yml && \
     apt -y autoremove && \
     apt -y autoclean && \
     apt install -y default-jdk-headless locales && \
