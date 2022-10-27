@@ -69,4 +69,5 @@
 
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
+  when: async_mode
 
