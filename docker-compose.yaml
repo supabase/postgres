@@ -3,9 +3,6 @@ version: "3.8"
 services:
   db:
     image: supabase/postgres:latest
-    build:
-      args:
-        VERSION: ${POSTGRES_VERSION:-14.1}
     restart: "no"
     healthcheck:
       test: pg_isready -U postgres -h localhost
