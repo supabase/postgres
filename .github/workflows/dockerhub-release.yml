@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@v3
 
       - id: settings
-        run: cat common.vars.pkr.hcl >> $GITHUB_OUTPUT
+        # Remove spaces and quotes to get the raw version string
+        run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
 
   docker_x86_release:
     needs: settings
