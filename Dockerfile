@@ -1,4 +1,4 @@
-ARG VERSION
+ARG VERSION=14.1
 
 FROM postgres:$VERSION
 
@@ -10,7 +10,7 @@ RUN apt update && \
     apt install -y ansible sudo git && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade && \
     cd /tmp/ansible && \
-    ansible-playbook playbook-docker.yml && \
+    ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
     apt -y autoclean && \
     apt install -y default-jdk-headless locales && \
@@ -21,5 +21,10 @@ RUN apt update && \
 ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
+
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
+COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
+COPY ansible/files/sodium_extension.sql /docker-entrypoint-initdb.d/02-sodium-extension.sql
+COPY migrations/db/ /docker-entrypoint-initdb.d/
 
 CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]

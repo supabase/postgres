@@ -6,25 +6,19 @@ on:
       - develop
     paths:
       - '.github/workflows/dockerhub-release.yml'
-      - 'docker.vars*'
+      - 'common.vars*'
 
 jobs:
   settings:
     runs-on: ubuntu-20.04
     outputs:
-      docker_version: ${{ steps.settings.outputs.docker_version }}
-      postgres_version: ${{ steps.settings.outputs.postgres_version }}
+      docker_version: ${{ steps.settings.outputs.postgres-version }}
     steps:
       - uses: actions/checkout@v3
 
       - id: settings
-        run: |
-          apt update --yes && apt install --yes jq
-          DOCKER_VERSION=$(cat docker.vars.json | jq -r '.["docker-version"]')
-          echo "::set-output name=docker_version::$DOCKER_VERSION"
-
-          POSTGRES_VERSION=$(cat docker.vars.json | jq -r '.["postgres-version"]')
-          echo "::set-output name=postgres_version::$POSTGRES_VERSION"
+        # Remove spaces and quotes to get the raw version string
+        run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
 
   docker_x86_release:
     needs: settings
@@ -64,8 +58,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
-          build-args: |
-            "VERSION=${{ needs.settings.outputs.postgres_version }}"
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -115,8 +107,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
-          build-args: |
-            "VERSION=${{ needs.settings.outputs.postgres_version }}"
           no-cache: true
 
   merge_manifest:

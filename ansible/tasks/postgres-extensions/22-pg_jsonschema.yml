@@ -28,7 +28,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: "~/.cargo/bin/cargo install --version '={{ pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
+    cmd: "~/.cargo/bin/cargo install --version '={{ pg_jsonschema_pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
 
 - name: pg_jsonschema - download release
   become: yes
@@ -56,6 +56,7 @@
   shell:
     cmd: "~/.cargo/bin/cargo pgx install --release"
     chdir: /tmp/pg_jsonschema
+  when: not async_mode
 
 - name: pg_jsonschema - return ownership to root
   file:
@@ -67,3 +68,16 @@
     - /usr/lib/postgresql/lib
     - /usr/lib/postgresql/14/lib
     - /usr/share/postgresql/14
+  when: not async_mode
+
+- name: pg_jsonschema - install
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: "~/.cargo/bin/cargo pgx install --release"
+    chdir: /tmp/pg_jsonschema
+  async: 1000
+  poll: 0
+  register: jsonschema_build
+  when: async_mode
+

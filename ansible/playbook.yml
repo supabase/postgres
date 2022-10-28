@@ -153,8 +153,8 @@
       shell:
         cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
 
-    - name: Run unit tests
-      import_tasks: tasks/test-image.yml
+    - name: Run migrations
+      import_tasks: tasks/setup-migrations.yml
 
     - name: Stop Postgres Database without Systemd
       become: yes
@@ -162,3 +162,7 @@
       shell:
         cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
+
+    - name: Run unit tests
+      import_tasks: tasks/test-image.yml
+

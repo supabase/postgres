@@ -1,0 +1,104 @@
+name: test
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - run: docker compose up --abort-on-container-exit
+
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: password
+
+    strategy:
+      matrix:
+        supabase-version: ["14.1.0.71"]
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: supabase/postgres:${{ matrix.supabase-version }}
+        ports:
+          - 5478:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install dbmate
+        run: |
+          curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          sudo chmod +x /usr/local/bin/dbmate
+
+      - name: migrate schema
+        run: ./migrations/db/migrate.sh
+        env:
+          USE_DBMATE: 1
+          POSTGRES_PORT: 5478
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+      - name: install pg_prove
+        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+        env:
+          SHELL: /bin/bash
+
+      - name: run tests
+        run: pg_prove migrations/tests/test.sql
+        env:
+          PGHOST: localhost
+          PGPORT: 5478
+          PGUSER: postgres
+          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+      - name: migrations should be idempotent
+        run: |
+          for sql in ./migrations/db/migrations/*.sql; do
+            echo "$0: running $sql"
+            psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -f "$sql"
+          done
+        env:
+          PGHOST: localhost
+          PGPORT: 5478
+          PGDATABASE: postgres
+          PGUSER: supabase_admin
+          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+      - name: run tests
+        run: pg_prove migrations/tests/test.sql
+        env:
+          PGHOST: localhost
+          PGPORT: 5478
+          PGUSER: postgres
+          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: verify schema.sql is committed
+        run: |
+          docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
+          if ! git diff --ignore-space-at-eol --exit-code --quiet migrations/schema.sql; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff
+            exit 1
+          fi
