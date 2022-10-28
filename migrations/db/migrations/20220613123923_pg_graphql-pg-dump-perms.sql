@@ -67,7 +67,7 @@ BEGIN
 
   IF graphql_exists 
   THEN
-  create extension if not exists pg_graphql schema extensions;
+  create extension if not exists pg_graphql schema graphql;
   END IF;
 END $$;
 
