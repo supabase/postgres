@@ -6,7 +6,7 @@ version: "3.8"
 
 services:
   db:
-    image: supabase/postgres:14.1.0.71
+    image: supabase/postgres:14.1.0.82
     restart: "no"
     ports:
       - 5478:5432
