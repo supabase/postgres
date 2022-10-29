@@ -23,7 +23,7 @@ jobs:
 
     strategy:
       matrix:
-        supabase-version: ["14.1.0.82"]
+        supabase-version: ["14.1.0.83-rc0"]
     timeout-minutes: 10
 
     services:
