@@ -1,1 +1,2 @@
 * @supabase/backend
+migrations @supabase/cli @supabase/backend
