@@ -24,17 +24,10 @@ CREATE SCHEMA extensions;
 
 
 --
--- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+-- Name: graphql; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA extensions;
-
-
---
--- Name: EXTENSION pg_graphql; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pg_graphql IS 'GraphQL support';
+CREATE SCHEMA graphql;
 
 
 --
@@ -84,6 +77,20 @@ CREATE SCHEMA realtime;
 --
 
 CREATE SCHEMA storage;
+
+
+--
+-- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA graphql;
+
+
+--
+-- Name: EXTENSION pg_graphql; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_graphql IS 'pg_graphql: GraphQL support';
 
 
 --
@@ -483,6 +490,32 @@ $$;
 
 
 --
+-- Name: TABLE key; Type: SECURITY LABEL; Schema: pgsodium; Owner: -
+--
+
+SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
+
+
+--
+-- Name: key_encrypt_secret(); Type: FUNCTION; Schema: pgsodium; Owner: -
+--
+
+CREATE FUNCTION pgsodium.key_encrypt_secret() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+            new.raw_key = CASE WHEN new.parent_key IS NULL THEN NULL ELSE
+                        pgsodium.crypto_aead_det_encrypt(new.raw_key::bytea, pg_catalog.convert_to((new.id::text || new.associated_data::text)::text, 'utf8'),
+                new.parent_key::uuid,
+                new.raw_key_nonce
+              ) END
+              ;
+    RETURN new;
+    END;
+    $$;
+
+
+--
 -- Name: extension(text); Type: FUNCTION; Schema: storage; Owner: -
 --
 
@@ -683,6 +716,30 @@ CREATE TABLE auth.users (
 --
 
 COMMENT ON TABLE auth.users IS 'Auth: Stores user login data within a secure schema.';
+
+
+--
+-- Name: decrypted_key; Type: VIEW; Schema: pgsodium; Owner: -
+--
+
+CREATE VIEW pgsodium.decrypted_key AS
+ SELECT key.id,
+    key.status,
+    key.created,
+    key.expires,
+    key.key_type,
+    key.key_id,
+    key.key_context,
+    key.name,
+    key.associated_data,
+    key.raw_key,
+        CASE
+            WHEN (key.parent_key IS NULL) THEN NULL::bytea
+            ELSE pgsodium.crypto_aead_det_decrypt(key.raw_key, convert_to(((key.id)::text || key.associated_data), 'utf8'::name), key.parent_key, key.raw_key_nonce)
+        END AS decrypted_raw_key,
+    key.raw_key_nonce,
+    key.parent_key
+   FROM pgsodium.key;
 
 
 --
