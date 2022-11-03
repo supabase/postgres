@@ -67,9 +67,8 @@
 # - name: Install vault
 #   import_tasks: tasks/postgres-extensions/23-vault.yml
 
-
-- name: Install PGroonga
-  import_tasks: tasks/postgres-extensions/24-pgroonga.yml
+#- name: Install PGroonga
+#  import_tasks: tasks/postgres-extensions/24-pgroonga.yml
 
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
