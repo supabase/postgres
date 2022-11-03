@@ -100,10 +100,11 @@ libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 pgsodium_release: "3.0.6"
 pgsodium_release_checksum: sha1:829f5d87a5fdb479a22f3d2f05ba1799067dd898
 
-pg_graphql_pgx_version: "0.5.2"
-pg_graphql_release: "v0.5.0"
+libgraphqlparser_commit_sha: 3b64cd52d13621921990a5801ba019e8a9402599
 
-pg_jsonschema_pgx_version: "0.4.5"
+pg_graphql_release: "v0.4.1"
+
+pgx_version: "0.4.5"
 pg_jsonschema_release: "v0.1.0"
 
 pg_stat_monitor_release: "1.0.1"

@@ -2,68 +2,49 @@
 - name: pg_graphql - download & install dependencies
   apt:
     pkg:
-      - make
-      - gcc
-      - pkg-config
-      - clang
-      - libssl-dev
+      - bison
+      - build-essential
+      - clang-11
+      - cmake
+      - flex
+      - python2
     update_cache: yes
     install_recommends: no
 
-- name: download rust/cargo installer
+- name: pg_graphql - download libgraphqlparser
+  git:
+    repo: https://github.com/graphql/libgraphqlparser.git
+    dest: /tmp/libgraphqlparser
+    version: "{{ libgraphqlparser_commit_sha }}"
   become: yes
-  get_url:
-    url: https://sh.rustup.rs
-    dest: /tmp/sh.rustup.rs
-    mode: '0755'
-    owner: postgres
-    group: postgres
 
-- name: install rust/cargo
-  become: yes
-  become_user: postgres
-  shell: /tmp/sh.rustup.rs -y
-
-- name: install cargo-pgx
-  become: yes
-  become_user: postgres
+- name: pg_graphql - compile libgraphqlparser
   shell:
-    cmd: "~/.cargo/bin/cargo install --version '={{ pg_graphql_pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
+    cmd: "cmake ."
+    chdir: /tmp/libgraphqlparser
+  become: yes
+
+- name: pg_graphql - build libgraphqlparser
+  make:
+    chdir: /tmp/libgraphqlparser
+    target: install
+  become: yes
 
 - name: pg_graphql - download latest release
-  become: yes
   git:
     repo: https://github.com/supabase/pg_graphql.git
     dest: /tmp/pg_graphql
     version: "{{ pg_graphql_release }}"
-
-- name: pg_graphql - temporarily transfer ownership to postgres
   become: yes
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    owner: postgres
-    group: postgres
-  with_items:
-    - /tmp/pg_graphql
-    - /usr/lib/postgresql/lib # AMI
-    - /usr/lib/postgresql/14/lib # Docker Image
-    - /usr/share/postgresql/14
 
-- name: pg_graphql - install
-  become: yes
-  become_user: postgres
-  shell:
-    cmd: "~/.cargo/bin/cargo pgx install --release"
+- name: pg_graphql - build
+  make:
     chdir: /tmp/pg_graphql
+    target: install
+  become: yes
 
-- name: pg_graphql - return ownership to root
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    owner: root
-    group: root
-  with_items:
-    - /usr/lib/postgresql/lib
-    - /usr/lib/postgresql/14/lib
-    - /usr/share/postgresql/14
+- name: pg_graphql - update links and cache for shared libraries
+  shell:
+    cmd: "/sbin/ldconfig -v"
+    chdir: /tmp/pg_graphql
+  become: yes

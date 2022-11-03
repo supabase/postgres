@@ -28,7 +28,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: "~/.cargo/bin/cargo install --version '={{ pg_jsonschema_pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
+    cmd: "~/.cargo/bin/cargo install --version '={{ pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
 
 - name: pg_jsonschema - download release
   become: yes
