@@ -44,6 +44,7 @@ BEGIN
             );
         $$;
 
+        grant select on graphql.field, graphql.type, graphql.enum_value to postgres, anon, authenticated, service_role;
         grant execute on function graphql.resolve to postgres, anon, authenticated, service_role;
     END IF;
 
