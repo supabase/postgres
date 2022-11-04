@@ -9,25 +9,35 @@ profile /usr/lib/postgresql/bin/postgres flags=(attach_disconnected) {
 #include <abstractions/ssl_keys>
 #include <abstractions/user-tmp>
 
-/dev/shm rw,
+capability dac_override,
+capability dac_read_search,
+
 deny @{HOME}/** rwx,
+
+/data/pgdata/** r,
+/dev/shm rw,
 /etc/postgresql-custom/** r,
 /etc/postgresql/** r,
+/etc/wal-g/config.json r,
 /run/systemd/notify rw,
-/var/run/systemd/notify rw,
 /usr/bin/cat rix,
 /usr/bin/dash rix,
 /usr/bin/mknod rix,
 /usr/lib/postgresql/bin/* mrix,
-/usr/local/lib/libgroonga.so.* mr,
+/usr/local/bin/wal-g rix,
 /usr/local/lib/libSFCGAL.so.* r,
+/usr/local/lib/libgroonga.so.* mr,
 /usr/share/postgresql/** r,
 /var/lib/postgresql/** rwl,
 /var/log/postgresql/** rw,
+/var/log/wal-g/** w,
+/var/run/systemd/notify rw,
 /{,var/}run/postgresql/** rw,
 owner /data/pgdata/** rwl,
 owner /data/pgdata/pgroonga.log k,
 owner /dev/shm/ rw,
 owner /dev/shm/PostgreSQL.* rw,
+owner /var/log/wal-g/** rw,
 owner @{PROC}/[0-9]*/oom_adj rw,
+
 }
