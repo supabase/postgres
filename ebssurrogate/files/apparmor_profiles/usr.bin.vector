@@ -11,11 +11,17 @@
 
   deny @{HOME}/** rwx,
   /etc/vector/** r,
+  /proc/cmdline r,
+  /proc/sys/kernel/osrelease r,
+  /run/log/journal/ r,
   /run/systemd/notify rw,
   /sys/kernel/mm/transparent_hugepage/enabled r,
+  /usr/bin/journalctl mrix,
   /usr/bin/vector mrix,
   /var/lib/vector/** rw,
-  /var/log/postgresql/** r,
+  /var/log/journal/ r,
+  /var/log/postgresql/** rw,
+  /var/log/postgresql/ r,
   /var/run/systemd/notify rw,
   owner /proc/*/cgroup r,
 }

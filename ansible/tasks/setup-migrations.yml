@@ -1,0 +1,7 @@
+- name: Run migrate.sh script
+  shell: ./migrate.sh
+  register: retval
+  when: ebssurrogate_mode
+  args:
+    chdir: /tmp/migrations/db
+  failed_when: retval.rc != 0

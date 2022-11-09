@@ -57,3 +57,9 @@
   systemd:
     name: fail2ban
     state: restarted
+
+- name: fail2ban - disable service
+  systemd:
+    name: fail2ban
+    enabled: no
+    daemon_reload: yes

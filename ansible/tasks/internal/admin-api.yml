@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,postgres,pgbouncer,wal-g
+    groups: root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
     append: yes
 
 - name: Move shell scripts to /root dir
@@ -17,23 +17,11 @@
     - { file: "disable_walg.sh" }
     - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
+    - { file: "manage_readonly_mode.sh" }
 
 - name: give adminapi user permissions
   copy:
-    content: |
-      %adminapi ALL= NOPASSWD: /root/grow_fs.sh
-      %adminapi ALL= NOPASSWD: /root/commence_walg_backup.sh
-      %adminapi ALL= NOPASSWD: /root/commence_walg_restore.sh
-      %adminapi ALL= NOPASSWD: /root/complete_walg_restore.sh
-      %adminapi ALL= NOPASSWD: /root/prepare_pg_upgrade.sh
-      %adminapi ALL= NOPASSWD: /root/initiate_pg_upgrade.sh
-      %adminapi ALL= NOPASSWD: /root/complete_pg_upgrade.sh
-      %adminapi ALL= NOPASSWD: /root/disable_walg.sh
-      %adminapi ALL= NOPASSWD: /root/enable_walg.sh
-      %adminapi ALL= NOPASSWD: /usr/bin/systemctl daemon-reload
-      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart postgresql.service
-      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart adminapi.service
-      %adminapi ALL= NOPASSWD: /usr/bin/systemctl restart pgbouncer.service
+    src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
 
 - name: perms for adminapi
@@ -83,3 +71,6 @@
 - name: adminapi - reload systemd
   systemd:
     daemon_reload: yes
+
+- name: adminapi - grant extra priviliges to user
+  shell: chmod 775 /etc && chmod 775 /etc/kong

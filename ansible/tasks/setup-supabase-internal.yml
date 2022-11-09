@@ -47,18 +47,14 @@
     cmd: |
       usermod -a -G postgres vector
 
-- name: create vector overrides dir
-  file:
-    state: directory
-    owner: root
-    group: root
-    path: /etc/systemd/system/vector.service.d
-    mode: '0700'
+- name: create service files for Vector
+  template:
+    src: files/vector.service.j2
+    dest: /etc/systemd/system/vector.service
 
-- name: Custom systemd overrides - ensure Vector gets restarted
-  copy:
-    src: files/vector.service.conf
-    dest: /etc/systemd/system/vector.service.d/overrides.conf
+- name: vector - reload systemd
+  systemd:
+    daemon_reload: yes
 
 - name: Create checkpoints dir
   become: yes
@@ -83,9 +79,6 @@
 
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
-
-- name: Install node exporter
-  import_tasks: internal/node-exporter.yml
 
 - name: Install supautils
   import_tasks: internal/supautils.yml

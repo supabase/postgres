@@ -9,8 +9,12 @@
 
   vars:
     sql_files:
-      - { source: "pgbouncer_config/pgbouncer_auth_schema.sql", dest: "00-schema.sql" }
+      - {
+          source: "pgbouncer_config/pgbouncer_auth_schema.sql",
+          dest: "00-schema.sql",
+        }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
+      - { source: "sodium_extension.sql", dest: "02-sodium-extension.sql" }
 
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
@@ -34,9 +38,32 @@
       import_tasks: tasks/setup-pgbouncer.yml
       tags:
         - install-pgbouncer
+        - install-supabase-internal
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
+
+    - name: Install Gotrue
+      import_tasks: tasks/setup-gotrue.yml
+      tags:
+        - install-gotrue
+        - install-supabase-internal
+
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      tags:
+        - install-postgrest
+        - install-supabase-internal
+
+    - name: Install Kong
+      import_tasks: tasks/setup-kong.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Install nginx
+      import_tasks: tasks/setup-nginx.yml
+      tags:
+        - install-supabase-internal
 
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
@@ -55,14 +82,6 @@
       shell:
         cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
       when: ebssurrogate_mode
-
-    - name: Install WAL-G
-      import_tasks: tasks/setup-wal-g.yml
-
-    - name: Install PostgREST
-      import_tasks: tasks/setup-postgrest.yml
-      tags:
-        - install-postgrest
 
     - name: Adjust APT update intervals
       copy:
@@ -140,3 +159,4 @@
       shell:
         cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
+

@@ -11,7 +11,6 @@
       - libxslt-dev
       - libssl-dev
       - libsystemd-dev
-      - libpq-dev
       - libxml2-utils
       - uuid-dev
       - xsltproc
@@ -75,6 +74,7 @@
   make:
     target: world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
 
 - name: Postgres - install
   make:
@@ -209,8 +209,8 @@
 
 - name: copy optimizations systemd unit
   template:
-    src: files/generate-optimizations.service.j2
-    dest: /etc/systemd/system/generate-optimizations.service
+    src: files/database-optimizations.service.j2
+    dest: /etc/systemd/system/database-optimizations.service
 
 # Reload
 - name: System - systemd reload

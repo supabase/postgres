@@ -7,6 +7,13 @@
   apt:
     pkg:
       - libpq5
+      - libnuma-dev
+
+- name: postgis - ensure dependencies do not get autoremoved
+  shell: |
+    set -e
+    apt-mark manual libnuma*
+    apt-mark auto libnuma*-dev
 
 - name: PostgREST - download ubuntu binary archive (arm)
   get_url:
@@ -30,11 +37,47 @@
     src: /tmp/postgrest.tar.xz
     dest: /opt
     owner: postgrest
+    mode: '0755'
 
-- name: PostgREST - create service file
+- name: create directories
+  file:
+    state: directory
+    owner: postgrest
+    group: postgrest
+    mode: '0775'
+    path: /etc/postgrest
+
+- name: empty files
+  file:
+    state: touch
+    owner: postgrest
+    group: postgrest
+    path: /etc/postgrest/{{ item }}
+  with_items:
+    - base.conf
+    - generated.conf
+
+- name: create conf merging script
+  copy:
+    content: |
+      #! /usr/bin/env bash
+      set -euo pipefail
+      set -x
+
+      cd "$(dirname "$0")"
+      cat $@ > merged.conf
+    dest: /etc/postgrest/merge.sh
+    mode: 0750
+    owner: postgrest
+    group: postgrest
+
+- name: PostgREST - create service files
   template:
-    src: files/postgrest.service.j2
-    dest: /etc/systemd/system/postgrest.service
+    src: files/{{ item }}.j2
+    dest: /etc/systemd/system/{{ item }}
+  with_items:
+    - postgrest.service
+    - postgrest-optimizations.service
 
 - name: PostgREST - reload systemd
   systemd:

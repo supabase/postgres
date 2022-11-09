@@ -40,5 +40,11 @@
 # ----------------------------------
 
 # MAPNAME       SYSTEM-USERNAME         PG-USERNAME
-# root is allowed to login as postgres
-root_as_postgres  postgres  postgres
+supabase_map  postgres   postgres
+supabase_map  root       postgres
+supabase_map  ubuntu     postgres
+
+# supabase-specific users
+supabase_map  gotrue     supabase_auth_admin
+supabase_map  postgrest  authenticator
+supabase_map  adminapi   postgres

@@ -2,8 +2,8 @@
 Description=PostgreSQL database server
 Documentation=man:postgres(1)
 {% if supabase_internal is defined %}
-Requires=generate-optimizations.service
-After=generate-optimizations.service
+Requires=database-optimizations.service
+After=database-optimizations.service
 {% endif %}
 
 [Service]
@@ -13,7 +13,9 @@ ExecStart=/usr/lib/postgresql/bin/postgres -D /etc/postgresql
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGINT
-TimeoutSec=0
+TimeoutStopSec=90
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

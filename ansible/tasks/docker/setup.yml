@@ -1,5 +1,6 @@
 - name: Install Python3
-  raw: apt update && apt upgrade -y && apt install python3 -y
+  raw: export DEBIAN_FRONTEND=noninteractive ; sh -c "apt update && apt upgrade -y && apt install python3 -y"
+  timeout: 300
 
 - name: Setup - install common dependencies
   apt:
@@ -17,6 +18,13 @@
       - cmake
       - ninja-build
       - python
+      - groonga-normalizer-mysql
+      - zlib1g-dev
+      - liblzo2-dev
+      - libmsgpack-dev
+      - libzmq3-dev
+      - libevent-dev
+      - libmecab-dev
     update_cache: yes
     install_recommends: no
 

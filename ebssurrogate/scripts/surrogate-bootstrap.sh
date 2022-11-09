@@ -164,6 +164,12 @@ function setup_chroot_environment {
 	chmod 644 /tmp/apparmor_profiles/*
 	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
+	# Copy migrations
+	cp -r /tmp/migrations /mnt/tmp/
+
+	# Copy unit tests 
+	cp -r /tmp/unit-tests /mnt/tmp/
+
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
 	chroot /mnt /tmp/chroot-bootstrap.sh
@@ -191,6 +197,11 @@ function download_ccache {
 }
 
 function execute_playbook {
+
+tee /etc/ansible/ansible.cfg <<EOF
+[defaults]
+callbacks_enabled = timer, profile_tasks, profile_roles
+EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
@@ -208,6 +219,9 @@ function update_systemd_services {
 
 	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
+
+	# Disable auditd
+	rm -f /mnt/etc/systemd/system/multi-user.target.wants/auditd.service
 }
 
 
@@ -234,6 +248,9 @@ function clean_system {
 	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log}
 	chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
 	chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
+
+        # audit logs directory for apparmor
+        mkdir /mnt/var/log/audit
 
 	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*

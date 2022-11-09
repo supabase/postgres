@@ -1,0 +1,83 @@
+# pg_jsonschema
+- name: pg_jsonschema - download & install dependencies
+  apt:
+    pkg:
+      - make
+      - gcc
+      - pkg-config
+      - clang
+      - libssl-dev
+    update_cache: yes
+    install_recommends: no
+
+- name: download rust/cargo installer
+  become: yes
+  get_url:
+    url: https://sh.rustup.rs
+    dest: /tmp/sh.rustup.rs
+    mode: '0755'
+    owner: postgres
+    group: postgres
+
+- name: install rust/cargo
+  become: yes
+  become_user: postgres
+  shell: /tmp/sh.rustup.rs -y
+
+- name: install cargo-pgx
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: "~/.cargo/bin/cargo install --version '={{ pg_jsonschema_pgx_version }}' cargo-pgx && ~/.cargo/bin/cargo pgx init --pg{{ postgresql_major }} pg_config"
+
+- name: pg_jsonschema - download release
+  become: yes
+  git:
+    repo: https://github.com/supabase/pg_jsonschema.git
+    dest: /tmp/pg_jsonschema
+    version: "{{ pg_jsonschema_release }}"
+
+- name: pg_jsonschema - temporarily transfer ownership to postgres
+  become: yes
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    owner: postgres
+    group: postgres
+  with_items:
+    - /tmp/pg_jsonschema
+    - /usr/lib/postgresql/lib # AMI
+    - /usr/lib/postgresql/14/lib # Docker Image
+    - /usr/share/postgresql/14
+
+- name: pg_jsonschema - install
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: "~/.cargo/bin/cargo pgx install --release"
+    chdir: /tmp/pg_jsonschema
+  when: not async_mode
+
+- name: pg_jsonschema - return ownership to root
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    owner: root
+    group: root
+  with_items:
+    - /usr/lib/postgresql/lib
+    - /usr/lib/postgresql/14/lib
+    - /usr/share/postgresql/14
+  when: not async_mode
+
+- name: pg_jsonschema - install
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: "~/.cargo/bin/cargo pgx install --release"
+    chdir: /tmp/pg_jsonschema
+  async: 1000
+  poll: 0
+  register: jsonschema_build
+  when: async_mode
+

@@ -193,6 +193,16 @@ build {
     destination = "/tmp"
   }
 
+  provisioner "file" {
+    source = "migrations"
+    destination = "/tmp"
+  }
+
+  provisioner "file" {
+    source = "ebssurrogate/files/unit-tests"
+    destination = "/tmp"
+  }
+
   # Copy ansible playbook
   provisioner "shell" {
     inline = ["mkdir /tmp/ansible-playbook"]

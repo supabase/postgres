@@ -1,0 +1,67 @@
+- name: install pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+
+- name: Temporarily disable PG Sodium references in config
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+  when: ebssurrogate_mode
+
+- name: Start Postgres Database to load all extensions.
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
+  when: ebssurrogate_mode
+
+- name: Enable pgTAP extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
+  when: ebssurrogate_mode
+
+- name: Run Unit tests (with filename unit-test-*) on Postgres Database 
+  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
+  register: retval
+  failed_when: retval.rc != 0
+  when: ebssurrogate_mode
+
+- name: Re-enable PG Sodium references in config
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
+  when: ebssurrogate_mode
+
+- name: Drop pgTap extension
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
+  when: ebssurrogate_mode
+
+- name: Reset db stats
+  shell: /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
+  when: ebssurrogate_mode
+
+- name: remove pg_prove
+  apt:
+    pkg:
+      - libtap-parser-sourcehandler-pgtap-perl
+    state: absent
+    autoremove: yes
+
+- name: Get pg_config file details
+  ansible.builtin.stat:
+    path: /usr/bin/pg_config
+  register: st
+
+- name: Ensure pg_config points to our install of PG
+  ansible.builtin.fail:
+    msg: "Incorrect symlink for pg_config"
+  when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'
+
+- name: Stop Postgres Database 
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
+  when: ebssurrogate_mode

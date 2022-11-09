@@ -1,0 +1,49 @@
+# Usage
+#   Start:          docker-compose up
+#   Stop:           docker-compose down -v
+
+version: "3.8"
+
+services:
+  db:
+    image: supabase/postgres:14.1.0.83-rc0
+    restart: "no"
+    ports:
+      - 5478:5432
+    healthcheck:
+      test: pg_isready -U postgres -h localhost
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ../ansible/files/postgresql_config/pg_hba.conf.j2:/etc/postgresql/pg_hba.conf
+      - ./db/init-scripts:/docker-entrypoint-initdb.d/init-scripts
+      - ./db/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./db/migrate.sh:/docker-entrypoint-initdb.d/migrate.sh
+
+  pg_prove:
+    image: horrendo/pg_prove
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./tests:/tests
+    command: pg_prove /tests/test.sql
+
+  dbmate:
+    image: ghcr.io/amacneil/dbmate:1
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./schema.sql:/db/schema.sql
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db/postgres?sslmode=disable
+    command: dump

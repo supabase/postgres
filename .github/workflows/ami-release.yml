@@ -1,4 +1,4 @@
-name: Run CI checks
+name: Release AMI
 
 on:
   push:

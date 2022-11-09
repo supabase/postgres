@@ -1,3 +1,9 @@
+- name: Install plv8
+  import_tasks: tasks/postgres-extensions/13-plv8.yml
+
+- name: Install pg_jsonschema
+  import_tasks: tasks/postgres-extensions/22-pg_jsonschema.yml
+
 - name: Install postgis
   import_tasks: tasks/postgres-extensions/01-postgis.yml
 
@@ -34,9 +40,6 @@
 - name: Install pljava
   import_tasks: tasks/postgres-extensions/12-pljava.yml
 
-- name: Install plv8
-  import_tasks: tasks/postgres-extensions/13-plv8.yml
-
 - name: Install pg_plan_filter
   import_tasks: tasks/postgres-extensions/14-pg_plan_filter.yml
 
@@ -57,3 +60,18 @@
 
 - name: Install pg_stat_monitor
   import_tasks: tasks/postgres-extensions/20-pg_stat_monitor.yml
+
+- name: Install auto_explain
+  import_tasks: tasks/postgres-extensions/21-auto_explain.yml
+
+# - name: Install vault
+#   import_tasks: tasks/postgres-extensions/23-vault.yml
+
+#- name: Install PGroonga
+#  import_tasks: tasks/postgres-extensions/24-pgroonga.yml
+
+- name: Verify async task status
+  import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
+  when: async_mode
+
+
