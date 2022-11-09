@@ -16,7 +16,7 @@ cleanup() {
     EXIT_CODE=${?:-0}
 
     systemctl start postgresql
-    run_sql "CREATE EXTENSION IF NOT EXISTS pg_graphql;"
+    run_sql "CREATE EXTENSION IF NOT EXISTS pg_graphql CASCADE;"
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
 
     umount $MOUNT_POINT
@@ -30,15 +30,16 @@ function initiate_upgrade {
     mkdir -p $MOUNT_POINT
     mount $BLOCK_DEVICE $MOUNT_POINT
 
-    tar zxvf "$MOUNT_POINT/binaries/$PGVERSION.tar.gz" -C "$MOUNT_POINT/binaries"
-    chown -R postgres:postgres "$MOUNT_POINT/binaries/$PGVERSION"
+    mkdir -p "/tmp/pg_upgrade_bin"
+    tar zxvf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
+    chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
     run_sql "DROP EXTENSION IF EXISTS pg_graphql CASCADE;"
     run_sql "ALTER USER postgres WITH SUPERUSER;"
 
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/");
     PGDATANEW="$MOUNT_POINT/pgdata"
-    PGBINNEW="$MOUNT_POINT/binaries/$PGVERSION/bin"
+    PGBINNEW="/tmp/pg_upgrade_bin/$PGVERSION/bin"
 
 
     rm -rf $PGDATANEW/*
