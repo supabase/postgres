@@ -160,6 +160,3 @@
         cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
 
-    - name: Run unit tests
-      import_tasks: tasks/test-image.yml
-
