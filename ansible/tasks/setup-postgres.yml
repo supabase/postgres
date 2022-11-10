@@ -172,7 +172,7 @@
   with_items: "{{ postgresql_bin.files }}"
 
 # init DB
-- name: Create directories on data volume
+- name: Create directory on data volume
   file:
     path: '{{ item }}'
     recurse: yes
