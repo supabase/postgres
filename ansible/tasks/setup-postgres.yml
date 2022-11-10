@@ -182,8 +182,6 @@
     mode: 0750
   with_items:
     - "/data/pgdata"
-    - "/data/bin"
-    - "/data/lib"
 
 - name: Link database data_dir to data volume directory
   file:
