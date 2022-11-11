@@ -24,6 +24,8 @@ jobs:
 
       - name: Push migration files to S3
         uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --delete
         env:
           AWS_S3_BUCKET: ${{ secrets.PG_INIT_SCRIPT_S3_BUCKET_STAGING }}
           AWS_ACCESS_KEY_ID: ${{ secrets.PG_INIT_SCRIPT_ACCESS_KEY_ID_STAGING }}
