@@ -20,7 +20,6 @@ if [ -n "$(command -v yum)" ]; then
 elif [ -n "$(command -v apt-get)" ]; then
   # Cleanup more packages
   apt-get -y remove --purge \
-	libgl1-mesa-dri \
 	automake \
  	autoconf \
 	autotools-dev \
@@ -34,7 +33,6 @@ elif [ -n "$(command -v apt-get)" ]; then
 	git  \
 	git-man  \
 	ansible \
-	libasound2 \
 	libicu-dev \
 	libcgal-dev \
 	libgcc-9-dev \
@@ -45,7 +43,6 @@ elif [ -n "$(command -v apt-get)" ]; then
   apt-get -y autoremove
   apt-get -y autoclean
 fi
-
 rm -rf /tmp/* /var/tmp/*
 history -c
 cat /dev/null > /root/.bash_history

@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan( 7 );
+SELECT plan( 5 );
 
 -- Check installed extensions
 SELECT extensions_are(
@@ -20,8 +20,6 @@ SELECT extensions_are(
 SELECT has_schema('pg_toast');
 SELECT has_schema('pg_catalog');
 SELECT has_schema('information_schema');
-SELECT has_schema('pgsodium');
-SELECT has_schema('pgsodium_masks');
 SELECT has_schema('public');
 
 SELECT * from finish();

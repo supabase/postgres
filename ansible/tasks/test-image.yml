@@ -21,11 +21,28 @@
   shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
   when: ebssurrogate_mode
 
+- name: Create function for testing extensions
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -f /tmp/unit-tests/test-extensions.sql;
+  when: ebssurrogate_mode
+
+- name: Extension Installation tests
+  shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v /tmp/unit-tests/verify-extensions.sql
+  register: retval
+  when: ebssurrogate_mode
+
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database 
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
   register: retval
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
+
+- name: Run migrations tests
+  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v tests/test.sql
+  register: retval
+  failed_when: retval.rc != 0
+  when: ebssurrogate_mode
+  args:
+    chdir: /tmp/migrations
 
 - name: Re-enable PG Sodium references in config
   become: yes
