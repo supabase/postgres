@@ -31,5 +31,5 @@
     group: root
   with_items:
     - /usr/lib/postgresql/lib
-    - /usr/lib/postgresql/14/lib
-    - /usr/share/postgresql/14
+    - /usr/lib/postgresql/15/lib
+    - /usr/share/postgresql/15
