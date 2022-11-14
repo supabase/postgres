@@ -11,6 +11,7 @@
     mode: "0700"
     owner: root
   loop:
+    - { file: "activate_read_replica.sh" }
     - { file: "commence_walg_backup.sh" }
     - { file: "commence_walg_restore.sh" }
     - { file: "complete_walg_restore.sh" }
