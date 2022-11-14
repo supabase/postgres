@@ -2,13 +2,13 @@ supabase_internal: true
 ebssurrogate_mode: true
 async_mode: true
 
-postgresql_major: "14"
-postgresql_release: "14.1"
-postgresql_release_checksum: sha1:f6c114a4be41ca876deeb462e9d02237b186743c
+postgresql_major: "15"
+postgresql_release: "15.1"
+postgresql_release_checksum: sha256:b29030525e1314d676f41e6007a96d4489ba0d03fa93e67b477c1d5386790c8fsh
 
 # Non Postgres Extensions
-pgbouncer_release: "1.16.1"
-pgbouncer_release_checksum: sha1:14c75af0b5a11b0363b6146170b516db498fc998
+pgbouncer_release: "1.17.0"
+pgbouncer_release_checksum: sha256:657309b7bc5c7a85cbf70a9a441b535f7824123081eabb7ba86d00349a256e23
 
 postgrest_release: "9.0.1.20220717"
 postgrest_arm_release_checksum: sha1:4d62e6adbd1f15eee735deae778650a1ec2cbbf6
@@ -19,10 +19,10 @@ gotrue_release_checksum: sha1:edf2dc3b1ef1b6968d05244e5fd8e468389cd0ac
 
 aws_cli_release: "2.2.7"
 
-golang_version: "1.18.3"
+golang_version: "1.19.3"
 golang_version_checksum:
-  arm64: sha256:beacbe1441bee4d7978b900136d1d6a71d150f0a9bb77e9d50c822065623a35a
-  amd64: sha256:956f8507b302ab0bb747613695cdae10af99bbd39a90cae522b7c0302cc27245
+  arm64: sha256:99de2fe112a52ab748fb175edea64b313a0c8d51d6157dba683a6be163fd5eab
+  amd64: sha256:74b9640724fd4e6bb0ed2a1bc44ae813a03f1e72a4c76253e2d5c015494430ba
 
 kong_release_target: focal # if it works, it works
 kong_deb: kong_2.8.1_arm64.deb
@@ -47,31 +47,31 @@ adminapi_release_checksum:
   amd64: sha256:f8f9d097c7fd0551a9db94c51420403baa399597277db7a7cd56eb37203356ae
 
 # Postgres Extensions
-postgis_release: "3.1.4"
-postgis_release_checksum: sha1:3077da5136841d9d51a4325a233be8eccf763c38
+postgis_release: "3.3.2"
+postgis_release_checksum: sha256:9a2a219da005a1730a39d1959a1c7cec619b1efb009b65be80ffc25bad299068
 
-pgrouting_release: "3.3.0"
-pgrouting_release_checksum: sha1:7475189f334bc97e1b3587b2f456a573c8aa811a
+pgrouting_release: "3.4.1"
+pgrouting_release_checksum: sha256:a4e034efee8cf67582b67033d9c3ff714a09d8f5425339624879df50aff3f642
 
 pgtap_release: "1.2.0"
 pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
 
-pg_cron_release: "1.4.1"
-pg_cron_release_checksum: sha1:411cb25b64a3aefc26e9b0c9d9de205cbeefe631
+pg_cron_release: "1.4.2"
+pg_cron_release_checksum: sha256:3652722ea98d94d8e27bf5e708dd7359f55a818a43550d046c5064c98876f1a8
 
-pgaudit_release: "1.6.1"
-pgaudit_release_checksum: sha1:2fae2690d38a1822b6e8f40ad6b2bd8669498659
+pgaudit_release: "1.7.0"
+pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f77f8f3126d428a8bd8
 
-pgsql_http_release: "1.3.1"
-pgsql_http_release_checksum: sha1:816a3fff53e05301b176cf0696799fc5a00f54e8
+pgsql_http_release: "1.5.0"
+pgsql_http_release_checksum: sha256:43efc9e82afcd110f205b86b8d28d1355d39b6b134161e9661a33a1346818f5d
 
-plpgsql_check_release: "2.0.6"
+plpgsql_check_release: "2.2.3"
 plpgsql_check_release_checksum: sha1:3f3ca49e38ee87392fd62f1a62a481c445e1c6c2
 
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
-timescaledb_release: "2.6.1"
+timescaledb_release: "2.8.1"
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
 
@@ -81,15 +81,15 @@ supautils_release_checksum: sha256:9c703d3d24d05a9f3302281a1893f6d887dd0e24d28cc
 pljava_release: "1_6_3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
 
-plv8_commit_version: 3656177d384e3e02b74faa8e2931600f3690ab59
+plv8_commit_version: bcddd92f71530e117f2f98b92d206dafe824f73a
 
 pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
 pg_net_release: "0.6.1"
 pg_net_release_checksum: sha1:8457081e28021043f77cec8c14a866bf9e9fdb8b
 
-rum_release: "1.3.9"
-rum_release_checksum: sha1:71901640ccf9e2e1886aad37703a9fd07ced9e53
+rum_release: "1.3.13"
+rum_release_checksum: sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
 
 vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
 vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
@@ -106,7 +106,7 @@ pg_graphql_release: "v0.5.0"
 pg_jsonschema_pgx_version: "0.5.6"
 pg_jsonschema_release: "v0.1.1"
 
-pg_stat_monitor_release: "1.0.1"
+pg_stat_monitor_release: "1.1.1"
 
 vault_release: "0.0.1"
 vault_release_checksum: sha1:a5ea3356c6f41985b2bef67b6a0491d4ffa99816
