@@ -66,7 +66,7 @@ pgsql_http_release: "1.5.0"
 pgsql_http_release_checksum: sha256:43efc9e82afcd110f205b86b8d28d1355d39b6b134161e9661a33a1346818f5d
 
 plpgsql_check_release: "2.2.3"
-plpgsql_check_release_checksum: sha1:3f3ca49e38ee87392fd62f1a62a481c445e1c6c2
+plpgsql_check_release_checksum: sha256:bb531dcf55366e21c88544289d617a9e923d122e8d919bb37205e562bfea2e9b
 
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
