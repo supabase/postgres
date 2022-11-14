@@ -4,7 +4,7 @@ async_mode: true
 
 postgresql_major: "15"
 postgresql_release: "15.1"
-postgresql_release_checksum: sha256:b29030525e1314d676f41e6007a96d4489ba0d03fa93e67b477c1d5386790c8fsh
+postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
 
 # Non Postgres Extensions
 pgbouncer_release: "1.17.0"
