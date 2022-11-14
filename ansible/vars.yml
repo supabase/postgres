@@ -71,7 +71,8 @@ plpgsql_check_release_checksum: sha256:bb531dcf55366e21c88544289d617a9e923d122e8
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
-timescaledb_release: "2.8.1"
+timescaledb_release: 121631c70fdf08c285ac9201d0767ed99e4891c8
+# timescaledb_release: "2.8.1"
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
 
