@@ -72,7 +72,7 @@ pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
 timescaledb_release: 121631c70fdf08c285ac9201d0767ed99e4891c8
-# timescaledb_release: "2.8.1"
+# timescaledb_release: "2.8.1" //TODO: update version after pg15 support is rolled out: https://github.com/timescale/timescaledb/pulls?q=is%3Apr+label%3Apg15+is%3Aclosed
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
 
