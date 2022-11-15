@@ -41,10 +41,10 @@ postgres_exporter_release_checksum:
   arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
   amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
 
-adminapi_release: 0.27.1
+adminapi_release: 0.27.2
 adminapi_release_checksum:
-  arm64: sha256:b448da232a0a17291cfb6ba82702dd409b41841c2633ea1db9116b4929e5f7b6
-  amd64: sha256:f8f9d097c7fd0551a9db94c51420403baa399597277db7a7cd56eb37203356ae
+  arm64: sha256:59ff6fd85ed9bde09702e39b7046891e3b5086833812255a03d7c1ba9a3c5ce7
+  amd64: sha256:d46b1279ed2025492190cbbd07fedb5ef952bbcc9758eb3b9044ffdc4cfbd0e6
 
 # Postgres Extensions
 postgis_release: "3.1.4"
