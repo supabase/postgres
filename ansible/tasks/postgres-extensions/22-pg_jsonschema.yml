@@ -54,7 +54,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: "~/.cargo/bin/cargo pgx install --release"
+    cmd: "~/.cargo/bin/cargo pgx install --release --no-default-features --features pg{{postgresql_major}}"
     chdir: /tmp/pg_jsonschema
   when: not async_mode
 
@@ -74,7 +74,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: "~/.cargo/bin/cargo pgx install --release"
+    cmd: "~/.cargo/bin/cargo pgx install --release --no-default-features --features pg{{postgresql_major}}"
     chdir: /tmp/pg_jsonschema
   async: 1000
   poll: 0
