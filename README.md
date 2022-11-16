@@ -22,7 +22,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [plpgsql_check](https://github.com/okbob/plpgsql_check) | [2.2.3](https://github.com/okbob/plpgsql_check/releases/tag/v2.2.3) | Linter tool for PL/pgSQL. |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate) | [1.4](https://github.com/eradman/pg-safeupdate/releases/tag/1.4) | Protect your data from accidental updates or deletes. |
 | [wal2json](https://github.com/eulerto/wal2json) | [commit](https://github.com/eulerto/wal2json/commit/53b548a29ebd6119323b6eb2f6013d7c5fe807ec) | JSON output plugin for logical replication decoding. |
-| [PL/Java](https://github.com/tada/pljava) | [1.6.3](https://github.com/tada/pljava/releases/tag/V1_6_3) | Write in Java functions in Postgres. |
+| [PL/Java](https://github.com/tada/pljava) | [1.6.4](https://github.com/tada/pljava/releases/tag/V1_6_4) | Write in Java functions in Postgres. |
 | [plv8](https://github.com/plv8/plv8) | [commit](https://github.com/plv8/plv8/commit/bcddd92f71530e117f2f98b92d206dafe824f73a) | Write in Javascript functions in Postgres. |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | [commit](https://github.com/pgexperts/pg_plan_filter/commit/5081a7b5cb890876e67d8e7486b6a64c38c9a492) | Only allow statements that fulfill set criteria to be executed. |
 | [pg_net](https://github.com/supabase/pg_net) | [v0.6.1](https://github.com/supabase/pg_net/releases/tag/v0.6.1) | Expose the SQL interface for async networking. |
