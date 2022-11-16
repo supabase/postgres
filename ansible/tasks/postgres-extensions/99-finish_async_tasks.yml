@@ -1,17 +1,18 @@
 ## Verify plv8 status and complete plv8-install
-- name: Check if plv8 is complete
-  async_status:
-    jid: "{{ plv8_build.ansible_job_id }}"
-  register: job_result
-  until: job_result.finished
-  delay: 60
-  retries: 60
+#TODO: reenable this after investigation
+# - name: Check if plv8 is complete
+#   async_status:
+#     jid: "{{ plv8_build.ansible_job_id }}"
+#   register: job_result
+#   until: job_result.finished
+#   delay: 60
+#   retries: 60
 
-- name: plv8 - install
-  make:
-    chdir: /tmp/plv8
-    target: install
-  become: yes
+# - name: plv8 - install
+#   make:
+#     chdir: /tmp/plv8
+#     target: install
+#   become: yes
 
 ## Verify jsonschema status and complete installation
 - name: Check if jsonschema is complete

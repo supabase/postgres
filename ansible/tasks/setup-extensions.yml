@@ -1,5 +1,6 @@
-- name: Install plv8
-  import_tasks: tasks/postgres-extensions/13-plv8.yml
+#TODO: reenable this after investigation
+# - name: Install plv8
+#   import_tasks: tasks/postgres-extensions/13-plv8.yml
 
 - name: Install pg_jsonschema
   import_tasks: tasks/postgres-extensions/22-pg_jsonschema.yml
