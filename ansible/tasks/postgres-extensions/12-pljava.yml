@@ -9,7 +9,7 @@
     update_cache: yes
     install_recommends: no
 
-#TODO: revert to usingmain repo after PG15 support is merged
+#TODO: revert to using main repo after PG15 support is merged: https://github.com/tada/pljava/pull/413
 # - name: pljava - download latest release
 #   get_url:
 #     url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
