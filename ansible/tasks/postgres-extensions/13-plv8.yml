@@ -54,7 +54,7 @@
   make:
     chdir: /tmp/plv8
   become: yes
-  async: 1500
+  async: 2000
   poll: 0
   register: plv8_build
   when: async_mode
