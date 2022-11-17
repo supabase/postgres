@@ -6,7 +6,7 @@
     update_cache: yes
     install_recommends: no
 
-#TODO: revert to using main repo after PG15 fix is merged: https://github.com/okbob/plpgsql_check/pull/131
+#TODO: revert to using releases after PG15 fix is tagged: https://github.com/okbob/plpgsql_check/pull/131
 # - name: plpgsql_check - download latest release
 #   get_url:
 #     url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
@@ -24,9 +24,9 @@
 - name: plpgsql_check - download latest release
   become: yes
   git:
-    repo: https://github.com/supabase/plpgsql_check.git
+    repo: https://github.com/okbob/plpgsql_check.git
     dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}
-    version: "pcnc/pg15-shmem-allocation"
+    version: "master"
 
 - name: plpgsql_check - clean
   make:
