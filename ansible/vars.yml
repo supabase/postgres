@@ -71,7 +71,7 @@ plpgsql_check_release_checksum: sha256:bb531dcf55366e21c88544289d617a9e923d122e8
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
-timescaledb_release: 121631c70fdf08c285ac9201d0767ed99e4891c8
+timescaledb_release: 1b65297ff7ed21ae2b338a88cf16d151903178f4
 # timescaledb_release: "2.8.1" //TODO: update version after pg15 support is rolled out: https://github.com/timescale/timescaledb/pulls?q=is%3Apr+label%3Apg15+is%3Aclosed
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
@@ -101,13 +101,13 @@ libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 pgsodium_release: "3.0.4"
 pgsodium_release_checksum: sha1:f08e9ac109ab5e6fc8b15ea21b26f88f451a2070
 
-#TODO: update versions when both stable pgx and pg_graphql versions are released
+#TODO: update version when stable pgx is released
 pg_graphql_pgx_version: "0.6.0-alpha.1"
-pg_graphql_release: "pg15_support"
+pg_graphql_release: "or/release_0_5_1"
 
-#TODO: update versions when both stable pgx and pg_jsonschema versions are released
+#TODO: update version when stable pgx is released
 pg_jsonschema_pgx_version: "0.6.0-alpha.1"
-pg_jsonschema_release: "pg15_support"
+pg_jsonschema_release: "v0.1.2"
 
 pg_stat_monitor_release: "1.1.1"
 

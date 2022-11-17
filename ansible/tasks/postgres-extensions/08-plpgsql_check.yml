@@ -6,19 +6,27 @@
     update_cache: yes
     install_recommends: no
 
-- name: plpgsql_check - download latest release
-  get_url:
-    url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
-    dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
-    checksum: "{{ plpgsql_check_release_checksum }}"
-    timeout: 60
+#TODO: revert to using main repo after PG15 fix is merged: https://github.com/okbob/plpgsql_check/pull/131
+# - name: plpgsql_check - download latest release
+#   get_url:
+#     url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
+#     dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
+#     checksum: "{{ plpgsql_check_release_checksum }}"
+#     timeout: 60
 
-- name: plpgsql_check - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
-    dest: /tmp
+# - name: plpgsql_check - unpack archive
+#   unarchive:
+#     remote_src: yes
+#     src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
+#     dest: /tmp
+#   become: yes
+
+- name: plpgsql_check - download latest release
   become: yes
+  git:
+    repo: https://github.com/supabase/plpgsql_check.git
+    dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}
+    version: "pcnc/pg15-shmem-allocation"
 
 - name: plpgsql_check - clean
   make:
