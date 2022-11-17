@@ -1,9 +1,11 @@
-ARG VERSION=14.1
+ARG VERSION=15.1
 
 FROM postgres:$VERSION
 
 COPY ansible/ /tmp/ansible/
 
+# needed for plv8 Makefile selection
+ENV DOCKER true
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt update && \

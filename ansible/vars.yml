@@ -103,7 +103,7 @@ pgsodium_release_checksum: sha1:f08e9ac109ab5e6fc8b15ea21b26f88f451a2070
 
 #TODO: update version when stable pgx is released
 pg_graphql_pgx_version: "0.6.0-alpha.1"
-pg_graphql_release: "or/release_0_5_1"
+pg_graphql_release: "v0.5.1"
 
 #TODO: update version when stable pgx is released
 pg_jsonschema_pgx_version: "0.6.0-alpha.1"

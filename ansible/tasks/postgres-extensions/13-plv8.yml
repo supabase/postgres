@@ -19,6 +19,7 @@
       - libc++abi1
       - ninja-build
       - python
+      - clang
     update_cache: yes
     install_recommends: no
 
