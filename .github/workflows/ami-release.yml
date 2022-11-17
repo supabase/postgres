@@ -33,3 +33,15 @@ jobs:
           AWS_REGION: ap-southeast-1
           SOURCE_DIR: migrations/db
           DEST_DIR: migrations/db
+
+      - name: Push migration files to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.PG_INIT_SCRIPT_S3_BUCKET_PROD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.PROD_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-southeast-1
+          SOURCE_DIR: migrations/db
+          DEST_DIR: migrations/db
