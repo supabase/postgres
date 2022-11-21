@@ -9,7 +9,7 @@ create user supabase_admin;
 alter user  supabase_admin with superuser createdb createrole replication bypassrls;
 
 -- Supabase replication user
-create user supabase_replication_admin with login replication
+create user supabase_replication_admin with login replication;
 
 -- Extension namespacing
 create schema if not exists extensions;
