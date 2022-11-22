@@ -76,6 +76,7 @@
   with_items:
     - 'generated-optimizations.ini'
     - 'custom-overrides.ini'
+    - 'ssl-config.ini'
 
 - name: PgBouncer - adjust pgbouncer.ini
   copy:
@@ -108,6 +109,11 @@
     - "host  all  pgbouncer  0.0.0.0/0  reject"
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
     - "# Connection configuration for pgbouncer user"
+
+- name: Grant pg_hba and pgbouncer grp perm for adminapi updates
+  shell: |
+     chmod g+w /etc/postgresql/pg_hba.conf
+     chmod g+w /etc/pgbouncer-custom/ssl-config.ini
 
 # Add fail2ban filter
 - name: import jail.d/pgbouncer.conf
