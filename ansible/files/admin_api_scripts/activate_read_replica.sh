@@ -23,7 +23,7 @@ function read_replica_preparations {
     touch /var/lib/postgresql/data/standby.signal
 
     # Ensure that downloaded backup is owned by the postgres Linux user
-    find /var/lib/postgresql/data/ -exec chown postgres:postgres {} +
+    chown -R postgres:postgres /var/lib/postgresql/data/
     find /var/lib/postgresql/data/ -type d -exec chmod 0750 {} +
     find /var/lib/postgresql/data/ -type f -exec chmod 0640 {} +
 
