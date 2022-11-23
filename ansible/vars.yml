@@ -10,7 +10,7 @@ postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340
 pgbouncer_release: "1.17.0"
 pgbouncer_release_checksum: sha256:657309b7bc5c7a85cbf70a9a441b535f7824123081eabb7ba86d00349a256e23
 
-postgrest_release: "v10.1.1"
+postgrest_release: "10.1.1"
 postgrest_arm_release_checksum: sha256:c759e953b6b988dba853e03b866f83c690ecc5bba2ca6eb9f86ab4f4536201f5
 postgrest_x86_release_checksum: sha256:13d6d1951e425193061d9a2347d3b9722b00367e3ede5aeeaec580353268d1c0
 
