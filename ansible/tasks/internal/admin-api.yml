@@ -44,11 +44,6 @@
     dest: "/tmp/adminapi.tar.gz"
     timeout: 90
 
-- name: Copy adminapi archive to remote
-  copy:
-    src: ./adminapi.tar.gz
-    dest: /tmp/adminapi.tar.gz
-
 - name: adminapi - unpack archive in /opt
   unarchive:
     remote_src: yes
