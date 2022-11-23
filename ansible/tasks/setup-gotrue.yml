@@ -1,3 +1,8 @@
+- name: UFW - Allow connections to GoTrue metrics exporter
+  ufw:
+    rule: allow
+    port: "9122"
+    
 # use this user for the Gotrue build and for running the service
 - name: Gotrue - system user
   user: name=gotrue
