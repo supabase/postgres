@@ -38,12 +38,20 @@
     arch: "arm64"
   when: platform == "arm64"
 
-- name: adminapi - download commit archive
-  get_url:
-    url: "https://github.com/supabase/supabase-admin-api/releases/download/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+- name: Download adminapi archive
+  amazon.aws.aws_s3:
+    bucket: supabase-internal-artifacts-bucket
+    object: supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz
+    dest: ./adminapi.tar.gz
+    mode: get
+  delegate_to: localhost
+  become: no
+  timeout: 90
+
+- name: Copy adminapi archive to remote
+  copy:
+    src: ./adminapi.tar.gz
     dest: /tmp/adminapi.tar.gz
-    checksum: "{{ adminapi_release_checksum[platform] }}"
-    timeout: 60
 
 - name: adminapi - unpack archive in /opt
   unarchive:
