@@ -111,15 +111,15 @@
   template:
     src: "files/walg_helper_scripts/wal_fetch.sh"
     dest: /home/postgres/wal_fetch.sh
-    mode: 0500
+    mode: 2750
     owner: postgres
     group: postgres
 
-- name: Add helper script for wal_fetch.sh
+- name: Add helper script for wal_fetch.sh with setuid perm
   template:
     src: "files/walg_helper_scripts/wal_change_ownership.sh"
     dest: /root/wal_change_ownership.sh
-    mode: 0700
+    mode: 2750
     owner: root
 
 - name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf

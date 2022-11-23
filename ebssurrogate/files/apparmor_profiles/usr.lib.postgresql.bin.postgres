@@ -12,7 +12,8 @@ profile /usr/lib/postgresql/bin/postgres flags=(attach_disconnected) {
 capability dac_override,
 capability dac_read_search,
 
-deny @{HOME}/** rwx,
+/home/postgres/wal_fetch.sh  rix,
+/home/postgres/.walg_decompressor_cache rw,
 
 /data/pgdata/** r,
 /dev/shm rw,
@@ -27,6 +28,7 @@ deny @{HOME}/** rwx,
 /run/systemd/notify rw,
 /usr/bin/cat rix,
 /usr/bin/dash rix,
+/usr/bin/bash rix,
 /usr/bin/mknod rix,
 /usr/lib/postgresql/bin/* mrix,
 /usr/local/bin/wal-g rix,
