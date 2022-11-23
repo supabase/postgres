@@ -42,7 +42,7 @@
   get_url:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
     dest: "/tmp/adminapi.tar.gz"
-    timeout: 60
+    timeout: 90
 
 - name: Copy adminapi archive to remote
   copy:
