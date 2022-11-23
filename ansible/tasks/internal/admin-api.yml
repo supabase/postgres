@@ -39,19 +39,10 @@
   when: platform == "arm64"
 
 - name: Download adminapi archive
-  amazon.aws.aws_s3:
-    bucket: supabase-internal-artifacts-bucket
-    object: supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz
-    dest: ./adminapi.tar.gz
-    mode: get
-  delegate_to: localhost
-  become: no
-  timeout: 90
-
-- name: Copy adminapi archive to remote
-  copy:
-    src: ./adminapi.tar.gz
-    dest: /tmp/adminapi.tar.gz
+  get_url:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+    dest: "/tmp/adminapi.tar.gz"
+    timeout: 90
 
 - name: adminapi - unpack archive in /opt
   unarchive:
