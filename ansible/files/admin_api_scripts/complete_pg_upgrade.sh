@@ -1,5 +1,10 @@
 #! /usr/bin/env bash
 
+run_sql() {
+    STATEMENT=$1
+    psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
+}
+
 function complete_pg_upgrade {
     mount -a -v
 
@@ -8,7 +13,10 @@ function complete_pg_upgrade {
 
     service postgresql start
     su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
-    su -c 'psql -c "CREATE EXTENSION IF NOT EXISTS pg_graphql;"' -s $SHELL postgres
+    run_sql "CREATE EXTENSION IF NOT EXISTS pg_graphql;"
+
+    sleep 5
+    service postgresql restart
 }
 
 set -euo pipefail

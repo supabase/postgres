@@ -1,9 +1,8 @@
 #! /usr/bin/env bash
 
-set -euo pipefail
+set -eEuo pipefail
 
 PGVERSION=$1
-PGPASSWORD=$2
 
 MOUNT_POINT="/data_migration"
 
@@ -27,8 +26,8 @@ cleanup() {
 function initiate_upgrade {
     BLOCK_DEVICE=$(lsblk -dpno name | grep -v "/dev/nvme[0-1]")
 
-    mkdir -p $MOUNT_POINT
-    mount $BLOCK_DEVICE $MOUNT_POINT
+    mkdir -p "$MOUNT_POINT"
+    mount "$BLOCK_DEVICE" "$MOUNT_POINT"
 
     mkdir -p "/tmp/pg_upgrade_bin"
     tar zxvf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
@@ -40,10 +39,11 @@ function initiate_upgrade {
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/");
     PGDATANEW="$MOUNT_POINT/pgdata"
     PGBINNEW="/tmp/pg_upgrade_bin/$PGVERSION/bin"
+    PGSHARENEW="/tmp/pg_upgrade_bin/$PGVERSION/share"
 
-
-    rm -rf $PGDATANEW/*
-    su -c "$PGBINNEW/initdb -D $PGDATANEW/" -s $SHELL postgres
+    chown -R postgres:postgres "$MOUNT_POINT/"
+    rm -rf "$PGDATANEW/"
+    su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s $SHELL postgres
 
     # running upgrade using at least 1 cpu core
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
