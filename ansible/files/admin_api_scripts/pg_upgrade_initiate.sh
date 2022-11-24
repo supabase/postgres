@@ -12,6 +12,7 @@ run_sql() {
 }
 
 cleanup() {
+    UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
     systemctl start postgresql
@@ -19,12 +20,14 @@ cleanup() {
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
 
     umount $MOUNT_POINT
+    echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
 
     exit $EXIT_CODE
 }
 
 function initiate_upgrade {
     BLOCK_DEVICE=$(lsblk -dpno name | grep -v "/dev/nvme[0-1]")
+    echo "running" > /tmp/pg-upgrade-status
 
     mkdir -p "$MOUNT_POINT"
     mount "$BLOCK_DEVICE" "$MOUNT_POINT"
@@ -70,7 +73,7 @@ EOF
     mkdir -p $MOUNT_POINT/conf
     cp /etc/postgresql-custom/* $MOUNT_POINT/conf/
 
-    cleanup
+    cleanup "complete"
 }
 
 trap cleanup ERR

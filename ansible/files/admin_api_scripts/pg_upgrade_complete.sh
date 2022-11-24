@@ -17,6 +17,9 @@ function complete_pg_upgrade {
 
     sleep 5
     service postgresql restart
+
+    sleep 5
+    service postgresql restart
 }
 
 set -euo pipefail
