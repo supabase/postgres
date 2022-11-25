@@ -55,6 +55,10 @@
   shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
   when: ebssurrogate_mode
 
+- name: Drop extension test function
+  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP FUNCTION IF EXISTS install_available_extensions_and_test";
+  when: ebssurrogate_mode
+
 - name: Reset db stats
   shell: /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
   when: ebssurrogate_mode
