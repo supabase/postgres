@@ -3,8 +3,8 @@ ebssurrogate_mode: true
 async_mode: true
 
 postgresql_major: "14"
-postgresql_release: "14.1"
-postgresql_release_checksum: sha1:f6c114a4be41ca876deeb462e9d02237b186743c
+postgresql_release: "14.6"
+postgresql_release_checksum: sha256:aceda0f908b94a47e14cbb467bb4ac619400d03246b7b0605683e11157fbd480
 
 # Non Postgres Extensions
 pgbouncer_release: "1.16.1"
