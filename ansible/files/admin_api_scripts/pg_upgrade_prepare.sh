@@ -4,3 +4,4 @@ set -euo pipefail
 
 systemctl stop postgresql
 umount /data
+

@@ -10,3 +10,4 @@ if [ -f "${STATUS_FILE}" ]; then
 else
     echo -n "unknown"
 fi
+
