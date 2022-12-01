@@ -16,6 +16,7 @@ RUN apt update && \
 
 # TODO (pcnc): reference buildcache image using updated registry
 RUN --mount=type=bind,target=/ccache/,source=/ccache/,from=pcnc/ccache:latest \
+    ccache -s && \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
