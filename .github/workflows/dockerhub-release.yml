@@ -23,7 +23,7 @@ jobs:
 
   docker_x86_release:
     needs: settings
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     timeout-minutes: 120
     env:
       arch: amd64
