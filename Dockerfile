@@ -6,11 +6,16 @@ COPY ansible/ /tmp/ansible/
 
 # needed for plv8 Makefile selection
 ENV DOCKER true
+ENV CCACHE_DIR=/ccache
+ENV PATH=/usr/lib/ccache:$PATH
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt update && \
-    apt install -y ansible sudo git && \
-    apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade && \
+    apt install -y ansible sudo git ccache && \
+    apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+
+# TODO (pcnc): reference buildcache image using updated registry
+RUN --mount=type=bind,target=/ccache/,source=/ccache/,from=pcnc/ccache:latest \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
