@@ -56,7 +56,7 @@ jobs:
       - id: build
         uses: docker/build-push-action@v3
         with:
-          push: false #TODO: enable this
+          push: false #TODO (pcnc): enable this
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
           cache-from: type=gha
@@ -105,7 +105,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: false #TODO: enable this
+          push: false #TODO (pcnc): enable this
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
           no-cache: true
@@ -134,7 +134,7 @@ jobs:
           username: ${{ secrets.PROD_ACCESS_KEY_ID }}
           password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
-      #TODO: enable this
+      #TODO (pcnc): enable this
       # - name: Mirror to ECR
       #   uses: akhilerm/tag-push-action@v2.0.0
       #   with:
