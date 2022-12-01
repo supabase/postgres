@@ -15,8 +15,9 @@ RUN apt update && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
 # TODO (pcnc): reference buildcache image using updated registry
-RUN --mount=type=bind,target=/ccache/,source=/ccache/,from=pcnc/ccache:latest \
-    ccache -s && \
+COPY --from=pcnc/ccache:latest /ccache/ /ccache/
+
+RUN ccache -s && \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
@@ -24,7 +25,7 @@ RUN --mount=type=bind,target=/ccache/,source=/ccache/,from=pcnc/ccache:latest \
     apt install -y default-jdk-headless locales && \
     sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen && \
-    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/*
+    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* /ccache
 
 ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8
