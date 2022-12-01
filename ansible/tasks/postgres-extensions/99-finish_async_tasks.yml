@@ -12,24 +12,3 @@
     chdir: /tmp/plv8
     target: install
   become: yes
-
-## Verify jsonschema status and complete installation
-- name: Check if jsonschema is complete
-  become_user: postgres
-  async_status:
-    jid: "{{ jsonschema_build.ansible_job_id }}"
-  register: job_result
-  until: job_result.finished is defined and job_result.finished
-  delay: 60
-  retries: 10
-
-- name: pg_jsonschema - return ownership to root
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    owner: root
-    group: root
-  with_items:
-    - /usr/lib/postgresql/lib
-    - /usr/lib/postgresql/15/lib
-    - /usr/share/postgresql/15
