@@ -62,6 +62,7 @@
   dpkg_selections:
     name: default-jre-headless
     selection: hold
+  when: async_mode
 
 - name: pljava - set pljava.libjvm_location
   become: yes
