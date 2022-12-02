@@ -15,7 +15,7 @@ RUN apt update && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
 # TODO (pcnc): reference buildcache image using updated registry
-COPY --from=pcnc/ccache:latest /ccache/ /ccache/
+COPY --from=pcnc/ccache:x86 /ccache/ /ccache/
 
 RUN ccache -s && \
     cd /tmp/ansible && \
