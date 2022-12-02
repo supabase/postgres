@@ -1,5 +1,18 @@
 #! /usr/bin/env bash
 
+## This script is run on the old (source) instance, mounting the data disk
+## of the newly launched instance, disabling extensions containing regtypes,
+## and running pg_upgrade.
+## It reports the current status of the upgrade process to /tmp/pg-upgrade-status,
+## which can then be subsequently checked through pg_upgrade_check.sh.
+
+# Extensions to disable before running pg_upgrade.
+# Running an upgrade with these extensions enabled will result in errors due to 
+# them depending on regtypes referencing system OIDs. 
+EXTENSIONS_TO_DISABLE=(
+    "pg_graphql"
+)
+
 set -eEuo pipefail
 
 PGVERSION=$1
@@ -16,7 +29,11 @@ cleanup() {
     EXIT_CODE=${?:-0}
 
     systemctl start postgresql
-    run_sql "CREATE EXTENSION IF NOT EXISTS pg_graphql CASCADE;"
+    
+    for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
+        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCDE;"
+    done
+
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
 
     umount $MOUNT_POINT
@@ -36,7 +53,10 @@ function initiate_upgrade {
     tar zxvf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
-    run_sql "DROP EXTENSION IF EXISTS pg_graphql CASCADE;"
+    for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
+        run_sql "DROP EXTENSION IF EXISTS ${EXTENSION} CASCADE;"
+    done
+
     run_sql "ALTER USER postgres WITH SUPERUSER;"
 
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/");

@@ -1,4 +1,7 @@
 #! /usr/bin/env bash
+## This script provides a method to check the status of the database upgrade
+## process, which is updated in /tmp/pg-upgrade-status by pg_upgrade_initiate.sh
+## This runs on the old (source) instance.
 
 set -euo pipefail
 
