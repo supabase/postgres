@@ -4,9 +4,11 @@
   #include <abstractions/base>
   #include <abstractions/nameservice>
 
+  /opt/gotrue/gotrue r,
+  /opt/gotrue/migrations/ r,
+  /opt/gotrue/migrations/** rw,
   /proc/sys/net/core/somaxconn r,
   /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
-  owner /opt/gotrue/gotrue r,
-  owner /opt/gotrue/migrations/ r,
+  owner /etc/gotrue.env r,
 
 }
