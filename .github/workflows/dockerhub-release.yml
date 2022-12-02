@@ -128,7 +128,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mirror Images
-        uses: akhilerm/tag-push-action@v2.0.0
+        uses: akhilerm/tag-push-action@v2.1.0
         with:
           src: docker.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
           dst: |
