@@ -70,7 +70,9 @@
 #- name: Install PGroonga
 #  import_tasks: tasks/postgres-extensions/24-pgroonga.yml
 
+- name: Install Trusted Language Extensions
+  import_tasks: tasks/postgres-extensions/25-pg_tle.yml
+
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
   when: async_mode
-

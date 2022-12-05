@@ -25,6 +25,7 @@
       - libzmq3-dev
       - libevent-dev
       - libmecab-dev
+      - flex
     update_cache: yes
     install_recommends: no
 
