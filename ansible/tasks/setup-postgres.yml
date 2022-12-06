@@ -157,11 +157,6 @@
     paths: /usr/lib/postgresql/bin
   register: postgresql_bin
 
-- name: Find all files in /usr/lib/postgresql/lib
-  find:
-    paths: /usr/lib/postgresql/lib
-  register: postgresql_lib
-
 - name: Create symbolic links for Postgres binaries to /usr/bin/
   become: yes
   file:
