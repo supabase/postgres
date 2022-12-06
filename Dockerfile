@@ -14,14 +14,14 @@ RUN apt update && \
     apt install -y ansible sudo git ccache && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
-# TODO (pcnc): reference buildcache image using updated registry
-COPY --from=pcnc/ccache:x86 /ccache/ /ccache/
+COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache/ /ccache/
 
 RUN ccache -s && \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
     apt -y autoclean && \
+    ccache -s && \
     apt install -y default-jdk-headless locales && \
     sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen && \
