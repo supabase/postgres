@@ -6,27 +6,19 @@
     update_cache: yes
     install_recommends: no
 
-#TODO: revert to using releases after PG15 fix is tagged: https://github.com/okbob/plpgsql_check/pull/131
-# - name: plpgsql_check - download latest release
-#   get_url:
-#     url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
-#     dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
-#     checksum: "{{ plpgsql_check_release_checksum }}"
-#     timeout: 60
-
-# - name: plpgsql_check - unpack archive
-#   unarchive:
-#     remote_src: yes
-#     src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
-#     dest: /tmp
-#   become: yes
-
 - name: plpgsql_check - download latest release
+  get_url:
+    url: "https://github.com/okbob/plpgsql_check/archive/refs/tags/v{{ plpgsql_check_release }}.tar.gz"
+    dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
+    checksum: "{{ plpgsql_check_release_checksum }}"
+    timeout: 60
+
+- name: plpgsql_check - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/plpgsql_check-{{ plpgsql_check_release }}.tar.gz
+    dest: /tmp
   become: yes
-  git:
-    repo: https://github.com/okbob/plpgsql_check.git
-    dest: /tmp/plpgsql_check-{{ plpgsql_check_release }}
-    version: "master"
 
 - name: plpgsql_check - clean
   make:

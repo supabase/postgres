@@ -62,13 +62,13 @@ pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f7
 pgsql_http_release: "1.5.0"
 pgsql_http_release_checksum: sha256:43efc9e82afcd110f205b86b8d28d1355d39b6b134161e9661a33a1346818f5d
 
-plpgsql_check_release: "2.2.3"
-plpgsql_check_release_checksum: sha256:bb531dcf55366e21c88544289d617a9e923d122e8d919bb37205e562bfea2e9b
+plpgsql_check_release: "2.2.5"
+plpgsql_check_release_checksum: sha256:6c3a3c5faf3f9689425c6db8a6b20bf4cd5e7144a055e29538eae980c7232573
 
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha1:942dacd0ebce6123944212ffb3d6b5a0c09174f9
 
-timescaledb_release: 1b65297ff7ed21ae2b338a88cf16d151903178f4
+timescaledb_release: bfed42c2d371322b7f5bcddfbf43d09042296379
 # timescaledb_release: "2.8.1" //TODO: update version after pg15 support is rolled out: https://github.com/timescale/timescaledb/pulls?q=is%3Apr+label%3Apg15+is%3Aclosed
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
