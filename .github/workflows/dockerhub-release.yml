@@ -35,7 +35,6 @@ jobs:
         with:
           images: |
             supabase/postgres
-            public.ecr.aws/t3w2s2c9/postgres
           tags: |
             type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
 
@@ -52,13 +51,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Login to ECR
-        uses: docker/login-action@v2
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.PROD_ACCESS_KEY_ID }}
-          password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
       - id: build
         uses: docker/build-push-action@v3
@@ -85,7 +77,6 @@ jobs:
         with:
           images: |
             supabase/postgres
-            public.ecr.aws/t3w2s2c9/postgres
           tags: |
             type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
 
@@ -93,13 +84,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Login to ECR
-        uses: docker/login-action@v2
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.PROD_ACCESS_KEY_ID }}
-          password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
       - uses: docker/setup-buildx-action@v2
         with:
@@ -120,6 +104,9 @@ jobs:
   merge_manifest:
     needs: [settings, docker_x86_release, docker_arm_release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: docker/setup-buildx-action@v2
 
@@ -141,8 +128,17 @@ jobs:
           username: ${{ secrets.PROD_ACCESS_KEY_ID }}
           password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
 
-      - name: Mirror to ECR
-        uses: akhilerm/tag-push-action@v2.0.0
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mirror Images
+        uses: akhilerm/tag-push-action@v2.1.0
         with:
           src: docker.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
-          dst: public.ecr.aws/t3w2s2c9/postgres:${{ needs.settings.outputs.docker_version }}
+          dst: |
+            public.ecr.aws/supabase/postgres:${{ needs.settings.outputs.docker_version }}
+            ghcr.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
