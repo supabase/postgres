@@ -6,6 +6,6 @@ grant pgsodium_keyiduser to postgres with admin option;
 grant pgsodium_keyholder to postgres with admin option;
 grant pgsodium_keymaker  to postgres with admin option;
 
-create extension if not exists vault;
+create extension if not exists supabase_vault;
 
 -- migrate:down
