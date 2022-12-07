@@ -103,8 +103,8 @@ pg_jsonschema_release: "v0.1.3"
 
 pg_stat_monitor_release: "1.0.1"
 
-vault_release: "0.2.0"
-vault_release_checksum: sha1:e301fa54939f3a8a0b1a13c73e5b5dff947bd616
+vault_release: "0.2.1"
+vault_release_checksum: sha1:04968e8e16e673ad3c0dcd64483ecdb187784c22
 
 groonga_release: "12.0.8"
 groonga_release_checksum: sha1:32aee787efffc2a22760fde946fb6462286074e2
