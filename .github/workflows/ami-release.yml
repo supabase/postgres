@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - feat/pgsodium-vault-updates
 
 jobs:
   build:
