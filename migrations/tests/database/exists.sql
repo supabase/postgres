@@ -5,5 +5,6 @@ SELECT schemas_are(ARRAY[
   'extensions',
   'graphql_public',
   'realtime',
-  'storage'
+  'storage',
+  'vault'
  ]);
