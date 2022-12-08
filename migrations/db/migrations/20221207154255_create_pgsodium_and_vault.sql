@@ -1,11 +1,11 @@
 -- migrate:up
 
-create extension pgsodium;
+create extension if not exists pgsodium;
 
 grant pgsodium_keyiduser to postgres with admin option;
 grant pgsodium_keyholder to postgres with admin option;
 grant pgsodium_keymaker  to postgres with admin option;
 
-create extension supabase_vault;
+create extension if not exists supabase_vault;
 
 -- migrate:down
