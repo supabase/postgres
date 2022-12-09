@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/pg15
 
 jobs:
   build:

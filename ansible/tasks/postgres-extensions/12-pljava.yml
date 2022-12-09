@@ -29,7 +29,7 @@
   git:
     repo: https://github.com/supabase/pljava.git
     dest: /tmp/pljava-{{ pljava_release }}
-    version: "master"
+    version: "{{ pljava_release }}"
 
 - name: pljava - build
   become: yes
