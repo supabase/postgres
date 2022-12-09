@@ -33,7 +33,7 @@ ENV LC_ALL en_US.UTF-8
 
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
-COPY ansible/files/sodium_extension.sql /docker-entrypoint-initdb.d/02-sodium-extension.sql
+# COPY ansible/files/sodium_extension.sql /docker-entrypoint-initdb.d/02-sodium-extension.sql
 COPY migrations/db/ /docker-entrypoint-initdb.d/
 
 CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
