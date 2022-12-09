@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - release/14
   pull_request:
   workflow_dispatch:
 
