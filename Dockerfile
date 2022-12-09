@@ -1,22 +1,31 @@
-ARG VERSION=14.1
+ARG VERSION=15.1
 
 FROM postgres:$VERSION
 
 COPY ansible/ /tmp/ansible/
 
+# needed for plv8 Makefile selection
+ENV DOCKER true
+ENV CCACHE_DIR=/ccache
+ENV PATH=/usr/lib/ccache:$PATH
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt update && \
-    apt install -y ansible sudo git && \
-    apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade && \
+    apt install -y ansible sudo git ccache && \
+    apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+
+COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache/ /ccache/
+
+RUN ccache -s && \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
     apt -y autoclean && \
+    ccache -s && \
     apt install -y default-jdk-headless locales && \
     sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen && \
-    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/*
+    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* /ccache
 
 ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8

@@ -86,7 +86,7 @@ source "amazon-ebssurrogate" "source" {
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
-  instance_type = "t4g.2xlarge"
+  instance_type = "c6g.4xlarge"
   region       = "${var.region}"
   #secret_key   = "${var.aws_secret_key}"
 
