@@ -11,11 +11,13 @@
   #include <abstractions/user-tmp>
 
   deny @{HOME}/** rwx,
+  /etc/machine-id r,
   /etc/vector/** r,
   /proc/*/sched r,
   /proc/cmdline r,
   /proc/sys/kernel/osrelease r,
   /run/log/journal/ r,
+  /var/log/journal/** r,
   /run/systemd/notify rw,
   /sys/kernel/mm/transparent_hugepage/enabled r,
   /usr/bin/journalctl mrix,
@@ -26,5 +28,6 @@
   /var/log/postgresql/** rw,
   /var/run/systemd/notify rw,
   owner /proc/*/cgroup r,
+  owner /proc/*/mountinfo r,
   owner /proc/*/stat r,
 }
