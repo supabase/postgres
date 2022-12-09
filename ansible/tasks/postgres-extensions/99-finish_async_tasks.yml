@@ -5,7 +5,7 @@
   register: job_result
   until: job_result.finished
   delay: 60
-  retries: 20
+  retries: 60
 
 - name: plv8 - install
   make:

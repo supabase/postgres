@@ -25,6 +25,8 @@
       - libzmq3-dev
       - libevent-dev
       - libmecab-dev
+      - systemtap-sdt-dev
+      - ccache
     update_cache: yes
     install_recommends: no
 
