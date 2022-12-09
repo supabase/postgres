@@ -27,6 +27,7 @@
       - libmecab-dev
       - systemtap-sdt-dev
       - ccache
+      - clang
     update_cache: yes
     install_recommends: no
 
