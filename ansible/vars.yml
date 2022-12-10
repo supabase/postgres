@@ -73,8 +73,8 @@ timescaledb_release: bfed42c2d371322b7f5bcddfbf43d09042296379
 
 wal2json_commit_sha: 770872b890f9e122290f178e7c7bfa19ec7afa94
 
-supautils_release: "1.5.0"
-supautils_release_checksum: sha256:a9a9d36a3273b817fd6a20b509ac6576c13dbe05b62f0662898ffbdd2e60d7fc
+supautils_release: "1.7.0"
+supautils_release_checksum: sha256:e2353040262bd7a1720099f4a03ec485b05c74a202956aa1361e422f8765c6b3
 
 pljava_release: "a5bfeca83cea2c4b844758a9c76db337392892e3"
 pljava_release_checksum: sha1:550bea791c404c9d62050fd9c330e162bab20763
