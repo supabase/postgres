@@ -23,6 +23,7 @@
   with_items:
     - /etc/postgresql-custom
 
+# TODO(pcnc): remove these when install locations are fixed for Docker builds
 - name: copy Supabase extension libs
   become: yes
   copy:
