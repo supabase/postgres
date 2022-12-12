@@ -22,3 +22,15 @@
     mode: '0774'
   with_items:
     - /etc/postgresql-custom
+
+- name: copy Supabase extension libs
+  become: yes
+  copy:
+    src: /usr/lib/postgresql/lib/
+    dest: /usr/lib/postgresql/{{ postgresql_major }}/lib/
+
+- name: copy Supabase extension files
+  become: yes
+  copy:
+    src: /var/lib/postgresql/extension/
+    dest: /usr/share/postgresql/{{ postgresql_major }}/extension/

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/fix-supabase-extensions
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'common.vars*'
