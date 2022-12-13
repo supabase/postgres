@@ -38,7 +38,7 @@ services:
     command: pg_prove /tests/test.sql
 
   dbmate:
-    image: ghcr.io/amacneil/dbmate:1
+    image: ghcr.io/amacneil/dbmate:main
     depends_on:
       db:
         condition: service_healthy
