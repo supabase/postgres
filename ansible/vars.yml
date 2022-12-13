@@ -104,8 +104,8 @@ pg_jsonschema_release: "v0.1.4"
 
 pg_stat_monitor_release: "1.1.1"
 
-vault_release: "0.2.5"
-vault_release_checksum: sha256:a8af6eadccafafc6b49c03887c26adbc9f011f90f96741e32b2e6781d0f23400
+vault_release: "0.2.6"
+vault_release_checksum: sha256:19f32d6bcf621a62a29525ef4cf12679610245baa44b2566a70f4bce79a75615
 
 groonga_release: "12.0.8"
 groonga_release_checksum: sha1:32aee787efffc2a22760fde946fb6462286074e2
