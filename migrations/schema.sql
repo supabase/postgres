@@ -80,6 +80,13 @@ CREATE SCHEMA storage;
 
 
 --
+-- Name: vault; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA vault;
+
+
+--
 -- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -133,6 +140,20 @@ CREATE EXTENSION IF NOT EXISTS pgjwt WITH SCHEMA extensions;
 --
 
 COMMENT ON EXTENSION pgjwt IS 'JSON Web Token API for Postgresql';
+
+
+--
+-- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
+
+
+--
+-- Name: EXTENSION supabase_vault; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION supabase_vault IS 'Supabase Vault Extension';
 
 
 --
@@ -490,13 +511,6 @@ $$;
 
 
 --
--- Name: TABLE key; Type: SECURITY LABEL; Schema: pgsodium; Owner: -
---
-
-SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
-
-
---
 -- Name: key_encrypt_secret(); Type: FUNCTION; Schema: pgsodium; Owner: -
 --
 
@@ -504,12 +518,12 @@ CREATE FUNCTION pgsodium.key_encrypt_secret() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
     BEGIN
-            new.raw_key = CASE WHEN new.parent_key IS NULL THEN NULL ELSE
+            new.raw_key = CASE WHEN new.raw_key IS NULL THEN NULL ELSE
+                CASE WHEN new.parent_key IS NULL THEN NULL ELSE
                         pgsodium.crypto_aead_det_encrypt(new.raw_key::bytea, pg_catalog.convert_to((new.id::text || new.associated_data::text)::text, 'utf8'),
                 new.parent_key::uuid,
                 new.raw_key_nonce
-              ) END
-              ;
+              ) END END;
     RETURN new;
     END;
     $$;
@@ -580,6 +594,28 @@ BEGIN
     -- saving space for cloud-init
 END
 $$;
+
+
+--
+-- Name: secrets_encrypt_secret(); Type: FUNCTION; Schema: vault; Owner: -
+--
+
+CREATE FUNCTION vault.secrets_encrypt_secret() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+            new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
+                CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
+                  pgsodium.crypto_aead_det_encrypt(
+                    pg_catalog.convert_to(new.secret, 'utf8'),
+                    pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
+                    new.key_id::uuid,
+                    new.nonce
+                  ),
+                    'base64') END END;
+    RETURN new;
+    END;
+    $$;
 
 
 SET default_tablespace = '';
@@ -734,11 +770,16 @@ CREATE VIEW pgsodium.decrypted_key AS
     key.associated_data,
     key.raw_key,
         CASE
-            WHEN (key.parent_key IS NULL) THEN NULL::bytea
-            ELSE pgsodium.crypto_aead_det_decrypt(key.raw_key, convert_to(((key.id)::text || key.associated_data), 'utf8'::name), key.parent_key, key.raw_key_nonce)
+            WHEN (key.raw_key IS NULL) THEN NULL::bytea
+            ELSE
+            CASE
+                WHEN (key.parent_key IS NULL) THEN NULL::bytea
+                ELSE pgsodium.crypto_aead_det_decrypt(key.raw_key, convert_to(((key.id)::text || key.associated_data), 'utf8'::name), key.parent_key, key.raw_key_nonce)
+            END
         END AS decrypted_raw_key,
     key.raw_key_nonce,
-    key.parent_key
+    key.parent_key,
+    key.comment
    FROM pgsodium.key;
 
 
@@ -790,6 +831,30 @@ CREATE TABLE storage.objects (
     last_accessed_at timestamp with time zone DEFAULT now(),
     metadata jsonb
 );
+
+
+--
+-- Name: decrypted_secrets; Type: VIEW; Schema: vault; Owner: -
+--
+
+CREATE VIEW vault.decrypted_secrets AS
+ SELECT secrets.id,
+    secrets.name,
+    secrets.description,
+    secrets.secret,
+        CASE
+            WHEN (secrets.secret IS NULL) THEN NULL::text
+            ELSE
+            CASE
+                WHEN (secrets.key_id IS NULL) THEN NULL::text
+                ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secrets.secret, 'base64'::text), convert_to(((((secrets.id)::text || secrets.description) || (secrets.created_at)::text) || (secrets.updated_at)::text), 'utf8'::name), secrets.key_id, secrets.nonce), 'utf8'::name)
+            END
+        END AS decrypted_secret,
+    secrets.key_id,
+    secrets.nonce,
+    secrets.created_at,
+    secrets.updated_at
+   FROM vault.secrets;
 
 
 --
