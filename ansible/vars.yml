@@ -95,8 +95,8 @@ vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.
 libsodium_release: "1.0.18"
 libsodium_release_checksum: sha1:795b73e3f92a362fabee238a71735579bf46bb97
 
-pgsodium_release: "3.1.1"
-pgsodium_release_checksum: sha256:56cc5649658904c4ec91f1159b494ed240e4cb2ef1f8204ca1b8616d88e3377f
+pgsodium_release: "3.1.2"
+pgsodium_release_checksum: sha256:98dd49af7b5de9142f3dac2de53e28e4fc4fa57a1d33bb278c66138ad9f1212e
 
 pg_graphql_release: "v1.0.1"
 
