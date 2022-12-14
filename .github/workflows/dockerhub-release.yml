@@ -54,7 +54,7 @@ jobs:
       - id: copy-cache
         run: |
           docker rm -f buildcache
-          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
           docker cp buildcache:/cccache ./docker/cache
           docker rm -f buildcache
 
@@ -94,7 +94,7 @@ jobs:
       - id: copy-cache
         run: |
           docker rm -f buildcache
-          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
           docker cp buildcache:/cccache ./docker/cache
           docker rm -f buildcache
 
