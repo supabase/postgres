@@ -53,6 +53,7 @@ jobs:
 
       - id: copy-cache
         run: |
+          ls -la .
           docker rm -f buildcache
           docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
           docker cp buildcache:/ccache ./docker/cache
