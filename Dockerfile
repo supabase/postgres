@@ -14,9 +14,8 @@ RUN apt update && \
     apt install -y ansible sudo git ccache && \
     apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
-COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache/ /ccache/
-
-RUN ccache -s && \
+RUN --mount=type=bind,source=docker/cache,target=/ccache,rw \
+    ccache -s && \
     cd /tmp/ansible && \
     ansible-playbook -e '{"async_mode": false}' playbook-docker.yml && \
     apt -y autoremove && \
@@ -25,7 +24,7 @@ RUN ccache -s && \
     apt install -y default-jdk-headless locales && \
     sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen && \
-    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* /ccache
+    rm -rf /tmp/* /var/lib/apt/lists/* /var/tmp/* 
 
 ENV LANGUAGE en_US.UTF-8
 ENV LANG en_US.UTF-8

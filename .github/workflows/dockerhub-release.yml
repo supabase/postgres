@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/optimize-docker-build
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'common.vars*'
@@ -41,7 +42,6 @@ jobs:
         run: |
           docker context create builders
 
-
       - uses: docker/setup-buildx-action@v2
         with:
           endpoint: builders
@@ -50,6 +50,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - id: buildx-context
+        run: |
+          docker rm -f buildcache
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
+          docker cp buildcache:/cccache ./docker/cache
+          docker rm -f buildcache
 
       - id: build
         uses: docker/build-push-action@v3
@@ -83,6 +90,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - id: buildx-context
+        run: |
+          docker rm -f buildcache
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
+          docker cp buildcache:/cccache ./docker/cache
+          docker rm -f buildcache
 
       - uses: docker/setup-buildx-action@v2
         with:
