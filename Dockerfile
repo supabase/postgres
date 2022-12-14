@@ -5,7 +5,7 @@ FROM postgres:$VERSION
 COPY ansible/ /tmp/ansible/
 
 # needed for plv8 Makefile selection
-ENV DOCKER true
+# ENV DOCKER true
 ENV CCACHE_DIR=/ccache
 ENV PATH=/usr/lib/ccache:$PATH
 ENV DEBIAN_FRONTEND noninteractive
