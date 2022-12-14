@@ -51,7 +51,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - id: buildx-context
+      - id: copy-cache
         run: |
           docker rm -f buildcache
           docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
@@ -91,7 +91,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - id: buildx-context
+      - id: copy-cache
         run: |
           docker rm -f buildcache
           docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest
