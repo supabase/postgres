@@ -47,6 +47,15 @@
     owner: postgres
     group: postgres
 
+- name: supautils - copy extension custom scripts
+  copy:
+    src: files/postgresql_extension_custom_scripts
+    dest: /etc/postgresql-custom/extension-custom-scripts
+    mode: 0664
+    owner: postgres
+    group: postgres
+  become: yes
+
 - name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
   become: yes
   replace:
