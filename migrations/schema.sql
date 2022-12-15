@@ -511,25 +511,6 @@ $$;
 
 
 --
--- Name: key_encrypt_secret(); Type: FUNCTION; Schema: pgsodium; Owner: -
---
-
-CREATE FUNCTION pgsodium.key_encrypt_secret() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-            new.raw_key = CASE WHEN new.raw_key IS NULL THEN NULL ELSE
-                CASE WHEN new.parent_key IS NULL THEN NULL ELSE
-                        pgsodium.crypto_aead_det_encrypt(new.raw_key::bytea, pg_catalog.convert_to((new.id::text || new.associated_data::text)::text, 'utf8'),
-                new.parent_key::uuid,
-                new.raw_key_nonce
-              ) END END;
-    RETURN new;
-    END;
-    $$;
-
-
---
 -- Name: extension(text); Type: FUNCTION; Schema: storage; Owner: -
 --
 
@@ -597,25 +578,25 @@ $$;
 
 
 --
--- Name: secrets_encrypt_secret(); Type: FUNCTION; Schema: vault; Owner: -
+-- Name: secrets_encrypt_secret_secret(); Type: FUNCTION; Schema: vault; Owner: -
 --
 
-CREATE FUNCTION vault.secrets_encrypt_secret() RETURNS trigger
+CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-    BEGIN
-            new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
-                CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
-                  pgsodium.crypto_aead_det_encrypt(
-                    pg_catalog.convert_to(new.secret, 'utf8'),
-                    pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
-                    new.key_id::uuid,
-                    new.nonce
-                  ),
-                    'base64') END END;
-    RETURN new;
-    END;
-    $$;
+		BEGIN
+		        new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
+			CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
+			  pgsodium.crypto_aead_det_encrypt(
+				pg_catalog.convert_to(new.secret, 'utf8'),
+				pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
+				new.key_id::uuid,
+				new.nonce
+			  ),
+				'base64') END END;
+		RETURN new;
+		END;
+		$$;
 
 
 SET default_tablespace = '';
@@ -752,35 +733,6 @@ CREATE TABLE auth.users (
 --
 
 COMMENT ON TABLE auth.users IS 'Auth: Stores user login data within a secure schema.';
-
-
---
--- Name: decrypted_key; Type: VIEW; Schema: pgsodium; Owner: -
---
-
-CREATE VIEW pgsodium.decrypted_key AS
- SELECT key.id,
-    key.status,
-    key.created,
-    key.expires,
-    key.key_type,
-    key.key_id,
-    key.key_context,
-    key.name,
-    key.associated_data,
-    key.raw_key,
-        CASE
-            WHEN (key.raw_key IS NULL) THEN NULL::bytea
-            ELSE
-            CASE
-                WHEN (key.parent_key IS NULL) THEN NULL::bytea
-                ELSE pgsodium.crypto_aead_det_decrypt(key.raw_key, convert_to(((key.id)::text || key.associated_data), 'utf8'::name), key.parent_key, key.raw_key_nonce)
-            END
-        END AS decrypted_raw_key,
-    key.raw_key_nonce,
-    key.parent_key,
-    key.comment
-   FROM pgsodium.key;
 
 
 --
