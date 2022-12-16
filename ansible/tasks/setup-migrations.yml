@@ -3,7 +3,7 @@
   register: retval
   when: ebssurrogate_mode
   args:
-    chdir: /tmp/migrations/db
+    chdir: /opt/migrations/db
   failed_when: retval.rc != 0
 
 - name: Create /root/MIGRATION-AMI file

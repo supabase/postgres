@@ -165,7 +165,7 @@ function setup_chroot_environment {
 	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
 	# Copy migrations
-	cp -r /tmp/migrations /mnt/tmp/
+	cp -r /tmp/migrations /mnt/opt/
 
 	# Copy unit tests 
 	cp -r /tmp/unit-tests /mnt/tmp/
