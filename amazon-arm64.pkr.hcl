@@ -77,6 +77,11 @@ variable "postgres-version" {
   default = ""
 }
 
+variable "git-head-version" {
+  type = string
+  default = "unknown"
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -138,6 +143,8 @@ source "amazon-ebssurrogate" "source" {
   tags = {
     creator = "packer"
     appType = "postgres"
+    postgresVersion = "${var.postgres-version}"
+    sourceSha = "${var.git-head-version}"
   }
 
   communicator = "ssh"

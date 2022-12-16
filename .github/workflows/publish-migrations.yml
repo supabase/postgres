@@ -1,0 +1,43 @@
+name: Release Migrations
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Merging migration files
+        run: cat $(ls -1) > ../migration-output.sql
+        working-directory: ${{ github.workspace }}/migrations/db/migrations
+
+      - name: Push migration files to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.PG_INIT_SCRIPT_S3_BUCKET_STAGING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.PG_INIT_SCRIPT_ACCESS_KEY_ID_STAGING }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PG_INIT_SCRIPT_SECRET_ACCESS_KEY_STAGING }}
+          AWS_REGION: ap-southeast-1
+          SOURCE_DIR: migrations/db
+          DEST_DIR: migrations/db
+
+      - name: Push migration files to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.PG_INIT_SCRIPT_S3_BUCKET_PROD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.PG_INIT_SCRIPT_ACCESS_KEY_ID_PROD }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PG_INIT_SCRIPT_SECRET_ACCESS_KEY_PROD }}
+          AWS_REGION: ap-southeast-1
+          SOURCE_DIR: migrations/db
+          DEST_DIR: migrations/db
