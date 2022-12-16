@@ -64,8 +64,8 @@
 - name: Install auto_explain
   import_tasks: tasks/postgres-extensions/21-auto_explain.yml
 
-- name: Install vault
-  import_tasks: tasks/postgres-extensions/23-vault.yml
+# - name: Install vault
+#   import_tasks: tasks/postgres-extensions/23-vault.yml
 
 - name: Install PGroonga
   import_tasks: tasks/postgres-extensions/24-pgroonga.yml
