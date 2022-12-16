@@ -12,7 +12,6 @@ SELECT extensions_are(
     'pgcrypto',
     'pgjwt',
     'uuid-ossp',
-    'supabase_vault'
      ]
 );
 
