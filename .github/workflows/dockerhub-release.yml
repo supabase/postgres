@@ -60,6 +60,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Slack Notification
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Building Postgres x86 image failed'
+          SLACK_FOOTER: ''
+
   docker_arm_release:
     needs: settings
     runs-on: [arm-runner]
@@ -99,6 +109,16 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
           no-cache: true
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Building Postgres arm image failed'
+          SLACK_FOOTER: ''
 
   merge_manifest:
     needs: [settings, docker_x86_release, docker_arm_release]
@@ -141,3 +161,13 @@ jobs:
           dst: |
             public.ecr.aws/supabase/postgres:${{ needs.settings.outputs.docker_version }}
             ghcr.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
+
+      - name: Slack Notification
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Building Postgres image failed'
+          SLACK_FOOTER: ''
