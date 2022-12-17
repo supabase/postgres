@@ -28,6 +28,7 @@
     path: /opt/gotrue
     state: directory
     owner: gotrue
+    mode: 0775
 
 - name: gotrue - unpack archive in /opt/gotrue
   unarchive:
