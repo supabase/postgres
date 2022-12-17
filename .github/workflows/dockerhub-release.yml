@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/revert-pgsodium
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'common.vars*'
