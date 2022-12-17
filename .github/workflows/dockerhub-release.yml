@@ -36,7 +36,7 @@ jobs:
           images: |
             supabase/postgres
           tags: |
-            type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
+            type=raw,value=${{ needs.settings.outputs.docker_version }}
 
       - id: buildx-context
         run: |
