@@ -18,6 +18,10 @@
     - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
+    - { file: "pg_upgrade_check.sh" }
+    - { file: "pg_upgrade_complete.sh" }
+    - { file: "pg_upgrade_initiate.sh" }
+    - { file: "pg_upgrade_prepare.sh" }
 
 - name: give adminapi user permissions
   copy:
