@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/optimize-docker-build
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'common.vars*'
