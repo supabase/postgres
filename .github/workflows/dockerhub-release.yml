@@ -29,6 +29,8 @@ jobs:
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
     steps:
+      - uses: actions/checkout@v3
+
       - id: meta
         uses: docker/metadata-action@v4
         with:
@@ -41,7 +43,6 @@ jobs:
         run: |
           docker context create builders
 
-
       - uses: docker/setup-buildx-action@v2
         with:
           endpoint: builders
@@ -50,6 +51,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - id: copy-cache
+        name: Copy Buildcache
+        run: |
+          docker rm -f buildcache
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
+          docker cp buildcache:/ccache/. ./docker/cache
+          docker rm -f buildcache
 
       - id: build
         uses: docker/build-push-action@v3
@@ -93,6 +102,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - id: copy-cache
+        name: Copy Buildcache
+        run: |
+          docker rm -f buildcache
+          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
+          docker cp buildcache:/ccache/. ./docker/cache/
+          docker rm -f buildcache
 
       - uses: docker/setup-buildx-action@v2
         with:
