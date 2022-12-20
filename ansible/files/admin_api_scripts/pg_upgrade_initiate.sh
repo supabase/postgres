@@ -28,13 +28,16 @@ cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
-    systemctl start postgresql
-    
+    systemctl restart postgresql
+    sleep 10
+    systemctl restart postgresql
+
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
         run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
+    cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
 
     umount $MOUNT_POINT
     echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
