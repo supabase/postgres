@@ -37,7 +37,9 @@ cleanup() {
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
-    cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
+        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+    fi
 
     umount $MOUNT_POINT
     echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
