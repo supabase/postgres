@@ -11,6 +11,7 @@
 # them depending on regtypes referencing system OIDs. 
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
+    "pgsodium"
 )
 
 set -eEuo pipefail
@@ -96,7 +97,7 @@ EOF
 
     # copying custom configurations
     mkdir -p $MOUNT_POINT/conf
-    cp /etc/postgresql-custom/* $MOUNT_POINT/conf/
+    cp -R /etc/postgresql-custom/* $MOUNT_POINT/conf/
 
     cleanup "complete"
 }
