@@ -11,7 +11,6 @@
 # them depending on regtypes referencing system OIDs. 
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
-    "pgsodium"
 )
 
 set -eEuo pipefail
