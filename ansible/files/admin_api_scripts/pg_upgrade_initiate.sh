@@ -31,7 +31,7 @@ cleanup() {
     systemctl start postgresql
     
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
-        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCDE;"
+        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
