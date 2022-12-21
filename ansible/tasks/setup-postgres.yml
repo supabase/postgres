@@ -15,6 +15,7 @@
       - uuid-dev
       - xsltproc
       - ssl-cert
+      - protobuf-compiler
 
 - name: Download LLVM & Clang
   apt:

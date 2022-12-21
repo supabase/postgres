@@ -71,7 +71,7 @@
 
 - name: postgis - configure
   shell:
-    cmd: "./configure --without-protobuf --with-sfcgal"
+    cmd: "./configure --with-sfcgal"
     chdir: /tmp/postgis-{{ postgis_release }}
   become: yes
 
