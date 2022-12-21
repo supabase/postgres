@@ -6,5 +6,6 @@ SELECT schemas_are(ARRAY[
   'graphql',
   'graphql_public',
   'realtime',
+  'vault',
   'storage'
  ]);
