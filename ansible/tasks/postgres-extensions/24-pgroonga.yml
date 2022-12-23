@@ -1,4 +1,11 @@
 # groonga and pgroonga
+- name: groonga - download & install dependencies
+  apt:
+    pkg:
+      - libmecab2
+      - mecab-naist-jdic
+    update_cache: yes
+    install_recommends: no
 
 - name: groonga - download groonga
   get_url:
@@ -23,6 +30,7 @@
 - name: groonga - build
   make:
     chdir: /tmp/groonga-{{ groonga_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: groonga - install
