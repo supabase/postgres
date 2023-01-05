@@ -3,6 +3,7 @@
   apt:
     pkg:
       - libmecab2
+      - libmecab-dev
       - mecab-naist-jdic
     update_cache: yes
     install_recommends: no
