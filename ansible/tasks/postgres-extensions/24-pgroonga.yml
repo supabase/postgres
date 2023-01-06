@@ -2,7 +2,12 @@
 - name: groonga - download & install dependencies
   apt:
     pkg:
-      - libmecab2
+      - groonga-normalizer-mysql
+      - zlib1g-dev
+      - liblzo2-dev
+      - libmsgpack-dev
+      - libzmq3-dev
+      - libevent-dev
       - libmecab-dev
       - mecab-naist-jdic
     update_cache: yes
