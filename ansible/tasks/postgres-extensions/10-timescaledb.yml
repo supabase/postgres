@@ -29,3 +29,8 @@
     chdir: /tmp/timescaledb/build
     target: install
   become: yes
+
+- name: timescaledb - cleanup
+  file:
+    state: absent
+    path: /tmp/timescaledb

@@ -31,3 +31,8 @@
     chdir: /tmp/plpgsql_check-{{ plpgsql_check_release }}
     target: install
   become: yes
+
+- name: plpgsql_check - cleanup
+  file:
+    state: absent
+    path: /tmp/plpgsql_check-{{ plpgsql_check_release }}

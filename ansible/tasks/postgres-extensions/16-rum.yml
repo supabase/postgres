@@ -27,3 +27,8 @@
     params:
       USE_PGXS: 1
   become: yes
+
+- name: rum - cleanup
+  file:
+    state: absent
+    path: /tmp/rum-{{ rum_release }}

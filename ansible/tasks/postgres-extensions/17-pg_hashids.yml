@@ -15,3 +15,8 @@
     chdir: /tmp/pg_hashids
     target: install
   become: yes
+
+- name: pg_hashids - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_hashids

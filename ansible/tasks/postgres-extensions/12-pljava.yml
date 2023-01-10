@@ -76,3 +76,9 @@
   file:
     path: ~/.m2
     state: absent
+
+- name: pljava - cleanup
+  become: yes
+  file:
+    state: absent
+    path: /tmp/pljava-{{ pljava_release }}

@@ -36,3 +36,8 @@
     params:
       USE_PGXS: 1
   become: yes
+
+- name: pgAudit - cleanup
+  file:
+    state: absent
+    path: /tmp/pgaudit-{{ pgaudit_release }}

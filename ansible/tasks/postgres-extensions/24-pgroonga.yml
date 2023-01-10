@@ -56,3 +56,14 @@
     target: install
   become: yes
   
+- name: groonga - cleanup
+  file:
+    state: absent
+    path: /tmp/groonga-{{ groonga_release }}
+  become: yes
+  
+- name: pgroonga - cleanup
+  file:
+    state: absent
+    path: /tmp/pgroonga-{{ pgroonga_release }}
+  become: yes

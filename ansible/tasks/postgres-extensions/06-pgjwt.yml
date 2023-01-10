@@ -10,3 +10,8 @@
     chdir: /tmp/pgjwt
     target: install
   become: yes
+
+- name: pgjwt - cleanup
+  file:
+    state: absent
+    path: /tmp/pgjwt

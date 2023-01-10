@@ -23,3 +23,8 @@
     chdir: /tmp/pg-safeupdate-{{ pg_safeupdate_release }}
     target: install
   become: yes
+
+- name: pg-safeupdate - cleanup
+  file:
+    state: absent
+    path: /tmp/pg-safeupdate-{{ pg_safeupdate_release }}

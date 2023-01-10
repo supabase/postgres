@@ -86,3 +86,8 @@
     chdir: /tmp/postgis-{{ postgis_release }}
     target: install
   become: yes
+
+- name: postgis - cleanup
+  file:
+    state: absent
+    path: /tmp/SFCGAL-v{{ sfcgal_release }}
