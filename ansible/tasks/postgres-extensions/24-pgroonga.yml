@@ -23,6 +23,7 @@
 - name: groonga - build
   make:
     chdir: /tmp/groonga-{{ groonga_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: groonga - install
@@ -48,6 +49,7 @@
 - name: pgroonga - build
   make:
     chdir: /tmp/pgroonga-{{ pgroonga_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: pgroonga - install

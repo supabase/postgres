@@ -87,7 +87,12 @@
     target: install
   become: yes
 
-- name: postgis - cleanup
+- name: postgis - SFCGAL cleanup
   file:
     state: absent
     path: /tmp/SFCGAL-v{{ sfcgal_release }}
+
+- name: postgis - cleanup
+  file:
+    state: absent
+    path: /tmp/postgis-{{ postgis_release }}

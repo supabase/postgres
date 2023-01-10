@@ -38,6 +38,12 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
+- name: determining number of processors
+  shell: nproc
+  register: nproc_output
+- set_fact:
+    parallel_jobs: "{{ nproc_output.stdout }}"
+
 - name: Setup - import postgresql.conf
   template:
     src: files/postgresql_config/postgresql.conf.j2
