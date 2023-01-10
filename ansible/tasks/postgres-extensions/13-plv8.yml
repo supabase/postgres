@@ -50,6 +50,12 @@
   become: yes
   when: not async_mode
 
+- name: plv8 - cleanup
+  file:
+    state: absent
+    path: /tmp/plv8
+  when: not async_mode
+
 - name: plv8 - build
   make:
     chdir: /tmp/plv8
@@ -58,4 +64,3 @@
   poll: 0
   register: plv8_build
   when: async_mode
-

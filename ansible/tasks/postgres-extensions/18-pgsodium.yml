@@ -69,3 +69,13 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
+
+- name: libsodium - cleanup
+  file:
+    state: absent
+    path: /tmp/libsodium-{{ libsodium_release }}
+
+- name: pgsodium - cleanup
+  file:
+    state: absent
+    path: /tmp/pgsodium-{{ pgsodium_release }}
