@@ -8,11 +8,11 @@
 
 - name: pgvector - build
   make:
-    chdir: /tmp/pgvector/build
+    chdir: /tmp/pgvector
   become: yes
 
 - name: pgvector - install
   make:
-    chdir: /tmp/pgvector/build
+    chdir: /tmp/pgvector
     target: install
   become: yes
