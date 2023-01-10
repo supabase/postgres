@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/cleanup-sources
     paths:
       - '.github/workflows/dockerhub-release.yml'
       - 'common.vars*'
