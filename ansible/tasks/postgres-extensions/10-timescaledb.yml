@@ -15,7 +15,7 @@
 
 - name: timescaledb - bootstrap
   shell:
-    cmd: "./bootstrap -DAPACHE_ONLY=1 -DEXPERIMENTAL=ON" #TODO: remove this after official support is rolled out: https://github.com/timescale/timescaledb/pulls?q=is%3Apr+label%3Apg15+is%3Aclosed
+    cmd: "./bootstrap -DAPACHE_ONLY=1"
     chdir: /tmp/timescaledb
   become: yes
 
