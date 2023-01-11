@@ -2,7 +2,6 @@
 - name: groonga - download & install dependencies
   apt:
     pkg:
-      - groonga-normalizer-mysql
       - zlib1g-dev
       - liblzo2-dev
       - libmsgpack-dev
