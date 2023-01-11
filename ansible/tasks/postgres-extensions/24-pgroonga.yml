@@ -1,4 +1,16 @@
 # groonga and pgroonga
+- name: groonga - download & install dependencies
+  apt:
+    pkg:
+      - zlib1g-dev
+      - liblzo2-dev
+      - libmsgpack-dev
+      - libzmq3-dev
+      - libevent-dev
+      - libmecab-dev
+      - mecab-naist-jdic
+    update_cache: yes
+    install_recommends: no
 
 - name: groonga - download groonga
   get_url:
