@@ -44,3 +44,8 @@
     chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
     target: install
   become: yes
+
+- name: pgRouting - cleanup
+  file:
+    state: absent
+    path: /tmp/pgrouting-{{ pgrouting_release }}

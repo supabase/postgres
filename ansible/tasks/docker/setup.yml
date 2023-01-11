@@ -31,7 +31,6 @@
 - set_fact:
     platform: "{{ platform_output.stdout }}"
 
-# Find number of processors and set as a variable
 - name: determining number of processors
   shell: nproc
   register: nproc_output

@@ -12,3 +12,8 @@
     chdir: /tmp/plv8
     target: install
   become: yes
+
+- name: plv8 - cleanup
+  file:
+    state: absent
+    path: /tmp/plv8
