@@ -113,3 +113,5 @@ pgroonga_release: "2.4.0"
 pgroonga_release_checksum: sha1:235d67e8487b318e656d4d3016a49c14fae0512d
 
 wrappers_release: "v0.1.7"
+
+hypopg_commit_sha: 57d711bc4e37164c8edac81580a5f477e2a33d86
