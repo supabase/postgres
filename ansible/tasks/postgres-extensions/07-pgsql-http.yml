@@ -36,3 +36,8 @@
     chdir: /tmp/pgsql-http-{{ pgsql_http_release }}
     target: install
   become: yes
+
+- name: pgsql-http - cleanup
+  file:
+    state: absent
+    path: /tmp/pgsql-http-{{ pgsql_http_release }}
