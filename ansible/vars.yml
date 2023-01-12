@@ -119,4 +119,4 @@ hypopg_commit_sha: 57d711bc4e37164c8edac81580a5f477e2a33d86
 pg_repack_release: "1.4.8"
 pg_repack_release_checksum: sha1:74e54f43f6c062644e442224eacc2a2bc95a04ef
 
-pgvector_release: "v0.3.2"
+pgvector_release: "v0.4.0"
