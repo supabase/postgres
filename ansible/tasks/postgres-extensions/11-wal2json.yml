@@ -10,3 +10,8 @@
     chdir: /tmp/wal2json
     target: install
   become: yes
+
+- name: wal2json - cleanup
+  file:
+    state: absent
+    path: /tmp/wal2json
