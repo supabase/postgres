@@ -16,3 +16,8 @@
     chdir: /tmp/pgvector
     target: install
   become: yes
+
+- name: pgvector - cleanup
+  file:
+    state: absent
+    path: /tmp/pgvector
