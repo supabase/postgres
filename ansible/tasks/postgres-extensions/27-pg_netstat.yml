@@ -1,0 +1,25 @@
+- name: pg_netstat - download & install dependencies
+  apt:
+    pkg:
+      - libpcap-dev
+    update_cache: yes
+    install_recommends: no
+
+- name: pg_netstat - set config in postgresql.conf
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: "{{ item.line }}"
+  loop:
+    - { line: 'pg_netstat.interval = 60' }
+    - { line: 'pg_netstat.capture_loopback = true' }
+
+- name: pg_netstat - grant network packet capture permission
+  shell:
+    cmd: "sudo setcap cap_net_raw,cap_net_admin=eip /usr/lib/postgresql/bin/postgres"
+  become: yes
+
+- name: install pg_netstat
+  ansible.builtin.apt:
+    deb: "https://github.com/supabase/pg_netstat/releases/download/{{ pg_netstat_release }}/pg_netstat-{{ pg_netstat_release }}-pg{{ postgresql_major }}-{{ platform }}-linux-gnu.deb"
