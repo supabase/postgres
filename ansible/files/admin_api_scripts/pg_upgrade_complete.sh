@@ -23,7 +23,7 @@ function complete_pg_upgrade {
     mount -a -v
 
     # copying custom configurations
-    cp /data/conf/* /etc/postgresql-custom/
+    cp -R /data/conf/* /etc/postgresql-custom/
 
     service postgresql start
     su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
