@@ -17,7 +17,7 @@
 
 - name: pg_netstat - grant network packet capture permission
   shell:
-    cmd: "sudo setcap cap_net_raw,cap_net_admin=eip /usr/lib/postgresql/bin/postgres"
+    cmd: "setcap cap_net_raw,cap_net_admin=eip /usr/lib/postgresql/bin/postgres"
   become: yes
 
 - name: install pg_netstat
