@@ -58,6 +58,7 @@ function initiate_upgrade {
 
     mkdir -p "$MOUNT_POINT"
     mount "$BLOCK_DEVICE" "$MOUNT_POINT"
+    resize2fs "$BLOCK_DEVICE"
 
     SHARED_PRELOAD_LIBRARIES=$(cat /etc/postgresql/postgresql.conf | grep shared_preload_libraries |  sed "s/shared_preload_libraries = '\(.*\)'.*/\1/")
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")    
