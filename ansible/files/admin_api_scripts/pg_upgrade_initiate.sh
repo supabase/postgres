@@ -120,5 +120,5 @@ EOF
 
 trap cleanup ERR
 
-initiate_upgrade >> /var/log/pg-upgrade-initiate.log 2>&1
+initiate_upgrade >> /var/log/pg-upgrade-initiate.log 2>&1 &
 echo "Upgrade initiate job completed "
