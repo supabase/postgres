@@ -28,13 +28,23 @@ cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
-    systemctl start postgresql
-    
+    if [ -L /var/lib/postgresql ]; then
+        rm /var/lib/postgresql
+        mv /var/lib/postgresql.bak /var/lib/postgresql
+    fi
+
+    systemctl restart postgresql
+    sleep 10
+    systemctl restart postgresql
+
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
-        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCDE;"
+        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
+    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
+        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+    fi
 
     umount $MOUNT_POINT
     echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
@@ -49,8 +59,20 @@ function initiate_upgrade {
     mkdir -p "$MOUNT_POINT"
     mount "$BLOCK_DEVICE" "$MOUNT_POINT"
 
+    SHARED_PRELOAD_LIBRARIES=$(cat /etc/postgresql/postgresql.conf | grep shared_preload_libraries |  sed "s/shared_preload_libraries = '\(.*\)'.*/\1/")
+    PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")    
+
+    PGDATANEW="$MOUNT_POINT/pgdata"
+    PGBINNEW="/tmp/pg_upgrade_bin/$PGVERSION/bin"
+    PGSHARENEW="/tmp/pg_upgrade_bin/$PGVERSION/share"
+
     mkdir -p "/tmp/pg_upgrade_bin"
     tar zxvf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
+
+    # copy upgrade-specific pgsodium_getkey script into the share dir
+    cp /root/pg_upgrade_pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
+    chmod +x "$PGSHARENEW/extension/pgsodium_getkey"
+
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
@@ -59,10 +81,6 @@ function initiate_upgrade {
 
     run_sql "ALTER USER postgres WITH SUPERUSER;"
 
-    PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/");
-    PGDATANEW="$MOUNT_POINT/pgdata"
-    PGBINNEW="/tmp/pg_upgrade_bin/$PGVERSION/bin"
-    PGSHARENEW="/tmp/pg_upgrade_bin/$PGVERSION/share"
 
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "$PGDATANEW/"
@@ -82,16 +100,20 @@ function initiate_upgrade {
     --new-datadir=${PGDATANEW} \
     --jobs="${WORKERS}" \
     --old-options='-c config_file=/etc/postgresql/postgresql.conf' \
-    --new-options="-c data_directory=${PGDATANEW}"
+    --new-options="-c data_directory=${PGDATANEW}" \
+    --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
 EOF
     )
+
+    mv /var/lib/postgresql /var/lib/postgresql.bak
+    ln -s /tmp/pg_upgrade_bin/15/share /var/lib/postgresql
 
     systemctl stop postgresql
     su -c "$UPGRADE_COMMAND" -s $SHELL postgres
 
     # copying custom configurations
     mkdir -p $MOUNT_POINT/conf
-    cp /etc/postgresql-custom/* $MOUNT_POINT/conf/
+    cp -R /etc/postgresql-custom/* $MOUNT_POINT/conf/
 
     cleanup "complete"
 }

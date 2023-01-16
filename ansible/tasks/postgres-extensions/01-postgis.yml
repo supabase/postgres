@@ -12,6 +12,8 @@
       - libmpfr-dev
       - libgmp-dev
       - cmake
+      - libprotobuf-c-dev
+      - protobuf-c-compiler
     update_cache: yes
     cache_valid_time: 3600
     install_recommends: no
@@ -71,7 +73,7 @@
 
 - name: postgis - configure
   shell:
-    cmd: "./configure --without-protobuf --with-sfcgal"
+    cmd: "./configure --with-sfcgal"
     chdir: /tmp/postgis-{{ postgis_release }}
   become: yes
 
