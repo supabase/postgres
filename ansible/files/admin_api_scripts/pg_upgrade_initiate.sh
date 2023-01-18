@@ -24,6 +24,30 @@ run_sql() {
     psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
 }
 
+function shutdown_services {
+    if [[ $(systemctl is-active gotrue) == "active" ]]; then
+        echo "stopping gotrue"
+        systemctl stop gotrue || true
+    fi
+
+    if [[ $(systemctl is-active postgrest) == "active" ]]; then
+        echo "stopping postgrest"
+        systemctl stop postgrest || true
+    fi
+}
+
+function start_services {
+    if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
+        echo "stopping gotrue"
+        systemctl start gotrue || true
+    fi
+
+    if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
+        echo "stopping postgrest"
+        systemctl start postgrest || true
+    fi
+}
+
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
@@ -46,6 +70,8 @@ cleanup() {
         cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
     fi
 
+    start_services
+
     umount $MOUNT_POINT
     echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
 
@@ -53,8 +79,13 @@ cleanup() {
 }
 
 function initiate_upgrade {
-    BLOCK_DEVICE=$(lsblk -dpno name | grep -v "/dev/nvme[0-1]")
     echo "running" > /tmp/pg-upgrade-status
+
+    shutdown_services
+
+    # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+    # excluding nvme0 since it is the root disk
+    BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
 
     mkdir -p "$MOUNT_POINT"
     mount "$BLOCK_DEVICE" "$MOUNT_POINT"
