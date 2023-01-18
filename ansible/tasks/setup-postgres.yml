@@ -117,6 +117,7 @@
     group: postgres
     mode: 0775
   with_items:
+    - '/etc/postgresql'
     - '/etc/postgresql-custom'
 
 - name: create placeholder config files
