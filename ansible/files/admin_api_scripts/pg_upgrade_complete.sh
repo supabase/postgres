@@ -38,7 +38,6 @@ function complete_pg_upgrade {
     cp -R /data/conf/* /etc/postgresql-custom/
 
     service postgresql start
-    su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
 
     for EXTENSION in "${EXTENSIONS_TO_REENABLE[@]}"; do
         run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
@@ -47,23 +46,26 @@ function complete_pg_upgrade {
     sleep 5
     service postgresql restart
 
-    sleep 5
-    service postgresql restart
-
     if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
-        echo "stopping gotrue"
-        systemctl start gotrue || true
+        echo "starting gotrue"
+        systemctl start --no-block gotrue || true
     fi
 
     if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
-        echo "stopping postgrest"
-        systemctl start postgrest || true
+        echo "starting postgrest"
+        systemctl start --no-block postgrest || true
     fi
 
     echo "Upgrade job completed"
+    echo "complete" > /tmp/pg-upgrade-status
+}
+
+function start_vacuum_analyze {
+    su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
     cleanup "complete"
 }
 
 trap cleanup ERR
 
-complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1 &
+complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1
+start_vacuum_analyze >>/var/log/pg-upgrade-complete.log 2>&1 &

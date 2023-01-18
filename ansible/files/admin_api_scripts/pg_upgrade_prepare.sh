@@ -21,4 +21,5 @@ fi
 
 systemctl stop postgresql
 
+cp /etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
 umount /data

@@ -38,12 +38,12 @@ function shutdown_services {
 
 function start_services {
     if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
-        echo "stopping gotrue"
+        echo "starting gotrue"
         systemctl start gotrue || true
     fi
 
     if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
-        echo "stopping postgrest"
+        echo "starting postgrest"
         systemctl start postgrest || true
     fi
 }
@@ -51,6 +51,10 @@ function start_services {
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
+
+    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
+        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+    fi
 
     if [ -L /var/lib/postgresql ]; then
         rm /var/lib/postgresql
@@ -66,9 +70,6 @@ cleanup() {
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
-    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
-        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
-    fi
 
     start_services
 
@@ -103,6 +104,12 @@ function initiate_upgrade {
     # copy upgrade-specific pgsodium_getkey script into the share dir
     cp /root/pg_upgrade_pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
     chmod +x "$PGSHARENEW/extension/pgsodium_getkey"
+
+    if [ -f "$MOUNTPOINT/pgsodium_root.key" ]; then
+        cp "$MOUNTPOINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
+        chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
+        chmod 600 /etc/postgresql-custom/pgsodium_root.key
+    fi
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
