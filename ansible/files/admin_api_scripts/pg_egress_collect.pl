@@ -4,11 +4,11 @@
 #
 # 1. extract outgoing TCP packet length on all devices port 5432 and 6543
 # 2. sum the length up to one minute
-# 3. save the total length to prom file (default is /tmp/pg_egress_collect.prom)
+# 3. save the total length to file (default is /tmp/pg_egress_collect.txt) per minute
 #
 # Usage:
 #
-# tcpdump -s 128 -Q out -i any -nn -tt -vv -p -l 'tcp and (port 5432 or port 6543)' | perl pg_egress_collect.pl /tmp/output.prom
+# tcpdump -s 128 -Q out -i any -nn -tt -vv -p -l 'tcp and (port 5432 or port 6543)' | perl pg_egress_collect.pl /tmp/output.txt
 #
 
 use POSIX;
@@ -46,19 +46,15 @@ sub extract_packet_length {
     }
 }
 
-# write total length to prom file
-#
-# ref: https://prometheus.io/docs/instrumenting/exposition_formats/#text-based-format
-sub write_prom_file {
+# write total length to file
+sub write_file {
     my ($output) = @_;
 
     my $now = strftime "%F %T", localtime time;
     print "[$now] write captured len $captured_len to $output\n";
 
     open(my $fh, "+>", $output) or die "Could not open file '$output' $!";
-    print $fh "# HELP postgres db network egress bytes\n";
-    print $fh "# TYPE db_egress_bytes counter\n";
-    print $fh "db_egress_bytes $captured_len\n";
+    print $fh "$captured_len";
     close($fh);
 }
 
@@ -67,8 +63,8 @@ sub main {
     my ($output) = @ARGV;
 
     if (not defined $output) {
-        # default prom file path
-        $output = "/tmp/pg_egress_collect.prom";
+        # default output file path
+        $output = "/tmp/pg_egress_collect.txt";
     }
 
     my $loop = IO::Async::Loop->new;
@@ -87,11 +83,11 @@ sub main {
         },
     );
 
-    # schedule prom file writer per minute
+    # schedule file writer per minute
     my $writer = IO::Async::Timer::Periodic->new(
         interval => 60,
         on_tick => sub {
-            write_prom_file($output);
+            write_file($output);
 
             # reset total captured length
             $captured_len = 0;
