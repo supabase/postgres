@@ -88,3 +88,6 @@
 
 - name: Init nftabless
   import_tasks: internal/setup-nftables.yml
+
+- name: Install pg_egress_collect
+  import_tasks: internal/pg_egress_collect.yml
