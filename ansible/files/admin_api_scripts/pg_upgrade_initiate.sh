@@ -106,8 +106,8 @@ function initiate_upgrade {
     cp /root/pg_upgrade_pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
     chmod +x "$PGSHARENEW/extension/pgsodium_getkey"
 
-    if [ -f "$MOUNTPOINT/pgsodium_root.key" ]; then
-        cp "$MOUNTPOINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
+    if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
+        cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
         chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
         chmod 600 /etc/postgresql-custom/pgsodium_root.key
     fi
@@ -146,6 +146,10 @@ EOF
 
     mv /var/lib/postgresql /var/lib/postgresql.bak
     ln -s /tmp/pg_upgrade_bin/15/share /var/lib/postgresql
+
+    if [ ! -L /var/lib/postgresql.bak/data ]; then
+        ln -s /var/lib/postgresql.bak/data /var/lib/postgresql/data
+    fi
 
     systemctl stop postgresql
     su -c "$UPGRADE_COMMAND" -s $SHELL postgres
