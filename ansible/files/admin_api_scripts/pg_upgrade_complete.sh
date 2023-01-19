@@ -57,7 +57,6 @@ function complete_pg_upgrade {
     fi
 
     echo "Upgrade job completed"
-    echo "complete" > /tmp/pg-upgrade-status
 }
 
 function start_vacuum_analyze {
