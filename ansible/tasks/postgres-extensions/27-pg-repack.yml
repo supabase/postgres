@@ -20,7 +20,7 @@
       USE_PGXS: 1
   become: yes
 
-- name: rum - install
+- name: pg_repack - install
   make:
     chdir: /tmp/pg_repack-{{ pg_repack_release }}
     target: install
