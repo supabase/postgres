@@ -16,6 +16,7 @@
       - xsltproc
       - ssl-cert
       - liblz4-dev
+      - libicu-dev
 
 - name: Download LLVM & Clang
   apt:
@@ -68,7 +69,7 @@
 
 - name: Postgres - configure
   shell:
-    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-icu --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
 - name: Postgres - build
