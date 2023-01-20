@@ -1,0 +1,34 @@
+# pg-repack
+- name: pg_repack - download latest release
+  get_url:
+    url: "https://github.com/reorg/pg_repack/releases/tag/ver_{{pg_repack_release}}.tar.gz"
+    dest: /tmp/pg-repack-{{ pg_repack_release }}.tar.gz
+    checksum: "{{ pg_repack_release_checksum }}"
+    timeout: 60
+
+- name: pg_repack - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pg_repack-{{ pg_repack_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: pg_repack - build
+  make:
+    chdir: /tmp/pg_repack-{{ pg_repack_release }}
+    params:
+      USE_PGXS: 1
+  become: yes
+
+- name: rum - install
+  make:
+    chdir: /tmp/pg_repack-{{ pg_repack_release }}
+    target: install
+    params:
+      USE_PGXS: 1
+  become: yes
+
+- name: rum - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_repack-{{ pg_repack_release }}
