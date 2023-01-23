@@ -9,16 +9,6 @@
 
 set -euo pipefail
 
-if [[ $(systemctl is-active gotrue) == "active" ]]; then
-    echo "stopping gotrue"
-    systemctl stop gotrue || true
-fi
-
-if [[ $(systemctl is-active postgrest) == "active" ]]; then
-    echo "stopping postgrest"
-    systemctl stop postgrest || true
-fi
-
 systemctl stop postgresql
 
 cp /etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key

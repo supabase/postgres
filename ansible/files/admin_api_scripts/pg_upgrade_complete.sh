@@ -13,11 +13,10 @@ EXTENSIONS_TO_REENABLE=(
     "pg_graphql"
 )
 
-set -euo pipefail
+set -eEuo pipefail
 
 run_sql() {
-    STATEMENT=$1
-    psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
+    psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
 cleanup() {
@@ -30,6 +29,11 @@ cleanup() {
 }
 
 function complete_pg_upgrade {
+    if [ -f /tmp/pg-upgrade-status ]; then
+        echo "Upgrade job already started. Bailing."
+        exit 0
+    fi
+
     echo "running" > /tmp/pg-upgrade-status
 
     mount -a -v
@@ -42,21 +46,19 @@ function complete_pg_upgrade {
     service postgresql start
 
     for EXTENSION in "${EXTENSIONS_TO_REENABLE[@]}"; do
-        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
+        run_sql -c "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
     done
+
+    if [ -d /data/sql ]; then
+        for FILE in /data/sql/*.sql; do
+            run_sql -f $FILE
+        done
+    fi
 
     sleep 5
     service postgresql restart
 
-    if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
-        echo "starting gotrue"
-        systemctl start --no-block gotrue || true
-    fi
-
-    if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
-        echo "starting postgrest"
-        systemctl start --no-block postgrest || true
-    fi
+    start_vacuum_analyze
 
     echo "Upgrade job completed"
 }
@@ -68,5 +70,4 @@ function start_vacuum_analyze {
 
 trap cleanup ERR
 
-complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1
-start_vacuum_analyze >>/var/log/pg-upgrade-complete.log 2>&1 &
+complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1 &
