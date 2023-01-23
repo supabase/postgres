@@ -24,9 +24,37 @@ run_sql() {
     psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
 }
 
+function shutdown_services {
+    if [[ $(systemctl is-active gotrue) == "active" ]]; then
+        echo "stopping gotrue"
+        systemctl stop gotrue || true
+    fi
+
+    if [[ $(systemctl is-active postgrest) == "active" ]]; then
+        echo "stopping postgrest"
+        systemctl stop postgrest || true
+    fi
+}
+
+function start_services {
+    if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
+        echo "starting gotrue"
+        systemctl start gotrue || true
+    fi
+
+    if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
+        echo "starting postgrest"
+        systemctl start postgrest || true
+    fi
+}
+
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
+
+    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
+        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+    fi
 
     if [ -L /var/lib/postgresql ]; then
         rm /var/lib/postgresql
@@ -42,9 +70,8 @@ cleanup() {
     done
 
     run_sql "ALTER USER postgres WITH NOSUPERUSER;"
-    if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
-        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
-    fi
+
+    start_services
 
     umount $MOUNT_POINT
     echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
@@ -53,11 +80,17 @@ cleanup() {
 }
 
 function initiate_upgrade {
-    BLOCK_DEVICE=$(lsblk -dpno name | grep -v "/dev/nvme[0-1]")
     echo "running" > /tmp/pg-upgrade-status
+
+    shutdown_services
+
+    # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+    # excluding nvme0 since it is the root disk
+    BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
 
     mkdir -p "$MOUNT_POINT"
     mount "$BLOCK_DEVICE" "$MOUNT_POINT"
+    resize2fs "$BLOCK_DEVICE"
 
     SHARED_PRELOAD_LIBRARIES=$(cat /etc/postgresql/postgresql.conf | grep shared_preload_libraries |  sed "s/shared_preload_libraries = '\(.*\)'.*/\1/")
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")    
@@ -72,6 +105,12 @@ function initiate_upgrade {
     # copy upgrade-specific pgsodium_getkey script into the share dir
     cp /root/pg_upgrade_pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
     chmod +x "$PGSHARENEW/extension/pgsodium_getkey"
+
+    if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
+        cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
+        chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
+        chmod 600 /etc/postgresql-custom/pgsodium_root.key
+    fi
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
@@ -108,6 +147,13 @@ EOF
     mv /var/lib/postgresql /var/lib/postgresql.bak
     ln -s /tmp/pg_upgrade_bin/15/share /var/lib/postgresql
 
+    if [ ! -L /var/lib/postgresql.bak/data ]; then
+        if [ -L /var/lib/postgresql/data ]; then
+            rm /var/lib/postgresql/data
+        fi
+        ln -s /var/lib/postgresql.bak/data /var/lib/postgresql/data
+    fi
+
     systemctl stop postgresql
     su -c "$UPGRADE_COMMAND" -s $SHELL postgres
 
@@ -120,5 +166,5 @@ EOF
 
 trap cleanup ERR
 
-initiate_upgrade >> /var/log/pg-upgrade-initiate.log 2>&1
-echo "Upgrade initiate job completed "
+initiate_upgrade >> /var/log/pg-upgrade-initiate.log 2>&1 &
+echo "Upgrade initiate job completed"
