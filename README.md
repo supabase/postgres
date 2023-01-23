@@ -31,7 +31,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [pgsodium](https://github.com/michelp/pgsodium) | [3.1.0](https://github.com/michelp/pgsodium/releases/tag/2.0.0) | Modern encryption API using libsodium. |
 | [pg_stat_monitor](https://github.com/percona/pg_stat_monitor) | [1.0.1](https://github.com/percona/pg_stat_monitor/releases/tag/1.0.1) | Query Performance Monitoring Tool for PostgreSQL
 | [pgvector](https://github.com/pgvector/pgvector) | [v0.4.0](https://github.com/pgvector/pgvector/releases/tag/v0.4.0) | Open-source vector similarity search for Postgres
-| [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.4.8](https://github.com/reorg/pg_repack/releases/tag/ver_1.4.8) | Tool to emove bloat from tables and indexes 
+| [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.4.8](https://github.com/reorg/pg_repack/releases/tag/ver_1.4.8) | Tool to remove bloat from tables and indexes 
 
 
 Can't find your favorite extension? Suggest for it to be added into future releases [here](https://github.com/supabase/supabase/discussions/679)!
