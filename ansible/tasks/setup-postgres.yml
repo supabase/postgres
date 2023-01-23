@@ -64,7 +64,7 @@
 
 - name: Setting CFLAGS (x86)
   set_fact:
-    cflags: "-fsigned-char -mtune=native -march=native"
+    cflags: "-fsigned-char"
   when: platform == "amd64"
 
 - name: Postgres - configure
