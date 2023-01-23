@@ -8,11 +8,12 @@
 #
 # Usage:
 #
-# tcpdump -s 128 -Q out -i any -nn -tt -vv -p -l 'tcp and (port 5432 or port 6543)' | perl pg_egress_collect.pl /tmp/output.txt
+# tcpdump -s 128 -Q out -i any -nn -tt -vv -p -l 'tcp and (port 5432 or port 6543)' | perl pg_egress_collect.pl -o /tmp/output.txt
 #
 
 use POSIX;
 use List::Util qw(sum);
+use Getopt::Long 'HelpMessage';
 use IO::Async::Loop;
 use IO::Async::Stream;
 use IO::Async::Timer::Periodic;
@@ -36,10 +37,7 @@ sub extract_packet_length {
 
     #print("debug: >> " . $line);
 
-    if ($line =~ /^(\d+)\.\d+/) {
-        # extract packet timestamp, do nothing for now
-        my $ts = $1;
-    } elsif ($line =~ /^\s+\d+\.\d+\.\d+\.\d+\..*, length (\d+)$/) {
+    if ($line =~ /^\s+\d+\.\d+\.\d+\.\d+\..*, length (\d+)$/) {
         # extract tcp packet length and add it up
         my $len = $1;
         $captured_len += $len;
@@ -60,12 +58,12 @@ sub write_file {
 
 # main
 sub main {
-    my ($output) = @ARGV;
-
-    if (not defined $output) {
-        # default output file path
-        $output = "/tmp/pg_egress_collect.txt";
-    }
+    # get arguments
+    GetOptions(
+        "interval:i"    => \(my $interval = 60),
+        "output:s"      => \(my $output = "/tmp/pg_egress_collect.txt"),
+        "help"          => sub { HelpMessage(0) },
+    ) or HelpMessage(1);
 
     my $loop = IO::Async::Loop->new;
 
@@ -85,7 +83,7 @@ sub main {
 
     # schedule file writer per minute
     my $writer = IO::Async::Timer::Periodic->new(
-        interval => 60,
+        interval => $interval,
         on_tick => sub {
             write_file($output);
 
@@ -95,7 +93,7 @@ sub main {
     );
     $writer->start;
 
-    print "pg_egress_collect started, egress data will be saved to $output\n";
+    print "pg_egress_collect started, egress data will be saved to $output at interval $interval seconds.\n";
 
     $loop->add($extractor);
     $loop->add($writer);
@@ -104,3 +102,25 @@ sub main {
 
 main();
 
+__END__
+
+=head1 NAME
+
+pg_egress_collect.pl - collect egress from tcpdump output, extract TCP packet length, aggregate in specified interval and write to output file.
+
+=head1 SYNOPSIS
+
+pg_egress_collect.pl [-i interval] [-o output]
+
+Options:
+
+    -i, --interval interval
+        output file write interval, in seconds, default is 60 seconds
+
+    -o, --output output
+        output file path, default is /tmp/pg_egress_collect.txt
+
+    -h, --help
+        print this help message
+
+=cut
