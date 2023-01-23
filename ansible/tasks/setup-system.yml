@@ -75,6 +75,16 @@
    name: systemd-journald
    state: restarted
 
+- name: Configure logind
+  copy:
+    src: files/logind.conf
+    dest: /etc/systemd/logind.conf
+
+- name: reload systemd-logind
+  systemd:
+   name: systemd-logind
+   state: restarted
+
 - name: enable timestamps for shell history
   copy:
     content: |
