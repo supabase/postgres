@@ -59,12 +59,12 @@
 
 - name: Setting CFLAGS (arm)
   set_fact:
-    cflags: "-moutline-atomics -mtune=neoverse-n1 -fsigned-char"
+    cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char"
   when: platform == "arm64"
 
 - name: Setting CFLAGS (x86)
   set_fact:
-    cflags: "-fsigned-char"
+    cflags: "-fsigned-char -mtune=native -march=native"
   when: platform == "amd64"
 
 - name: Postgres - configure
