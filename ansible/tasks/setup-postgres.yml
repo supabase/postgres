@@ -3,6 +3,7 @@
   apt:
     pkg:
       - build-essential
+      - pkg-configs
       - libreadline-dev
       - zlib1g-dev
       - flex
