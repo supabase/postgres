@@ -2,7 +2,7 @@
 - name: pg_repack - download latest release
   get_url:
     url: "https://github.com/reorg/pg_repack/archive/refs/tags/ver_{{pg_repack_release}}.tar.gz"
-    dest: /tmp/pg-repack-{{ pg_repack_release }}.tar.gz
+    dest: /tmp/pg_repack-{{ pg_repack_release }}.tar.gz
     checksum: "{{ pg_repack_release_checksum }}"
     timeout: 60
 
