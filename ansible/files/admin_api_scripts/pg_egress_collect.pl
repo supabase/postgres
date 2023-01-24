@@ -53,7 +53,7 @@ sub write_file {
 
     open(my $fh, "+>", $output) or die "Could not open file '$output' $!";
     print $fh "$captured_len";
-    close($fh);
+    close($fh) or die "Could not write file '$output' $!";
 }
 
 # main
