@@ -79,8 +79,8 @@
 - name: Install pg_repack
   import_tasks: tasks/postgres-extensions/27-pg_repack.yml
 
-- name: Install pgvector
-  import_tasks: tasks/postgres-extensions/28-pgvector.yml
+# - name: Install pgvector
+#   import_tasks: tasks/postgres-extensions/28-pgvector.yml
 
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
