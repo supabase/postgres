@@ -82,8 +82,8 @@ plv8_commit_version: bcddd92f71530e117f2f98b92d206dafe824f73a
 
 pg_plan_filter_commit_version: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
-pg_net_release: "0.6.1"
-pg_net_release_checksum: sha1:8457081e28021043f77cec8c14a866bf9e9fdb8b
+pg_net_release: "0.7"
+pg_net_release_checksum: sha1:52cffe467858182e12f158870b3339ed785a1320
 
 rum_release: "1.3.13"
 rum_release_checksum: sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
