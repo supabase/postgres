@@ -20,7 +20,7 @@ jobs:
           GIT_SHA=$(git rev-parse HEAD)
           packer build -var "git-head-version=${GIT_SHA}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
 
-      - name: Slack Notification
+      - name: Slack Notification on Failure
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
@@ -28,4 +28,14 @@ jobs:
           SLACK_USERNAME: 'gha-failures-notifier'
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Building Postgres AMI failed'
+          SLACK_FOOTER: ''
+
+      - name: Slack Notification on Cancel
+        if: ${{ cancelled() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Postgres AMI build cancelled. Reminder to clean up any Packer instances that may have been left running. @group-infra'
           SLACK_FOOTER: ''
