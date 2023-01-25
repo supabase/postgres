@@ -82,6 +82,11 @@ variable "git-head-version" {
   default = "unknown"
 }
 
+variable "packer-execution-id" {
+  type = string
+  default = "unknown"
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -129,8 +134,9 @@ source "amazon-ebssurrogate" "source" {
   }
 
   run_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   run_volume_tags = {
     creator = "packer"

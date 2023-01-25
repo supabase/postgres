@@ -18,9 +18,9 @@ jobs:
       - name: Build AMI
         run: |
           GIT_SHA=$(git rev-parse HEAD)
-          packer build -var "git-head-version=${GIT_SHA}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
 
-      - name: Slack Notification
+      - name: Slack Notification on Failure
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
@@ -29,3 +29,8 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Building Postgres AMI failed'
           SLACK_FOOTER: ''
+
+      - name: Cleanup resources on build cancellation
+        if: ${{ cancelled() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}
