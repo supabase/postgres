@@ -23,6 +23,7 @@
     - { file: "pg_upgrade_initiate.sh" }
     - { file: "pg_upgrade_prepare.sh" }
     - { file: "pg_upgrade_pgsodium_getkey.sh" }
+    - { file: "pg_egress_collect.pl" }
 
 - name: give adminapi user permissions
   copy:
