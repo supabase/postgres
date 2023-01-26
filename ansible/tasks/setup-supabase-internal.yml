@@ -83,6 +83,9 @@
 - name: Install supautils
   import_tasks: internal/supautils.yml
 
+- name: Install admin-mgr
+  import_tasks: internal/admin-mgr.yml
+
 - name: Install adminapi
   import_tasks: internal/admin-api.yml
 

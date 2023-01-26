@@ -11,11 +11,6 @@
     mode: "0700"
     owner: root
   loop:
-    - { file: "commence_walg_backup.sh" }
-    - { file: "commence_walg_restore.sh" }
-    - { file: "complete_walg_restore.sh" }
-    - { file: "disable_walg.sh" }
-    - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
     - { file: "pg_upgrade_check.sh" }
