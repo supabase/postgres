@@ -20,6 +20,3 @@
     src: /tmp/admin-mgr.tar.gz
     dest: /usr/bin/
     owner: root
-
-- name: admin-mgr - grant additional priveleges
-  shell: chmod +x /usr/bin/admin-mgr && chmod ug+s /usr/bin/admin-mgr
