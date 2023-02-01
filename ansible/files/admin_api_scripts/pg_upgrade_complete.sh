@@ -28,15 +28,6 @@ cleanup() {
     exit $EXIT_CODE
 }
 
-cleanup() {
-    UPGRADE_STATUS=${1:-"failed"}
-    EXIT_CODE=${?:-0}
-
-    echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
-
-    exit $EXIT_CODE
-}
-
 function complete_pg_upgrade {
     if [ -f /tmp/pg-upgrade-status ]; then
         echo "Upgrade job already started. Bailing."
@@ -60,7 +51,9 @@ function complete_pg_upgrade {
 
     if [ -d /data/sql ]; then
         for FILE in /data/sql/*.sql; do
-            run_sql -f $FILE
+            if [ -f "$FILE" ]; then
+                run_sql -f $FILE
+            fi
         done
     fi
 

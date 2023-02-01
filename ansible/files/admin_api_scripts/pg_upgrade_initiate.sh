@@ -24,30 +24,6 @@ run_sql() {
     psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
 }
 
-function shutdown_services {
-    if [[ $(systemctl is-active gotrue) == "active" ]]; then
-        echo "stopping gotrue"
-        systemctl stop gotrue || true
-    fi
-
-    if [[ $(systemctl is-active postgrest) == "active" ]]; then
-        echo "stopping postgrest"
-        systemctl stop postgrest || true
-    fi
-}
-
-function start_services {
-    if [[ $(systemctl is-active gotrue) == "inactive" ]]; then
-        echo "starting gotrue"
-        systemctl start gotrue || true
-    fi
-
-    if [[ $(systemctl is-active postgrest) == "inactive" ]]; then
-        echo "starting postgrest"
-        systemctl start postgrest || true
-    fi
-}
-
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
