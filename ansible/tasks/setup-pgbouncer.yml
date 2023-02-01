@@ -110,6 +110,13 @@
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
     - "# Connection configuration for pgbouncer user"
 
+- name: PgBouncer - By default allow ssl connections.
+  become: yes
+  copy:
+    dest: /etc/pgbouncer-custom/ssl-config.ini
+    content: |
+      client_tls_sslmode = allow
+
 - name: Grant pg_hba and pgbouncer grp perm for adminapi updates
   shell: |
      chmod g+w /etc/postgresql/pg_hba.conf
