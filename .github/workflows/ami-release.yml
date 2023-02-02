@@ -15,10 +15,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
 
-      - name: Build AMI
-        run: |
-          GIT_SHA=$(git rev-parse HEAD)
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
+      # - name: Build AMI
+      #   run: |
+      #     GIT_SHA=$(git rev-parse HEAD)
+      #     packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
