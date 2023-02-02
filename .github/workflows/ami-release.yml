@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - da/test-tags
   workflow_dispatch:
 
 jobs:
@@ -27,6 +28,11 @@ jobs:
           GIT_SHA=$(git rev-parse HEAD)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "git_sha=$GIT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: echo output
+        run: |
+          echo "sha was ${{ steps.process_release_vesion.outputs.git_sha }}"
+          echo "version was ${{ steps.process_release_version.outputs.version }}"
 
       - name: Create release
         uses: softprops/action-gh-release@v1
