@@ -13,6 +13,10 @@ services:
     environment:
       POSTGRES_HOST: /var/run/postgresql
       POSTGRES_PASSWORD: password
+    volumes:
+      - ./migrations/db/init-scripts:/docker-entrypoint-initdb.d/init-scripts
+      - ./migrations/db/migrations:/docker-entrypoint-initdb.d/migrations
+      - ./migrations/db/migrate.sh:/docker-entrypoint-initdb.d/migrate.sh
 
   pg_prove:
     image: horrendo/pg_prove
