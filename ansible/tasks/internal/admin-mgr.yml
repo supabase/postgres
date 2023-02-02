@@ -1,6 +1,6 @@
 - name: Setting arch (x86)
   set_fact:
-    arch: "x86"
+    arch: "amd64"
   when: platform == "amd64"
 
 - name: Setting arch (arm)
