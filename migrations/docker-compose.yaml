@@ -19,7 +19,6 @@ services:
       POSTGRES_HOST: /var/run/postgresql
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ../ansible/files/postgresql_config/pg_hba.conf.j2:/etc/postgresql/pg_hba.conf
       - ./db/init-scripts:/docker-entrypoint-initdb.d/init-scripts
       - ./db/migrations:/docker-entrypoint-initdb.d/migrations
       - ./db/migrate.sh:/docker-entrypoint-initdb.d/migrate.sh
