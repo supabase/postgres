@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - run: docker compose up --abort-on-container-exit
+      - run: docker compose up --abort-on-container-exit --build
 
   migrate:
     runs-on: ubuntu-latest
