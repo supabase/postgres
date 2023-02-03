@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - da/text
   workflow_dispatch:
 
 jobs:
@@ -15,33 +16,15 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
 
-      - name: Build AMI
+      - name: s
         run: |
-          GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" amazon-arm64.pkr.hcl
+          echo "world"
 
       - name: Grab release version
         id: process_release_version
         run: |
           VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Create release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ steps.process_release_version.outputs.version }}
-          tag_name: ${{ steps.process_release_version.outputs.version }}
-          target_commitish: ${{github.sha}}
-
-      - name: Slack Notification on Failure
-        if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres AMI failed'
-          SLACK_FOOTER: ''
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
