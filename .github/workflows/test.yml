@@ -13,8 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - run: docker compose up --abort-on-container-exit --build
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/build-push-action@v3
+        with:
+          push: false
+          context: ansible
+          tags: supabase/postgres:latest
+          # platforms: linux/${{ env.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # - run: docker compose up --abort-on-container-exit --build
 
   migrate:
     runs-on: ubuntu-latest
