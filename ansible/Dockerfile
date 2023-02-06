@@ -294,10 +294,6 @@ RUN apt-get update && apt-get install -y --download-only \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
-# path: /etc/postgresql/postgresql.conf
-# state: present
-# line: pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'
-
 ####################
 # 13-plv8.yml
 ####################
@@ -427,10 +423,6 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 ####################
 # 21-auto_explain.yml
 ####################
-
-# path: /etc/postgresql/postgresql.conf
-# state: present
-# line: auto_explain.log_min_duration = 10s
 
 ####################
 # 22-pg_jsonschema.yml
@@ -595,3 +587,5 @@ RUN apt-get update && apt-get install -y \
 # tasks/docker/finalize.yml
 COPY --chown=postgres:postgres files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 # COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 ${pg_bindir}/pgsodium_getkey.sh
+RUN echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
+RUN echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
