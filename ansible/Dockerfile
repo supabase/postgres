@@ -22,6 +22,7 @@ ARG pg_hashids_release=master
 ARG pg_graphql_release=1.1.0
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_jsonschema_release=0.1.4
+ARG vault_release=0.2.9
 ARG pgroonga_release=2.4.0
 ARG wrappers_release=0.1.7
 ARG hypopg_release=1.3.1
@@ -435,6 +436,18 @@ ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschem
 ####################
 # 23-vault.yml
 ####################
+FROM builder as vault
+# Download and extract
+ARG vault_release
+ADD "https://github.com/supabase/vault/archive/refs/tags/v${vault_release}.tar.gz" /tmp/vault.tar.gz
+RUN tar -xvf /tmp/vault.tar.gz -C /tmp && \
+    rm -rf /tmp/vault.tar.gz
+# Build from source
+WORKDIR /tmp/vault-${vault_release}
+RUN make
+RUN make install
+# Create debian package
+RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 
 ####################
 # 24-pgroonga.yml
@@ -574,6 +587,7 @@ COPY --from=pg_hashids /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
+COPY --from=vault /tmp/*.deb /tmp/
 COPY --from=pgroonga /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
 COPY --from=hypopg /tmp/*.deb /tmp/
