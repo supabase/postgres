@@ -18,7 +18,6 @@ jobs:
           push: false
           context: ansible
           tags: supabase/postgres:latest
-          # platforms: linux/${{ env.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       # - run: docker compose up --abort-on-container-exit --build

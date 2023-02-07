@@ -560,13 +560,14 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 ####################
 FROM base as production
 
+# tasks/docker/setup.yml
 COPY files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 
-# tasks/docker/setup.yml
 RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf
 
+# tasks/setup-extensions.yml
 COPY --from=sfcgal /usr/local/lib/libSFCGAL.* /usr/local/lib/
 COPY --from=postgis /tmp/*.deb /tmp/
 COPY --from=pgrouting /tmp/*.deb /tmp/
@@ -601,6 +602,10 @@ RUN apt-get update && apt-get install -y \
 
 # tasks/docker/finalize.yml
 COPY --chown=postgres:postgres files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
-# COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 ${pg_bindir}/pgsodium_getkey.sh
+COPY files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
+COPY files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
+
 RUN echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
 RUN echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
+
+ENV POSTGRES_HOST=/var/run/postgresql
