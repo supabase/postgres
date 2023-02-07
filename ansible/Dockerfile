@@ -35,6 +35,10 @@ ARG pg_net_release_checksum=sha256:f466d3de79b5fc9c4d0f137fcd6b51a868dacbf8002f9
 ARG rum_release=1.3.13
 ARG rum_release_checksum=sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
+ARG libsodium_release=1.0.18
+ARG libsodium_release_checksum=sha256:6f504490b342a4f8a4c4a02fc9b866cbef8622d5df4e5452b46be121e46636c1
+ARG pgsodium_release=3.1.5
+ARG pgsodium_release_checksum=sha256:bec847388a5db2a60ea9d991962ce27954d91b4c41cbcc7bd8e34472c69114d1
 ARG pg_graphql_release=1.1.0
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_stat_monitor_release_checksum=sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
@@ -466,6 +470,40 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 ####################
 # 18-pgsodium.yml
 ####################
+FROM builder as libsodium
+# Download and extract
+ARG libsodium_release
+ARG libsodium_release_checksum
+ADD --checksum=${libsodium_release_checksum} \
+    "https://download.libsodium.org/libsodium/releases/libsodium-${libsodium_release}.tar.gz" \
+    /tmp/libsodium.tar.gz
+RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
+    rm -rf /tmp/libsodium.tar.gz
+# Build from source
+WORKDIR /tmp/libsodium-${libsodium_release}
+RUN ./configure
+RUN make -j$(nproc)
+RUN make install
+
+FROM libsodium as pgsodium
+# Download and extract
+ARG pgsodium_release
+ARG pgsodium_release_checksum
+ADD --checksum=${pgsodium_release_checksum} \
+    "https://github.com/michelp/pgsodium/archive/refs/tags/v${pgsodium_release}.tar.gz" \
+    /tmp/pgsodium.tar.gz
+RUN tar -xvf /tmp/pgsodium.tar.gz -C /tmp && \
+    rm -rf /tmp/pgsodium.tar.gz
+# Build from source
+WORKDIR /tmp/pgsodium-${pgsodium_release}
+RUN make -j$(nproc)
+RUN make install
+# Create debian package
+RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN apt-get update && apt-get install -y --download-only \
+    libsodium23 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # 19-pg_graphql.yml
@@ -653,6 +691,7 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 # Build final image
 ####################
 FROM base as production
+ARG MAJOR
 
 # tasks/docker/setup.yml
 COPY files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
@@ -679,6 +718,7 @@ COPY --from=pljava /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter /tmp/*.deb /tmp/
 COPY --from=pg_net /tmp/*.deb /tmp/
 COPY --from=rum /tmp/*.deb /tmp/
+COPY --from=pgsodium /tmp/*.deb /tmp/
 COPY --from=pg_hashids /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
@@ -696,10 +736,12 @@ RUN apt-get update && apt-get install -y \
 
 # tasks/docker/finalize.yml
 COPY --chown=postgres:postgres files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${MAJOR}/bin/pgsodium_getkey.sh
 COPY files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
 COPY files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
 
 RUN echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
+RUN echo "pgsodium.getkey_script= '/usr/lib/postgresql/${MAJOR}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf
 RUN echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
 
 ENV POSTGRES_HOST=/var/run/postgresql
