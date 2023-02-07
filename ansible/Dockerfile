@@ -383,13 +383,12 @@ RUN apt-get update && apt-get install -y \
 COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache /ccache
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
-ENV DOCKER=true
+ENV DOCKER=1
 ENV CCACHE_DIR=/ccache
 ENV PATH=/usr/lib/ccache:$PATH
-RUN make
-RUN make install
+RUN make generate_upgrades
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --pakdir=/tmp --nodoc
 
 ####################
 # 14-pg_plan_filter.yml
