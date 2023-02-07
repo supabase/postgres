@@ -22,7 +22,7 @@ jobs:
 
   docker_x86_release:
     needs: settings
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, X64]
     timeout-minutes: 120
     env:
       arch: amd64
@@ -47,6 +47,11 @@ jobs:
         with:
           endpoint: builders
 
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
       - id: copy-cache
         name: Copy Buildcache
         run: |
@@ -59,7 +64,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: false
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/${{ env.arch }}
           no-cache: true
@@ -76,7 +81,6 @@ jobs:
 
   docker_arm_release:
     needs: settings
-    if: false
     runs-on: [arm-runner]
     timeout-minutes: 120
     env:
