@@ -368,15 +368,19 @@ RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
+    ccache \
     pkg-config \
     ninja-build \
     clang \
     git \
     libtinfo5 \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache /ccache
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
 ENV DOCKER=true
+ENV CCACHE_DIR=/ccache
+ENV PATH=/usr/lib/ccache:$PATH
 RUN make
 RUN make install
 # Create debian package
