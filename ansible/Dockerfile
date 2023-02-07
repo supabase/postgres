@@ -306,10 +306,11 @@ RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    libtinfo5 \
+    pkg-config \
     ninja-build \
     clang \
     git \
+    libtinfo5 \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
@@ -579,7 +580,7 @@ COPY --from=pg-safeupdate /tmp/*.deb /tmp/
 COPY --from=timescaledb /tmp/*.deb /tmp/
 COPY --from=wal2json /tmp/*.deb /tmp/
 COPY --from=pljava /tmp/*.deb /tmp/
-# COPY --from=plv8 /tmp/*.deb /tmp/
+COPY --from=plv8 /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter /tmp/*.deb /tmp/
 COPY --from=pg_net /tmp/*.deb /tmp/
 COPY --from=rum /tmp/*.deb /tmp/
