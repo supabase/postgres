@@ -72,16 +72,19 @@ pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha256:ff01d3d444d35924bd3d745c5695696292e2855042da4c30fe728fb3b6648122
 
 timescaledb_release: "2.9.1"
+timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4c799919d363f04089b47b
 
 wal2json_release: "2_5"
+wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
 
 supautils_release: "1.7.0"
 supautils_release_checksum: sha256:e2353040262bd7a1720099f4a03ec485b05c74a202956aa1361e422f8765c6b3
 
-pljava_release: a5bfeca83cea2c4b844758a9c76db337392892e3
+pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
 
-plv8_release: bcddd92f71530e117f2f98b92d206dafe824f73a
+plv8_release: "3.1.5"
+plv8_release_checksum: sha256:1e108d5df639e4c189e1c5bdfa2432a521c126ca89e7e5a969d46899ca7bf106
 
 pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
@@ -113,10 +116,10 @@ vault_release: "0.2.8"
 vault_release_checksum: sha256:842cdee6d5b586b1baacccfaa08b45d56566987af87952a5fe5ee80b24400754
 
 groonga_release: "12.0.8"
-groonga_release_checksum: sha1:32aee787efffc2a22760fde946fb6462286074e2
+groonga_release_checksum: sha256:7770c0ff6804ef4b47b015b15736cd973cffced977c20991b16b2daa4fea6eeb
 
 pgroonga_release: "2.4.0"
-pgroonga_release_checksum: sha1:235d67e8487b318e656d4d3016a49c14fae0512d
+pgroonga_release_checksum: sha256:5baaae0e7d81f8167e278e9a34c6ed56aece8b34f5ab98f228c64408093417b3
 
 wrappers_release: "0.1.7"
 
