@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/iCyberon/pg_hashids.git
     dest: /tmp/pg_hashids
-    version: master
+    version: "{{ pg_hashids_release }}"
 
 - name: pg_hashids - build
   make:
