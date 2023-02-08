@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.5-labs
-ARG MAJOR=15
-ARG MINOR=1
+ARG postgres_major=15
+ARG postgres_minor=1
 
 ARG sfcgal_release=1.3.10
 ARG sfcgal_release_checksum=sha256:4e39b3b2adada6254a7bdba6d297bb28e1a9835a9f879b74f37e2dab70203232
@@ -30,11 +30,15 @@ ARG pljava_release_checksum=sha256:5dc5a963365cbdeb786d0ad65b6310c4c5150ef8524e2
 ARG plv8_release=3.1.5
 ARG plv8_release_checksum=sha256:1e108d5df639e4c189e1c5bdfa2432a521c126ca89e7e5a969d46899ca7bf106
 ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
-ARG pg_net_release=0.7
-ARG pg_net_release_checksum=sha256:f466d3de79b5fc9c4d0f137fcd6b51a868dacbf8002f94727d801553eb8e0c99
+ARG pg_net_release=0.7.1
+ARG pg_net_release_checksum=sha256:f403019fbffe5b3ec28816957ef81279dea1db5b008e3fb3bc39181a5e361940
 ARG rum_release=1.3.13
 ARG rum_release_checksum=sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
+ARG libsodium_release=1.0.18
+ARG libsodium_release_checksum=sha256:6f504490b342a4f8a4c4a02fc9b866cbef8622d5df4e5452b46be121e46636c1
+ARG pgsodium_release=3.1.5
+ARG pgsodium_release_checksum=sha256:bec847388a5db2a60ea9d991962ce27954d91b4c41cbcc7bd8e34472c69114d1
 ARG pg_graphql_release=1.1.0
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_stat_monitor_release_checksum=sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
@@ -53,14 +57,15 @@ ARG pg_repack_release_checksum=sha256:18b4d871c1abf78cf0b1b1fe6081d435d183a8dc5e
 ARG pgvector_release=0.4.0
 ARG pgvector_release_checksum=sha256:b76cf84ddad452cc880a6c8c661d137ddd8679c000a16332f4f03ecf6e10bcc8
 
-FROM postgres:$MAJOR.$MINOR as base
+FROM postgres:$postgres_major.$postgres_minor as base
+# Redeclare args for use in subsequent stages
 ARG TARGETARCH
+ARG postgres_major
 
 FROM base as builder
-ARG MAJOR
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    postgresql-server-dev-${MAJOR} \
+    postgresql-server-dev-${postgres_major} \
     build-essential \
     checkinstall \
     cmake \
@@ -114,9 +119,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/postgis-${postgis_release}
 RUN ./configure --with-sfcgal
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 02-pgrouting.yml
@@ -138,9 +142,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/pgrouting-${pgrouting_release}/build
 RUN cmake -DBUILD_HTML=OFF -DBUILD_DOXY=OFF ..
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
 ####################
 # 03-pgtap.yml
@@ -156,9 +159,9 @@ RUN tar -xvf /tmp/pgtap.tar.gz -C /tmp && \
     rm -rf /tmp/pgtap.tar.gz
 # Build from source
 WORKDIR /tmp/pgtap-${pgtap_release}
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 04-pg_cron.yml
@@ -175,9 +178,8 @@ RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pg_cron-${pg_cron_release}
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 05-pgaudit.yml
@@ -199,9 +201,9 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pgaudit-${pgaudit_release}
 ENV USE_PGXS=1
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 06-pgjwt.yml
@@ -213,9 +215,9 @@ ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
     /tmp/pgjwt-${pgjwt_release}
 # Build from source
 WORKDIR /tmp/pgjwt-${pgjwt_release}
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 07-pgsql-http.yml
@@ -236,9 +238,8 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pgsql-http-${pgsql_http_release}
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 08-plpgsql_check.yml
@@ -258,10 +259,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/plpgsql_check-${plpgsql_check_release}
-RUN make clean
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 09-pg-safeupdate.yml
@@ -277,10 +277,9 @@ RUN tar -xvf /tmp/pg-safeupdate.tar.gz -C /tmp && \
     rm -rf /tmp/pg-safeupdate.tar.gz
 # Build from source
 WORKDIR /tmp/pg-safeupdate-${pg_safeupdate_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 10-timescaledb.yml
@@ -298,9 +297,8 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
 RUN cmake -DAPACHE_ONLY=1 ..
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
 
 ####################
 # 11-wal2json.yml
@@ -316,9 +314,9 @@ RUN tar -xvf /tmp/wal2json.tar.gz -C /tmp --one-top-level --strip-components 1 &
     rm -rf /tmp/wal2json.tar.gz
 # Build from source
 WORKDIR /tmp/wal2json
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
 
 ####################
 # 12-pljava.yml
@@ -344,13 +342,13 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/pljava-${pljava_release}
 RUN mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
 # Create debian package
-RUN cp pljava-packaging/target/pljava-pg${MAJOR}.jar /tmp/
+RUN cp pljava-packaging/target/pljava-pg${postgres_major}.jar /tmp/
 
 FROM builder as pljava
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --download-only \
     default-jdk-headless \
-    postgresql-${MAJOR}-pljava \
+    postgresql-${postgres_major}-pljava \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -378,13 +376,13 @@ RUN apt-get update && apt-get install -y \
 COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache /ccache
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
-ENV DOCKER=true
+ENV DOCKER=1
 ENV CCACHE_DIR=/ccache
 ENV PATH=/usr/lib/ccache:$PATH
-RUN make
-RUN make install
+RUN make generate_upgrades
+RUN make v8
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 14-pg_plan_filter.yml
@@ -396,10 +394,9 @@ ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" 
     /tmp/pg_plan_filter-${pg_plan_filter_release}
 # Build from source
 WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 15-pg_net.yml
@@ -419,10 +416,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_net-${pg_net_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 16-rum.yml
@@ -443,10 +439,9 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/rum-${rum_release}
 ENV USE_PGXS=1
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 17-pg_hashids.yml
@@ -458,14 +453,46 @@ ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
     /tmp/pg_hashids-${pg_hashids_release}
 # Build from source
 WORKDIR /tmp/pg_hashids-${pg_hashids_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 18-pgsodium.yml
 ####################
+FROM builder as libsodium
+# Download and extract
+ARG libsodium_release
+ARG libsodium_release_checksum
+ADD --checksum=${libsodium_release_checksum} \
+    "https://download.libsodium.org/libsodium/releases/libsodium-${libsodium_release}.tar.gz" \
+    /tmp/libsodium.tar.gz
+RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
+    rm -rf /tmp/libsodium.tar.gz
+# Build from source
+WORKDIR /tmp/libsodium-${libsodium_release}
+RUN ./configure
+RUN make -j$(nproc)
+RUN make install
+
+FROM libsodium as pgsodium
+# Download and extract
+ARG pgsodium_release
+ARG pgsodium_release_checksum
+ADD --checksum=${pgsodium_release_checksum} \
+    "https://github.com/michelp/pgsodium/archive/refs/tags/v${pgsodium_release}.tar.gz" \
+    /tmp/pgsodium.tar.gz
+RUN tar -xvf /tmp/pgsodium.tar.gz -C /tmp && \
+    rm -rf /tmp/pgsodium.tar.gz
+# Build from source
+WORKDIR /tmp/pgsodium-${pgsodium_release}
+RUN make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN apt-get update && apt-get install -y --download-only \
+    libsodium23 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # 19-pg_graphql.yml
@@ -473,7 +500,7 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 FROM builder as pg_graphql
 # Download package archive
 ARG pg_graphql_release
-ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${MAJOR}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/pg_graphql.deb
 
 ####################
@@ -491,10 +518,9 @@ RUN tar -xvf /tmp/pg_stat_monitor.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pg_stat_monitor-${pg_stat_monitor_release}
 ENV USE_PGXS=1
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 21-auto_explain.yml
@@ -506,7 +532,7 @@ RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
 FROM builder as pg_jsonschema
 # Download package archive
 ARG pg_jsonschema_release
-ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${MAJOR}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/pg_jsonschema.deb
 
 ####################
@@ -523,10 +549,9 @@ RUN tar -xvf /tmp/vault.tar.gz -C /tmp && \
     rm -rf /tmp/vault.tar.gz
 # Build from source
 WORKDIR /tmp/vault-${vault_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 24-pgroonga.yml
@@ -562,9 +587,8 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pgroonga-${pgroonga_release}
 RUN make -j$(nproc)
-RUN make install
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 FROM builder as pgroonga
 # Download pre-built packages
@@ -574,7 +598,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
 RUN apt-get update && apt-get install -y --download-only \
-    postgresql-${MAJOR}-pgdg-pgroonga \
+    postgresql-${postgres_major}-pgdg-pgroonga \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -584,7 +608,8 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 FROM builder as wrappers
 # Download package archive
 ARG wrappers_release
-ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${MAJOR}-${TARGETARCH}-linux-gnu.deb" \
+
+ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/wrappers.deb
 
 ####################
@@ -601,9 +626,9 @@ RUN tar -xvf /tmp/hypopg.tar.gz -C /tmp && \
     rm -rf /tmp/hypopg.tar.gz
 # Build from source
 WORKDIR /tmp/hypopg-${hypopg_release}
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 27-pg_repack.yml
@@ -626,10 +651,9 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
 ENV USE_PGXS=1
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
 
 ####################
 # 28-pgvector.yml
@@ -644,10 +668,9 @@ RUN tar -xvf /tmp/pgvector.tar.gz -C /tmp && \
     rm -rf /tmp/pgvector.tar.gz
 # Build from source
 WORKDIR /tmp/pgvector-${pgvector_release}
-RUN make
-RUN make install
+RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # Build final image
@@ -658,8 +681,6 @@ FROM base as production
 COPY files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
-
-RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf
 
 # tasks/setup-extensions.yml
 COPY --from=sfcgal /usr/local/lib/libSFCGAL.* /usr/local/lib/
@@ -679,6 +700,7 @@ COPY --from=pljava /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter /tmp/*.deb /tmp/
 COPY --from=pg_net /tmp/*.deb /tmp/
 COPY --from=rum /tmp/*.deb /tmp/
+COPY --from=pgsodium /tmp/*.deb /tmp/
 COPY --from=pg_hashids /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
@@ -690,16 +712,23 @@ COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     /tmp/*.deb \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # tasks/docker/finalize.yml
 COPY --chown=postgres:postgres files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgres_major}/bin/pgsodium_getkey.sh
 COPY files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
 COPY files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
 
-RUN echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf
-RUN echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
+RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
+    echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
+    echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgres_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
 
 ENV POSTGRES_HOST=/var/run/postgresql
+
+HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
