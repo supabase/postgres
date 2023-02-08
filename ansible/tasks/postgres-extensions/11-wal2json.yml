@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/eulerto/wal2json.git
     dest: /tmp/wal2json
-    version: "{{ wal2json_commit_sha }}"
+    version: "wal2json_{{ wal2json_release }}"
 
 - name: wal2json - install
   make:

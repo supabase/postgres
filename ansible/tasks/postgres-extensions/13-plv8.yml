@@ -26,7 +26,7 @@
   git:
     repo: https://github.com/plv8/plv8.git
     dest: /tmp/plv8
-    version: "{{ plv8_commit_version }}"
+    version: "{{ plv8_release }}"
   become: yes
 
 - name: Create a symbolic link

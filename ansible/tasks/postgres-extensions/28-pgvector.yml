@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/pgvector/pgvector.git
     dest: /tmp/pgvector
-    version: '{{ pgvector_release }}'
+    version: 'v{{ pgvector_release }}'
   become: yes
 
 - name: pgvector - build

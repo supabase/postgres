@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/pgexperts/pg_plan_filter.git
     dest: /tmp/pg_plan_filter
-    version: "{{ pg_plan_filter_commit_version }}"
+    version: "{{ pg_plan_filter_release }}"
   become: yes
 
 - name: pg_plan_filter - build
