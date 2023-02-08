@@ -17,6 +17,7 @@ jobs:
       - uses: docker/build-push-action@v3
         with:
           push: false
+          load: true
           context: ansible
           tags: supabase/postgres:latest
           cache-from: type=gha
