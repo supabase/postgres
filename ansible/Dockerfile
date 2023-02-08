@@ -608,7 +608,6 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 FROM builder as wrappers
 # Download package archive
 ARG wrappers_release
-
 ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/wrappers.deb
 
