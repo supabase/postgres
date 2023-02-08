@@ -26,19 +26,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - run: |
+      - name: Start Postgres
+        run: |
           docker run --rm --pull=never \
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
           -d supabase/postgres:latest
 
-      - name: install dbmate
+      - name: Install dbmate
         run: |
           curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
           sudo chmod +x /usr/local/bin/dbmate
 
-      - name: wait for healthy database
+      - name: Install pg_prove
+        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+        env:
+          SHELL: /bin/bash
+
+      - name: Wait for healthy database
         run: |
           count=0
           until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == "healthy" ]; do
@@ -56,19 +62,14 @@ jobs:
           retries: 20
           container: supabase_postgres
 
-      - name: migrate schema
+      - name: Migrate schema
         run: ./migrations/db/migrate.sh
         env:
           USE_DBMATE: 1
           POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
           POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-      - name: install pg_prove
-        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
-        env:
-          SHELL: /bin/bash
-
-      - name: run tests
+      - name: Run tests
         run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
@@ -76,7 +77,7 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-      - name: migrations should be idempotent
+      - name: Check migrations are idempotent
         run: |
           for sql in ./migrations/db/migrations/*.sql; do
             echo "$0: running $sql"
@@ -89,7 +90,7 @@ jobs:
           PGUSER: supabase_admin
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-      - name: run tests
+      - name: Run tests again
         run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
