@@ -40,7 +40,7 @@ jobs:
           sudo chmod +x /usr/local/bin/dbmate
 
       - name: Install pg_prove
-        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+        run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
         env:
           SHELL: /bin/bash
 
