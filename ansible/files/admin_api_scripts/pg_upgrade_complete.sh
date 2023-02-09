@@ -5,14 +5,6 @@
 ## The following commands copy custom PG configs and enable previously disabled
 ## extensions, containing regtypes referencing system OIDs.
 
-# Extensions to be reenabled after pg_upgrade.
-# Running an upgrade with these extensions enabled will result in errors due to
-# them depending on regtypes referencing system OIDs. Thus they have been disabled
-# beforehand.
-EXTENSIONS_TO_REENABLE=(
-    "pg_graphql"
-)
-
 set -eEuo pipefail
 
 run_sql() {
@@ -36,19 +28,19 @@ function complete_pg_upgrade {
 
     echo "running" > /tmp/pg-upgrade-status
 
+    echo "1. Mounting data disk"
     mount -a -v
 
     # copying custom configurations
+    echo "2. Copying custom configurations"
     cp -R /data/conf/* /etc/postgresql-custom/
     chown -R postgres:postgres /var/lib/postgresql/data
     chown -R postgres:postgres /data/pgdata
 
+    echo "3. Starting postgresql"
     service postgresql start
 
-    for EXTENSION in "${EXTENSIONS_TO_REENABLE[@]}"; do
-        run_sql -c "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
-    done
-
+    echo "4. Running generated SQL files"
     if [ -d /data/sql ]; then
         for FILE in /data/sql/*.sql; do
             if [ -f "$FILE" ]; then
@@ -58,8 +50,11 @@ function complete_pg_upgrade {
     fi
 
     sleep 5
+
+    echo "5. Restarting postgresql"
     service postgresql restart
 
+    echo "6. Starting vacuum analyze"
     start_vacuum_analyze
 
     echo "Upgrade job completed"
