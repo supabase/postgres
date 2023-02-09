@@ -1,0 +1,23 @@
+# pg_tle
+- name: pg_tle - download latest release
+  git:
+    repo: https://github.com/aws/pg_tle.git
+    dest: /tmp/pg_tle
+    version: 'v{{ pg_tle_tag }}'
+  become: yes
+
+- name: pg_tle - build
+  make:
+    chdir: /tmp/pg_tle
+  become: yes
+
+- name: pg_tle - install
+  make:
+    chdir: /tmp/pg_tle
+    target: install
+  become: yes
+
+- name: pg_tle - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_tle
