@@ -464,11 +464,7 @@ RUN tar -xvf /tmp/pgsodium.tar.gz -C /tmp && \
 WORKDIR /tmp/pgsodium-${pgsodium_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
-RUN apt-get update && apt-get install -y --download-only \
-    libsodium23 \
-    && rm -rf /var/lib/apt/lists/*
-RUN mv /var/cache/apt/archives/*.deb /tmp/
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libsodium23 --nodoc
 
 ####################
 # 19-pg_graphql.yml
