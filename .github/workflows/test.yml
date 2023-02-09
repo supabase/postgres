@@ -26,6 +26,7 @@ jobs:
           push: false
           load: true
           context: ansible
+          target: production
           tags: supabase/postgres:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
