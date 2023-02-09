@@ -394,7 +394,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/pg_net-${pg_net_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
 ####################
 # 16-rum.yml
