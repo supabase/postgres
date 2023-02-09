@@ -47,10 +47,19 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
+FROM builder as ccache
+# Cache large build artifacts
+RUN apt-get update && apt-get install -y \
+    clang \
+    ccache \
+    && rm -rf /var/lib/apt/lists/*
+ENV CCACHE_DIR=/ccache
+ENV PATH=/usr/lib/ccache:$PATH
+
 ####################
 # 01-postgis.yml
 ####################
-FROM builder as sfcgal
+FROM ccache as sfcgal
 # Download and extract
 ARG sfcgal_release
 ARG sfcgal_release_checksum
@@ -69,7 +78,8 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/sfcgal/build
 RUN cmake ..
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 RUN make install
 
 FROM sfcgal as postgis
@@ -94,14 +104,15 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/postgis-${postgis_release}
 RUN ./configure --with-sfcgal
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 02-pgrouting.yml
 ####################
-FROM builder as pgrouting
+FROM ccache as pgrouting
 # Download and extract
 ARG pgrouting_release
 ARG pgrouting_release_checksum
@@ -117,7 +128,8 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pgrouting-${pgrouting_release}/build
 RUN cmake -DBUILD_HTML=OFF -DBUILD_DOXY=OFF ..
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
@@ -142,7 +154,7 @@ RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 ####################
 # 04-pg_cron.yml
 ####################
-FROM builder as pg_cron
+FROM ccache as pg_cron
 # Download and extract
 ARG pg_cron_release
 ARG pg_cron_release_checksum
@@ -153,14 +165,15 @@ RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
     rm -rf /tmp/pg_cron.tar.gz
 # Build from source
 WORKDIR /tmp/pg_cron-${pg_cron_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 05-pgaudit.yml
 ####################
-FROM builder as pgaudit
+FROM ccache as pgaudit
 # Download and extract
 ARG pgaudit_release
 ARG pgaudit_release_checksum
@@ -177,7 +190,8 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pgaudit-${pgaudit_release}
 ENV USE_PGXS=1
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
@@ -198,7 +212,7 @@ RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 ####################
 # 07-pgsql-http.yml
 ####################
-FROM builder as pgsql-http
+FROM ccache as pgsql-http
 # Download and extract
 ARG pgsql_http_release
 ARG pgsql_http_release_checksum
@@ -213,14 +227,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pgsql-http-${pgsql_http_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 08-plpgsql_check.yml
 ####################
-FROM builder as plpgsql_check
+FROM ccache as plpgsql_check
 # Download and extract
 ARG plpgsql_check_release
 ARG plpgsql_check_release_checksum
@@ -235,14 +250,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/plpgsql_check-${plpgsql_check_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 09-pg-safeupdate.yml
 ####################
-FROM builder as pg-safeupdate
+FROM ccache as pg-safeupdate
 # Download and extract
 ARG pg_safeupdate_release
 ARG pg_safeupdate_release_checksum
@@ -253,14 +269,15 @@ RUN tar -xvf /tmp/pg-safeupdate.tar.gz -C /tmp && \
     rm -rf /tmp/pg-safeupdate.tar.gz
 # Build from source
 WORKDIR /tmp/pg-safeupdate-${pg_safeupdate_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 10-timescaledb.yml
 ####################
-FROM builder as timescaledb
+FROM ccache as timescaledb
 # Download and extract
 ARG timescaledb_release
 ARG timescaledb_release_checksum
@@ -272,14 +289,15 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
 RUN cmake -DAPACHE_ONLY=1 ..
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
 
 ####################
 # 11-wal2json.yml
 ####################
-FROM builder as wal2json
+FROM ccache as wal2json
 # Download and extract
 ARG wal2json_release
 ARG wal2json_release_checksum
@@ -290,7 +308,8 @@ RUN tar -xvf /tmp/wal2json.tar.gz -C /tmp --one-top-level --strip-components 1 &
     rm -rf /tmp/wal2json.tar.gz
 # Build from source
 WORKDIR /tmp/wal2json
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
 
@@ -320,7 +339,7 @@ RUN mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=t
 # Create debian package
 RUN cp pljava-packaging/target/pljava-pg${postgres_major}.jar /tmp/
 
-FROM builder as pljava
+FROM base as pljava
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --download-only \
     default-jdk-headless \
@@ -331,7 +350,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 # 13-plv8.yml
 ####################
-FROM builder as plv8
+FROM ccache as plv8-source
 # Download and extract
 ARG plv8_release
 ARG plv8_release_checksum
@@ -342,42 +361,43 @@ RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    ccache \
     pkg-config \
     ninja-build \
-    clang \
     git \
     libtinfo5 \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=public.ecr.aws/t3w2s2c9/postgres-buildcache:latest /ccache /ccache
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
 ENV DOCKER=1
-ENV CCACHE_DIR=/ccache
-ENV PATH=/usr/lib/ccache:$PATH
 RUN make generate_upgrades
-RUN make v8
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make v8
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    checkinstall -D --install=no --fstrans=no --backup=no --exclude=/ccache --pakdir=/tmp --nodoc
+
+FROM scratch as libv8_monolith
+COPY --from=plv8-source /tmp/*.deb /tmp/
 
 ####################
 # 14-pg_plan_filter.yml
 ####################
-FROM builder as pg_plan_filter
+FROM ccache as pg_plan_filter
 # Download and extract
 ARG pg_plan_filter_release
 ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" \
     /tmp/pg_plan_filter-${pg_plan_filter_release}
 # Build from source
 WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 15-pg_net.yml
 ####################
-FROM builder as pg_net
+FROM ccache as pg_net
 # Download and extract
 ARG pg_net_release
 ARG pg_net_release_checksum
@@ -392,14 +412,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_net-${pg_net_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
 ####################
 # 16-rum.yml
 ####################
-FROM builder as rum
+FROM ccache as rum
 # Download and extract
 ARG rum_release
 ARG rum_release_checksum
@@ -415,14 +436,15 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/rum-${rum_release}
 ENV USE_PGXS=1
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 17-pg_hashids.yml
 ####################
-FROM builder as pg_hashids
+FROM ccache as pg_hashids
 # Download and extract
 ARG pg_hashids_release
 ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
@@ -436,7 +458,7 @@ RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 ####################
 # 18-pgsodium.yml
 ####################
-FROM builder as libsodium
+FROM ccache as libsodium
 # Download and extract
 ARG libsodium_release
 ARG libsodium_release_checksum
@@ -448,7 +470,8 @@ RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/libsodium-${libsodium_release}
 RUN ./configure
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 RUN make install
 
 FROM libsodium as pgsodium
@@ -462,14 +485,15 @@ RUN tar -xvf /tmp/pgsodium.tar.gz -C /tmp && \
     rm -rf /tmp/pgsodium.tar.gz
 # Build from source
 WORKDIR /tmp/pgsodium-${pgsodium_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libsodium23 --nodoc
 
 ####################
 # 19-pg_graphql.yml
 ####################
-FROM builder as pg_graphql
+FROM base as pg_graphql
 # Download package archive
 ARG pg_graphql_release
 ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
@@ -478,7 +502,7 @@ ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_rele
 ####################
 # 20-pg_stat_monitor.yml
 ####################
-FROM builder as pg_stat_monitor
+FROM ccache as pg_stat_monitor
 # Download and extract
 ARG pg_stat_monitor_release
 ARG pg_stat_monitor_release_checksum
@@ -490,7 +514,8 @@ RUN tar -xvf /tmp/pg_stat_monitor.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pg_stat_monitor-${pg_stat_monitor_release}
 ENV USE_PGXS=1
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
@@ -501,7 +526,7 @@ RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 ####################
 # 22-pg_jsonschema.yml
 ####################
-FROM builder as pg_jsonschema
+FROM base as pg_jsonschema
 # Download package archive
 ARG pg_jsonschema_release
 ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
@@ -528,7 +553,7 @@ RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 ####################
 # 24-pgroonga.yml
 ####################
-FROM builder as groonga
+FROM ccache as groonga
 # Download and extract
 ARG groonga_release
 ARG groonga_release_checksum
@@ -540,7 +565,8 @@ RUN tar -xvf /tmp/groonga.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/groonga-${groonga_release}
 RUN ./configure
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 RUN make install
 
 FROM groonga as pgroonga-source
@@ -558,14 +584,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pgroonga-${pgroonga_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
-FROM builder as pgroonga
+FROM base as pgroonga
 # Download pre-built packages
 ADD "https://packages.groonga.org/debian/groonga-apt-source-latest-bullseye.deb" /tmp/source.deb
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
     /tmp/source.deb \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
@@ -577,7 +605,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 # 25-wrappers.yml
 ####################
-FROM builder as wrappers
+FROM base as wrappers
 # Download package archive
 ARG wrappers_release
 ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
@@ -586,7 +614,7 @@ ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}
 ####################
 # 26-hypopg.yml
 ####################
-FROM builder as hypopg
+FROM ccache as hypopg
 # Download and extract
 ARG hypopg_release
 ARG hypopg_release_checksum
@@ -597,14 +625,15 @@ RUN tar -xvf /tmp/hypopg.tar.gz -C /tmp && \
     rm -rf /tmp/hypopg.tar.gz
 # Build from source
 WORKDIR /tmp/hypopg-${hypopg_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
 ####################
 # 27-pg_repack.yml
 ####################
-FROM builder as pg_repack
+FROM ccache as pg_repack
 ARG pg_repack_release
 ARG pg_repack_release_checksum
 ADD --checksum=${pg_repack_release_checksum} \
@@ -622,14 +651,15 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
 ENV USE_PGXS=1
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
 
 ####################
 # 28-pgvector.yml
 ####################
-FROM builder as pgvector
+FROM ccache as pgvector
 ARG pgvector_release
 ARG pgvector_release_checksum
 ADD --checksum=${pgvector_release_checksum} \
@@ -639,7 +669,8 @@ RUN tar -xvf /tmp/pgvector.tar.gz -C /tmp && \
     rm -rf /tmp/pgvector.tar.gz
 # Build from source
 WORKDIR /tmp/pgvector-${pgvector_release}
-RUN make -j$(nproc)
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
 
@@ -703,3 +734,13 @@ RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/va
 ENV POSTGRES_HOST=/var/run/postgresql
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+
+####################
+# Update build cache
+####################
+FROM production as stats
+RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+    ccache -s && \
+    cp -r /ccache /tmp
+FROM scratch as postgres-buildcache
+COPY --from=stats /tmp /ccache
