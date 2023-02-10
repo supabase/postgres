@@ -37,6 +37,13 @@
   when: platform == "arm64"
   ignore_errors: yes # not needed for docker build
 
+- name: plv8 - enable ccache
+  become: yes
+  replace:
+    path: /tmp/plv8/Makefiles/Makefile.docker
+    regexp: "^GN_ARGS ="
+    replace: GN_ARGS = cc_wrapper=\"env CCACHE_SLOPPINESS=time_macros ccache\"
+
 - name: plv8 - build
   make:
     chdir: /tmp/plv8
