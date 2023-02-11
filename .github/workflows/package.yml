@@ -19,17 +19,17 @@ jobs:
   settings:
     runs-on: ubuntu-20.04
     outputs:
-      image_tag: ${{ steps.plv8_release.outputs.result }}-${{ steps.postgres_major.outputs.result }}
+      image_tag: ${{ steps.plv8_release.outputs.result }}-${{ steps.postgresql_major.outputs.result }}
     steps:
       - uses: actions/checkout@v3
       - id: plv8_release
         uses: mikefarah/yq@master
         with:
           cmd: yq '.plv8_release' 'ansible/vars.yml'
-      - id: postgres_major
+      - id: postgresql_major
         uses: mikefarah/yq@master
         with:
-          cmd: yq '.postgres_major' 'ansible/vars.yml'
+          cmd: yq '.postgresql_major' 'ansible/vars.yml'
 
   package_x86:
     needs: settings

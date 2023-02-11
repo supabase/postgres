@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.5-labs
-ARG postgres_major=15
-ARG postgres_minor=1
+ARG postgresql_major=15
+ARG postgresql_release=${postgresql_major}.1
 
 ARG sfcgal_release=1.3.10
 ARG postgis_release=3.3.2
@@ -33,15 +33,15 @@ ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 
-FROM postgres:$postgres_major.$postgres_minor as base
+FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
-ARG postgres_major
+ARG postgresql_major
 
 FROM base as builder
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    postgresql-server-dev-${postgres_major} \
+    postgresql-server-dev-${postgresql_major} \
     build-essential \
     checkinstall \
     cmake \
@@ -337,13 +337,13 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /tmp/pljava-${pljava_release}
 RUN mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
 # Create debian package
-RUN cp pljava-packaging/target/pljava-pg${postgres_major}.jar /tmp/
+RUN cp pljava-packaging/target/pljava-pg${postgresql_major}.jar /tmp/
 
 FROM base as pljava
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --download-only \
     default-jdk-headless \
-    postgresql-${postgres_major}-pljava \
+    postgresql-${postgresql_major}-pljava \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -377,7 +377,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM scratch as plv8-deb
 COPY --from=plv8-source /tmp/*.deb /tmp/
 
-FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgres_major} as plv8
+FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
 
 ####################
 # 14-pg_plan_filter.yml
@@ -496,7 +496,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 FROM base as pg_graphql
 # Download package archive
 ARG pg_graphql_release
-ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/pg_graphql.deb
 
 ####################
@@ -529,7 +529,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM base as pg_jsonschema
 # Download package archive
 ARG pg_jsonschema_release
-ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/pg_jsonschema.deb
 
 ####################
@@ -598,7 +598,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
 RUN apt-get update && apt-get install -y --download-only \
-    postgresql-${postgres_major}-pgdg-pgroonga \
+    postgresql-${postgresql_major}-pgdg-pgroonga \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -608,7 +608,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 FROM base as wrappers
 # Download package archive
 ARG wrappers_release
-ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgres_major}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/wrappers.deb
 
 ####################
@@ -721,14 +721,14 @@ RUN apt-get update && apt-get install -y \
 
 # tasks/docker/finalize.yml
 COPY --chown=postgres:postgres files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
-COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgres_major}/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
 COPY files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
 COPY files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
 
 RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
-    echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgres_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
 
 ENV POSTGRES_HOST=/var/run/postgresql
