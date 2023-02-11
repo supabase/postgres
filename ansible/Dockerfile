@@ -107,7 +107,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 02-pgrouting.yml
@@ -131,7 +131,7 @@ RUN cmake -DBUILD_HTML=OFF -DBUILD_DOXY=OFF ..
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
 ####################
 # 03-pgtap.yml
@@ -149,7 +149,7 @@ RUN tar -xvf /tmp/pgtap.tar.gz -C /tmp && \
 WORKDIR /tmp/pgtap-${pgtap_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 04-pg_cron.yml
@@ -168,7 +168,7 @@ WORKDIR /tmp/pg_cron-${pg_cron_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 05-pgaudit.yml
@@ -193,7 +193,7 @@ ENV USE_PGXS=1
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 06-pgjwt.yml
@@ -207,7 +207,7 @@ ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
 WORKDIR /tmp/pgjwt-${pgjwt_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 07-pgsql-http.yml
@@ -230,7 +230,7 @@ WORKDIR /tmp/pgsql-http-${pgsql_http_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 08-plpgsql_check.yml
@@ -253,7 +253,7 @@ WORKDIR /tmp/plpgsql_check-${plpgsql_check_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 09-pg-safeupdate.yml
@@ -272,7 +272,7 @@ WORKDIR /tmp/pg-safeupdate-${pg_safeupdate_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 10-timescaledb.yml
@@ -292,7 +292,7 @@ RUN cmake -DAPACHE_ONLY=1 ..
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
 
 ####################
 # 11-wal2json.yml
@@ -311,7 +311,7 @@ WORKDIR /tmp/wal2json
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
 
 ####################
 # 12-pljava.yml
@@ -369,15 +369,15 @@ RUN apt-get update && apt-get install -y \
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
 ENV DOCKER=1
-RUN make generate_upgrades
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
-    make v8
+    make
 # Create debian package
-RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
-    checkinstall -D --install=no --fstrans=no --backup=no --exclude=/ccache --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-FROM scratch as libv8_monolith
+FROM scratch as plv8-deb
 COPY --from=plv8-source /tmp/*.deb /tmp/
+
+FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgres_major} as plv8
 
 ####################
 # 14-pg_plan_filter.yml
@@ -392,7 +392,7 @@ WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 15-pg_net.yml
@@ -415,7 +415,7 @@ WORKDIR /tmp/pg_net-${pg_net_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
 ####################
 # 16-rum.yml
@@ -439,7 +439,7 @@ ENV USE_PGXS=1
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 17-pg_hashids.yml
@@ -453,7 +453,7 @@ ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
 WORKDIR /tmp/pg_hashids-${pg_hashids_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 18-pgsodium.yml
@@ -488,7 +488,7 @@ WORKDIR /tmp/pgsodium-${pgsodium_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --requires=libsodium23 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libsodium23 --nodoc
 
 ####################
 # 19-pg_graphql.yml
@@ -517,7 +517,7 @@ ENV USE_PGXS=1
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 21-auto_explain.yml
@@ -548,7 +548,7 @@ RUN tar -xvf /tmp/vault.tar.gz -C /tmp && \
 WORKDIR /tmp/vault-${vault_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 24-pgroonga.yml
@@ -587,7 +587,7 @@ WORKDIR /tmp/pgroonga-${pgroonga_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM base as pgroonga
 # Download pre-built packages
@@ -628,7 +628,7 @@ WORKDIR /tmp/hypopg-${hypopg_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # 27-pg_repack.yml
@@ -654,7 +654,7 @@ ENV USE_PGXS=1
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
 
 ####################
 # 28-pgvector.yml
@@ -672,7 +672,7 @@ WORKDIR /tmp/pgvector-${pgvector_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
 # Build final image
@@ -698,7 +698,7 @@ COPY --from=pg-safeupdate /tmp/*.deb /tmp/
 COPY --from=timescaledb /tmp/*.deb /tmp/
 COPY --from=wal2json /tmp/*.deb /tmp/
 # COPY --from=pljava /tmp/*.deb /tmp/
-# COPY --from=plv8 /tmp/*.deb /tmp/
+COPY --from=plv8 /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter /tmp/*.deb /tmp/
 COPY --from=pg_net /tmp/*.deb /tmp/
 COPY --from=rum /tmp/*.deb /tmp/
