@@ -9,70 +9,80 @@ on:
 
 jobs:
   build:
-    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      POSTGRES_PORT: 5478
+      POSTGRES_PASSWORD: password
     steps:
       - uses: actions/checkout@v3
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join(" ")' 'ansible/vars.yml'
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/build-push-action@v3
+        with:
+          push: false
+          load: true
+          context: ansible
+          target: production
+          tags: supabase/postgres:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - run: docker compose up --abort-on-container-exit --build
+      - name: Start Postgres
+        run: |
+          docker run --rm --pull=never \
+          -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
+          -p ${{ env.POSTGRES_PORT }}:5432 \
+          --name supabase_postgres \
+          -d supabase/postgres:latest
 
-  migrate:
-    runs-on: ubuntu-latest
-    env:
-      POSTGRES_PASSWORD: password
-
-    strategy:
-      matrix:
-        supabase-version: ["15.1.0.11"]
-    timeout-minutes: 10
-
-    services:
-      postgres:
-        image: supabase/postgres:${{ matrix.supabase-version }}
-        ports:
-          - 5478:5432
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd "pg_isready -U postgres -h localhost"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        env:
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-        volumes:
-          # Disable migration by removing from entrypoint
-          - /dev/null:/docker-entrypoint-initdb.d/migrate.sh
-
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install dbmate
+      - name: Install dbmate
         run: |
           curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
           sudo chmod +x /usr/local/bin/dbmate
 
-      - name: migrate schema
-        run: ./migrations/db/migrate.sh
-        env:
-          USE_DBMATE: 1
-          POSTGRES_PORT: 5478
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-      - name: install pg_prove
-        run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+      - name: Install pg_prove
+        run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
         env:
           SHELL: /bin/bash
 
-      - name: run tests
+      - name: Wait for healthy database
+        run: |
+          count=0
+          until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == "healthy" ]; do
+              exit=$?
+              count=$((count + 1))
+              if [ $count -ge "$retries" ]; then
+                  echo "Retry $count/$retries exited $exit, no more retries left."
+                  docker stop -t 2 "$container"
+                  return $exit
+              fi
+              sleep 1;
+          done;
+          echo "$container container is healthy"
+        env:
+          retries: 20
+          container: supabase_postgres
+
+      - name: Migrate schema
+        run: ./migrations/db/migrate.sh
+        env:
+          USE_DBMATE: 1
+          POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+
+      - name: Run tests
         run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
-          PGPORT: 5478
+          PGPORT: ${{ env.POSTGRES_PORT }}
           PGUSER: postgres
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-      - name: migrations should be idempotent
+      - name: Check migrations are idempotent
         run: |
           for sql in ./migrations/db/migrations/*.sql; do
             echo "$0: running $sql"
@@ -80,16 +90,16 @@ jobs:
           done
         env:
           PGHOST: localhost
-          PGPORT: 5478
+          PGPORT: ${{ env.POSTGRES_PORT }}
           PGDATABASE: postgres
           PGUSER: supabase_admin
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-      - name: run tests
+      - name: Run tests again
         run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
-          PGPORT: 5478
+          PGPORT: ${{ env.POSTGRES_PORT }}
           PGUSER: postgres
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 

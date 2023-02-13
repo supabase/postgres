@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/HypoPG/hypopg.git
     dest: /tmp/hypopg
-    version: "{{ hypopg_commit_sha }}"
+    version: "{{ hypopg_release }}"
 
 - name: hypopg - install
   make:

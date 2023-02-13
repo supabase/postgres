@@ -1,0 +1,101 @@
+name: Package plv8
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/package.yml"
+      - "ansible/Dockerfile"
+
+env:
+  image: ghcr.io/supabase/plv8
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  settings:
+    runs-on: ubuntu-20.04
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: meta
+        run: |
+          plv8_release=$(grep -o 'plv8_release=.*' ansible/Dockerfile | head -1 | cut -d "=" -f 2)
+          postgresql_major=$(grep -o 'postgresql_major=.*' ansible/Dockerfile | head -1 | cut -d "=" -f 2)
+          echo "image_tag=${plv8_release}-pg${postgresql_major}" >> $GITHUB_OUTPUT
+
+  build_x86:
+    needs: settings
+    runs-on: [self-hosted, X64]
+    timeout-minutes: 180
+    env:
+      arch: amd64
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - run: docker context create builders
+      - uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: builders
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: "{{defaultContext}}:ansible"
+          target: plv8-deb
+          tags: ${{ env.image }}:${{ needs.settings.outputs.image_tag }}_${{ env.arch }}
+          platforms: linux/${{ env.arch }}
+          no-cache: true
+
+  build_arm:
+    needs: settings
+    runs-on: [arm-runner]
+    timeout-minutes: 180
+    env:
+      arch: arm64
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - run: docker context create builders
+      - uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: builders
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          context: "{{defaultContext}}:ansible"
+          target: plv8-deb
+          tags: ${{ env.image }}:${{ needs.settings.outputs.image_tag }}_${{ env.arch }}
+          platforms: linux/${{ env.arch }}
+          no-cache: true
+
+  merge_manifest:
+    needs: [settings, build_x86, build_arm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v2
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge multi-arch manifests
+        run: |
+          docker buildx imagetools create -t ${{ env.image }}:${{ needs.settings.outputs.image_tag }} \
+          ${{ env.image }}@${{ needs.build_x86.outputs.image_digest }} \
+          ${{ env.image }}@${{ needs.build_arm.outputs.image_digest }}
