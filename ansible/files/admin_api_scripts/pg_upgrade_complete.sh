@@ -15,9 +15,9 @@ cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
-    echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
+    echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
-    exit $EXIT_CODE
+    exit "$EXIT_CODE"
 }
 
 function complete_pg_upgrade {
@@ -44,7 +44,7 @@ function complete_pg_upgrade {
     if [ -d /data/sql ]; then
         for FILE in /data/sql/*.sql; do
             if [ -f "$FILE" ]; then
-                run_sql -f $FILE
+                run_sql -f "$FILE"
             fi
         done
     fi
@@ -56,12 +56,11 @@ function complete_pg_upgrade {
 
     echo "6. Starting vacuum analyze"
     start_vacuum_analyze
-
-    echo "Upgrade job completed"
 }
 
 function start_vacuum_analyze {
-    su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
+    su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+    echo "Upgrade job completed"
     cleanup "complete"
 }
 
