@@ -1,4 +1,4 @@
-name: Build Package
+name: Package plv8
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           postgresql_major=$(grep -o 'postgresql_major=.*' ansible/Dockerfile | head -1 | cut -d "=" -f 2)
           echo "image_tag=${plv8_release}-pg${postgresql_major}" >> $GITHUB_OUTPUT
 
-  package_x86:
+  build_x86:
     needs: settings
     runs-on: [self-hosted, X64]
     timeout-minutes: 180
@@ -56,7 +56,7 @@ jobs:
           platforms: linux/${{ env.arch }}
           no-cache: true
 
-  package_arm:
+  build_arm:
     needs: settings
     runs-on: [arm-runner]
     timeout-minutes: 180
@@ -85,12 +85,8 @@ jobs:
           no-cache: true
 
   merge_manifest:
-    needs: [settings, package_x86, package_arm]
+    needs: [settings, build_x86, build_arm]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
     steps:
       - uses: docker/setup-buildx-action@v2
       - uses: docker/login-action@v2
@@ -101,5 +97,5 @@ jobs:
       - name: Merge multi-arch manifests
         run: |
           docker buildx imagetools create -t ${{ env.image }}:${{ needs.settings.outputs.image_tag }} \
-          ${{ env.image }}@${{ needs.package_x86.outputs.image_digest }} \
-          ${{ env.image }}@${{ needs.package_arm.outputs.image_digest }}
+          ${{ env.image }}@${{ needs.build_x86.outputs.image_digest }} \
+          ${{ env.image }}@${{ needs.build_arm.outputs.image_digest }}
