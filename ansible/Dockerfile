@@ -2,6 +2,8 @@
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
+# Bump default build arg to build a package from source
+# Bump vars.yml to specify runtime package version
 ARG sfcgal_release=1.3.10
 ARG postgis_release=3.3.2
 ARG pgrouting_release=3.4.1
