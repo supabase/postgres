@@ -14,4 +14,4 @@ jobs:
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
       with:
-        scandir: './ansible/files/admin_scripts'
+        scandir: './ansible/files/admin_api_scripts'
