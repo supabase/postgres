@@ -36,7 +36,6 @@ fi
 MOUNT_POINT="/data_migration"
 
 run_sql() {
-    STATEMENT=$1
     psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
@@ -90,9 +89,9 @@ cleanup() {
         echo "Unmounting data disk from ${MOUNT_POINT}"
         umount $MOUNT_POINT
     fi
-    echo "${UPGRADE_STATUS}" > /tmp/pg-upgrade-status
+    echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
-    exit $EXIT_CODE
+    exit "$EXIT_CODE"
 }
 
 function handle_extensions {
@@ -125,7 +124,7 @@ function initiate_upgrade {
 
     # Wrappers officially launched in PG15; PG14 version is incompatible
     if [[ "$OLD_PGVERSION" =~ 14* ]]; then
-        SHARED_PRELOAD_LIBRARIES=$(echo $SHARED_PRELOAD_LIBRARIES | sed "s/wrappers, //")
+        SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers, //")
     fi
 
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
@@ -203,8 +202,8 @@ function initiate_upgrade {
 
     echo "8. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
-    rm -rf "$PGDATANEW/"
-    su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s $SHELL postgres
+    rm -rf "${PGDATANEW:?}/"
+    su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
@@ -236,7 +235,7 @@ EOF
         systemctl stop postgresql
     fi
 
-    su -c "$UPGRADE_COMMAND" -s $SHELL postgres
+    su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
 
     # copying custom configurations
     echo "10. Copying custom configurations"
