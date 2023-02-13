@@ -6,7 +6,7 @@ on:
       - develop
     paths:
       - ".github/workflows/package.yml"
-      - "ansible/vars.yml"
+      - "ansible/Dockerfile"
 
 env:
   image: ghcr.io/supabase/plv8
@@ -19,17 +19,14 @@ jobs:
   settings:
     runs-on: ubuntu-20.04
     outputs:
-      image_tag: ${{ steps.plv8_release.outputs.result }}-${{ steps.postgresql_major.outputs.result }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v3
-      - id: plv8_release
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq '.plv8_release' 'ansible/vars.yml'
-      - id: postgresql_major
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq '.postgresql_major' 'ansible/vars.yml'
+      - id: meta
+        run: |
+          plv8_release=$(grep -o 'plv8_release=.*' ansible/Dockerfile | head -1 | cut -d "=" -f 2)
+          postgresql_major=$(grep -o 'postgresql_major=.*' ansible/Dockerfile | head -1 | cut -d "=" -f 2)
+          echo "image_tag=${plv8_release}-pg${postgresql_major}" >> $GITHUB_OUTPUT
 
   package_x86:
     needs: settings
