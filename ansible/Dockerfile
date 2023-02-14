@@ -42,7 +42,7 @@ ARG postgresql_major
 
 FROM base as builder
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-server-dev-${postgresql_major} \
     build-essential \
     checkinstall \
@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y \
 
 FROM builder as ccache
 # Cache large build artifacts
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
     ccache \
     && rm -rf /var/lib/apt/lists/*
@@ -71,7 +71,7 @@ ADD --checksum=${sfcgal_release_checksum} \
 RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && \
     rm -rf /tmp/sfcgal.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libcgal-dev \
     libboost-all-dev \
     libmpfr-dev \
@@ -94,7 +94,7 @@ ADD --checksum=${postgis_release_checksum} \
 RUN tar -xvf /tmp/postgis.tar.gz -C /tmp && \
     rm -rf /tmp/postgis.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     protobuf-c-compiler \
     libgeos-dev \
     libproj-dev \
@@ -124,7 +124,7 @@ ADD --checksum=${pgrouting_release_checksum} \
 RUN tar -xvf /tmp/pgrouting.tar.gz -C /tmp && \
     rm -rf /tmp/pgrouting.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-all-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -185,7 +185,7 @@ ADD --checksum=${pgaudit_release_checksum} \
 RUN tar -xvf /tmp/pgaudit.tar.gz -C /tmp && \
     rm -rf /tmp/pgaudit.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -224,7 +224,7 @@ ADD --checksum=${pgsql_http_release_checksum} \
 RUN tar -xvf /tmp/pgsql-http.tar.gz -C /tmp && \
     rm -rf /tmp/pgsql-http.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-gnutls-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -247,7 +247,7 @@ ADD --checksum=${plpgsql_check_release_checksum} \
 RUN tar -xvf /tmp/plpgsql_check.tar.gz -C /tmp && \
     rm -rf /tmp/plpgsql_check.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -329,7 +329,7 @@ ADD --checksum=${pljava_release_checksum} \
 RUN tar -xvf /tmp/pljava.tar.gz -C /tmp && \
     rm -rf /tmp/pljava.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     maven \
     default-jdk \
     libssl-dev \
@@ -343,7 +343,7 @@ RUN cp pljava-packaging/target/pljava-pg${postgresql_major}.jar /tmp/
 
 FROM base as pljava
 # Download pre-built packages
-RUN apt-get update && apt-get install -y --download-only \
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
     default-jdk-headless \
     postgresql-${postgresql_major}-pljava \
     && rm -rf /var/lib/apt/lists/*
@@ -362,7 +362,7 @@ ADD --checksum=${plv8_release_checksum} \
 RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     ninja-build \
     git \
@@ -409,7 +409,7 @@ ADD --checksum=${pg_net_release_checksum} \
 RUN tar -xvf /tmp/pg_net.tar.gz -C /tmp && \
     rm -rf /tmp/pg_net.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-gnutls-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -432,7 +432,7 @@ ADD --checksum=${rum_release_checksum} \
 RUN tar -xvf /tmp/rum.tar.gz -C /tmp && \
     rm -rf /tmp/rum.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     systemtap-sdt-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -581,7 +581,7 @@ ADD --checksum=${pgroonga_release_checksum} \
 RUN tar -xvf /tmp/pgroonga.tar.gz -C /tmp && \
     rm -rf /tmp/pgroonga.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -594,12 +594,12 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM base as pgroonga
 # Download pre-built packages
 ADD "https://packages.groonga.org/debian/groonga-apt-source-latest-bullseye.deb" /tmp/source.deb
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     /tmp/source.deb \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
-RUN apt-get update && apt-get install -y --download-only \
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
     postgresql-${postgresql_major}-pgdg-pgroonga \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
@@ -644,7 +644,7 @@ ADD --checksum=${pg_repack_release_checksum} \
 RUN tar -xvf /tmp/pg_repack.tar.gz -C /tmp && \
     rm -rf /tmp/pg_repack.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     liblz4-dev \
     libz-dev \
     libzstd-dev \
@@ -717,7 +717,7 @@ COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
@@ -731,7 +731,9 @@ RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/va
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
-    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf
+    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    mkdir -p /etc/postgresql-custom && \
+    chown postgres:postgres /etc/postgresql-custom
 
 ENV POSTGRES_HOST=/var/run/postgresql
 
