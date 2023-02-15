@@ -209,7 +209,7 @@ ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
 WORKDIR /tmp/pgjwt-${pgjwt_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
 ####################
 # 07-pgsql-http.yml
@@ -394,7 +394,7 @@ WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
 ####################
 # 15-pg_net.yml
@@ -455,7 +455,7 @@ ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
 WORKDIR /tmp/pg_hashids-${pg_hashids_release}
 RUN make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
 ####################
 # 18-pgsodium.yml
@@ -740,6 +740,7 @@ RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/va
     chown postgres:postgres /etc/postgresql-custom
 
 ENV POSTGRES_HOST=/var/run/postgresql
+CMD ["postgres", "-D", "/etc/postgresql"]
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 
