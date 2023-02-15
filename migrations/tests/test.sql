@@ -3,7 +3,7 @@
 
 BEGIN;
 
-SELECT plan(13);
+SELECT plan(19);
 
 \ir fixtures.sql
 \ir database/test.sql
