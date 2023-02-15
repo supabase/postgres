@@ -11,7 +11,12 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, X64]
+    strategy:
+      matrix:
+        include:
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
     permissions:
       contents: write
@@ -21,6 +26,33 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
+
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+      - run: docker context create builders
+      - uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: builders
+      - uses: docker/build-push-action@v3
+        with:
+          push: false
+          load: true
+          build-args: |
+            ${{ steps.args.outputs.result }}
+          target: extensions
+          tags: supabase/postgres:extensions
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Extract built packages
+        run: |
+          mkdir -p ansible/extensions/packages
+          docker save supabase/postgres:extensions | tar xv -C ansible/extensions
+          for layer in ansible/extensions/*/layer.tar; do
+            tar xvf "$layer" -C ansible/extensions/packages --strip-components 1
+          done
 
       - name: Build AMI
         run: |
