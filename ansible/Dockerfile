@@ -109,7 +109,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libsfcgal1,libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1 --nodoc
 
 ####################
 # 02-pgrouting.yml
@@ -677,17 +677,9 @@ RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
-# Build final image
+# Build extension packages
 ####################
-FROM base as production
-
-# tasks/docker/setup.yml
-COPY files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
-COPY files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
-COPY files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
-
-# tasks/setup-extensions.yml
-COPY --from=sfcgal /usr/local/lib/libSFCGAL.* /usr/local/lib/
+FROM scratch as extensions
 COPY --from=postgis /tmp/*.deb /tmp/
 COPY --from=pgrouting /tmp/*.deb /tmp/
 COPY --from=pgtap /tmp/*.deb /tmp/
@@ -716,6 +708,18 @@ COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 
+####################
+# Build final image
+####################
+FROM base as production
+
+# tasks/docker/setup.yml
+COPY files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
+COPY files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
+COPY files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+
+# tasks/setup-extensions.yml
+COPY --from=extensions /tmp /tmp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
