@@ -313,7 +313,8 @@ WORKDIR /tmp/wal2json
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${wal2json_release} --nodoc
+ENV version=${wal2json_release}
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion="\${version/_/.}" --nodoc
 
 ####################
 # 12-pljava.yml
