@@ -365,6 +365,7 @@ RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     pkg-config \
     ninja-build \
     git \
@@ -593,6 +594,9 @@ RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
+FROM scratch as pgroonga-deb
+COPY --from=pgroonga-source /tmp/*.deb /tmp/
+
 FROM base as pgroonga
 # Download pre-built packages
 ADD "https://packages.groonga.org/debian/groonga-apt-source-latest-bullseye.deb" /tmp/source.deb
@@ -700,7 +704,7 @@ RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
-# Build extension packages
+# Collect extension packages
 ####################
 FROM scratch as extensions
 COPY --from=postgis /tmp/*.deb /tmp/
@@ -772,9 +776,11 @@ HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -
 # Update build cache
 ####################
 FROM production as stats
-COPY --from=plv8-source /tmp/*.deb /tmp/
+# Additional packages that are built from source
+COPY --from=plv8 /tmp/*.deb /dev/null
+COPY --from=pgroonga-deb /tmp/*.deb /dev/null
+# Cache mount is only populated by docker build --no-cache
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
-    ccache -s && \
     cp -r /ccache /tmp
 FROM scratch as postgres-buildcache
 COPY --from=stats /tmp /ccache
