@@ -27,3 +27,4 @@
 \ir 26-hypopg.sql
 \ir 27-pg_repack.sql
 \ir 28-pgvector.sql
+\ir 29-pg_tle.sql

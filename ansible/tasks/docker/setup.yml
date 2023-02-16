@@ -21,7 +21,6 @@
       - systemtap-sdt-dev
       - ccache
       - clang
-      - flex
     update_cache: yes
     install_recommends: no
 

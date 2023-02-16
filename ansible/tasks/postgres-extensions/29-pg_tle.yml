@@ -3,7 +3,7 @@
   git:
     repo: https://github.com/aws/pg_tle.git
     dest: /tmp/pg_tle
-    version: v1.0.1
+    version: v{{ pg_tle_release }}
 
 - name: pg_tle - install
   make:
