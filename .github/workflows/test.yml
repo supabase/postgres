@@ -26,7 +26,7 @@ jobs:
       - id: args
         uses: mikefarah/yq@master
         with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join(" ")' 'ansible/vars.yml'
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v2
@@ -38,6 +38,8 @@ jobs:
           load: true
           context: ansible
           target: production
+          build-args: |
+            ${{ steps.args.outputs.result }}
           tags: supabase/postgres:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
