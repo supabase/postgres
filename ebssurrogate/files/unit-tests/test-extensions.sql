@@ -6,7 +6,7 @@ BEGIN
   LOOP
     SELECT trim(extension_name) INTO extension_name;
     /* skip below extensions check for now */
-    CONTINUE WHEN extension_name = 'pgroonga' OR  extension_name = 'pgroonga_database' OR extension_name = 'pgsodium';
+    CONTINUE WHEN extension_name = 'pgsodium';
     CONTINUE WHEN extension_name = 'plpgsql' OR  extension_name = 'plpgsql_check' OR extension_name = 'pgtap';
     CONTINUE WHEN extension_name = 'supabase_vault' OR extension_name = 'wrappers';
     RAISE notice 'START TEST FOR: %', extension_name;

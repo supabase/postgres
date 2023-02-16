@@ -3,10 +3,15 @@
   git:
     repo: https://github.com/eulerto/wal2json.git
     dest: /tmp/wal2json
-    version: "{{ wal2json_commit_sha }}"
+    version: "wal2json_{{ wal2json_release }}"
 
 - name: wal2json - install
   make:
     chdir: /tmp/wal2json
     target: install
   become: yes
+
+- name: wal2json - cleanup
+  file:
+    state: absent
+    path: /tmp/wal2json

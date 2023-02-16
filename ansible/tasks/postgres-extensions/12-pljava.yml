@@ -9,19 +9,27 @@
     update_cache: yes
     install_recommends: no
 
-- name: pljava - download latest release
-  get_url:
-    url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
-    dest: /tmp/pljava-{{ pljava_release }}.tar.gz
-    checksum: "{{ pljava_release_checksum }}"
-    timeout: 60
+#TODO: revert to using main repo after PG15 support is merged: https://github.com/tada/pljava/pull/413
+# - name: pljava - download latest release
+#   get_url:
+#     url: https://github.com/tada/pljava/archive/V{{ pljava_release }}.tar.gz
+#     dest: /tmp/pljava-{{ pljava_release }}.tar.gz
+#     checksum: "{{ pljava_release_checksum }}"
+#     timeout: 60
 
-- name: pljava - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/pljava-{{ pljava_release }}.tar.gz
-    dest: /tmp
+# - name: pljava - unpack archive
+#   unarchive:
+#     remote_src: yes
+#     src: /tmp/pljava-{{ pljava_release }}.tar.gz
+#     dest: /tmp
+#   become: yes
+
+- name: pljava - download latest release
   become: yes
+  git:
+    repo: https://github.com/supabase/pljava.git
+    dest: /tmp/pljava-{{ pljava_release }}
+    version: "{{ pljava_release }}"
 
 - name: pljava - build
   become: yes
@@ -54,6 +62,7 @@
   dpkg_selections:
     name: default-jre-headless
     selection: hold
+  when: async_mode
 
 - name: pljava - set pljava.libjvm_location
   become: yes
@@ -67,3 +76,9 @@
   file:
     path: ~/.m2
     state: absent
+
+- name: pljava - cleanup
+  become: yes
+  file:
+    state: absent
+    path: /tmp/pljava-{{ pljava_release }}

@@ -116,6 +116,12 @@ function format_and_mount_rootfs {
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
 
+function create_swapfile {
+	fallocate -l 1G /mnt/swapfile
+	chmod 600 /mnt/swapfile
+	mkswap /mnt/swapfile
+}
+
 function format_build_partition {
 	mkfs.ext4 -O ^has_journal /dev/xvdc
 }
@@ -132,6 +138,7 @@ $(printf "${FMT}" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK")
 $(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
 $(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
 $(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
+$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
 EOF
 	unset FMT
 }
@@ -293,6 +300,7 @@ waitfor_boot_finished
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
+create_swapfile
 format_build_partition
 #pull_docker
 setup_chroot_environment

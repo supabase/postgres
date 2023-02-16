@@ -2,3 +2,4 @@
 .python-version
 venv/
 *.swp
+docker/cache/
