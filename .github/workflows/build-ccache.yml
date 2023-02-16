@@ -59,7 +59,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          context: ansible
+          context: "{{defaultContext}}:ansible"
           target: postgres-buildcache
           build-args: |
             ${{ needs.settings.outputs.build_args }}
