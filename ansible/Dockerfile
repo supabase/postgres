@@ -753,10 +753,11 @@ HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -
 # Update build cache
 ####################
 FROM production as stats
-COPY --from=plv8-deb /tmp/*.deb /tmp/
-COPY --from=pgroonga-deb /tmp/*.deb /tmp/
+# Additional packages that are built from source
+COPY --from=plv8 /tmp/*.deb /dev/null
+COPY --from=pgroonga-deb /tmp/*.deb /dev/null
+# Cache mount is only populated by docker build --no-cache
 RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
-    ccache -s && \
     cp -r /ccache /tmp
 FROM scratch as postgres-buildcache
 COPY --from=stats /tmp /ccache
