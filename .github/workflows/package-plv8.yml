@@ -19,7 +19,7 @@ jobs:
   settings:
     runs-on: ubuntu-latest
     outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
+      image_tag: ${{ env.image }}:${{ steps.meta.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v3
       - id: meta
@@ -57,7 +57,7 @@ jobs:
           push: true
           context: "{{defaultContext}}:ansible"
           target: plv8-deb
-          tags: ${{ env.image }}:${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
+          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           no-cache: true
 
@@ -73,6 +73,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ env.image }}:${{ needs.settings.outputs.image_tag }} \
-          ${{ env.image }}:${{ needs.settings.outputs.image_tag }}_amd64 \
-          ${{ env.image }}:${{ needs.settings.outputs.image_tag }}_arm64
+          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }} \
+          ${{ needs.settings.outputs.image_tag }}_amd64 \
+          ${{ needs.settings.outputs.image_tag }}_arm64
