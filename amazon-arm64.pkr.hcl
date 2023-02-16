@@ -77,6 +77,16 @@ variable "postgres-version" {
   default = ""
 }
 
+variable "git-head-version" {
+  type = string
+  default = "unknown"
+}
+
+variable "packer-execution-id" {
+  type = string
+  default = "unknown"
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -86,7 +96,7 @@ source "amazon-ebssurrogate" "source" {
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
-  instance_type = "t4g.2xlarge"
+  instance_type = "c6g.4xlarge"
   region       = "${var.region}"
   #secret_key   = "${var.aws_secret_key}"
 
@@ -124,8 +134,9 @@ source "amazon-ebssurrogate" "source" {
   }
 
   run_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   run_volume_tags = {
     creator = "packer"
@@ -138,6 +149,8 @@ source "amazon-ebssurrogate" "source" {
   tags = {
     creator = "packer"
     appType = "postgres"
+    postgresVersion = "${var.postgres-version}"
+    sourceSha = "${var.git-head-version}"
   }
 
   communicator = "ssh"

@@ -30,3 +30,8 @@
     chdir: /tmp/pg_net-{{ pg_net_release }}
     target: install
   become: yes
+
+- name: pg_net - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_net-{{ pg_net_release }}

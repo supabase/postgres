@@ -11,13 +11,14 @@
     mode: "0700"
     owner: root
   loop:
-    - { file: "commence_walg_backup.sh" }
-    - { file: "commence_walg_restore.sh" }
-    - { file: "complete_walg_restore.sh" }
-    - { file: "disable_walg.sh" }
-    - { file: "enable_walg.sh" }
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
+    - { file: "pg_upgrade_check.sh" }
+    - { file: "pg_upgrade_complete.sh" }
+    - { file: "pg_upgrade_initiate.sh" }
+    - { file: "pg_upgrade_prepare.sh" }
+    - { file: "pg_upgrade_pgsodium_getkey.sh" }
+    - { file: "pg_egress_collect.pl" }
 
 - name: give adminapi user permissions
   copy:

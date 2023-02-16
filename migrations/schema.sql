@@ -319,19 +319,15 @@ BEGIN
 
     ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
     ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
-    ALTER function net.http_collect_response(request_id bigint, async boolean) SECURITY DEFINER;
 
     ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
     ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
-    ALTER function net.http_collect_response(request_id bigint, async boolean) SET search_path = net;
 
     REVOKE ALL ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
     REVOKE ALL ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
-    REVOKE ALL ON FUNCTION net.http_collect_response(request_id bigint, async boolean) FROM PUBLIC;
 
     GRANT EXECUTE ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
     GRANT EXECUTE ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-    GRANT EXECUTE ON FUNCTION net.http_collect_response(request_id bigint, async boolean) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
   END IF;
 END;
 $$;
@@ -487,32 +483,6 @@ BEGIN
     WHERE usename = p_usename;
 END;
 $$;
-
-
---
--- Name: TABLE key; Type: SECURITY LABEL; Schema: pgsodium; Owner: -
---
-
-SECURITY LABEL FOR pgsodium ON COLUMN pgsodium.key.raw_key IS 'ENCRYPT WITH KEY COLUMN parent_key ASSOCIATED (id, associated_data) NONCE raw_key_nonce';
-
-
---
--- Name: key_encrypt_secret(); Type: FUNCTION; Schema: pgsodium; Owner: -
---
-
-CREATE FUNCTION pgsodium.key_encrypt_secret() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-            new.raw_key = CASE WHEN new.parent_key IS NULL THEN NULL ELSE
-                        pgsodium.crypto_aead_det_encrypt(new.raw_key::bytea, pg_catalog.convert_to((new.id::text || new.associated_data::text)::text, 'utf8'),
-                new.parent_key::uuid,
-                new.raw_key_nonce
-              ) END
-              ;
-    RETURN new;
-    END;
-    $$;
 
 
 --
@@ -716,30 +686,6 @@ CREATE TABLE auth.users (
 --
 
 COMMENT ON TABLE auth.users IS 'Auth: Stores user login data within a secure schema.';
-
-
---
--- Name: decrypted_key; Type: VIEW; Schema: pgsodium; Owner: -
---
-
-CREATE VIEW pgsodium.decrypted_key AS
- SELECT key.id,
-    key.status,
-    key.created,
-    key.expires,
-    key.key_type,
-    key.key_id,
-    key.key_context,
-    key.name,
-    key.associated_data,
-    key.raw_key,
-        CASE
-            WHEN (key.parent_key IS NULL) THEN NULL::bytea
-            ELSE pgsodium.crypto_aead_det_decrypt(key.raw_key, convert_to(((key.id)::text || key.associated_data), 'utf8'::name), key.parent_key, key.raw_key_nonce)
-        END AS decrypted_raw_key,
-    key.raw_key_nonce,
-    key.parent_key
-   FROM pgsodium.key;
 
 
 --

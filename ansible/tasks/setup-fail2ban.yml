@@ -11,6 +11,11 @@
     src: files/fail2ban_config/jail-ssh.conf
     dest: /etc/fail2ban/jail.d/sshd.local
 
+- name: configure fail2ban to use nftables
+  copy:
+    src: files/fail2ban_config/jail.local
+    dest: /etc/fail2ban/jail.local
+
 # postgresql
 - name: import jail.d/postgresql.conf
   template:

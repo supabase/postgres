@@ -18,13 +18,9 @@
       - cmake
       - ninja-build
       - python
-      - groonga-normalizer-mysql
-      - zlib1g-dev
-      - liblzo2-dev
-      - libmsgpack-dev
-      - libzmq3-dev
-      - libevent-dev
-      - libmecab-dev
+      - systemtap-sdt-dev
+      - ccache
+      - clang
       - flex
     update_cache: yes
     install_recommends: no
@@ -35,6 +31,12 @@
   register: platform_output
 - set_fact:
     platform: "{{ platform_output.stdout }}"
+
+- name: determining number of processors
+  shell: nproc
+  register: nproc_output
+- set_fact:
+    parallel_jobs: "{{ nproc_output.stdout }}"
 
 - name: Setup - import postgresql.conf
   template:

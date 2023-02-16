@@ -18,3 +18,8 @@
     chdir: /tmp/pgtap-{{ pgtap_release }}
     target: install
   become: yes
+  
+- name: pgTAP - cleanup
+  file:
+    state: absent
+    path: /tmp/pgtap-{{ pgtap_release }}
