@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  image_tag: public.ecr.aws/t3w2s2c9/postgres:ccache
+  image_tag: public.ecr.aws/supabase/postgres:ccache
 permissions:
   contents: read
   packages: write
@@ -60,12 +60,12 @@ jobs:
         with:
           push: true
           context: "{{defaultContext}}:ansible"
-          target: postgres-buildcache
+          target: buildcache
           build-args: |
+            CACHE_EPOCH=${{ github.event.repository.updated_at }}
             ${{ needs.settings.outputs.build_args }}
           tags: ${{ env.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
-          no-cache: true
 
   merge_manifest:
     needs: build_image
