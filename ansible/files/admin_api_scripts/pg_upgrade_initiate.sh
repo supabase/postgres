@@ -98,6 +98,16 @@ function handle_extensions {
     rm -f $POST_UPGRADE_EXTENSION_SCRIPT
     touch $POST_UPGRADE_EXTENSION_SCRIPT
 
+    PASSWORD_ENCRYPTION_SETTING=$(run_sql -A -t -c "SHOW password_encryption;")
+    if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
+        echo "ALTER SYSTEM SET password_encryption = 'md5';" >> $POST_UPGRADE_EXTENSION_SCRIPT
+    fi
+
+    cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
+ALTER SYSTEM SET jit = off;
+SELECT pg_reload_conf();
+EOF
+
     # Disable extensions if they're enabled
     # Generate SQL script to re-enable them after upgrade
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
