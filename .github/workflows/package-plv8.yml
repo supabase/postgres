@@ -5,7 +5,7 @@ on:
     branches:
       - develop
     paths:
-      - ".github/workflows/package.yml"
+      - ".github/workflows/package-plv8.yml"
       - "ansible/Dockerfile"
 
 env:
