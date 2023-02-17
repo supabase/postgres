@@ -52,12 +52,6 @@ jobs:
           --name supabase_postgres \
           -d supabase/postgres:latest
 
-      - name: Install dbmate
-        run: |
-          curl -fsSL -o dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-${{ matrix.arch }}
-          sudo chmod +x dbmate
-          sudo mv dbmate /usr/local/bin/
-
       - name: Install psql
         run: |
           sudo apt update
@@ -86,13 +80,6 @@ jobs:
           retries: 20
           container: supabase_postgres
 
-      - name: Migrate schema
-        run: ./migrations/db/migrate.sh
-        env:
-          USE_DBMATE: 1
-          POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
       - name: Run tests
         run: pg_prove migrations/tests/test.sql
         env:
@@ -108,15 +95,6 @@ jobs:
             echo "$0: running $sql"
             psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -f "$sql"
           done
-        env:
-          PGHOST: localhost
-          PGPORT: ${{ env.POSTGRES_PORT }}
-          PGDATABASE: postgres
-          PGUSER: supabase_admin
-          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-      - name: Run tests again
-        run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
           PGPORT: ${{ env.POSTGRES_PORT }}
