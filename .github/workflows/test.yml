@@ -36,7 +36,7 @@ jobs:
         with:
           push: false
           load: true
-          context: ansible
+          context: .
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}

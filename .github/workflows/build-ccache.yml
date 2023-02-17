@@ -6,8 +6,8 @@ on:
       - develop
     paths:
       - ".github/workflows/build-ccache.yml"
-      - "ansible/Dockerfile"
       - "ansible/vars.yml"
+      - "Dockerfile"
   workflow_dispatch:
 
 env:
@@ -59,7 +59,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          context: "{{defaultContext}}:ansible"
           target: buildcache
           build-args: |
             CACHE_EPOCH=${{ github.event.repository.updated_at }}
