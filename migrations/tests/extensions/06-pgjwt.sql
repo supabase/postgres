@@ -1,1 +1,1 @@
-create extension if not exists pgjwt with schema "extensions" CASCADE;
+create extension if not exists pgjwt with schema "extensions" cascade;

@@ -75,7 +75,7 @@ RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcgal-dev \
-    libboost-all-dev \
+    libboost-serialization1.74-dev \
     libmpfr-dev \
     libgmp-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -84,9 +84,10 @@ WORKDIR /tmp/sfcgal/build
 RUN cmake ..
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
-RUN make install
+# Create debian package
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.74.0,libmpfr6 --nodoc
 
-FROM sfcgal as postgis
+FROM sfcgal as postgis-source
 # Download and extract
 ARG postgis_release
 ARG postgis_release_checksum
@@ -111,7 +112,14 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libsfcgal1,libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1 --nodoc
+
+FROM base as postgis
+# Download pre-built packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-${postgresql_major}-postgis-3 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # 02-pgrouting.yml
@@ -573,7 +581,8 @@ WORKDIR /tmp/groonga-${groonga_release}
 RUN ./configure
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
-RUN make install
+# Create debian package
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM groonga as pgroonga-source
 # Download and extract
@@ -687,7 +696,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 # Collect extension packages
 ####################
 FROM scratch as extensions
-COPY --from=postgis /tmp/*.deb /tmp/
+COPY --from=postgis-source /tmp/*.deb /tmp/
 COPY --from=pgrouting /tmp/*.deb /tmp/
 COPY --from=pgtap /tmp/*.deb /tmp/
 COPY --from=pg_cron /tmp/*.deb /tmp/
@@ -709,7 +718,7 @@ COPY --from=pg_graphql /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
 COPY --from=vault /tmp/*.deb /tmp/
-COPY --from=pgroonga /tmp/*.deb /tmp/
+COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
 COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
@@ -758,7 +767,6 @@ FROM ccache as stats
 COPY --from=extensions /tmp/*.deb /dev/null
 # Additional packages that are separately built from source
 # COPY --from=plv8-deb /tmp/*.deb /dev/null
-# COPY --from=pgroonga-deb /tmp/*.deb /dev/null
 # Cache mount is only populated by docker build --no-cache
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     ccache -s && \
