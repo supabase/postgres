@@ -30,14 +30,14 @@
   register: retval
   when: ebssurrogate_mode
 
-- name: Run Unit tests (with filename unit-test-*) on Postgres Database 
+- name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
   register: retval
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
 
 - name: Run migrations tests
-  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v tests/test.sql
+  shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
   register: retval
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
@@ -80,7 +80,7 @@
     msg: "Incorrect symlink for pg_config"
   when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'
 
-- name: Stop Postgres Database 
+- name: Stop Postgres Database
   become: yes
   become_user: postgres
   shell:

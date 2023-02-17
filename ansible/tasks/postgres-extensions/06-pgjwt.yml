@@ -3,10 +3,15 @@
   git:
     repo: https://github.com/michelp/pgjwt.git
     dest: /tmp/pgjwt
-    version: master
+    version: "{{ pgjwt_release }}"
 
 - name: pgjwt - install
   make:
     chdir: /tmp/pgjwt
     target: install
   become: yes
+
+- name: pgjwt - cleanup
+  file:
+    state: absent
+    path: /tmp/pgjwt

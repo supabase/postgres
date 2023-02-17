@@ -5,186 +5,97 @@ on:
     branches:
       - develop
     paths:
-      - '.github/workflows/dockerhub-release.yml'
-      - 'common.vars*'
+      - ".github/workflows/dockerhub-release.yml"
+      - "common.vars*"
 
 jobs:
   settings:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       docker_version: ${{ steps.settings.outputs.postgres-version }}
+      image_tag: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+      build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
-
       - id: settings
         # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
-  docker_x86_release:
+  build_image:
     needs: settings
-    runs-on: [self-hosted, X64]
-    timeout-minutes: 120
-    env:
-      arch: amd64
+    strategy:
+      matrix:
+        include:
+          - runner: [self-hosted, X64]
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v3
-
-      - id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            supabase/postgres
-          tags: |
-            type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
-
-      - id: buildx-context
-        run: |
-          docker context create builders
-
+      - run: docker context create builders
       - uses: docker/setup-buildx-action@v2
         with:
           endpoint: builders
-
       - uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - id: copy-cache
-        name: Copy Buildcache
-        run: |
-          docker rm -f buildcache
-          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
-          docker cp buildcache:/ccache/. ./docker/cache
-          docker rm -f buildcache
-
       - id: build
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          platforms: linux/${{ env.arch }}
+          build-args: |
+            ${{ needs.settings.outputs.build_args }}
+          target: production
+          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres x86 image failed'
-          SLACK_FOOTER: ''
-
-  docker_arm_release:
-    needs: settings
-    runs-on: [arm-runner]
-    timeout-minutes: 120
-    env:
-      arch: arm64
-    outputs:
-      image_digest: ${{ steps.build.outputs.digest }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            supabase/postgres
-          tags: |
-            type=raw,value=${{ needs.settings.outputs.docker_version }}_${{ env.arch }}
-
-      - uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - id: copy-cache
-        name: Copy Buildcache
-        run: |
-          docker rm -f buildcache
-          docker create --name buildcache public.ecr.aws/t3w2s2c9/postgres-buildcache:latest ls
-          docker cp buildcache:/ccache/. ./docker/cache/
-          docker rm -f buildcache
-
-      - uses: docker/setup-buildx-action@v2
-        with:
-          driver: docker
-          driver-opts: |
-            image=moby/buildkit:master
-            network=host
-
-      - id: build
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          platforms: linux/${{ env.arch }}
-          no-cache: true
-
-      - name: Slack Notification
-        if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres arm image failed'
-          SLACK_FOOTER: ''
+          SLACK_USERNAME: "gha-failures-notifier"
+          SLACK_COLOR: "danger"
+          SLACK_MESSAGE: "Building Postgres ${{ matrix.arch }} image failed"
+          SLACK_FOOTER: ""
 
   merge_manifest:
-    needs: [settings, docker_x86_release, docker_arm_release]
+    needs: [settings, build_image]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: docker/setup-buildx-action@v2
-
       - uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t supabase/postgres:${{ needs.settings.outputs.docker_version }} \
-          supabase/postgres@${{ needs.docker_x86_release.outputs.image_digest }} \
-          supabase/postgres@${{ needs.docker_arm_release.outputs.image_digest }}
-
-      - name: Login to ECR
-        uses: docker/login-action@v2
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.PROD_ACCESS_KEY_ID }}
-          password: ${{ secrets.PROD_SECRET_ACCESS_KEY }}
-
-      - name: Login to GHCR
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Mirror Images
-        uses: akhilerm/tag-push-action@v2.1.0
-        with:
-          src: docker.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
-          dst: |
-            public.ecr.aws/supabase/postgres:${{ needs.settings.outputs.docker_version }}
-            ghcr.io/supabase/postgres:${{ needs.settings.outputs.docker_version }}
-
+          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }} \
+          ${{ needs.settings.outputs.image_tag }}_amd64 \
+          ${{ needs.settings.outputs.image_tag }}_arm64
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres image failed'
-          SLACK_FOOTER: ''
+          SLACK_USERNAME: "gha-failures-notifier"
+          SLACK_COLOR: "danger"
+          SLACK_MESSAGE: "Building Postgres image failed"
+          SLACK_FOOTER: ""
+
+  publish:
+    needs: [settings, merge_manifest]
+    # Call workflow explicitly because events from actions cannot trigger more actions
+    uses: ./.github/workflows/mirror.yml
+    with:
+      version: ${{ needs.settings.outputs.docker_version }}
+    secrets: inherit

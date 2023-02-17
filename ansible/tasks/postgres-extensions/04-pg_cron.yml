@@ -30,3 +30,8 @@
     path: /etc/postgresql/postgresql.conf
     state: present
     line: cron.database_name = 'postgres'
+    
+- name: pg_cron - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_cron-{{ pg_cron_release }}
