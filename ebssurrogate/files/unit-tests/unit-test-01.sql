@@ -1,4 +1,5 @@
 BEGIN;
+CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(8);
 
 -- Check installed extensions
