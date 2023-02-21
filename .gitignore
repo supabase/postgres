@@ -3,3 +3,5 @@
 venv/
 *.swp
 docker/cache/
+
+ansible/image-manifest*.json

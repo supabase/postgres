@@ -1,0 +1,1 @@
+{{ vars | to_json }}
