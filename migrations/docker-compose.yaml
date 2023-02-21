@@ -28,6 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      dbmate:
+        condition: service_completed_successfully
     environment:
       PGHOST: db
       PGUSER: supabase_admin

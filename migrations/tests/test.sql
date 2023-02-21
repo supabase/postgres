@@ -1,9 +1,9 @@
 -- Create all extensions
 \ir extensions/test.sql
 
-CREATE EXTENSION IF NOT EXISTS pgtap;
-
 BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS pgtap;
 
 SELECT plan(19);
 
