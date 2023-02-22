@@ -706,7 +706,7 @@ RUN tar -xvf /tmp/pg_tle.tar.gz -C /tmp && \
     rm -rf /tmp/pg_tle.tar.gz
 # Build from source
 WORKDIR /tmp/pg_tle-${pg_tle_release}
-RUN --mount=type=cache,source=/ccache,target=/ccache,from=public.ecr.aws/t3w2s2c9/postgres-buildcache:docker \
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
