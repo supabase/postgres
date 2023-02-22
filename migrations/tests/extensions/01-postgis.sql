@@ -1,1 +1,3 @@
-create extension if not exists postgis with schema "extensions";
+BEGIN;
+create extension if not exists postgis_sfcgal with schema "extensions" cascade;
+ROLLBACK;

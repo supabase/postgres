@@ -9,7 +9,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runner: [self-hosted, X64]
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     env:
       POSTGRES_PORT: 5478
@@ -19,14 +26,20 @@ jobs:
       - id: args
         uses: mikefarah/yq@master
         with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join(" ")' 'ansible/vars.yml'
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+
+      - run: docker context create builders
       - uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: builders
       - uses: docker/build-push-action@v3
         with:
           push: false
           load: true
-          context: ansible
+          context: .
           target: production
+          build-args: |
+            ${{ steps.args.outputs.result }}
           tags: supabase/postgres:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -39,10 +52,10 @@ jobs:
           --name supabase_postgres \
           -d supabase/postgres:latest
 
-      - name: Install dbmate
+      - name: Install psql
         run: |
-          curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
-          sudo chmod +x /usr/local/bin/dbmate
+          sudo apt update
+          sudo apt install -y --no-install-recommends postgresql-client
 
       - name: Install pg_prove
         run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
@@ -67,13 +80,6 @@ jobs:
           retries: 20
           container: supabase_postgres
 
-      - name: Migrate schema
-        run: ./migrations/db/migrate.sh
-        env:
-          USE_DBMATE: 1
-          POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
       - name: Run tests
         run: pg_prove migrations/tests/test.sql
         env:
@@ -89,15 +95,6 @@ jobs:
             echo "$0: running $sql"
             psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -f "$sql"
           done
-        env:
-          PGHOST: localhost
-          PGPORT: ${{ env.POSTGRES_PORT }}
-          PGDATABASE: postgres
-          PGUSER: supabase_admin
-          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-      - name: Run tests again
-        run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
           PGPORT: ${{ env.POSTGRES_PORT }}
