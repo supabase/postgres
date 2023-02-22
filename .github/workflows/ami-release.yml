@@ -36,12 +36,26 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
 
-      - name: Upload software manifest to s3
+      - name: Upload software manifest to s3 staging
         run: |
           cd ansible
           ansible-playbook -i localhost \
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+            manifest-playbook.yml
+
+      - name: configure aws credentials - prod
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload software manifest to s3 prod
+        run: |
+          cd ansible
+          ansible-playbook -i localhost \
+            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
 
       - name: Create release
