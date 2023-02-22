@@ -34,6 +34,7 @@ ARG wrappers_release=0.1.7
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
+ARG pg_tle_release=1.0.1
 
 FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
@@ -693,6 +694,27 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 29-pg_tle.yml
+####################
+FROM ccache as pg_tle
+ARG pg_tle_release
+ARG pg_tle_release_checksum
+ADD --checksum=${pg_tle_release_checksum} \
+    "https://github.com/aws/pg_tle/archive/refs/tags/v${pg_tle_release}.tar.gz" \
+    /tmp/pg_tle.tar.gz
+RUN tar -xvf /tmp/pg_tle.tar.gz -C /tmp && \
+    rm -rf /tmp/pg_tle.tar.gz
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    flex \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/pg_tle-${pg_tle_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -723,6 +745,7 @@ COPY --from=wrappers /tmp/*.deb /tmp/
 COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
+COPY --from=pg_tle /tmp/*.deb /tmp/
 
 ####################
 # Build final image
