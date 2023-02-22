@@ -6,7 +6,7 @@ version: "3.8"
 
 services:
   db:
-    image: supabase/postgres:15.1.0.11
+    image: supabase/postgres:15.1.0.45
     restart: "no"
     ports:
       - 5478:5432
@@ -30,7 +30,8 @@ services:
         condition: service_healthy
     environment:
       PGHOST: db
-      PGUSER: postgres
+      PGUSER: supabase_admin
+      PGDATABASE: postgres
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./tests:/tests

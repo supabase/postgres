@@ -9,8 +9,12 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, X64]
     timeout-minutes: 150
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout Repo
@@ -26,6 +30,20 @@ jobs:
         run: |
           VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload software manifest to s3
+        run: |
+          cd ansible
+          ansible-playbook -i localhost \
+            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+            manifest-playbook.yml
 
       - name: Create release
         uses: softprops/action-gh-release@v1
