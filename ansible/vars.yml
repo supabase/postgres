@@ -14,8 +14,8 @@ postgrest_release: "10.1.2"
 postgrest_arm_release_checksum: sha1:bc1a811dc0482853b226c644551f290411573f23
 postgrest_x86_release_checksum: sha1:96844c1c66d16d6bde41b4c34173f92fe4a3385b
 
-gotrue_release: v2.47.0
-gotrue_release_checksum: sha1:48ed159775bfb5577ea90bf96b908cd62ac2bd33
+gotrue_release: v2.51.4
+gotrue_release_checksum: sha1:2581f1a87885d4f179938c4a4575ec26cd4a26c5
 
 aws_cli_release: "2.2.7"
 
@@ -41,7 +41,7 @@ postgres_exporter_release_checksum:
   arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
   amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
 
-adminapi_release: 0.34.0
+adminapi_release: 0.35.1
 adminmgr_release: 0.3.0
 
 # Postgres Extensions
