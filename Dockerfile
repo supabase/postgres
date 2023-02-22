@@ -704,6 +704,9 @@ ADD --checksum=${pg_tle_release_checksum} \
     /tmp/pg_tle.tar.gz
 RUN tar -xvf /tmp/pg_tle.tar.gz -C /tmp && \
     rm -rf /tmp/pg_tle.tar.gz
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    flex \
+    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_tle-${pg_tle_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
