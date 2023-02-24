@@ -3,6 +3,7 @@ create extension if not exists postgis_sfcgal with schema "extensions" cascade;
 ROLLBACK;
 
 BEGIN;
+-- create postgis tiger as supabase_admin
 create extension if not exists address_standardizer with schema extensions;
 create extension if not exists postgis_tiger_geocoder cascade;
 -- \ir ansible/files/postgresql_extension_custom_scripts/postgis_tiger_geocoder/after-create.sql
