@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - chore/update-vault-0.2.9
   workflow_dispatch:
 
 jobs:
