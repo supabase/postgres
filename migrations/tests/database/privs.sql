@@ -8,6 +8,11 @@ SELECT function_privs_are('pgsodium', 'crypto_aead_det_encrypt', array['bytea', 
 SELECT function_privs_are('pgsodium', 'crypto_aead_det_keygen', array[]::text[], 'service_role', array['EXECUTE']);
 
 -- Verify public schema privileges
+SELECT schema_privs_are('public', 'postgres', array['CREATE', 'USAGE']);
+SELECT schema_privs_are('public', 'anon', array['USAGE']);
+SELECT schema_privs_are('public', 'authenticated', array['USAGE']);
+SELECT schema_privs_are('public', 'service_role', array['USAGE']);
+
 set role postgres;
 create table test_priv();
 SELECT table_owner_is('test_priv', 'postgres');
