@@ -5,7 +5,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(25);
+SELECT plan(33);
 
 \ir fixtures.sql
 \ir database/test.sql
