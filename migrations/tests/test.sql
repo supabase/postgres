@@ -1,11 +1,11 @@
 -- Create all extensions
 \ir extensions/test.sql
 
-CREATE EXTENSION IF NOT EXISTS pgtap;
-
 BEGIN;
 
-SELECT plan(25);
+CREATE EXTENSION IF NOT EXISTS pgtap;
+
+SELECT plan(33);
 
 \ir fixtures.sql
 \ir database/test.sql

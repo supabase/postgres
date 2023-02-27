@@ -28,6 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      dbmate:
+        condition: service_completed_successfully
     environment:
       PGHOST: db
       PGUSER: supabase_admin
@@ -38,7 +40,7 @@ services:
     command: pg_prove /tests/test.sql
 
   dbmate:
-    image: ghcr.io/amacneil/dbmate:main
+    image: amacneil/dbmate:1.16.2
     depends_on:
       db:
         condition: service_healthy
