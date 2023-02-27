@@ -21,7 +21,7 @@
 \ir 20-pg_stat_monitor.sql
 \ir 21-auto_explain.sql
 \ir 22-pg_jsonschema.sql
-\ir 23-vault.sql
+-- \ir 23-vault.sql
 \ir 24-pgroonga.sql
 \ir 25-wrappers.sql
 \ir 26-hypopg.sql
