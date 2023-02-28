@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - develop
+    paths:
+      - '.github/workflows/ami-release.yml'
+      - 'common.vars.pkr.hcl'
   workflow_dispatch:
 
 jobs:
