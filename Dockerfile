@@ -113,7 +113,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1,libgdal28 --nodoc
 
 FROM base as postgis
 # Download pre-built packages
