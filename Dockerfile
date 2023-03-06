@@ -718,24 +718,6 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # internal/supautils.yml
 ####################
-FROM ccache as supautils-source
-ARG supautils_release
-ARG supautils_release_checksum
-ADD --checksum=${supautils_release_checksum} \
-    "https://github.com/supabase/supautils/archive/refs/tags/v${supautils_release}.tar.gz" /tmp/supautils.tar.gz
-RUN tar -xvf /tmp/supautils.tar.gz -C /tmp && \
-    rm -rf /tmp/supautils.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    libicu-dev \
-    && rm -rf /var/lib/apt/lists/*
-# Build from source
-WORKDIR /tmp/supautils-${supautils_release}
-RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-    make -j$(nproc)
-# Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
-
 FROM base as supautils
 # Download package archive
 ARG supautils_release
