@@ -35,6 +35,7 @@ ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.1
+ARG supautils_release=1.7.2
 
 FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
@@ -715,6 +716,33 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# internal/supautils.yml
+####################
+FROM ccache as supautils-source
+ARG supautils_release
+ARG supautils_release_checksum
+ADD --checksum=${supautils_release_checksum} \
+    "https://github.com/supabase/supautils/archive/refs/tags/v${supautils_release}.tar.gz" /tmp/supautils.tar.gz
+RUN tar -xvf /tmp/supautils.tar.gz -C /tmp && \
+    rm -rf /tmp/supautils.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/supautils-${supautils_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+FROM base as supautils
+# Download package archive
+ARG supautils_release
+ADD "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+    /tmp/supautils.deb
+
+####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -746,6 +774,7 @@ COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
+COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
 # Build final image
@@ -764,9 +793,13 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
 
 RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
+    sed -i "s/#session_preload_libraries = ''/session_preload_libraries = 'supautils'/g" /etc/postgresql/postgresql.conf && \
+    sed -i "s/#include = '\/etc\/postgresql-custom\/supautils.conf'/include = '\/etc\/postgresql-custom\/supautils.conf'/g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
