@@ -808,9 +808,9 @@ RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/va
     chown postgres:postgres /etc/postgresql-custom
 
 # Include schema migrations
-COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
-COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
 COPY migrations/db /docker-entrypoint-initdb.d/
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
+COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Setup default host and locale
 ENV POSTGRES_HOST=/var/run/postgresql
