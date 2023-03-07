@@ -3,6 +3,7 @@
   apt:
     pkg:
       - build-essential
+      - pkg-config
       - libreadline-dev
       - zlib1g-dev
       - flex
@@ -15,6 +16,8 @@
       - uuid-dev
       - xsltproc
       - ssl-cert
+      - liblz4-dev
+      - libicu-dev
 
 - name: Download LLVM & Clang
   apt:
@@ -57,7 +60,7 @@
 
 - name: Setting CFLAGS (arm)
   set_fact:
-    cflags: "-moutline-atomics -mtune=neoverse-n1 -fsigned-char"
+    cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char"
   when: platform == "arm64"
 
 - name: Setting CFLAGS (x86)
@@ -67,7 +70,7 @@
 
 - name: Postgres - configure
   shell:
-    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-icu --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
 - name: Postgres - build
@@ -117,6 +120,7 @@
     group: postgres
     mode: 0775
   with_items:
+    - '/etc/postgresql'
     - '/etc/postgresql-custom'
 
 - name: create placeholder config files

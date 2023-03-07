@@ -17,27 +17,14 @@
     cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
   when: ebssurrogate_mode
 
-- name: Enable pgTAP extension
-  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "CREATE extension pgtap";
-  when: ebssurrogate_mode
-
-- name: Create function for testing extensions
-  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -f /tmp/unit-tests/test-extensions.sql;
-  when: ebssurrogate_mode
-
-- name: Extension Installation tests
-  shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v /tmp/unit-tests/verify-extensions.sql
-  register: retval
-  when: ebssurrogate_mode
-
-- name: Run Unit tests (with filename unit-test-*) on Postgres Database 
+- name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
   register: retval
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
 
 - name: Run migrations tests
-  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v tests/test.sql
+  shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
   register: retval
   failed_when: retval.rc != 0
   when: ebssurrogate_mode
@@ -49,14 +36,6 @@
   become_user: postgres
   shell:
     cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
-  when: ebssurrogate_mode
-
-- name: Drop pgTap extension
-  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP extension if exists pgtap";
-  when: ebssurrogate_mode
-
-- name: Drop extension test function
-  shell: /usr/lib/postgresql/bin/psql -U postgres -h localhost -d postgres -c "DROP FUNCTION IF EXISTS install_available_extensions_and_test";
   when: ebssurrogate_mode
 
 - name: Reset db stats
@@ -80,7 +59,7 @@
     msg: "Incorrect symlink for pg_config"
   when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'
 
-- name: Stop Postgres Database 
+- name: Stop Postgres Database
   become: yes
   become_user: postgres
   shell:

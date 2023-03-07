@@ -5,41 +5,65 @@
 ## The following commands copy custom PG configs and enable previously disabled
 ## extensions, containing regtypes referencing system OIDs.
 
-# Extensions to be reenabled after pg_upgrade.
-# Running an upgrade with these extensions enabled will result in errors due to 
-# them depending on regtypes referencing system OIDs. Thus they have been disabled
-# beforehand.
-EXTENSIONS_TO_REENABLE=(
-    "pg_graphql"
-)
-
+set -eEuo pipefail
 
 run_sql() {
-    STATEMENT=$1
-    psql -h localhost -U supabase_admin -d postgres -c "$STATEMENT"
+    psql -h localhost -U supabase_admin -d postgres "$@"
+}
+
+cleanup() {
+    UPGRADE_STATUS=${1:-"failed"}
+    EXIT_CODE=${?:-0}
+
+    echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
+
+    exit "$EXIT_CODE"
 }
 
 function complete_pg_upgrade {
+    if [ -f /tmp/pg-upgrade-status ]; then
+        echo "Upgrade job already started. Bailing."
+        exit 0
+    fi
+
+    echo "running" > /tmp/pg-upgrade-status
+
+    echo "1. Mounting data disk"
     mount -a -v
 
     # copying custom configurations
-    cp /data/conf/* /etc/postgresql-custom/
+    echo "2. Copying custom configurations"
+    cp -R /data/conf/* /etc/postgresql-custom/
+    chown -R postgres:postgres /var/lib/postgresql/data
+    chown -R postgres:postgres /data/pgdata
 
+    echo "3. Starting postgresql"
     service postgresql start
-    su -c 'vacuumdb --all --analyze-in-stages' -s $SHELL postgres
 
-    for EXTENSION in "${EXTENSIONS_TO_REENABLE[@]}"; do
-        run_sql "CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;"
-    done
-    
+    echo "4. Running generated SQL files"
+    if [ -d /data/sql ]; then
+        for FILE in /data/sql/*.sql; do
+            if [ -f "$FILE" ]; then
+                run_sql -f "$FILE"
+            fi
+        done
+    fi
+
     sleep 5
+
+    echo "5. Restarting postgresql"
     service postgresql restart
 
-    sleep 5
-    service postgresql restart
+    echo "6. Starting vacuum analyze"
+    start_vacuum_analyze
 }
 
-set -euo pipefail
+function start_vacuum_analyze {
+    su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+    echo "Upgrade job completed"
+    cleanup "complete"
+}
 
-complete_pg_upgrade >> /var/log/pg-upgrade-complete.log 2>&1
-echo "Upgrade job completed"
+trap cleanup ERR
+
+complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1 &

@@ -1,12 +1,3 @@
-# DigitalOcean's ubuntu droplet isn't up to date with installed packages, and on
-# a fresh install I see 71 security upgrades available.
-- name: Terminate any ongoing updates
-  shell: killall apt apt-get
-  ignore_errors: yes
-  tags:
-    - update
-    - update-only
-
 - name: System - apt update and apt upgrade
   apt: update_cache=yes upgrade=yes
   when: not ebssurrogate_mode
@@ -82,6 +73,16 @@
 - name: reload systemd-journald
   systemd:
    name: systemd-journald
+   state: restarted
+
+- name: Configure logind
+  copy:
+    src: files/logind.conf
+    dest: /etc/systemd/logind.conf
+
+- name: reload systemd-logind
+  systemd:
+   name: systemd-logind
    state: restarted
 
 - name: enable timestamps for shell history

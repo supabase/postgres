@@ -27,7 +27,7 @@ FROM role_comment;
 EOF
 )
     RESULT=$(psql -h localhost -U supabase_admin -d postgres -At -c "$COMMAND")
-    echo -n $RESULT
+    echo -n "$RESULT"
 }
 
 case $SUBCOMMAND in
@@ -36,7 +36,7 @@ case $SUBCOMMAND in
         ;;
     "set")
        shift
-        set_mode $@
+        set_mode "$@"
         ;;
     *)
         echo "Error: '$SUBCOMMAND' is not a known subcommand."

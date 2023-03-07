@@ -24,3 +24,8 @@
     chdir: /tmp/vault-{{ vault_release }}
     target: install
   become: yes
+
+- name: vault - cleanup
+  file:
+    state: absent
+    path: /tmp/vault-{{ vault_release }}

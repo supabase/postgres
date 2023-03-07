@@ -1,13 +1,13 @@
 # - Archiving -
 
 #archive_mode = on
-#archive_command = 'sudo -u wal-g wal-g wal-push %p --config /etc/wal-g/config.json >> /var/log/wal-g/wal-push.log 2>&1'
+#archive_command = '/usr/bin/admin-mgr wal-push %p >> /var/log/wal-g/wal-push.log 2>&1'
 #archive_timeout = 120
 
 
 # - Archive Recovery -
 
-#restore_command = '/home/postgres/wal_fetch.sh %f %p >> /var/log/wal-g/wal-fetch.log 2>&1'
+#restore_command = '/usr/bin/admin-mgr wal-fetch %f %p >> /var/log/wal-g/wal-fetch.log 2>&1'
 
 # - Recovery Target -
 

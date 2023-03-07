@@ -1,4 +1,16 @@
 # groonga and pgroonga
+- name: groonga - download & install dependencies
+  apt:
+    pkg:
+      - zlib1g-dev
+      - liblzo2-dev
+      - libmsgpack-dev
+      - libzmq3-dev
+      - libevent-dev
+      - libmecab-dev
+      - mecab-naist-jdic
+    update_cache: yes
+    install_recommends: no
 
 - name: groonga - download groonga
   get_url:
@@ -23,6 +35,7 @@
 - name: groonga - build
   make:
     chdir: /tmp/groonga-{{ groonga_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: groonga - install
@@ -48,6 +61,7 @@
 - name: pgroonga - build
   make:
     chdir: /tmp/pgroonga-{{ pgroonga_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: pgroonga - install
@@ -56,3 +70,14 @@
     target: install
   become: yes
   
+- name: groonga - cleanup
+  file:
+    state: absent
+    path: /tmp/groonga-{{ groonga_release }}
+  become: yes
+  
+- name: pgroonga - cleanup
+  file:
+    state: absent
+    path: /tmp/pgroonga-{{ pgroonga_release }}
+  become: yes
