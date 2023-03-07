@@ -28,3 +28,8 @@ SELECT schema_privs_are('extensions', 'postgres', array['CREATE', 'USAGE']);
 SELECT schema_privs_are('extensions', 'anon', array['USAGE']);
 SELECT schema_privs_are('extensions', 'authenticated', array['USAGE']);
 SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
+
+-- Verify role privileges
+set role supabase_auth_admin;
+select * from information_schema.table_constraints limit 1;
+reset role;
