@@ -244,7 +244,7 @@ WORKDIR /tmp/pgsql-http-${pgsql_http_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
 ####################
 # 08-plpgsql_check.yml
@@ -762,6 +762,12 @@ COPY --from=supautils /tmp/*.deb /tmp/
 # Build final image
 ####################
 FROM base as production
+# Install essential packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Needed for anything using libcurl
+    # https://github.com/supabase/postgres/issues/573
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Setup extensions
 COPY --from=extensions /tmp /tmp
