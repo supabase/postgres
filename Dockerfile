@@ -762,18 +762,15 @@ COPY --from=supautils /tmp/*.deb /tmp/
 # Build final image
 ####################
 FROM base as production
-# Install essential packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Needed for anything using libcurl
-    # https://github.com/supabase/postgres/issues/573
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 
 # Setup extensions
 COPY --from=extensions /tmp /tmp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
+    # Needed for anything using libcurl
+    # https://github.com/supabase/postgres/issues/573
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Initialise configs
