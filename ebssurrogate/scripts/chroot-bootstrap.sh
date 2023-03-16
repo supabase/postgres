@@ -96,7 +96,6 @@ function install_packages_for_build {
 	 gcc-10 g++-10 \
 	 libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
 	 libkrb5-dev \
-	 maven default-jre default-jdk \
 	 curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
 	 liblzo2-dev
 
