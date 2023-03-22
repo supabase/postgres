@@ -17,6 +17,15 @@
     dest: /etc/fail2ban/jail.local
 
 # postgresql
+- name: create watch files
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: |
+      chmod g+w /var/log/postgresql
+      touch /var/log/postgresql/auth-failures.csv
+      chmod g+w /var/log/postgresql/auth-failures.csv
+
 - name: import jail.d/postgresql.conf
   template:
     src: files/fail2ban_config/jail-postgresql.conf.j2
