@@ -34,7 +34,7 @@ nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
 wal_g_release: "v2.0.1"
 
 sfcgal_release: "1.3.10"
-sfcgal_release_checksum: sha256:4e39b3b2adada6254a7bdba6d297bb28e1a9835a9f879b74f37e2dab70203232
+sfcgal_release_checksum: sha256:0793963dbff1f2f641dd587fa9a663426f7a44e8af002336e94f634da6f81b0e
 
 postgres_exporter_release: "0.9.0"
 postgres_exporter_release_checksum:
