@@ -1,0 +1,23 @@
+- name: Collect Postgres binaries - create collection directory
+  file:
+    path: /tmp/pg_binaries/{{ postgresql_major }}/
+    state: directory
+
+- name: Collect Postgres binaries - collect binaries and libraries
+  copy:
+    src: /usr/lib/postgresql/{{ item }}/
+    dest: /tmp/pg_binaries/{{ postgresql_major }}/{{ item }}/
+  with_items:
+    - bin
+    - lib
+
+- name: Collect Postgres binaries - collect shared files
+  copy:
+    src: /var/lib/postgresql/
+    dest: /tmp/pg_binaries/{{ postgresql_major }}/share/
+
+- name: Collect Postgres binaries - create tarfile
+  archive:
+    path: /tmp/pg_binaries/{{ postgresql_major }}/
+    dest: /tmp/pg_binaries.tar.gz
+    remove: yes
