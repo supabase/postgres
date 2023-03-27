@@ -25,7 +25,7 @@ jobs:
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl"  -var "skip_create_ami=true" -var "ami=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*" amazon-arm64.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl"  -var "skip_create_ami=true" -var "ami=ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*" -var "ami_name=supabase-postgres-u18" amazon-arm64.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
