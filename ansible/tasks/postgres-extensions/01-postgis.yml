@@ -30,7 +30,7 @@
 
 - name: postgis - download SFCGAL dependency
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v${sfcgal_release}.tar.gz"
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v{{ sfcgal_release }}.tar.gz"
     dest: /tmp/SFCGAL-v{{ sfcgal_release }}.tar.gz
     checksum: "{{ sfcgal_release_checksum }}"
     timeout: 60
