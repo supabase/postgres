@@ -70,7 +70,7 @@ FROM ccache as sfcgal
 ARG sfcgal_release
 ARG sfcgal_release_checksum
 ADD --checksum=${sfcgal_release_checksum} \
-    "https://gitlab.com/Oslandia/SFCGAL/-/archive/v${sfcgal_release}/SFCGAL-v${sfcgal_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v${sfcgal_release}.tar.gz" \
     /tmp/sfcgal.tar.gz
 RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && \
     rm -rf /tmp/sfcgal.tar.gz
