@@ -581,7 +581,7 @@ CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 		BEGIN
-		    new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
+		        new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
 			CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
 			  pgsodium.crypto_aead_det_encrypt(
 				pg_catalog.convert_to(new.secret, 'utf8'),
