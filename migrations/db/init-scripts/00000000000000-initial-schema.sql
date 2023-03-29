@@ -11,6 +11,10 @@ alter user  supabase_admin with superuser createdb createrole replication bypass
 -- Supabase replication user
 create user supabase_replication_admin with login replication;
 
+-- Supabase read-only user
+create role supabase_read_only_user with login bypassrls;
+grant pg_read_all_data to supabase_read_only_user;
+
 -- Extension namespacing
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp"      with schema extensions;

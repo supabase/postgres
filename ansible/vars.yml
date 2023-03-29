@@ -14,8 +14,8 @@ postgrest_release: "10.1.2"
 postgrest_arm_release_checksum: sha1:bc1a811dc0482853b226c644551f290411573f23
 postgrest_x86_release_checksum: sha1:96844c1c66d16d6bde41b4c34173f92fe4a3385b
 
-gotrue_release: v2.51.4
-gotrue_release_checksum: sha1:2581f1a87885d4f179938c4a4575ec26cd4a26c5
+gotrue_release: v2.54.0
+gotrue_release_checksum: sha1:65758bdf551ad5055c766dfe20f34860674cd874
 
 aws_cli_release: "2.2.7"
 
@@ -41,8 +41,8 @@ postgres_exporter_release_checksum:
   arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
   amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
 
-adminapi_release: 0.35.1
-adminmgr_release: 0.3.0
+adminapi_release: 0.39.1
+adminmgr_release: 0.3.1
 
 # Postgres Extensions
 postgis_release: "3.3.2"
@@ -77,8 +77,8 @@ timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4
 wal2json_release: "2_5"
 wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
 
-supautils_release: "1.7.0"
-supautils_release_checksum: sha256:e2353040262bd7a1720099f4a03ec485b05c74a202956aa1361e422f8765c6b3
+supautils_release: "1.7.2"
+supautils_release_checksum: sha256:527e645112e1348ea4b6be6740037b444797fbbc5d3ed98103ca582419e06084
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
@@ -121,7 +121,7 @@ groonga_release_checksum: sha256:7770c0ff6804ef4b47b015b15736cd973cffced977c2099
 pgroonga_release: "2.4.0"
 pgroonga_release_checksum: sha256:5baaae0e7d81f8167e278e9a34c6ed56aece8b34f5ab98f228c64408093417b3
 
-wrappers_release: "0.1.7"
+wrappers_release: "0.1.9"
 
 hypopg_release: "1.3.1"
 hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e

@@ -60,7 +60,7 @@
 
 - name: Setting CFLAGS (arm)
   set_fact:
-    cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char"
+    cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char -O2"
   when: platform == "arm64"
 
 - name: Setting CFLAGS (x86)

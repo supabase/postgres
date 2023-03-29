@@ -30,11 +30,12 @@ ARG pg_jsonschema_release=0.1.4
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.7
+ARG wrappers_release=0.1.9
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.1
+ARG supautils_release=1.7.2
 
 FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
@@ -69,7 +70,7 @@ FROM ccache as sfcgal
 ARG sfcgal_release
 ARG sfcgal_release_checksum
 ADD --checksum=${sfcgal_release_checksum} \
-    "https://gitlab.com/Oslandia/SFCGAL/-/archive/v${sfcgal_release}/SFCGAL-v${sfcgal_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v${sfcgal_release}.tar.gz" \
     /tmp/sfcgal.tar.gz
 RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && \
     rm -rf /tmp/sfcgal.tar.gz
@@ -113,7 +114,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1,libgdal28 --nodoc
 
 FROM base as postgis
 # Download pre-built packages
@@ -243,7 +244,7 @@ WORKDIR /tmp/pgsql-http-${pgsql_http_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
 ####################
 # 08-plpgsql_check.yml
@@ -715,6 +716,15 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# internal/supautils.yml
+####################
+FROM base as supautils
+# Download package archive
+ARG supautils_release
+ADD "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+    /tmp/supautils.deb
+
+####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -746,6 +756,7 @@ COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
+COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
 # Build final image
@@ -757,6 +768,9 @@ COPY --from=extensions /tmp /tmp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
+    # Needed for anything using libcurl
+    # https://github.com/supabase/postgres/issues/573
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Initialise configs
@@ -764,9 +778,13 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
 
 RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
+    sed -i "s/#session_preload_libraries = ''/session_preload_libraries = 'supautils'/g" /etc/postgresql/postgresql.conf && \
+    sed -i "s/#include = '\/etc\/postgresql-custom\/supautils.conf'/include = '\/etc\/postgresql-custom\/supautils.conf'/g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
@@ -775,9 +793,9 @@ RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/va
     chown postgres:postgres /etc/postgresql-custom
 
 # Include schema migrations
-COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/00-schema.sql
-COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/01-extension.sql
 COPY migrations/db /docker-entrypoint-initdb.d/
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
+COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Setup default host and locale
 ENV POSTGRES_HOST=/var/run/postgresql
