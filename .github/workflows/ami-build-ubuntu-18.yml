@@ -5,9 +5,9 @@ on:
     branches:
       - develop
       - pcnc/build-glibc227-bin
-    paths:
-      - '.github/workflows/ami-build-ubuntu-18.yml'
-      - 'common.vars.pkr.hcl'
+    # paths:
+    #   - '.github/workflows/ami-build-ubuntu-18.yml'
+    #   - 'common.vars.pkr.hcl'
   workflow_dispatch:
 
 jobs:
