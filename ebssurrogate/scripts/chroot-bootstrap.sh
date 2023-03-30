@@ -24,8 +24,9 @@ fi
 
 
 function update_install_packages {
-	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
-	if [ "${UBUNTU_VERSION}" = "bionic" ]; then
+	source /etc/os-release
+	printenv
+	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
 		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 	fi
 
