@@ -24,6 +24,11 @@ fi
 
 
 function update_install_packages {
+	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
+	if [ "${UBUNTU_VERSION}" = "bionic" ]; then
+		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+	fi
+
 	# Update APT with new sources
 	cat /etc/apt/sources.list
 	apt-get $APT_OPTIONS update && apt-get $APT_OPTIONS --yes dist-upgrade
@@ -88,11 +93,6 @@ function disable_ufw_ipv6 {
 }
 
 function install_packages_for_build {
-	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
-	if [ "${UBUNTU_VERSION}" = "bionic" ]; then
-		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-	fi
-
 	apt-get install -y --no-install-recommends linux-libc-dev \
 	 acl \
 	 magic-wormhole sysstat \
