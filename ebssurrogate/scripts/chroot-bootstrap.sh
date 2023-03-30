@@ -24,12 +24,6 @@ fi
 
 
 function update_install_packages {
-	source /etc/os-release
-	printenv
-	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
-		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-	fi
-
 	# Update APT with new sources
 	cat /etc/apt/sources.list
 	apt-get $APT_OPTIONS update && apt-get $APT_OPTIONS --yes dist-upgrade
@@ -49,6 +43,7 @@ function update_install_packages {
 	# Install standard packages
 	apt-get install -y \
 		sudo \
+		wget \
 		cloud-init \
 		acpid \
 		ec2-hibinit-agent \
@@ -77,6 +72,13 @@ function update_install_packages {
 
 	if [ "${ARCH}" = "arm64" ]; then
 		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools
+	fi
+
+	source /etc/os-release
+	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
+		echo "deb [trusted=yes] http://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main" >> /tmp/sources.list
+		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+		apt-get $APT_OPTIONS update
 	fi
 }
 

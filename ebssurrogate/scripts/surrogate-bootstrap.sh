@@ -144,8 +144,6 @@ EOF
 }
 
 function setup_chroot_environment {
-	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
-
 	# Bootstrap Ubuntu into /mnt
 	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt
 
@@ -153,13 +151,6 @@ function setup_chroot_environment {
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
-
-	if [ "${UBUNTU_VERSION}" = "bionic" ]; then
-		echo "deb [trusted=yes] http://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main" >> /tmp/sources.list
-
-		sed -i "s/focal/bionic/g" /tmp/sources.list
-		cp /tmp/sources.list /mnt/etc/apt/sources.list
-	fi
 
 	if [ "${ARCH}" = "arm64" ]; then
 		create_fstab
