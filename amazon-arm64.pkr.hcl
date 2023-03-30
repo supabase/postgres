@@ -87,11 +87,6 @@ variable "packer-execution-id" {
   default = "unknown"
 }
 
-variable "skip_create_ami" {
-  type = bool
-  default = false
-}
-
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -103,7 +98,6 @@ source "amazon-ebssurrogate" "source" {
   ami_regions   = "${var.ami_regions}"
   instance_type = "c6g.4xlarge"
   region       = "${var.region}"
-  skip_create_ami = "${var.skip_create_ami}"
   #secret_key   = "${var.aws_secret_key}"
 
   # Use latest official ubuntu focal ami owned by Canonical.

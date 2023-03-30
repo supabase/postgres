@@ -1,0 +1,55 @@
+name: Build Ubuntu 18 AMI
+
+on:
+  push:
+    branches:
+      - develop
+      - pcnc/build-glibc227-bin
+    paths:
+      - '.github/workflows/ami-build-ubuntu-18.yml'
+      - 'common.vars.pkr.hcl'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, X64]
+    timeout-minutes: 150
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Build AMI
+        run: |
+          GIT_SHA=${{github.sha}}
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" amazon-arm64.pkr.hcl
+
+      - name: List files
+        id: list_files
+        run: |
+          ls -la /tmp
+
+      - name: Deregister image
+        if: ${{ always() }}
+        run: |
+          IMAGE_IDS=$(aws ec2 describe-images --filters "Name=name,Values=builder-supabase-postgres-u18-*" --query "Images[] .ImageId" --output text)
+          for IMAGE_ID in $IMAGE_IDS; do
+            SNAPSHOTS=$(aws ec2 describe-images --image-ids $IMAGE_ID --query "Images[*].BlockDeviceMappings[*].Ebs.SnapshotId" --output text)
+
+            echo "Deregistering image $IMAGE_ID"
+            # aws ec2 deregister-image --image-id $IMAGE_ID
+
+            for SNAPSHOT in $SNAPSHOTS; do
+              echo "Deleting snapshot $SNAPSHOT"
+              # aws ec2 delete-snapshot --snapshot-id $SNAPSHOT
+            done
+          done
+
+      - name: Cleanup resources on build cancellation
+        if: ${{ cancelled() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=u18-${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}
