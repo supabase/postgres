@@ -155,6 +155,8 @@ function setup_chroot_environment {
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
 
 	if [ "${UBUNTU_VERSION}" = "bionic" ]; then
+		echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main" >> /tmp/sources.list
+
 		sed -i "s/focal/bionic/g" /tmp/sources.list
 		cp /tmp/sources.list /mnt/etc/apt/sources.list
 	fi

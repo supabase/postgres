@@ -28,10 +28,42 @@ jobs:
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" amazon-arm64.pkr.hcl
 
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          
       - name: List files
         id: list_files
         run: |
           ls -la /tmp
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload pg binaries to s3 staging
+        run: |
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/${{ steps.process_release_version.outputs.version }}/18.04.tar.gz
+
+          cd ansible
+          ansible-playbook -i localhost \
+            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+            pg-binaries-playbook.yml
+
+      - name: configure aws credentials - prod
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload pg binaries to s3 prod
+        run: |
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
 
       - name: Deregister image
         if: ${{ always() }}
