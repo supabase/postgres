@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - da/new-build
     paths:
       - ".github/workflows/dockerhub-release.yml"
       - "common.vars*"
