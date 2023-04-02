@@ -36,6 +36,7 @@ ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.1
 ARG supautils_release=1.7.2
+ARG pg_ivm_release=1.5.1
 
 FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
@@ -716,6 +717,25 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-pg_ivm.yml
+####################
+FROM ccache as pg_ivm
+ARG pg_ivm_release
+ARG pg_ivm_release_checksum
+ADD --checksum=${pg_ivm_release_checksum} \
+    "https://github.com/sraoss/pg_ivm/archive/refs/tags/v${pg_ivm_release}.tar.gz" \
+    /tmp/pg_ivm.tar.gz
+RUN tar -xvf /tmp/pg_ivm.tar.gz -C /tmp && \
+    rm -rf /tmp/pg_ivm.tar.gz
+# Build from source
+WORKDIR /tmp/pg_ivm-${pg_ivm_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+
+####################
 # internal/supautils.yml
 ####################
 FROM base as supautils
@@ -757,6 +777,7 @@ COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
+COPY --from=pg_ivm /tmp/*.deb /tmp/
 
 ####################
 # Build final image

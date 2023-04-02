@@ -85,6 +85,9 @@
 - name: Install Trusted Language Extensions
   import_tasks: tasks/postgres-extensions/29-pg_tle.yml
 
+- name: Install Incremental View Maintenance (IVM) feature for PostgreSQL
+  import_tasks: tasks/postgres-extensions/30-pg_ivm.yml  
+
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml
   when: async_mode

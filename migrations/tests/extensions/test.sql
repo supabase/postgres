@@ -28,3 +28,4 @@
 \ir 27-pg_repack.sql
 \ir 28-pgvector.sql
 \ir 29-pg_tle.sql
+\ir 30-pg_ivm.sql

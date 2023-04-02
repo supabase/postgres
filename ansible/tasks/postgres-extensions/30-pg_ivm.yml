@@ -1,0 +1,23 @@
+# pg_ivm
+- name: pg_ivm - download latest release
+  git:
+    repo: https://github.com/sraoss/pg_ivm.git
+    dest: /tmp/pg_ivm
+    version: 'v{{ pg_ivm_release }}'
+  become: yes
+
+- name: pg_ivm - build
+  make:
+    chdir: /tmp/pg_ivm
+  become: yes
+
+- name: pg_ivm - install
+  make:
+    chdir: /tmp/pg_ivm
+    target: install
+  become: yes
+
+- name: pg_ivm - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_ivm
