@@ -162,10 +162,12 @@ function initiate_upgrade {
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
-    # Make latest libpq available to pg_upgrade
-    mkdir -p /usr/lib/postgresql/lib/aarch64
-    if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
-      ln -s "$PGLIBNEW/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
+    if [[ "$OLD_PGVERSION" =~ 14* || "$OLD_PGVERSION" =~ 13* ]]; then
+        # Make latest libpq available to pg_upgrade
+        mkdir -p /usr/lib/postgresql/lib/aarch64
+        if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
+        ln -s "$PGLIBNEW/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
+        fi
     fi
 
     # upgrade job outputs a log in the cwd; needs write permissions
