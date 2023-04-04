@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - drag/enable_vault
     paths:
       - '.github/workflows/ami-release.yml'
       - 'common.vars.pkr.hcl'
