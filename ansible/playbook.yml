@@ -30,140 +30,140 @@
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
-    # - name: Install Postgres extensions
-    #   import_tasks: tasks/setup-extensions.yml
+    - name: Install Postgres extensions
+      import_tasks: tasks/setup-extensions.yml
 
-    # - name: Install PgBouncer
-    #   import_tasks: tasks/setup-pgbouncer.yml
-    #   tags:
-    #     - install-pgbouncer
-    #     - install-supabase-internal
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      tags:
+        - install-pgbouncer
+        - install-supabase-internal
 
-    # - name: Install WAL-G
-    #   import_tasks: tasks/setup-wal-g.yml
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
 
-    # - name: Install Gotrue
-    #   import_tasks: tasks/setup-gotrue.yml
-    #   tags:
-    #     - install-gotrue
-    #     - install-supabase-internal
+    - name: Install Gotrue
+      import_tasks: tasks/setup-gotrue.yml
+      tags:
+        - install-gotrue
+        - install-supabase-internal
 
-    # - name: Install PostgREST
-    #   import_tasks: tasks/setup-postgrest.yml
-    #   tags:
-    #     - install-postgrest
-    #     - install-supabase-internal
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      tags:
+        - install-postgrest
+        - install-supabase-internal
 
-    # - name: Install Kong
-    #   import_tasks: tasks/setup-kong.yml
-    #   tags:
-    #     - install-supabase-internal
+    - name: Install Kong
+      import_tasks: tasks/setup-kong.yml
+      tags:
+        - install-supabase-internal
 
-    # - name: Install nginx
-    #   import_tasks: tasks/setup-nginx.yml
-    #   tags:
-    #     - install-supabase-internal
+    - name: Install nginx
+      import_tasks: tasks/setup-nginx.yml
+      tags:
+        - install-supabase-internal
 
-    # - name: Install Supabase specific content
-    #   import_tasks: tasks/setup-supabase-internal.yml
-    #   tags:
-    #     - install-supabase-internal
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
 
-    # - name: Start Postgres Database
-    #   systemd:
-    #     name: postgresql
-    #     state: started
-    #   when: not ebssurrogate_mode
+    - name: Start Postgres Database
+      systemd:
+        name: postgresql
+        state: started
+      when: not ebssurrogate_mode
 
-    # - name: Start Postgres Database without Systemd
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
-    #   when: ebssurrogate_mode
+    - name: Start Postgres Database without Systemd
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
+      when: ebssurrogate_mode
 
-    # - name: Adjust APT update intervals
-    #   copy:
-    #     src: files/apt_periodic
-    #     dest: /etc/apt/apt.conf.d/10periodic
+    - name: Adjust APT update intervals
+      copy:
+        src: files/apt_periodic
+        dest: /etc/apt/apt.conf.d/10periodic
 
-    # - name: Transfer init SQL files
-    #   copy:
-    #     src: files/{{ item.source }}
-    #     dest: /tmp/{{ item.dest }}
-    #   loop: "{{ sql_files }}"
+    - name: Transfer init SQL files
+      copy:
+        src: files/{{ item.source }}
+        dest: /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
 
-    # - name: Execute init SQL files
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
-    #   loop: "{{ sql_files }}"
+    - name: Execute init SQL files
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
+      loop: "{{ sql_files }}"
 
-    # - name: Delete SQL scripts
-    #   file:
-    #     path: /tmp/{{ item.dest }}
-    #     state: absent
-    #   loop: "{{ sql_files }}"
+    - name: Delete SQL scripts
+      file:
+        path: /tmp/{{ item.dest }}
+        state: absent
+      loop: "{{ sql_files }}"
 
-    # - name: First boot optimizations
-    #   import_tasks: tasks/internal/optimizations.yml
-    #   tags:
-    #     - install-supabase-internal
+    - name: First boot optimizations
+      import_tasks: tasks/internal/optimizations.yml
+      tags:
+        - install-supabase-internal
 
-    # - name: Finalize AMI
-    #   import_tasks: tasks/finalize-ami.yml
-    #   tags:
-    #     - install-supabase-internal
+    - name: Finalize AMI
+      import_tasks: tasks/finalize-ami.yml
+      tags:
+        - install-supabase-internal
 
-    # - name: Enhance fail2ban
-    #   import_tasks: tasks/setup-fail2ban.yml
+    - name: Enhance fail2ban
+      import_tasks: tasks/setup-fail2ban.yml
 
-    # # Install EC2 instance connect
-    # # Only for AWS images
-    # - name: install EC2 instance connect
-    #   become: yes
-    #   apt:
-    #     pkg:
-    #       - ec2-instance-connect
-    #   tags:
-    #     - aws-only
+    # Install EC2 instance connect
+    # Only for AWS images
+    - name: install EC2 instance connect
+      become: yes
+      apt:
+        pkg:
+          - ec2-instance-connect
+      tags:
+        - aws-only
 
-    # # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
-    # - name: Install security tools
-    #   become: yes
-    #   apt:
-    #     pkg:
-    #       - unattended-upgrades
-    #     update_cache: yes
-    #     cache_valid_time: 3600
+    # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
+    - name: Install security tools
+      become: yes
+      apt:
+        pkg:
+          - unattended-upgrades
+        update_cache: yes
+        cache_valid_time: 3600
 
-    # # Put PG binaries in a directory under $PATH
-    # - name: Find all files in /usr/lib/postgresql/bin
-    #   find:
-    #     paths: /usr/lib/postgresql/bin
-    #   register: postgresql_bin
+    # Put PG binaries in a directory under $PATH
+    - name: Find all files in /usr/lib/postgresql/bin
+      find:
+        paths: /usr/lib/postgresql/bin
+      register: postgresql_bin
 
-    # - name: Clean out build dependencies
-    #   import_tasks: tasks/clean-build-dependencies.yml
+    - name: Clean out build dependencies
+      import_tasks: tasks/clean-build-dependencies.yml
 
-    # - name: Create symbolic links for Postgres binaries to /usr/bin/
-    #   become: yes
-    #   shell:
-    #     cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
+    - name: Create symbolic links for Postgres binaries to /usr/bin/
+      become: yes
+      shell:
+        cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
 
-    # - name: Run migrations
-    #   import_tasks: tasks/setup-migrations.yml
+    - name: Run migrations
+      import_tasks: tasks/setup-migrations.yml
 
-    # - name: Stop Postgres Database without Systemd
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
-    #   when: ebssurrogate_mode
+    - name: Stop Postgres Database without Systemd
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
+      when: ebssurrogate_mode
 
-    # - name: Run unit tests
-    #   import_tasks: tasks/test-image.yml
+    - name: Run unit tests
+      import_tasks: tasks/test-image.yml
 
     - name: Collect Postgres binaries
       import_tasks: tasks/internal/collect-pg-binaries.yml

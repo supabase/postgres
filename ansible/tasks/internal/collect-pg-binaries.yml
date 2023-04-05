@@ -5,6 +5,7 @@
 
 - name: Collect Postgres binaries - collect binaries and libraries
   copy:
+    remote_src: yes
     src: /usr/lib/postgresql/{{ item }}/
     dest: /tmp/pg_binaries/{{ postgresql_major }}/{{ item }}/
   with_items:
@@ -13,11 +14,18 @@
 
 - name: Collect Postgres binaries - collect shared files
   copy:
+    remote_src: yes
     src: /var/lib/postgresql/
     dest: /tmp/pg_binaries/{{ postgresql_major }}/share/
 
 - name: Collect Postgres binaries - create tarfile
   archive:
-    path: /tmp/pg_binaries/{{ postgresql_major }}/
+    path: /tmp/pg_binaries/
     dest: /tmp/pg_binaries.tar.gz
     remove: yes
+
+- name: Fetch tarfile to local
+  fetch:
+    src: /tmp/pg_binaries.tar.gz
+    dest: /tmp/
+    flat: true

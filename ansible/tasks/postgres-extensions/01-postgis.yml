@@ -49,7 +49,8 @@
   become: yes
 
 - name: postgis - build SFCGAL
-  make:
+  community.general.make:
+    target: all
     chdir: /tmp/SFCGAL-v{{ sfcgal_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
@@ -78,7 +79,8 @@
   become: yes
 
 - name: postgis - build
-  make:
+  community.general.make:
+    target: all
     chdir: /tmp/postgis-{{ postgis_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes

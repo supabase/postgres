@@ -27,6 +27,7 @@
     port: http
   tags:
   - install-supabase-internal 
+  when: ansible_distribution_version != "18.04"
 
 - name: UFW - Allow connections to https (443)
   ufw:
@@ -34,6 +35,23 @@
     port: https
   tags:
   - install-supabase-internal 
+  when: ansible_distribution_version != "18.04"
+
+- name: UFW - Allow connections to http (80) - Ubuntu 18.04
+  ufw:
+    rule: allow
+    port: "80"
+  tags:
+  - install-supabase-internal 
+  when: ansible_distribution_version == "18.04"
+
+- name: UFW - Allow connections to https (443) - Ubuntu 18.04
+  ufw:
+    rule: allow
+    port: "443"
+  tags:
+  - install-supabase-internal 
+  when: ansible_distribution_version == "18.04"
 
 - name: UFW - Deny all other incoming traffic by default
   ufw:
@@ -65,6 +83,7 @@
         sed -i -e 's;daily;*:0/10;' /etc/systemd/system/logrotate.timer
         systemctl reenable logrotate.timer
   become: yes
+  when: ansible_distribution_version != "18.04"
 
 - name: import pgsodium_getkey script
   template:

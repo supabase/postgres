@@ -33,7 +33,8 @@
   become: yes
 
 - name: groonga - build
-  make:
+  community.general.make:
+    target: all
     chdir: /tmp/groonga-{{ groonga_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
@@ -59,7 +60,8 @@
   become: yes
 
 - name: pgroonga - build
-  make:
+  community.general.make:
+    target: all
     chdir: /tmp/pgroonga-{{ pgroonga_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes

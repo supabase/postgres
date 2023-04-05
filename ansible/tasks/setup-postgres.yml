@@ -24,6 +24,14 @@
     pkg:
       - llvm-11-dev
       - clang-11
+  when: ansible_distribution_version != "18.04"
+
+- name: Download LLVM & Clang - Ubuntu 18.04
+  apt:
+    pkg:
+      - llvm-12-dev
+      - clang-12
+  when: ansible_distribution_version == "18.04"
 
 - name: Download GCC 10
   apt:
@@ -61,20 +69,37 @@
 - name: Setting CFLAGS (arm)
   set_fact:
     cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char -O2"
-  when: platform == "arm64"
+  when: platform == "arm64" and ansible_distribution_version != "18.04"
+
+- name: Setting CFLAGS (arm) - Ubuntu 18.04
+  set_fact:
+    cflags: "-moutline-atomics -fsigned-char -O2"
+  when: platform == "arm64" and ansible_distribution_version == "18.04"
 
 - name: Setting CFLAGS (x86)
   set_fact:
     cflags: "-fsigned-char"
   when: platform == "amd64"
 
+- name: Setting LLVM_CONFIG
+  set_fact:
+    llvm_config: "/usr/bin/llvm-config-11"
+    clang: "/usr/bin/clang-11"
+  when: ansible_distribution_version != "18.04"
+
+- name: Setting LLVM_CONFIG - Ubuntu 18.04
+  set_fact:
+    llvm_config: "/usr/bin/llvm-config-12"
+    clang: "/usr/bin/clang-12"
+  when: ansible_distribution_version == "18.04"
+
 - name: Postgres - configure
   shell:
-    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG=/usr/bin/llvm-config-11 CLANG=/usr/bin/clang-11 ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-icu --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
+    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG='{{ llvm_config }}' CLANG='{{ clang }}' ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-icu --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
     chdir: /tmp/postgresql-{{ postgresql_release }}
 
 - name: Postgres - build
-  make:
+  community.general.make:
     target: world-bin
     chdir: /tmp/postgresql-{{ postgresql_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
