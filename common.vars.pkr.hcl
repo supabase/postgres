@@ -1,1 +1,1 @@
-postgres-version = "15.1.0.65"
+postgres-version = "15.1.0.65-disable.vault"
