@@ -121,7 +121,7 @@ groonga_release_checksum: sha256:7770c0ff6804ef4b47b015b15736cd973cffced977c2099
 pgroonga_release: "2.4.0"
 pgroonga_release_checksum: sha256:5baaae0e7d81f8167e278e9a34c6ed56aece8b34f5ab98f228c64408093417b3
 
-wrappers_release: "0.1.9"
+wrappers_release: "0.1.10"
 
 hypopg_release: "1.3.1"
 hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
