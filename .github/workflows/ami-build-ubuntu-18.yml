@@ -26,7 +26,8 @@ jobs:
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" -var ansible_arguments="ebssurrogate_mode='true' --skip-tags 'install-supabase-internal,migrations,unit-tests'" amazon-arm64.pkr.hcl
+          # packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" -var ansible_arguments="ebssurrogate_mode='true' --skip-tags 'install-supabase-internal,migrations,unit-tests'" amazon-arm64.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" -var ansible_arguments="ebssurrogate_mode='true' --skip-tags 'install-supabase-internal,ubuntu-18-incompatible'" amazon-arm64.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
