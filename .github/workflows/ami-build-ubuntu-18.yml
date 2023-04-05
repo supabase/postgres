@@ -26,7 +26,7 @@ jobs:
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" amazon-arm64.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ami=ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-arm64-server-*" -var "ami_name=builder-supabase-postgres-u18" -var ansible_arguments="ebssurrogate_mode='true' --skip-tags 'install-supabase-internal,migrations,unit-tests'" amazon-arm64.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -37,7 +37,7 @@ jobs:
       - name: List files
         id: list_files
         run: |
-          ls -la /tmp
+          ls -la /tmp/
 
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v1
@@ -48,12 +48,6 @@ jobs:
       - name: Upload pg binaries to s3 staging
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/${{ steps.process_release_version.outputs.version }}/18.04.tar.gz
-
-          cd ansible
-          ansible-playbook -i localhost \
-            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
-            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
-            pg-binaries-playbook.yml
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v1
