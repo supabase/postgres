@@ -23,7 +23,7 @@ ARG pg_net_release=0.7.1
 ARG rum_release=1.3.13
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
 ARG libsodium_release=1.0.18
-ARG pgsodium_release=3.1.5
+ARG pgsodium_release=3.1.6
 ARG pg_graphql_release=1.1.0
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_jsonschema_release=0.1.4
@@ -70,7 +70,7 @@ FROM ccache as sfcgal
 ARG sfcgal_release
 ARG sfcgal_release_checksum
 ADD --checksum=${sfcgal_release_checksum} \
-    "https://gitlab.com/Oslandia/SFCGAL/-/archive/v${sfcgal_release}/SFCGAL-v${sfcgal_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v${sfcgal_release}.tar.gz" \
     /tmp/sfcgal.tar.gz
 RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && \
     rm -rf /tmp/sfcgal.tar.gz

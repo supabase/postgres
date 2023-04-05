@@ -36,7 +36,7 @@
 
     - name: gotrue - pack archive
       shell: |
-        tar -cJf /tmp/gotrue-{{ gotrue_release }}-arm64.tar.xz /tmp/gotrue
+        cd /tmp && tar -cJf gotrue-{{ gotrue_release }}-arm64.tar.xz gotrue
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
@@ -59,7 +59,7 @@
 
     - name: adminapi - pack archive
       shell: |
-        tar -cJf /tmp/supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz /tmp/supabase-admin-api
+        cd /tmp && tar -cJf supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz supabase-admin-api
 
     - name: upload archives
       shell: |
