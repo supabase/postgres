@@ -78,6 +78,14 @@ CREATE SCHEMA realtime;
 
 CREATE SCHEMA storage;
 
+
+--
+-- Name: vault; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA vault;
+
+
 --
 -- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
 --
@@ -133,43 +141,19 @@ CREATE EXTENSION IF NOT EXISTS pgjwt WITH SCHEMA extensions;
 
 COMMENT ON EXTENSION pgjwt IS 'JSON Web Token API for Postgresql';
 
+
 --
+-- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
 --
+
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
+
+
+--
+-- Name: EXTENSION supabase_vault; Type: COMMENT; Schema: -; Owner: -
 --
 
-DO $$
-DECLARE
-  vault_exists boolean;
-BEGIN
-  vault_exists = (
-      select count(*) = 1 
-      from pg_available_extensions 
-      where name = 'supabase_vault'
-  );
-
-  IF vault_exists 
-  THEN
-  
-  --
-  -- Name: vault; Type: SCHEMA; Schema: -; Owner: -
-  --
-
-  CREATE SCHEMA vault;
-  --
-  -- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
-  --
-
-  CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault;
-
-
-  --
-  -- Name: EXTENSION supabase_vault; Type: COMMENT; Schema: -; Owner: -
-  --
-
-  COMMENT ON EXTENSION supabase_vault IS 'Supabase Vault Extension';
-
-  END IF;
-END $$;
+COMMENT ON EXTENSION supabase_vault IS 'Supabase Vault Extension';
 
 
 --
@@ -593,38 +577,23 @@ $$;
 -- Name: secrets_encrypt_secret_secret(); Type: FUNCTION; Schema: vault; Owner: -
 --
 
-DO $$
-DECLARE
-  vault_exists boolean;
-BEGIN
-  vault_exists = (
-      select count(*) = 1 
-      from pg_available_extensions 
-      where name = 'supabase_vault'
-  );
+CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+		BEGIN
+		        new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
+			CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
+			  pgsodium.crypto_aead_det_encrypt(
+				pg_catalog.convert_to(new.secret, 'utf8'),
+				pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
+				new.key_id::uuid,
+				new.nonce
+			  ),
+				'base64') END END;
+		RETURN new;
+		END;
+		$$;
 
-  IF vault_exists 
-  THEN
-  
-    CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
-        LANGUAGE plpgsql
-        AS $$
-            BEGIN
-                    new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
-                CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
-                pgsodium.crypto_aead_det_encrypt(
-                    pg_catalog.convert_to(new.secret, 'utf8'),
-                    pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
-                    new.key_id::uuid,
-                    new.nonce
-                ),
-                    'base64') END END;
-            RETURN new;
-            END;
-            $$;
-
-  END IF;
-END $$;
 
 SET default_tablespace = '';
 
@@ -816,40 +785,25 @@ CREATE TABLE storage.objects (
 -- Name: decrypted_secrets; Type: VIEW; Schema: vault; Owner: -
 --
 
-DO $$
-DECLARE
-  vault_exists boolean;
-BEGIN
-  vault_exists = (
-      select count(*) = 1 
-      from pg_available_extensions 
-      where name = 'supabase_vault'
-  );
-
-  IF vault_exists 
-  THEN
-  
-    CREATE VIEW vault.decrypted_secrets AS
-    SELECT secrets.id,
-        secrets.name,
-        secrets.description,
-        secrets.secret,
+CREATE VIEW vault.decrypted_secrets AS
+ SELECT secrets.id,
+    secrets.name,
+    secrets.description,
+    secrets.secret,
+        CASE
+            WHEN (secrets.secret IS NULL) THEN NULL::text
+            ELSE
             CASE
-                WHEN (secrets.secret IS NULL) THEN NULL::text
-                ELSE
-                CASE
-                    WHEN (secrets.key_id IS NULL) THEN NULL::text
-                    ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secrets.secret, 'base64'::text), convert_to(((((secrets.id)::text || secrets.description) || (secrets.created_at)::text) || (secrets.updated_at)::text), 'utf8'::name), secrets.key_id, secrets.nonce), 'utf8'::name)
-                END
-            END AS decrypted_secret,
-        secrets.key_id,
-        secrets.nonce,
-        secrets.created_at,
-        secrets.updated_at
-    FROM vault.secrets;
+                WHEN (secrets.key_id IS NULL) THEN NULL::text
+                ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secrets.secret, 'base64'::text), convert_to(((((secrets.id)::text || secrets.description) || (secrets.created_at)::text) || (secrets.updated_at)::text), 'utf8'::name), secrets.key_id, secrets.nonce), 'utf8'::name)
+            END
+        END AS decrypted_secret,
+    secrets.key_id,
+    secrets.nonce,
+    secrets.created_at,
+    secrets.updated_at
+   FROM vault.secrets;
 
-  END IF;
-END $$;
 
 --
 -- Name: refresh_tokens id; Type: DEFAULT; Schema: auth; Owner: -
