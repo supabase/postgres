@@ -60,7 +60,7 @@ cleanup() {
 
     if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
         echo "Copying pg_upgrade output to /var/log"
-        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/
+        cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
     fi
 
     if [ -L /var/lib/postgresql ]; then
@@ -136,6 +136,7 @@ function initiate_upgrade {
     if [[ "$OLD_PGVERSION" =~ 14* ]]; then
         SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers, //")
     fi
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_cron, //")
 
     PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
@@ -162,12 +163,10 @@ function initiate_upgrade {
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
-    if [[ "$OLD_PGVERSION" =~ 14* || "$OLD_PGVERSION" =~ 13* ]]; then
-        # Make latest libpq available to pg_upgrade
-        mkdir -p /usr/lib/postgresql/lib/aarch64
-        if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
+    # Make latest libpq available to pg_upgrade
+    mkdir -p /usr/lib/postgresql/lib/aarch64
+    if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
         ln -s "$PGLIBNEW/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
-        fi
     fi
 
     # upgrade job outputs a log in the cwd; needs write permissions
@@ -225,6 +224,7 @@ function initiate_upgrade {
     --new-datadir=${PGDATANEW} \
     --jobs="${WORKERS}" \
     --old-options='-c config_file=/etc/postgresql/postgresql.conf' \
+    --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
     --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
 EOF
