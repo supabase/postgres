@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload pg binaries to s3 prod
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/${{ steps.process_release_version.outputs.version }}/18.04.tar.gz
 
       - name: Deregister image
         if: ${{ always() }}
