@@ -27,6 +27,7 @@ Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/deve
 ## Guidelines
 
 - Migrations are append only. Never edit existing migrations once they are on master.
+- Migrations in `migrations/db/migrations` have to be idempotent.
 - Self contained components (gotrue, storage, realtime) may contain their own migrations.
 - Self hosted Supabase users should update role passwords separately after running all migrations.
 - Prod release is done by publishing a new GitHub release on master branch.
