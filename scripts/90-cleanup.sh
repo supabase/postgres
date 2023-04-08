@@ -36,8 +36,13 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libicu-dev \
 	libcgal-dev \
 	libgcc-9-dev \
-	libgcc-8-dev \
-	linux-headers-5.11.0-1021-aws
+	libgcc-8-dev
+
+  source /etc/os-release
+  if [ "${UBUNTU_VERSION}" != "bionic" ]; then
+	apt-get -y remove --purge linux-headers-5.11.0-1021-aws
+  fi
+
   apt-get -y update
   apt-get -y upgrade
   apt-get -y autoremove

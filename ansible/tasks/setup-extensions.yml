@@ -39,6 +39,8 @@
 
 - name: Install pljava
   import_tasks: tasks/postgres-extensions/12-pljava.yml
+  tags:
+    - legacy-incompatible
 
 - name: Install pg_plan_filter
   import_tasks: tasks/postgres-extensions/14-pg_plan_filter.yml
@@ -58,7 +60,7 @@
 - name: Install pg_graphql
   import_tasks: tasks/postgres-extensions/19-pg_graphql.yml
   tags:
-    - ubuntu-18-incompatible
+    - legacy-incompatible
 
 - name: Install pg_stat_monitor
   import_tasks: tasks/postgres-extensions/20-pg_stat_monitor.yml

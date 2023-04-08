@@ -172,4 +172,4 @@
     - name: Collect Postgres binaries
       import_tasks: tasks/internal/collect-pg-binaries.yml
       tags:
-        - install-supabase-internal
+        - collect-binaries
