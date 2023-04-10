@@ -40,9 +40,7 @@ function install_packages {
 		gdisk \
 		e2fsprogs \
 		debootstrap \
-		nvme-cli \
-		docker.io 
-
+		nvme-cli
 }
 
 # Partition the new root EBS volume
@@ -126,6 +124,7 @@ function format_build_partition {
 	mkfs.ext4 -O ^has_journal /dev/xvdc
 }
 function pull_docker {
+	apt-get install -y docker.io
 	docker run -itd --name ccachedata "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}" sh
 	docker exec -itd ccachedata mkdir -p /build/ccache
 }
@@ -214,7 +213,7 @@ EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars " $ARGS"
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml $ARGS
 }
 
 function update_systemd_services {
