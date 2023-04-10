@@ -242,6 +242,10 @@ EOF
             fi
             ln -s /var/lib/postgresql.bak/data /var/lib/postgresql/data
         fi
+        
+        if [ ! -L /var/lib/postgresql/data ]; then
+            ln -s /data/pgdata /var/lib/postgresql/data
+        fi
 
         echo "9. Stopping postgres; running pg_upgrade"
         systemctl stop postgresql
