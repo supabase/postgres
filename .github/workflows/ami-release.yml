@@ -25,7 +25,7 @@ jobs:
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ansible_arguments=''"  amazon-arm64.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
