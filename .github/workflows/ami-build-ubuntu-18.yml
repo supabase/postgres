@@ -1,6 +1,13 @@
 name: Build Ubuntu 18 AMI
 
 on:
+  push:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/ami-build-ubuntu-18.yml'
+      - 'common.vars.pkr.hcl'
+      
   workflow_run:
     workflows: [Release AMI]
     types:
