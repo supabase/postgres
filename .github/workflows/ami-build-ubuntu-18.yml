@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/build-glibc227-bin
     paths:
       - '.github/workflows/ami-build-ubuntu-18.yml'
       - 'common.vars.pkr.hcl'
