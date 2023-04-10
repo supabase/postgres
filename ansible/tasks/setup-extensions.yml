@@ -75,7 +75,7 @@
 
 - name: Install hypopg
   import_tasks: tasks/postgres-extensions/26-hypopg.yml
-  
+
 - name: Install pg_repack
   import_tasks: tasks/postgres-extensions/27-pg_repack.yml
 
@@ -84,6 +84,9 @@
 
 - name: Install Trusted Language Extensions
   import_tasks: tasks/postgres-extensions/29-pg_tle.yml
+
+- name: Install ulid
+  import_tasks: tasks/postgres-extensions/30-ulid.yml
 
 - name: Verify async task status
   import_tasks: tasks/postgres-extensions/99-finish_async_tasks.yml

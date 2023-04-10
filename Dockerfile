@@ -35,6 +35,7 @@ ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.1
+ARG ulid_release=0.1.0
 ARG supautils_release=1.7.2
 
 FROM postgres:${postgresql_release} as base
@@ -716,6 +717,15 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-ulid.yml
+####################
+FROM base as ulid
+# Download package archive
+ARG ulid_release
+ADD "https://github.com/pksunkara/pgx_ulid/releases/download/v${ulid_release}/pgx_ulid-v${ulid_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+    /tmp/ulid.deb
+
+####################
 # internal/supautils.yml
 ####################
 FROM base as supautils
@@ -756,6 +766,7 @@ COPY --from=hypopg /tmp/*.deb /tmp/
 COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
+COPY --from=ulid /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################

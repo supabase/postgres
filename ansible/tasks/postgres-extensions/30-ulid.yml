@@ -1,0 +1,3 @@
+- name: install ulid
+  ansible.builtin.apt:
+    deb: "https://github.com/pksunkara/pgx_ulid/releases/download/v{{ ulid_release }}/pgx_ulid-v{{ ulid_release }}-pg{{ postgresql_major }}-{{ platform }}-linux-gnu.deb"

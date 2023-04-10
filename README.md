@@ -32,7 +32,8 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [pg_stat_monitor](https://github.com/percona/pg_stat_monitor) | [1.0.1](https://github.com/percona/pg_stat_monitor/releases/tag/1.0.1) | Query Performance Monitoring Tool for PostgreSQL
 | [pgvector](https://github.com/pgvector/pgvector) | [v0.4.0](https://github.com/pgvector/pgvector/releases/tag/v0.4.0) | Open-source vector similarity search for Postgres
 | [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.4.8](https://github.com/reorg/pg_repack/releases/tag/ver_1.4.8) | Tool to remove bloat from tables and indexes 
-
+| [pg_jsonschema](https://github.com/supabase/pg_jsonschema) | [v0.1.4](https://github.com/supabase/pg_net/releases/tag/v0.1.4) | JSON Schema validation
+| [ulid](https://github.com/pksunkara/pgx_ulid) | [v0.1.0](https://github.com/pksunkara/pgx_ulid/releases/tag/v0.1.0) | ULID support
 
 Can't find your favorite extension? Suggest for it to be added into future releases [here](https://github.com/supabase/supabase/discussions/679)!
 
