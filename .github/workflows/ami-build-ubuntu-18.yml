@@ -1,9 +1,6 @@
 name: Build Ubuntu 18 AMI
 
 on:
-  push:
-    paths:
-      - '.github/workflows/ami-build-ubuntu-18.yml'
   workflow_run:
     workflows: [Release AMI]
     types:
