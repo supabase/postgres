@@ -39,8 +39,8 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libgcc-8-dev
 
   source /etc/os-release
-  if [ "${UBUNTU_VERSION}" != "bionic" ]; then
-	apt-get -y remove --purge linux-headers-5.11.0-1021-aws
+  if [ "${UBUNTU_CODENAME}" != "bionic" ]; then
+	  apt-get -y remove --purge linux-headers-5.11.0-1021-aws
   fi
 
   apt-get -y update
