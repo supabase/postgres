@@ -115,8 +115,8 @@ pg_stat_monitor_release_checksum: sha256:1756a02d5a6dd66b892d15920257c69a17a67d4
 vault_release: "0.2.9"
 vault_release_checksum: sha256:1e813216395c59bb94c92be47ce8b70ba19ccc0efbcdb1fb14ed6d34a42c6cdb
 
-groonga_release: "12.0.8"
-groonga_release_checksum: sha256:7770c0ff6804ef4b47b015b15736cd973cffced977c20991b16b2daa4fea6eeb
+groonga_release: "13.0.0"
+groonga_release_checksum: sha256:58c52d0ae7ac32f2722da179096ea281b054673b010165b0e5e52620982b7725
 
 pgroonga_release: "2.4.0"
 pgroonga_release_checksum: sha256:5baaae0e7d81f8167e278e9a34c6ed56aece8b34f5ab98f228c64408093417b3
