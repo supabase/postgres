@@ -66,6 +66,13 @@ COMMENT ON EXTENSION pgsodium IS 'Pgsodium is a modern cryptography library for 
 
 
 --
+-- Name: pgtle; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pgtle;
+
+
+--
 -- Name: realtime; Type: SCHEMA; Schema: -; Owner: -
 --
 
