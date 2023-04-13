@@ -1,1 +1,1 @@
-postgres-version = "15.1.0.68-bump.pgtle"
+postgres-version = "15.1.0.68"
