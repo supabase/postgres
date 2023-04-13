@@ -24,6 +24,11 @@ fi
 
 
 function update_install_packages {
+	source /etc/os-release
+	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
+		sed -i 's/focal/bionic/g' /etc/apt/sources.list
+	fi
+
 	# Update APT with new sources
 	cat /etc/apt/sources.list
 	apt-get $APT_OPTIONS update && apt-get $APT_OPTIONS --yes dist-upgrade
@@ -43,6 +48,7 @@ function update_install_packages {
 	# Install standard packages
 	apt-get install -y \
 		sudo \
+		wget \
 		cloud-init \
 		acpid \
 		ec2-hibinit-agent \
@@ -72,6 +78,18 @@ function update_install_packages {
 	if [ "${ARCH}" = "arm64" ]; then
 		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools
 	fi
+
+	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
+		echo "deb [trusted=yes] http://apt.llvm.org/bionic/ llvm-toolchain-bionic-12 main" >> /etc/apt/sources.list
+		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+		add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
+		
+		# Install cmake 3.12+
+		wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+		apt-add-repository --yes --update 'deb https://apt.kitware.com/ubuntu/ bionic main'
+
+		apt-get $APT_OPTIONS update
+	fi
 }
 
 function setup_locale {
@@ -92,7 +110,6 @@ function install_packages_for_build {
 	 acl \
 	 magic-wormhole sysstat \
 	 build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libsystemd-dev libpq-dev libxml2-utils uuid-dev xsltproc ssl-cert \
-	 llvm-11-dev clang-11 \
 	 gcc-10 g++-10 \
 	 libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
 	 libkrb5-dev \
@@ -100,8 +117,15 @@ function install_packages_for_build {
 	 curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
 	 liblzo2-dev
 
-	# Mark llvm as manual to prevent auto removal
-	apt-mark manual libllvm11:arm64
+	source /etc/os-release
+	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
+		apt-get install -y --no-install-recommends llvm-12-dev clang-12 cmake
+		apt-mark manual libllvm12:arm64
+	else 
+		apt-get install -y --no-install-recommends llvm-11-dev clang-11
+		# Mark llvm as manual to prevent auto removal
+		apt-mark manual libllvm11:arm64
+	fi
 }
 
 function setup_apparmor {
@@ -136,7 +160,7 @@ EOF
 # Install GRUB
 function install_configure_grub {
 	if [ "${ARCH}" = "arm64" ]; then
-		apt-get $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64
+		apt-get $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr
 		setup_grub_conf_arm64
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1

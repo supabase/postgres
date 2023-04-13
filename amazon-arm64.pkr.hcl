@@ -20,7 +20,7 @@ variable "ami_regions" {
 
 variable "ansible_arguments" {
   type    = string
-  default = "--skip-tags,install-postgrest,--skip-tags,install-pgbouncer,--skip-tags,install-supabase-internal,ebssurrogate_mode='true'"
+  default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
 }
 
 variable "aws_access_key" {
@@ -239,8 +239,9 @@ build {
       "DOCKER_IMAGE=${var.docker_image}",
       "DOCKER_IMAGE_TAG=${var.docker_image_tag}"
     ]
+    use_env_var_file = true
     script = "ebssurrogate/scripts/surrogate-bootstrap.sh"
-    execute_command = "sudo -S sh -c '{{ .Vars }} {{ .Path }}'"
+    execute_command = "sudo -S sh -c '. {{.EnvVarFile}} && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean = true
   }
@@ -248,6 +249,12 @@ build {
   provisioner "file" {
     source = "/tmp/ansible.log"
     destination = "/tmp/ansible.log"
+    direction = "download"
+  }
+
+  provisioner "file" {
+    source = "/tmp/pg_binaries.tar.gz"
+    destination = "/tmp/pg_binaries.tar.gz"
     direction = "download"
   }
 }

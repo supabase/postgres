@@ -5,6 +5,14 @@
     dest: /tmp/pgvector
     version: 'v{{ pgvector_release }}'
   become: yes
+  
+- name: pgvector - ubuntu 18.04 compat
+  lineinfile:
+    path: /tmp/pgvector/Makefile
+    regexp: "march=native$"
+    line: "OPTFLAGS = "
+    firstmatch: true
+  when: ansible_distribution_version == "18.04"
 
 - name: pgvector - build
   make:

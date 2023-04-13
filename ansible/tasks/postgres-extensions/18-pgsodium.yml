@@ -53,7 +53,6 @@
 - name: pgsodium - build
   make:
     chdir: /tmp/pgsodium-{{ pgsodium_release }}
-    jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes
 
 - name: pgsodium - install

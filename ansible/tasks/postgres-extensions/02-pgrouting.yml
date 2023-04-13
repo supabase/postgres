@@ -34,7 +34,8 @@
   become: yes
 
 - name: pgRouting - build
-  make:
+  community.general.make:
+    target: all
     chdir: /tmp/pgrouting-{{ pgrouting_release }}/build
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes

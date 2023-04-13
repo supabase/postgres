@@ -37,7 +37,8 @@
   become: yes
 
 - name: nginx - build
-  make:
+  community.general.make:
+    target: build
     chdir: /tmp/nginx-{{ nginx_release }}
     jobs: "{{ parallel_jobs | default(omit) }}"
   become: yes

@@ -40,9 +40,7 @@ function install_packages {
 		gdisk \
 		e2fsprogs \
 		debootstrap \
-		nvme-cli \
-		docker.io 
-
+		nvme-cli
 }
 
 # Partition the new root EBS volume
@@ -126,6 +124,7 @@ function format_build_partition {
 	mkfs.ext4 -O ^has_journal /dev/xvdc
 }
 function pull_docker {
+	apt-get install -y docker.io
 	docker run -itd --name ccachedata "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}" sh
 	docker exec -itd ccachedata mkdir -p /build/ccache
 }
@@ -144,8 +143,10 @@ EOF
 }
 
 function setup_chroot_environment {
+	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
+
 	# Bootstrap Ubuntu into /mnt
-	debootstrap --arch ${ARCH} --variant=minbase focal /mnt
+	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt
 
 	# Update ec2-region
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
@@ -211,8 +212,8 @@ callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars " $ARGS"
+	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml $ARGS
 }
 
 function update_systemd_services {
@@ -244,20 +245,27 @@ function clean_system {
 	touch /mnt/var/log/auth.log
 
 	touch /mnt/var/log/pgbouncer.log
-	chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
+	if [ -f /usr/bin/chown ]; then
+		chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
+	fi
 
 	# Setup postgresql logs
 	mkdir -p /mnt/var/log/postgresql
-	chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
+	if [ -f /usr/bin/chown ]; then
+		chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
+	fi
 
 	# Setup wal-g logs
 	mkdir /mnt/var/log/wal-g
 	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log}
-	chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
-	chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
 
-        # audit logs directory for apparmor
-        mkdir /mnt/var/log/audit
+	if [ -f /usr/bin/chown ]; then
+		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
+		chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
+	fi
+
+	# audit logs directory for apparmor
+	mkdir /mnt/var/log/audit
 
 	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*

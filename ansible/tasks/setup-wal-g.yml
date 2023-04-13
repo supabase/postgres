@@ -53,7 +53,7 @@
   ignore_errors: yes
 
 - name: wal-g - build and install
-  make:
+  community.general.make:
     chdir: /tmp/wal-g
     target: pg_install
     jobs: "{{ parallel_jobs | default(omit) }}"
