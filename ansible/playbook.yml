@@ -152,6 +152,13 @@
       shell:
         cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
 
+    - name: Restart Postgres Database without Systemd
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data restart
+      when: ebssurrogate_mode
+
     - name: Run migrations
       import_tasks: tasks/setup-migrations.yml
       tags:
