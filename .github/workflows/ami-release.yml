@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - fix/tle_build_error
     paths:
       - '.github/workflows/ami-release.yml'
       - 'common.vars.pkr.hcl'
