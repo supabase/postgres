@@ -156,7 +156,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data restart "-o -c shared_preload_libraries='pg_stat_statements, pg_stat_monitor, pg_tle'"
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data restart "-o -c shared_preload_libraries='pg_tle'"
       when: ebssurrogate_mode
 
     - name: Run migrations
