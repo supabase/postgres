@@ -79,7 +79,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /etc/postgresql start
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
       when: ebssurrogate_mode
 
     - name: Adjust APT update intervals
@@ -156,7 +156,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /etc/postgresql restart
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data restart "-o -c config_file=/etc/postgresql/postgresql.conf"
       when: ebssurrogate_mode
 
     - name: Run migrations
@@ -168,7 +168,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /etc/postgresql stop
+        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
 
     - name: Run unit tests
