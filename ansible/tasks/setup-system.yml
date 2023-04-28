@@ -32,6 +32,21 @@
     update-alternatives --set ebtables /usr/sbin/ebtables-nft
     systemctl restart ufw
 
+- name: Configure sysstat
+  copy:
+    src: files/sysstat.sysstat
+    dest: /etc/sysstat/sysstat
+
+- name: Configure default sysstat
+  copy:
+    src: files/default.sysstat
+    dest: /etc/default/sysstat
+
+- name: Create Sysstat log directory
+  file:
+    path: /var/log/sysstat
+    state: directory
+    
 - name: Install other useful tools
   apt:
     pkg:
