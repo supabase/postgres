@@ -36,6 +36,7 @@ ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
 ARG supautils_release=1.7.2
+ARG wal_g_release=2.0.1
 
 FROM postgres:${postgresql_release} as base
 # Redeclare args for use in subsequent stages
@@ -725,6 +726,16 @@ ADD "https://github.com/supabase/supautils/releases/download/v${supautils_releas
     /tmp/supautils.deb
 
 ####################
+# setup-wal-g.yml
+####################
+FROM base as walg
+ARG wal_g_release
+ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
+RUN tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
+    rm -rf /tmp/wal-g.tar.gz && \
+    mv /tmp/wal-g-pg-ubuntu-20.04-${TARGETARCH} /tmp/wal-g
+
+####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -757,6 +768,7 @@ COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
+COPY --from=walg /tmp/wal-g /usr/local/bin/
 
 ####################
 # Build final image
