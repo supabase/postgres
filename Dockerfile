@@ -736,7 +736,7 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
     curl -kL "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${arch}.tar.gz" -o /tmp/wal-g.tar.gz && \
     tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
     rm -rf /tmp/wal-g.tar.gz && \
-    mv /tmp/wal-g-pg-ubuntu-20.04-$arch /tmp/wal-g
+    mv /tmp/wal-g-pg-ubuntu*20.04-$arch /tmp/wal-g
 
 ####################
 # Collect extension packages
