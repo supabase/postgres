@@ -27,7 +27,7 @@
   git:
     repo: https://github.com/wal-g/wal-g.git
     dest: /tmp/wal-g
-    version: "{{ wal_g_release }}"
+    version: "v{{ wal_g_release }}"
   become: yes
 
 - name: wal-g - pg_clean
