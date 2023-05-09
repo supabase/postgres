@@ -730,10 +730,13 @@ ADD "https://github.com/supabase/supautils/releases/download/v${supautils_releas
 ####################
 FROM base as walg
 ARG wal_g_release
-ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
-RUN tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
+# ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
+RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
+    apt-get update && apt-get install -y --no-install-recommends curl && \
+    curl -kL "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${arch}.tar.gz" -o /tmp/wal-g.tar.gz && \
+    tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
     rm -rf /tmp/wal-g.tar.gz && \
-    mv /tmp/wal-g-pg-ubuntu-20.04-${TARGETARCH} /tmp/wal-g
+    mv /tmp/wal-g-pg-ubuntu-20.04-$arch /tmp/wal-g
 
 ####################
 # Collect extension packages
@@ -793,14 +796,19 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.j2 /etc/postgresql-custom/wal-g.conf
+COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
+COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
 RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
     sed -i "s/#session_preload_libraries = ''/session_preload_libraries = 'supautils'/g" /etc/postgresql/postgresql.conf && \
     sed -i "s/#include = '\/etc\/postgresql-custom\/supautils.conf'/include = '\/etc\/postgresql-custom\/supautils.conf'/g" /etc/postgresql/postgresql.conf && \
+    sed -i "s/#include = '\/etc\/postgresql-custom\/wal-g.conf''/include = '\/etc\/postgresql-custom\/wal-g.conf'/g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    useradd --create-home --shell /bin/bash wal-g -G postgres && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
 
