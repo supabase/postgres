@@ -55,7 +55,7 @@ pgtap_release: "1.2.0"
 pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
 
 pg_cron_release: "1.5.2"
-pg_cron_release_checksum: sha256:3652722ea98d94d8e27bf5e708dd7359f55a818a43550d046c5064c98876f1a8
+pg_cron_release_checksum: sha256:6f7f0980c03f1e2a6a747060e67bf4a303ca2a50e941e2c19daeed2b44dec744
 
 pgaudit_release: "1.7.0"
 pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f77f8f3126d428a8bd8
