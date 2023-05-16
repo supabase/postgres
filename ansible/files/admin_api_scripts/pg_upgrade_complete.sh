@@ -7,15 +7,18 @@
 
 set -eEuo pipefail
 
-run_sql() {
-    psql -h localhost -U supabase_admin -d postgres "$@"
-}
+# shellcheck disable=SC1091
+source ./pg_upgrade_common.sh
 
-cleanup() {
+LOG_FILE="/tmp/pg-upgrade-complete.log"
+
+function cleanup {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
     echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
+
+    ship_logs "$LOG_FILE" || true
 
     exit "$EXIT_CODE"
 }
@@ -29,18 +32,34 @@ function complete_pg_upgrade {
     echo "running" > /tmp/pg-upgrade-status
 
     echo "1. Mounting data disk"
-    mount -a -v
+    retry 3 mount -a -v
 
     # copying custom configurations
     echo "2. Copying custom configurations"
+    retry 3 copy_configs
+
+    echo "3. Starting postgresql"
+    retry 3 service postgresql start
+
+    echo "4. Running generated SQL files"
+    retry 3 run_generated_sql
+
+    sleep 5
+
+    echo "5. Restarting postgresql"
+    retry 3 service postgresql restart
+
+    echo "6. Starting vacuum analyze"
+    retry 3 start_vacuum_analyze
+}
+
+function copy_configs {
     cp -R /data/conf/* /etc/postgresql-custom/
     chown -R postgres:postgres /var/lib/postgresql/data
     chown -R postgres:postgres /data/pgdata
+}
 
-    echo "3. Starting postgresql"
-    service postgresql start
-
-    echo "4. Running generated SQL files"
+function run_generated_sql {
     if [ -d /data/sql ]; then
         for FILE in /data/sql/*.sql; do
             if [ -f "$FILE" ]; then
@@ -48,22 +67,15 @@ function complete_pg_upgrade {
             fi
         done
     fi
-
-    sleep 5
-
-    echo "5. Restarting postgresql"
-    service postgresql restart
-
-    echo "6. Starting vacuum analyze"
-    start_vacuum_analyze
 }
 
 function start_vacuum_analyze {
+    echo "complete" > /tmp/pg-upgrade-status
     su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
     echo "Upgrade job completed"
-    cleanup "complete"
 }
 
 trap cleanup ERR
 
-complete_pg_upgrade >>/var/log/pg-upgrade-complete.log 2>&1 &
+
+complete_pg_upgrade >> $LOG_FILE 2>&1 &

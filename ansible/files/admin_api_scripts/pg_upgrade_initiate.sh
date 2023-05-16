@@ -27,6 +27,11 @@ PG13_EXTENSIONS_TO_DISABLE=(
 
 set -eEuo pipefail
 
+# shellcheck disable=SC1091
+source ./pg_upgrade_common.sh
+
+LOG_FILE="/var/log/pg-upgrade-initiate.log"
+
 PGVERSION=$1
 IS_DRY_RUN=${2:-false}
 if [ "$IS_DRY_RUN" != false ]; then
@@ -35,12 +40,9 @@ fi
 
 MOUNT_POINT="/data_migration"
 
-run_sql() {
-    psql -h localhost -U supabase_admin -d postgres "$@"
-}
-
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
+
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ 14* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG14_EXTENSIONS_TO_DISABLE[@]}")
@@ -61,6 +63,9 @@ cleanup() {
     if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
         echo "Copying pg_upgrade output to /var/log"
         cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
+        ship_logs "$LOG_FILE" || true
+        tail -n +1 /var/log/pg_upgrade_output.d/*/* > /var/log/pg_upgrade_output.d/pg_upgrade.log || true
+        ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
     fi
 
     if [ -L /var/lib/postgresql ]; then
@@ -279,6 +284,6 @@ echo "running" > /tmp/pg-upgrade-status
 if [ "$IS_DRY_RUN" = true ]; then
     initiate_upgrade
 else 
-    initiate_upgrade >> /var/log/pg-upgrade-initiate.log 2>&1 &
+    initiate_upgrade >> "$LOG_FILE" 2>&1 &
     echo "Upgrade initiate job completed"
 fi
