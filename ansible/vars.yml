@@ -7,8 +7,8 @@ postgresql_release: "15.1"
 postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
 
 # Non Postgres Extensions
-pgbouncer_release: "1.17.0"
-pgbouncer_release_checksum: sha256:657309b7bc5c7a85cbf70a9a441b535f7824123081eabb7ba86d00349a256e23
+pgbouncer_release: "1.19.0"
+pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
 
 postgrest_release: "11.0.1"
 postgrest_arm_release_checksum: sha1:3dd463fa514f9acfce40f186436e989e668ebb36
