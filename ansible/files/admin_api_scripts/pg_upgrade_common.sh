@@ -36,7 +36,7 @@ function ship_logs {
     DERIVED_REF="${HOSTNAME##*-}"
 
     printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
-    curl -s -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
+    curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
          -H "apikey: ${REPORTING_ANON_KEY}" \
          -H 'Content-type: application/json' \
          -d "$BODY"
