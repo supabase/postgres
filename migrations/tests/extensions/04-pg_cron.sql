@@ -1,6 +1,6 @@
 BEGIN;
 -- create cron extension as supabase_admin
-create extension if not exists pg_cron with schema "extensions";
+create extension if not exists pg_cron;
 
 -- \ir migrations/db/init-scripts/00000000000003-post-setup.sql
 grant usage on schema cron to postgres with grant option;
