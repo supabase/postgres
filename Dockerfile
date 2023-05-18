@@ -771,7 +771,6 @@ COPY --from=pg_repack /tmp/*.deb /tmp/
 COPY --from=pgvector /tmp/*.deb /tmp/
 COPY --from=pg_tle /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
-COPY --from=walg /tmp/wal-g /usr/local/bin/
 
 ####################
 # Build final image
@@ -780,6 +779,8 @@ FROM base as production
 
 # Setup extensions
 COPY --from=extensions /tmp /tmp
+COPY --from=walg /tmp/wal-g /usr/local/bin/
+
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
