@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - ansi-dock
     paths:
       - '.github/workflows/ami-release.yml'
       - 'common.vars.pkr.hcl'
@@ -25,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - id: args
         uses: mikefarah/yq@master
@@ -48,10 +49,10 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Extract built packages
         run: |
-          mkdir -p ansible/extensions/packages
-          docker save supabase/postgres:extensions | tar xv -C ansible/extensions
-          for layer in ansible/extensions/*/layer.tar; do
-            tar xvf "$layer" -C ansible/extensions/packages --strip-components 1
+          mkdir -p /tmp/extensions ansible/files/extensions
+          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
+          for layer in /tmp/extensions/*/layer.tar; do
+            tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
 
       - name: Build AMI
@@ -82,7 +83,7 @@ jobs:
       - name: Upload pg binaries to s3 staging
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-    
+
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -100,7 +101,7 @@ jobs:
       - name: Upload pg binaries to s3 prod
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-    
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:

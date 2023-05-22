@@ -179,7 +179,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1,libgdal28 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj15,libjson-c4,libprotobuf-c1,libgdal26 --nodoc
 
 FROM ppa as postgis
 # Latest available is 3.3.2
@@ -818,7 +818,7 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 # Collect extension packages
 ####################
 FROM scratch as extensions
-COPY --from=postgis /tmp/*.deb /tmp/
+COPY --from=postgis-source /tmp/*.deb /tmp/
 COPY --from=pgrouting-source /tmp/*.deb /tmp/
 COPY --from=pgtap-source /tmp/*.deb /tmp/
 COPY --from=pg_cron-source /tmp/*.deb /tmp/

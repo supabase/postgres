@@ -14,7 +14,7 @@
   become: yes
   become_user: postgres
   shell:
-    cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
   when: ebssurrogate_mode
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
@@ -49,19 +49,9 @@
     state: absent
     autoremove: yes
 
-- name: Get pg_config file details
-  ansible.builtin.stat:
-    path: /usr/bin/pg_config
-  register: st
-
-- name: Ensure pg_config points to our install of PG
-  ansible.builtin.fail:
-    msg: "Incorrect symlink for pg_config"
-  when: st.stat.lnk_target != '/usr/lib/postgresql/bin/pg_config'
-
 - name: Stop Postgres Database
   become: yes
   become_user: postgres
   shell:
-    cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
   when: ebssurrogate_mode
