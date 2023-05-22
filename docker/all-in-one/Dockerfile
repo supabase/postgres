@@ -58,7 +58,7 @@ FROM postgrest/postgrest:v${postgrest_release} as pgrst
 ####################
 # Install GoTrue
 ####################
-FROM supabase/gotrue:v${gotrue_release} as gotrue
+FROM supabase/gotrue:${gotrue_release} as gotrue
 
 ####################
 # Install Kong
