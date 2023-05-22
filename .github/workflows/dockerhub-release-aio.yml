@@ -6,6 +6,7 @@ on:
       - pcnc/migrate-all-in-one
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
+      - "docker/all-in-one/Dockerfile"
       - "common.vars*"
   workflow_run:
     workflows: [Release on Dockerhub]
