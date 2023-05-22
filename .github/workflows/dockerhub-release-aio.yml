@@ -38,8 +38,8 @@ jobs:
         include:
           - runner: [self-hosted, X64]
             arch: amd64
-          # - runner: arm-runner
-          #   arch: arm64
+          - runner: arm-runner
+            arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     outputs:
@@ -56,9 +56,10 @@ jobs:
       - id: build
         uses: docker/build-push-action@v3
         with:
+          file: docker/all-in-one/Dockerfile
           push: true
           build-args: |
-            postgres_version=${{ needs.settings.outputs.docker_version }}_${{ matrix.arch }}
+            postgres_version=${{ needs.settings.outputs.docker_version }}
             ${{ needs.settings.outputs.build_args }}
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
