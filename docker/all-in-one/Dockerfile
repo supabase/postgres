@@ -224,7 +224,6 @@ RUN mkdir -p /etc/wal-g && \
 RUN mkdir -p /var/log/wal-g && chmod +x /usr/bin/admin-mgr && chmod ug+s /usr/bin/admin-mgr && touch /etc/wal-g/config.json && chown adminapi:adminapi /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
-
 # Add healthcheck and entrypoint scripts
 COPY docker/all-in-one/healthcheck.sh /usr/local/bin/
 HEALTHCHECK --interval=3s --timeout=2s --start-period=4s --retries=10 CMD [ "healthcheck.sh" ]
