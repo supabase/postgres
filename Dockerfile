@@ -193,7 +193,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 # 02-pgrouting.yml
 ####################
-FROM ccache as pgrouting
+FROM ccache as pgrouting-source
 # Download and extract
 ARG pgrouting_release
 ARG pgrouting_release_checksum
@@ -214,10 +214,18 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
+FROM ppa as pgrouting
+ARG pgrouting_release
+# Download pre-built packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-${postgresql_major}-pgrouting=${pgrouting_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
 ####################
 # 03-pgtap.yml
 ####################
-FROM builder as pgtap
+FROM builder as pgtap-source
 # Download and extract
 ARG pgtap_release
 ARG pgtap_release_checksum
@@ -235,7 +243,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 04-pg_cron.yml
 ####################
-FROM ccache as pg_cron
+FROM ccache as pg_cron-source
 # Download and extract
 ARG pg_cron_release
 ARG pg_cron_release_checksum
@@ -254,7 +262,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 05-pgaudit.yml
 ####################
-FROM ccache as pgaudit
+FROM ccache as pgaudit-source
 # Download and extract
 ARG pgaudit_release
 ARG pgaudit_release_checksum
@@ -279,7 +287,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 06-pgjwt.yml
 ####################
-FROM builder as pgjwt
+FROM builder as pgjwt-source
 # Download and extract
 ARG pgjwt_release
 ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
@@ -293,7 +301,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 07-pgsql-http.yml
 ####################
-FROM ccache as pgsql-http
+FROM ccache as pgsql-http-source
 # Download and extract
 ARG pgsql_http_release
 ARG pgsql_http_release_checksum
@@ -316,7 +324,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 ####################
 # 08-plpgsql_check.yml
 ####################
-FROM ccache as plpgsql_check
+FROM ccache as plpgsql_check-source
 # Download and extract
 ARG plpgsql_check_release
 ARG plpgsql_check_release_checksum
@@ -339,7 +347,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 09-pg-safeupdate.yml
 ####################
-FROM ccache as pg-safeupdate
+FROM ccache as pg-safeupdate-source
 # Download and extract
 ARG pg_safeupdate_release
 ARG pg_safeupdate_release_checksum
@@ -358,7 +366,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 10-timescaledb.yml
 ####################
-FROM ccache as timescaledb
+FROM ccache as timescaledb-source
 # Download and extract
 ARG timescaledb_release
 ARG timescaledb_release_checksum
@@ -378,7 +386,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgnam
 ####################
 # 11-wal2json.yml
 ####################
-FROM ccache as wal2json
+FROM ccache as wal2json-source
 # Download and extract
 ARG wal2json_release
 ARG wal2json_release_checksum
@@ -465,7 +473,7 @@ FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
 ####################
 # 14-pg_plan_filter.yml
 ####################
-FROM ccache as pg_plan_filter
+FROM ccache as pg_plan_filter-source
 # Download and extract
 ARG pg_plan_filter_release
 ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" \
@@ -480,7 +488,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 15-pg_net.yml
 ####################
-FROM ccache as pg_net
+FROM ccache as pg_net-source
 # Download and extract
 ARG pg_net_release
 ARG pg_net_release_checksum
@@ -503,7 +511,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 ####################
 # 16-rum.yml
 ####################
-FROM ccache as rum
+FROM ccache as rum-source
 # Download and extract
 ARG rum_release
 ARG rum_release_checksum
@@ -527,7 +535,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 17-pg_hashids.yml
 ####################
-FROM ccache as pg_hashids
+FROM ccache as pg_hashids-source
 # Download and extract
 ARG pg_hashids_release
 ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
@@ -585,7 +593,7 @@ ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_rele
 ####################
 # 20-pg_stat_monitor.yml
 ####################
-FROM ccache as pg_stat_monitor
+FROM ccache as pg_stat_monitor-source
 # Download and extract
 ARG pg_stat_monitor_release
 ARG pg_stat_monitor_release_checksum
@@ -618,7 +626,7 @@ ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschem
 ####################
 # 23-vault.yml
 ####################
-FROM builder as vault
+FROM builder as vault-source
 # Download and extract
 ARG vault_release
 ARG vault_release_checksum
@@ -703,7 +711,7 @@ ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}
 ####################
 # 26-hypopg.yml
 ####################
-FROM ccache as hypopg
+FROM ccache as hypopg-source
 # Download and extract
 ARG hypopg_release
 ARG hypopg_release_checksum
@@ -722,7 +730,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 27-pg_repack.yml
 ####################
-FROM ccache as pg_repack
+FROM ccache as pg_repack-source
 ARG pg_repack_release
 ARG pg_repack_release_checksum
 ADD --checksum=${pg_repack_release_checksum} \
@@ -748,7 +756,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 28-pgvector.yml
 ####################
-FROM ccache as pgvector
+FROM ccache as pgvector-source
 ARG pgvector_release
 ARG pgvector_release_checksum
 ADD --checksum=${pgvector_release_checksum} \
@@ -766,7 +774,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 29-pg_tle.yml
 ####################
-FROM ccache as pg_tle
+FROM ccache as pg_tle-source
 ARG pg_tle_release
 ARG pg_tle_release_checksum
 ADD --checksum=${pg_tle_release_checksum} \
@@ -811,33 +819,33 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 ####################
 FROM scratch as extensions
 COPY --from=postgis /tmp/*.deb /tmp/
-COPY --from=pgrouting /tmp/*.deb /tmp/
-COPY --from=pgtap /tmp/*.deb /tmp/
-COPY --from=pg_cron /tmp/*.deb /tmp/
-COPY --from=pgaudit /tmp/*.deb /tmp/
-COPY --from=pgjwt /tmp/*.deb /tmp/
-COPY --from=pgsql-http /tmp/*.deb /tmp/
-COPY --from=plpgsql_check /tmp/*.deb /tmp/
-COPY --from=pg-safeupdate /tmp/*.deb /tmp/
-COPY --from=timescaledb /tmp/*.deb /tmp/
-COPY --from=wal2json /tmp/*.deb /tmp/
+COPY --from=pgrouting-source /tmp/*.deb /tmp/
+COPY --from=pgtap-source /tmp/*.deb /tmp/
+COPY --from=pg_cron-source /tmp/*.deb /tmp/
+COPY --from=pgaudit-source /tmp/*.deb /tmp/
+COPY --from=pgjwt-source /tmp/*.deb /tmp/
+COPY --from=pgsql-http-source /tmp/*.deb /tmp/
+COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
+COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=timescaledb-source /tmp/*.deb /tmp/
+COPY --from=wal2json-source /tmp/*.deb /tmp/
 # COPY --from=pljava /tmp/*.deb /tmp/
 COPY --from=plv8 /tmp/*.deb /tmp/
-COPY --from=pg_plan_filter /tmp/*.deb /tmp/
-COPY --from=pg_net /tmp/*.deb /tmp/
-COPY --from=rum /tmp/*.deb /tmp/
-COPY --from=pgsodium /tmp/*.deb /tmp/
-COPY --from=pg_hashids /tmp/*.deb /tmp/
+COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
+COPY --from=pg_net-source /tmp/*.deb /tmp/
+COPY --from=rum-source /tmp/*.deb /tmp/
+COPY --from=pgsodium-source /tmp/*.deb /tmp/
+COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
-COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
+COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
-COPY --from=vault /tmp/*.deb /tmp/
+COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
-COPY --from=hypopg /tmp/*.deb /tmp/
-COPY --from=pg_repack /tmp/*.deb /tmp/
-COPY --from=pgvector /tmp/*.deb /tmp/
-COPY --from=pg_tle /tmp/*.deb /tmp/
+COPY --from=hypopg-source /tmp/*.deb /tmp/
+COPY --from=pg_repack-source /tmp/*.deb /tmp/
+COPY --from=pgvector-source /tmp/*.deb /tmp/
+COPY --from=pg_tle-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
