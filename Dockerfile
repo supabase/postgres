@@ -38,15 +38,79 @@ ARG pg_tle_release=1.0.3
 ARG supautils_release=1.7.2
 ARG wal_g_release=2.0.1
 
-FROM postgres:${postgresql_release} as base
+####################
+# Setup Postgres PPA
+####################
+FROM ubuntu:focal as ppa
+# Redeclare args for use in subsequent stages
+ARG postgresql_major
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+# Add Postgres PPA
+ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+RUN set -ex; \
+    mkdir -p /usr/local/share/keyrings/; \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}"; \
+    gpg --batch --export --armor "${postgresql_gpg_key}" > /usr/local/share/keyrings/postgres.gpg.asc; \
+    gpgconf --kill all; \
+    aptRepo="[ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main"; \
+    echo "deb $aptRepo" > /etc/apt/sources.list.d/pgdg.list
+
+####################
+# Download pre-built postgres
+####################
+FROM ppa as pg
+ARG postgresql_release
+# Download .deb packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
+FROM ppa as pg-dev
+ARG postgresql_release
+# Download .deb packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-server-dev-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
+####################
+# Install postgres
+####################
+FROM ubuntu:focal as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
 ARG postgresql_major
 
+# Install postgres
+COPY --from=pg /tmp /tmp
+# Ref: https://github.com/docker-library/postgres/blob/master/15/bullseye/Dockerfile#L91
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -ex; \
+    export PYTHONDONTWRITEBYTECODE=1; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
+    sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
+    apt-get install -y --no-install-recommends /tmp/*.deb; \
+    rm -rf /var/lib/apt/lists/*; \
+    find /usr -name '*.pyc' -type f -exec bash -c 'for pyc; do dpkg -S "$pyc" &> /dev/null || rm -vf "$pyc"; done' -- '{}' +
+
+ENV PATH=$PATH:/usr/lib/postgresql/${postgresql_major}/bin
+ENV PGDATA=/var/lib/postgresql/data
+
+# Make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
+RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_CTYPE=C.UTF-8
+
 FROM base as builder
 # Install build dependencies
+COPY --from=pg-dev /tmp /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-server-dev-${postgresql_major} \
+    /tmp/*.deb \
     build-essential \
     checkinstall \
     cmake \
@@ -78,7 +142,7 @@ RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcgal-dev \
-    libboost-serialization1.74-dev \
+    libboost-serialization1.71-dev \
     libmpfr-dev \
     libgmp-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -88,7 +152,7 @@ RUN cmake ..
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.74.0,libmpfr6 --nodoc
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
 
 FROM sfcgal as postgis-source
 # Download and extract
@@ -117,17 +181,19 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1,libgdal28 --nodoc
 
-FROM base as postgis
+FROM ppa as postgis
+# Latest available is 3.3.2
+ARG postgis_release
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-postgis-3 \
+    postgresql-${postgresql_major}-postgis-3=${postgis_release}+dfsg-1.pgdg20.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # 02-pgrouting.yml
 ####################
-FROM ccache as pgrouting
+FROM ccache as pgrouting-source
 # Download and extract
 ARG pgrouting_release
 ARG pgrouting_release_checksum
@@ -148,10 +214,18 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
+FROM ppa as pgrouting
+ARG pgrouting_release
+# Download pre-built packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-${postgresql_major}-pgrouting=${pgrouting_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
 ####################
 # 03-pgtap.yml
 ####################
-FROM builder as pgtap
+FROM builder as pgtap-source
 # Download and extract
 ARG pgtap_release
 ARG pgtap_release_checksum
@@ -169,7 +243,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 04-pg_cron.yml
 ####################
-FROM ccache as pg_cron
+FROM ccache as pg_cron-source
 # Download and extract
 ARG pg_cron_release
 ARG pg_cron_release_checksum
@@ -188,7 +262,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 05-pgaudit.yml
 ####################
-FROM ccache as pgaudit
+FROM ccache as pgaudit-source
 # Download and extract
 ARG pgaudit_release
 ARG pgaudit_release_checksum
@@ -213,7 +287,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 06-pgjwt.yml
 ####################
-FROM builder as pgjwt
+FROM builder as pgjwt-source
 # Download and extract
 ARG pgjwt_release
 ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
@@ -227,7 +301,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 07-pgsql-http.yml
 ####################
-FROM ccache as pgsql-http
+FROM ccache as pgsql-http-source
 # Download and extract
 ARG pgsql_http_release
 ARG pgsql_http_release_checksum
@@ -250,7 +324,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 ####################
 # 08-plpgsql_check.yml
 ####################
-FROM ccache as plpgsql_check
+FROM ccache as plpgsql_check-source
 # Download and extract
 ARG plpgsql_check_release
 ARG plpgsql_check_release_checksum
@@ -273,7 +347,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 09-pg-safeupdate.yml
 ####################
-FROM ccache as pg-safeupdate
+FROM ccache as pg-safeupdate-source
 # Download and extract
 ARG pg_safeupdate_release
 ARG pg_safeupdate_release_checksum
@@ -292,7 +366,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 10-timescaledb.yml
 ####################
-FROM ccache as timescaledb
+FROM ccache as timescaledb-source
 # Download and extract
 ARG timescaledb_release
 ARG timescaledb_release_checksum
@@ -312,7 +386,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgnam
 ####################
 # 11-wal2json.yml
 ####################
-FROM ccache as wal2json
+FROM ccache as wal2json-source
 # Download and extract
 ARG wal2json_release
 ARG wal2json_release_checksum
@@ -399,7 +473,7 @@ FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
 ####################
 # 14-pg_plan_filter.yml
 ####################
-FROM ccache as pg_plan_filter
+FROM ccache as pg_plan_filter-source
 # Download and extract
 ARG pg_plan_filter_release
 ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" \
@@ -414,7 +488,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 15-pg_net.yml
 ####################
-FROM ccache as pg_net
+FROM ccache as pg_net-source
 # Download and extract
 ARG pg_net_release
 ARG pg_net_release_checksum
@@ -437,7 +511,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 ####################
 # 16-rum.yml
 ####################
-FROM ccache as rum
+FROM ccache as rum-source
 # Download and extract
 ARG rum_release
 ARG rum_release_checksum
@@ -461,7 +535,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 17-pg_hashids.yml
 ####################
-FROM ccache as pg_hashids
+FROM ccache as pg_hashids-source
 # Download and extract
 ARG pg_hashids_release
 ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
@@ -491,7 +565,7 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
     make -j$(nproc)
 RUN make install
 
-FROM libsodium as pgsodium
+FROM libsodium as pgsodium-source
 # Download and extract
 ARG pgsodium_release
 ARG pgsodium_release_checksum
@@ -519,7 +593,7 @@ ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_rele
 ####################
 # 20-pg_stat_monitor.yml
 ####################
-FROM ccache as pg_stat_monitor
+FROM ccache as pg_stat_monitor-source
 # Download and extract
 ARG pg_stat_monitor_release
 ARG pg_stat_monitor_release_checksum
@@ -552,7 +626,7 @@ ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschem
 ####################
 # 23-vault.yml
 ####################
-FROM builder as vault
+FROM builder as vault-source
 # Download and extract
 ARG vault_release
 ARG vault_release_checksum
@@ -611,15 +685,17 @@ FROM scratch as pgroonga-deb
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 
 FROM base as pgroonga
+# Latest available is 3.0.3
+ARG pgroonga_release
 # Download pre-built packages
-ADD "https://packages.groonga.org/debian/groonga-apt-source-latest-bullseye.deb" /tmp/source.deb
+ADD "https://packages.groonga.org/ubuntu/groonga-apt-source-latest-focal.deb" /tmp/source.deb
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     /tmp/source.deb \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-pgdg-pgroonga \
+    postgresql-${postgresql_major}-pgdg-pgroonga=${pgroonga_release}-1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -635,7 +711,7 @@ ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}
 ####################
 # 26-hypopg.yml
 ####################
-FROM ccache as hypopg
+FROM ccache as hypopg-source
 # Download and extract
 ARG hypopg_release
 ARG hypopg_release_checksum
@@ -654,7 +730,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 27-pg_repack.yml
 ####################
-FROM ccache as pg_repack
+FROM ccache as pg_repack-source
 ARG pg_repack_release
 ARG pg_repack_release_checksum
 ADD --checksum=${pg_repack_release_checksum} \
@@ -680,7 +756,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 # 28-pgvector.yml
 ####################
-FROM ccache as pgvector
+FROM ccache as pgvector-source
 ARG pgvector_release
 ARG pgvector_release_checksum
 ADD --checksum=${pgvector_release_checksum} \
@@ -698,7 +774,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 29-pg_tle.yml
 ####################
-FROM ccache as pg_tle
+FROM ccache as pg_tle-source
 ARG pg_tle_release
 ARG pg_tle_release_checksum
 ADD --checksum=${pg_tle_release_checksum} \
@@ -742,35 +818,58 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 # Collect extension packages
 ####################
 FROM scratch as extensions
-COPY --from=postgis-source /tmp/*.deb /tmp/
-COPY --from=pgrouting /tmp/*.deb /tmp/
-COPY --from=pgtap /tmp/*.deb /tmp/
-COPY --from=pg_cron /tmp/*.deb /tmp/
-COPY --from=pgaudit /tmp/*.deb /tmp/
-COPY --from=pgjwt /tmp/*.deb /tmp/
-COPY --from=pgsql-http /tmp/*.deb /tmp/
-COPY --from=plpgsql_check /tmp/*.deb /tmp/
-COPY --from=pg-safeupdate /tmp/*.deb /tmp/
-COPY --from=timescaledb /tmp/*.deb /tmp/
-COPY --from=wal2json /tmp/*.deb /tmp/
+COPY --from=postgis /tmp/*.deb /tmp/
+COPY --from=pgrouting-source /tmp/*.deb /tmp/
+COPY --from=pgtap-source /tmp/*.deb /tmp/
+COPY --from=pg_cron-source /tmp/*.deb /tmp/
+COPY --from=pgaudit-source /tmp/*.deb /tmp/
+COPY --from=pgjwt-source /tmp/*.deb /tmp/
+COPY --from=pgsql-http-source /tmp/*.deb /tmp/
+COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
+COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=timescaledb-source /tmp/*.deb /tmp/
+COPY --from=wal2json-source /tmp/*.deb /tmp/
 # COPY --from=pljava /tmp/*.deb /tmp/
 COPY --from=plv8 /tmp/*.deb /tmp/
-COPY --from=pg_plan_filter /tmp/*.deb /tmp/
-COPY --from=pg_net /tmp/*.deb /tmp/
-COPY --from=rum /tmp/*.deb /tmp/
-COPY --from=pgsodium /tmp/*.deb /tmp/
-COPY --from=pg_hashids /tmp/*.deb /tmp/
+COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
+COPY --from=pg_net-source /tmp/*.deb /tmp/
+COPY --from=rum-source /tmp/*.deb /tmp/
+COPY --from=pgsodium-source /tmp/*.deb /tmp/
+COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
-COPY --from=pg_stat_monitor /tmp/*.deb /tmp/
+COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
-COPY --from=vault /tmp/*.deb /tmp/
+COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
-COPY --from=hypopg /tmp/*.deb /tmp/
-COPY --from=pg_repack /tmp/*.deb /tmp/
-COPY --from=pgvector /tmp/*.deb /tmp/
-COPY --from=pg_tle /tmp/*.deb /tmp/
+COPY --from=hypopg-source /tmp/*.deb /tmp/
+COPY --from=pg_repack-source /tmp/*.deb /tmp/
+COPY --from=pgvector-source /tmp/*.deb /tmp/
+COPY --from=pg_tle-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
+
+####################
+# Download gosu for easy step-down from root
+####################
+FROM ubuntu:focal as gosu
+ARG TARGETARCH
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+# Download binary
+ARG GOSU_VERSION=1.16
+ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
+ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
+    /usr/local/bin/gosu
+ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH.asc \
+    /usr/local/bin/gosu.asc
+# Verify checksum
+RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY && \
+    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
+    gpgconf --kill all && \
+    chmod +x /usr/local/bin/gosu
 
 ####################
 # Build final image
@@ -818,12 +917,19 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# Setup default host and locale
-ENV POSTGRES_HOST=/var/run/postgresql
-ENV POSTGRES_INITDB_ARGS=--lc-ctype=C.UTF-8
-CMD ["postgres", "-D", "/etc/postgresql"]
+# Add upstream entrypoint script
+COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+ADD --chmod=0755 \
+    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+    /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+STOPSIGNAL SIGINT
+EXPOSE 5432
+
+ENV POSTGRES_HOST=/var/run/postgresql
+CMD ["postgres", "-D", "/etc/postgresql"]
 
 ####################
 # Update build cache
