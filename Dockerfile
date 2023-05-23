@@ -565,7 +565,7 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
     make -j$(nproc)
 RUN make install
 
-FROM libsodium as pgsodium
+FROM libsodium as pgsodium-source
 # Download and extract
 ARG pgsodium_release
 ARG pgsodium_release_checksum
