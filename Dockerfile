@@ -42,6 +42,8 @@ ARG wal_g_release=2.0.1
 # Setup Postgres PPA
 ####################
 FROM ubuntu:focal as ppa
+# Redeclare args for use in subsequent stages
+ARG postgresql_major
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     ca-certificates \
@@ -60,8 +62,6 @@ RUN set -ex; \
 # Download pre-built postgres
 ####################
 FROM ppa as pg
-# Redeclare args for use in subsequent stages
-ARG postgresql_major
 ARG postgresql_release
 # Download .deb packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
@@ -70,8 +70,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends --download-only
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 FROM ppa as pg-dev
-# Redeclare args for use in subsequent stages
-ARG postgresql_major
 ARG postgresql_release
 # Download .deb packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
@@ -144,7 +142,7 @@ RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcgal-dev \
-    libboost-serialization1.74-dev \
+    libboost-serialization1.71-dev \
     libmpfr-dev \
     libgmp-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -154,7 +152,7 @@ RUN cmake ..
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.74.0,libmpfr6 --nodoc
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
 
 FROM sfcgal as postgis-source
 # Download and extract
@@ -183,10 +181,12 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj19,libjson-c5,libprotobuf-c1,libgdal28 --nodoc
 
-FROM base as postgis
+FROM ppa as postgis
+# Latest available is 3.3.2
+ARG postgis_release
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-postgis-3 \
+    postgresql-${postgresql_major}-postgis-3=${postgis_release}+dfsg-1.pgdg20.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -677,15 +677,17 @@ FROM scratch as pgroonga-deb
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 
 FROM base as pgroonga
+# Latest available is 3.0.3
+ARG pgroonga_release
 # Download pre-built packages
-ADD "https://packages.groonga.org/debian/groonga-apt-source-latest-bullseye.deb" /tmp/source.deb
+ADD "https://packages.groonga.org/ubuntu/groonga-apt-source-latest-focal.deb" /tmp/source.deb
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     /tmp/source.deb \
     && rm -rf /var/lib/apt/lists/*
 RUN rm /tmp/source.deb
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-pgdg-pgroonga \
+    postgresql-${postgresql_major}-pgdg-pgroonga=${pgroonga_release}-1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -808,7 +810,7 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 # Collect extension packages
 ####################
 FROM scratch as extensions
-COPY --from=postgis-source /tmp/*.deb /tmp/
+COPY --from=postgis /tmp/*.deb /tmp/
 COPY --from=pgrouting /tmp/*.deb /tmp/
 COPY --from=pgtap /tmp/*.deb /tmp/
 COPY --from=pg_cron /tmp/*.deb /tmp/
