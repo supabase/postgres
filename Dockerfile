@@ -38,15 +38,81 @@ ARG pg_tle_release=1.0.3
 ARG supautils_release=1.7.2
 ARG wal_g_release=2.0.1
 
-FROM postgres:${postgresql_release} as base
+####################
+# Setup Postgres PPA
+####################
+FROM ubuntu:focal as ppa
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+# Add Postgres PPA
+ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+RUN set -ex; \
+    mkdir -p /usr/local/share/keyrings/; \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}"; \
+    gpg --batch --export --armor "${postgresql_gpg_key}" > /usr/local/share/keyrings/postgres.gpg.asc; \
+    gpgconf --kill all; \
+    aptRepo="[ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main"; \
+    echo "deb $aptRepo" > /etc/apt/sources.list.d/pgdg.list
+
+####################
+# Download pre-built postgres
+####################
+FROM ppa as pg
+# Redeclare args for use in subsequent stages
+ARG postgresql_major
+ARG postgresql_release
+# Download .deb packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
+FROM ppa as pg-dev
+# Redeclare args for use in subsequent stages
+ARG postgresql_major
+ARG postgresql_release
+# Download .deb packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    postgresql-server-dev-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
+
+####################
+# Install postgres
+####################
+FROM ubuntu:focal as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
 ARG postgresql_major
 
+COPY --from=pg /tmp /tmp
+
+# Ref: https://github.com/docker-library/postgres/blob/master/15/bullseye/Dockerfile#L91
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -ex; \
+    export PYTHONDONTWRITEBYTECODE=1; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
+    sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
+    apt-get install -y --no-install-recommends /tmp/*.deb; \
+    rm -rf /var/lib/apt/lists/*; \
+    find /usr -name '*.pyc' -type f -exec bash -c 'for pyc; do dpkg -S "$pyc" &> /dev/null || rm -vf "$pyc"; done' -- '{}' +
+
+ENV PATH=$PATH:/usr/lib/postgresql/${postgresql_major}/bin
+ENV PGDATA=/var/lib/postgresql/data
+
+# Make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
+RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_CTYPE=C.UTF-8
+
 FROM base as builder
 # Install build dependencies
+COPY --from=pg-dev /tmp /tmp
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-server-dev-${postgresql_major} \
+    /tmp/*.deb \
     build-essential \
     checkinstall \
     cmake \
@@ -773,6 +839,29 @@ COPY --from=pg_tle /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
+# Download gosu for easy step-down from root
+####################
+FROM ubuntu:focal as gosu
+ARG TARGETARCH
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+# Download binary
+ARG GOSU_VERSION=1.16
+ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
+ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
+    /usr/local/bin/gosu
+ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH.asc \
+    /usr/local/bin/gosu.asc
+# Verify checksum
+RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY && \
+    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
+    gpgconf --kill all && \
+    chmod +x /usr/local/bin/gosu
+
+####################
 # Build final image
 ####################
 FROM base as production
@@ -818,12 +907,19 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# Setup default host and locale
-ENV POSTGRES_HOST=/var/run/postgresql
-ENV POSTGRES_INITDB_ARGS=--lc-ctype=C.UTF-8
-CMD ["postgres", "-D", "/etc/postgresql"]
+# Add upstream entrypoint script
+COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+ADD --chmod=0655 \
+    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+    /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+STOPSIGNAL SIGINT
+EXPOSE 5432
+
+ENV POSTGRES_HOST=/var/run/postgresql
+CMD ["postgres", "-D", "/etc/postgresql"]
 
 ####################
 # Update build cache
