@@ -85,8 +85,8 @@ FROM ubuntu:focal as base
 ARG TARGETARCH
 ARG postgresql_major
 
+# Install postgres
 COPY --from=pg /tmp /tmp
-
 # Ref: https://github.com/docker-library/postgres/blob/master/15/bullseye/Dockerfile#L91
 ENV DEBIAN_FRONTEND=noninteractive
 RUN set -ex; \
@@ -919,7 +919,7 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 
 # Add upstream entrypoint script
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
-ADD --chmod=0655 \
+ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
     /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
