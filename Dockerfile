@@ -50,13 +50,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # Add Postgres PPA
 ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
-RUN set -ex; \
-    mkdir -p /usr/local/share/keyrings/; \
-    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}"; \
-    gpg --batch --export --armor "${postgresql_gpg_key}" > /usr/local/share/keyrings/postgres.gpg.asc; \
-    gpgconf --kill all; \
-    aptRepo="[ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main"; \
-    echo "deb $aptRepo" > /etc/apt/sources.list.d/pgdg.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
+    echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
 ####################
 # Download pre-built postgres
@@ -95,7 +90,7 @@ RUN set -ex; \
     apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
     sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
     apt-get install -y --no-install-recommends /tmp/*.deb; \
-    rm -rf /var/lib/apt/lists/*; \
+    rm -rf /var/lib/apt/lists/* /tmp/*; \
     find /usr -name '*.pyc' -type f -exec bash -c 'for pyc; do dpkg -S "$pyc" &> /dev/null || rm -vf "$pyc"; done' -- '{}' +
 
 ENV PATH=$PATH:/usr/lib/postgresql/${postgresql_major}/bin
@@ -114,7 +109,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     checkinstall \
     cmake \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/*
 
 FROM builder as ccache
 # Cache large build artifacts
@@ -152,7 +147,7 @@ RUN cmake ..
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --pkgname=sfcgal --pkgversion=${sfcgal_release} --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
 
 FROM sfcgal as postgis-source
 # Download and extract
