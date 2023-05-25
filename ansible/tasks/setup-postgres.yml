@@ -27,6 +27,9 @@
   apt:
     name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
 
+- name: Hold postgres {{ postgresql_release }} from apt upgrade
+  shell: apt-mark hold postgresql-{{ postgresql_major }}
+
 - name: Create symlink to /usr/lib/postgresql/bin
   shell:
     cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
