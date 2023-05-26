@@ -71,6 +71,7 @@ jobs:
               if [ $count -ge "$retries" ]; then
                   echo "Retry $count/$retries exited $exit, no more retries left."
                   docker stop -t 2 "$container"
+                  docker logs "$container"
                   return $exit
               fi
               sleep 1;
