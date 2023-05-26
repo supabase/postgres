@@ -788,6 +788,25 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-postgresql-anonymizer.yml
+####################
+FROM ccache as postgresql_anonymizer-source
+ARG postgresql_anonymizer_release
+ARG postgresql_anonymizer_release_checksum
+ADD --checksum=${postgresql_anonymizer_release_checksum} \
+    "https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/${postgresql_anonymizer_release}/postgresql_anonymizer-1.1.0.tar.gz" \
+    /tmp/postgresql_anonymizer.tar.gz
+RUN tar -xvf /tmp/postgresql_anonymizer.tar.gz -C /tmp && \
+    rm -rf /tmp/postgresql_anonymizer.tar.gz
+# Build from source
+WORKDIR /tmp/postgresql_anonymizer-${postgresql_anonymizer_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+####################
 # internal/supautils.yml
 ####################
 FROM base as supautils
@@ -841,6 +860,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
+COPY --from=postgresql_anonymizer-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
