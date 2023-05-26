@@ -50,7 +50,7 @@ jobs:
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
-          -d supabase/postgres:latest
+          supabase/postgres:latest
 
       - name: Install psql
         run: |
