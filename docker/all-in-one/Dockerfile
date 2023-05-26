@@ -221,7 +221,7 @@ RUN useradd --create-home --shell /bin/bash postgrest && \
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
     chmod g+w /etc/wal-g
-RUN mkdir -p /var/log/wal-g && chmod +x /usr/bin/admin-mgr && chmod ug+s /usr/bin/admin-mgr && touch /etc/wal-g/config.json && chown adminapi:adminapi /etc/wal-g/config.json
+RUN mkdir -p /var/log/wal-g && chown -R postgres:postgres /var/log/wal-g && chmod +x /usr/bin/admin-mgr && chmod ug+s /usr/bin/admin-mgr && touch /etc/wal-g/config.json && chown adminapi:adminapi /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
 # Add healthcheck and entrypoint scripts
