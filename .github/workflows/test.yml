@@ -46,15 +46,12 @@ jobs:
 
       - name: Start Postgres
         run: |
-          docker run --rm --pull=never \
+          docker rm -f supabase_postgres || true
+          docker run --pull=never \
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
           -d supabase/postgres:latest
-
-          sleep 5
-
-          docker logs supabase_postgres
 
       - name: Install psql
         run: |
@@ -76,6 +73,7 @@ jobs:
                   echo "Retry $count/$retries exited $exit, no more retries left."
                   docker stop -t 2 "$container"
                   docker logs "$container"
+                  docker rm -f "$container" || true
                   return $exit
               fi
               sleep 1;
