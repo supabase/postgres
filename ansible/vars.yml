@@ -136,4 +136,4 @@ pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
 
 postgresql_anonymizer_release: "1.1.0"
-postgresql_anonymizer_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
+postgresql_anonymizer_release_checksum: sha256:08b09d2ff9b962f96c60db7e6f8e79cf7253eb8772516998fc35ece08633d3ad
