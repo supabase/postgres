@@ -1,7 +1,7 @@
 # postgresql-anonymizer
 - name: postgresql-anonymizer - download latest release
   get_url:
-    url: "https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/{{ postgresql_anonymizer_release }}/postgresql_anonymizer-1.1.0.tar.gz"
+    url: "https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/{{ postgresql_anonymizer_release }}/postgresql_anonymizer-{{ postgresql_anonymizer_release }}.tar.gz"
     dest: /tmp/postgresql-anonymizer-{{ postgresql_anonymizer_release }}.tar.gz
     checksum: "{{ postgresql_anonymizer_release_checksum }}"
     timeout: 60

@@ -794,7 +794,7 @@ FROM ccache as postgresql_anonymizer-source
 ARG postgresql_anonymizer_release
 ARG postgresql_anonymizer_release_checksum
 ADD --checksum=${postgresql_anonymizer_release_checksum} \
-    "https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/${postgresql_anonymizer_release}/postgresql_anonymizer-1.1.0.tar.gz" \
+    "https://gitlab.com/dalibo/postgresql_anonymizer/-/archive/${postgresql_anonymizer_release}/postgresql_anonymizer-${postgresql_anonymizer_release}.tar.gz" \
     /tmp/postgresql_anonymizer.tar.gz
 RUN tar -xvf /tmp/postgresql_anonymizer.tar.gz -C /tmp && \
     rm -rf /tmp/postgresql_anonymizer.tar.gz
