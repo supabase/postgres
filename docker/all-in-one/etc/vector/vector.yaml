@@ -1,0 +1,214 @@
+api:
+  enabled: true
+  address: "0.0.0.0:{{ .ApiPort }}"
+
+sources:
+  service_gotrue:
+    type: file
+    include: 
+      - /var/log/services/gotrue.log
+  service_kong:
+    type: file
+    include: 
+      - /var/log/services/kong.log
+  service_postgrest:
+    type: file
+    include: 
+      - /var/log/services/postgrest.log
+  service_pgbouncer:
+    type: file
+    include: 
+      - /var/log/services/pgbouncer.log
+  service_adminapi:
+    type: file
+    include: 
+      - /var/log/services/adminapi.log
+  postgres_log:
+    type: file
+    include:
+      - /var/log/postgresql/postgres*.csv
+    read_from: end
+    multiline:
+      start_pattern: '^20[0-9][0-9]-[0-1][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{3} UTC,"'
+      mode: halt_before
+      condition_pattern: '^20[0-9][0-9]-[0-1][0-9]-[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9]{3} UTC,"'
+      timeout_ms: 500
+
+transforms:
+  # Kong logs only include api requests
+  kong_logs:
+    type: remap
+    inputs:
+      - service_kong
+    source: |-
+      .project = "{{ .ProjectRef }}"
+      req, err = parse_nginx_log(.message, "combined")
+      if err == null {
+          .timestamp = req.timestamp
+          .metadata.request.headers.referer = req.referer
+          .metadata.request.headers.user_agent = req.agent
+          .metadata.request.headers.cf_connecting_ip = req.client
+          .metadata.request.method = req.method
+          .metadata.request.path = req.path
+          .metadata.request.protocol = req.protocol
+          .metadata.response.status_code = req.status
+      }
+  # TODO: create a separate page and filter for kong error logs
+  kong_err:
+    type: remap
+    inputs:
+      - service_kong
+    source: |-
+      .project = "{{ .ProjectRef }}"
+      .metadata.request.method = "GET"
+      .metadata.response.status_code = 200
+      parsed, err = parse_nginx_log(.message, "error")
+      if err == null {
+          .timestamp = parsed.timestamp
+          .severity = parsed.severity
+          .metadata.request.host = parsed.host
+          .metadata.request.headers.cf_connecting_ip = parsed.client
+          url, err = split(parsed.request, " ")
+          if err == null {
+              .metadata.request.method = url[0]
+              .metadata.request.path = url[1]
+              .metadata.request.protocol = url[2]
+          }
+      }
+  # Gotrue logs are structured json strings which frontend parses directly. But we keep metadata for consistency.
+  auth_logs:
+    type: remap
+    inputs:
+      - service_gotrue
+    source: |-
+      .project = "{{ .ProjectRef }}"
+      parsed, err = parse_json(.message)
+      if err == null {
+          .metadata.timestamp = parsed.time
+          .metadata = merge!(.metadata, parsed)
+          .metadata.host = "$HOSTNAME"
+      }
+  # PostgREST logs are structured so we separate timestamp from message using regex
+  rest_logs:
+    type: remap
+    inputs:
+      - service_postgrest
+    source: |-
+      .project = "{{ .ProjectRef }}"
+      parsed, err = parse_regex(.message, r'^(?P<time>.*?): (?P<msg>.*)$')
+      if err == null {
+          .message = parsed.msg
+          .timestamp = to_timestamp!(parsed.time)
+          .metadata.host = "$HOSTNAME"
+      }
+      parsed, err = parse_json(.message)
+      if err == null {
+          .metadata = merge!(.metadata, parsed)
+      }
+  # Postgres logs some messages to stderr which we map to warning severity level
+  csv_parse:
+    type: remap
+    inputs:
+      - postgres_log
+    source: |-
+      csv_data = parse_csv!(.message)
+      .metadata.parsed.timestamp = csv_data[0]
+      .metadata.parsed.user_name = csv_data[1]
+      .metadata.parsed.database_name = csv_data[2]
+      .metadata.parsed.process_id = to_int(csv_data[3]) ?? null
+      .metadata.parsed.connection_from = csv_data[4]
+      .metadata.parsed.session_id = csv_data[5]
+      .metadata.parsed.session_line_num = to_int(csv_data[6]) ?? null
+      .metadata.parsed.command_tag = csv_data[7]
+      .metadata.parsed.session_start_time = csv_data[8]
+      .metadata.parsed.virtual_transaction_id = csv_data[9]
+      .metadata.parsed.transaction_id = to_int(csv_data[10]) ?? null
+      .metadata.parsed.error_severity = csv_data[11]
+      .metadata.parsed.sql_state_code = csv_data[12]
+      .metadata.parsed.message = csv_data[13]
+      .metadata.parsed.detail = csv_data[14]
+      .metadata.parsed.hint = csv_data[15]
+      .metadata.parsed.internal_query = csv_data[16]
+      .metadata.parsed.internal_query_pos = to_int(csv_data[17]) ?? null
+      .metadata.parsed.context = csv_data[18]
+      .metadata.parsed.query = csv_data[19]
+      .metadata.parsed.query_pos = to_int(csv_data[20]) ?? null
+      .metadata.parsed.location = csv_data[21]
+      .metadata.parsed.application_name = csv_data[22]
+      .metadata.parsed.backend_type = csv_data[23]
+      .metadata.parsed.leader_pid = to_int(csv_data[24]) ?? null
+      .metadata.parsed.query_id = to_int(csv_data[25]) ?? null
+
+      z_ts = replace!(.metadata.parsed.timestamp, " UTC", "Z")
+      iso8601_ts = replace(z_ts, " ", "T")
+
+      .timestamp = iso8601_ts
+
+      # Sends original csv log line duplicating data. Used for QA.
+      # .metadata.parsed_from = .message
+
+      .message = del(.metadata.parsed.message)
+      .metadata.host = del(.host)
+      del(.file)
+      del(.source_type)
+
+  drop_metrics:
+    type: filter
+    inputs:
+      - csv_parse
+    condition: >
+      .metadata.parsed.application_name != "postgres_exporter" && .metadata.parsed.application_name != "realtime_rls"
+
+  add_project_ref:
+    type: add_fields
+    inputs:
+      - drop_metrics
+    fields:
+      project: {{ .ProjectRef }}
+
+  auth_failures:
+    type: filter
+    inputs:
+      - postgres_log
+    condition: >-
+      contains!(.message, "password authentication failed for user")
+
+sinks:
+  logflare_auth:
+    type: "http"
+    inputs:
+      - auth_logs
+    encoding:
+      codec: "json"
+    method: "post"
+    request:
+      retry_max_duration_secs: 10
+    uri: "https://{{ .LogflareHost }}/logs?api_key={{ .ApiKey }}&source={{ .GotrueSource }}"
+  logflare_rest:
+    type: "http"
+    inputs:
+      - rest_logs
+    encoding:
+      codec: "json"
+    method: "post"
+    request:
+      retry_max_duration_secs: 10
+    uri: "https://{{ .LogflareHost }}/logs?api_key={{ .ApiKey }}&source={{ .PostgrestSource }}"
+  logflare_db:
+    type: "http"
+    inputs:
+      - add_project_ref
+    encoding:
+      codec: "json"
+    method: "post"
+    request:
+      retry_max_duration_secs: 10
+    uri: "https://{{ .LogflareHost }}/logs?api_key={{ .ApiKey }}&source={{ .DbSource }}"
+  file_postgres:
+    type: file
+    inputs:
+      - auth_failures
+    encoding:
+      codec: text
+    path: >-
+      /var/log/postgresql/auth-failures.csv
