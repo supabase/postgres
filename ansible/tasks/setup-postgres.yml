@@ -13,11 +13,62 @@
     repo: "deb https://apt-archive.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg-archive main"
     state: present
 
+# let's build binaries from their published source packages
+- name: Add Postgres PPA - source
+  apt_repository:
+    repo: "deb-src https://apt-archive.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg-archive main"
+    state: present
+
+- name: Create temporary build directory
+  tempfile:
+    state: directory
+  register: pg_build_dir
+
+- name: Setting mcpu (arm)
+  set_fact:
+    mcpu: "neoverse-n1"
+  when: platform == "arm64"
+
+- name: Postgres - build
+  shell: |
+    set -e
+    export PYTHONDONTWRITEBYTECODE=1
+    savedAptMark="$(apt-mark showmanual)"
+    cd "{{ pg_build_dir.path }}"
+
+    # create a temporary local APT repo to install from (so that dependency resolution can be handled by APT, as it should be)
+    apt-get update
+    apt-get install -y --no-install-recommends dpkg-dev
+    echo "deb [ trusted=yes ] file://{{ pg_build_dir.path }} ./" > /etc/apt/sources.list.d/temp.list
+    _update_repo() {
+      dpkg-scanpackages . > Packages
+      apt-get -o Acquire::GzipIndexes=false update
+    }
+    _update_repo
+
+    # build .deb files from upstream's source packages (which are verified by apt-get)
+    export DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
+    export DEB_CPPFLAGS_APPEND="-mcpu={{ mcpu }} -fsigned-char"
+
+    # we have to build postgresql-common first because postgresql-15 shares "debian/rules" logic with it: https://salsa.debian.org/postgresql/postgresql/-/commit/99f44476e258cae6bf9e919219fa2c5414fa2876
+    # (and it "Depends: pgdg-keyring")
+    apt-get build-dep -y postgresql-common pgdg-keyring
+    apt-get source --compile postgresql-common pgdg-keyring
+    _update_repo
+    apt-get build-dep -y "postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1"
+    apt-get source --compile "postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1"
+
+    # we don't remove APT lists here because they get re-downloaded and removed later
+    # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+    # (which is done after we install the built packages so we don't have to redownload any overlapping dependencies)
+    apt-mark showmanual | xargs apt-mark auto > /dev/null
+    apt-mark manual $savedAptMark
+    _update_repo
+
 - name: Postgres - install commons
   apt:
     name: postgresql-common
-    state: latest
-    update_cache: yes
+    install_recommends: no
 
 - name: Do not create main cluster
   shell:
@@ -26,6 +77,16 @@
 - name: Postgres - install server
   apt:
     name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
+    install_recommends: no
+
+# if we have leftovers from building, let's purge them (including extra, unnecessary build deps)
+- name: Remove build dependencies
+  shell: |
+    set -e
+    rm -rf /var/lib/apt/lists/*
+    apt-get purge -y --auto-remove
+    rm -rf "{{ pg_build_dir.path }}" /etc/apt/sources.list.d/temp.list
+    find /usr -name '*.pyc' -type f -exec bash -c 'for pyc; do dpkg -S "$pyc" &> /dev/null || rm -vf "$pyc"; done' -- '{}' +
 
 - name: Hold postgres {{ postgresql_release }} from apt upgrade
   shell: apt-mark hold postgresql-{{ postgresql_major }}
