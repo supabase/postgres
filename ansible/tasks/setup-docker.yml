@@ -5,7 +5,10 @@
 
 # Builtin apt module does not support wildcard for deb paths
 - name: Install extensions
-  shell: apt-get install -y --no-install-recommends /tmp/extensions/*.deb
+  shell: |
+    set -e
+    apt-get update
+    apt-get install -y --no-install-recommends /tmp/extensions/*.deb
 
 - name: pg_cron - set cron.database_name
   become: yes
