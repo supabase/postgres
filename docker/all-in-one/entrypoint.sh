@@ -125,7 +125,9 @@ fi
 
 if [ "${PGDATA:-}" ]; then
     mkdir -p "$(dirname "${PGDATA}")"
-    ln -s "${PGDATA}" "${PGDATA_REAL}"
+    if [ "${PGDATA_REAL:-}" ]; then
+        ln -s "${PGDATA}" "${PGDATA_REAL}"
+    fi
     chown postgres:postgres "$PGDATA"
     sed -i "s|data_directory = '.*'|data_directory = '$PGDATA'|g" $PG_CONF
 fi
