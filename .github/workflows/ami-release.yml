@@ -56,6 +56,25 @@ jobs:
             tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
 
+      - name: Build Postgres deb
+        uses: docker/build-push-action@v3
+        with:
+          push: false
+          load: true
+          file: docker/Dockerfile
+          target: pg-deb
+          tags: supabase/postgres:deb
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Extract Postgres deb
+        run: |
+          mkdir -p /tmp/build ansible/files/postgres
+          docker save supabase/postgres:deb | tar xv -C /tmp/build
+          for layer in /tmp/build/*/layer.tar; do
+            tar xvf "$layer" -C ansible/files/postgres --strip-components 1
+          done
+
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
