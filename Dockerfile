@@ -648,6 +648,19 @@ ADD --checksum=${groonga_release_checksum} \
     /tmp/groonga.tar.gz
 RUN tar -xvf /tmp/groonga.tar.gz -C /tmp && \
     rm -rf /tmp/groonga.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    zlib1g-dev \
+    liblz4-dev \
+    libz-dev \
+    libzstd-dev \
+    libmsgpack-dev \
+    libzmq3-dev \
+    libevent-dev \
+    libmecab-dev \
+    mecab-naist-jdic \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/groonga-${groonga_release}
 RUN ./configure
@@ -665,16 +678,12 @@ ADD --checksum=${pgroonga_release_checksum} \
     /tmp/pgroonga.tar.gz
 RUN tar -xvf /tmp/pgroonga.tar.gz -C /tmp && \
     rm -rf /tmp/pgroonga.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pgroonga-${pgroonga_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libmsgpackc2 --nodoc
 
 FROM scratch as pgroonga-deb
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
