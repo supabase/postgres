@@ -10,12 +10,12 @@ postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340
 pgbouncer_release: "1.19.0"
 pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
 
-postgrest_release: "11.0.1"
-postgrest_arm_release_checksum: sha1:3dd463fa514f9acfce40f186436e989e668ebb36
-postgrest_x86_release_checksum: sha1:836221d191eb3e6c5fdd468e1812501cbf607268
+postgrest_release: "10.2.0"
+postgrest_arm_release_checksum: sha1:93404f97cc5079d8412ffa23c415a394503d2f24
+postgrest_x86_release_checksum: sha1:78cb66b297eee56d84a0a46869a4be9f388cddc7
 
-gotrue_release: v2.60.7
-gotrue_release_checksum: sha1:bfccf8e0e011fa57377f02d8fab69d131bb64271
+gotrue_release: v2.66.0
+gotrue_release_checksum: sha1:e6d0a4e29b22431eca57273fed7831b5417152f6
 
 aws_cli_release: "2.2.7"
 
@@ -54,8 +54,8 @@ pgrouting_release_checksum: sha256:a4e034efee8cf67582b67033d9c3ff714a09d8f542533
 pgtap_release: "1.2.0"
 pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
 
-pg_cron_release: "1.5.2"
-pg_cron_release_checksum: sha256:6f7f0980c03f1e2a6a747060e67bf4a303ca2a50e941e2c19daeed2b44dec744
+pg_cron_release: "1.4.2"
+pg_cron_release_checksum: sha256:3652722ea98d94d8e27bf5e708dd7359f55a818a43550d046c5064c98876f1a8
 
 pgaudit_release: "1.7.0"
 pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f77f8f3126d428a8bd8
