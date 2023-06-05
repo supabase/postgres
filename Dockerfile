@@ -652,13 +652,12 @@ RUN tar -xvf /tmp/groonga.tar.gz -C /tmp && \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     liblz4-dev \
-    libz-dev \
     libzstd-dev \
     libmsgpack-dev \
     libzmq3-dev \
     libevent-dev \
     libmecab-dev \
-    mecab-naist-jdic \
+    rapidjson-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -667,7 +666,7 @@ RUN ./configure
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=zlib1g,liblz4-1,libzstd1,libmsgpackc2,libzmq5,libevent-2.1-7,libmecab2 --nodoc
 
 FROM groonga as pgroonga-source
 # Download and extract
@@ -683,7 +682,7 @@ WORKDIR /tmp/pgroonga-${pgroonga_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libmsgpackc2 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM scratch as pgroonga-deb
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
