@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - develop
-      - ansi-dock
-      - build-pg
     paths:
       - '.github/workflows/ami-release.yml'
       - 'common.vars.pkr.hcl'
@@ -130,7 +128,7 @@ jobs:
           target_commitish: ${{github.sha}}
 
       - name: Slack Notification on Failure
-        if: ${{ false }}
+        if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}

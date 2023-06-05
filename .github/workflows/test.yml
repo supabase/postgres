@@ -8,11 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  config:
-    runs-on: arm-runner
-    steps:
-      - run: docker run --rm -t supabase/postgres:15.1.0.84 pg_config
-
   build:
     strategy:
       matrix:
