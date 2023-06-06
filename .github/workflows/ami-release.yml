@@ -66,10 +66,10 @@ jobs:
           file: docker/Dockerfile
           target: pg-deb
           build-args: |
-            ubuntu_release="${{ matrix.ubuntu }}"
-            postgresql_major="${{ steps.version.outputs.postgresql_major }}"
-            postgresql_release="${{ steps.version.outputs.postgresql_release }}"
-            CPPFLAGS="-mcpu=${{ matrix.mcpu }}"
+            ubuntu_release=${{ matrix.ubuntu }}
+            postgresql_major=${{ steps.version.outputs.postgresql_major }}
+            postgresql_release=${{ steps.version.outputs.postgresql_release }}
+            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
           tags: supabase/postgres:deb
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
