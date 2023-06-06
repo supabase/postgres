@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.5-labs
+ARG ubuntu_release=focal
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
@@ -41,8 +42,9 @@ ARG wal_g_release=2.0.1
 ####################
 # Setup Postgres PPA
 ####################
-FROM ubuntu:focal as ppa
+FROM ubuntu:${ubuntu_release} as ppa
 # Redeclare args for use in subsequent stages
+ARG ubuntu_release
 ARG postgresql_major
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
@@ -51,7 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Add Postgres PPA
 ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
-    echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
+    echo "deb https://apt-archive.postgresql.org/pub/repos/apt ${ubuntu_release}-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
 ####################
 # Download pre-built postgres
@@ -75,9 +77,10 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 # Install postgres
 ####################
-FROM ubuntu:focal as base
+FROM ubuntu:${ubuntu_release} as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
+ARG ubuntu_release
 ARG postgresql_major
 
 # Install postgres
@@ -691,7 +694,7 @@ FROM base as pgroonga
 # Latest available is 3.0.3
 ARG pgroonga_release
 # Download pre-built packages
-ADD "https://packages.groonga.org/ubuntu/groonga-apt-source-latest-focal.deb" /tmp/source.deb
+ADD "https://packages.groonga.org/ubuntu/groonga-apt-source-latest-${ubuntu_release}.deb" /tmp/source.deb
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     /tmp/source.deb \
@@ -854,7 +857,7 @@ COPY --from=supautils /tmp/*.deb /tmp/
 ####################
 # Download gosu for easy step-down from root
 ####################
-FROM ubuntu:focal as gosu
+FROM ubuntu:${ubuntu_release} as gosu
 ARG TARGETARCH
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
