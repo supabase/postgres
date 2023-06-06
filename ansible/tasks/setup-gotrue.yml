@@ -19,7 +19,7 @@
 
 - name: gotrue - download commit archive
   get_url:
-    url: "https://github.com/supabase/gotrue/releases/download/{{ gotrue_release }}/gotrue-{{ gotrue_release }}-{{ arch }}.tar.gz"
+    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/gotrue-v{{ gotrue_release }}-{{ arch }}.tar.gz"
     dest: /tmp/gotrue.tar.gz
     checksum: "{{ gotrue_release_checksum }}"
 
