@@ -244,7 +244,7 @@ EOF
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
         mv /var/lib/postgresql /var/lib/postgresql.bak
-        ln -s "$PGSHARENEW" /var/lib/postgresql
+        mkdir -p /var/lib/postgresql
 
         if [ ! -L /var/lib/postgresql.bak/data ]; then
             if [ -L /var/lib/postgresql/data ]; then
