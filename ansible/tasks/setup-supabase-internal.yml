@@ -80,9 +80,6 @@
 - name: Install Postgres exporter
   import_tasks: internal/postgres-exporter.yml
 
-- name: Install supautils
-  import_tasks: internal/supautils.yml
-
 - name: Install admin-mgr
   import_tasks: internal/admin-mgr.yml
 
