@@ -119,17 +119,19 @@ fi
 
 # Update pgdata directory
 if [ "${PGDATA_REAL:-}" ]; then
-    mkdir -p "${PGDATA_REAL}"
-    chown -R postgres:postgres "${PGDATA_REAL}"
+  mkdir -p "${PGDATA_REAL}"
+  chown -R postgres:postgres "${PGDATA_REAL}"
 fi
 
 if [ "${PGDATA:-}" ]; then
+  if [ "${PGDATA_REAL:-}" ]; then
     mkdir -p "$(dirname "${PGDATA}")"
-    if [ "${PGDATA_REAL:-}" ]; then
-        ln -s "${PGDATA}" "${PGDATA_REAL}"
-    fi
+    ln -s "${PGDATA}" "${PGDATA_REAL}"
+  else
+    mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"
-    sed -i "s|data_directory = '.*'|data_directory = '$PGDATA'|g" $PG_CONF
+  fi
+  sed -i "s|data_directory = '.*'|data_directory = '$PGDATA'|g" $PG_CONF
 fi
 
 # Download and extract init payload from s3
