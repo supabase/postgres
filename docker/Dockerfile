@@ -31,7 +31,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 
 # Configure processor optimised build
-ARG CPPFLAGS="-mcpu=neoverse-n1"
+ARG CPPFLAGS
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
 
 RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
