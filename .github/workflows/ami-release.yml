@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - cleanup
     paths:
       - '.github/workflows/ami-release.yml'
       - 'common.vars.pkr.hcl'
