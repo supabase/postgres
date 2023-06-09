@@ -119,14 +119,16 @@ fi
 
 # Update pgdata directory
 if [ "${PGDATA_REAL:-}" ]; then
-  mkdir -p "${PGDATA_REAL}"
-  chown -R postgres:postgres "${PGDATA_REAL}"
+    mkdir -p "${PGDATA_REAL}"
+    chown -R postgres:postgres "${PGDATA_REAL}"
+    chmod g+rx "${PGDATA_REAL}"
 fi
 
 if [ "${PGDATA:-}" ]; then
   if [ "${PGDATA_REAL:-}" ]; then
     mkdir -p "$(dirname "${PGDATA}")"
-    ln -s "${PGDATA}" "${PGDATA_REAL}"
+    rm -rf "${PGDATA}"
+    ln -s "${PGDATA_REAL}" "${PGDATA}"
   else
     mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"
