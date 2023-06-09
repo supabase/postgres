@@ -3,7 +3,7 @@ name: Release AIO image on Dockerhub
 on:
   push:
     branches:
-      - pcnc/migrate-all-in-one
+      - pcnc/fix-aio-pgdata-symlink
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/Dockerfile"
