@@ -125,7 +125,6 @@ fi
 
 if [ "${PGDATA:-}" ]; then
   if [ "${PGDATA_REAL:-}" ]; then
-    mkdir -p "$(dirname "${PGDATA}")"
     ln -s "${PGDATA}" "${PGDATA_REAL}"
   else
     mkdir -p "$PGDATA"
