@@ -125,7 +125,8 @@ fi
 
 if [ "${PGDATA:-}" ]; then
   if [ "${PGDATA_REAL:-}" ]; then
-    ln -s "${PGDATA}" "${PGDATA_REAL}"
+    mkdir -p "$(dirname "${PGDATA}")"
+    ln -s "${PGDATA_REAL}" "${PGDATA}"
   else
     mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"

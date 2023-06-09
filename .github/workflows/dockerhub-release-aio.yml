@@ -6,7 +6,6 @@ on:
       - pcnc/fix-aio-pgdata-symlink
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
-      - "docker/all-in-one/Dockerfile"
       - "docker/all-in-one/*"
       - "common.vars*"
   workflow_run:
