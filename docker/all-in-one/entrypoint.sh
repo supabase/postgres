@@ -125,11 +125,15 @@ if [ "${PGDATA_REAL:-}" ]; then
 fi
 
 if [ "${PGDATA:-}" ]; then
+  if [ "${PGDATA_REAL:-}" ]; then
     mkdir -p "$(dirname "${PGDATA}")"
     rm -rf "${PGDATA}"
     ln -s "${PGDATA_REAL}" "${PGDATA}"
+  else
+    mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"
-    sed -i "s|data_directory = '.*'|data_directory = '$PGDATA'|g" $PG_CONF
+  fi
+  sed -i "s|data_directory = '.*'|data_directory = '$PGDATA'|g" $PG_CONF
 fi
 
 # Download and extract init payload from s3

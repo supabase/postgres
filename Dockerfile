@@ -648,13 +648,25 @@ ADD --checksum=${groonga_release_checksum} \
     /tmp/groonga.tar.gz
 RUN tar -xvf /tmp/groonga.tar.gz -C /tmp && \
     rm -rf /tmp/groonga.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    zlib1g-dev \
+    liblz4-dev \
+    libzstd-dev \
+    libmsgpack-dev \
+    libzmq3-dev \
+    libevent-dev \
+    libmecab-dev \
+    rapidjson-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/groonga-${groonga_release}
 RUN ./configure
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=zlib1g,liblz4-1,libzstd1,libmsgpackc2,libzmq5,libevent-2.1-7,libmecab2 --nodoc
 
 FROM groonga as pgroonga-source
 # Download and extract
@@ -665,16 +677,12 @@ ADD --checksum=${pgroonga_release_checksum} \
     /tmp/pgroonga.tar.gz
 RUN tar -xvf /tmp/pgroonga.tar.gz -C /tmp && \
     rm -rf /tmp/pgroonga.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pgroonga-${pgroonga_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=mecab-naist-jdic --nodoc
 
 FROM scratch as pgroonga-deb
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
@@ -895,10 +903,11 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
-RUN sed -i "s/#unix_socket_directories = '\/tmp'/unix_socket_directories = '\/var\/run\/postgresql'/g" /etc/postgresql/postgresql.conf && \
-    sed -i "s/#session_preload_libraries = ''/session_preload_libraries = 'supautils'/g" /etc/postgresql/postgresql.conf && \
-    sed -i "s/#include = '\/etc\/postgresql-custom\/supautils.conf'/include = '\/etc\/postgresql-custom\/supautils.conf'/g" /etc/postgresql/postgresql.conf && \
-    sed -i "s/#include = '\/etc\/postgresql-custom\/wal-g.conf''/include = '\/etc\/postgresql-custom\/wal-g.conf'/g" /etc/postgresql/postgresql.conf && \
+RUN sed -i \
+    -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
+    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \

@@ -32,6 +32,12 @@
     update-alternatives --set ebtables /usr/sbin/ebtables-nft
     systemctl restart ufw
 
+- name: Install other useful tools
+  apt:
+    pkg:
+      - sysstat
+    update_cache: yes
+
 - name: Configure sysstat
   copy:
     src: files/sysstat.sysstat
@@ -46,12 +52,6 @@
   file:
     path: /var/log/sysstat
     state: directory
-    
-- name: Install other useful tools
-  apt:
-    pkg:
-      - sysstat
-    update_cache: yes
 
 - name: Adjust APT update intervals
   copy:

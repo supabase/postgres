@@ -30,9 +30,6 @@
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
-    - name: Install Postgres extensions
-      import_tasks: tasks/setup-extensions.yml
-
     - name: Install PgBouncer
       import_tasks: tasks/setup-pgbouncer.yml
       tags:
@@ -79,7 +76,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data start
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
       when: ebssurrogate_mode
 
     - name: Adjust APT update intervals
@@ -138,25 +135,14 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    # Put PG binaries in a directory under $PATH
-    - name: Find all files in /usr/lib/postgresql/bin
-      find:
-        paths: /usr/lib/postgresql/bin
-      register: postgresql_bin
-
     - name: Clean out build dependencies
       import_tasks: tasks/clean-build-dependencies.yml
-
-    - name: Create symbolic links for Postgres binaries to /usr/bin/
-      become: yes
-      shell:
-        cmd: "for fl in /usr/lib/postgresql/bin/* ; do ln -sf $fl /usr/bin/$(basename $fl) ; done"
 
     - name: Restart Postgres Database without Systemd
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data restart "-o -c shared_preload_libraries='pg_tle'"
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
       when: ebssurrogate_mode
 
     - name: Run migrations
@@ -168,7 +154,7 @@
       become: yes
       become_user: postgres
       shell:
-        cmd: /usr/bin/pg_ctl -D /var/lib/postgresql/data stop
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
 
     - name: Run unit tests

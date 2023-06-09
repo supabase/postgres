@@ -223,7 +223,7 @@ function cleanup_cache {
 
 update_install_packages
 setup_locale
-install_packages_for_build
+#install_packages_for_build
 install_configure_grub
 setup_apparmor
 setup_hostname
@@ -233,5 +233,5 @@ setup_eth0_interface
 disable_ufw_ipv6
 disable_sshd_passwd_auth
 disable_fsck
-setup_ccache
+#setup_ccache
 cleanup_cache

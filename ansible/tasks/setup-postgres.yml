@@ -1,127 +1,40 @@
-# Downloading dependencies
-- name: Postgres dependencies
-  apt:
-    pkg:
-      - build-essential
-      - pkg-config
-      - libreadline-dev
-      - zlib1g-dev
-      - flex
-      - bison
-      - libxml2-dev
-      - libxslt-dev
-      - libssl-dev
-      - libsystemd-dev
-      - libxml2-utils
-      - uuid-dev
-      - xsltproc
-      - ssl-cert
-      - liblz4-dev
-      - libicu-dev
+- name: Postgres - copy package
+  copy:
+    src: files/postgres/
+    dest: /tmp/build/
 
-- name: Download LLVM & Clang
-  apt:
-    pkg:
-      - llvm-11-dev
-      - clang-11
-  when: ansible_distribution_version != "18.04"
-
-- name: Download LLVM & Clang - Ubuntu 18.04
-  apt:
-    pkg:
-      - llvm-12-dev
-      - clang-12
-  when: ansible_distribution_version == "18.04"
-
-- name: Download GCC 10
-  apt:
-    pkg:
-      - gcc-10
-      - g++-10
-
-- name: Switch to GCC 10
-  shell:
-    cmd: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
-
-# Setup permissions
-- name: Update permissions for /var/tmp directory
-  file:
-    path: /var/tmp/
-    owner: root
-    group: root
-    mode: '1777'
-  become: yes
-
-# Building Postgres from source
-- name: Postgres - download latest release
-  get_url:
-    url: https://ftp.postgresql.org/pub/source/v{{ postgresql_release }}/postgresql-{{ postgresql_release }}.tar.gz
-    dest: /tmp
-    checksum: "{{ postgresql_release_checksum }}"
-    timeout: 60
-
-- name: Postgres - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/postgresql-{{ postgresql_release }}.tar.gz
-    dest: /tmp
-
-- name: Setting CFLAGS (arm)
-  set_fact:
-    cflags: "-moutline-atomics -mtune=native -march=native -mcpu=native -fsigned-char -O2"
-  when: platform == "arm64" and ansible_distribution_version != "18.04"
-
-- name: Setting CFLAGS (arm) - Ubuntu 18.04
-  set_fact:
-    cflags: "-moutline-atomics -fsigned-char -O2"
-  when: platform == "arm64" and ansible_distribution_version == "18.04"
-
-- name: Setting CFLAGS (x86)
-  set_fact:
-    cflags: "-fsigned-char"
-  when: platform == "amd64"
-
-- name: Setting LLVM_CONFIG
-  set_fact:
-    llvm_config: "/usr/bin/llvm-config-11"
-    clang: "/usr/bin/clang-11"
-  when: ansible_distribution_version != "18.04"
-
-- name: Setting LLVM_CONFIG - Ubuntu 18.04
-  set_fact:
-    llvm_config: "/usr/bin/llvm-config-12"
-    clang: "/usr/bin/clang-12"
-  when: ansible_distribution_version == "18.04"
-
-- name: Postgres - configure
-  shell:
-    cmd: CFLAGS='{{ cflags }}' LLVM_CONFIG='{{ llvm_config }}' CLANG='{{ clang }}' ./configure --with-llvm --with-openssl --with-systemd --with-uuid=e2fs --with-libxml --with-icu --with-lz4 --exec-prefix=/usr/lib/postgresql --datarootdir=/var/lib/postgresql
-    chdir: /tmp/postgresql-{{ postgresql_release }}
-
-- name: Postgres - build
-  community.general.make:
-    target: world-bin
-    chdir: /tmp/postgresql-{{ postgresql_release }}
-    jobs: "{{ parallel_jobs | default(omit) }}"
-
-- name: Postgres - install
-  make:
-    target: install-world-bin
-    chdir: /tmp/postgresql-{{ postgresql_release }}
-
-- name: Create postgres group
-  group:
-    name: postgres
+- name: Postgres - add PPA
+  apt_repository:
+    repo: "deb [ trusted=yes ] file:///tmp/build ./"
     state: present
 
-# Create postgres user
-- name: Create postgres user
-  user:
-    name: postgres
-    shell: /bin/false
-    comment: Postgres user
-    group: postgres
-    groups: postgres,ssl-cert
+- name: Postgres - install commons
+  apt:
+    name: postgresql-common
+    install_recommends: no
+
+- name: Do not create main cluster
+  shell:
+    cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
+
+- name: Postgres - install server
+  apt:
+    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
+    install_recommends: no
+
+- name: Postgres - remove PPA
+  apt_repository:
+    repo: "deb [ trusted=yes ] file:///tmp/build ./"
+    state: absent
+
+- name: Postgres - cleanup package
+  file:
+    path: /tmp/build
+    state: absent
+
+- name: Create symlink to /usr/lib/postgresql/bin
+  shell:
+    cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
 
 - name: Create relevant directories
   file:
@@ -131,8 +44,7 @@
     owner: postgres
     group: postgres
   with_items:
-    - '/etc/postgresql'
-    - '/etc/postgresql-custom'
+    - '/home/postgres'
     - '/var/log/postgresql'
     - '/var/lib/postgresql'
 
@@ -181,19 +93,9 @@
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
 
-- name: Find all files in /usr/lib/postgresql/bin
-  find:
-    paths: /usr/lib/postgresql/bin
-  register: postgresql_bin
-
-- name: Create symbolic links for Postgres binaries to /usr/bin/
-  become: yes
-  file:
-    src: "{{ item.path }}"
-    path: "/usr/bin/{{ item.path | basename }}"
-    state: link
-    force: yes
-  with_items: "{{ postgresql_bin.files }}"
+# Install extensions before init
+- name: Install Postgres extensions
+  import_tasks: tasks/setup-docker.yml
 
 # init DB
 - name: Create directory on data volume
