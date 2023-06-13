@@ -177,8 +177,10 @@ fi
 export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
-  curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz"
-  mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
+  curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz" || true
+  if [ -f "/tmp/payload.tar.gz" ]; then
+    mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
+  fi
 fi
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
