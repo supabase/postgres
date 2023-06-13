@@ -3,10 +3,10 @@ name: Release AIO image on Dockerhub
 on:
   push:
     branches:
-      - pcnc/migrate-all-in-one
+      - pcnc/fly-fixes
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
-      - "docker/all-in-one/Dockerfile"
+      - "docker/all-in-one/*"
       - "common.vars*"
   workflow_run:
     workflows: [Release on Dockerhub]

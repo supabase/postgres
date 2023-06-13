@@ -40,6 +40,8 @@ function configure_services {
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
+export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
+
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
@@ -74,6 +76,40 @@ function setup_postgres {
     -e "s|ssl_cert_file = ''|ssl_cert_file = '$PGSSLCERT'|g" \
     -e "s|ssl_key_file = ''|ssl_key_file = '$PGSSLKEY'|g" \
     $PG_CONF
+
+  if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+    # Preserve postgresql configs across restarts
+    POSTGRESQL_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgresql-custom"
+
+    mkdir -p "${POSTGRESQL_CUSTOM_DIR}"
+
+    if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
+      echo "Copying existing custom postgresql config from /etc/postgresql-custom to ${POSTGRESQL_CUSTOM_DIR}"
+      cp -R "/etc/postgresql-custom/." "${POSTGRESQL_CUSTOM_DIR}/"
+    fi
+
+    rm -rf "/etc/postgresql-custom"
+    ln -s "${POSTGRESQL_CUSTOM_DIR}" "/etc/postgresql-custom"
+    chown -R postgres:postgres "/etc/postgresql-custom"
+    chown -R postgres:postgres "${POSTGRESQL_CUSTOM_DIR}"
+    chmod g+rx "${POSTGRESQL_CUSTOM_DIR}"
+
+    # Preserve wal-g configs across restarts
+    WALG_CONF_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/wal-g"
+    mkdir -p "${WALG_CONF_DIR}"
+
+    if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
+      echo "Copying existing custom wal-g config from /etc/wal-g to ${WALG_CONF_DIR}"
+      cp -R "/etc/wal-g/." "${WALG_CONF_DIR}/"
+    fi
+
+    rm -rf "/etc/wal-g"
+    ln -s "${WALG_CONF_DIR}" "/etc/wal-g"
+    chown -R adminapi:adminapi "/etc/wal-g"
+    chown -R adminapi:adminapi "${WALG_CONF_DIR}"
+    chmod g+rx "/etc/wal-g"
+    chmod g+rx "${WALG_CONF_DIR}"
+  fi
 
   # TODO: define instance size and type for running optimizations
   # /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
@@ -121,7 +157,7 @@ fi
 if [ "${PGDATA_REAL:-}" ]; then
     mkdir -p "${PGDATA_REAL}"
     chown -R postgres:postgres "${PGDATA_REAL}"
-    chmod g+rx "${PGDATA_REAL}"
+    chmod -R g+rx "${PGDATA_REAL}"
 fi
 
 if [ "${PGDATA:-}" ]; then
@@ -129,6 +165,7 @@ if [ "${PGDATA:-}" ]; then
     mkdir -p "$(dirname "${PGDATA}")"
     rm -rf "${PGDATA}"
     ln -s "${PGDATA_REAL}" "${PGDATA}"
+    chmod -R g+rx "${PGDATA}"
   else
     mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"
@@ -138,10 +175,22 @@ fi
 
 # Download and extract init payload from s3
 export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
-export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$PGDATA/../machine.configured}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
-  curl -sSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "$INIT_PAYLOAD_PATH"
+  curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz"
+  mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
+fi
+
+if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+  BASE_LOGS_FOLDER="${DATA_VOLUME_MOUNTPOINT}/logs"
+
+  for folder in "postgresql" "services" "wal-g"; do
+    mkdir -p "${BASE_LOGS_FOLDER}/${folder}"
+    rm -rf "/var/log/${folder}"
+    ln -s "${BASE_LOGS_FOLDER}/${folder}" "/var/log/${folder}"
+  done
+
+  chown -R postgres:postgres "${LOGS_FOLDER}"
 fi
 
 # Process init payload
@@ -152,7 +201,7 @@ else
   echo "Skipped extracting init payload: $INIT_PAYLOAD_PATH does not exist"
 fi
 
-mkdir /var/log/services
+mkdir -p /var/log/services
 
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 find /etc/supervisor/ -type d -exec chmod 0770 {} +

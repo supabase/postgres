@@ -5,7 +5,7 @@ ARG postgrest_release=10.1.2
 ARG gotrue_release=2.47.0
 ARG kong_release=2.8.1
 ARG adminapi_release=0.44.3
-ARG adminmgr_release=0.4.0
+ARG adminmgr_release=0.5.0
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
 
@@ -230,4 +230,6 @@ HEALTHCHECK --interval=3s --timeout=2s --start-period=4s --retries=10 CMD [ "hea
 
 COPY docker/all-in-one/init /init
 COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
+COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
+COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
 ENTRYPOINT [ "entrypoint.sh" ]
