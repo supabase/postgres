@@ -177,24 +177,18 @@ fi
 export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
-  curl -sSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz"
+  curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz"
   mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
 fi
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
-  LOGS_FOLDER="${DATA_VOLUME_MOUNTPOINT}/logs"
+  BASE_LOGS_FOLDER="${DATA_VOLUME_MOUNTPOINT}/logs"
 
-  mkdir -p "${LOGS_FOLDER}/postgresql"
-  mkdir -p "${LOGS_FOLDER}/services"
-  mkdir -p "${LOGS_FOLDER}/wal-g"
-
-  rm -rf "/var/log/postgresql"
-  rm -rf "/var/log/services"
-  rm -rf "/var/log/wal-g"
-
-  ln -s "${LOGS_FOLDER}/postgresql" "/var/log/postgresql"
-  ln -s "${LOGS_FOLDER}/services" "/var/log/services"
-  ln -s "${LOGS_FOLDER}/wal-g" "/var/log/wal-g"
+  for folder in "postgresql" "services" "wal-g"; do
+    mkdir -p "${BASE_LOGS_FOLDER}/${folder}"
+    rm -rf "/var/log/${folder}"
+    ln -s "${BASE_LOGS_FOLDER}/${folder}" "/var/log/${folder}"
+  done
 
   chown -R postgres:postgres "${LOGS_FOLDER}"
 fi
