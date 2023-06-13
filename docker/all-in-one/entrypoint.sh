@@ -190,7 +190,7 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
     ln -s "${BASE_LOGS_FOLDER}/${folder}" "/var/log/${folder}"
   done
 
-  chown -R postgres:postgres "${LOGS_FOLDER}"
+  chown -R postgres:postgres "${BASE_LOGS_FOLDER}"
 fi
 
 # Process init payload

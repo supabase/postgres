@@ -3,7 +3,7 @@ name: Release AIO image on Dockerhub
 on:
   push:
     branches:
-      - pcnc/fly-fixes
+      - pcnc/trigger-build
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"
