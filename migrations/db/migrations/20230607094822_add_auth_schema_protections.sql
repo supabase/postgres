@@ -101,7 +101,9 @@ create or replace function
       for cmd in select * from pg_event_trigger_dropped_objects()
       loop
         if cmd.schema_name = 'auth' then
-          if nextval('auth.lock_seq') > 0 then
+          if cmd.object_identity in ('auth.lock_seq', 'auth.changes_seq') then
+            raise notice 'Dropping % is likely to cause issues with other DDL commands in auth.schema! Please make sure all protect_auth_schema_ddl_... event triggers are removed first.', cmd.object_identity;
+          else if nextval('auth.lock_seq') > 0 then
             raise exception 'auth schema is protected from unintended changes. To unlock run SELECT auth.disable_schema_ddl_protection(); ';
           end if;
 
@@ -120,8 +122,5 @@ create event trigger
   protect_auth_schema_ddl_sql_drop
   on sql_drop
   execute function auth.schema_ddl_protection_drop();
-
--- Enable the lock
-select auth.enable_schema_ddl_protection()
 
 -- migrate:down
