@@ -103,7 +103,7 @@ create or replace function
         if cmd.schema_name = 'auth' then
           if cmd.object_identity in ('auth.lock_seq', 'auth.changes_seq') then
             raise notice 'Dropping % is likely to cause issues with other DDL commands in auth.schema! Please make sure all protect_auth_schema_ddl_... event triggers are removed first.', cmd.object_identity;
-          else if nextval('auth.lock_seq') > 0 then
+          elsif nextval('auth.lock_seq') > 0 then
             raise exception 'auth schema is protected from unintended changes. To unlock run SELECT auth.disable_schema_ddl_protection(); ';
           end if;
 
