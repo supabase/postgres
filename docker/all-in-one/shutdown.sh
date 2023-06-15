@@ -9,7 +9,8 @@
 # If all of these conditions are met, then Postgres is shut down, allowing it to wrap up any pending transactions (such as WAL shippipng) and gracefully exit.
 # To terminate the machine/container, a SIGTERM signal is sent to the top-level process (supervisord) which will then shut down all other processes and exit.
 
-MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
+DEFAULT_MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
+CONFIG_FILE_PATH=${CONFIG_FILE_PATH:-/etc/supa-shutdown/shutdown.conf}
 
 run_sql() {
   psql -h localhost -U supabase_admin -d postgres "$@"
@@ -73,6 +74,18 @@ run_sql -c "SELECT pg_reload_conf();"
 
 sleep $((MAX_IDLE_TIME_MINUTES * 60))
 while true; do
+  if [ -f "$CONFIG_FILE_PATH" ]; then
+    source "$CONFIG_FILE_PATH"
+
+    if [ -z "$SHUTDOWN_IDLE_TIME_MINUTES" ]; then
+      MAX_IDLE_TIME_MINUTES="$DEFAULT_MAX_IDLE_TIME_MINUTES"
+    else
+      MAX_IDLE_TIME_MINUTES="$SHUTDOWN_IDLE_TIME_MINUTES"
+    fi
+  else
+    MAX_IDLE_TIME_MINUTES="$DEFAULT_MAX_IDLE_TIME_MINUTES"
+  fi
+
   check_activity
   sleep 30
 done
