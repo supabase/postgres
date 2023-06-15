@@ -220,6 +220,9 @@ else
   /init/configure-adminapi.sh
 fi
 
+if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+fi
 
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor

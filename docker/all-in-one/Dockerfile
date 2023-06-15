@@ -186,6 +186,9 @@ COPY --chown=vector:vector docker/all-in-one/etc/vector/vector.yaml /etc/vector/
 # Customizations for supervisor
 COPY docker/all-in-one/etc/supervisor /etc/supervisor
 
+# Customizations for supa-shutdown
+COPY  --chown=adminapi:adminapi docker/all-in-one/etc/supa-shutdown /etc/supa-shutdown
+
 # Configure service ports
 ENV PGRST_SERVER_PORT=3000
 ENV PGRST_ADMIN_SERVER_PORT=3001
