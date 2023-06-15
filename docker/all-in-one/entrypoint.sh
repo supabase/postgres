@@ -37,6 +37,13 @@ function configure_services {
   done
 }
 
+function enable_swap {
+  fallocate -l 1G /mnt/swapfile
+  chmod 600 /mnt/swapfile
+  mkswap /mnt/swapfile
+  swapon /mnt/swapfile
+}
+
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
@@ -222,6 +229,10 @@ fi
 
 if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
   sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+fi
+
+if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
+  enable_swap
 fi
 
 touch "$CONFIGURED_FLAG_PATH"
