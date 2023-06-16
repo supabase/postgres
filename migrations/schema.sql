@@ -171,6 +171,21 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
 
 
 --
+-- Name: disable_schema_ddl_protection(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.disable_schema_ddl_protection() RETURNS void
+    LANGUAGE sql SECURITY DEFINER
+    AS $$
+    alter sequence auth.lock_seq
+      increment by -1
+      minvalue -999999999999999
+      maxvalue 999999999999999
+      restart with -1;
+  $$;
+
+
+--
 -- Name: email(); Type: FUNCTION; Schema: auth; Owner: -
 --
 
@@ -182,6 +197,21 @@ $$;
 
 
 --
+-- Name: enable_schema_ddl_protection(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.enable_schema_ddl_protection() RETURNS void
+    LANGUAGE sql SECURITY DEFINER
+    AS $$
+    alter sequence auth.lock_seq
+      increment by 1
+      minvalue -999999999999999
+      maxvalue 999999999999999
+      restart with 1;
+  $$;
+
+
+--
 -- Name: role(); Type: FUNCTION; Schema: auth; Owner: -
 --
 
@@ -190,6 +220,56 @@ CREATE FUNCTION auth.role() RETURNS text
     AS $$
   select nullif(current_setting('request.jwt.claim.role', true), '')::text;
 $$;
+
+
+--
+-- Name: schema_ddl_protection_command_end(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.schema_ddl_protection_command_end() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+    declare
+      cmd record;
+    begin
+      for cmd in select * from pg_event_trigger_ddl_commands()
+      loop
+        if cmd.schema_name = 'auth' and cmd.object_identity <> 'auth.lock_seq' then
+          if nextval('auth.lock_seq') > 0 then
+            raise exception 'auth schema is protected from unintended changes. To unlock run SELECT auth.disable_schema_ddl_protection(); ';
+          end if;
+
+          perform nextval('auth.changes_seq');
+        end if;
+      end loop;
+    end;
+  $$;
+
+
+--
+-- Name: schema_ddl_protection_drop(); Type: FUNCTION; Schema: auth; Owner: -
+--
+
+CREATE FUNCTION auth.schema_ddl_protection_drop() RETURNS event_trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+    declare
+      cmd record;
+    begin
+      for cmd in select * from pg_event_trigger_dropped_objects()
+      loop
+        if cmd.schema_name = 'auth' then
+          if cmd.object_identity in ('auth.lock_seq', 'auth.changes_seq') then
+            raise notice 'Dropping % is likely to cause issues with other DDL commands in auth.schema! Please make sure all protect_auth_schema_ddl_... event triggers are removed first.', cmd.object_identity;
+          elsif nextval('auth.lock_seq') > 0 then
+            raise exception 'auth schema is protected from unintended changes. To unlock run SELECT auth.disable_schema_ddl_protection(); ';
+          end if;
+
+          perform nextval('auth.changes_seq');
+        end if;
+      end loop;
+    end;
+  $$;
 
 
 --
@@ -619,6 +699,25 @@ COMMENT ON TABLE auth.audit_log_entries IS 'Auth: Audit trail for user actions.'
 
 
 --
+-- Name: changes_seq; Type: SEQUENCE; Schema: auth; Owner: -
+--
+
+CREATE SEQUENCE auth.changes_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: SEQUENCE changes_seq; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON SEQUENCE auth.changes_seq IS 'Tracks the number of changes of the auth schema.';
+
+
+--
 -- Name: instances; Type: TABLE; Schema: auth; Owner: -
 --
 
@@ -636,6 +735,25 @@ CREATE TABLE auth.instances (
 --
 
 COMMENT ON TABLE auth.instances IS 'Auth: Manages users across multiple sites.';
+
+
+--
+-- Name: lock_seq; Type: SEQUENCE; Schema: auth; Owner: -
+--
+
+CREATE SEQUENCE auth.lock_seq
+    START WITH -1
+    INCREMENT BY -1
+    MINVALUE -999999999999999
+    MAXVALUE 999999999999999
+    CACHE 1;
+
+
+--
+-- Name: SEQUENCE lock_seq; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON SEQUENCE auth.lock_seq IS 'Used to protect against accidental schema changes in the auth schema.';
 
 
 --
@@ -1050,6 +1168,22 @@ CREATE EVENT TRIGGER pgrst_ddl_watch ON ddl_command_end
 
 CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
    EXECUTE FUNCTION extensions.pgrst_drop_watch();
+
+
+--
+-- Name: protect_auth_schema_ddl_command_end; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER protect_auth_schema_ddl_command_end ON ddl_command_end
+   EXECUTE FUNCTION auth.schema_ddl_protection_command_end();
+
+
+--
+-- Name: protect_auth_schema_ddl_sql_drop; Type: EVENT TRIGGER; Schema: -; Owner: -
+--
+
+CREATE EVENT TRIGGER protect_auth_schema_ddl_sql_drop ON sql_drop
+   EXECUTE FUNCTION auth.schema_ddl_protection_drop();
 
 
 --
