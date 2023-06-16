@@ -28,5 +28,5 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   ln -s "${PGBOUNCER_CUSTOM_DIR}" "/etc/pgbouncer-custom"
   chown -R pgbouncer:pgbouncer "/etc/pgbouncer-custom"
   chown -R pgbouncer:pgbouncer "${PGBOUNCER_CUSTOM_DIR}"
-  chmod g+rx "${PGBOUNCER_CUSTOM_DIR}"
+  chmod -R g+rx "${PGBOUNCER_CUSTOM_DIR}"
 fi

@@ -38,9 +38,9 @@ function configure_services {
 }
 
 function enable_swap {
-	fallocate -l 1G /mnt/swapfile
-	chmod 600 /mnt/swapfile
-	mkswap /mnt/swapfile
+  fallocate -l 1G /mnt/swapfile
+  chmod 600 /mnt/swapfile
+  mkswap /mnt/swapfile
   swapon /mnt/swapfile
 }
 
