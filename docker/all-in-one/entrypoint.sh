@@ -47,6 +47,7 @@ function enable_swap {
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
+DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
 function setup_postgres {
