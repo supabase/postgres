@@ -14,6 +14,8 @@ if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
 fi
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+  /opt/supabase-admin-api optimize pgbouncer --destination-config-file-path /etc/pgbouncer-custom/generated-optimizations.ini
+
   # Preserve pgbouncer configs across restarts
   PGBOUNCER_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/pgbouncer-custom"
 
@@ -28,5 +30,5 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   ln -s "${PGBOUNCER_CUSTOM_DIR}" "/etc/pgbouncer-custom"
   chown -R pgbouncer:pgbouncer "/etc/pgbouncer-custom"
   chown -R pgbouncer:pgbouncer "${PGBOUNCER_CUSTOM_DIR}"
-  chmod g+rx "${PGBOUNCER_CUSTOM_DIR}"
+  chmod -R g+rx "${PGBOUNCER_CUSTOM_DIR}"
 fi

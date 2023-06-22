@@ -72,7 +72,7 @@ SQL
 run_sql -c "ALTER SYSTEM SET log_disconnections = 'on';"
 run_sql -c "SELECT pg_reload_conf();"
 
-sleep $((MAX_IDLE_TIME_MINUTES * 60))
+sleep $((DEFAULT_MAX_IDLE_TIME_MINUTES * 60))
 while true; do
   if [ -f "$CONFIG_FILE_PATH" ]; then
     source "$CONFIG_FILE_PATH"

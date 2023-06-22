@@ -47,6 +47,7 @@ function enable_swap {
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
+DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
 function setup_postgres {
@@ -85,6 +86,8 @@ function setup_postgres {
     $PG_CONF
 
   if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+    /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
+
     # Preserve postgresql configs across restarts
     POSTGRESQL_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgresql-custom"
 
@@ -117,10 +120,6 @@ function setup_postgres {
     chmod g+rx "/etc/wal-g"
     chmod g+rx "${WALG_CONF_DIR}"
   fi
-
-  # TODO: define instance size and type for running optimizations
-  # /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
-  # /opt/supabase-admin-api optimize pgbouncer --destination-config-file-path /etc/pgbouncer-custom/generated-optimizations.ini
 }
 
 function setup_credentials {
