@@ -118,9 +118,8 @@ function setup_postgres {
     chmod g+rx "${WALG_CONF_DIR}"
   fi
 
-  # TODO: define instance size and type for running optimizations
-  # /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
-  # /opt/supabase-admin-api optimize pgbouncer --destination-config-file-path /etc/pgbouncer-custom/generated-optimizations.ini
+  /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
+  /opt/supabase-admin-api optimize pgbouncer --destination-config-file-path /etc/pgbouncer-custom/generated-optimizations.ini
 }
 
 function setup_credentials {
@@ -231,7 +230,9 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
   sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
 fi
 
-enable_swap
+if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
+  enable_swap
+fi
 
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor
