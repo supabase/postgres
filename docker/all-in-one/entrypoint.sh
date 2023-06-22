@@ -86,6 +86,8 @@ function setup_postgres {
     $PG_CONF
 
   if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+    /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
+
     # Preserve postgresql configs across restarts
     POSTGRESQL_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgresql-custom"
 
@@ -118,9 +120,6 @@ function setup_postgres {
     chmod g+rx "/etc/wal-g"
     chmod g+rx "${WALG_CONF_DIR}"
   fi
-
-  /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
-  /opt/supabase-admin-api optimize pgbouncer --destination-config-file-path /etc/pgbouncer-custom/generated-optimizations.ini
 }
 
 function setup_credentials {

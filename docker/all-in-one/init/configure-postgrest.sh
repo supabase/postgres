@@ -12,6 +12,7 @@ sed -i "s|pgrst_db_anon_role|${PGRST_DB_ANON_ROLE:-anon}|g" /etc/postgrest/base.
 sed -i "s|pgrst_jwt_secret|$JWT_SECRET|g" /etc/postgrest/base.conf
 
 POSTGREST_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgrest"
+mkdir -p "${POSTGREST_CUSTOM_DIR}"
 if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
   echo "Copying existing custom PostgREST config from /etc/postgrest/ to ${POSTGREST_CUSTOM_DIR}"
   cp -R "/etc/postgrest/." "${POSTGREST_CUSTOM_DIR}/"
