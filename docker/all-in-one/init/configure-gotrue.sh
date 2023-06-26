@@ -13,7 +13,7 @@ if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
   cp "/etc/gotrue.env" "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
 fi
 
-rm "$GOTRUE_CUSTOM_CONFIG_FILE_PATH"
+rm "/etc/gotrue.env"
 ln -s "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}" "/etc/gotrue.env"
 chown -R adminapi:adminapi "/etc/gotrue.env"
 chown -R adminapi:adminapi "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
