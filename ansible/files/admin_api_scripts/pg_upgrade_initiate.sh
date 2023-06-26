@@ -27,8 +27,9 @@ PG13_EXTENSIONS_TO_DISABLE=(
 
 set -eEuo pipefail
 
+SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
-source ./pg_upgrade_common.sh
+source "$SCRIPT_DIR/pg_upgrade_common.sh"
 
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
