@@ -8,6 +8,11 @@
     repo: "deb [ trusted=yes ] file:///tmp/build ./"
     state: present
 
+- name: Postgres install deps - Ubuntu 18.04 compat
+  ansible.builtin.apt:
+    deb: "http://ftp.debian.org/debian/pool/main/i/init-system-helpers/init-system-helpers_1.60_all.deb"
+  when: ansible_distribution_version == "18.04"
+
 - name: Postgres - install commons
   apt:
     name: postgresql-common

@@ -24,7 +24,8 @@ jobs:
         include:
         - runner: arm-runner
           arch: arm64
-          ubuntu: focal
+          ubuntu_release: bionic
+          ubuntu_version: 18.04
           mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
@@ -74,18 +75,19 @@ jobs:
           file: docker/Dockerfile
           target: pg-deb
           build-args: |
-            ubuntu_release=${{ matrix.ubuntu }}
+            ubuntu_release=${{ matrix.ubuntu_release }}
+            ubuntu_version=${{ matrix.ubuntu_version }}
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
             CPPFLAGS=-mcpu=${{ matrix.mcpu }}
-          tags: supabase/postgres:deb
+          tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres
-          docker save supabase/postgres:deb | tar xv -C /tmp/build
+          docker save supabase/postgres:deb-u18 | tar xv -C /tmp/build
           for layer in /tmp/build/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/postgres --strip-components 1
           done
