@@ -14,6 +14,7 @@ BEGIN
   IF pg_cron_installed
   THEN
     grant usage on schema cron to postgres with grant option;
+    grant all on all functions in schema cron to postgres with grant option;
 
     alter default privileges in schema cron grant all on tables to postgres with grant option;
     alter default privileges in schema cron grant all on functions to postgres with grant option;
