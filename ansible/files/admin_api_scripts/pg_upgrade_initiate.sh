@@ -73,8 +73,9 @@ cleanup() {
         mv /var/lib/postgresql.bak /var/lib/postgresql
     fi
 
-    if [ -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
-        rm /usr/lib/postgresql/lib/aarch64/libpq.so.5
+    if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
+        rm "/usr/share/postgresql/${PGVERSION}"
+        mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
     fi
 
     if [ "$IS_DRY_RUN" = false ]; then
@@ -148,7 +149,6 @@ function initiate_upgrade {
     PGDATANEW="$MOUNT_POINT/pgdata"
     PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
     PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
-    PGLIBNEW="$PG_UPGRADE_BIN_DIR/lib"
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
     # running upgrade using at least 1 cpu core
@@ -167,12 +167,6 @@ function initiate_upgrade {
     fi
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
-
-    # Make latest libpq available to pg_upgrade
-    mkdir -p /usr/lib/postgresql/lib/aarch64
-    if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
-        ln -s "$PGLIBNEW/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
-    fi
 
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/
@@ -243,19 +237,10 @@ EOF
     if [ "$IS_DRY_RUN" = true ]; then
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
-        mv /var/lib/postgresql /var/lib/postgresql.bak
-        ln -s "$PGSHARENEW" /var/lib/postgresql
-
-        if [ ! -L /var/lib/postgresql.bak/data ]; then
-            if [ -L /var/lib/postgresql/data ]; then
-                rm /var/lib/postgresql/data
-            fi
-            ln -s /var/lib/postgresql.bak/data /var/lib/postgresql/data
+        if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
         fi
-        
-        if [ ! -L /var/lib/postgresql/data ]; then
-            ln -s /data/pgdata /var/lib/postgresql/data
-        fi
+        ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
 
         echo "9. Stopping postgres; running pg_upgrade"
         systemctl stop postgresql

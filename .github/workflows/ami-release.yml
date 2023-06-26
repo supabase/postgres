@@ -16,7 +16,8 @@ jobs:
         include:
           - runner: arm-runner
             arch: arm64
-            ubuntu: focal
+            ubuntu_release: focal
+            ubuntu_version: 20.04
             mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
@@ -66,7 +67,8 @@ jobs:
           file: docker/Dockerfile
           target: pg-deb
           build-args: |
-            ubuntu_release=${{ matrix.ubuntu }}
+            ubuntu_release=${{ matrix.ubuntu_release }}
+            ubuntu_release_no=${{ matrix.ubuntu_version }}
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
             CPPFLAGS=-mcpu=${{ matrix.mcpu }}
