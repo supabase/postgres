@@ -69,14 +69,17 @@ cleanup() {
         ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
     fi
 
-    if [ -L /var/lib/postgresql ]; then
-        rm /var/lib/postgresql
-        mv /var/lib/postgresql.bak /var/lib/postgresql
-    fi
-
     if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
         rm "/usr/share/postgresql/${PGVERSION}"
-        mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+
+        if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+        fi
+    fi
+
+    if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5.bak" ]; then
+        rm /usr/lib/postgresql/lib/aarch64/libpq.so.5
+        mv /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak /usr/lib/postgresql/lib/aarch64/libpq.so.5
     fi
 
     if [ "$IS_DRY_RUN" = false ]; then
@@ -168,6 +171,13 @@ function initiate_upgrade {
     fi
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
+
+    # Make latest libpq available to pg_upgrade
+    mkdir -p /usr/lib/postgresql/lib/aarch64
+    if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5" ]; then
+        mv /usr/lib/postgresql/lib/aarch64/libpq.so.5 /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak
+        ln -s "$PG_UPGRADE_BIN_DIR/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
+    fi
 
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/

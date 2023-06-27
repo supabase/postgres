@@ -18,6 +18,12 @@
     src: /usr/lib/postgresql/lib/
     dest: /tmp/pg_binaries/{{ postgresql_major }}/lib/
 
+- name: Collect Postgres libraries - collect latest libpq
+  copy:
+    remote_src: yes
+    src: /usr/lib/aarch64-linux-gnu/libpq.so.5
+    dest: /tmp/pg_binaries/{{ postgresql_major }}/libpq.so.5
+
 - name: Collect Postgres binaries - collect shared files
   copy:
     remote_src: yes
