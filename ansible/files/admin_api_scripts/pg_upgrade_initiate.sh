@@ -173,11 +173,11 @@ function initiate_upgrade {
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
     # Make latest libpq available to pg_upgrade
-    mkdir -p /usr/lib/postgresql/lib/aarch64
-    if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5" ]; then
-        mv /usr/lib/postgresql/lib/aarch64/libpq.so.5 /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak
-        ln -s "$PG_UPGRADE_BIN_DIR/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
+    mkdir -p /usr/lib/aarch64-linux-gnu
+    if [ -f "/usr/lib/aarch64-linux-gnu/libpq.so.5" ]; then
+        mv /usr/lib/aarch64-linux-gnu/libpq.so.5 /usr/lib/aarch64-linux-gnu/libpq.so.5.bak
     fi
+    ln -s "$PG_UPGRADE_BIN_DIR/libpq.so.5" /usr/lib/aarch64-linux-gnu/libpq.so.5
 
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/
@@ -226,6 +226,12 @@ function initiate_upgrade {
     echo "7. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
+    if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
+        mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
+    fi
+    ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
+    ls -la /usr/share/postgresql/15/extension/
+
     echo "8. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
@@ -248,11 +254,6 @@ EOF
     if [ "$IS_DRY_RUN" = true ]; then
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
-        if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
-            mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
-        fi
-        ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
-
         echo "9. Stopping postgres; running pg_upgrade"
         systemctl stop postgresql
     fi

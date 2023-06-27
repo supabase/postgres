@@ -12,10 +12,16 @@
     - bin
     - lib
 
-- name: Collect Postgres libraries - collect libraries which are not in /usr/lib/postgresql/lib
+- name: Collect Postgres libraries - collect libraries which are in /usr/lib/postgresql/lib/
   copy:
     remote_src: yes
     src: /usr/lib/postgresql/lib/
+    dest: /tmp/pg_binaries/{{ postgresql_major }}/lib/
+
+- name: Collect Postgres libraries - collect libraries which are in /var/lib/postgresql/extension/
+  copy:
+    remote_src: yes
+    src: /var/lib/postgresql/extension/
     dest: /tmp/pg_binaries/{{ postgresql_major }}/lib/
 
 - name: Collect Postgres libraries - collect latest libpq
