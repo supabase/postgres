@@ -27,8 +27,9 @@ PG13_EXTENSIONS_TO_DISABLE=(
 
 set -eEuo pipefail
 
+SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
-source ./pg_upgrade_common.sh
+source "$SCRIPT_DIR/pg_upgrade_common.sh"
 
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
@@ -68,13 +69,17 @@ cleanup() {
         ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
     fi
 
-    if [ -L /var/lib/postgresql ]; then
-        rm /var/lib/postgresql
-        mv /var/lib/postgresql.bak /var/lib/postgresql
+    if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
+        rm "/usr/share/postgresql/${PGVERSION}"
+
+        if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+        fi
     fi
 
-    if [ -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
+    if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5.bak" ]; then
         rm /usr/lib/postgresql/lib/aarch64/libpq.so.5
+        mv /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak /usr/lib/postgresql/lib/aarch64/libpq.so.5
     fi
 
     if [ "$IS_DRY_RUN" = false ]; then
@@ -169,10 +174,11 @@ function initiate_upgrade {
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
     # Make latest libpq available to pg_upgrade
-    mkdir -p /usr/lib/postgresql/lib/aarch64
-    if [ ! -L /usr/lib/postgresql/lib/aarch64/libpq.so.5 ]; then
-        ln -s "$PGLIBNEW/libpq.so.5" /usr/lib/postgresql/lib/aarch64/libpq.so.5
+    mkdir -p /usr/lib/aarch64-linux-gnu
+    if [ -f "/usr/lib/aarch64-linux-gnu/libpq.so.5" ]; then
+        mv /usr/lib/aarch64-linux-gnu/libpq.so.5 /usr/lib/aarch64-linux-gnu/libpq.so.5.bak
     fi
+    ln -s "$PG_UPGRADE_BIN_DIR/libpq.so.5" /usr/lib/aarch64-linux-gnu/libpq.so.5
 
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/
@@ -221,6 +227,14 @@ function initiate_upgrade {
     echo "7. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
+    if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
+        mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
+    fi
+    ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
+
+    cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
+    cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+
     echo "8. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
@@ -243,20 +257,6 @@ EOF
     if [ "$IS_DRY_RUN" = true ]; then
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
-        mv /var/lib/postgresql /var/lib/postgresql.bak
-        ln -s "$PGSHARENEW" /var/lib/postgresql
-
-        if [ ! -L /var/lib/postgresql.bak/data ]; then
-            if [ -L /var/lib/postgresql/data ]; then
-                rm /var/lib/postgresql/data
-            fi
-            ln -s /var/lib/postgresql.bak/data /var/lib/postgresql/data
-        fi
-        
-        if [ ! -L /var/lib/postgresql/data ]; then
-            ln -s /data/pgdata /var/lib/postgresql/data
-        fi
-
         echo "9. Stopping postgres; running pg_upgrade"
         systemctl stop postgresql
     fi

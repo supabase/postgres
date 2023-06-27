@@ -18,8 +18,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: [self-hosted, X64]
+  build:     
+    strategy:
+      matrix:
+        include:
+        - runner: arm-runner
+          arch: arm64
+          ubuntu_release: bionic
+          ubuntu_version: 18.04
+          mcpu: neoverse-n1
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
     permissions:
       contents: write
@@ -28,8 +36,62 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+      - run: docker context create builders
+      - uses: docker/setup-buildx-action@v2
+        with:
+          endpoint: builders          
+      - uses: docker/build-push-action@v3
+        with:
+          push: false
+          load: true
+          build-args: |
+            ${{ steps.args.outputs.result }}
+          target: extensions
+          tags: supabase/postgres:extensions
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract built packages
+        run: |
+          mkdir -p /tmp/extensions ansible/files/extensions
+          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
+          for layer in /tmp/extensions/*/layer.tar; do
+            tar xvf "$layer" -C ansible/files/extensions --strip-components 1
+          done
+
+      - id: version
+        run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
+      - name: Build Postgres deb
+        uses: docker/build-push-action@v3
+        with:
+          push: false
+          load: true
+          file: docker/Dockerfile
+          target: pg-deb
+          build-args: |
+            ubuntu_release=${{ matrix.ubuntu_release }}
+            ubuntu_release_no=${{ matrix.ubuntu_version }}
+            postgresql_major=${{ steps.version.outputs.postgresql_major }}
+            postgresql_release=${{ steps.version.outputs.postgresql_release }}
+            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+          tags: supabase/postgres:deb-u18
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Extract Postgres deb
+        run: |
+          mkdir -p /tmp/build ansible/files/postgres
+          docker save supabase/postgres:deb-u18 | tar xv -C /tmp/build
+          for layer in /tmp/build/*/layer.tar; do
+            tar xvf "$layer" -C ansible/files/postgres --strip-components 1
+          done
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
