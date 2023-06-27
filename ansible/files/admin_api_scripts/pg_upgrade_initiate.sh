@@ -153,6 +153,7 @@ function initiate_upgrade {
     PGDATANEW="$MOUNT_POINT/pgdata"
     PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
     PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
+    PGLIBNEW="$PG_UPGRADE_BIN_DIR/lib"
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
     # running upgrade using at least 1 cpu core
@@ -230,7 +231,9 @@ function initiate_upgrade {
         mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
     fi
     ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
-    ls -la /usr/share/postgresql/15/extension/
+
+    cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
+    cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
 
     echo "8. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
