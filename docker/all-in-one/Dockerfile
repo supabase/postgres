@@ -136,6 +136,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     # reading files using cat sucks
     less \
+    # pg_egress_collect deps
+    tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Copy single binary dependencies
@@ -151,6 +153,9 @@ COPY docker/all-in-one/opt/postgres_exporter /opt/postgres_exporter/
 COPY ansible/files/admin_api_scripts /root 
 COPY --chown=adminapi:adminapi docker/all-in-one/etc/adminapi /etc/adminapi
 COPY docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
+
+# Script for pg_egress_collect
+COPY --chown=adminapi:adminapi docker/all-in-one/opt/pg_egress_collect /opt/pg_egress_collect
 
 # Customizations for pgbouncer
 COPY docker/all-in-one/etc/pgbouncer /etc/pgbouncer
