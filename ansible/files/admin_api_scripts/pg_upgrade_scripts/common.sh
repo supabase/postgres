@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Common functions and variables used by pg_upgrade_initiate.sh and pg_upgrade_complete.sh
+# Common functions and variables used by initiate.sh and complete.sh
 
 REPORTING_PROJECT_REF="ihmaxnjpcccasmrbkpvo"
 REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"

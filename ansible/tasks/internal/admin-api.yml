@@ -13,11 +13,6 @@
   loop:
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
-    - { file: "pg_upgrade_check.sh" }
-    - { file: "pg_upgrade_complete.sh" }
-    - { file: "pg_upgrade_initiate.sh" }
-    - { file: "pg_upgrade_prepare.sh" }
-    - { file: "pg_upgrade_pgsodium_getkey.sh" }
     - { file: "pg_egress_collect.pl" }
 
 - name: give adminapi user permissions
@@ -57,6 +52,20 @@
     path: /etc/adminapi
     owner: adminapi
     state: directory
+
+- name: Move shell scripts to /root dir
+  copy:
+    src: "files/admin_api_scripts/pg_upgrade_scripts/{{ item.file }}"
+    dest: "/etc/adminapi/pg_upgrade_scripts/{{ item.file }}"
+    mode: "0755"
+    owner: adminapi
+  loop:
+    - { file: "check.sh" }
+    - { file: "complete.sh" }
+    - { file: "initiate.sh" }
+    - { file: "prepare.sh" }
+    - { file: "pgsodium_getkey.sh" }
+    - { file: "common.sh" }
 
 - name: adminapi - create service file
   template:
