@@ -10,6 +10,9 @@ on:
       - 'common.vars.pkr.hcl'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+    
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,7 +31,7 @@ jobs:
         run: |
           mkdir -p /tmp/pg_upgrade_scripts
           cp -r ansible/files/admin_api_scripts/pg_upgrade_scripts/* /tmp/pg_upgrade_scripts
-          tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/pg_upgrade_scripts .
+          tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v1
