@@ -53,7 +53,7 @@
     owner: adminapi
     state: directory
 
-- name: Move shell scripts to /root dir
+- name: Move shell scripts to /etc/adminapi/pg_upgrade_scripts/
   copy:
     src: "files/admin_api_scripts/pg_upgrade_scripts/{{ item.file }}"
     dest: "/etc/adminapi/pg_upgrade_scripts/{{ item.file }}"

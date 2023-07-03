@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/pg-upgrade-scripts
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common.vars.pkr.hcl'
@@ -53,12 +52,12 @@ jobs:
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
 
-      # - name: Slack Notification on Failure
-      #   if: ${{ failure() }}
-      #   uses: rtCamp/action-slack-notify@v2
-      #   env:
-      #     SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-      #     SLACK_USERNAME: 'gha-failures-notifier'
-      #     SLACK_COLOR: 'danger'
-      #     SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
-      #     SLACK_FOOTER: ''
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
+          SLACK_FOOTER: ''
