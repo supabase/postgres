@@ -11,6 +11,9 @@ PGBOUNCER_CONF=/etc/pgbouncer/pgbouncer.ini
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   echo "init pgbouncer payload"
   sed -i -E "s|^# (%include /etc/pgbouncer-custom/ssl-config.ini)$|\1|g" $PGBOUNCER_CONF
+
+  tar -xzvf "$INIT_PAYLOAD_PATH" -C /etc/pgbouncer/ --strip-components 3 ./etc/pgbouncer/userlist.txt
+  chown -R pgbouncer:pgbouncer /etc/pgbouncer/userlist.txt
 fi
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
