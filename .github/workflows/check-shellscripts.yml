@@ -18,3 +18,10 @@ jobs:
         SHELLCHECK_OPTS: -e SC2001 -e SC2002 -e SC2143
       with:
         scandir: './ansible/files/admin_api_scripts'
+
+    - name: Run ShellCheck on pg_upgrade scripts
+      uses: ludeeus/action-shellcheck@master
+      env:
+        SHELLCHECK_OPTS: -e SC2001 -e SC2002 -e SC2143
+      with:
+        scandir: './ansible/files/admin_api_scripts/pg_upgrade_scripts'

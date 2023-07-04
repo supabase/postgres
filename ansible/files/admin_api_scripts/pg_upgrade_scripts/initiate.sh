@@ -4,7 +4,7 @@
 ## of the newly launched instance, disabling extensions containing regtypes,
 ## and running pg_upgrade.
 ## It reports the current status of the upgrade process to /tmp/pg-upgrade-status,
-## which can then be subsequently checked through pg_upgrade_check.sh.
+## which can then be subsequently checked through check.sh.
 
 # Extensions to disable before running pg_upgrade.
 # Running an upgrade with these extensions enabled will result in errors due to 
@@ -29,7 +29,7 @@ set -eEuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/pg_upgrade_common.sh"
+source "$SCRIPT_DIR/common.sh"
 
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
@@ -164,10 +164,10 @@ function initiate_upgrade {
     tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
 
     # copy upgrade-specific pgsodium_getkey script into the share dir
-    chmod +x "/root/pg_upgrade_pgsodium_getkey.sh"
-    cp /root/pg_upgrade_pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
+    chmod +x "$SCRIPT_DIR/pgsodium_getkey.sh"
+    cp  "$SCRIPT_DIR/pgsodium_getkey.sh" "$PGSHARENEW/extension/pgsodium_getkey"
     if [ -d "/var/lib/postgresql/extension/" ]; then
-        cp /root/pg_upgrade_pgsodium_getkey.sh "/var/lib/postgresql/extension/pgsodium_getkey"
+        cp  "$SCRIPT_DIR/pgsodium_getkey.sh" "/var/lib/postgresql/extension/pgsodium_getkey"
         chown postgres:postgres "/var/lib/postgresql/extension/pgsodium_getkey"
     fi
 

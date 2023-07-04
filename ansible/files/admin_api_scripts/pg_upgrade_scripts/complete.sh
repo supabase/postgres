@@ -9,7 +9,7 @@ set -eEuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/pg_upgrade_common.sh"
+source "$SCRIPT_DIR/common.sh"
 
 LOG_FILE="/tmp/pg-upgrade-complete.log"
 
