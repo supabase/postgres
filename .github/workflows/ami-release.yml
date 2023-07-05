@@ -50,7 +50,7 @@ jobs:
           tags: supabase/postgres:extensions
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
       - name: Extract built packages
         run: |
           mkdir -p /tmp/extensions ansible/files/extensions
