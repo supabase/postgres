@@ -81,6 +81,7 @@ jobs:
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
             CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+            DEB_BUILD_PROFILES=pkg.postgresql.nozstd
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha

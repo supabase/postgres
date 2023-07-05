@@ -34,6 +34,8 @@ ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 # Configure processor optimised build
 ARG CPPFLAGS="-mcpu=neoverse-n1"
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
+ARG DEB_BUILD_PROFILES=""
+ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 
 RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
     apt-get source --compile postgresql-common pgdg-keyring && \
