@@ -1,3 +1,3 @@
 BEGIN;
-create extension if not exists pljava with schema "sqlj";
+create extension if not exists pljava;
 ROLLBACK;

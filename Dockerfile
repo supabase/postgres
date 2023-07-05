@@ -16,7 +16,7 @@ ARG plpgsql_check_release=2.2.5
 ARG pg_safeupdate_release=1.4
 ARG timescaledb_release=2.9.1
 ARG wal2json_release=2_5
-ARG pljava_release=1.6.4
+ARG pljava_release=1_6_5
 ARG plv8_release=3.1.5
 ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
 ARG pg_net_release=0.7.1
@@ -406,7 +406,7 @@ FROM builder as pljava-source
 ARG pljava_release=1_6_5
 ARG pljava_release_checksum=sha256:e1492b237eac8aaed6792feb26b8fa06b9c6ec3bd0a61ecd7a90e175dd1f1c5a
 ADD --checksum=${pljava_release_checksum} \
-    "https://github.com/tada/pljava/archive/V{pljava_release}.tar.gz" \
+    "https://github.com/tada/pljava/archive/refs/tags/V${pljava_release}.tar.gz" \
     /tmp/pljava.tar.gz
 RUN tar -xvf /tmp/pljava.tar.gz -C /tmp && \
     rm -rf /tmp/pljava.tar.gz
@@ -421,15 +421,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/pljava-${pljava_release}
 RUN mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
 # Create debian package
-RUN cp pljava-packaging/target/pljava-pg${postgresql_major}.jar /tmp/
-
-FROM base as pljava
-# Download pre-built packages
-RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    default-jdk-headless \
-    postgresql-${postgresql_major}-pljava \
-    && rm -rf /var/lib/apt/lists/*
-RUN mv /var/cache/apt/archives/*.deb /tmp/
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pljava --pkgversion="\${pljava_release//_/.}" --requires=libssl-dev,default-jdk --exclude /proc/ --nodoc java -jar pljava-packaging/target/pljava-pg${postgresql_major}.jar
 
 ####################
 # 13-plv8.yml
@@ -831,7 +823,7 @@ COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
 COPY --from=timescaledb-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
-COPY --from=pljava /tmp/*.deb /tmp/
+COPY --from=pljava-source /tmp/*.deb /tmp/
 COPY --from=plv8 /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
