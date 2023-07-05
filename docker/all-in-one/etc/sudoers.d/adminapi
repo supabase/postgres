@@ -5,11 +5,12 @@ Cmnd_Alias PGBOUNCER = /usr/bin/supervisorctl start pgbouncer, /usr/bin/supervis
 
 %adminapi ALL= NOPASSWD: /root/grow_fs.sh
 %adminapi ALL= NOPASSWD: /root/manage_readonly_mode.sh
-%adminapi ALL= NOPASSWD: /root/pg_upgrade_prepare.sh
-%adminapi ALL= NOPASSWD: /root/pg_upgrade_initiate.sh
-%adminapi ALL= NOPASSWD: /root/pg_upgrade_complete.sh
-%adminapi ALL= NOPASSWD: /root/pg_upgrade_check.sh
-%adminapi ALL= NOPASSWD: /root/pg_upgrade_pgsodium_getkey.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/prepare.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/initiate.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/complete.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/check.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/common.sh
+%adminapi ALL= NOPASSWD: /etc/adminapi/pg_upgrade_scripts/pgsodium_getkey.sh
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl reread
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl update
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl restart postgresql
