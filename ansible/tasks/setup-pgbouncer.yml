@@ -103,12 +103,12 @@
   lineinfile:
     path: /etc/postgresql/pg_hba.conf
     state: present
-    insertafter: '^# TYPE'
+    insertafter: '# Default:'
     line: "{{ item }}"
   with_items:
-    - "# Connection configuration for pgbouncer user"
     - "host  all  pgbouncer  0.0.0.0/0  reject"
     - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
+    - "# Connection configuration for pgbouncer user"
 
 - name: PgBouncer - By default allow ssl connections.
   become: yes
