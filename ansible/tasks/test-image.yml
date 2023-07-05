@@ -10,6 +10,14 @@
     cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
   when: ebssurrogate_mode
 
+- name: Display /etc/postgresql/postgresql.conf contents
+  command: cat postgresql.conf chdir=/etc/postgresql.conf
+  register: command_output
+
+- name: Print to console
+  debug:
+    msg: "{{command_output.stdout}}"
+
 - name: Start Postgres Database to load all extensions.
   become: yes
   become_user: postgres
