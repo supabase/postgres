@@ -80,8 +80,8 @@ wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc12567
 supautils_release: "1.7.2"
 supautils_release_checksum: sha256:527e645112e1348ea4b6be6740037b444797fbbc5d3ed98103ca582419e06084
 
-pljava_release: master
-pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
+pljava_release: "1_6_5"
+pljava_release_checksum: sha256:e1492b237eac8aaed6792feb26b8fa06b9c6ec3bd0a61ecd7a90e175dd1f1c5a
 
 plv8_release: "3.1.5"
 plv8_release_checksum: sha256:1e108d5df639e4c189e1c5bdfa2432a521c126ca89e7e5a969d46899ca7bf106

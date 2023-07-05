@@ -403,11 +403,10 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgver
 ####################
 FROM builder as pljava-source
 # Download and extract
-# TODO: revert to using main repo after PG15 support is merged: https://github.com/tada/pljava/pull/413
-ARG pljava_release=master
-ARG pljava_release_checksum=sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
+ARG pljava_release=1_6_5
+ARG pljava_release_checksum=sha256:e1492b237eac8aaed6792feb26b8fa06b9c6ec3bd0a61ecd7a90e175dd1f1c5a
 ADD --checksum=${pljava_release_checksum} \
-    "https://github.com/supabase/pljava/archive/refs/heads/${pljava_release}.tar.gz" \
+    "https://github.com/tada/pljava/archive/V{pljava_release}.tar.gz" \
     /tmp/pljava.tar.gz
 RUN tar -xvf /tmp/pljava.tar.gz -C /tmp && \
     rm -rf /tmp/pljava.tar.gz
@@ -832,7 +831,7 @@ COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
 COPY --from=timescaledb-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
-# COPY --from=pljava /tmp/*.deb /tmp/
+COPY --from=pljava /tmp/*.deb /tmp/
 COPY --from=plv8 /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
