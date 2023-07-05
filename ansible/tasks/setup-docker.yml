@@ -38,6 +38,13 @@
     state: present
     line: auto_explain.log_min_duration = 10s
 
+- name: pljava - set pljava.libjvm_location
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-{{ platform }}/lib/server/libjvm.so'
+
 # supautils
 - name: supautils - add supautils to session_preload_libraries
   become: yes

@@ -10,7 +10,7 @@
 \ir 09-pg-safeupdate.sql
 \ir 10-timescaledb.sql
 \ir 11-wal2json.sql
--- \ir 12-pljava.sql
+\ir 12-pljava.sql
 \ir 13-plv8.sql
 \ir 14-pg_plan_filter.sql
 \ir 15-pg_net.sql
