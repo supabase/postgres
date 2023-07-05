@@ -38,6 +38,8 @@ jobs:
       - uses: docker/setup-buildx-action@v2
         with:
           endpoint: builders
+          driver-opts: image=moby/buildkit:v0.11.6
+          buildkitd-flags: --debug
       - uses: docker/build-push-action@v3
         with:
           push: false
@@ -75,7 +77,7 @@ jobs:
           tags: supabase/postgres:deb
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres

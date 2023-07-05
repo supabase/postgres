@@ -11,7 +11,7 @@
   when: ebssurrogate_mode
 
 - name: Display /etc/postgresql/postgresql.conf contents
-  command: cat postgresql.conf chdir=/etc/postgresql.conf
+  command: cat postgresql.conf chdir=/etc/postgresql/
   register: command_output
 
 - name: Print to console

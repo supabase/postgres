@@ -85,7 +85,7 @@ jobs:
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres
