@@ -98,18 +98,6 @@
     dest: /etc/tmpfiles.d/pgbouncer.conf
   become: yes
 
-- name: PgBouncer - add permissions for pgbouncer user
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/pg_hba.conf
-    state: present
-    insertafter: '# Default:'
-    line: "{{ item }}"
-  with_items:
-    - "host  all  pgbouncer  0.0.0.0/0  reject"
-    - "host  all  pgbouncer  127.0.0.1/32  scram-sha-256"
-    - "# Connection configuration for pgbouncer user"
-
 - name: PgBouncer - By default allow ssl connections.
   become: yes
   copy:
