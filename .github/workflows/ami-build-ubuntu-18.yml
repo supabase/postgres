@@ -80,7 +80,7 @@ jobs:
             ubuntu_release_no=${{ matrix.ubuntu_version }}
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
-            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+            CPPFLAGS=
             DEB_BUILD_PROFILES=pkg.postgresql.nozstd
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}

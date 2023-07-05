@@ -42,10 +42,10 @@ RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
     dpkg-scanpackages . > Packages && \
     apt-get -o Acquire::GzipIndexes=false update
 
-RUN apt-get build-dep -y "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1"
-RUN apt-get source --compile "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1"
-RUN dpkg-scanpackages . > Packages 
-RUN apt-get -o Acquire::GzipIndexes=false update
+RUN apt-get build-dep -y "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1" && \
+    apt-get source --compile "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1" && \
+    dpkg-scanpackages . > Packages && \
+    apt-get -o Acquire::GzipIndexes=false update
 
 # Remove source directories
 RUN rm -rf /tmp/build/*/
