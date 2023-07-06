@@ -421,7 +421,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/pljava-${pljava_release}
 RUN mvn -T 1C clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pljava --pkgversion="\${pljava_release//_/.}" --requires=libssl-dev,default-jdk --exclude /proc/ --nodoc java -jar pljava-packaging/target/pljava-pg${postgresql_major}.jar
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pljava --pkgversion="\${pljava_release//_/.}" --requires=default-jdk-headless --exclude /proc/ --nodoc java -jar pljava-packaging/target/pljava-pg${postgresql_major}.jar
 
 ####################
 # 13-plv8.yml
