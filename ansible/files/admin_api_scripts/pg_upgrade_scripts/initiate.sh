@@ -198,7 +198,8 @@ function initiate_upgrade {
     # Needed for PostGIS, since it's compiled with Protobuf-C support now
     echo "3. Installing libprotobuf-c1 and libicu66 if missing"
     if [[ ! "$(apt list --installed libprotobuf-c1 | grep "installed")" ]]; then
-        apt-get update && apt --fix-broken install -y libprotobuf-c1 libicu66 || true
+        apt-get update -y
+        apt --fix-broken install -y libprotobuf-c1 libicu66 || true
     fi
 
     if [ "$IS_CI" = false ]; then
