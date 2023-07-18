@@ -3,9 +3,9 @@
 All Supabase backend services bundled in a single Docker image for quick local testing and edge deployment.
 
 ## Build
-
+## build is set from postgres root so use the followign command to build
 ```bash
-docker build . -t supabase/all-in-one
+docker build -t supabase/all-in-one -f docker/all-in-one/Dockerfile .
 ```
 
 ## Run
@@ -13,6 +13,8 @@ docker build . -t supabase/all-in-one
 ```bash
 docker run --rm \
     -e POSTGRES_PASSWORD=postgres \
+    -e DATA_VOLUME_MOUNTPOINT=/data \
+    -e MACHINE_TYPE=shared_cpu_1x_1g \
     -e JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long \
     -e ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE \
     -e SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q \

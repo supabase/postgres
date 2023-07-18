@@ -1,0 +1,136 @@
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 80 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          access_log:
+              - name: envoy.clearaccess_log
+                typed_config:
+                  "@type": "type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog"
+                  log_format:
+                    json_format:
+                      authority: '%REQ(:AUTHORITY)%'
+                      bytes_received: '%BYTES_RECEIVED%'
+                      bytes_sent: '%BYTES_SENT%'
+                      connection_termination_details: '%CONNECTION_TERMINATION_DETAILS%'
+                      downstream_local_address: '%DOWNSTREAM_LOCAL_ADDRESS%'
+                      downstream_remote_address: '%DOWNSTREAM_REMOTE_ADDRESS%'
+                      duration: '%DURATION%'
+                      method: '%REQ(:METHOD)%'
+                      path: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
+                      protocol: '%PROTOCOL%'
+                      request_id: '%REQ(X-REQUEST-ID)%'
+                      requested_server_name: '%REQUESTED_SERVER_NAME%'
+                      response_code: '%RESPONSE_CODE%'
+                      response_code_details: '%RESPONSE_CODE_DETAILS%'
+                      response_flags: '%RESPONSE_FLAGS%'
+                      route_name: '%ROUTE_NAME%'
+                      start_time: '%START_TIME%'
+                      upstream_cluster: '%UPSTREAM_CLUSTER%'
+                      upstream_host: '%UPSTREAM_HOST%'
+                      upstream_local_address: '%UPSTREAM_LOCAL_ADDRESS%'
+                      upstream_service_time: '%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%'
+                      upstream_transport_failure_reason: '%UPSTREAM_TRANSPORT_FAILURE_REASON%'
+                      user_agent: '%REQ(USER-AGENT)%'
+                      x_forwarded_for: '%REQ(X-FORWARDED-FOR)%'
+          codec_type: AUTO
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match:
+                  prefix: "/health"
+                direct_response:
+                  status: 200
+                  body:
+                    inline_string: "Healthy"
+              - match:
+                  prefix: "/rest/v1/"
+                  headers:
+                  - name: apikey
+                    safe_regex_match:
+                      google_re2: { "max_program_size": 700}
+                      regex: "service_key|supabase_admin_key|anon_key"
+                route:
+                  cluster: rest
+                  prefix_rewrite: "/"
+              - match:
+                  prefix: "/auth/v1/admin/"
+                  headers:
+                  - name: apikey
+                    safe_regex_match:
+                      google_re2: { "max_program_size": 700}
+                      regex: "service_key|supabase_admin_key|anon_key"
+                route:
+                  cluster: gotrue
+                  prefix_rewrite: "/"
+              - match:
+                  prefix: "/auth/v1/"
+                route:
+                  cluster: gotrue
+                  prefix_rewrite: "/"
+              - match:
+                  prefix: "/pg/"
+                  headers:
+                  - name: apikey
+                    safe_regex_match:
+                      google_re2: { "max_program_size": 700}
+                      regex: "service_key|supabase_admin_key|anon_key"
+                route:
+                  cluster: pg-v1
+                  prefix_rewrite: "/"
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+  - name: gotrue
+    connect_timeout: 0.25s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: gotrue
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 9998
+
+  - name: rest
+    connect_timeout: 0.25s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: rest
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 3000
+
+  - name: pg-v1
+    connect_timeout: 0.25s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: pg-v1
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: 127.0.0.1
+                port_value: 1337
