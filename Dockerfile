@@ -829,9 +829,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     pkg-config \
     wget \
-    crossbuild-essential-arm64 \
-    crossbuild-essential-amd64  \
     && rm -rf /var/lib/apt/lists/*
+
 # Build from source
 WORKDIR /tmp/plrust-${plrust_release}
 
@@ -867,7 +866,7 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
     STD_TARGETS=$arch-postgres-linux-gnu \
     ./build
 
-RUN cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
+RUN cd plrust && cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
 
 ####################
 # internal/supautils.yml
