@@ -157,6 +157,11 @@
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
       when: ebssurrogate_mode
 
+    - name: Run unit tests
+      import_tasks: tasks/test-image.yml
+      tags:
+        - unit-tests
+
     - name: Collect Postgres binaries
       import_tasks: tasks/internal/collect-pg-binaries.yml
       tags:
