@@ -864,7 +864,7 @@ RUN mv build/bin/plrustc /root/.cargo/bin/
 RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
     cd plrust && \
     PG_VER=${postgresql_major} \
-    STD_TARGETS=$arch-unknown-linux-gnu \
+    STD_TARGETS=$arch-postgres-linux-gnu \
     ./build
 
 RUN cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
