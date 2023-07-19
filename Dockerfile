@@ -37,6 +37,11 @@ ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
 ARG supautils_release=1.7.2
 ARG wal_g_release=2.0.1
+ARG plrust_release=1.2.3
+ARG plrust_release_checksum
+ARG plrust_language_version=1.70.0
+ARG plrust_pgrx_version=0.9.7
+
 
 ####################
 # Setup Postgres PPA
@@ -797,6 +802,74 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-plrust.yml
+####################
+FROM ccache as plrust-source
+ARG plrust_release
+ARG plrust_release_checksum
+ARG plrust_language_version=1.70.0
+ARG plrust_pgrx_version=0.9.7
+
+ADD --checksum=${plrust_release_checksum} \
+    "https://github.com/tcdi/plrust/archive/refs/tags/v${plrust_release}.tar.gz" \
+    /tmp/plrust.tar.gz
+RUN tar -xvf /tmp/plrust.tar.gz -C /tmp && \
+    rm -rf /tmp/plrust.tar.gz
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    clang \
+    clang-11 \
+    gcc \
+    git \
+    gnupg \
+    libssl-dev \
+    llvm-11 \
+    lsb-release \
+    make \
+    pkg-config \
+    wget \
+    crossbuild-essential-arm64 \
+    crossbuild-essential-amd64  \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/plrust-${plrust_release}
+
+RUN wget -qO- https://sh.rustup.rs | \
+  sh -s -- \
+  -y \
+  --profile minimal \
+  --default-toolchain=${plrust_language_version}
+
+# Make sure we have the cargo environment
+ENV PATH "/root/.cargo/bin:$PATH"
+
+
+# Install required Rust components and target
+RUN rustup toolchain install ${plrust_language_version} && \
+    rustup default ${plrust_language_version} && \
+    rustup component add llvm-tools-preview rustc-dev && \
+    rustup target install x86_64-unknown-linux-gnu && \
+    rustup target install aarch64-unknown-linux-gnu
+
+# Install cargo-pgrx
+RUN cargo install cargo-pgrx --version ${plrust_pgrx_version} --locked && \
+    cargo pgrx init --pg${postgresql_major} /usr/bin/pg_config
+
+# build plrustc
+RUN cd plrustc && ./build.sh
+
+RUN mv build/bin/plrustc /root/.cargo/bin/
+
+RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
+    cd plrust && \
+    PG_VER=${postgresql_major} \
+    STD_TARGETS=$arch-unknown-linux-gnu \
+    ./build
+
+RUN cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
+
+####################
 # internal/supautils.yml
 ####################
 FROM base as supautils
@@ -850,6 +923,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
+COPY --from=plrust-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
