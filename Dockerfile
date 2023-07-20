@@ -868,6 +868,19 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 
 RUN cd plrust && cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
 
+# build .deb package
+ENV PLRUST_PACKAGE_DIR /tmp/plrust-${plrust_release}-pg${postgresql_major}-$TARGETARCH-unknown-linux-gnu
+RUN mkdir -p $PLRUST_PACKAGE_DIR/DEBIAN 
+RUN touch $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN echo 'Package: plrust' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN echo 'Version: ' ${plrust_release} >> $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN echo 'Architecture: ' $TARGETARCH >> $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN echo 'Maintainer: TCDI' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN echo 'Description: PL for the Rust programming language' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
+RUN mv /tmp/usr $PLRUST_PACKAGE_DIR
+
+RUN dpkg-deb --build --root-owner-group $PLRUST_PACKAGE_DIR
+
 ####################
 # internal/supautils.yml
 ####################
