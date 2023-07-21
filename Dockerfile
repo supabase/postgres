@@ -804,82 +804,11 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 30-plrust.yml
 ####################
-FROM ccache as plrust-source
+FROM base as plrust-source
 ARG plrust_release
-ARG plrust_release_checksum
 ARG plrust_language_version=1.70.0
-ARG plrust_pgrx_version=0.9.7
-
-ADD --checksum=${plrust_release_checksum} \
-    "https://github.com/tcdi/plrust/archive/refs/tags/v${plrust_release}.tar.gz" \
-    /tmp/plrust.tar.gz
-RUN tar -xvf /tmp/plrust.tar.gz -C /tmp && \
-    rm -rf /tmp/plrust.tar.gz
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    clang \
-    clang-11 \
-    gcc \
-    git \
-    gnupg \
-    libssl-dev \
-    llvm-11 \
-    lsb-release \
-    make \
-    pkg-config \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Build from source
-WORKDIR /tmp/plrust-${plrust_release}
-
-RUN wget -qO- https://sh.rustup.rs | \
-  sh -s -- \
-  -y \
-  --profile minimal \
-  --default-toolchain=${plrust_language_version}
-
-# Make sure we have the cargo environment
-ENV PATH "/root/.cargo/bin:$PATH"
-
-
-# Install required Rust components and target
-RUN rustup toolchain install ${plrust_language_version} && \
-    rustup default ${plrust_language_version} && \
-    rustup component add llvm-tools-preview rustc-dev && \
-    rustup target install x86_64-unknown-linux-gnu && \
-    rustup target install aarch64-unknown-linux-gnu
-
-# Install cargo-pgrx
-RUN cargo install cargo-pgrx --version ${plrust_pgrx_version} --locked && \
-    cargo pgrx init --pg${postgresql_major} /usr/bin/pg_config
-
-# build plrustc
-RUN cd plrustc && ./build.sh
-
-RUN mv build/bin/plrustc /root/.cargo/bin/
-
-RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
-    cd plrust && \
-    PG_VER=${postgresql_major} \
-    STD_TARGETS=$arch-postgres-linux-gnu \
-    ./build
-
-RUN cd plrust && cargo pgrx package --profile=release --features trusted -c /usr/bin/pg_config --out-dir=/tmp
-
-# build .deb package
-ENV PLRUST_PACKAGE_DIR /tmp/plrust-${plrust_release}-pg${postgresql_major}-$TARGETARCH-unknown-linux-gnu
-RUN mkdir -p $PLRUST_PACKAGE_DIR/DEBIAN 
-RUN touch $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN echo 'Package: plrust' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN echo 'Version: ' ${plrust_release} >> $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN echo 'Architecture: ' $TARGETARCH >> $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN echo 'Maintainer: TCDI' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN echo 'Description: PL for the Rust programming language' >> $PLRUST_PACKAGE_DIR/DEBIAN/control
-RUN mv /tmp/usr $PLRUST_PACKAGE_DIR
-
-RUN dpkg-deb --build --root-owner-group $PLRUST_PACKAGE_DIR
+ADD "https://github.com/tcdi/plrust/releases/download/v${plrust_release}/plrust-trusted-${plrust_release}_${plrust_language_version}-debian-pg${postgresql_major}-${TARGETARCH}.deb" \
+    /tmp/plrust.deb
 
 ####################
 # internal/supautils.yml
