@@ -15,7 +15,7 @@
       - make
       - pkg-config
       - wget
-      - postgresql-server-dev-{{ postgresql_major }}
+      - postgresql-server-dev-all
     state: present
     update_cache: yes
 
