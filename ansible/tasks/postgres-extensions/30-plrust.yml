@@ -15,7 +15,25 @@
       - make
       - pkg-config
       - wget
-      - postgresql-server-dev-all
+    state: present
+    update_cache: yes
+
+# required for postgresql-server-dev-XX
+- name: plrust - import the PostgreSQL GPG key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: plrust - add PostgreSQL Apt repository
+  apt_repository:
+    repo: "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main"
+    state: present
+    update_cache: yes
+
+- name: plrust - install postgresql-server-dev-XX
+  apt:
+    name:
+      - postgresql-server-dev-{{ postgresql_major }}
     state: present
     update_cache: yes
 
