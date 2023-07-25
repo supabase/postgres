@@ -19,14 +19,24 @@
 	state: present
 	update_cache: yes
 
-- name: plrust - install Rust
+- name: plrust - install plrust
+  ansible.builtin.apt:
+    deb: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }/plrust-trusted-{ plrust_release }_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{ platform }}.deb"
+
+- name: plrust - install rust
+  become: yes
+	become_user: postgres
+	become_method: su
   shell: |
 	wget -qO- https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain={{ plrust_language_version }}
 	echo 'source "$HOME/.cargo/env"' >> $HOME/.bashrc
   args:
 	creates: "$HOME/.cargo"
 
-- name: plrust - install Rust toolchain and set default
+- name: plrust - install rust toolchain and set default
+	become: yes
+	become_user: postgres
+	become_method: su
   shell: |
 	source $HOME/.cargo/env
 	rustup toolchain install {{ plrust_language_version }}
@@ -34,56 +44,14 @@
   args:
 	executable: /bin/bash
 
-- name: plrust - add components and target
+- name: plrust - add rust components and target
+	become: yes
+	become_user: postgres
+	become_method: su
   shell: |
 	source $HOME/.cargo/env
 	rustup component add llvm-tools-preview rustc-dev
 	rustup target install x86_64-unknown-linux-gnu
-  args:
-	executable: /bin/bash
-
-- name: plrust - install cargo-pgrx and initialize
-  shell: |
-	source $HOME/.cargo/env
-	cargo install cargo-pgrx --locked
-	cargo pgrx init --pg{{ postgresql_major }} /usr/bin/pg_config
-  args:
-	executable: /bin/bash
-
-- name: plrust - clone plrust
-  git:
-    repo: https://github.com/tcdi/plrust
-    dest: /tmp/plrust
-    version: v{{ plrust_release }}
-
-
-- name: plrust - move plrustc binary to .cargo/bin
-  command:
-	cmd: mv "/tmp/plrust/plrust/build/bin/plrustc" "$HOME/.cargo/bin/"
-	warn: false
-
-- name: plrust - build plrust
-  shell: |
-	source $HOME/.cargo/env
-	export PG_VER="{{ postgresql_major }}"
-
-	if [[ "{{ platform }}" == "arm64" ]]; then
-		STD_TARGETS="aarch64-postgres-linux-gnu"
-	elif [[ "{{ platform }}" == "amd64" ]]; then
-		STD_TARGETS="amd64-postgres-linux-gnu"
-	else
-		echo "Unsupported platform: $platform"
-		exit 1
-	fi
-
-	./build
-  args:
-	executable: /bin/bash
-	chdir: "/tmp/plrust/plrust"
-
-- name: plrust - install plrust
-  shell: |
-	source $HOME/.cargo/env
-	cargo pgrx install --release --features trusted -c /usr/bin/pg_config
+	rustup target install aarch64-unknown-linux-gnu
   args:
 	executable: /bin/bash

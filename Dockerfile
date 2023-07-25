@@ -37,10 +37,6 @@ ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
 ARG supautils_release=1.7.2
 ARG wal_g_release=2.0.1
-ARG plrust_release=1.2.3
-ARG plrust_release_checksum
-ARG plrust_language_version=1.70.0
-ARG plrust_pgrx_version=0.9.7
 
 
 ####################
@@ -800,15 +796,6 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
     make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
-
-####################
-# 30-plrust.yml
-####################
-FROM base as plrust-source
-ARG plrust_release
-ARG plrust_language_version=1.70.0
-ADD "https://github.com/tcdi/plrust/releases/download/v${plrust_release}/plrust-trusted-${plrust_release}_${plrust_language_version}-debian-pg${postgresql_major}-${TARGETARCH}.deb" \
-    /tmp/plrust.deb
 
 ####################
 # internal/supautils.yml
