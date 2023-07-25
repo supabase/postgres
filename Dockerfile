@@ -851,7 +851,6 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
-COPY --from=plrust-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
