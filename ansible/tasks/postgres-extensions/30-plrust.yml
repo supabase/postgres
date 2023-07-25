@@ -1,23 +1,23 @@
 # plrust
 - name: plrust - update and install dependencies
   apt:
-	name:
-	  - build-essential
-	  - ca-certificates
-	  - clang
-	  - clang-11
-	  - gcc
-	  - git
-	  - gnupg
-	  - libssl-dev
-	  - llvm-11
-	  - lsb-release
-	  - make
-	  - pkg-config
-	  - wget
-	  - postgresql-server-dev-{{ postgresql_major }}
-	state: present
-	update_cache: yes
+    name:
+      - build-essential
+      - ca-certificates
+      - clang
+      - clang-11
+      - gcc
+      - git
+      - gnupg
+      - libssl-dev
+      - llvm-11
+      - lsb-release
+      - make
+      - pkg-config
+      - wget
+      - postgresql-server-dev-{{ postgresql_major }}
+    state: present
+    update_cache: yes
 
 - name: plrust - install plrust
   ansible.builtin.apt:
@@ -25,33 +25,33 @@
 
 - name: plrust - install rust
   become: yes
-	become_user: postgres
-	become_method: su
+  become_user: postgres
+  become_method: su
   shell: |
-	wget -qO- https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain={{ plrust_language_version }}
-	echo 'source "$HOME/.cargo/env"' >> $HOME/.bashrc
+    wget -qO- https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain={{ plrust_language_version }}
+    echo 'source "$HOME/.cargo/env"' >> $HOME/.bashrc
   args:
-	creates: "$HOME/.cargo"
+    creates: "$HOME/.cargo"
 
 - name: plrust - install rust toolchain and set default
-	become: yes
-	become_user: postgres
-	become_method: su
+  become: yes
+  become_user: postgres
+  become_method: su
   shell: |
-	source $HOME/.cargo/env
-	rustup toolchain install {{ plrust_language_version }}
-	rustup default {{ plrust_language_version }}
+    source $HOME/.cargo/env
+    rustup toolchain install {{ plrust_language_version }}
+    rustup default {{ plrust_language_version }}
   args:
-	executable: /bin/bash
+    executable: /bin/bash
 
 - name: plrust - add rust components and target
-	become: yes
-	become_user: postgres
-	become_method: su
+  become: yes
+  become_user: postgres
+  become_method: su
   shell: |
-	source $HOME/.cargo/env
-	rustup component add llvm-tools-preview rustc-dev
-	rustup target install x86_64-unknown-linux-gnu
-	rustup target install aarch64-unknown-linux-gnu
+    source $HOME/.cargo/env
+    rustup component add llvm-tools-preview rustc-dev
+    rustup target install x86_64-unknown-linux-gnu
+    rustup target install aarch64-unknown-linux-gnu
   args:
-	executable: /bin/bash
+    executable: /bin/bash
