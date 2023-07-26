@@ -14,6 +14,7 @@ Cmnd_Alias PGBOUNCER = /usr/bin/supervisorctl start pgbouncer, /usr/bin/supervis
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl reread
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl update
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl restart postgresql
+%adminapi ALL= NOPASSWD: /usr/bin/supervisorctl status postgresql
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl restart adminapi
 %adminapi ALL= NOPASSWD: /usr/bin/supervisorctl restart services\:*
 %adminapi ALL= NOPASSWD: /usr/sbin/nft -f /etc/nftables/supabase_managed.conf
