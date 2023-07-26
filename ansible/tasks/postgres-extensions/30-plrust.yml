@@ -37,10 +37,6 @@
     state: present
     update_cache: yes
 
-- name: plrust - install plrust
-  ansible.builtin.apt:
-    deb: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
-
 - name: plrust - install rust
   become: yes
   become_user: postgres
@@ -73,3 +69,7 @@
     rustup target install aarch64-unknown-linux-gnu
   args:
     executable: /bin/bash
+
+- name: plrust - install plrust
+  ansible.builtin.apt:
+    deb: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
