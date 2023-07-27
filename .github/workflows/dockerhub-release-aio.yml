@@ -63,7 +63,7 @@ jobs:
             postgres_version=${{ needs.settings.outputs.docker_version }}
             ${{ needs.settings.outputs.build_args }}
           target: production
-          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
+          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-beta
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -79,9 +79,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }} \
-          ${{ needs.settings.outputs.image_tag }}_amd64 \
-          ${{ needs.settings.outputs.image_tag }}_arm64
+          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }}-beta \
+          ${{ needs.settings.outputs.image_tag }}_amd64-beta \
+          ${{ needs.settings.outputs.image_tag }}_arm64-beta
   publish:
     needs: [settings, merge_manifest]
     # Call workflow explicitly because events from actions cannot trigger more actions
