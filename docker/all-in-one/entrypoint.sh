@@ -86,6 +86,7 @@ function setup_postgres {
     $PG_CONF
 
   if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+    /usr/local/bin/configure-shim.sh /dist/supabase-admin-api /opt/supabase-admin-api
     /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
 
     # Preserve postgresql configs across restarts

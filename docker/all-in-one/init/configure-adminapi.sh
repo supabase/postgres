@@ -6,6 +6,8 @@ touch /var/log/services/adminapi.log
 
 ADMINAPI_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/adminapi"
 
+/usr/local/bin/configure-shim.sh /dist/supabase-admin-api /opt/supabase-admin-api
+
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   mkdir -p "${ADMINAPI_CUSTOM_DIR}"
   if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then

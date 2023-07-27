@@ -11,6 +11,8 @@ sed -i "s|pgrst_db_extra_search_path|${PGRST_DB_SCHEMAS:-public,extensions}|g" /
 sed -i "s|pgrst_db_anon_role|${PGRST_DB_ANON_ROLE:-anon}|g" /etc/postgrest/base.conf
 sed -i "s|pgrst_jwt_secret|$JWT_SECRET|g" /etc/postgrest/base.conf
 
+/usr/local/bin/configure-shim.sh /dist/postgrest /opt/postgrest
+
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   POSTGREST_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgrest"
   mkdir -p "${POSTGREST_CUSTOM_DIR}"
