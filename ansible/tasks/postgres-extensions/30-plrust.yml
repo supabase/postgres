@@ -70,6 +70,18 @@
   args:
     executable: /bin/bash
 
+- name: plrust - download package
+  get_url:
+    url: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
+    dest: /tmp/plrust-{{ plrust_release }}.deb
+    timeout: 60
+
+# Bug: `id -u postgres 2&> /dev/null` returns exit code 1 even if postgres user exists
+# https://github.com/tcdi/plrust/blob/main/.github/docker/Dockerfile.debian-artifact-build#L131
 - name: plrust - install plrust
-  ansible.builtin.apt:
-    deb: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
+  shell: |
+    set -e
+    echo "alias id='echo'" >> /etc/bash.bashrc
+    apt-get install -y /tmp/plrust-{{ plrust_release }}.deb
+  args:
+    executable: /bin/bash
