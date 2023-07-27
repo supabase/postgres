@@ -70,6 +70,6 @@
   args:
     executable: /bin/bash
 
-- name: plrust - install plrust		 - name: plrust - install cargo-pgrx and initialize
-   ansible.builtin.apt:		    shell: |
-     deb: "https://github.com/supabase/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
+- name: plrust - install plrust
+  ansible.builtin.apt:
+    deb: "https://github.com/supabase/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
