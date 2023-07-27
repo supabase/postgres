@@ -5,4 +5,4 @@ set -x
 cd "$(dirname "$0")"
 cat $@ > merged.conf
 
-/opt/postgrest merged.conf
+/usr/local/bin/shim.sh /opt/postgrest merged.conf

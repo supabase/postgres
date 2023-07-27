@@ -13,18 +13,9 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
     cp -R "/etc/adminapi/." "${ADMINAPI_CUSTOM_DIR}/"
   fi
 
-  if [ ! -f "${ADMINAPI_CUSTOM_DIR}/supabase-admin-api" ]; then
-    echo "Copying existing adminapi binary from /opt/supabase-admin-api to ${ADMINAPI_CUSTOM_DIR}"
-    cp "/opt/supabase-admin-api" "${ADMINAPI_CUSTOM_DIR}/supabase-admin-api"
-  fi
-
   rm -rf "/etc/adminapi"
   ln -s "${ADMINAPI_CUSTOM_DIR}" "/etc/adminapi"
   chown -R adminapi:adminapi "/etc/adminapi"
-
-  rm -f "/opt/supabase-admin-api"
-  ln -s "${ADMINAPI_CUSTOM_DIR}/supabase-admin-api" "/opt/supabase-admin-api"
-  chown -R adminapi:adminapi "/opt/supabase-admin-api"
 
   chown -R adminapi:adminapi "${ADMINAPI_CUSTOM_DIR}"
   chmod g+rx "${ADMINAPI_CUSTOM_DIR}"

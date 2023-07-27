@@ -1,0 +1,20 @@
+#!/bin/bash
+
+INITIAL_BINARY_PATH=$1
+UPDATED_BINARY_PATH="${DATA_VOLUME_MOUNTPOINT}${INITIAL_BINARY_PATH}"
+BINARY_OWNER=${BINARY_OWNER:-postgres}
+BINARY_GROUP=${BINARY_GROUP:-postgres}
+
+if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+  if [ ! -f "$UPDATED_BINARY_PATH" ]; then
+    mkdir -p "$(dirname "$UPDATED_BINARY_PATH")"
+    cp "$INITIAL_BINARY_PATH" "$UPDATED_BINARY_PATH"
+    chown "${BINARY_OWNER}:${BINARY_GROUP}" "$UPDATED_BINARY_PATH"
+    chmod g+rx "$UPDATED_BINARY_PATH"
+  fi
+
+  exec "$UPDATED_BINARY_PATH" "${@:3}"
+else
+  exec "$INITIAL_BINARY_PATH" "${@:3}"
+fi
+

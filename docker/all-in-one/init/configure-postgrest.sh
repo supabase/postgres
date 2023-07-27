@@ -19,18 +19,9 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
     cp -R "/etc/postgrest/." "${POSTGREST_CUSTOM_DIR}/"
   fi
 
-  if [ ! -f "${POSTGREST_CUSTOM_DIR}/postgrest" ]; then
-    echo "Copying existing postgrest binary from /opt/postgrest to ${POSTGREST_CUSTOM_DIR}"
-    cp "/opt/postgrest" "${POSTGREST_CUSTOM_DIR}/postgrest"
-  fi
-
   rm -rf "/etc/postgrest"
   ln -s "${POSTGREST_CUSTOM_DIR}" "/etc/postgrest"
   chown -R postgrest:postgrest "/etc/postgrest"
-
-  rm -f "/opt/postgrest"
-  ln -s "${POSTGREST_CUSTOM_DIR}/opt/postgrest" "/opt/postgrest"
-  chown -R postgrest:postgrest "/opt/postgrest"
 
   chown -R postgrest:postgrest "${POSTGREST_CUSTOM_DIR}"
   chmod g+rx "${POSTGREST_CUSTOM_DIR}"

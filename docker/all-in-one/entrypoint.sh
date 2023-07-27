@@ -184,7 +184,7 @@ export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
   curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz" || true
-  if [ -f "/tmp/payload.tar.gz" ]; then
+  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ] ; then
     mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
   fi
 fi

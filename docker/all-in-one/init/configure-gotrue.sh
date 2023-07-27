@@ -14,18 +14,9 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
     cp "/etc/gotrue.env" "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
   fi
 
-  if [ ! -f "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}/gotrue" ]; then
-    echo "Copying existing gotrue binary from /opt/gotrue to ${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
-    cp "/opt/gotrue" "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}/gotrue"
-  fi
-
   rm -f "/etc/gotrue.env"
   ln -s "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}" "/etc/gotrue.env"
   chown -R adminapi:adminapi "/etc/gotrue.env"
-
-  rm -f "/opt/gotrue"
-  ln -s "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}/gotrue" "/opt/gotrue"
-  chown -R adminapi:adminapi "/opt/gotrue"
 
   chown -R adminapi:adminapi "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
   chmod g+rx "${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"

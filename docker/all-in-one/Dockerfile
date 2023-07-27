@@ -175,6 +175,7 @@ COPY docker/all-in-one/etc/fail2ban/filter.d /etc/fail2ban/filter.d/
 COPY docker/all-in-one/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
 
 # Customizations for postgrest
+COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/bootstrap.sh /etc/postgrest/bootstrap.sh
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/base.conf /etc/postgrest/base.conf
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf /etc/postgrest/generated.conf
 
@@ -192,7 +193,8 @@ COPY --chown=vector:vector docker/all-in-one/etc/vector/vector.yaml /etc/vector/
 COPY docker/all-in-one/etc/supervisor /etc/supervisor
 
 # Customizations for supa-shutdown
-COPY  --chown=adminapi:adminapi docker/all-in-one/etc/supa-shutdown /etc/supa-shutdown
+COPY --chown=adminapi:adminapi docker/all-in-one/etc/supa-shutdown /etc/supa-shutdown
+COPY docker/all-in-one/shim.sh /usr/local/bin/shim.sh
 
 # Configure service ports
 ENV PGRST_SERVER_PORT=3000
@@ -229,7 +231,13 @@ RUN useradd --create-home --shell /bin/bash postgrest && \
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
     chmod g+w /etc/wal-g
-RUN mkdir -p /var/log/wal-g && chown -R postgres:postgres /var/log/wal-g && chmod +x /usr/bin/admin-mgr && chmod ug+s /usr/bin/admin-mgr && touch /etc/wal-g/config.json && chown adminapi:adminapi /etc/wal-g/config.json && echo '{}' > /etc/wal-g/config.json
+RUN mkdir -p /var/log/wal-g \
+    && chown -R postgres:postgres /var/log/wal-g \
+    && chmod +x /usr/bin/admin-mgr \
+    && chmod ug+s /usr/bin/admin-mgr \
+    && touch /etc/wal-g/config.json \
+    && chown adminapi:adminapi /etc/wal-g/config.json \
+    && echo '{}' > /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
 # Add healthcheck and entrypoint scripts
