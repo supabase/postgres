@@ -86,6 +86,8 @@ function setup_postgres {
     $PG_CONF
 
   if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+    mkdir -p "${DATA_VOLUME_MOUNTPOINT}/opt"
+    /usr/local/bin/configure-shim.sh /dist/supabase-admin-api /opt/supabase-admin-api
     /opt/supabase-admin-api optimize db --destination-config-file-path /etc/postgresql-custom/generated-optimizations.conf
 
     # Preserve postgresql configs across restarts
@@ -184,7 +186,7 @@ export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
   curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz" || true
-  if [ -f "/tmp/payload.tar.gz" ]; then
+  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ] ; then
     mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
   fi
 fi

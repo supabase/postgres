@@ -106,5 +106,5 @@ jobs:
     # Call workflow explicitly because events from actions cannot trigger more actions
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ needs.settings.outputs.docker_version }}
+      version: aio-${{ needs.settings.outputs.docker_version }}
     secrets: inherit
