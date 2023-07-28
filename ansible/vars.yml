@@ -136,6 +136,6 @@ pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
 
 plrust_release: "1.2.3-supa"
-plrust_release_checksum: sha256:b1af1ccab9c3b8e11dc4a9cee99d51395de4c13770d9d0601b70e86cb97ab02
+plrust_release_checksum: sha256:4fe08bbd7625fec02ee07c111ee9e923140161b99b8f025b3d7713ac22c3db39
 plrust_language_version: "1.70.0"
 plrust_pgrx_version: "0.9.7"
