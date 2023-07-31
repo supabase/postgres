@@ -30,6 +30,9 @@
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
+    - name: plrust - install
+      import_tasks: tasks/postgres-extensions/30-plrust.yml
+
     - name: Install PgBouncer
       import_tasks: tasks/setup-pgbouncer.yml
       tags:

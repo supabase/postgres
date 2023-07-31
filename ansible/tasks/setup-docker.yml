@@ -3,9 +3,6 @@
     src: files/extensions/
     dest: /tmp/extensions/
 
-- name: plrust - install
-  import_tasks: tasks/postgres-extensions/30-plrust.yml
-
 # Builtin apt module does not support wildcard for deb paths
 - name: Install extensions
   shell: |

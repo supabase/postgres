@@ -18,24 +18,76 @@
     state: present
     update_cache: yes
 
-# required for postgresql-server-dev-XX
-- name: plrust - import the PostgreSQL GPG key
-  apt_key:
-    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    state: present
+- name: Add Postgres GPG key
+  command: "apt-key adv --keyserver keyserver.ubuntu.com --recv-keys {{ postgresql_gpg_key }}"
 
-- name: plrust - add PostgreSQL Apt repository
-  apt_repository:
-    repo: "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main"
-    state: present
-    update_cache: yes
+- name: Add Postgres PPA
+  copy:
+	dest: /etc/apt/sources.list.d/pgdg.list
+	content: |
+	  deb https://apt-archive.postgresql.org/pub/repos/apt {{ ubuntu_release }}-pgdg-archive main
+	  deb-src https://apt-archive.postgresql.org/pub/repos/apt {{ ubuntu_release }}-pgdg-archive main
 
-- name: plrust - install postgresql-server-dev-XX
+- name: Create local PPA
+  copy:
+	dest: /etc/apt/sources.list.d/temp.list
+	content: "deb [ trusted=yes ] file:///tmp/build ./"
+
+- name: Set work directory
+  command: mkdir -p /tmp/build
+  args:
+	creates: /tmp/build
+
+- name: Generate Packages file
+  shell: dpkg-scanpackages . > Packages
+  args:
+	chdir: /tmp/build
+
+- name: Update apt cache without gzip indexes
+  shell: apt-get -o Acquire::GzipIndexes=false update
+
+- name: Set environment variables
+  lineinfile:
+	path: /etc/environment
+	line: "{{ item }}"
+	create: yes
+  with_items:
+	- "DEBIAN_FRONTEND=noninteractive"
+	- "PYTHONDONTWRITEBYTECODE=1"
+	- "DEB_BUILD_OPTIONS=nocheck parallel={{ ansible_processor_vcpus }}"
+	- "DEB_CPPFLAGS_APPEND={{ CPPFLAGS }} -fsigned-char"
+
+- name: Build dependencies for postgresql-common and pgdg-keyring
   apt:
-    name:
-      - postgresql-server-dev-{{ postgresql_major }}
-    state: present
-    update_cache: yes
+	name:
+	  - postgresql-common
+	  - pgdg-keyring
+	state: build-dep
+	update_cache: yes
+
+- name: Compile postgresql-common and pgdg-keyring
+  command: apt-get source --compile postgresql-common pgdg-keyring
+
+- name: Generate Packages file
+  shell: dpkg-scanpackages . > Packages
+
+- name: Update apt cache without gzip indexes
+  shell: apt-get -o Acquire::GzipIndexes=false update
+
+- name: Build dependencies for specific postgresql version
+  apt:
+	name: "postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg{{ ubuntu_release_no }}+1"
+	state: build-dep
+	update_cache: yes
+
+- name: Compile specific postgresql version
+  command: "apt-get source --compile postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg{{ ubuntu_release_no }}+1"
+
+- name: Generate Packages file again
+  shell: dpkg-scanpackages . > Packages
+
+- name: Update apt cache without gzip indexes again
+  shell: apt-get -o Acquire::GzipIndexes=false update
 
 - name: plrust - install rust
   become: yes
@@ -73,3 +125,8 @@
 - name: plrust - install plrust
   ansible.builtin.apt:
     deb: "https://github.com/supabase/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-pg{{ postgresql_major }}-{{ platform }}.deb"
+
+- name: test plrust
+  shell: psql -c "CREATE FUNCTION add_two_numbers(a NUMERIC, b NUMERIC) RETURNS NUMERIC STRICT LANGUAGE plrust AS $$ Ok(Some(a+b))$$; select add_two_numbers(1, 2);"
+  become: yes
+  become_user: postgres
