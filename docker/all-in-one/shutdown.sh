@@ -57,9 +57,7 @@ SQL
 
     # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
     # This is to ensure that the WAL file is shipped, just in case
-    if [ "$LAST_WAL_FILE_NAME" != "$NEW_WAL_FILE_NAME" ]; then
-        sleep 2
-    fi
+    sleep 1
 
     kill -s TERM "$(supervisorctl pid)"
   fi
