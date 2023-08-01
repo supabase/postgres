@@ -51,18 +51,13 @@ SQL
   TIME_SINCE_LAST_DISCONNECT="$((NOW - LAST_DISCONNECT_TIME))"
 
   if [ $TIME_SINCE_LAST_DISCONNECT -gt "$((MAX_IDLE_TIME_MINUTES * 60))" ]; then
-    LAST_WAL_FILE_NAME=$(run_sql -tA -c "SELECT pg_walfile_name(pg_switch_wal())")
-    NEW_WAL_FILE_NAME=$(run_sql -tA -c "SELECT pg_walfile_name(pg_current_wal_lsn())")
-
     echo "$(date): No active connections for $MAX_IDLE_TIME_MINUTES minutes. Shutting down."
 
     supervisorctl stop postgresql
 
     # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
     # This is to ensure that the WAL file is shipped, just in case
-    if [ "$LAST_WAL_FILE_NAME" != "$NEW_WAL_FILE_NAME" ]; then
-        sleep 2
-    fi
+    sleep 1
 
     kill -s TERM "$(supervisorctl pid)"
   fi
