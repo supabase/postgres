@@ -240,6 +240,8 @@ RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
     chmod g+w /etc/wal-g
 RUN mkdir -p /var/log/wal-g \
+    && touch /var/log/wal-g/pitr.log \
+    && chmod g+w /var/log/wal-g \
     && chown -R postgres:postgres /var/log/wal-g \
     && chmod +x /dist/admin-mgr \
     && chmod ug+s /dist/admin-mgr \
