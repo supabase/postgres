@@ -63,7 +63,7 @@ function graceful_shutdown {
 
   # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
   # This is to ensure that the WAL file is shipped, just in case
-  sleep 1
+  sleep 0.2
 
   /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
 
