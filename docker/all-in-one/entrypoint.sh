@@ -160,6 +160,8 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
+
+  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
 }
 
 # Increase max number of open connections
