@@ -58,6 +58,17 @@ function create_lsn_checkpoint_file {
   fi
 }
 
+function graceful_shutdown {
+    supervisorctl stop postgresql
+
+    # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
+    # This is to ensure that the WAL file is shipped, just in case
+    sleep 1
+
+    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+
+    kill -s TERM "$(supervisorctl pid)"
+}
 
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
@@ -160,8 +171,6 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
-
-  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
 }
 
 # Increase max number of open connections
@@ -250,3 +259,7 @@ fi
 
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor
+
+if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
+  trap graceful_shutdown INT
+fi
