@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/fix-post-upgrade-cleanup
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common.vars.pkr.hcl'

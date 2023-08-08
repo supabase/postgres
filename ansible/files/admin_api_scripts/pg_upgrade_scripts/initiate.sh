@@ -77,6 +77,10 @@ cleanup() {
         fi
     fi
 
+    if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+        mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+    fi
+
     if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5.bak" ]; then
         rm /usr/lib/postgresql/lib/aarch64/libpq.so.5
         mv /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak /usr/lib/postgresql/lib/aarch64/libpq.so.5
