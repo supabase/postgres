@@ -1,6 +1,12 @@
 #!/bin/bash
 set -eou pipefail
 
+PG_CONF=/etc/postgresql/postgresql.conf
+SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
+
+DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
+export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
+
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
   # Pass 0 for unlimited retries
@@ -44,11 +50,14 @@ function enable_swap {
   swapon /mnt/swapfile
 }
 
-PG_CONF=/etc/postgresql/postgresql.conf
-SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
+function create_lsn_checkpoint_file {
+  if [ ! -f "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint" ]; then
+    echo "0/0" > "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+    chown postgres:postgres "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+    chmod 0300 "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+  fi
+}
 
-DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
-export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
@@ -234,6 +243,7 @@ fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
   enable_swap
+  create_lsn_checkpoint_file
 fi
 
 touch "$CONFIGURED_FLAG_PATH"
