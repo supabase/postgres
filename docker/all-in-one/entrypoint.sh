@@ -59,15 +59,15 @@ function create_lsn_checkpoint_file {
 }
 
 function graceful_shutdown {
-    supervisorctl stop postgresql
+  supervisorctl stop postgresql
 
-    # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
-    # This is to ensure that the WAL file is shipped, just in case
-    sleep 1
+  # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
+  # This is to ensure that the WAL file is shipped, just in case
+  sleep 1
 
-    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
 
-    kill -s TERM "$(supervisorctl pid)"
+  kill -s TERM "$(supervisorctl pid)"
 }
 
 function setup_postgres {
