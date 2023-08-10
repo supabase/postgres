@@ -71,6 +71,11 @@
     - { file: "logrotate-walg.conf" }
     - { file: "logrotate-postgres-auth.conf" }
 
+- name: Ensure default Postgres logrotate config is removed
+  file:
+    path: /etc/logrotate.d/postgresql-common
+    state: absent
+
 - name: Disable cron access
   copy:
     src: files/cron.deny
