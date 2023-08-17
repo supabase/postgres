@@ -4,6 +4,9 @@
 echo "Clearing all log files"
 rm -rf /var/log/*
 
+# creating system stats directory 
+mkdir /var/log/sysstat
+
 # https://github.com/fail2ban/fail2ban/issues/1593
 touch /var/log/auth.log
 
