@@ -30,5 +30,5 @@ sed -i -e "s|anon_key|$ANON_KEY|g" \
   $ENVOY_CONF
 
 # Update envoy ports
-sed -i "s|80 |:$KONG_HTTP_PORT |g" /etc/envoy/envoy.yml
-sed -i "s|443 |:$KONG_HTTPS_PORT |g" /etc/envoy/envoy.yml
+sed -i "s|80 |$KONG_HTTP_PORT |g" /etc/envoy/envoy.yml
+sed -i "s|443 |$KONG_HTTPS_PORT |g" /etc/envoy/envoy.yml
