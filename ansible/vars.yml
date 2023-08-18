@@ -77,8 +77,8 @@ timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4
 wal2json_release: "2_5"
 wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
 
-supautils_release: "1.7.2"
-supautils_release_checksum: sha256:527e645112e1348ea4b6be6740037b444797fbbc5d3ed98103ca582419e06084
+supautils_release: "1.8.0"
+supautils_release_checksum: sha256:63e82826179bf2ceac33abd73fccbd915b7d0f92438a46b59c90b9f4c9274cef
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
