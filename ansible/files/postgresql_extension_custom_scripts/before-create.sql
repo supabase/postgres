@@ -1,4 +1,11 @@
--- If extension is a TLE, create extension dependencies in supautils.privileged_extensions.
+-- If the following are true:
+-- * the extension to be created is a TLE
+-- * the extension is created with `cascade`
+--
+-- then we pre-`create` all nested extension dependencies which are part of
+-- `supautils.privileged_extensions`. This is because supautils can't intercept
+-- the extension creation for dependencies - it can only intercept the `create
+-- extension` statement.
 do $$
 declare
   _extname text := @extname@;
