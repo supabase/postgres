@@ -199,6 +199,6 @@ $$;
 
     );
 
-create extension "supabase-dbdev";
+create extension if not exists "supabase-dbdev";
 
 -- migrate:down
