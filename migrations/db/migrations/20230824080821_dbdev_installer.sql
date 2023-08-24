@@ -8,7 +8,7 @@ select
         'supabase-dbdev',
         '0.0.2',
         'Install packages from the database.dev registry',
-        $pkg$,
+        $pkg$
 
 create schema dbdev;
 
