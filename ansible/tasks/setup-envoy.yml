@@ -1,0 +1,48 @@
+- name: Envoy - system user
+  user: name=envoy
+
+- name: envoy - create /opt/envoy
+  file:
+    path: /opt/envoy
+    state: directory
+    owner: envoy
+    mode: 0775
+
+- name: Envoy - download binary
+  get_url:
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
+    dest: /opt/envoy/envoy
+    checksum: "{{ envoy_release_checksum }}"
+
+- name: Envoy - add execution bit to binary
+  file:
+    path: /opt/envoy/envoy
+    state: file
+    owner: envoy
+    mode: u+rwx
+
+- name: Envoy - copy basic conf
+  copy:
+    src: files/envoy_config/envoy.yml
+    dest: /opt/envoy/envoy.yml
+
+# [warn] ulimit is currently set to "1024". For better performance set it to at least
+# "4096" using "ulimit -n"
+- name: Envoy - bump up ulimit
+  pam_limits:
+    limit_item: nofile
+    limit_type: soft
+    domain: envoy
+    value: "4096"
+
+- name: Envoy - create service file
+  template:
+    src: files/envoy_config/envoy.service.j2
+    dest: /etc/systemd/system/envoy.service
+
+- name: Envoy - disable service
+  systemd:
+    enabled: no
+    name: envoy
+    state: stopped
+    daemon_reload: yes

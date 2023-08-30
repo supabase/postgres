@@ -56,6 +56,11 @@
       tags:
         - install-supabase-internal
 
+    - name: Install Envoy
+      import_tasks: tasks/setup-envoy.yml
+      tags:
+        - install-supabase-internal
+
     - name: Install nginx
       import_tasks: tasks/setup-nginx.yml
       tags:
