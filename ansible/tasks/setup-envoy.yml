@@ -1,22 +1,11 @@
 - name: Envoy - system user
   user: name=envoy
 
-- name: Kong - download deb package
+- name: Kong - download binary
   get_url:
     url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
-    dest: /etc/envoy/envoy
+    dest: /tmp/envoy.app
     checksum: "{{ envoy_release_checksum }}"
-
-- name: Kong - configuration
-  template:
-    src: files/envoy_config/envoy.conf.j2
-    dest: /etc/envoy/envoy.conf
-
-- name: Kong - hand over ownership of /usr/local/envoy to user envoy
-  file:
-    path: /usr/local/envoy
-    recurse: yes
-    owner: envoy
 
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
 # "4096" using "ulimit -n"
