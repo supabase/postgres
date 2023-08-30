@@ -259,7 +259,7 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 				# placeholders: %p = path of file to restore
 				#               %f = file name only
 				# e.g. 'cp /mnt/server/archivedir/%f %p'
-#archive_cleanup_command = ''	# command to execute at every restartpoint
+archive_cleanup_command = 'echo "$(date) - pg_archivecleanup %r" >> /var/lib/postgresql/data/pg_archivecleanup.log && pg_archivecleanup /var/lib/postgresql/data/pg_wal %r' # command to execute at every restartpoint
 #recovery_end_command = ''	# command to execute at completion of recovery
 
 # - Recovery Target -
