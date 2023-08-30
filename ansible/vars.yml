@@ -28,6 +28,9 @@ kong_release_target: focal # if it works, it works
 kong_deb: kong_2.8.1_arm64.deb
 kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
 
+envoy_release: "1.26.0"
+emvoy_release_checksum: sha1:57d5bb8bfbc66d7ba4705b98ddab9ddebc069708
+
 nginx_release: 1.22.0
 nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
 
