@@ -14,6 +14,15 @@
     dest: /opt/envoy/envoy
     checksum: "{{ envoy_release_checksum }}"
 
+- name: Envoy - add execution bit to binary
+  file:
+    dest: /opt/envoy/envoy mode=a+x
+
+- name: Envoy - copy basic conf
+  copy:
+    src: files/envoy/envoy.yml
+    dest: /opt/envoy/envoy.yml
+
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
 # "4096" using "ulimit -n"
 - name: Envoy - bump up ulimit
