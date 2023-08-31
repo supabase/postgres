@@ -1,10 +1,17 @@
 - name: Envoy - system user
   user: name=envoy
 
-- name: Kong - download binary
+- name: envoy - create /opt/envoy
+  file:
+    path: /opt/envoy
+    state: directory
+    owner: envoy
+    mode: 0775
+
+- name: Envoy - download binary
   get_url:
     url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
-    dest: /tmp/envoy.app
+    dest: /opt/envoy/envoy
     checksum: "{{ envoy_release_checksum }}"
 
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
