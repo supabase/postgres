@@ -16,7 +16,10 @@
 
 - name: Envoy - add execution bit to binary
   file:
-    dest: /opt/envoy/envoy mode=a+x
+    path: /opt/envoy/envoy
+    state: file
+    owner: envoy
+    mode: u+rwx
 
 - name: Envoy - copy basic conf
   copy:
