@@ -23,7 +23,7 @@
 
 - name: Envoy - copy basic conf
   copy:
-    src: files/envoy/envoy.yml
+    src: files/envoy_config/envoy.yml
     dest: /opt/envoy/envoy.yml
 
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
