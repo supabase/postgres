@@ -1,8 +1,8 @@
-ARG ubuntu_release=bionic
+ARG ubuntu_release=focal
 FROM ubuntu:${ubuntu_release} as base
 
-ARG ubuntu_release=bionic
-ARG ubuntu_release_no=18.04
+ARG ubuntu_release=focal
+ARG ubuntu_release_no=20.04
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Add Postgres PPA
 ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
+RUN mkdir -p /root/.gnupg && chmod 700 /root/.gnupg && \
+    gpg --recv-keys --no-default-keyring --keyring /tmp/pgdg.key --keyserver pgp.mit.edu --recv-keys "${postgresql_gpg_key}" && \
+    gpg --no-default-keyring --keyring /tmp/pgdg.key --export "${postgresql_gpg_key}" > /etc/apt/trusted.gpg.d/pgdg.gpg && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt ${ubuntu_release}-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
     echo "deb-src https://apt-archive.postgresql.org/pub/repos/apt ${ubuntu_release}-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
@@ -34,7 +36,7 @@ ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 # Configure processor optimised build
 ARG CPPFLAGS=""
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
-ARG DEB_BUILD_PROFILES=""
+ARG DEB_BUILD_PROFILES="pkg.postgresql.nozstd"
 ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 
 RUN apt-get build-dep -y postgresql-common pgdg-keyring && \

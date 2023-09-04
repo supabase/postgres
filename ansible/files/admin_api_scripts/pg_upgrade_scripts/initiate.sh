@@ -75,6 +75,10 @@ cleanup() {
         if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
             mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
         fi
+
+        if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+        fi
     fi
 
     if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5.bak" ]; then
@@ -234,6 +238,11 @@ function initiate_upgrade {
 
     cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
     cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+    export LD_LIBRARY_PATH="${PGLIBNEW}"
+
+    if [ -f "${PG_UPGRADE_BIN_DIR}/libpq.so.5" ]; then
+        cp "${PG_UPGRADE_BIN_DIR}/libpq.so.5" "${PGLIBNEW}/libpq.so.5"
+    fi
 
     echo "8. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
