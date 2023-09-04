@@ -5,7 +5,10 @@ echo "Clearing all log files"
 rm -rf /var/log/*
 
 # creating system stats directory 
+service sysstat stop
+rm -rf /var/log/sysstat
 mkdir /var/log/sysstat
+service sysstat start
 
 # https://github.com/fail2ban/fail2ban/issues/1593
 touch /var/log/auth.log
