@@ -58,8 +58,10 @@ rm -rf /var/lib/cloud/instances/*
 rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
+service sysstat stop
+rm /var/log/sysstat
 mkdir /var/log/sysstat
-
+service sysstat start
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
 NC='\033[0m'
