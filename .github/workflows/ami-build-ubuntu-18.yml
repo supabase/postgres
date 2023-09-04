@@ -50,18 +50,19 @@ jobs:
         with:
           push: false
           load: true
+          file: Dockerfile-u18
           build-args: |
             ${{ steps.args.outputs.result }}
           target: extensions
-          tags: supabase/postgres:extensions
+          tags: supabase/postgres:extensions-u18
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
 
       - name: Extract built packages
         run: |
           mkdir -p /tmp/extensions ansible/files/extensions
-          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
+          docker save supabase/postgres:extensions-u18 | tar xv -C /tmp/extensions
           for layer in /tmp/extensions/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
@@ -80,11 +81,11 @@ jobs:
             ubuntu_release_no=${{ matrix.ubuntu_version }}
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
-            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+            DEB_BUILD_PROFILES=pkg.postgresql.nozstd
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres

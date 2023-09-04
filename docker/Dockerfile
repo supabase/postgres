@@ -1,8 +1,8 @@
-ARG ubuntu_release=focal
+ARG ubuntu_release=bionic
 FROM ubuntu:${ubuntu_release} as base
 
-ARG ubuntu_release
-ARG ubuntu_release_no
+ARG ubuntu_release=bionic
+ARG ubuntu_release_no=18.04
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
@@ -32,8 +32,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 
 # Configure processor optimised build
-ARG CPPFLAGS="-mcpu=neoverse-n1"
+ARG CPPFLAGS=""
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
+ARG DEB_BUILD_PROFILES=""
+ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 
 RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
     apt-get source --compile postgresql-common pgdg-keyring && \
