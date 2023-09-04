@@ -59,7 +59,7 @@ rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
 service sysstat stop
-rm /var/log/sysstat
+rmdir /var/log/sysstat
 mkdir /var/log/sysstat
 service sysstat start
 # Securely erase the unused portion of the filesystem
