@@ -1,7 +1,7 @@
 ARG ubuntu_release=focal
 FROM ubuntu:${ubuntu_release} as base
 
-ARG ubuntu_release=focal
+ARG ubuntu_release=flocal
 ARG ubuntu_release_no=20.04
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
