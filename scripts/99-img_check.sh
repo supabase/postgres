@@ -652,7 +652,7 @@ checkRoot
 checkAgent
 
 checkMongoDB
-
+ls -alh /var/log/ >> ~/varlog2.log
 
 # Summary
 echo -en "\n\n---------------------------------------------------------------------------------------------------\n"

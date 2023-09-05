@@ -62,6 +62,7 @@ service sysstat stop
 rmdir /var/log/sysstat
 mkdir /var/log/sysstat
 service sysstat start
+ls -alh /var/log/ >> ~/varlog3.log
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
 NC='\033[0m'
