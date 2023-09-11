@@ -7,6 +7,9 @@
 VERSION="v. 1.6"
 RUNDATE=$( date )
 
+echo "this script ran" >> /opt/script.log
+ls -alh /var/log/ >> /opt/varlog2.log
+
 # Script should be run with SUDO
 if [ "$EUID" -ne 0 ]
   then echo "[Error] - This script must be run with sudo or as the root user."
@@ -652,7 +655,7 @@ checkRoot
 checkAgent
 
 checkMongoDB
-ls -alh /var/log/ >> ~/varlog2.log
+
 
 # Summary
 echo -en "\n\n---------------------------------------------------------------------------------------------------\n"

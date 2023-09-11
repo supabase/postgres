@@ -64,6 +64,7 @@ chmod 600 /etc/ssh/revoked_keys
 /usr/sbin/service sysstat start >> ~/varlog3rc8.log
 /usr/bin/sar -A >> ~/varlog3rc8.log
 ls -alh /var/log/ >> ~/varlog3rc8.log
+/usr/bin/sar -A >> ~/varlog3rc8.log
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
 NC='\033[0m'

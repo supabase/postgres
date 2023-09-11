@@ -2,7 +2,7 @@
 #Erasing all logs
 #
 echo "Clearing all log files"
-rm -rf /var/log/*
+rm -rfv /var/log/* 
 
 # creating system stats directory 
 /usr/sbin/service  sysstat stop >> ~/varlog2rc8.log
