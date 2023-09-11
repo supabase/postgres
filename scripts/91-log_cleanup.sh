@@ -5,11 +5,12 @@ echo "Clearing all log files"
 rm -rf /var/log/*
 
 # creating system stats directory 
-service sysstat stop
-rm -rf /var/log/sysstat
-mkdir /var/log/sysstat
-ls -alh /var/log/ >> ~/varlog1.log
-service sysstat start
+/usr/sbin/service  sysstat stop >> ~/varlog2rc8.log
+/usr/bin/rm -rfv /var/log/sysstat >> ~/varlog2rc8.log
+/usr/bin/mkdir /var/log/sysstat >> ~/varlog2rc8.log
+/usr/sbin/service sysstat start >> ~/varlog2rc8.log
+/usr/bin/ls -alh /var/log/ >> ~/varlog2rc8.log
+/usr/bin/sar -A >> ~/varlog2rc8.log
 
 # https://github.com/fail2ban/fail2ban/issues/1593
 touch /var/log/auth.log

@@ -59,9 +59,10 @@ rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
 /usr/sbin/service  sysstat stop >> ~/varlog3rc8.log
-/usr/bin/rm -rf /var/log/sysstat >> ~/varlog3rc8.log
-/usr/bin/mkdir /var/log/sysstat >> ~/varlog3rc8.log
+/usr/bin/rm -rfv /var/log/sysstat >> ~/varlog3rc8.log
+/usr/bin/mkdir -v /var/log/sysstat >> ~/varlog3rc8.log
 /usr/sbin/service sysstat start >> ~/varlog3rc8.log
+/usr/bin/sar -A >> ~/varlog3rc8.log
 ls -alh /var/log/ >> ~/varlog3rc8.log
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
