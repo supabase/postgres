@@ -33,14 +33,22 @@ function complete_pg_upgrade {
     echo "running" > /tmp/pg-upgrade-status
 
     echo "1. Mounting data disk"
-    retry 3 mount -a -v
+    if [ -z "$IS_CI" ]; then
+        retry 3 mount -a -v
+    else
+        echo "Skipping mount -a -v"
+    fi
 
     # copying custom configurations
     echo "2. Copying custom configurations"
     retry 3 copy_configs
 
     echo "3. Starting postgresql"
-    retry 3 service postgresql start
+    if [ -z "$IS_CI" ]; then
+        retry 3 start_postgres
+    else
+        start_postgres --new-bin
+    fi
 
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
@@ -48,7 +56,8 @@ function complete_pg_upgrade {
     sleep 5
 
     echo "5. Restarting postgresql"
-    retry 3 service postgresql restart
+    retry 3 stop_postgres || true
+    retry 3 start_postgres
 
     echo "6. Starting vacuum analyze"
     retry 3 start_vacuum_analyze
@@ -78,5 +87,16 @@ function start_vacuum_analyze {
 
 trap cleanup ERR
 
+if [ -z "$IS_CI" ]; then
+    complete_pg_upgrade >> $LOG_FILE 2>&1 &
+else 
+    stop_postgres || true
 
-complete_pg_upgrade >> $LOG_FILE 2>&1 &
+    rm -f /tmp/pg-upgrade-status
+    mv /data_migration /data
+
+    rm -rf /var/lib/postgresql/data
+    ln -s /data/pgdata /var/lib/postgresql/data
+
+    complete_pg_upgrade
+fi
