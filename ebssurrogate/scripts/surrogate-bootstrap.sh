@@ -243,6 +243,7 @@ function clean_system {
 	rm -rf /mnt/var/log/*
 	# https://github.com/fail2ban/fail2ban/issues/1593
 	touch /mnt/var/log/auth.log
+	mkdir /mnt/var/log/sysstat
 
 	touch /mnt/var/log/pgbouncer.log
 	if [ -f /usr/bin/chown ]; then
