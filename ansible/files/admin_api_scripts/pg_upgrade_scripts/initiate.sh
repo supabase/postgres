@@ -50,15 +50,14 @@ PGBINOLD="/usr/lib/postgresql/bin"
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ 14* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG14_EXTENSIONS_TO_DISABLE[@]}")
-fi
-if [[ "$OLD_PGVERSION" =~ 13* ]]; then
+elif [[ "$OLD_PGVERSION" =~ 13* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG13_EXTENSIONS_TO_DISABLE[@]}")
-fi
-if [[ "$OLD_PGVERSION" =~ 12* ]]; then
+elif [[ "$OLD_PGVERSION" =~ 12* ]]; then
     POSTGRES_CONFIG_PATH="/etc/postgresql/12/main/postgresql.conf"
     PGBINOLD="/usr/lib/postgresql/12/bin"
 fi
 
+echo "Detected PG version: $PGVERSION"
 
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
@@ -187,7 +186,10 @@ function initiate_upgrade {
     # Make latest libpq available to pg_upgrade
     mkdir -p /usr/lib/aarch64-linux-gnu
     if [ -f "/usr/lib/aarch64-linux-gnu/libpq.so.5" ]; then
-        cp /usr/lib/aarch64-linux-gnu/libpq.so.5 /usr/lib/aarch64-linux-gnu/libpq.so.5.bak
+        mv /usr/lib/aarch64-linux-gnu/libpq.so.5 /usr/lib/aarch64-linux-gnu/libpq.so.5.bak
+    fi
+    if [ -f "${PG_UPGRADE_BIN_DIR}/libpq.so.5" ]; then
+        cp "${PG_UPGRADE_BIN_DIR}/libpq.so.5" "${PGLIBNEW}/libpq.so.5"
     fi
     ln -s "${PGLIBNEW}/libpq.so.5" /usr/lib/aarch64-linux-gnu/libpq.so.5
 
