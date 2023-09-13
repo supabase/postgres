@@ -21,6 +21,13 @@
   apt:
     name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
     install_recommends: no
+  when: ansible_distribution_version != "18.04"
+
+- name: Postgres - install server - Ubuntu 18.04
+  apt:
+    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg18.04+1
+    install_recommends: no
+  when: ansible_distribution_version == "18.04"
 
 - name: Postgres - remove PPA
   apt_repository:
