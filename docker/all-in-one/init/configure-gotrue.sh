@@ -5,6 +5,7 @@ touch /var/log/services/gotrue.log
 
 /usr/local/bin/configure-shim.sh /dist/gotrue /opt/gotrue/gotrue
 
+sed -i "s|api_external_url|${API_EXTERNAL_URL:-http://localhost}|g" /etc/gotrue.env
 sed -i "s|gotrue_api_host|${GOTRUE_API_HOST:-0.0.0.0}|g" /etc/gotrue.env
 sed -i "s|gotrue_site_url|$GOTRUE_SITE_URL|g" /etc/gotrue.env
 sed -i "s|gotrue_jwt_secret|$JWT_SECRET|g" /etc/gotrue.env
