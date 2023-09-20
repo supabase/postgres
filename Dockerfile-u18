@@ -133,7 +133,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Add Postgres PPA
 ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
 RUN mkdir -p /root/.gnupg && chmod 700 /root/.gnupg && \
-    gpg --recv-keys --no-default-keyring --keyring /tmp/pgdg.key --keyserver pgp.mit.edu --recv-keys "${postgresql_gpg_key}" && \
+    gpg --recv-keys --no-default-keyring --keyring /tmp/pgdg.key --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
     gpg --no-default-keyring --keyring /tmp/pgdg.key --export "${postgresql_gpg_key}" > /etc/apt/trusted.gpg.d/pgdg.gpg && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt bionic-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
