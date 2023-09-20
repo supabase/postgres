@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/pg-upgrade-fixes
     paths:
       - '.github/workflows/collect-u18-binaries.yml'
       - 'common.vars.pkr.hcl'
@@ -99,7 +100,7 @@ jobs:
         with:
           push: false
           load: true
-          file: docker/Dockerfile-u18
+          file: Dockerfile-u18
           target: pg_binary_collection
           build-args: |
             ubuntu_release=${{ matrix.ubuntu_release }}
