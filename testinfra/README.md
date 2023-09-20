@@ -3,7 +3,7 @@
 ## Prerequisites
 
 ```sh
-pip3 install docker pytest pytest-testinfra
+pip3 install docker pytest pytest-testinfra requests
 ```
 
 ## Running locally
