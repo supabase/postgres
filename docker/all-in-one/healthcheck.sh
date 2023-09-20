@@ -38,6 +38,7 @@ fail2ban-client status
 curl -sSfI "http://localhost:$PGEXPORTER_PORT/metrics"
 
 # vector is up (if starting logflare)
+# TODO: make this non-conditional once we set up local logflare for testinfra
 if [ -n "${LOGFLARE_API_KEY:-}" ]; then
   curl -sSfI "http://localhost:$VECTOR_API_PORT/health"
 fi
