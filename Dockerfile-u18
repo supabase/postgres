@@ -1032,3 +1032,4 @@ COPY --from=pg_binary_collection_base /usr/share/postgresql/${postgresql_major} 
 RUN cd /tmp/pg_binaries && \
     tar czvf 18.04.tar.gz ${postgresql_major}/ && \
     rm -rf ${postgresql_major}/
+    
