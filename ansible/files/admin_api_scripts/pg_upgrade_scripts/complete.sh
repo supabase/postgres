@@ -11,7 +11,7 @@ SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh"
 
-LOG_FILE="/tmp/pg-upgrade-complete.log"
+LOG_FILE="/var/log/pg-upgrade-complete.log"
 
 function cleanup {
     UPGRADE_STATUS=${1:-"failed"}
@@ -45,6 +45,9 @@ function complete_pg_upgrade {
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
+    echo "4.1. Applying correct authentication scheme"
+    retry 3 use_corect_auth_scheme
+
     sleep 5
 
     echo "5. Restarting postgresql"
@@ -67,6 +70,15 @@ function run_generated_sql {
                 run_sql -f "$FILE"
             fi
         done
+    fi
+}
+
+# Projects which had their passwords hashed using md5 need be 
+# configured to use md5 on upgraded instances as well, as opposed to scram-sha-256
+function use_corect_auth_scheme {
+    PASSWORD_ENCRYPTION_SETTING=$(run_sql -A -t -c "SHOW password_encryption;")
+    if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
+        sed -i 's/scram-sha-256/md5/g' /etc/postgresql/pg_hba.conf
     fi
 }
 
