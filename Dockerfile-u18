@@ -874,19 +874,6 @@ ADD "https://github.com/supabase/supautils/releases/download/v${supautils_releas
     /tmp/supautils.deb
 
 ####################
-# setup-wal-g.yml
-####################
-FROM base as walg
-ARG wal_g_release
-# ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-18.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
-RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
-    apt-get update && apt-get install -y --no-install-recommends curl && \
-    curl -kL "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-18.04-${arch}.tar.gz" -o /tmp/wal-g.tar.gz && \
-    tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
-    rm -rf /tmp/wal-g.tar.gz && \
-    mv /tmp/wal-g-pg-ubuntu*18.04-$arch /tmp/wal-g
-
-####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -949,7 +936,6 @@ FROM base as production
 
 # Setup extensions
 COPY --from=extensions /tmp /tmp
-COPY --from=walg /tmp/wal-g /usr/local/bin/
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -1016,3 +1002,33 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
     cp -r /ccache/* /tmp
 FROM scratch as buildcache
 COPY --from=stats /tmp /
+
+FROM ubuntu:bionic as pg_binary_collection_base
+ENV DEBIAN_FRONTEND=noninteractive
+
+COPY ansible/files/extensions/* /tmp/build/extensions/
+COPY ansible/files/postgres/* /tmp/build/
+
+RUN echo "deb [ trusted=yes ] file:///tmp/build ./" > /etc/apt/sources.list.d/temp.list
+RUN apt-get update && \
+    apt-get install -y postgresql-${postgresql_major}=${postgresql_release}-1.pgdg18.04+1 --no-install-recommends && \
+    apt-get install -y ca-certificates \
+                        libcurl3-gnutls libmecab2 libnghttp2-14 \
+                        libpsl5 librtmp1 libsodium23 mecab-naist-jdic \
+                        mecab-naist-jdic-eucjp mecab-utils publicsuffix
+RUN rm -f /tmp/build/extensions/postgis* && \
+    dpkg -i /tmp/build/extensions/*
+
+FROM ubuntu:bionic as pg_binary_collection
+
+RUN mkdir -p /tmp/pg_binaries/${postgresql_major}
+COPY --from=pg_binary_collection_base /usr/lib/postgresql/${postgresql_major} /tmp/pg_binaries/${postgresql_major}
+COPY --from=pg_binary_collection_base /usr/lib/postgresql/lib /tmp/pg_binaries/${postgresql_major}/lib
+COPY --from=pg_binary_collection_base /var/lib/postgresql/extension /tmp/pg_binaries/${postgresql_major}/lib
+COPY --from=pg_binary_collection_base /usr/lib/aarch64-linux-gnu/libpq.so.5 /tmp/pg_binaries/${postgresql_major}/lib
+COPY --from=pg_binary_collection_base /usr/lib/aarch64-linux-gnu/libpq.so.5 /tmp/pg_binaries/${postgresql_major}/libpq.so.5
+COPY --from=pg_binary_collection_base /usr/share/postgresql/${postgresql_major} /tmp/pg_binaries/${postgresql_major}/share
+
+RUN cd /tmp/pg_binaries && \
+    tar czvf 18.04.tar.gz ${postgresql_major}/ && \
+    rm -rf ${postgresql_major}/
