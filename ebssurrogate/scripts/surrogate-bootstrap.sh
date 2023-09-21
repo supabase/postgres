@@ -259,6 +259,9 @@ function clean_system {
 	mkdir /mnt/var/log/wal-g
 	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
 
+	#Creatre Sysstat directory for SAR
+	mkdir /mnt/var/log/sysstat
+
 	if [ -f /usr/bin/chown ]; then
 		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
 		chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
