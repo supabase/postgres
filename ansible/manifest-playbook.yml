@@ -63,7 +63,7 @@
 
     - name: Download admin-mgr archive
       get_url:
-        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_{{ arch }}.tar.gz"
+        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
         dest: "/tmp/admin-mgr.tar.gz"
         timeout: 90
 
