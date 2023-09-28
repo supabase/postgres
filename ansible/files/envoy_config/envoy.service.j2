@@ -1,10 +1,10 @@
 Description=Envoy Proxy Server
 After=postgrest.service gotrue.service adminapi.service
 Wants=postgrest.service gotrue.service adminapi.service
+Conflicts=kong.service
 
 [Service]
 Type=simple
-#ExecStart=/opt/envoy/envoy --config-path /opt/envoy/envoy.yml
 ExecStart=/usr/bin/bash -c '/opt/envoy/envoy --config-path /opt/envoy/envoy.yml'
 User=envoy
 
