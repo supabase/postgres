@@ -21,11 +21,6 @@
     owner: envoy
     mode: u+rwx
 
-- name: Envoy - copy basic conf
-  copy:
-    src: files/envoy_config/envoy.yml
-    dest: /opt/envoy/envoy.yml
-
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
 # "4096" using "ulimit -n"
 - name: Envoy - bump up ulimit
