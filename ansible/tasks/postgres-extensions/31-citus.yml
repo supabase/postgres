@@ -1,0 +1,58 @@
+- name: Update apt cache
+  apt:
+  update_cache: yes
+
+- name: Install dependencies
+  apt:
+  name:
+    - git
+    - build-essential
+    - liblz4-dev
+    - libzstd-dev
+    - clang-11
+    - libcurl4-openssl-dev
+    - libkrb5-dev
+    - libicu-dev
+  state: present
+
+- name: Add PostgreSQL repo and install postgresql-server-dev
+  block:
+  - name: Add PostgreSQL APT key
+    apt_key:
+    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    state: present
+
+  - name: Add PostgreSQL APT repository
+    apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+
+  - name: Install postgresql-server-dev-15
+    apt:
+    name: postgresql-server-dev-15
+    state: present
+
+- name: Clone and install Citus
+  block:
+  - name: Clone Citus repository
+    git:
+    repo: 'https://github.com/citusdata/citus.git'
+    dest: '/tmp/citus'
+    clone: yes
+
+  - name: Build Citus
+    command:
+    cmd: "{{ item }}"
+    chdir: /tmp/citus
+    loop:
+    - './configure'
+    - 'make'
+    args:
+    creates: "/tmp/citus/Makefile"
+
+  - name: Install Citus
+    command:
+    cmd: "sudo make install"
+    chdir: /tmp/citus
+
+
