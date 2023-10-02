@@ -100,6 +100,9 @@
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
 
+- name: Install Citus
+  import_tasks: tasks/postgres-extensions/30-citus.yml
+
 # Install extensions before init
 - name: Install Postgres extensions
   import_tasks: tasks/setup-docker.yml
