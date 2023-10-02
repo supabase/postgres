@@ -87,6 +87,11 @@ variable "packer-execution-id" {
   default = "unknown"
 }
 
+variable "force-deregister" {
+  type    = bool
+  default = false
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
@@ -99,6 +104,7 @@ source "amazon-ebssurrogate" "source" {
   instance_type = "c6g.4xlarge"
   region       = "${var.region}"
   #secret_key   = "${var.aws_secret_key}"
+  force_deregister = var.force-deregister
 
   # Use latest official ubuntu focal ami owned by Canonical.
   source_ami_filter {
