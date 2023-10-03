@@ -40,19 +40,28 @@
         dest: '/tmp/citus'
         clone: yes
 
-    - name: Build Citus
+    - name: Run ./configure
       command:
-        cmd: "{{ item }}"
+        cmd: "./configure"
         chdir: /tmp/citus
-      loop:
-        - './configure'
-        - 'make'
-      args:
-        creates: "/tmp/citus/Makefile"
+      register: configure_result
+      ignore_errors: yes
+
+    - name: Check ./configure output
+      assert:
+        that: configure_result.rc == 0
+        fail_msg: "./configure failed with the following output: {{ configure_result.stdout }} {{ configure_result.stderr }}"
+        success_msg: "./configure succeeded with the following output: {{ configure_result.stdout }}"
+      when: configure_result is defined
+
+    - name: Run make to build Citus
+      command:
+        cmd: "make"
+        chdir: /tmp/citus
+      when: configure_result is defined and configure_result.rc == 0
 
     - name: Install Citus
       command:
-        cmd: "sudo make install"
+        cmd: "make install"
         chdir: /tmp/citus
-
-
+      when: configure_result is defined and configure_result.rc == 0
