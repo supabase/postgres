@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.5-labs
+# syntax=docker/dockerfile:1.6
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 

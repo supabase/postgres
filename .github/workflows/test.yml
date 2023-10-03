@@ -29,20 +29,21 @@ jobs:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
       - run: docker context create builders
-      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v3
         with:
           endpoint: builders
-      - uses: docker/build-push-action@v3
+      - uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           context: .
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
           tags: supabase/postgres:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=${{ github.ref_name }}-latest
+            type=gha,scope=${{ github.base_ref }}-latest
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest
 
       - name: Start Postgres
         run: |
