@@ -25,7 +25,8 @@ jobs:
 
       - name: Run aio integration tests
         run: |
-          pip3 install docker pytest pytest-testinfra
+          # TODO: use poetry for pkg mgmt
+          pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
           pytest -vv testinfra/test_all_in_one.py
 
   test-ami:
@@ -58,12 +59,6 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         with:
           endpoint: builders
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v5
         with:
@@ -118,6 +113,10 @@ jobs:
             tar xvf "$layer" -C ansible/files/postgres --strip-components 1
           done
 
+      # Packer doesn't support skipping registering the AMI for the ebssurrogate
+      # builder, so we register an AMI with a fixed name and run tests on an
+      # instance launched from that
+      # https://github.com/hashicorp/packer/issues/4899
       - name: Build AMI
         run: |
           GIT_SHA=${{github.sha}}
@@ -125,7 +124,9 @@ jobs:
 
       - name: Run tests
         run: |
-          echo TODO
+          # TODO: use poetry for pkg mgmt
+          pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
+          pytest -vv testinfra/test_ami.py
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}

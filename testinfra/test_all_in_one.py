@@ -1,4 +1,5 @@
 from docker.models.containers import Container
+from os import path
 from time import sleep
 from typing import cast
 import docker
@@ -24,7 +25,7 @@ all_in_one_envs = {
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
-def host(request):
+def host():
     # We build the image with the Docker CLI in path instead of using docker-py
     # (official Docker SDK for Python) because the latter doesn't use BuildKit,
     # so things like `ARG TARGETARCH` don't work:
@@ -36,11 +37,11 @@ def host(request):
             "buildx",
             "build",
             "--file",
-            "docker/all-in-one/Dockerfile",
+            path.join(path.dirname(__file__), "../docker/all-in-one/Dockerfile"),
             "--load",
             "--tag",
             all_in_one_image_tag,
-            ".",
+            path.join(path.dirname(__file__), ".."),
         ]
     )
 
