@@ -443,11 +443,11 @@ FROM ccache as plv8-source
 # Download and extract
 ARG plv8_release
 ARG plv8_release_checksum
-ADD --checksum=${plv8_release_checksum} \
-    "https://github.com/plv8/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
-    /tmp/plv8.tar.gz
-RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
-    rm -rf /tmp/plv8.tar.gz
+# ADD --checksum=${plv8_release_checksum} \
+#     "https://github.com/plv8/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
+#     /tmp/plv8.tar.gz
+# RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
+#     rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -456,6 +456,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     libtinfo5 \
     && rm -rf /var/lib/apt/lists/*
+RUN git clone "https://github.com/plv8/plv8.git" --branch=v${plv8_release} /tmp/plv8-${plv8_release}
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
 ENV DOCKER=1
