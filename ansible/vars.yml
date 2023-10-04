@@ -46,7 +46,7 @@ adminmgr_release: 0.10.2
 
 # Postgres Extensions
 postgis_release: "3.4.0"
-postgis_release_checksum: sha256:9a2a219da005a1730a39d1959a1c7cec619b1efb009b65be80ffc25bad299068
+postgis_release_checksum: sha256:aee9b60a6c884d354164b3096c4657f324454186607f859d1ce05d899798af9d
 
 pgrouting_release: "3.4.1"
 pgrouting_release_checksum: sha256:a4e034efee8cf67582b67033d9c3ff714a09d8f5425339624879df50aff3f642
@@ -55,18 +55,18 @@ pgtap_release: "1.2.0"
 pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
 
 pg_cron_release: "1.6.1"
-pg_cron_release_checksum: sha256:3652722ea98d94d8e27bf5e708dd7359f55a818a43550d046c5064c98876f1a8
+pg_cron_release_checksum: sha256:7e5ec9a519b8f7c5a2b350153093c7b87ff7d94aef2ed461a5844e4313aadf07
 
 pgaudit_release: "16.0"
-pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f77f8f3126d428a8bd8
+pgaudit_release_checksum: sha256:d53ef985f2d0b15ba25c512c4ce967dce07b94fd4422c95bd04c4c1a055fe738
 
 pgjwt_release: 9742dab1b2f297ad3811120db7b21451bca2d3c9
 
 pgsql_http_release: "1.6.0"
-pgsql_http_release_checksum: sha256:43efc9e82afcd110f205b86b8d28d1355d39b6b134161e9661a33a1346818f5d
+pgsql_http_release_checksum: sha256:add8b5734cd7271e07a15ad42a970138f50b3911e397b27be78b8e488f42be92
 
 plpgsql_check_release: "2.5.2"
-plpgsql_check_release_checksum: sha256:6c3a3c5faf3f9689425c6db8a6b20bf4cd5e7144a055e29538eae980c7232573
+plpgsql_check_release_checksum: sha256:7c149bc2e7216d5612e66ccfc2cfd819d331e6de53b1288f9d98dc749302fae2
 
 pg_safeupdate_release: "1.4"
 pg_safeupdate_release_checksum: sha256:ff01d3d444d35924bd3d745c5695696292e2855042da4c30fe728fb3b6648122
@@ -89,7 +89,7 @@ plv8_release_checksum: sha256:ec07b191882bfbba2cb9471ccc4f1e2a3f5360d70f1df83673
 pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
 pg_net_release: "0.7.3"
-pg_net_release_checksum: sha256:f403019fbffe5b3ec28816957ef81279dea1db5b008e3fb3bc39181a5e361940
+pg_net_release_checksum: sha256:77de31b617eb6a58ddb0776e87dc7f3f11d908bae9214453da10663bac4555b1
 
 rum_release: "1.3.13"
 rum_release_checksum: sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d

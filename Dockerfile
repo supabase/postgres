@@ -157,7 +157,8 @@ FROM sfcgal as postgis-source
 # Download and extract
 ARG postgis_release
 ARG postgis_release_checksum
-ADD "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgis-${postgis_release}.tar.gz" \
+ADD --checksum=${postgis_release_checksum} \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgis-${postgis_release}.tar.gz" \
     /tmp/postgis.tar.gz
 RUN tar -xvf /tmp/postgis.tar.gz -C /tmp && \
     rm -rf /tmp/postgis.tar.gz
@@ -245,7 +246,8 @@ FROM ccache as pg_cron-source
 # Download and extract
 ARG pg_cron_release
 ARG pg_cron_release_checksum
-ADD "https://github.com/citusdata/pg_cron/archive/refs/tags/v${pg_cron_release}.tar.gz" \
+ADD --checksum=${pg_cron_release_checksum} \
+    "https://github.com/citusdata/pg_cron/archive/refs/tags/v${pg_cron_release}.tar.gz" \
     /tmp/pg_cron.tar.gz
 RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
     rm -rf /tmp/pg_cron.tar.gz
@@ -263,7 +265,8 @@ FROM ccache as pgaudit-source
 # Download and extract
 ARG pgaudit_release
 ARG pgaudit_release_checksum
-ADD "https://github.com/pgaudit/pgaudit/archive/refs/tags/${pgaudit_release}.tar.gz" \
+ADD --checksum=${pgaudit_release_checksum} \
+    "https://github.com/pgaudit/pgaudit/archive/refs/tags/${pgaudit_release}.tar.gz" \
     /tmp/pgaudit.tar.gz
 RUN tar -xvf /tmp/pgaudit.tar.gz -C /tmp && \
     rm -rf /tmp/pgaudit.tar.gz
@@ -301,7 +304,8 @@ FROM ccache as pgsql-http-source
 # Download and extract
 ARG pgsql_http_release
 ARG pgsql_http_release_checksum
-ADD "https://github.com/pramsey/pgsql-http/archive/refs/tags/v${pgsql_http_release}.tar.gz" \
+ADD --checksum=${pgsql_http_release_checksum} \
+    "https://github.com/pramsey/pgsql-http/archive/refs/tags/v${pgsql_http_release}.tar.gz" \
     /tmp/pgsql-http.tar.gz
 RUN tar -xvf /tmp/pgsql-http.tar.gz -C /tmp && \
     rm -rf /tmp/pgsql-http.tar.gz
@@ -323,7 +327,8 @@ FROM ccache as plpgsql_check-source
 # Download and extract
 ARG plpgsql_check_release
 ARG plpgsql_check_release_checksum
-ADD "https://github.com/okbob/plpgsql_check/archive/refs/tags/v${plpgsql_check_release}.tar.gz" \
+ADD --checksum=${plpgsql_check_release_checksum} \
+    "https://github.com/okbob/plpgsql_check/archive/refs/tags/v${plpgsql_check_release}.tar.gz" \
     /tmp/plpgsql_check.tar.gz
 RUN tar -xvf /tmp/plpgsql_check.tar.gz -C /tmp && \
     rm -rf /tmp/plpgsql_check.tar.gz
@@ -505,7 +510,8 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 FROM base as pg_net2
 # Download package archive
 ARG pg_net_release
-ADD "https://github.com/supabase/pg_net/releases/download/v${pg_net_release}/pg_net-v${pg_net_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+ADD --checksum=${pg_net_release_checksum} \
+    "https://github.com/supabase/pg_net/releases/download/v${pg_net_release}/pg_net-v${pg_net_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/pg_net.deb
 
 ####################
@@ -597,7 +603,8 @@ FROM ccache as pg_stat_monitor-source
 # Download and extract
 ARG pg_stat_monitor_release
 ARG pg_stat_monitor_release_checksum
-ADD "https://github.com/percona/pg_stat_monitor/archive/refs/tags/${pg_stat_monitor_release}.tar.gz" \
+ADD --checksum=${pg_stat_monitor_release_checksum} \
+    "https://github.com/percona/pg_stat_monitor/archive/refs/tags/${pg_stat_monitor_release}.tar.gz" \
     /tmp/pg_stat_monitor.tar.gz
 RUN tar -xvf /tmp/pg_stat_monitor.tar.gz -C /tmp && \
     rm -rf /tmp/pg_stat_monitor.tar.gz
