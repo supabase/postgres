@@ -44,12 +44,11 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
       - run: docker context create builders
-      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v3
         with:
-          endpoint: builders          
-      - uses: docker/build-push-action@v3
+          endpoint: builders
+      - uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: Dockerfile-u18
           build-args: |
@@ -57,8 +56,8 @@ jobs:
           target: extensions
           tags: supabase/postgres:extensions-u18
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,ignore-error=true
+          cache-from: type=gha,scope=${{ github.ref_name }}-extensions-u18
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-extensions-u18,ignore-error=true
 
       - name: Extract built packages
         run: |
@@ -71,9 +70,8 @@ jobs:
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
       - name: Build Postgres deb
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: docker/Dockerfile
           target: pg-deb
@@ -85,8 +83,8 @@ jobs:
             DEB_BUILD_PROFILES=pkg.postgresql.nozstd
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,ignore-error=true
+          cache-from: type=gha,scope=${{ github.ref_name }}-deb-u18
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb-u18,ignore-error=true
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres
@@ -94,11 +92,10 @@ jobs:
           for layer in /tmp/build/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/postgres --strip-components 1
           done
-        
+
       - name: Build surrogate Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: Dockerfile-u18
           target: pg_binary_collection
@@ -109,8 +106,8 @@ jobs:
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
           tags: supabase/postgres:u18-binaries
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,ignore-error=true
+          cache-from: type=gha,scope=${{ github.ref_name }}-u18-binaries
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-u18-binaries,ignore-error=true
 
       - name: Copy binary tarball
         run: |
