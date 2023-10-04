@@ -46,8 +46,8 @@ jobs:
           target: extensions
           tags: supabase/postgres:extensions
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ github.ref_name }}-extensions-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-extensions-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+          # No need to export extensions cache because latest depends on it
       - name: Extract built packages
         run: |
           mkdir -p /tmp/extensions ansible/files/extensions
@@ -72,8 +72,8 @@ jobs:
             CPPFLAGS=-mcpu=${{ matrix.mcpu }}
           tags: supabase/postgres:deb
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ github.ref_name }}-deb-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-deb
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres
