@@ -49,7 +49,6 @@ jobs:
           endpoint: builders
       - uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: Dockerfile-u18
           build-args: |
@@ -73,7 +72,6 @@ jobs:
       - name: Build Postgres deb
         uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: docker/Dockerfile
           target: pg-deb
@@ -98,7 +96,6 @@ jobs:
       - name: Build surrogate Docker image
         uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: Dockerfile-u18
           target: pg_binary_collection
