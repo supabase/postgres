@@ -110,7 +110,7 @@ pg_graphql_release: "1.4.2"
 pg_jsonschema_release: "0.2.0"
 
 pg_stat_monitor_release: "2.0.2"
-pg_stat_monitor_release_checksum: sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
+pg_stat_monitor_release_checksum: sha256:9d10f2999e3f79724571fbc2467d86c75c35d3e549af194f884f523293aacbb5
 
 vault_release: "0.2.9"
 vault_release_checksum: sha256:1e813216395c59bb94c92be47ce8b70ba19ccc0efbcdb1fb14ed6d34a42c6cdb
