@@ -41,9 +41,9 @@ jobs:
             ${{ steps.args.outputs.result }}
           tags: supabase/postgres:latest
           cache-from: |
-            type=gha,scope=${{ github.ref_name }}-latest
-            type=gha,scope=${{ github.base_ref }}-latest
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest
+            type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+            type=gha,scope=${{ github.base_ref }}-latest-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
 
       - name: Start Postgres
         run: |

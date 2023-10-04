@@ -65,8 +65,8 @@ jobs:
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ github.ref_name }}-aio
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-aio
+          cache-from: type=gha,scope=${{ github.ref_name }}-aio-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-aio-${{ matrix.arch }}
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
