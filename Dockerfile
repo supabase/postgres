@@ -156,8 +156,7 @@ FROM sfcgal as postgis-source
 # Download and extract
 ARG postgis_release
 ARG postgis_release_checksum
-ADD --checksum=${postgis_release_checksum} \
-    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgis-${postgis_release}.tar.gz" \
+ADD "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgis-${postgis_release}.tar.gz" \
     /tmp/postgis.tar.gz
 RUN tar -xvf /tmp/postgis.tar.gz -C /tmp && \
     rm -rf /tmp/postgis.tar.gz
@@ -245,8 +244,7 @@ FROM ccache as pg_cron-source
 # Download and extract
 ARG pg_cron_release
 ARG pg_cron_release_checksum
-ADD --checksum=${pg_cron_release_checksum} \
-    "https://github.com/citusdata/pg_cron/archive/refs/tags/v${pg_cron_release}.tar.gz" \
+ADD "https://github.com/citusdata/pg_cron/archive/refs/tags/v${pg_cron_release}.tar.gz" \
     /tmp/pg_cron.tar.gz
 RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
     rm -rf /tmp/pg_cron.tar.gz
@@ -264,8 +262,7 @@ FROM ccache as pgaudit-source
 # Download and extract
 ARG pgaudit_release
 ARG pgaudit_release_checksum
-ADD --checksum=${pgaudit_release_checksum} \
-    "https://github.com/pgaudit/pgaudit/archive/refs/tags/${pgaudit_release}.tar.gz" \
+ADD "https://github.com/pgaudit/pgaudit/archive/refs/tags/${pgaudit_release}.tar.gz" \
     /tmp/pgaudit.tar.gz
 RUN tar -xvf /tmp/pgaudit.tar.gz -C /tmp && \
     rm -rf /tmp/pgaudit.tar.gz
@@ -303,8 +300,7 @@ FROM ccache as pgsql-http-source
 # Download and extract
 ARG pgsql_http_release
 ARG pgsql_http_release_checksum
-ADD --checksum=${pgsql_http_release_checksum} \
-    "https://github.com/pramsey/pgsql-http/archive/refs/tags/v${pgsql_http_release}.tar.gz" \
+ADD "https://github.com/pramsey/pgsql-http/archive/refs/tags/v${pgsql_http_release}.tar.gz" \
     /tmp/pgsql-http.tar.gz
 RUN tar -xvf /tmp/pgsql-http.tar.gz -C /tmp && \
     rm -rf /tmp/pgsql-http.tar.gz
@@ -326,8 +322,7 @@ FROM ccache as plpgsql_check-source
 # Download and extract
 ARG plpgsql_check_release
 ARG plpgsql_check_release_checksum
-ADD --checksum=${plpgsql_check_release_checksum} \
-    "https://github.com/okbob/plpgsql_check/archive/refs/tags/v${plpgsql_check_release}.tar.gz" \
+ADD "https://github.com/okbob/plpgsql_check/archive/refs/tags/v${plpgsql_check_release}.tar.gz" \
     /tmp/plpgsql_check.tar.gz
 RUN tar -xvf /tmp/plpgsql_check.tar.gz -C /tmp && \
     rm -rf /tmp/plpgsql_check.tar.gz
@@ -466,7 +461,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM scratch as plv8-deb
 COPY --from=plv8-source /tmp/*.deb /tmp/
 
-FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
+# FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8/
 
 ####################
 # 14-pg_plan_filter.yml
@@ -505,6 +500,12 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
     make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
+
+FROM base as pg_net2
+# Download package archive
+ARG pg_net_release
+ADD "https://github.com/supabase/pg_net/releases/download/v${pg_net_release}/pg_net-v${pg_net_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+    /tmp/pg_net.deb
 
 ####################
 # 16-rum.yml
@@ -595,8 +596,7 @@ FROM ccache as pg_stat_monitor-source
 # Download and extract
 ARG pg_stat_monitor_release
 ARG pg_stat_monitor_release_checksum
-ADD --checksum=${pg_stat_monitor_release_checksum} \
-    "https://github.com/percona/pg_stat_monitor/archive/refs/tags/${pg_stat_monitor_release}.tar.gz" \
+ADD "https://github.com/percona/pg_stat_monitor/archive/refs/tags/${pg_stat_monitor_release}.tar.gz" \
     /tmp/pg_stat_monitor.tar.gz
 RUN tar -xvf /tmp/pg_stat_monitor.tar.gz -C /tmp && \
     rm -rf /tmp/pg_stat_monitor.tar.gz
@@ -711,7 +711,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 FROM base as wrappers
 # Download package archive
 ARG wrappers_release
-ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg15-${TARGETARCH}-linux-gnu.deb" \
     /tmp/wrappers.deb
 
 ####################
@@ -833,12 +833,12 @@ COPY --from=pgjwt-source /tmp/*.deb /tmp/
 COPY --from=pgsql-http-source /tmp/*.deb /tmp/
 COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
-COPY --from=timescaledb-source /tmp/*.deb /tmp/
+# COPY --from=timescaledb-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
 # COPY --from=pljava /tmp/*.deb /tmp/
-COPY --from=plv8 /tmp/*.deb /tmp/
+COPY --from=plv8-source /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
-COPY --from=pg_net-source /tmp/*.deb /tmp/
+COPY --from=pg_net2 /tmp/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pgsodium-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
@@ -852,7 +852,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
-COPY --from=supautils /tmp/*.deb /tmp/
+# COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
 # Download gosu for easy step-down from root
