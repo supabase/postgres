@@ -1,5 +1,5 @@
 
-\ir 01-postgis.sql
+-- \ir 01-postgis.sql
 \ir 02-pgrouting.sql
 \ir 03-pgtap.sql
 \ir 04-pg_cron.sql
@@ -8,7 +8,7 @@
 \ir 07-pgsql-http.sql
 \ir 08-plpgsql_check.sql
 \ir 09-pg-safeupdate.sql
-\ir 10-timescaledb.sql
+-- \ir 10-timescaledb.sql
 \ir 11-wal2json.sql
 -- \ir 12-pljava.sql
 \ir 13-plv8.sql
@@ -23,7 +23,7 @@
 \ir 22-pg_jsonschema.sql
 \ir 23-vault.sql
 \ir 24-pgroonga.sql
-\ir 25-wrappers.sql
+-- \ir 25-wrappers.sql
 \ir 26-hypopg.sql
 \ir 27-pg_repack.sql
 \ir 28-pgvector.sql

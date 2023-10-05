@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -eux
 
 #######################################
 # Used by both ami and docker builds to initialise database schema.
