@@ -917,8 +917,8 @@ COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_
 
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
-    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
-    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    # -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    # -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
@@ -936,7 +936,7 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 # Add upstream entrypoint script
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+    https://github.com/docker-library/postgres/raw/master/16/bullseye/docker-entrypoint.sh \
     /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
 
