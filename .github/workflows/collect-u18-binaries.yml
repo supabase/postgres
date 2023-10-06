@@ -66,7 +66,6 @@ jobs:
           for layer in /tmp/extensions/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
-          ls -laR ansible/files
 
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
@@ -97,6 +96,7 @@ jobs:
       - name: Build surrogate Docker image
         uses: docker/build-push-action@v5
         with:
+          context: .
           load: true
           file: Dockerfile-u18
           target: pg_binary_collection
