@@ -48,11 +48,11 @@ POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
 
 # If upgrading from older major PG versions, disable specific extensions
-if [[ "$OLD_PGVERSION" =~ 14* ]]; then
+if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG14_EXTENSIONS_TO_DISABLE[@]}")
-elif [[ "$OLD_PGVERSION" =~ 13* ]]; then
+elif [[ "$OLD_PGVERSION" =~ ^13.* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG13_EXTENSIONS_TO_DISABLE[@]}")
-elif [[ "$OLD_PGVERSION" =~ 12* ]]; then
+elif [[ "$OLD_PGVERSION" =~ ^12.* ]]; then
     POSTGRES_CONFIG_PATH="/etc/postgresql/12/main/postgresql.conf"
     PGBINOLD="/usr/lib/postgresql/12/bin"
 fi
