@@ -78,12 +78,12 @@
     recurse: yes
   become: yes
 
-- name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
-    replace: "include = '/etc/postgresql-custom/supautils.conf'"
+# - name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
+#   become: yes
+#   replace:
+#     path: /etc/postgresql/postgresql.conf
+#     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
+#     replace: "include = '/etc/postgresql-custom/supautils.conf'"
 
 - name: Cleanup - extension packages
   file:
