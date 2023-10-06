@@ -47,21 +47,21 @@
     state: present
     line: auto_explain.log_min_duration = 10s
 
-# supautils
-- name: supautils - add supautils to session_preload_libraries
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: "#session_preload_libraries = ''"
-    replace: session_preload_libraries = 'supautils'
+# # supautils
+# - name: supautils - add supautils to session_preload_libraries
+#   become: yes
+#   replace:
+#     path: /etc/postgresql/postgresql.conf
+#     regexp: "#session_preload_libraries = ''"
+#     replace: session_preload_libraries = 'supautils'
 
-- name: supautils - write custom supautils.conf
-  template:
-    src: "files/postgresql_config/supautils.conf.j2"
-    dest: /etc/postgresql-custom/supautils.conf
-    mode: 0664
-    owner: postgres
-    group: postgres
+# - name: supautils - write custom supautils.conf
+#   template:
+#     src: "files/postgresql_config/supautils.conf.j2"
+#     dest: /etc/postgresql-custom/supautils.conf
+#     mode: 0664
+#     owner: postgres
+#     group: postgres
 
 - name: supautils - copy extension custom scripts
   copy:
