@@ -1005,6 +1005,8 @@ FROM scratch as buildcache
 COPY --from=stats /tmp /
 
 FROM ubuntu:bionic as pg_binary_collection_base
+ARG postgresql_major
+ARG postgresql_release
 ENV DEBIAN_FRONTEND=noninteractive
 
 COPY --from=extensions /tmp/* /tmp/build/extensions/
@@ -1021,6 +1023,8 @@ RUN rm -f /tmp/build/extensions/postgis* && \
     dpkg -i /tmp/build/extensions/*
 
 FROM ubuntu:bionic as pg_binary_collection
+ARG postgresql_major
+ARG postgresql_release
 
 RUN mkdir -p /tmp/pg_binaries/${postgresql_major}
 COPY --from=pg_binary_collection_base /usr/lib/postgresql/${postgresql_major} /tmp/pg_binaries/${postgresql_major}
