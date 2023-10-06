@@ -66,6 +66,7 @@ jobs:
           for layer in /tmp/extensions/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
+          ls -laR ansible/files
 
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
