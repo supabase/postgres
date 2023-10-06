@@ -1007,7 +1007,7 @@ COPY --from=stats /tmp /
 FROM ubuntu:bionic as pg_binary_collection_base
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY ansible/files/extensions/* /tmp/build/extensions/
+COPY --from=extensions /tmp/* /tmp/build/extensions/
 COPY ansible/files/postgres/* /tmp/build/
 
 RUN echo "deb [ trusted=yes ] file:///tmp/build ./" > /etc/apt/sources.list.d/temp.list
