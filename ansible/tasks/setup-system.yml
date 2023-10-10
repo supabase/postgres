@@ -72,6 +72,19 @@
     - update
     - update-only
 
+- name: create overrides dir
+  file:
+    state: directory
+    owner: root
+    group: root
+    path: /etc/systemd/system/systemd-resolved.service.d
+    mode: '0700'
+
+- name: Custom systemd overrides for resolved
+  copy:
+    src: files/systemd-resolved.conf
+    dest: /etc/systemd/system/systemd-resolved.service.d/override.conf
+
 - name: System - Create services.slice
   template:
     src: files/services.slice.j2

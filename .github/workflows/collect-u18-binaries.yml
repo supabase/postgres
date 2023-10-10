@@ -1,11 +1,12 @@
-name: Build Ubuntu 18 AMI
+name: Collect Ubuntu 18 compatible binaries
 
 on:
   push:
     branches:
       - develop
+      - pcnc/pg-upgrade-fixes
     paths:
-      - '.github/workflows/ami-build-ubuntu-18.yml'
+      - '.github/workflows/collect-u18-binaries.yml'
       - 'common.vars.pkr.hcl'
       
   workflow_run:
@@ -43,25 +44,25 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
       - run: docker context create builders
-      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v3
         with:
-          endpoint: builders          
-      - uses: docker/build-push-action@v3
+          endpoint: builders
+      - uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
+          file: Dockerfile-u18
           build-args: |
             ${{ steps.args.outputs.result }}
           target: extensions
-          tags: supabase/postgres:extensions
+          tags: supabase/postgres:extensions-u18
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.ref_name }}-extensions-u18
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-extensions-u18,ignore-error=true
 
       - name: Extract built packages
         run: |
           mkdir -p /tmp/extensions ansible/files/extensions
-          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
+          docker save supabase/postgres:extensions-u18 | tar xv -C /tmp/extensions
           for layer in /tmp/extensions/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/extensions --strip-components 1
           done
@@ -69,9 +70,8 @@ jobs:
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
       - name: Build Postgres deb
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
-          push: false
           load: true
           file: docker/Dockerfile
           target: pg-deb
@@ -80,11 +80,11 @@ jobs:
             ubuntu_release_no=${{ matrix.ubuntu_version }}
             postgresql_major=${{ steps.version.outputs.postgresql_major }}
             postgresql_release=${{ steps.version.outputs.postgresql_release }}
-            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+            DEB_BUILD_PROFILES=pkg.postgresql.nozstd
           tags: supabase/postgres:deb-u18
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.ref_name }}-deb-u18
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb-u18,ignore-error=true
       - name: Extract Postgres deb
         run: |
           mkdir -p /tmp/build ansible/files/postgres
@@ -92,21 +92,29 @@ jobs:
           for layer in /tmp/build/*/layer.tar; do
             tar xvf "$layer" -C ansible/files/postgres --strip-components 1
           done
-      - name: Build AMI
-        run: |
-          GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=u18-${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var-file="legacy.vars.pkr.hcl" amazon-arm64.pkr.hcl
 
-      - name: Grab release version
-        id: process_release_version
+      - name: Build surrogate Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          file: Dockerfile-u18
+          target: pg_binary_collection
+          build-args: |
+            ubuntu_release=${{ matrix.ubuntu_release }}
+            ubuntu_release_no=${{ matrix.ubuntu_version }}
+            postgresql_major=${{ steps.version.outputs.postgresql_major }}
+            postgresql_release=${{ steps.version.outputs.postgresql_release }}
+          tags: supabase/postgres:u18-binaries
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-u18-binaries
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-u18-binaries,ignore-error=true
+
+      - name: Copy binary tarball
         run: |
-          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          
-      - name: List files
-        id: list_files
-        run: |
-          ls -la /tmp/
+          CONTAINER_ID=$(docker create supabase/postgres:u18-binaries)
+          docker cp "${CONTAINER_ID}:/tmp/pg_binaries/${{ matrix.ubuntu_version }}.tar.gz" - > /tmp/pg_binaries.tar.gz
+          docker rm "${CONTAINER_ID}"
 
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v1
@@ -127,25 +135,3 @@ jobs:
       - name: Upload pg binaries to s3 prod
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/18.04.tar.gz
-
-      - name: Deregister image
-        if: ${{ always() }}
-        continue-on-error: true
-        run: |
-          IMAGE_IDS=$(aws ec2 describe-images --filters "Name=name,Values=builder-supabase-postgres-u18-*" --query "Images[] .ImageId" --output text)
-          for IMAGE_ID in $IMAGE_IDS; do
-            SNAPSHOTS=$(aws ec2 describe-images --image-ids $IMAGE_ID --query "Images[*].BlockDeviceMappings[*].Ebs.SnapshotId" --output text)
-
-            echo "Deregistering image $IMAGE_ID"
-            aws ec2 deregister-image --image-id $IMAGE_ID
-
-            for SNAPSHOT in $SNAPSHOTS; do
-              echo "Deleting snapshot $SNAPSHOT"
-              aws ec2 delete-snapshot --snapshot-id $SNAPSHOT
-            done
-          done
-
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
-        run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=u18-${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}

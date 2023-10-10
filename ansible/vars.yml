@@ -10,12 +10,12 @@ postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340
 pgbouncer_release: "1.19.0"
 pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
 
-postgrest_release: "11.2.0"
-postgrest_arm_release_checksum: sha1:42496254d6fb8aa5660b8b7586f1e6a40977e319
-postgrest_x86_release_checksum: sha1:6c09ba1b97830e794a28ad7e475f7f8d20e759cc
+postgrest_release: "11.2.1"
+postgrest_arm_release_checksum: sha1:d5d7f846977c0da8a92e644752aa5831bab4d316
+postgrest_x86_release_checksum: sha1:381078de33bf12c868c33c040488d6ad76fd197e
 
-gotrue_release: 2.92.1
-gotrue_release_checksum: sha1:d893b5f0a433a087536773b961b96acbfd0bb55a
+gotrue_release: 2.99.0
+gotrue_release_checksum: sha1:2076accd8546612aae1f741b0335b9895cce1f01
 
 aws_cli_release: "2.2.7"
 
@@ -44,8 +44,8 @@ postgres_exporter_release_checksum:
   arm64: sha256:d869c16791481dc8475487ad84ae4371a63f9b399898ca1c666eead5cccf7182
   amd64: sha256:ff541bd3ee19c0ae003d71424a75edfcc8695e828dd20d5b4555ce433c89d60b
 
-adminapi_release: 0.48.0
-adminmgr_release: 0.10.0
+adminapi_release: 0.51.0
+adminmgr_release: 0.10.2
 
 # Postgres Extensions
 postgis_release: "3.3.2"
@@ -132,8 +132,8 @@ hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada
 pg_repack_release: "1.4.8"
 pg_repack_release_checksum: sha256:18b4d871c1abf78cf0b1b1fe6081d435d183a8dc5eb977576e7a47fe113dd4ec
 
-pgvector_release: "0.4.0"
-pgvector_release_checksum: sha256:b76cf84ddad452cc880a6c8c661d137ddd8679c000a16332f4f03ecf6e10bcc8
+pgvector_release: "0.5.0"
+pgvector_release_checksum: sha256:d8aa3504b215467ca528525a6de12c3f85f9891b091ce0e5864dd8a9b757f77b
 
 pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a

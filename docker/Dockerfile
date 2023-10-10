@@ -1,8 +1,8 @@
 ARG ubuntu_release=focal
 FROM ubuntu:${ubuntu_release} as base
 
-ARG ubuntu_release
-ARG ubuntu_release_no
+ARG ubuntu_release=flocal
+ARG ubuntu_release_no=20.04
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
@@ -16,8 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Postgres PPA
-ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
+# In the off-chance that the key in the repository expires, it can be replaced by running the following in the repository's root:
+#  gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys $NEW_POSTGRESQL_GPG_KEY
+#  gpg --export --armor $NEW_POSTGRESQL_GPG_KEY > postgresql.gpg.key
+COPY postgresql.gpg.key /tmp/postgresql.gpg.key
+RUN apt-key add /tmp/postgresql.gpg.key && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt ${ubuntu_release}-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
     echo "deb-src https://apt-archive.postgresql.org/pub/repos/apt ${ubuntu_release}-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
@@ -32,8 +35,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 
 # Configure processor optimised build
-ARG CPPFLAGS="-mcpu=neoverse-n1"
+ARG CPPFLAGS=""
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
+ARG DEB_BUILD_PROFILES="pkg.postgresql.nozstd"
+ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 
 RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
     apt-get source --compile postgresql-common pgdg-keyring && \
