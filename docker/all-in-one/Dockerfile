@@ -134,7 +134,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fail2ban \
     # sudo
     sudo \
-    # reading files using cat sucks
+    vim-tiny \
     less \
     # pg_egress_collect deps
     tcpdump libio-async-perl \

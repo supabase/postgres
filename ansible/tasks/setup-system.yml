@@ -41,6 +41,7 @@
   apt:
     pkg:
       - sysstat
+      - vim-tiny
     update_cache: yes
 
 - name: Configure sysstat
