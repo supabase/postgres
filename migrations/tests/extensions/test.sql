@@ -23,7 +23,7 @@
 \ir 22-pg_jsonschema.sql
 \ir 23-vault.sql
 \ir 24-pgroonga.sql
--- \ir 25-wrappers.sql
+\ir 25-wrappers.sql
 \ir 26-hypopg.sql
 \ir 28-pgvector.sql
 \ir 29-pg_tle.sql
