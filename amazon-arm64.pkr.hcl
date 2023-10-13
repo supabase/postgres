@@ -238,6 +238,7 @@ build {
       "DOCKER_PASSWD=${var.docker_passwd}",
       "DOCKER_IMAGE=${var.docker_image}",
       "DOCKER_IMAGE_TAG=${var.docker_image_tag}"
+      "POSTGRES_SUPABASE_VERSION=${var.postgres-version}"
     ]
     use_env_var_file = true
     script = "ebssurrogate/scripts/surrogate-bootstrap.sh"
