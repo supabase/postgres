@@ -89,11 +89,6 @@ EOF
 	localedef -i en_US -f UTF-8 en_US.UTF-8
 }
 
-# Disable IPV6 for ufw
-function disable_ufw_ipv6 {
-	sed -i 's/IPV6=yes/IPV6=no/g' /etc/default/ufw
-}
-
 function install_packages_for_build {
 	apt-get install -y --no-install-recommends linux-libc-dev \
 	 acl \
@@ -126,19 +121,7 @@ GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
 GRUB_TIMEOUT_STYLE="hidden"
 GRUB_DISTRIBUTOR="Supabase postgresql"
-GRUB_CMDLINE_LINUX_DEFAULT="nomodeset console=tty1 console=ttyS0 ipv6.disable=1"
-EOF
-}
-
-function setup_grub_conf_amd64 {
-	mkdir -p /etc/default/grub.d
-
-cat << EOF > /etc/default/grub.d/50-aws-settings.cfg
-GRUB_RECORDFAIL_TIMEOUT=0
-GRUB_TIMEOUT=0
-GRUB_CMDLINE_LINUX_DEFAULT=" root=/dev/nvme0n1p2 rootfstype=ext4 rw noatime,nodiratime,discard console=tty1 console=ttyS0 ip=dhcp tsc=reliable net.ifnames=0 quiet module_blacklist=psmouse,input_leds,autofs4 ipv6.disable=1 nvme_core.io_timeout=4294967295 systemd.hostname=ubuntu ipv6.disable=1"
-GRUB_TERMINAL=console
-GRUB_DISABLE_LINUX_UUID=true
+GRUB_CMDLINE_LINUX_DEFAULT="nomodeset console=tty1 console=ttyS0 ipv6.disable=0"
 EOF
 }
 
@@ -215,7 +198,6 @@ setup_hostname
 create_admin_account
 set_default_target
 setup_eth0_interface
-disable_ufw_ipv6
 disable_sshd_passwd_auth
 disable_fsck
 #setup_ccache

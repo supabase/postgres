@@ -132,6 +132,7 @@
   copy:
     content: |
       127.0.0.1   localhost
+      ::1         localhost
     dest: /etc/hosts
     mode: 0644
     owner: root
