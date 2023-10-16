@@ -14,8 +14,8 @@ postgrest_release: "11.2.1"
 postgrest_arm_release_checksum: sha1:d5d7f846977c0da8a92e644752aa5831bab4d316
 postgrest_x86_release_checksum: sha1:381078de33bf12c868c33c040488d6ad76fd197e
 
-gotrue_release: 2.99.0
-gotrue_release_checksum: sha1:2076accd8546612aae1f741b0335b9895cce1f01
+gotrue_release: 2.103.0
+gotrue_release_checksum: sha1:3b16adc142f9c1213bd1d13d6ef665ea16e69b24
 
 aws_cli_release: "2.2.7"
 
@@ -105,9 +105,9 @@ libsodium_release_checksum: sha256:6f504490b342a4f8a4c4a02fc9b866cbef8622d5df4e5
 pgsodium_release: "3.1.8"
 pgsodium_release_checksum: sha256:4d027aeee5163f3f33740d269938a120d1593a41c3701c920d2a1de80aa97486
 
-pg_graphql_release: "1.2.3"
+pg_graphql_release: "1.4.1"
 
-pg_jsonschema_release: "0.1.4"
+pg_jsonschema_release: "0.2.0"
 
 pg_stat_monitor_release: "1.1.1"
 pg_stat_monitor_release_checksum: sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
@@ -126,8 +126,8 @@ wrappers_release: "0.1.16"
 hypopg_release: "1.3.1"
 hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
 
-pgvector_release: "0.5.0"
-pgvector_release_checksum: sha256:d8aa3504b215467ca528525a6de12c3f85f9891b091ce0e5864dd8a9b757f77b
+pgvector_release: "0.5.1"
+pgvector_release_checksum: sha256:cc7a8e034a96e30a819911ac79d32f6bc47bdd1aa2de4d7d4904e26b83209dc8
 
 pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
