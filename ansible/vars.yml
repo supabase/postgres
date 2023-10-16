@@ -105,9 +105,9 @@ libsodium_release_checksum: sha256:6f504490b342a4f8a4c4a02fc9b866cbef8622d5df4e5
 pgsodium_release: "3.1.8"
 pgsodium_release_checksum: sha256:4d027aeee5163f3f33740d269938a120d1593a41c3701c920d2a1de80aa97486
 
-pg_graphql_release: "1.2.3"
+pg_graphql_release: "1.4.1"
 
-pg_jsonschema_release: "0.1.4"
+pg_jsonschema_release: "0.2.0"
 
 pg_stat_monitor_release: "1.1.1"
 pg_stat_monitor_release_checksum: sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
