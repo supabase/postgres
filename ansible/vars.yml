@@ -129,8 +129,8 @@ hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada
 pg_repack_release: "1.4.8"
 pg_repack_release_checksum: sha256:18b4d871c1abf78cf0b1b1fe6081d435d183a8dc5eb977576e7a47fe113dd4ec
 
-pgvector_release: "0.5.0"
-pgvector_release_checksum: sha256:d8aa3504b215467ca528525a6de12c3f85f9891b091ce0e5864dd8a9b757f77b
+pgvector_release: "0.5.1"
+pgvector_release_checksum: sha256-ZNzq+dATZn9LUgeOczsaadr5hwdbt9y/+sAOPIdr77U=
 
 pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
