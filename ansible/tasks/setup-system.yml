@@ -131,3 +131,18 @@
     mode: 0644
     owner: root
     group: root
+
+#Set Sysctl params for restarting the OS on oom after 10
+- name: Set vm.panic_on_oom=1
+  ansible.builtin.sysctl:
+    name: vm.panic_on_oom
+    value: '1'
+    state: present
+    reload: yes
+
+- name: Set kernel.panic=10
+  ansible.builtin.sysctl:
+    name: kernel.panic
+    value: '10'
+    state: present
+    reload: yes
