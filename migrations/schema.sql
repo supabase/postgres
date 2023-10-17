@@ -299,6 +299,7 @@ BEGIN
         alter default privileges in schema graphql grant all on functions to postgres, anon, authenticated, service_role;
         alter default privileges in schema graphql grant all on sequences to postgres, anon, authenticated, service_role;
 
+        -- Allow postgres role to allow granting usage on graphql and graphql_public schemas to custom roles
         grant usage on schema graphql_public to postgres with grant option;
         grant usage on schema graphql to postgres with grant option;
     END IF;
