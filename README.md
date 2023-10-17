@@ -58,9 +58,9 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 
 See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
 
-[![Docker](https://github.com/supabase/postgres/blob/master/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
-[![Digital Ocean](https://github.com/supabase/postgres/blob/master/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
-[![AWS](https://github.com/supabase/postgres/blob/master/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
+[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
+[![Digital Ocean](https://github.com/supabase/postgres/blob/develop/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
+[![AWS](https://github.com/supabase/postgres/blob/develop/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
 ### Marketplace Images
 |   | Postgres & Extensions | PgBouncer | PostgREST | WAL-G |
