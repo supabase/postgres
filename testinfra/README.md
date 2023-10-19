@@ -3,13 +3,10 @@
 ## Prerequisites
 
 - Docker
-- Packer
-- yq
-- Python deps:
-
-```sh
-pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-```
+- [Packer](https://www.packer.io)
+- [yq](https://github.com/mikefarah/yq)
+- Python (3.12+)
+- [Poetry](https://python-poetry.org)
 
 ## Running locally
 
@@ -61,5 +58,6 @@ AWS_PROFILE=supabase-dev packer build \
   amazon-arm64.pkr.hcl
 
 # run tests
-AWS_PROFILE=supabase-dev pytest -vv -s testinfra/test_*.py
+cd testinfra
+AWS_PROFILE=supabase-dev poetry run pytest -vv -s test_*.py
 ```
