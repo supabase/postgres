@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: 3.12
       - if: ${{ matrix.arch == 'arm64' }}
-        uses: deadsnakes/action@v3
+        uses: deadsnakes/action@v3.0.1
         with:
           python-version: 3.12
 
@@ -39,7 +39,7 @@ jobs:
           endpoint: builders
 
       - name: Run aio integration tests
-        run: cd testinfra && poetry run pytest -vv test_all_in_one.py
+        run: cd testinfra && poetry install && poetry run pytest -vv test_all_in_one.py
 
   test-ami:
     strategy:
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
 
       # actions/setup-python doesn't support arm: https://github.com/actions/setup-python/issues/678
-      - uses: deadsnakes/action@v3
+      - uses: deadsnakes/action@v3.0.1
         with:
           python-version: 3.12
 
@@ -70,69 +70,12 @@ jobs:
         with:
           version: 1.6.1
 
-      - id: args
-        uses: mikefarah/yq@master
+      - uses: ./.github/actions/build-pg-extensions-and-deb
         with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
-
-      - run: docker context create builders
-
-      - uses: docker/setup-buildx-action@v3
-        with:
-          endpoint: builders
-
-      - uses: docker/build-push-action@v5
-        with:
-          load: true
-          build-args: |
-            ${{ steps.args.outputs.result }}
-          target: extensions
-          tags: supabase/postgres:extensions
-          platforms: linux/${{ matrix.arch }}
-          cache-from: |
-            type=gha,scope=${{ github.ref_name }}-extensions
-            type=gha,scope=${{ github.base_ref }}-extensions
-            type=gha,scope=develop-extensions
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-extensions
-
-      - name: Extract built packages
-        run: |
-          mkdir -p /tmp/extensions ansible/files/extensions
-          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
-          for layer in /tmp/extensions/*/layer.tar; do
-            tar xvf "$layer" -C ansible/files/extensions --strip-components 1
-          done
-
-      - id: version
-        run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
-
-      - name: Build Postgres deb
-        uses: docker/build-push-action@v5
-        with:
-          load: true
-          file: docker/Dockerfile
-          target: pg-deb
-          build-args: |
-            ubuntu_release=${{ matrix.ubuntu_release }}
-            ubuntu_release_no=${{ matrix.ubuntu_version }}
-            postgresql_major=${{ steps.version.outputs.postgresql_major }}
-            postgresql_release=${{ steps.version.outputs.postgresql_release }}
-            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
-          tags: supabase/postgres:deb
-          platforms: linux/${{ matrix.arch }}
-          cache-from: |
-            type=gha,scope=${{ github.ref_name }}-deb
-            type=gha,scope=${{ github.base_ref }}-deb
-            type=gha,scope=develop-deb
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
-
-      - name: Extract Postgres deb
-        run: |
-          mkdir -p /tmp/build ansible/files/postgres
-          docker save supabase/postgres:deb | tar xv -C /tmp/build
-          for layer in /tmp/build/*/layer.tar; do
-            tar xvf "$layer" -C ansible/files/postgres --strip-components 1
-          done
+          arch: ${{ matrix.arch }}
+          ubuntu_release: ${{ matrix.ubuntu_release }}
+          ubuntu_version: ${{ matrix.ubuntu_version }}
+          mcpu: ${{ matrix.mcpu }}
 
       # Packer doesn't support skipping registering the AMI for the ebssurrogate
       # builder, so we register an AMI with a fixed name and run tests on an
@@ -144,7 +87,7 @@ jobs:
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=ci-ami-test" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" amazon-arm64.pkr.hcl
 
       - name: Run AMI integration tests
-        run: cd testinfra && poetry run pytest -vv test_ami.py
+        run: cd testinfra && poetry install && poetry run pytest -vv test_ami.py
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}

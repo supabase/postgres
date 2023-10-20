@@ -59,5 +59,6 @@ AWS_PROFILE=supabase-dev packer build \
 
 # run tests
 cd testinfra
+poetry instsall
 AWS_PROFILE=supabase-dev poetry run pytest -vv -s test_*.py
 ```
