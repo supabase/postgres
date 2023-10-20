@@ -213,7 +213,6 @@ setup_hostname
 create_admin_account
 set_default_target
 setup_eth0_interface
-disable_ufw_ipv6
 disable_sshd_passwd_auth
 disable_fsck
 #setup_ccache
