@@ -225,7 +225,7 @@ function initiate_upgrade {
         mount "$BLOCK_DEVICE" "$MOUNT_POINT"
 
         sleep 1
-        resize2fs "$BLOCK_DEVICE"
+        retry 3 resize2fs "$BLOCK_DEVICE"
     fi
 
     if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then

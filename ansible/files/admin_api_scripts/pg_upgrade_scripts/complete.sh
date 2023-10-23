@@ -45,8 +45,8 @@ function complete_pg_upgrade {
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
-    echo "4.1. Applying correct authentication scheme"
-    retry 3 use_corect_auth_scheme
+    echo "4.1. Applying authentication scheme updates"
+    retry 3 apply_auth_scheme_updates
 
     sleep 5
 
@@ -73,12 +73,14 @@ function run_generated_sql {
     fi
 }
 
-# Projects which had their passwords hashed using md5 need be 
-# configured to use md5 on upgraded instances as well, as opposed to scram-sha-256
-function use_corect_auth_scheme {
+# Projects which had their passwords hashed using md5 need to have their passwords reset
+# Passwords for managed roles are already present in /etc/postgresql.schema.sql
+function apply_auth_scheme_updates {
     PASSWORD_ENCRYPTION_SETTING=$(run_sql -A -t -c "SHOW password_encryption;")
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
-        sed -i 's/scram-sha-256/md5/g' /etc/postgresql/pg_hba.conf
+        run_sql -c "ALTER SYSTEM SET password_encryption TO 'scram-sha-256';"
+        run_sql -c "SELECT pg_reload_conf();"
+        run_sql -f /etc/postgresql.schema.sql
     fi
 }
 
