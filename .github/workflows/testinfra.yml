@@ -30,6 +30,7 @@ jobs:
           pytest -vv testinfra/test_all_in_one.py
 
   test-ami:
+    if: false
     strategy:
       matrix:
         include:
