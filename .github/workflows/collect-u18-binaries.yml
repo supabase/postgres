@@ -119,7 +119,7 @@ jobs:
       - name: Copy binary tarball
         run: |
           CONTAINER_ID=$(docker create supabase/postgres:u18-binaries)
-          docker cp "${CONTAINER_ID}:/tmp/pg_binaries/${{ matrix.ubuntu_version }}.tar.gz" - > /tmp/pg_binaries.tar.gz
+          docker cp "${CONTAINER_ID}:/tmp/pg_binaries/${{ matrix.ubuntu_version }}.tar.gz" /tmp/pg_binaries.tar.gz
           docker rm "${CONTAINER_ID}"
 
       - name: configure aws credentials - staging
