@@ -39,6 +39,12 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - id: args
         uses: mikefarah/yq@master
         with:
