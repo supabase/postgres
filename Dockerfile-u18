@@ -998,13 +998,13 @@ ARG postgresql_release
 
 RUN mkdir -p /tmp/pg_binaries/${postgresql_major}
 COPY --from=pg_binary_collection_base /usr/lib/postgresql/${postgresql_major} /tmp/pg_binaries/${postgresql_major}
-COPY --from=pg_binary_collection_base /usr/lib/postgresql/lib /tmp/pg_binaries/${postgresql_major}/lib
 COPY --from=pg_binary_collection_base /var/lib/postgresql/extension /tmp/pg_binaries/${postgresql_major}/lib
 COPY --from=pg_binary_collection_base /usr/lib/aarch64-linux-gnu/libpq.so.5 /tmp/pg_binaries/${postgresql_major}/lib
 COPY --from=pg_binary_collection_base /usr/lib/aarch64-linux-gnu/libpq.so.5 /tmp/pg_binaries/${postgresql_major}/libpq.so.5
+COPY --from=pg_binary_collection_base /usr/lib/postgresql/lib /tmp/pg_binaries/${postgresql_major}/lib
 COPY --from=pg_binary_collection_base /usr/share/postgresql/${postgresql_major} /tmp/pg_binaries/${postgresql_major}/share
+COPY --from=pg_binary_collection_base /var/lib/postgresql/extension /tmp/pg_binaries/${postgresql_major}/share/extension
 
 RUN cd /tmp/pg_binaries && \
     tar czvf 18.04.tar.gz ${postgresql_major}/ && \
     rm -rf ${postgresql_major}/
-    
