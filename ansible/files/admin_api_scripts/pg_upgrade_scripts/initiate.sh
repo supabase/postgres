@@ -133,18 +133,6 @@ EOF
     for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
         EXTENSION_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = '${EXTENSION}');")
         if [ "$EXTENSION_ENABLED" = "t" ]; then
-            echo "Exporting dependent objects for extension ${EXTENSION}, if they exist"
-            EXPORT_QUERY=$(cat << EOF
-    SELECT pg_get_functiondef(objid) || ';' AS function_definition
-    FROM pg_depend d
-    JOIN pg_language l on (d.refobjid = l.oid)
-    JOIN pg_proc pp on (d.objid = pp.oid)
-    JOIN pg_namespace pn on (pp.pronamespace = pn.oid)
-    WHERE pn.nspname <> 'pg_catalog' and l.lanname = '${EXTENSION}';
-EOF
-    )
-            DEPENDENT_OBJECTS=$(run_sql -A -t -c "$EXPORT_QUERY")
-
             echo "Disabling extension ${EXTENSION}"
             run_sql -c "DROP EXTENSION IF EXISTS ${EXTENSION} CASCADE;"
             cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
@@ -152,7 +140,6 @@ DO \$\$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = '${EXTENSION}') THEN
         CREATE EXTENSION IF NOT EXISTS ${EXTENSION} CASCADE;
-        ${DEPENDENT_OBJECTS}
     END IF;
 END;
 \$\$;
@@ -238,7 +225,7 @@ function initiate_upgrade {
         mount "$BLOCK_DEVICE" "$MOUNT_POINT"
 
         sleep 1
-        retry 3 resize2fs "$BLOCK_DEVICE"
+        resize2fs "$BLOCK_DEVICE"
     fi
 
     if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
