@@ -46,6 +46,7 @@ OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
+PGLIBOLD="/usr/lib/postgresql/lib"
 
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
@@ -247,6 +248,18 @@ function initiate_upgrade {
 
     cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
     cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+
+    if [ -d "$PGLIBOLD" ]; then
+        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so")
+        if [ -f "$WRAPPERS_LIB_PATH" ]; then
+            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so")
+            if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
+                LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+                cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+            fi
+        fi
+    fi
+
     export LD_LIBRARY_PATH="${PGLIBNEW}"
 
     echo "8. Creating new data directory, initializing database"
