@@ -249,10 +249,21 @@ function initiate_upgrade {
     cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
     cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
 
+    # This is a workaround for older versions of wrappers which don't have the expected
+    #  naming scheme, containing the version in their library's file name
+    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
+    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
+    #  library directory, so we're making sure the new version has the expected (old version's)
+    #  file name.
+    # After the upgrade completes, the new version's library file is used.
+    # i.e. 
+    #  - old version: wrappers-0.1.16.so
+    #  - new version: wrappers-0.1.18.so
+    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
     if [ -d "$PGLIBOLD" ]; then
-        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so")
+        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
         if [ -f "$WRAPPERS_LIB_PATH" ]; then
-            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so")
+            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
             if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
                 LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
                 cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
