@@ -45,6 +45,8 @@ function complete_pg_upgrade {
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
+    run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
+
     echo "4.1. Applying authentication scheme updates"
     retry 3 apply_auth_scheme_updates
 
