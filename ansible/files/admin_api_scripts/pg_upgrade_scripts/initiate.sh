@@ -266,7 +266,10 @@ function initiate_upgrade {
             OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
             if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
                 LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
-                cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
+                    echo "Copying $OLD_WRAPPER_LIB_PATH to $WRAPPERS_LIB_PATH"
+                    cp "$OLD_WRAPPER_LIB_PATH" "$WRAPPERS_LIB_PATH"
+                fi
             fi
         fi
     fi
