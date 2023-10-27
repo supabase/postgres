@@ -1,5 +1,5 @@
 
--- \ir 01-postgis.sql
+\ir 01-postgis.sql
 \ir 02-pgrouting.sql
 \ir 03-pgtap.sql
 \ir 04-pg_cron.sql

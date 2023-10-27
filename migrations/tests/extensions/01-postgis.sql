@@ -10,6 +10,8 @@ BEGIN;
 -- create postgis tiger as supabase_admin
 create extension if not exists address_standardizer with schema extensions;
 create extension if not exists postgis_tiger_geocoder cascade;
+-- create extension seems to reset search_path
+SELECT set_config('search_path', current_setting('search_path') ||', extensions', false);
 
 -- \ir ansible/files/postgresql_extension_custom_scripts/postgis_tiger_geocoder/after-create.sql
 grant usage on schema tiger, tiger_data to postgres with grant option;
