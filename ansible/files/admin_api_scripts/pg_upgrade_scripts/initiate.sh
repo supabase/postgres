@@ -268,7 +268,7 @@ function initiate_upgrade {
                 LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
                 if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
                     echo "Copying $OLD_WRAPPER_LIB_PATH to $WRAPPERS_LIB_PATH"
-                    cp "$OLD_WRAPPER_LIB_PATH" "$WRAPPERS_LIB_PATH"
+                    cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
                 fi
             fi
         fi
