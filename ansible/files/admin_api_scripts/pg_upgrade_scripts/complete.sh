@@ -17,7 +17,7 @@ function cleanup {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
 
-    echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
+    report_upgrade_status "$UPGRADE_STATUS"
 
     ship_logs "$LOG_FILE" || true
 
@@ -25,12 +25,12 @@ function cleanup {
 }
 
 function complete_pg_upgrade {
-    if [ -f /tmp/pg-upgrade-status ]; then
+    if [ -f "$UPGRADE_STATUS_FILE" ]; then
         echo "Upgrade job already started. Bailing."
         exit 0
     fi
 
-    echo "running" > /tmp/pg-upgrade-status
+    report_upgrade_status "running"
 
     echo "1. Mounting data disk"
     retry 3 mount -a -v
@@ -82,17 +82,17 @@ function apply_auth_scheme_updates {
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
         run_sql -c "ALTER SYSTEM SET password_encryption TO 'scram-sha-256';"
         run_sql -c "SELECT pg_reload_conf();"
-        run_sql -f /etc/postgresql.schema.sql
+        run_sql -f /etc/postgresql.schema.sql || true
     fi
 }
 
 function start_vacuum_analyze {
-    echo "complete" > /tmp/pg-upgrade-status
+    report_upgrade_status "complete"
     su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
     echo "Upgrade job completed"
 }
 
 trap cleanup ERR
 
-
+create_pgupgrade_files_dir
 complete_pg_upgrade >> $LOG_FILE 2>&1 &

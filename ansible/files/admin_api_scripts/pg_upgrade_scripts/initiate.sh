@@ -3,7 +3,7 @@
 ## This script is run on the old (source) instance, mounting the data disk
 ## of the newly launched instance, disabling extensions containing regtypes,
 ## and running pg_upgrade.
-## It reports the current status of the upgrade process to /tmp/pg-upgrade-status,
+## It reports the current status of the upgrade process to /root/pg_upgrade/status,
 ## which can then be subsequently checked through check.sh.
 
 # Extensions to disable before running pg_upgrade.
@@ -41,7 +41,10 @@ fi
 
 MOUNT_POINT="/data_migration"
 
-POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
+create_pgupgrade_files_dir
+PG_UPGRADE_DIR="/root/pg_upgrade/$(date +%s)"
+
+POST_UPGRADE_EXTENSION_SCRIPT="${PG_UPGRADE_DIR}/pg_upgrade_extensions.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
@@ -99,8 +102,8 @@ cleanup() {
     fi
 
     echo "Re-enabling extensions"
-    if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
-        run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
+    if [ -f "$POST_UPGRADE_EXTENSION_SCRIPT" ]; then
+        run_sql -f "$POST_UPGRADE_EXTENSION_SCRIPT"
     fi
 
     echo "Removing SUPERUSER grant from postgres"
@@ -110,21 +113,21 @@ cleanup() {
         echo "Unmounting data disk from ${MOUNT_POINT}"
         umount $MOUNT_POINT
     fi
-    echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
+    report_upgrade_status "$UPGRADE_STATUS"
 
     exit "$EXIT_CODE"
 }
 
 function handle_extensions {
-    rm -f $POST_UPGRADE_EXTENSION_SCRIPT
-    touch $POST_UPGRADE_EXTENSION_SCRIPT
+    rm -f "$POST_UPGRADE_EXTENSION_SCRIPT"
+    touch "$POST_UPGRADE_EXTENSION_SCRIPT"
 
     PASSWORD_ENCRYPTION_SETTING=$(run_sql -A -t -c "SHOW password_encryption;")
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
-        echo "ALTER SYSTEM SET password_encryption = 'md5';" >> $POST_UPGRADE_EXTENSION_SCRIPT
+        echo "ALTER SYSTEM SET password_encryption = 'md5';" >> "$POST_UPGRADE_EXTENSION_SCRIPT"
     fi
 
-    cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
+    cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
 ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
@@ -136,7 +139,7 @@ EOF
         if [ "$EXTENSION_ENABLED" = "t" ]; then
             echo "Disabling extension ${EXTENSION}"
             run_sql -c "DROP EXTENSION IF EXISTS ${EXTENSION} CASCADE;"
-            cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
+            cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
 DO \$\$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = '${EXTENSION}') THEN
@@ -147,6 +150,26 @@ END;
 EOF
         fi
     done
+}
+
+function mount_data_migration_disk {
+    # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+    # excluding nvme0 since it is the root disk
+    echo "4. Determining block device to mount"
+    BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
+    echo "Block device found: $BLOCK_DEVICE"
+
+    mkdir -p "$MOUNT_POINT"
+    echo "5. Mounting block device"
+
+    sleep 5
+    e2fsck -pf "$BLOCK_DEVICE"
+
+    sleep 1
+    mount "$BLOCK_DEVICE" "$MOUNT_POINT"
+
+    sleep 1
+    resize2fs "$BLOCK_DEVICE"
 }
 
 function initiate_upgrade {
@@ -162,7 +185,7 @@ function initiate_upgrade {
     PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
     PGDATANEW="$MOUNT_POINT/pgdata"
-    PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
+    PG_UPGRADE_BIN_DIR="${PG_UPGRADE_DIR}/${PGVERSION}"
     PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
     PGLIBNEW="$PG_UPGRADE_BIN_DIR/lib"
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
@@ -171,8 +194,12 @@ function initiate_upgrade {
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
     
     echo "1. Extracting pg_upgrade binaries"
-    mkdir -p "/tmp/pg_upgrade_bin"
-    tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
+    mkdir -p "$PG_UPGRADE_DIR"
+
+    # upgrade job outputs a log in the cwd; needs write permissions
+    chown postgres:postgres "$PG_UPGRADE_DIR"
+
+    tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "$PG_UPGRADE_DIR"
 
     # copy upgrade-specific pgsodium_getkey script into the share dir
     chmod +x "$SCRIPT_DIR/pgsodium_getkey.sh"
@@ -182,7 +209,7 @@ function initiate_upgrade {
         chown postgres:postgres "/var/lib/postgresql/extension/pgsodium_getkey"
     fi
 
-    chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
+    chown -R postgres:postgres "$PG_UPGRADE_BIN_DIR"
 
     # Make latest libpq available to pg_upgrade
     mkdir -p /usr/lib/aarch64-linux-gnu
@@ -193,11 +220,6 @@ function initiate_upgrade {
         cp "${PG_UPGRADE_BIN_DIR}/libpq.so.5" "${PGLIBNEW}/libpq.so.5"
     fi
     ln -s "${PGLIBNEW}/libpq.so.5" /usr/lib/aarch64-linux-gnu/libpq.so.5
-
-    # upgrade job outputs a log in the cwd; needs write permissions
-    mkdir -p /tmp/pg_upgrade/
-    chown -R postgres:postgres /tmp/pg_upgrade/
-    cd /tmp/pg_upgrade/
 
     # Fixing erros generated by previous dpkg executions (package upgrades et co)
     echo "2. Fixing potential errors generated by dpkg"
@@ -210,23 +232,7 @@ function initiate_upgrade {
     fi
 
     if [ "$IS_DRY_RUN" = false ]; then
-        # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-        # excluding nvme0 since it is the root disk
-        echo "4. Determining block device to mount"
-        BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
-        echo "Block device found: $BLOCK_DEVICE"
-
-        mkdir -p "$MOUNT_POINT"
-        echo "5. Mounting block device"
-
-        sleep 5
-        e2fsck -pf "$BLOCK_DEVICE"
-
-        sleep 1
-        mount "$BLOCK_DEVICE" "$MOUNT_POINT"
-
-        sleep 1
-        resize2fs "$BLOCK_DEVICE"
+        retry 3 mount_data_migration_disk
     fi
 
     if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
@@ -315,7 +321,7 @@ EOF
     # copy sql files generated by pg_upgrade
     echo "11. Copying sql files generated by pg_upgrade"
     mkdir -p "$MOUNT_POINT/sql"
-    cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
+    cp "${PG_UPGRADE_DIR}/*.sql" "$MOUNT_POINT/sql/" || true
     chown -R postgres:postgres "$MOUNT_POINT/sql/"
 
     echo "12. Cleaning up"
@@ -324,7 +330,8 @@ EOF
 
 trap cleanup ERR
 
-echo "running" > /tmp/pg-upgrade-status
+report_upgrade_status "running"
+
 if [ "$IS_DRY_RUN" = true ]; then
     initiate_upgrade
 else 
