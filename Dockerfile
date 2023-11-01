@@ -37,6 +37,8 @@ ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
 ARG supautils_release=1.9.0
 ARG wal_g_release=2.0.1
+ARG h3_pg_release=4.1.3
+ARG h3_pg_release_checksum
 
 ####################
 # Setup Postgres PPA
@@ -800,6 +802,41 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-h3-pg.yml
+####################
+FROM ccache as h3-pg-source
+# Download and extract
+ARG h3_pg_release
+ARG h3_pg_release_checksum
+
+# Update and install the necessary packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates gpg wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Kitware's APT repository to get the newer version of CMake
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update
+
+# Install the newer version of cmake from Kitware's APT repository
+RUN apt-get install -y cmake && \
+    rm -rf /var/lib/apt/lists/*
+
+ADD --checksum=${h3_pg_release_checksum} \
+    "https://github.com/zachasme/h3-pg/archive/refs/tags/v${h3_pg_release}.tar.gz" \
+    /tmp/h3-pg.tar.gz
+RUN tar -xvf /tmp/h3-pg.tar.gz -C /tmp && \
+    rm -rf /tmp/h3-pg.tar.gz
+
+# Build from source
+WORKDIR /tmp/h3-pg-${h3_pg_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+####################
 # internal/supautils.yml
 ####################
 FROM base as supautils
@@ -853,6 +890,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
+COPY --from=h3-pg-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
