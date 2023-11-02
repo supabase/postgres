@@ -822,6 +822,30 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
     mv /tmp/wal-g-pg-ubuntu*20.04-$arch /tmp/wal-g
 
 ####################
+# 30-pg_idkit
+####################
+FROM ccache as pg_idkit-source
+WORKDIR /root/
+RUN apt-get update && apt-get install -y git libpq-dev \
+        postgresql-15 \
+        postgresql-server-dev-15 \
+        curl \
+        bison \
+        flex \
+        pkg-config \
+        libreadline-dev \
+        zlib1g-dev \
+        libclang-dev \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y \
+    && . "$HOME/.cargo/env" \
+    && git clone https://github.com/VADOSWARE/pg_idkit.git \
+    && cd pg_idkit \
+    && cargo install just sccache cargo-cache cargo-pgrx@0.11.0 \
+    && cargo pgrx init --pg15 download \
+    && just build \
+    && just package
+
+####################
 # Collect extension packages
 ####################
 FROM scratch as extensions
@@ -894,6 +918,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # https://github.com/supabase/postgres/issues/573
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* /tmp/*
+
+# Install idkit
+COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/lib/postgresql/15/lib/pg_idkit.so /usr/lib/postgresql/15/lib/pg_idkit.so
+COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/share/postgresql/15/extension/pg_idkit.control /usr/share/postgresql/15/extension/pg_idkit.control
+COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/share/postgresql/15/extension/pg_idkit--0.1.0.sql /usr/share/postgresql/15/extension/pg_idkit--0.1.0.sql
 
 # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
