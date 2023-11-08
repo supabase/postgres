@@ -1,6 +1,7 @@
 import base64
 import boto3
 import gzip
+import logging
 import os
 import pytest
 import requests
@@ -149,6 +150,13 @@ init_json_content = f"""
 }}
 """
 
+logger = logging.getLogger("ami-tests")
+handler = logging.StreamHandler()
+formatter = logging.Formatter(
+        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
@@ -245,30 +253,37 @@ runcmd:
     def is_healthy(host) -> bool:
         cmd = host.run("pg_isready -U postgres")
         if cmd.failed is True:
+            logger.warn("pg not ready")
             return False
 
-        cmd = host.run(f"curl http://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
+        cmd = host.run(f"curl -sf -k https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
         if cmd.failed is True:
+            logger.warn("adminapi not ready")
             return False
 
-        cmd = host.run("curl http://localhost:3001/ready")
+        cmd = host.run("curl -sf http://localhost:3001/ready")
         if cmd.failed is True:
+            logger.warn("postgrest not ready")
             return False
 
-        cmd = host.run("curl http://localhost:8081/health")
+        cmd = host.run("curl -sf http://localhost:8081/health")
         if cmd.failed is True:
+            logger.warn("gotrue not ready")
             return False
 
         cmd = host.run("sudo kong health")
         if cmd.failed is True:
+            logger.warn("kong not ready")
             return False
 
         cmd = host.run("printf \\\\0 > '/dev/tcp/localhost/6543'")
         if cmd.failed is True:
+            logger.warn("pgbouncer not ready")
             return False
 
         cmd = host.run("sudo fail2ban-client status")
         if cmd.failed is True:
+            logger.warn("fail2ban not ready")
             return False
 
         return True
