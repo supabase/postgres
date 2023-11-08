@@ -30,7 +30,6 @@ jobs:
           pytest -vv testinfra/test_all_in_one.py
 
   test-ami:
-    if: false
     strategy:
       matrix:
         include:
@@ -122,6 +121,12 @@ jobs:
         run: |
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=ci-ami-test" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" amazon-arm64.pkr.hcl
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
 
       - name: Run tests
         run: |
