@@ -3,16 +3,22 @@
     rule: allow
     port: "9187"
 
-- name: create directories
+- name: create directories - systemd unit
   file:
     state: directory
-    path: "{{ item }}"
+    path: /etc/systemd/system/postgres_exporter.service.d
     owner: root
     mode: '0700'
   become: yes
-  with_items:
-    - /opt/postgres_exporter
-    - /etc/systemd/system/postgres_exporter.service.d
+
+- name: create directories - service files
+  file:
+    state: directory
+    path: /opt/postgres_exporter
+    owner: postgres
+    group: postgres
+    mode: '0775'
+  become: yes
 
 - name: download postgres exporter
   get_url:
