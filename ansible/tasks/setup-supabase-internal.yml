@@ -52,6 +52,12 @@
     src: files/vector.service.j2
     dest: /etc/systemd/system/vector.service
 
+- name: fix permissions for vector config to be managed
+  shell:
+    cmd: |
+      chown -R vector:vector /etc/vector
+      chmod 0775 /etc/vector
+
 - name: vector - reload systemd
   systemd:
     daemon_reload: yes
