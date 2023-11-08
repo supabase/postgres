@@ -209,7 +209,10 @@ runcmd:
             TagSpecifications=[
                 {
                     "ResourceType": "instance",
-                    "Tags": [{"Key": "Name", "Value": "ci-ami-test"}],
+                    "Tags": [
+                        {"Key": "Name", "Value": "ci-ami-test"},
+                        {"Key": "creator", "Value": "testinfra-ci"}
+                    ],
                 }
             ],
         )
