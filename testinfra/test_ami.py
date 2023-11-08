@@ -1,12 +1,15 @@
 import base64
 import boto3
 import gzip
+import os
 import pytest
 import requests
 import testinfra
 from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
+
+RUN_ID = os.environ["GITHUB_RUN_ID"] if os.environ["GITHUB_RUN_ID"] else "unknown-ci-run"
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -211,7 +214,8 @@ runcmd:
                     "ResourceType": "instance",
                     "Tags": [
                         {"Key": "Name", "Value": "ci-ami-test"},
-                        {"Key": "creator", "Value": "testinfra-ci"}
+                        {"Key": "creator", "Value": "testinfra-ci"},
+                        {"Key": "testinfra-run-id", "Value": RUN_ID}
                     ],
                 }
             ],
