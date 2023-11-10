@@ -723,6 +723,8 @@ RUN tar -xvf /tmp/pgvector.tar.gz -C /tmp && \
     rm -rf /tmp/pgvector.tar.gz
 # Build from source
 WORKDIR /tmp/pgvector-${pgvector_release}
+# error: the clang compiler does not support '-march=native'
+RUN sed -i -e "s|-march=native||g" Makefile
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
