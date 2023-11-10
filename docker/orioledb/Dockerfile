@@ -184,6 +184,7 @@ RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
     rm -rf /tmp/pg_cron.tar.gz
 # Build from source
 WORKDIR /tmp/pg_cron-${pg_cron_release}
+# error: redefinition of typedef 'snapshot_hook_type' is a C11 feature [-Werror,-Wtypedef-redefinition]
 RUN sed -i -e "s|-std=c99|-std=c11|g" Makefile
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
@@ -449,6 +450,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/rum-${rum_release}
+RUN sed -i \
+    # error: typedef redefinition with different types ('struct SortTuple' vs 'struct SortTuple')
+    -e "183s|^|// |g" \
+    -e "184s|^|// |g" \
+    -e "185s|^|// |g" \
+    -e "186s|^|// |g" \
+    -e "187s|^|// |g" \
+    -e "188s|^|// |g" \
+    -e "189s|^|// |g" \
+    # error: static declaration of 'tuplesort_begin_common' follows non-static declaration
+    -e "621s|static ||g" \
+    # error: static declaration of 'tuplesort_begin_common' follows non-static declaration
+    -e "846s|static ||g" \
+    # error: static declaration of 'tuplesort_gettuple_common' follows non-static declaration
+    -e "2308s|static ||g" \
+    src/tuplesort15.c
 ENV USE_PGXS=1
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
@@ -663,6 +680,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
+# Makefile:29: *** pg_repack requires PostgreSQL 9.4 or later. This is 3.  Stop.
 RUN sed -i -e "s|904|3|g" Makefile
 ENV USE_PGXS=1
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
@@ -765,7 +783,7 @@ COPY --from=wal2json-source /tmp/*.deb /tmp/
 COPY --from=plv8 /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
-# COPY --from=rum-source /tmp/*.deb /tmp/
+COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pgsodium-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_graphql /tmp/*.deb /tmp/
