@@ -867,11 +867,11 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# Add upstream entrypoint script
-ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
-    /usr/local/bin/
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Patch upstream entrypoint script
+RUN sed -i \
+    -e "s|su-exec|gosu|g" \
+    -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
+    /usr/local/bin/docker-entrypoint.sh
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT
