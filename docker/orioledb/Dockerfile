@@ -754,13 +754,7 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # internal/supautils.yml
 ####################
-FROM base as supautils
-# Download package archive
-ARG supautils_release
-ADD "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/supautils.deb
-
-FROM base as supautils-source
+FROM ccache as supautils-source
 ARG supautils_release
 ARG supautils_release_checksum
 ADD --checksum=${supautils_release_checksum} \
@@ -768,6 +762,10 @@ ADD --checksum=${supautils_release_checksum} \
     /tmp/supautils.tar.gz
 RUN tar -xvf /tmp/supautils.tar.gz -C /tmp && \
     rm -rf /tmp/supautils.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/supautils-${supautils_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
@@ -820,7 +818,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
-COPY --from=supautils /tmp/*.deb /tmp/
+COPY --from=supautils-source /tmp/*.deb /tmp/
 
 ####################
 # Build final image
