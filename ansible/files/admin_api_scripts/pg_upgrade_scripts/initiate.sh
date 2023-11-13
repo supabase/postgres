@@ -299,7 +299,7 @@ EOF
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
         echo "9. Stopping postgres; running pg_upgrade"
-        systemctl stop postgresql
+        retry 5 systemctl stop postgresql
     fi
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
