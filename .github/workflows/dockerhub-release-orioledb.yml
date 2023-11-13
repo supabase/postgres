@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - orioledb
     paths:
       - ".github/workflows/dockerhub-release-orioledb.yml"
       - "docker/orioledb/*"
