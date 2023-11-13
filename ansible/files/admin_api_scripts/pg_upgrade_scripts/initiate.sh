@@ -95,7 +95,8 @@ cleanup() {
 
     if [ "$IS_DRY_RUN" = false ]; then
         echo "Restarting postgresql"
-        systemctl restart postgresql
+        systemctl enable postgresql
+        retry 5 systemctl restart postgresql
     fi
 
     echo "Re-enabling extensions"
@@ -299,6 +300,8 @@ EOF
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
         echo "9. Stopping postgres; running pg_upgrade"
+        retry 5 systemctl restart postgresql
+        systemctl disable postgresql
         retry 5 systemctl stop postgresql
     fi
 
