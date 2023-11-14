@@ -55,6 +55,10 @@ function complete_pg_upgrade {
     echo "5. Restarting postgresql"
     retry 3 service postgresql restart
 
+    echo "5.1. Restarting gotrue and postgrest"
+    retry 3 service gotrue restart
+    retry 3 service postgrest restart
+
     echo "6. Starting vacuum analyze"
     retry 3 start_vacuum_analyze
 }
