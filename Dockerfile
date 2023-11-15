@@ -825,7 +825,7 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 # 30-pg_idkit
 ####################
 FROM ccache as pg_idkit-source
-WORKDIR /root/
+WORKDIR /tmp
 RUN apt-get update && apt-get install -y git libpq-dev \
         postgresql-15 \
         postgresql-server-dev-15 \
@@ -836,14 +836,29 @@ RUN apt-get update && apt-get install -y git libpq-dev \
         libreadline-dev \
         zlib1g-dev \
         libclang-dev \
+        ruby \
     && curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && . "$HOME/.cargo/env" \
     && git clone https://github.com/VADOSWARE/pg_idkit.git \
     && cd pg_idkit \
     && cargo install just sccache cargo-cache cargo-pgrx@0.11.0 \
     && cargo pgrx init --pg15 download \
-    && just build \
-    && just package
+    && just package \
+    && gem install --no-document fpm \
+    && cd /tmp/pg_idkit/target/release/pg_idkit-pg${postgresql_major} \
+    && . /etc/lsb-release \
+    && OSNAME=$DISTRIB_CODENAME \
+    && VERSION=$(cat usr/share/postgresql/${postgresql_major}/extension/pg_idkit.control | grep default_version | awk '{print $3}' | tr -d "'") \
+    && OUTNAME=pg-idkit_${VERSION}_${OSNAME}_pg${postgresql_major}_amd64 \
+    && fpm \
+            -s dir \
+            -t deb \
+            -n pg-idkit \
+            -v ${VERSION} \
+            --deb-no-default-config-files \
+            -p /tmp/${OUTNAME}.deb \
+            -a amd64 \
+            . || exit 1
 
 ####################
 # Collect extension packages
@@ -878,6 +893,7 @@ COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
+COPY --from=pg_idkit-source /tmp/*.deb /tmp/
 
 ####################
 # Download gosu for easy step-down from root
@@ -918,11 +934,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # https://github.com/supabase/postgres/issues/573
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* /tmp/*
-
-# Install idkit
-COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/lib/postgresql/15/lib/pg_idkit.so /usr/lib/postgresql/15/lib/pg_idkit.so
-COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/share/postgresql/15/extension/pg_idkit.control /usr/share/postgresql/15/extension/pg_idkit.control
-COPY --from=pg_idkit-source /root/pg_idkit/target/release/pg_idkit-pg15/usr/share/postgresql/15/extension/pg_idkit--0.1.0.sql /usr/share/postgresql/15/extension/pg_idkit--0.1.0.sql
 
 # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
