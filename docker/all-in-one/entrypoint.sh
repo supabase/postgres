@@ -69,6 +69,7 @@ function setup_postgres {
   # TODO (darora): walg enablement is temporarily performed here until changes from https://github.com/supabase/postgres/pull/639 get picked up
   # other things will still be needed in the future (auth_delay config)
   sed -i \
+      -e "s|#include = '/etc/postgresql-custom/read-replica.conf'|include = '/etc/postgresql-custom/read-replica.conf'|g" \
       -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
       -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, auth_delay'|" \
       -e "/# Automatically generated optimizations/i auth_delay.milliseconds = '3000'" \

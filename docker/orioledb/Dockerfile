@@ -845,6 +845,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf.j2 /etc/postgresql-custom/read-replica.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.j2 /etc/postgresql-custom/wal-g.conf
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
@@ -853,6 +854,7 @@ RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    -e "s|#include = '/etc/postgresql-custom/read-replica.conf'|include = '/etc/postgresql-custom/read-replica.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
