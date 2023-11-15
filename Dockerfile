@@ -842,7 +842,7 @@ RUN apt-get update && apt-get install -y git libpq-dev \
     && git clone https://github.com/VADOSWARE/pg_idkit.git \
     && cd pg_idkit \
     && cargo install just sccache cargo-cache cargo-pgrx@0.11.0 \
-    && cargo pgrx init --pg15 download \
+    && cargo pgrx init --pg${postgresql_major} download \
     && just package \
     && gem install --no-document fpm \
     && cd /tmp/pg_idkit/target/release/pg_idkit-pg${postgresql_major} \
