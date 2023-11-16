@@ -109,13 +109,6 @@
     owner: postgres
     group: postgres
 
-- name: Include /etc/postgresql-custom/read-replica.conf in postgresql.conf
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: "#include = '/etc/postgresql-custom/read-replica.conf'"
-    replace: "include = '/etc/postgresql-custom/read-replica.conf'"
-
 # Install extensions before init
 - name: Install Postgres extensions
   import_tasks: tasks/setup-docker.yml
