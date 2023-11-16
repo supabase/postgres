@@ -52,12 +52,32 @@ function enable_swap {
 
 function create_lsn_checkpoint_file {
   if [ ! -f "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint" ]; then
-    echo "0/0" > "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+    echo -n "0/0" > "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
     chown postgres:postgres "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
     chmod 0300 "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
   fi
 }
 
+function graceful_shutdown {
+  echo "$(date): Received SIGINT. Shutting down."
+  supervisorctl stop postgresql
+
+  # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
+  # This is to ensure that the WAL file is shipped, just in case
+  sleep 0.2
+
+  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+
+  kill -s TERM "$(supervisorctl pid)"
+}
+
+function enable_autoshutdown {
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+}
+
+function disable_fail2ban {
+    sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+}
 
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
@@ -238,13 +258,24 @@ else
 fi
 
 if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
-  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+  enable_autoshutdown
+fi
+
+if [ "${FAIL2BAN_DISABLED:-}" ]; then
+  disable_fail2ban
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
   enable_swap
   create_lsn_checkpoint_file
+
+  trap graceful_shutdown SIGINT
 fi
+
+if [ "${SHUTDOWN_GRACEFULLY:-}" ]; then
+  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+  exit 0
+fi  
 
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor
