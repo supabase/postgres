@@ -241,6 +241,11 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
   sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
 fi
 
+if [ "${FAIL2BAN_DISABLED:-}" ]; then
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
+fi
+
 if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
   enable_swap
   create_lsn_checkpoint_file
