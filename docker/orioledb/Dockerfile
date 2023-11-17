@@ -26,7 +26,7 @@ ARG libsodium_release=1.0.18
 ARG pgsodium_release=3.1.6
 ARG pg_graphql_release=1.4.2
 ARG pg_stat_monitor_release=1.1.1
-ARG pg_jsonschema_release=0.1.4
+ARG pg_jsonschema_release=0.2.0
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
@@ -574,6 +574,7 @@ RUN ls -al target/release
 RUN mkdir archive
 RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/share/postgresql/extension/pg_graphql* archive
 RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/lib/postgresql/pg_graphql.so archive
+
 # name of the package directory before packaging
 ENV package_dir=pg_graphql-v${pg_graphql_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu
 
@@ -638,11 +639,60 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 # 22-pg_jsonschema.yml
 ####################
-FROM base as pg_jsonschema
-# Download package archive
+FROM rust-toolchain as pg_jsonschema-source
+# Download and extract
 ARG pg_jsonschema_release
-ADD "https://github.com/supabase/pg_jsonschema/releases/download/v${pg_jsonschema_release}/pg_jsonschema-v${pg_jsonschema_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/pg_jsonschema.deb
+ARG pg_jsonschema_release_checksum
+ADD --checksum=${pg_jsonschema_release_checksum} \
+  "https://github.com/supabase/pg_jsonschema/archive/refs/tags/v${pg_jsonschema_release}.tar.gz" \
+    /tmp/pg_jsonschema.tar.gz
+RUN tar -xvf /tmp/pg_jsonschema.tar.gz -C /tmp && \
+    rm -rf /tmp/pg_jsonschema.tar.gz
+WORKDIR /tmp/pg_jsonschema-${pg_jsonschema_release}
+RUN cargo pgrx package --no-default-features --features pg${postgresql_major}
+
+# Create installable package
+RUN mkdir archive
+RUN cp target/release/pg_jsonschema-pg${postgresql_major}/usr/local/share/postgresql/extension/pg_jsonschema* archive
+RUN cp target/release/pg_jsonschema-pg${postgresql_major}/usr/local/lib/postgresql/pg_jsonschema.so archive
+RUN ls -al archive
+
+# name of the package directory before packaging
+ENV package_dir=pg_jsonschema-v${pg_jsonschema_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu
+
+## Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/lib/postgresql/lib
+RUN mkdir -p ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.so ${package_dir}/usr/lib/postgresql/lib
+RUN cp archive/*.control ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.sql ${package_dir}/var/lib/postgresql/extension
+
+# symlinks to Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
+WORKDIR ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
+RUN cp -s ../../lib/*.so .
+WORKDIR ../../../../../..
+
+RUN mkdir -p ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
+WORKDIR ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
+
+RUN cp -s ../../../../../var/lib/postgresql/extension/pg_jsonschema.control .
+RUN cp -s ../../../../../var/lib/postgresql/extension/pg_jsonschema*.sql .
+WORKDIR ../../../../../..
+
+RUN mkdir -p ${package_dir}/DEBIAN
+RUN touch ${package_dir}/DEBIAN/control
+RUN echo 'Package: pg-jsonschema' >> ${package_dir}/DEBIAN/control
+RUN echo 'Version:' ${pg_jsonschema_release} >> ${package_dir}/DEBIAN/control
+RUN echo "Architecture: ${TARGETARCH}" >> ${package_dir}/DEBIAN/control
+RUN echo 'Maintainer: supabase' >> ${package_dir}/DEBIAN/control
+RUN echo 'Description: A PostgreSQL extension' >> ${package_dir}/DEBIAN/control
+
+# Create deb package
+RUN chown -R root:root ${package_dir}
+RUN chmod -R 00755 ${package_dir}
+RUN dpkg-deb --build --root-owner-group ${package_dir}
+RUN cp ./*.deb /tmp/pg_jsonschema.deb
 
 ####################
 # 23-vault.yml
@@ -869,7 +919,7 @@ COPY --from=pgsodium-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_graphql-source /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
-COPY --from=pg_jsonschema /tmp/*.deb /tmp/
+COPY --from=pg_jsonschema-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
