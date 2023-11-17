@@ -40,6 +40,10 @@
 - name: Install other useful tools
   apt:
     pkg:
+      - bwm-ng
+      - htop
+      - net-tools
+      - ngrep
       - sysstat
       - vim-tiny
     update_cache: yes
