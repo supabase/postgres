@@ -586,14 +586,13 @@ RUN cp archive/*.control ${package_dir}/var/lib/postgresql/extension
 RUN cp archive/*.sql ${package_dir}/var/lib/postgresql/extension
 
 # symlinks to Copy files into directory structure
-RUN mkdir -p ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
-WORKDIR ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
-RUN cp -s ../../lib/*.so .
-WORKDIR ../../../../../..
+RUN mkdir -p ${package_dir}/usr/local/lib/postgresql
+WORKDIR ${package_dir}/usr/local/lib/postgresql
+RUN cp -s ../../../lib/postgresql/lib/*.so .
+WORKDIR ../../../../..
 
-RUN mkdir -p ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
-WORKDIR ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
-
+RUN mkdir -p ${package_dir}/usr/local/share/postgresql/extension
+WORKDIR ${package_dir}/usr/local/share/postgresql/extension
 RUN cp -s ../../../../../var/lib/postgresql/extension/pg_graphql.control .
 RUN cp -s ../../../../../var/lib/postgresql/extension/pg_graphql*.sql .
 WORKDIR ../../../../../..
