@@ -15,6 +15,7 @@
       - manpages
       - manpages-dev
       - ninja-build
+      - patch
       - python2
     state: absent
     autoremove: yes
