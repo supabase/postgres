@@ -100,6 +100,15 @@
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
 
+# Add custom config for read replicas set up
+- name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
+  template:
+    src: "files/postgresql_config/custom_read_replica.conf.j2"
+    dest: /etc/postgresql-custom/read-replica.conf
+    mode: 0664
+    owner: postgres
+    group: postgres
+
 # Install extensions before init
 - name: Install Postgres extensions
   import_tasks: tasks/setup-docker.yml
