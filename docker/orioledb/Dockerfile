@@ -77,7 +77,7 @@ ARG CACHE_EPOCH
 FROM builder as rust-toolchain
 ENV PATH=/root/.cargo/bin:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends curl pkg-config && \
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain nightly && \
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable && \
   rustup --version && \
   rustc --version && \
   cargo --version 
