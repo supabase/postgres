@@ -24,7 +24,7 @@ ARG rum_release=1.3.13
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
 ARG libsodium_release=1.0.18
 ARG pgsodium_release=3.1.6
-ARG pg_graphql_release=1.2.2
+ARG pg_graphql_release=1.4.2
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_jsonschema_release=0.1.4
 ARG vault_release=0.2.8
@@ -73,6 +73,17 @@ ENV CCACHE_DIR=/ccache
 ENV PATH=/usr/lib/ccache:$PATH
 # Used to update ccache
 ARG CACHE_EPOCH
+
+FROM builder as rust-toolchain
+ENV PATH=/root/.cargo/bin:$PATH
+RUN apt-get update && apt-get install -y --no-install-recommends curl pkg-config && \
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain nightly && \
+  rustup --version && \
+  rustc --version && \
+  cargo --version 
+
+RUN cargo install cargo-pgrx --version 0.10.2 --locked
+RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
 
 ####################
 # 01-postgis.yml
@@ -546,11 +557,59 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requir
 ####################
 # 19-pg_graphql.yml
 ####################
-FROM base as pg_graphql
-# Download package archive
+FROM rust-toolchain as pg_graphql-source
+# Download and extract
 ARG pg_graphql_release
-ADD "https://github.com/supabase/pg_graphql/releases/download/v${pg_graphql_release}/pg_graphql-v${pg_graphql_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/pg_graphql.deb
+ARG pg_graphql_release_checksum
+ADD --checksum=${pg_graphql_release_checksum} \
+  "https://github.com/supabase/pg_graphql/archive/refs/tags/v${pg_graphql_release}.tar.gz" \
+    /tmp/pg_graphql.tar.gz
+RUN tar -xvf /tmp/pg_graphql.tar.gz -C /tmp && \
+    rm -rf /tmp/pg_graphql.tar.gz
+WORKDIR /tmp/pg_graphql-${pg_graphql_release}
+RUN cargo pgrx package --no-default-features --features pg${postgresql_major}
+
+# Create installable package
+RUN ls -al target/release
+RUN mkdir archive
+RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/share/postgresql/extension/pg_graphql* archive
+RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/lib/postgresql/pg_graphql.so archive
+# name of the package directory before packaging
+ENV package_dir=pg_graphql-v${pg_graphql_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu
+
+## Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/lib/postgresql/lib
+RUN mkdir -p ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.so ${package_dir}/usr/lib/postgresql/lib
+RUN cp archive/*.control ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.sql ${package_dir}/var/lib/postgresql/extension
+
+# symlinks to Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
+WORKDIR ${package_dir}/usr/lib/postgresql/${postgresql_major}/lib
+RUN cp -s ../../lib/*.so .
+WORKDIR ../../../../../..
+
+RUN mkdir -p ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
+WORKDIR ${package_dir}/usr/share/postgresql/${postgresql_major}/extension
+
+RUN cp -s ../../../../../var/lib/postgresql/extension/pg_graphql.control .
+RUN cp -s ../../../../../var/lib/postgresql/extension/pg_graphql*.sql .
+WORKDIR ../../../../../..
+
+RUN mkdir -p ${package_dir}/DEBIAN
+RUN touch ${package_dir}/DEBIAN/control
+RUN echo 'Package: pg-graphql' >> ${package_dir}/DEBIAN/control
+RUN echo 'Version:' ${pg_graphql_release} >> ${package_dir}/DEBIAN/control
+RUN echo "Architecture: ${TARGETARCH}" >> ${package_dir}/DEBIAN/control
+RUN echo 'Maintainer: supabase' >> ${package_dir}/DEBIAN/control
+RUN echo 'Description: A PostgreSQL extension' >> ${package_dir}/DEBIAN/control
+
+# Create deb package
+RUN chown -R root:root ${package_dir}
+RUN chmod -R 00755 ${package_dir}
+RUN dpkg-deb --build --root-owner-group ${package_dir}
+RUN cp ./*.deb /tmp/pg_graphql.deb
 
 ####################
 # 20-pg_stat_monitor.yml
@@ -808,7 +867,7 @@ COPY --from=pg_net-source /tmp/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pgsodium-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
-COPY --from=pg_graphql /tmp/*.deb /tmp/
+COPY --from=pg_graphql-source /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
