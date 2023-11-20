@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
 # This script is used to make sure the latest LSN checkpoint is persisted remotely
-#  before the container is stopped. It is triggered by the shutdown event listener
-#  or every 60 seconds, whichever comes first.
+#  before the container is stopped. It is triggered every 60 seconds, whichever comes first.
 # The script will ship the latest LSN checkpoint to the remote storage if:
 # - the latest LSN checkpoint is different from the previous, already shipped, one
 # - the latest LSN checkpoint is not 0/0 as to avoid shipping empty checkpoints
@@ -39,20 +38,18 @@ def main():
         write_stderr(data)
 
         if headers['eventname'] == 'TICK_60':
-            if os.path.getmtime(checkpointFile) < time.time() - 60 * LSN_CHECKPOINT_SHIP_INTERVAL:
-                break
+            if os.path.getmtime(checkpointFilePrevious) < time.time() - 60 * LSN_CHECKPOINT_SHIP_INTERVAL:
+                previousLSN = ''
+                with open(checkpointFilePrevious) as f:
+                    previousLSN = f.read()
 
-            previousLSN = ''
-            with open(checkpointFilePrevious) as f:
-                previousLSN = f.read()
-
-            # If the current LSN is different from the previous one, persist it remotely
-            with open(checkpointFile) as f:
-                currentLSN = f.read()
-                if currentLSN != '0/0' and currentLSN != previousLSN:
-                    subprocess.run(["/usr/bin/admin-mgr", "lsn-checkpoint-push"])
-                    with open(previousLSN, 'w') as f:
-                        f.write(checkpointFilePrevious)
+                # If the current LSN is different from the previous one, persist it remotely
+                with open(checkpointFile) as f:
+                    currentLSN = f.read()
+                    if currentLSN != '0/0' and currentLSN != previousLSN:
+                        subprocess.run(["/usr/bin/admin-mgr", "lsn-checkpoint-push"])
+                        with open(checkpointFilePrevious, 'w') as f:
+                            f.write(currentLSN)
 
         write_stdout('RESULT 2\nOK')
 
