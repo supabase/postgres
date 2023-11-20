@@ -63,6 +63,11 @@ function create_lsn_checkpoint_file {
 }
 
 function push_lsn_checkpoint_file {
+    if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
+      echo "Skipping push of LSN checkpoint file"
+      return
+    fi
+
     LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}")
     PREVIOUS_LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}.previous")
 
