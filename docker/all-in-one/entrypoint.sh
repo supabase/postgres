@@ -206,8 +206,6 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
-
-
 }
 
 # Increase max number of open connections

@@ -26,7 +26,7 @@ def write_stderr(s):
     sys.stderr.flush()
 
 def main():
-    while 1:
+    while True:
         write_stdout('READY\n')
 
         line = sys.stdin.readline()
