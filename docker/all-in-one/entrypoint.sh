@@ -258,6 +258,7 @@ else
 fi
 
 if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
+  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/supa-shutdown/shutdown.conf
   enable_autoshutdown
 fi
 
