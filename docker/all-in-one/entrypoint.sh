@@ -101,7 +101,8 @@ function enable_autoshutdown {
 }
 
 function disable_fail2ban {
-    sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
 }
 
 function setup_postgres {
@@ -274,25 +275,25 @@ find /etc/supervisor/ -type d -exec chmod 0770 {} +
 find /etc/supervisor/ -type f -exec chmod 0660 {} +
 
 # Start services in the background
-if [ -z "${POSTGRES_ONLY:-}" ]; then
-  sed -i "s|  #  - postgrest|    - postgrest|g" /etc/adminapi/adminapi.yaml
-  sed -i "s|files = db-only/\*.conf|files = services/\*.conf db-only/\*.conf|g" $SUPERVISOR_CONF
-  configure_services
-else
+if [ "${POSTGRES_ONLY:-}" == "true" ]; then
   sed -i "s|    - postgrest|  #  - postgrest|g" /etc/adminapi/adminapi.yaml
   sed -i "s|files = services/\*.conf db-only/\*.conf|files = db-only/\*.conf|g" $SUPERVISOR_CONF
   /init/configure-adminapi.sh
+else
+  sed -i "s|  #  - postgrest|    - postgrest|g" /etc/adminapi/adminapi.yaml
+  sed -i "s|files = db-only/\*.conf|files = services/\*.conf db-only/\*.conf|g" $SUPERVISOR_CONF
+  configure_services
 fi
 
-if [ "${AUTOSHUTDOWN_ENABLED:-}" ]; then
+if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   enable_autoshutdown
 fi
 
-if [ "${FAIL2BAN_DISABLED:-}" ]; then
+if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
   disable_fail2ban
 fi
 
-if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
+if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   enable_swap
   create_lsn_checkpoint_file
 

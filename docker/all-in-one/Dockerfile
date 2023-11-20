@@ -179,6 +179,7 @@ COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql.schema.sql /etc/
 # Customizations for postgres_exporter
 COPY --chown=postgres:postgres docker/all-in-one/opt/postgres_exporter/queries.yml /opt/postgres_exporter/queries.yml
 
+# Customizations for fail2ban
 COPY docker/all-in-one/etc/fail2ban/filter.d /etc/fail2ban/filter.d/
 COPY docker/all-in-one/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
 
