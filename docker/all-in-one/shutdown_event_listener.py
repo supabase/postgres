@@ -1,6 +1,8 @@
 #!/usr/bin/python3
+import os
 import sys
 import subprocess
+import time
 
 LSN_CHECKPOINT_SHIP_INTERVAL = 10
 
@@ -41,7 +43,7 @@ def main():
                 if currentLSN != '0/0' and currentLSN != previousLSN:
                     subprocess.run(["/usr/bin/admin-mgr", "lsn-checkpoint-push"])
                     with open(previousLSN, 'w') as f:
-                        f.write(currentLSN)
+                        f.write(checkpointFilePrevious)
 
         write_stdout('RESULT 2\nOK')
 
