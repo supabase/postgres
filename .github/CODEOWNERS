@@ -1,2 +1,3 @@
 * @supabase/backend
 migrations/ @supabase/cli @supabase/backend
+docker/orioledb @supabase/postgres
