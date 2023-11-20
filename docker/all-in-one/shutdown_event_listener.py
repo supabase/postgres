@@ -1,4 +1,13 @@
 #!/usr/bin/python3
+
+# This script is used to make sure the latest LSN checkpoint is persisted remotely
+#  before the container is stopped. It is triggered by the shutdown event listener
+#  or every 60 seconds, whichever comes first.
+# The script will ship the latest LSN checkpoint to the remote storage if:
+# - the latest LSN checkpoint is different from the previous, already shipped, one
+# - the latest LSN checkpoint is not 0/0 as to avoid shipping empty checkpoints
+# - the latest LSN checkpoint is not older than 10 minutes, thus reducing remote write calls
+
 import os
 import sys
 import subprocess
