@@ -2,6 +2,8 @@ name: Release AIO image on Dockerhub
 
 on:
   push:
+    branches:
+      - develop
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"
