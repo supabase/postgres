@@ -7,6 +7,8 @@ SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
+LSN_CHECKPOINT_FILE_PATH="${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
   # Pass 0 for unlimited retries
@@ -51,11 +53,30 @@ function enable_swap {
 }
 
 function create_lsn_checkpoint_file {
-  if [ ! -f "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint" ]; then
-    echo -n "0/0" > "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
-    chown postgres:postgres "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
-    chmod 0300 "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
+  if [ ! -f "${LSN_CHECKPOINT_FILE_PATH}" ]; then
+    echo -n "0/0" > "${LSN_CHECKPOINT_FILE_PATH}"
+    touch "${LSN_CHECKPOINT_FILE_PATH}.previous"
+    chown postgres:postgres "${LSN_CHECKPOINT_FILE_PATH}"
+
+    chmod 0300 "${LSN_CHECKPOINT_FILE_PATH}"
   fi
+}
+
+function push_lsn_checkpoint_file {
+    LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}")
+    PREVIOUS_LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}.previous")
+
+    if [ "${LSN_CHECKPOINT}" == "${PREVIOUS_LSN_CHECKPOINT}" ]; then
+      echo "LSN checkpoint file has not changed. Skipping push."
+      return
+    fi
+
+    if [ "${LSN_CHECKPOINT}" == "0/0" ]; then
+      echo "LSN checkpoint file is empty. Skipping push."
+      return
+    fi
+
+    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
 }
 
 function graceful_shutdown {
@@ -65,8 +86,7 @@ function graceful_shutdown {
   # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
   # This is to ensure that the WAL file is shipped, just in case
   sleep 0.2
-
-  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+  push_lsn_checkpoint_file
 
   kill -s TERM "$(supervisorctl pid)"
 }
@@ -180,6 +200,8 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
+
+
 }
 
 # Increase max number of open connections
@@ -272,10 +294,6 @@ if [ "${PLATFORM_DEPLOYMENT:-}" ]; then
   trap graceful_shutdown SIGINT
 fi
 
-if [ "${SHUTDOWN_GRACEFULLY:-}" ]; then
-  /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
-  exit 0
-fi  
-
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor
+push_lsn_checkpoint_file
