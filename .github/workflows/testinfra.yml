@@ -137,4 +137,4 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {} || true
