@@ -247,7 +247,7 @@ runcmd:
 
     host = testinfra.get_host(
         # paramiko is an ssh backend
-        f"paramiko://ubuntu@{instance.public_ip_address}",
+        f"paramiko://ubuntu@{instance.public_ip_address}?timeout=60",
         ssh_identity_file=temp_key.get_priv_key_file(),
     )
 
