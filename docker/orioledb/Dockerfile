@@ -30,7 +30,7 @@ ARG pg_jsonschema_release=0.2.0
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.18
+ARG wrappers_release=0.1.19
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
@@ -570,7 +570,6 @@ WORKDIR /tmp/pg_graphql-${pg_graphql_release}
 RUN cargo pgrx package --no-default-features --features pg${postgresql_major}
 
 # Create installable package
-RUN ls -al target/release
 RUN mkdir archive
 RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/share/postgresql/extension/pg_graphql* archive
 RUN cp target/release/pg_graphql-pg${postgresql_major}/usr/local/lib/postgresql/pg_graphql.so archive
@@ -654,7 +653,6 @@ RUN cargo pgrx package --no-default-features --features pg${postgresql_major}
 RUN mkdir archive
 RUN cp target/release/pg_jsonschema-pg${postgresql_major}/usr/local/share/postgresql/extension/pg_jsonschema* archive
 RUN cp target/release/pg_jsonschema-pg${postgresql_major}/usr/local/lib/postgresql/pg_jsonschema.so archive
-RUN ls -al archive
 
 # name of the package directory before packaging
 ENV package_dir=pg_jsonschema-v${pg_jsonschema_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu
@@ -765,11 +763,75 @@ COPY --from=pgroonga-source /tmp/*.deb /tmp/
 ####################
 # 25-wrappers.yml
 ####################
-FROM base as wrappers
-# Download package archive
+FROM rust-toolchain as wrappers-source
+# Download and extract
 ARG wrappers_release
-ADD "https://github.com/supabase/wrappers/releases/download/v${wrappers_release}/wrappers-v${wrappers_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/wrappers.deb
+ARG wrappers_release_checksum
+ADD --checksum=${wrappers_release_checksum} \
+  "https://github.com/supabase/wrappers/archive/refs/tags/v${wrappers_release}.tar.gz" \
+    /tmp/wrappers.tar.gz
+RUN tar -xvf /tmp/wrappers.tar.gz -C /tmp && \
+    rm -rf /tmp/wrappers.tar.gz
+WORKDIR /tmp/wrappers-${wrappers_release}/wrappers
+RUN cargo pgrx package --no-default-features --features pg${postgresql_major},all_fdws
+
+ENV extension_dir=target/release/wrappers-pg${postgresql_major}/usr/local/share/postgresql/extension
+
+# copy schema file to version update sql files
+# Note: some version numbers may be skipped
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.6--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.7--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.8--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.9--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.10--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.11--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.14--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.15--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.16--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.17--${wrappers_release}.sql
+RUN cp ${extension_dir}/wrappers--${wrappers_release}.sql ${extension_dir}/wrappers--0.1.18--${wrappers_release}.sql
+
+# Create installable package
+RUN mkdir archive
+RUN cp target/release/wrappers-pg${postgresql_major}/usr/local/share/postgresql/extension/wrappers* archive
+RUN cp target/release/wrappers-pg${postgresql_major}/usr/local/lib/postgresql/wrappers-${wrappers_release}.so archive
+
+# name of the package directory before packaging
+ENV package_dir=wrappers-v${wrappers_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu
+
+## Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/lib/postgresql/lib
+RUN mkdir -p ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.so ${package_dir}/usr/lib/postgresql/lib
+RUN cp archive/*.control ${package_dir}/var/lib/postgresql/extension
+RUN cp archive/*.sql ${package_dir}/var/lib/postgresql/extension
+
+# symlinks to Copy files into directory structure
+RUN mkdir -p ${package_dir}/usr/local/lib/postgresql
+WORKDIR ${package_dir}/usr/local/lib/postgresql
+RUN cp -s ../../../lib/postgresql/lib/*.so .
+WORKDIR ../../../../..
+
+RUN mkdir -p ${package_dir}/usr/local/share/postgresql/extension
+WORKDIR ${package_dir}/usr/local/share/postgresql/extension
+
+RUN cp -s ../../../../../var/lib/postgresql/extension/wrappers.control .
+RUN cp -s ../../../../../var/lib/postgresql/extension/wrappers*.sql .
+WORKDIR ../../../../../..
+
+RUN mkdir -p ${package_dir}/DEBIAN
+RUN touch ${package_dir}/DEBIAN/control
+RUN echo 'Package: wrappers' >> ${package_dir}/DEBIAN/control
+RUN echo 'Version:' ${wrappers_release} >> ${package_dir}/DEBIAN/control
+RUN echo "Architecture: ${TARGETARCH}" >> ${package_dir}/DEBIAN/control
+RUN echo 'Maintainer: supabase' >> ${package_dir}/DEBIAN/control
+RUN echo 'Description: A PostgreSQL extension' >> ${package_dir}/DEBIAN/control
+
+# Create deb package
+RUN chown -R root:root ${package_dir}
+RUN chmod -R 00755 ${package_dir}
+RUN dpkg-deb --build --root-owner-group ${package_dir}
+RUN cp ./*.deb /tmp/wrappers.deb
 
 ####################
 # 26-hypopg.yml
@@ -921,7 +983,7 @@ COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
-COPY --from=wrappers /tmp/*.deb /tmp/
+COPY --from=wrappers-source /tmp/*.deb /tmp/
 COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
