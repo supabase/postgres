@@ -990,8 +990,7 @@ RUN apt-get update && \
                         libcurl3-gnutls libmecab2 libnghttp2-14 \
                         libpsl5 librtmp1 libsodium23 mecab-naist-jdic \
                         mecab-naist-jdic-eucjp mecab-utils publicsuffix
-RUN rm -f /tmp/build/extensions/postgis* && \
-    dpkg -i /tmp/build/extensions/*
+RUN dpkg -i /tmp/build/extensions/*
 
 FROM ubuntu:bionic as pg_binary_collection
 ARG postgresql_major

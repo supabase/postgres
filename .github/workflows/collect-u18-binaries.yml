@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - develop
-      - pcnc/pg-upgrade-fixes
+      - pcnc/debug-postgis-u18
     paths:
       - '.github/workflows/collect-u18-binaries.yml'
       - 'common.vars.pkr.hcl'
