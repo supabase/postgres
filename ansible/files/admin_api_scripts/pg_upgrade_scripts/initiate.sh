@@ -300,9 +300,15 @@ EOF
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
         echo "9. Stopping postgres; running pg_upgrade"
+
+        # Extra work to ensure postgres is actually stopped
+        #  Mostly needed for PG12 projects with odd systemd unit behavior
         retry 5 systemctl restart postgresql
         systemctl disable postgresql
         retry 5 systemctl stop postgresql
+
+        sleep 3
+        systemctl stop postgresql
     fi
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
