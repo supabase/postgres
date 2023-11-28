@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - s3
     paths:
       - ".github/workflows/dockerhub-release-orioledb.yml"
       - "docker/orioledb/*"
