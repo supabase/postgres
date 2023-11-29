@@ -261,7 +261,7 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj15,libjson-c4,libprotobuf-c1,libgdal26 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj12,libjson-c3,libprotobuf-c1,libgdal20 --nodoc
 
 FROM ppa as postgis
 # Latest available is 3.3.2
@@ -516,6 +516,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     pkg-config \
     ninja-build \
+    python3 \
     git \
     libtinfo5 \
     && rm -rf /var/lib/apt/lists/*
@@ -529,8 +530,6 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM scratch as plv8-deb
 COPY --from=plv8-source /tmp/*.deb /tmp/
-
-FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
 
 ####################
 # 14-pg_plan_filter.yml
@@ -860,7 +859,7 @@ COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
 # COPY --from=pljava /tmp/*.deb /tmp/
-COPY --from=plv8 /tmp/*.deb /tmp/
+COPY --from=plv8-deb /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
@@ -975,7 +974,7 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 FROM scratch as buildcache
 COPY --from=stats /tmp /
 
-FROM ubuntu:bionic as pg_binary_collection_base
+FROM ppa as pg_binary_collection_base
 ARG postgresql_major
 ARG postgresql_release
 ENV DEBIAN_FRONTEND=noninteractive
@@ -989,9 +988,17 @@ RUN apt-get update && \
     apt-get install -y ca-certificates \
                         libcurl3-gnutls libmecab2 libnghttp2-14 \
                         libpsl5 librtmp1 libsodium23 mecab-naist-jdic \
-                        mecab-naist-jdic-eucjp mecab-utils publicsuffix
-RUN rm -f /tmp/build/extensions/postgis* && \
-    dpkg -i /tmp/build/extensions/*
+                        mecab-naist-jdic-eucjp mecab-utils publicsuffix \
+                        libcgal-dev libmpfr-dev libgmp-dev \
+                        protobuf-c-compiler \
+                        libgeos-dev \
+                        libproj-dev \
+                        libgdal-dev \
+                        libjson-c-dev \
+                        libxml2-dev \
+                        libprotobuf-c-dev 
+
+RUN dpkg -i /tmp/build/extensions/*
 
 FROM ubuntu:bionic as pg_binary_collection
 ARG postgresql_major
