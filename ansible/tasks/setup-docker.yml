@@ -9,15 +9,6 @@
     set -e
     apt-get update
     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
-  when: ansible_distribution_version != "18.04"
-
-# Builtin apt module does not support wildcard for deb paths
-- name: Install extensions - Ubuntu 18.04
-  shell: |
-    set -e
-    apt-get update
-    apt-get install -y /tmp/extensions/*.deb
-  when: ansible_distribution_version == "18.04"
 
 - name: pg_cron - set cron.database_name
   become: yes
