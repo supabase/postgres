@@ -11,9 +11,6 @@
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
-    "plv8"
-    "plcoffee"
-    "plls"
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -47,6 +44,7 @@ OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
 PGLIBOLD="/usr/lib/postgresql/lib"
+PGLIBOLD_ALTERNATE="$(pg_config --pkglibdir 2>/dev/null || true)"
 
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
@@ -59,6 +57,48 @@ elif [[ "$OLD_PGVERSION" =~ ^12.* ]]; then
 fi
 
 echo "Detected PG version: $PGVERSION"
+
+function shim_extensions {
+    PKGLIB=$1
+    # This is a workaround for older versions of wrappers which don't have the expected
+    #  naming scheme, containing the version in their library's file name
+    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
+    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
+    #  library directory, so we're making sure the new version has the expected (old version's)
+    #  file name.
+    # After the upgrade completes, the new version's library file is used.
+    # i.e. 
+    #  - old version: wrappers-0.1.16.so
+    #  - new version: wrappers-0.1.18.so
+    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
+    if [ -d "$PKGLIB" ]; then
+        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
+        if [ -f "$WRAPPERS_LIB_PATH" ]; then
+            OLD_WRAPPER_LIB_PATH=$(find "$PKGLIB" -name "wrappers*so" -print -quit)
+            if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
+                LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+                if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
+                    echo "Copying $WRAPPERS_LIB_PATH to $PGLIBNEW/${LIB_FILE_NAME}"
+                    cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                    chown postgres:postgres "$PGLIBNEW/${LIB_FILE_NAME}"
+                fi
+            fi
+        fi
+        
+        PLV8_LIB_PATH=$(find "$PGLIBNEW" -name "plv8-3*so" -print -quit)
+        if [ -f "$PLV8_LIB_PATH" ]; then
+            OLD_PLV8_LIB_PATH=$(find "$PKGLIB" -name "plv8-3*so" -print -quit)
+            if [ -f "$OLD_PLV8_LIB_PATH" ]; then
+                LIB_FILE_NAME=$(basename "$OLD_PLV8_LIB_PATH")
+                if [ "$PLV8_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
+                    echo "Copying $PLV8_LIB_PATH to ${PGLIBNEW}/${LIB_FILE_NAME}"
+                    cp "$PLV8_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                    chown postgres:postgres "$PGLIBNEW/${LIB_FILE_NAME}"
+                fi
+            fi
+        fi
+    fi
+}
 
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
@@ -251,30 +291,8 @@ function initiate_upgrade {
     cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
     cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
 
-    # This is a workaround for older versions of wrappers which don't have the expected
-    #  naming scheme, containing the version in their library's file name
-    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
-    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
-    #  library directory, so we're making sure the new version has the expected (old version's)
-    #  file name.
-    # After the upgrade completes, the new version's library file is used.
-    # i.e. 
-    #  - old version: wrappers-0.1.16.so
-    #  - new version: wrappers-0.1.18.so
-    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
-    if [ -d "$PGLIBOLD" ]; then
-        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
-        if [ -f "$WRAPPERS_LIB_PATH" ]; then
-            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
-            if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
-                LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
-                if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
-                    echo "Copying $OLD_WRAPPER_LIB_PATH to $WRAPPERS_LIB_PATH"
-                    cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
-                fi
-            fi
-        fi
-    fi
+    shim_extensions "$PGLIBOLD"
+    shim_extensions "$PGLIBOLD_ALTERNATE"
 
     export LD_LIBRARY_PATH="${PGLIBNEW}"
 
