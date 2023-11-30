@@ -974,7 +974,7 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 FROM scratch as buildcache
 COPY --from=stats /tmp /
 
-FROM ppa as pg_binary_collection_base
+FROM ubuntu:bionic as pg_binary_collection_base
 ARG postgresql_major
 ARG postgresql_release
 ENV DEBIAN_FRONTEND=noninteractive
