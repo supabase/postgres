@@ -302,6 +302,6 @@ resources:
             common_tls_context:
               tls_certificates:
                 - certificate_chain:
-                    filename: /etc/envoy/fullChain.pem
+                    filename: /etc/kong/fullChain.pem
                   private_key:
-                    filename: /etc/envoy/privKey.pem
+                    filename: /etc/kong/privKey.pem
