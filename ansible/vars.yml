@@ -24,6 +24,10 @@ golang_version_checksum:
   arm64: sha256:99de2fe112a52ab748fb175edea64b313a0c8d51d6157dba683a6be163fd5eab
   amd64: sha256:74b9640724fd4e6bb0ed2a1bc44ae813a03f1e72a4c76253e2d5c015494430ba
 
+envoy_release: 1.28.0
+envoy_release_checksum: sha1:b0a06e9cfb170f1993f369beaa5aa9d7ec679ce5
+envoy_hot_restarter_release_checksum: sha1:6d43b89d266fb2427a4b51756b649883b0617eda
+
 kong_release_target: focal # if it works, it works
 kong_deb: kong_2.8.1_arm64.deb
 kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
