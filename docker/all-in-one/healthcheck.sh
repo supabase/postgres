@@ -25,8 +25,13 @@ curl -sSfI "http://localhost:$PGRST_ADMIN_SERVER_PORT/ready"
 # gotrue up
 curl -sSf "http://localhost:$GOTRUE_API_PORT/health"
 
-# kong up
-kong health
+if [ "${ENVOY_ENABLED:-}" == "true" ]; then
+  # envoy up
+  curl -sSfI "http://localhost:$ENVOY_HTTP_PORT/health"
+else
+  # kong up
+  kong health
+fi
 
 # pgbouncer up
 printf \\0 > "/dev/tcp/localhost/$PGBOUNCER_PORT"
