@@ -283,6 +283,7 @@ runcmd:
             logger.warning("gotrue not ready")
             return False
 
+        # TODO(thebengeu): switch to checking Envoy once it's the default.
         cmd = host.run("sudo kong health")
         if cmd.failed is True:
             logger.warning("kong not ready")
