@@ -7,6 +7,7 @@ ARG adminapi_release=0.48.0
 ARG adminmgr_release=0.9.0
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
+ARG envoy_release=1.28.0
 
 # Update `gateway-28` in the URL below if upgrading above v2.8.x.
 ARG kong_release=2.8.1
@@ -61,6 +62,11 @@ FROM postgrest/postgrest:v${postgrest_release} as pgrst
 # Install GoTrue
 ####################
 FROM supabase/gotrue:v${gotrue_release} as gotrue
+
+####################
+# Install Envoy
+####################
+FROM envoyproxy/envoy:v${envoy_release} as envoy
 
 ####################
 # Install Kong
@@ -148,6 +154,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=pgrst /bin/postgrest /dist/
 COPY --from=gotrue /usr/local/bin/gotrue /dist/
 COPY --from=gotrue /usr/local/etc/gotrue /opt/gotrue/
+COPY --from=envoy /usr/local/bin/envoy /dist/
 COPY --from=adminapi /tmp/supabase-admin-api /dist/
 COPY --chown=root:root --from=adminmgr /tmp/admin-mgr /dist/
 COPY --from=exporter /tmp/postgres_exporter /opt/postgres_exporter/
@@ -193,6 +200,9 @@ COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf 
 # Customizations for gotrue
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
 
+# Customizations for envoy
+COPY --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
+
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
 COPY docker/all-in-one/etc/kong/kong.yml /etc/kong/kong.yml
@@ -216,9 +226,15 @@ ENV GOTRUE_SITE_URL=http://localhost:${PGRST_SERVER_PORT}
 ENV GOTRUE_API_PORT=9999
 EXPOSE ${GOTRUE_API_PORT}
 
+ENV ENVOY_HTTP_PORT=8000
+ENV ENVOY_HTTPS_PORT=8443
+
 ENV KONG_HTTP_PORT=8000
 ENV KONG_HTTPS_PORT=8443
-EXPOSE ${KONG_HTTP_PORT} ${KONG_HTTPS_PORT}
+
+ENV HTTP_PORT=${ENVOY_HTTP_PORT:-KONG_HTTP_PORT}
+ENV HTTP_PORT=${ENVOY_HTTPS_PORT:-KONG_HTTPS_PORT}
+EXPOSE ${HTTP_PORT} ${HTTPS_PORT}
 
 ENV ADMIN_API_CERT_DIR=/etc/ssl/adminapi
 ENV ADMIN_API_PORT=8085
@@ -235,9 +251,10 @@ ENV VECTOR_API_PORT=9001
 # Create system users
 RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
+    useradd --create-home --shell /bin/bash envoy && \
     useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
     # root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
-    useradd --create-home --shell /bin/bash adminapi -G root,kong,pgbouncer,postgres,postgrest,wal-g && \
+    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
