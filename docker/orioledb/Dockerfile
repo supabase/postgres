@@ -41,7 +41,7 @@ ARG wal_g_release=2.0.1
 ####################
 # Install postgres
 ####################
-FROM orioledb/orioledb:latest-pg${postgresql_major}-ubuntu as base
+FROM orioledb/orioledb:beta3-s3-pg${postgresql_major}-ubuntu as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
 ARG postgresql_major
