@@ -791,6 +791,7 @@ RUN tar -xvf /tmp/pg_tle.tar.gz -C /tmp && \
     rm -rf /tmp/pg_tle.tar.gz
 RUN apt-get update && apt-get install -y --no-install-recommends \
     flex \
+    libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_tle-${pg_tle_release}
