@@ -72,7 +72,7 @@ def host():
             # print container logs for debugging
             print(container.logs().decode("utf-8"))
 
-            # write logs to file
+            # write logs to file to be displayed in GHA output
             with open("testinfra-aio-container-logs.log", "w") as f:
                 f.write(container.logs().decode("utf-8"))
             

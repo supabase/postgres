@@ -27,11 +27,16 @@ jobs:
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-          pytest -vv testinfra/test_all_in_one.py
+          
 
-          # show logs if tests failed
-          if [ $? -ne 0 ]; then
-            cat testinfra/testinfra-aio-container-logs.log
+          if ! pytest -vv testinfra/test_all_in_one.py; then
+            # display container logs if the test fails
+            # if file exists
+            if [ -f testinfra-aio-container-logs.log ]; then
+              cat testinfra-aio-container-logs.log
+            fi
+            ls -lR .
+            exit 1
           fi
 
   test-ami:
