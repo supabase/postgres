@@ -34,7 +34,7 @@ ARG wrappers_release=0.1.19
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
-ARG pg_tle_release=1.0.3
+ARG pg_tle_release=1.3.2
 ARG supautils_release=1.9.0
 ARG wal_g_release=2.0.1
 
