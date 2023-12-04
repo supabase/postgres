@@ -31,11 +31,11 @@ jobs:
 
           if ! pytest -vv testinfra/test_all_in_one.py; then
             # display container logs if the test fails
-            # if file exists
+            
             if [ -f testinfra-aio-container-logs.log ]; then
+              echo "AIO container logs:"
               cat testinfra-aio-container-logs.log
             fi
-            ls -lR .
             exit 1
           fi
 
