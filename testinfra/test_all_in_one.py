@@ -71,6 +71,10 @@ def host():
         if attempts > 60 or health == "exited":
             # print container logs for debugging
             print(container.logs().decode("utf-8"))
+
+            # write logs to file
+            with open("testinfra-aio-container-logs.log", "w") as f:
+                f.write(container.logs().decode("utf-8"))
             
             raise TimeoutError("Container failed to become healthy.")
         attempts += 1
