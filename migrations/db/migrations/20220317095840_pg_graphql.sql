@@ -1,6 +1,8 @@
 -- migrate:up
 create schema if not exists graphql_public;
 
+-- obsolete signature: https://github.com/supabase/infrastructure/pull/5524/files
+drop function if exists graphql_public.graphql(text, text, jsonb);
 -- GraphQL Placeholder Entrypoint
 create or replace function graphql_public.graphql(
     "operationName" text default null,

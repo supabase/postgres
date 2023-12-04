@@ -25,9 +25,6 @@ fi
 
 function update_install_packages {
 	source /etc/os-release
-	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
-		sed -i 's/focal/bionic/g' /etc/apt/sources.list
-	fi
 
 	# Update APT with new sources
 	cat /etc/apt/sources.list
@@ -78,18 +75,6 @@ function update_install_packages {
 	if [ "${ARCH}" = "arm64" ]; then
 		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools
 	fi
-
-	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
-		echo "deb [trusted=yes] http://apt.llvm.org/bionic/ llvm-toolchain-bionic-12 main" >> /etc/apt/sources.list
-		wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-		add-apt-repository --yes --update ppa:ubuntu-toolchain-r/test
-		
-		# Install cmake 3.12+
-		wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
-		apt-add-repository --yes --update 'deb https://apt.kitware.com/ubuntu/ bionic main'
-
-		apt-get $APT_OPTIONS update
-	fi
 }
 
 function setup_locale {
@@ -118,14 +103,10 @@ function install_packages_for_build {
 	 liblzo2-dev
 
 	source /etc/os-release
-	if [ "${UBUNTU_CODENAME}" = "bionic" ]; then
-		apt-get install -y --no-install-recommends llvm-12-dev clang-12 cmake
-		apt-mark manual libllvm12:arm64
-	else 
-		apt-get install -y --no-install-recommends llvm-11-dev clang-11
-		# Mark llvm as manual to prevent auto removal
-		apt-mark manual libllvm11:arm64
-	fi
+
+	apt-get install -y --no-install-recommends llvm-11-dev clang-11
+	# Mark llvm as manual to prevent auto removal
+	apt-mark manual libllvm11:arm64
 }
 
 function setup_apparmor {

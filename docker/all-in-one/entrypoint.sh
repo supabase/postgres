@@ -291,6 +291,11 @@ if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
   disable_fail2ban
 fi
 
+if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+fi
+
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   enable_swap
   create_lsn_checkpoint_file

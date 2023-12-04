@@ -127,7 +127,7 @@ jobs:
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-          pytest -vv testinfra/test_ami.py
+          pytest -vv -s testinfra/test_ami.py
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
@@ -137,4 +137,4 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {} || true

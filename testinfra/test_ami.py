@@ -5,12 +5,13 @@ import logging
 import os
 import pytest
 import requests
+import socket
 import testinfra
 from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 
-RUN_ID = os.environ["GITHUB_RUN_ID"] if os.environ["GITHUB_RUN_ID"] else "unknown-ci-run"
+RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run")
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -242,48 +243,59 @@ runcmd:
     assert response["Success"]
 
     # instance doesn't have public ip yet
-    instance.reload()
+    while not instance.public_ip_address:
+        logger.warning("waiting for ip to be available")
+        sleep(5)
+        instance.reload()
+
+    while True:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if sock.connect_ex((instance.public_ip_address, 22)) == 0:
+            break
+        else:
+            logger.warning("waiting for ssh to be available")
+            sleep(10)
 
     host = testinfra.get_host(
         # paramiko is an ssh backend
-        f"paramiko://ubuntu@{instance.public_ip_address}",
+        f"paramiko://ubuntu@{instance.public_ip_address}?timeout=60",
         ssh_identity_file=temp_key.get_priv_key_file(),
     )
 
     def is_healthy(host) -> bool:
         cmd = host.run("pg_isready -U postgres")
         if cmd.failed is True:
-            logger.warn("pg not ready")
+            logger.warning("pg not ready")
             return False
 
         cmd = host.run(f"curl -sf -k https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
         if cmd.failed is True:
-            logger.warn("adminapi not ready")
+            logger.warning("adminapi not ready")
             return False
 
         cmd = host.run("curl -sf http://localhost:3001/ready")
         if cmd.failed is True:
-            logger.warn("postgrest not ready")
+            logger.warning("postgrest not ready")
             return False
 
         cmd = host.run("curl -sf http://localhost:8081/health")
         if cmd.failed is True:
-            logger.warn("gotrue not ready")
+            logger.warning("gotrue not ready")
             return False
 
         cmd = host.run("sudo kong health")
         if cmd.failed is True:
-            logger.warn("kong not ready")
+            logger.warning("kong not ready")
             return False
 
         cmd = host.run("printf \\\\0 > '/dev/tcp/localhost/6543'")
         if cmd.failed is True:
-            logger.warn("pgbouncer not ready")
+            logger.warning("pgbouncer not ready")
             return False
 
         cmd = host.run("sudo fail2ban-client status")
         if cmd.failed is True:
-            logger.warn("fail2ban not ready")
+            logger.warning("fail2ban not ready")
             return False
 
         return True
@@ -291,7 +303,6 @@ runcmd:
     while True:
         if is_healthy(host):
             break
-        print("waiting until healthy")
         sleep(1)
 
     # return a testinfra connection to the instance
