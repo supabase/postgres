@@ -1,4 +1,4 @@
-ARG postgres_version=15.1.0.83
+ARG postgres_version=15.1.0.136
 
 ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
