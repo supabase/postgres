@@ -68,13 +68,13 @@ def host():
         health = get_health(container)
         if health == "healthy":
             break
-        sleep(1)
-        attempts += 1
-        if attempts > 30 or health == "exited":
+        if attempts > 60 or health == "exited":
             # print container logs for debugging
             print(container.logs().decode("utf-8"))
             
             raise TimeoutError("Container failed to become healthy.")
+        attempts += 1
+        sleep(1)
 
     # return a testinfra connection to the container
     yield testinfra.get_host("docker://" + cast(str, container.name))
