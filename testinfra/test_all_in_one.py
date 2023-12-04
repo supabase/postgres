@@ -70,9 +70,10 @@ def host():
             break
         sleep(1)
         attempts += 1
-        if attempts > 30:
+        if attempts > 30 or health == "exited":
             # print container logs for debugging
             print(container.logs().decode("utf-8"))
+            
             raise TimeoutError("Container failed to become healthy.")
 
     # return a testinfra connection to the container
