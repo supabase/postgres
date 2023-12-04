@@ -41,6 +41,8 @@ def host():
             "--load",
             "--tag",
             all_in_one_image_tag,
+            "--cache-from",
+            "supabase/postgres:aio-15.1.0.136",
             path.join(path.dirname(__file__), ".."),
         ]
     )
@@ -63,11 +65,17 @@ def host():
         inspect_results = docker_client.api.inspect_container(container.name)
         return inspect_results["State"]["Health"]["Status"]
 
+    attempts = 0
     while True:
         health = get_health(container)
         if health == "healthy":
             break
         sleep(1)
+        attempts += 1
+        if attempts > 30:
+            # print container logs for debugging
+            print(container.logs().decode("utf-8"))
+            raise TimeoutError("Container failed to become healthy.")
 
     # return a testinfra connection to the container
     yield testinfra.get_host("docker://" + cast(str, container.name))
