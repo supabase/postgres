@@ -29,9 +29,11 @@ if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
 fi
 
 # Inject project specific configuration
+# "c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5" is base64-encoded "service_role:service_key".
 sed -i -e "s|anon_key|$ANON_KEY|g" \
   -e "s|service_key|$SERVICE_ROLE_KEY|g" \
   -e "s|supabase_admin_key|$ADMIN_API_KEY|g" \
+  -e "s|c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5|$(echo -n "service_role:$SERVICE_ROLE_KEY" | base64 --wrap 0)|g" \
   "$ENVOY_LDS_CONF"
 
 # Update Envoy ports

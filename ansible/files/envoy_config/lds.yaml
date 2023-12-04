@@ -6,7 +6,7 @@ resources:
         address: 0.0.0.0
         port_value: 80
     filter_chains:
-      - filters: &ref_2
+      - filters: &ref_1
           - name: envoy.filters.network.http_connection_manager
             typed_config:
               '@type': >-
@@ -107,8 +107,6 @@ resources:
                     '@type': >-
                       type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
                     source_codes:
-                      basic_auth:
-                        filename: /etc/envoy/basic_auth.lua
                       remove_apikey_query_parameter:
                         filename: /etc/envoy/remove_apikey_query_parameter.lua
                 - name: envoy.filters.http.router
@@ -118,6 +116,26 @@ resources:
                     dynamic_stats: false
               local_reply_config:
                 mappers:
+                  - filter:
+                      and_filter:
+                        filters:
+                          - status_code_filter:
+                              comparison:
+                                value:
+                                  default_value: 403
+                                  runtime_key: unused
+                          - header_filter:
+                              header:
+                                name: ':path'
+                                string_match:
+                                  prefix: /customer/v1/privileged/
+                    status_code: 401
+                    body:
+                      inline_string: Unauthorized
+                    headers_to_add:
+                      - header:
+                          key: WWW-Authenticate
+                          value: Basic realm="Unknown"
                   - filter:
                       and_filter:
                         filters:
@@ -166,7 +184,7 @@ resources:
                           body:
                             inline_string: Healthy
                         typed_per_filter_config: &ref_0
-                          envoy.filters.http.rbac: &ref_1
+                          envoy.filters.http.rbac:
                             '@type': >-
                               type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
                       - match:
@@ -255,15 +273,23 @@ resources:
                           cluster: admin_api
                           prefix_rewrite: /privileged/
                         typed_per_filter_config:
-                          envoy.filters.http.lua:
+                          envoy.filters.http.rbac:
                             '@type': >-
-                              type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
-                            name: basic_auth
-                          envoy.filters.http.rbac: *ref_1
-                        metadata:
-                          filter_metadata:
-                            envoy.filters.http.lua:
-                              credentials: c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5
+                              type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
+                            rbac:
+                              rules:
+                                action: DENY
+                                policies:
+                                  basic_auth:
+                                    permissions:
+                                      - any: true
+                                    principals:
+                                      - header:
+                                          name: authorization
+                                          invert_match: true
+                                          string_match:
+                                            exact: Basic c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5
+                                          treat_missing_header_as_empty: true
                       - match:
                           prefix: /metrics/aggregated
                         route:
@@ -293,7 +319,7 @@ resources:
         address: 0.0.0.0
         port_value: 443
     filter_chains:
-      - filters: *ref_2
+      - filters: *ref_1
         transport_socket:
           name: envoy.transport_sockets.tls
           typed_config:
@@ -305,3 +331,4 @@ resources:
                     filename: /etc/kong/fullChain.pem
                   private_key:
                     filename: /etc/kong/privKey.pem
+
