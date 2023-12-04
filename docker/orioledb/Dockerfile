@@ -77,10 +77,10 @@ ARG CACHE_EPOCH
 FROM builder as rust-toolchain
 ENV PATH=/root/.cargo/bin:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends curl pkg-config && \
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable && \
-  rustup --version && \
-  rustc --version && \
-  cargo --version 
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable && \
+    rustup --version && \
+    rustc --version && \
+    cargo --version
 
 RUN cargo install cargo-pgrx --version 0.10.2 --locked
 RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
@@ -562,7 +562,7 @@ FROM rust-toolchain as pg_graphql-source
 ARG pg_graphql_release
 ARG pg_graphql_release_checksum
 ADD --checksum=${pg_graphql_release_checksum} \
-  "https://github.com/supabase/pg_graphql/archive/refs/tags/v${pg_graphql_release}.tar.gz" \
+    "https://github.com/supabase/pg_graphql/archive/refs/tags/v${pg_graphql_release}.tar.gz" \
     /tmp/pg_graphql.tar.gz
 RUN tar -xvf /tmp/pg_graphql.tar.gz -C /tmp && \
     rm -rf /tmp/pg_graphql.tar.gz
@@ -642,7 +642,7 @@ FROM rust-toolchain as pg_jsonschema-source
 ARG pg_jsonschema_release
 ARG pg_jsonschema_release_checksum
 ADD --checksum=${pg_jsonschema_release_checksum} \
-  "https://github.com/supabase/pg_jsonschema/archive/refs/tags/v${pg_jsonschema_release}.tar.gz" \
+    "https://github.com/supabase/pg_jsonschema/archive/refs/tags/v${pg_jsonschema_release}.tar.gz" \
     /tmp/pg_jsonschema.tar.gz
 RUN tar -xvf /tmp/pg_jsonschema.tar.gz -C /tmp && \
     rm -rf /tmp/pg_jsonschema.tar.gz
@@ -768,7 +768,7 @@ FROM rust-toolchain as wrappers-source
 ARG wrappers_release
 ARG wrappers_release_checksum
 ADD --checksum=${wrappers_release_checksum} \
-  "https://github.com/supabase/wrappers/archive/refs/tags/v${wrappers_release}.tar.gz" \
+    "https://github.com/supabase/wrappers/archive/refs/tags/v${wrappers_release}.tar.gz" \
     /tmp/wrappers.tar.gz
 RUN tar -xvf /tmp/wrappers.tar.gz -C /tmp && \
     rm -rf /tmp/wrappers.tar.gz
@@ -1023,6 +1023,7 @@ COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
@@ -1043,6 +1044,9 @@ RUN sed -i \
     -e "s|su-exec|gosu|g" \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
     /usr/local/bin/docker-entrypoint.sh
+
+# COPY docker/orioledb/entrypoint.sh /
+# ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT
