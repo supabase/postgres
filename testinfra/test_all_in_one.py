@@ -41,8 +41,6 @@ def host():
             "--load",
             "--tag",
             all_in_one_image_tag,
-            "--cache-from",
-            "supabase/postgres:aio-15.1.0.136",
             path.join(path.dirname(__file__), ".."),
         ]
     )

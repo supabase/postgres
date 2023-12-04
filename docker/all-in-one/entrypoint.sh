@@ -9,6 +9,8 @@ export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/mach
 
 LSN_CHECKPOINT_FILE_PATH="${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
 
+export MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
+
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
   # Pass 0 for unlimited retries
