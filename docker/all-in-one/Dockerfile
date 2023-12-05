@@ -136,6 +136,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     vim-tiny \
     less \
+    libnuma1 \
     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
