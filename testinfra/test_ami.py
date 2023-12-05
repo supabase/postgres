@@ -339,3 +339,53 @@ def test_postgrest_can_connect_to_db(host):
         },
     )
     assert res.ok
+
+
+# There would be an error if the `apikey` query parameter isn't removed,
+# since PostgREST treats query parameters as conditions.
+#
+# Worth testing since remove_apikey_query_parameter.lua uses regexp instead
+# of parsed query parameters.
+def test_postgrest_starting_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "apikey": service_role_key,
+            "id": "eq.absent",
+            "name": "eq.absent",
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_middle_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "id": "eq.absent",
+            "apikey": service_role_key,
+            "name": "eq.absent",
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_ending_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "id": "eq.absent",
+            "name": "eq.absent",
+            "apikey": service_role_key,
+        },
+    )
+    assert res.ok
