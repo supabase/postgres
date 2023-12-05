@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eou pipefail
 
+ENVOY_CDS_CONF=/etc/envoy/cds.yaml
 ENVOY_LDS_CONF=/etc/envoy/lds.yaml
 touch /var/log/services/envoy.log
 
@@ -37,9 +38,9 @@ sed -i -e "s|anon_key|$ANON_KEY|g" \
   "$ENVOY_LDS_CONF"
 
 # Update Envoy ports
-sed -i "s|:80 |:$ENVOY_HTTP_PORT |g" "$ENVOY_LDS_CONF"
-sed -i "s|:443 |:$ENVOY_HTTPS_PORT |g" "$ENVOY_LDS_CONF"
-sed -i "s|:3000 |:$PGRST_SERVER_PORT |g" "$ENVOY_LDS_CONF"
-sed -i "s|:3001 |:$PGRST_ADMIN_SERVER_PORT |g" "$ENVOY_LDS_CONF"
-sed -i "s|:8085 |:$ADMIN_API_PORT |g" "$ENVOY_LDS_CONF"
-sed -i "s|:9999 |:$GOTRUE_API_PORT |g" "$ENVOY_LDS_CONF"
+sed -i "s|port_value: 80$|port_value: $ENVOY_HTTP_PORT|g" "$ENVOY_LDS_CONF"
+sed -i "s|port_value: 443$|port_value: $ENVOY_HTTPS_PORT|g" "$ENVOY_LDS_CONF"
+sed -i "s|port_value: 3000$|port_value: $PGRST_SERVER_PORT|g" "$ENVOY_CDS_CONF"
+sed -i "s|port_value: 3001$|port_value: $PGRST_ADMIN_SERVER_PORT|g" "$ENVOY_CDS_CONF"
+sed -i "s|port_value: 8085$|port_value: $ADMIN_API_PORT|g" "$ENVOY_CDS_CONF"
+sed -i "s|port_value: 9999$|port_value: $GOTRUE_API_PORT|g" "$ENVOY_CDS_CONF"
