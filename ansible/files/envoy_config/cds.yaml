@@ -10,11 +10,6 @@ resources:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 8085
-    transport_socket:
-      name: envoy.transport_sockets.tls
-      typed_config:
-        '@type': >-
-          type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
   - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: gotrue
     load_assignment:
