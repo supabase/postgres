@@ -7,13 +7,15 @@ jobs:
 
   check-release-version:
     timeout-minutes: 5
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      run: |
-        SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common.vars.pkr.hcl)
-        if [[ -n $SUFFIX ]] ; then
-          echo "We no longer allow merging RC versions to develop."
-          exit 1
-        fi
+      - name: Run checks
+        run: |
+          SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common.vars.pkr.hcl)
+          if [[ -n $SUFFIX ]] ; then
+            echo "We no longer allow merging RC versions to develop."
+            exit 1
+          fi
