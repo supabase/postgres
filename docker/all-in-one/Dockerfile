@@ -65,7 +65,7 @@ FROM supabase/gotrue:v${gotrue_release} as gotrue
 ####################
 FROM base as kong
 ARG kong_release
-ADD "https://download.konghq.com/gateway-2.x-ubuntu-focal/pool/all/k/kong/kong_${kong_release}_${TARGETARCH}.deb" \
+ADD "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_${kong_release}/kong_${kong_release}_${TARGETARCH}.deb" \
     /tmp/kong.deb
 
 ####################
@@ -158,7 +158,7 @@ RUN ln -s /data/opt/supabase-admin-api /opt/supabase-admin-api \
     && ln -s /data/opt/admin-mgr /usr/bin/admin-mgr
 
 # Scripts for adminapi
-COPY ansible/files/admin_api_scripts /root 
+COPY ansible/files/admin_api_scripts /root
 COPY --chown=adminapi:adminapi docker/all-in-one/etc/adminapi /etc/adminapi
 COPY docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
 
