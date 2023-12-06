@@ -3,11 +3,13 @@ ARG postgres_version=15.1.0.83
 ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
 ARG gotrue_release=2.47.0
-ARG kong_release=2.8.1
 ARG adminapi_release=0.48.0
 ARG adminmgr_release=0.9.0
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
+
+# Update `gateway-28` in the URL below if upgrading above v2.8.x.
+ARG kong_release=2.8.1
 
 FROM supabase/postgres:${postgres_version} as base
 ARG TARGETARCH
