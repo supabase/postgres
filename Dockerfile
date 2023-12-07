@@ -149,7 +149,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/sfcgal/build
 RUN cmake ..
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --pkgname=sfcgal --pkgversion=${sfcgal_release} --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
 
@@ -176,7 +176,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/postgis-${postgis_release}
 RUN ./configure --with-sfcgal
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj15,libjson-c4,libprotobuf-c1,libgdal26 --nodoc
 
@@ -209,7 +209,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/pgrouting-${pgrouting_release}/build
 RUN cmake -DBUILD_HTML=OFF -DBUILD_DOXY=OFF ..
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=pgrouting --pkgversion=${pgrouting_release} --nodoc
 
@@ -235,7 +235,7 @@ RUN tar -xvf /tmp/pgtap.tar.gz -C /tmp && \
     rm -rf /tmp/pgtap.tar.gz
 # Build from source
 WORKDIR /tmp/pgtap-${pgtap_release}
-# RUN make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -254,7 +254,7 @@ RUN tar -xvf /tmp/pg_cron.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pg_cron-${pg_cron_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -279,7 +279,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/pgaudit-${pgaudit_release}
 ENV USE_PGXS=1
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -293,7 +293,7 @@ ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
     /tmp/pgjwt-${pgjwt_release}
 # Build from source
 WORKDIR /tmp/pgjwt-${pgjwt_release}
-# RUN make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
@@ -316,7 +316,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build from source
 WORKDIR /tmp/pgsql-http-${pgsql_http_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
@@ -339,7 +339,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build from source
 WORKDIR /tmp/plpgsql_check-${plpgsql_check_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -358,7 +358,7 @@ RUN tar -xvf /tmp/pg-safeupdate.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pg-safeupdate-${pg_safeupdate_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -378,7 +378,7 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
 RUN cmake  ..
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgname=timescaledb --pkgversion=${timescaledb_release} --nodoc
 
@@ -397,7 +397,7 @@ RUN tar -xvf /tmp/wal2json.tar.gz -C /tmp --one-top-level --strip-components 1 &
 # Build from source
 WORKDIR /tmp/wal2json
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 ENV version=${wal2json_release}
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion="\${version/_/.}" --nodoc
@@ -480,7 +480,7 @@ ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" 
 # Build from source
 WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
@@ -503,7 +503,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build from source
 WORKDIR /tmp/pg_net-${pg_net_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
 
@@ -527,7 +527,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/rum-${rum_release}
 ENV USE_PGXS=1
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -561,7 +561,7 @@ RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
 WORKDIR /tmp/libsodium-${libsodium_release}
 RUN ./configure
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 RUN make install
 
 FROM libsodium as pgsodium-source
@@ -576,7 +576,7 @@ RUN tar -xvf /tmp/pgsodium.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pgsodium-${pgsodium_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libsodium23 --nodoc
 
@@ -605,7 +605,7 @@ RUN tar -xvf /tmp/pg_stat_monitor.tar.gz -C /tmp && \
 WORKDIR /tmp/pg_stat_monitor-${pg_stat_monitor_release}
 ENV USE_PGXS=1
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -668,7 +668,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/groonga-${groonga_release}
 RUN ./configure
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --requires=zlib1g,liblz4-1,libzstd1,libmsgpackc2,libzmq5,libevent-2.1-7,libmecab2 --nodoc
 
@@ -684,7 +684,7 @@ RUN tar -xvf /tmp/pgroonga.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pgroonga-${pgroonga_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=mecab-naist-jdic --nodoc
 
@@ -730,7 +730,7 @@ RUN tar -xvf /tmp/hypopg.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/hypopg-${hypopg_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -756,7 +756,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
 ENV USE_PGXS=1
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
 
@@ -774,7 +774,7 @@ RUN tar -xvf /tmp/pgvector.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/pgvector-${pgvector_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -795,7 +795,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build from source
 WORKDIR /tmp/pg_tle-${pg_tle_release}
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
