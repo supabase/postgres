@@ -4,7 +4,6 @@ on:
   pull_request:
 
 jobs:
-
   check-release-version:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -13,6 +12,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run checks
+        # Update `ami-release.yaml` too if changing constraints.
         run: |
           SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common.vars.pkr.hcl)
           if [[ -n $SUFFIX ]] ; then
