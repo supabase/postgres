@@ -321,27 +321,11 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
 RUN cmake -DAPACHE_ONLY=1 ..
-# error: too few arguments to function ‘table_multi_insert’
+# error: too few arguments to function ‘table_tuple_update’
+# error: too few arguments to function ‘table_tuple_delete’
 RUN sed -i \
-    -e "358s|^|        bool *insert_indexes = NULL;|g" \
-    -e "364s|);|, insert_indexes);|g" \
-    -e "930s|^|                bool *insert_indexes = NULL;|g" \
-    -e "1115s|);|, insert_indexes);|g" \
-    -e "1134s|);|, insert_indexes);|g" \
-    ../src/copy.c
-# error: static declaration of ‘replace_nestloop_params’ follows non-static declaration
-RUN sed -i \
-    -e "48s|static ||g" \
-    -e "943s|static ||g" \
-    ../src/import/planner.c
-# error: too few arguments to function ‘table_tuple_insert’
-RUN sed -i \
-    -e "1672s|*/|*/ bool *insert_indexes = NULL;|g" \
-    -e "1673s|);|, insert_indexes);|g" \
-    -e "1971s|*/|*/ bool *insert_indexes = NULL;|g" \
-    -e "1981s|);|, insert_indexes);|g" \
-    -e "2559s|}|} bool *insert_indexes = NULL;|g" \
-    -e "2567s|);|, insert_indexes);|g" \
+    -e "1981s|);|, NULL);|g" \
+    -e "2567s|);|, NULL);|g" \
     ../src/nodes/hypertable_modify.c
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
