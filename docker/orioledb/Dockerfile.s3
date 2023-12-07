@@ -1,0 +1,9 @@
+FROM orioledb/orioledb:latest-pg15-ubuntu as base
+
+COPY --chown=postgres:postgres docker/orioledb/postgresql /etc/postgresql
+
+ENV PG_CONF=/etc/postgresql/postgresql.conf
+COPY docker/orioledb/entrypoint-s3.sh /
+ENTRYPOINT ["/entrypoint-s3.sh"]
+
+CMD ["postgres", "-D", "/etc/postgresql"]
