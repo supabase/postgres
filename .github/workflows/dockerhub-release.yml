@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker_version: ${{ steps.settings.outputs.postgres-version }}
-      image_tag: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+      image_tag: intellecta/postgres:${{ steps.settings.outputs.postgres-version }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
