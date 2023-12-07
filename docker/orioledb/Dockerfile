@@ -1029,6 +1029,7 @@ RUN sed -i \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
     /usr/local/bin/docker-entrypoint.sh
 
+# TODO: support s3 credentials once upstream is tested
 # COPY docker/orioledb/entrypoint.sh /
 # ENTRYPOINT ["/entrypoint.sh"]
 
