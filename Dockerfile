@@ -235,7 +235,7 @@ RUN tar -xvf /tmp/pgtap.tar.gz -C /tmp && \
     rm -rf /tmp/pgtap.tar.gz
 # Build from source
 WORKDIR /tmp/pgtap-${pgtap_release}
-  make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
@@ -293,7 +293,7 @@ ADD "https://github.com/michelp/pgjwt.git#${pgjwt_release}" \
     /tmp/pgjwt-${pgjwt_release}
 # Build from source
 WORKDIR /tmp/pgjwt-${pgjwt_release}
-  make -j$(nproc)
+RUN  make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
@@ -541,7 +541,7 @@ ADD "https://github.com/iCyberon/pg_hashids.git#${pg_hashids_release}" \
     /tmp/pg_hashids-${pg_hashids_release}
 # Build from source
 WORKDIR /tmp/pg_hashids-${pg_hashids_release}
-# RUN make -j$(nproc)
+RUN make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
@@ -636,7 +636,7 @@ RUN tar -xvf /tmp/vault.tar.gz -C /tmp && \
     rm -rf /tmp/vault.tar.gz
 # Build from source
 WORKDIR /tmp/vault-${vault_release}
-# RUN make -j$(nproc)
+RUN make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
