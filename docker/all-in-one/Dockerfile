@@ -253,7 +253,6 @@ RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
     useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
-    # root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
     useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
