@@ -201,7 +201,7 @@ COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf 
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
 
 # Customizations for envoy
-COPY --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
+COPY --chmod=644 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
 
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
@@ -253,7 +253,6 @@ RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
     useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
-    # root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
     useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \

@@ -6,6 +6,7 @@
   ansible.builtin.get_url:
     checksum: "{{ envoy_release_checksum }}"
     dest: /opt/envoy
+    group: envoy
     mode: u+x
     owner: envoy
     # yamllint disable-line rule:line-length
@@ -15,6 +16,7 @@
   ansible.builtin.get_url:
     checksum: "{{ envoy_hot_restarter_release_checksum }}"
     dest: /opt/envoy-hot-restarter.py
+    group: envoy
     mode: u+x
     owner: envoy
     # yamllint disable-line rule:line-length
@@ -30,6 +32,7 @@
 - name: Envoy - create script to start envoy
   ansible.builtin.copy:
     dest: /opt/start-envoy.sh
+    group: envoy
     mode: u+x
     owner: envoy
     src: files/start-envoy.sh
@@ -37,6 +40,8 @@
 - name: Envoy - create configuration files
   ansible.builtin.copy:
     dest: /etc/envoy/
+    directory_mode: u=rw,g=rw,o=r
+    group: envoy
     mode: u=rw,g=rw,o=r
     owner: envoy
     src: files/envoy_config/
