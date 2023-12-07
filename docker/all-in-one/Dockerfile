@@ -201,7 +201,7 @@ COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf 
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
 
 # Customizations for envoy
-COPY --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
+COPY --chmod=644 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
 
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
