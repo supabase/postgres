@@ -926,6 +926,14 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
+
+#additional-scripts
+COPY additional-scripts/realtime.sql /docker-entrypoint-initdb.d/migrations/99-realtime.sql
+COPY additional-scripts/logs.sql /docker-entrypoint-initdb.d/migrations/99-logs.sql
+COPY additional-scripts/webhooks.sql /docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql
+COPY additional-scripts/roles.sql /docker-entrypoint-initdb.d/init-scripts/99-roles.sql
+COPY additional-scripts/jwt.sql /docker-entrypoint-initdb.d/init-scripts/99-jwt.sql
+
 # Add upstream entrypoint script
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
