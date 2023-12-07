@@ -376,7 +376,7 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
     rm -rf /tmp/timescaledb.tar.gz
 # Build from source
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
-RUN cmake  ..
+RUN cmake -DAPACHE_ONLY=1 ..
 # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
 RUN  make -j$(nproc)
 # Create debian package
