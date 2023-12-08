@@ -29,8 +29,8 @@ fi
 
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   echo "init envoy payload"
-  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/envoy/
-  chown -R adminapi:adminapi /etc/envoy
+  tar -xzvhf "$INIT_PAYLOAD_PATH" -C / ./etc/envoy/
+  chown -HR adminapi:adminapi /etc/envoy
 fi
 
 # Inject project specific configuration
