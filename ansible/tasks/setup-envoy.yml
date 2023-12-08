@@ -40,7 +40,7 @@
 - name: Envoy - create configuration files
   ansible.builtin.copy:
     dest: /etc/envoy/
-    directory_mode: u=rw,g=rw,o=r
+    directory_mode: u=rwx,g=rwx,o=rx
     group: envoy
     mode: u=rw,g=rw,o=r
     owner: envoy
