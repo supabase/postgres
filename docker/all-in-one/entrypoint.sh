@@ -155,7 +155,7 @@ function report_health {
 }
 
 function start_supervisor {
-  # Start health reporting 
+  # Start health reporting
   report_health &
 
   # Start supervisord
@@ -239,6 +239,12 @@ fi
 
 if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+fi
+
+if [ "${ENVOY_ENABLED:-}" == "true" ]; then
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
+  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
 fi
 
 if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
