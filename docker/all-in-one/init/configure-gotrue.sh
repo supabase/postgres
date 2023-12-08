@@ -10,7 +10,7 @@ GOTRUE_CUSTOM_CONFIG_FILE_PATH="${DATA_VOLUME_MOUNTPOINT}/etc/gotrue/gotrue.env"
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   mkdir -p "${GOTRUE_CUSTOM_DIR}"
-  chown gotrue:gotrue "${GOTRUE_CUSTOM_DIR}"
+  chown adminapi:adminapi "${GOTRUE_CUSTOM_DIR}"
 
   if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
     echo "Copying existing GoTrue config from /etc/gotrue.env to ${GOTRUE_CUSTOM_CONFIG_FILE_PATH}"
@@ -27,7 +27,7 @@ fi
 
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   echo "init gotrue payload"
-  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/gotrue.env
+  tar -h --overwrite -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/gotrue.env
   chown -R adminapi:adminapi /etc/gotrue.env
 else
   sed -i "s|api_external_url|${API_EXTERNAL_URL:-http://localhost}|g" /etc/gotrue.env
