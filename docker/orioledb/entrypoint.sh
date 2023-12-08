@@ -6,9 +6,9 @@ PG_CONF=/etc/postgresql/postgresql.conf
 function configure_orioledb {
   echo "Configuring OrioleDB..."
 
+  # -e "s|#log_min_messages = .*|log_min_messages = debug1 # will log all S3 requests|" \
   sed -i \
     -e "s|#max_worker_processes = .*|max_worker_processes = 50 # should fit orioledb.s3_num_workers as long as other workers|" \
-    -e "s|#log_min_messages = .*|log_min_messages = debug1 # will log all S3 requests|" \
     -e "s|#archive_mode = off\(.*\)|archive_mode = on\1|" \
     "$PG_CONF"
 
@@ -25,7 +25,7 @@ orioledb.s3_secretkey = '$S3_SECRET_KEY' # replace with your S3 secret key
 " >> "$PG_CONF"
 }
 
-if ! grep -q orioledb "$PG_CONF"; then
+if ! grep -q "orioledb.s3_mode" "$PG_CONF"; then
   configure_orioledb
 fi
 

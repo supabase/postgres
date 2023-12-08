@@ -1029,9 +1029,8 @@ RUN sed -i \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
     /usr/local/bin/docker-entrypoint.sh
 
-# TODO: support s3 credentials once upstream is tested
-# COPY docker/orioledb/entrypoint.sh /
-# ENTRYPOINT ["/entrypoint.sh"]
+COPY docker/orioledb/entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT
