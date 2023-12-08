@@ -1,6 +1,10 @@
 #!/bin/bash
 set -eou pipefail
 
+if [ "${ENVOY_ENABLED:-}" != "true" ]; then
+  exit
+fi
+
 ENVOY_CDS_CONF=/etc/envoy/cds.yaml
 ENVOY_LDS_CONF=/etc/envoy/lds.yaml
 touch /var/log/services/envoy.log
