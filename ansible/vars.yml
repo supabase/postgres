@@ -14,8 +14,8 @@ postgrest_release: "11.2.2"
 postgrest_arm_release_checksum: sha1:e6d2a7dae851b696b64d49bf7c12336f7c4fff3e
 postgrest_x86_release_checksum: sha1:9997e5969c2a600c2ded35121ff339f35ba53e84
 
-gotrue_release: 2.125.1
-gotrue_release_checksum: sha1:3ec7f09465f5ddb9e5f222aa6d68107e23bccd67
+gotrue_release: 2.126.0
+gotrue_release_checksum: sha1:832e034d099bebd00b357daa0a9b0e582f35f582
 
 aws_cli_release: "2.2.7"
 
@@ -23,6 +23,10 @@ golang_version: "1.19.3"
 golang_version_checksum:
   arm64: sha256:99de2fe112a52ab748fb175edea64b313a0c8d51d6157dba683a6be163fd5eab
   amd64: sha256:74b9640724fd4e6bb0ed2a1bc44ae813a03f1e72a4c76253e2d5c015494430ba
+
+envoy_release: 1.28.0
+envoy_release_checksum: sha1:b0a06e9cfb170f1993f369beaa5aa9d7ec679ce5
+envoy_hot_restarter_release_checksum: sha1:6d43b89d266fb2427a4b51756b649883b0617eda
 
 kong_release_target: focal # if it works, it works
 kong_deb: kong_2.8.1_arm64.deb
@@ -41,7 +45,7 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: 0.54.0
+adminapi_release: 0.57.1
 adminmgr_release: 0.13.1
 
 # Postgres Extensions

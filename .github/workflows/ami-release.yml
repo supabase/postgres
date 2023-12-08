@@ -30,6 +30,16 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - name: Run checks if triggered manually
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        # Update `ci.yaml` too if changing constraints.
+        run: |
+          SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common.vars.pkr.hcl)
+          if [[ -z $SUFFIX ]] ; then
+            echo "Version must include non-numeric characters if built manually."
+            exit 1
+          fi
+
       - id: args
         uses: mikefarah/yq@master
         with:
