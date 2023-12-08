@@ -3,11 +3,10 @@ name: Release AIO image
 on:
   push:
     branches:
-      - pcnc/fly-deployment
+      - develop
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"
-      - "common.vars*"
   workflow_run:
     workflows: [Release on Dockerhub]
     branches:
@@ -134,12 +133,12 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           
-      # - name: Slack Notification
-      #   if: ${{ failure() }}
-      #   uses: rtCamp/action-slack-notify@v2
-      #   env:
-      #     SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-      #     SLACK_USERNAME: "gha-failures-notifier"
-      #     SLACK_COLOR: "danger"
-      #     SLACK_MESSAGE: "Building Postgres image failed"
-      #     SLACK_FOOTER: ""
+      - name: Slack Notification
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: "gha-failures-notifier"
+          SLACK_COLOR: "danger"
+          SLACK_MESSAGE: "Failed pushing AIO image to Fly.io"
+          SLACK_FOOTER: ""
