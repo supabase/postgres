@@ -37,21 +37,35 @@ def main():
         data = sys.stdin.read(int(headers['len']))
         write_stderr(data)
 
-        if headers['eventname'] == 'TICK_60':
-            if os.path.getmtime(checkpointFilePrevious) < time.time() - 60 * LSN_CHECKPOINT_SHIP_INTERVAL:
-                previousLSN = ''
-                with open(checkpointFilePrevious) as f:
-                    previousLSN = f.read()
-
-                # If the current LSN is different from the previous one, persist it remotely
-                with open(checkpointFile) as f:
-                    currentLSN = f.read()
-                    if currentLSN != '0/0' and currentLSN != previousLSN:
-                        subprocess.run(["/usr/bin/admin-mgr", "lsn-checkpoint-push"])
-                        with open(checkpointFilePrevious, 'w') as f:
-                            f.write(currentLSN)
+        process_event(headers)
 
         write_stdout('RESULT 2\nOK')
 
+def process_event(event):
+    if event['eventname'] == 'TICK_60':
+        if os.path.getmtime(checkpointFilePrevious) < time.time() - 60 * LSN_CHECKPOINT_SHIP_INTERVAL:
+            previousLSN = ''
+            with open(checkpointFilePrevious) as f:
+                previousLSN = f.read()
+
+            # If the current LSN is different from the previous one, persist it remotely
+            with open(checkpointFile) as f:
+                currentLSN = f.read()
+                if currentLSN != '0/0' and currentLSN != previousLSN:
+                    try:
+                        subprocess.run(["/usr/bin/admin-mgr", "lsn-checkpoint-push"])
+                        with open(checkpointFilePrevious, 'w') as f:
+                            f.write(currentLSN)
+                    except subprocess.CalledProcessError as ex:
+                        write_stderr('ERROR calling admin-mgr lsn-checkpoint-push: ' + ex.output.decode('utf-8'))
+                    except Exception as ex:
+                        write_stderr('ERROR: ' + str(ex))
+
 if __name__ == '__main__':
     main()
+
+
+# test process_event
+# process_event('TICK_60')
+
+# test main
