@@ -5,7 +5,6 @@ on:
 
 jobs:
   check-release-version:
-    runs-on: ubuntu-latest
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
