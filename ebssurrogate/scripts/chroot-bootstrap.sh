@@ -78,6 +78,10 @@ function update_install_packages {
 }
 
 function setup_locale {
+cat << EOF >> /etc/locale.gen
+en_US.UTF-8 UTF-8
+EOF
+
 cat << EOF > /etc/default/locale
 LANG="C.UTF-8"
 LC_CTYPE="C.UTF-8"
