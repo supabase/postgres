@@ -1,9 +1,9 @@
-name: Release AIO image on Dockerhub
+name: Release AIO image
 
 on:
   push:
     branches:
-      - pcnc/trigger-build
+      - pcnc/fly-deployment
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"
@@ -21,6 +21,7 @@ jobs:
     outputs:
       docker_version: ${{ steps.settings.outputs.postgres-version }}
       image_tag: supabase/postgres:aio-${{ steps.settings.outputs.postgres-version }}
+      fly_image_tag: supabase-postgres-image:aio-${{ steps.settings.outputs.postgres-version }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
@@ -108,3 +109,37 @@ jobs:
     with:
       version: aio-${{ needs.settings.outputs.docker_version }}
     secrets: inherit
+
+  publish_to_fly:
+    needs: [settings, build_image]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to Fly
+        uses: superfly/flyctl-actions/setup-flyctl@dfdfedc86b296f5e5384f755a18bf400409a15d0
+        with:
+          version: 0.1.64
+      - run: |
+          docker pull ${{ needs.settings.outputs.image_tag }}_amd64
+          docker tag ${{ needs.settings.outputs.image_tag }}_amd64 "registry.fly.io/staging-${{ needs.settings.outputs.fly_image_tag }}"
+          docker tag ${{ needs.settings.outputs.image_tag }}_amd64 "registry.fly.io/prod-${{ needs.settings.outputs.fly_image_tag }}"
+
+          flyctl auth docker
+          docker push "registry.fly.io/staging-${{ needs.settings.outputs.fly_image_tag }}"
+          docker push "registry.fly.io/prod-${{ needs.settings.outputs.fly_image_tag }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          
+      # - name: Slack Notification
+      #   if: ${{ failure() }}
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+      #     SLACK_USERNAME: "gha-failures-notifier"
+      #     SLACK_COLOR: "danger"
+      #     SLACK_MESSAGE: "Building Postgres image failed"
+      #     SLACK_FOOTER: ""
