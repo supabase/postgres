@@ -1007,13 +1007,16 @@ COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
-    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|g" \
+    -e "s|#max_wal_size = 1GB|max_wal_size = 8GB|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.main_buffers = 1GB" >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.undo_buffers = 256MB" >> /etc/postgresql/postgresql.conf && \
     useradd --create-home --shell /bin/bash wal-g -G postgres && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
@@ -1027,10 +1030,10 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 RUN sed -i \
     -e "s|su-exec|gosu|g" \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
-    /usr/local/bin/docker-entrypoint.sh
+    /usr/local/bin/docker-entrypoint.sh && \
+    mv /usr/local/bin/docker-entrypoint.sh /usr/local/bin/orioledb-entrypoint.sh
 
-COPY docker/orioledb/entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+COPY docker/orioledb/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT
