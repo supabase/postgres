@@ -120,6 +120,7 @@ FROM builder as ccache
 RUN apt-get update && apt-get install -y --no-install-recommends \
     clang \
     ccache \
+    libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
 ENV CCACHE_DIR=/ccache
 ENV PATH=/usr/lib/ccache:$PATH
