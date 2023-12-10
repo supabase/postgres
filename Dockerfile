@@ -370,13 +370,14 @@ FROM ccache as timescaledb-source
 ARG timescaledb_release
 ARG timescaledb_release_checksum
 ADD --checksum=${timescaledb_rcmakeelease_checksum} \
-    "https://github.com/timescale/timescaledb/archive/refs/tags/${timescaledb_release}.tar.gz" \
+    # "https://github.com/timescale/timescaledb/archive/refs/tags/${timescaledb_release}.tar.gz" \
+    "https://github.com/timescale/timescaledb/archive/refs/tags/2.13.0.tar.gz" \
     /tmp/timescaledb.tar.gz
 RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
     rm -rf /tmp/timescaledb.tar.gz
 # Build from source
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
-RUN cmake -DAPACHE_ONLY=0 ..
+RUN cmake ..
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
   make -j$(nproc)
 # Create debian package
@@ -894,6 +895,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # https://github.com/supabase/postgres/issues/573
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* /tmp/*
+
 
 # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
