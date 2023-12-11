@@ -54,36 +54,13 @@ function enable_swap {
   swapon /mnt/swapfile
 }
 
-function create_lsn_checkpoint_file {
-  if [ ! -f "${LSN_CHECKPOINT_FILE_PATH}" ]; then
-    echo -n "0/0" > "${LSN_CHECKPOINT_FILE_PATH}"
-    touch "${LSN_CHECKPOINT_FILE_PATH}.previous"
-    chown postgres:postgres "${LSN_CHECKPOINT_FILE_PATH}"
-
-    chmod 0300 "${LSN_CHECKPOINT_FILE_PATH}"
-  fi
-}
-
 function push_lsn_checkpoint_file {
     if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
       echo "Skipping push of LSN checkpoint file"
       return
     fi
 
-    LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}")
-    PREVIOUS_LSN_CHECKPOINT=$(cat "${LSN_CHECKPOINT_FILE_PATH}.previous")
-
-    if [ "${LSN_CHECKPOINT}" == "${PREVIOUS_LSN_CHECKPOINT}" ]; then
-      echo "LSN checkpoint file has not changed. Skipping push."
-      return
-    fi
-
-    if [ "${LSN_CHECKPOINT}" == "0/0" ]; then
-      echo "LSN checkpoint file is empty. Skipping push."
-      return
-    fi
-
-    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 }
 
 function graceful_shutdown {
@@ -100,6 +77,11 @@ function graceful_shutdown {
 
 function enable_autoshutdown {
     sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+}
+
+function enable_lsn_checkpoint_push {
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/lsn-checkpoint-push.conf
+    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/db-only/lsn-checkpoint-push.conf
 }
 
 function disable_fail2ban {
@@ -306,7 +288,7 @@ fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   enable_swap
-  create_lsn_checkpoint_file
+  enable_lsn_checkpoint_push
 
   trap graceful_shutdown SIGINT
 fi
