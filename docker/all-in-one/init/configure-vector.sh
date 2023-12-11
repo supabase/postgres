@@ -21,7 +21,7 @@ if [ -z "${LOGFLARE_API_KEY:-}" ]; then
   exit 0
 fi
 
-# Add vector to support both db-only and services config
+# Add vector to support both base-services and services config
 cat <<EOF > /etc/supervisor/services/vector.conf
 
 [program:vector]

@@ -76,12 +76,12 @@ function graceful_shutdown {
 }
 
 function enable_autoshutdown {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
 }
 
 function enable_lsn_checkpoint_push {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/lsn-checkpoint-push.conf
-    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/db-only/lsn-checkpoint-push.conf
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
 }
 
 function disable_fail2ban {
@@ -259,11 +259,11 @@ find /etc/supervisor/ -type f -exec chmod 0660 {} +
 # Start services in the background
 if [ "${POSTGRES_ONLY:-}" == "true" ]; then
   sed -i "s|    - postgrest|  #  - postgrest|g" /etc/adminapi/adminapi.yaml
-  sed -i "s|files = services/\*.conf db-only/\*.conf|files = db-only/\*.conf|g" $SUPERVISOR_CONF
+  sed -i "s|files = services/\*.conf base-services/\*.conf|files = base-services/\*.conf|g" $SUPERVISOR_CONF
   /init/configure-adminapi.sh
 else
   sed -i "s|  #  - postgrest|    - postgrest|g" /etc/adminapi/adminapi.yaml
-  sed -i "s|files = db-only/\*.conf|files = services/\*.conf db-only/\*.conf|g" $SUPERVISOR_CONF
+  sed -i "s|files = base-services/\*.conf|files = services/\*.conf base-services/\*.conf|g" $SUPERVISOR_CONF
   configure_services
 fi
 
