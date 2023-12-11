@@ -10,9 +10,10 @@ postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340
 pgbouncer_release: "1.19.0"
 pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
 
-postgrest_release: "11.2.2"
-postgrest_arm_release_checksum: sha1:e6d2a7dae851b696b64d49bf7c12336f7c4fff3e
-postgrest_x86_release_checksum: sha1:9997e5969c2a600c2ded35121ff339f35ba53e84
+# to get these use `wget https://github.com/PostgREST/postgrest/releases/download/v12.0.0/postgrest-v12.0.0-ubuntu-aarch64.tar.xz -q -O- | sha1sum`
+postgrest_release: "12.0.0"
+postgrest_arm_release_checksum: sha1:d2f9f207cb1c4912640339d459041c6e44f829a8
+postgrest_x86_release_checksum: sha1:1d6e2a6cbbc54dbef651967fc6fe83ae17ee20d7
 
 gotrue_release: 2.126.0
 gotrue_release_checksum: sha1:832e034d099bebd00b357daa0a9b0e582f35f582
