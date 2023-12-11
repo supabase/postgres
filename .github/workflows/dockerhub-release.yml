@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/dockerhub-release.yml"
       - "common.vars*"
-      
+ 
 jobs:
   settings:
     runs-on: ubuntu-latest
