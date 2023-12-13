@@ -53,7 +53,7 @@ ENV PGDATA=/var/lib/postgresql/data
 # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_CTYPE=C.UTF-8
-ENV LC_COLLATE=C.UTF-8
+ENV LC_COLLATE=C
 
 FROM base as builder
 # Install build dependencies
