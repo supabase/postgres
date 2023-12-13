@@ -276,5 +276,5 @@ COPY docker/all-in-one/init /init
 COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
-COPY docker/all-in-one/shutdown_event_listener.py /usr/local/bin/shutdown_event_listener.py
+
 ENTRYPOINT [ "entrypoint.sh" ]
