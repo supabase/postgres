@@ -287,7 +287,9 @@ if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
-  enable_swap
+  if [ "${SWAP_DISABLED:-}" != "true" ]; then
+    enable_swap
+  fi
   enable_lsn_checkpoint_push
 
   trap graceful_shutdown SIGINT

@@ -265,7 +265,7 @@ RUN mkdir -p /var/log/wal-g \
     && chmod ug+s /dist/admin-mgr \
     && touch /etc/wal-g/config.json \
     && chown adminapi:adminapi /etc/wal-g/config.json \
-    && echo '{}' > /etc/wal-g/config.json
+    && echo '{"WALG_S3_PREFIX": "s3://foo/bar/"}' > /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
 # Add healthcheck and entrypoint scripts

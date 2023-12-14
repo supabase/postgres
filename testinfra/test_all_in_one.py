@@ -17,6 +17,8 @@ all_in_one_envs = {
     "ADMIN_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3VwYWJhc2VfYWRtaW4iLCJpc3MiOiJzdXBhYmFzZS1kZW1vIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.Y9mSNVuTw2TdfryoaqM5wySvwQemGGWfSe9ixcklVfM",
     "DATA_VOLUME_MOUNTPOINT": "/data",
     "MACHINE_TYPE": "shared_cpu_1x_512m",
+    "PLATFORM_DEPLOYMENT": "true",
+    "SWAP_DISABLED": "true",
 }
 
 # TODO: spin up local Logflare for Vector tests.
@@ -64,6 +66,10 @@ def host():
         return inspect_results["State"]["Health"]["Status"]
 
     attempts = 0
+
+    # containers might appear healthy but crash during bootstrap
+    sleep(3)
+    
     while True:
         health = get_health(container)
         if health == "healthy":
