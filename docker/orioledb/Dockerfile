@@ -30,7 +30,7 @@ ARG pg_jsonschema_release=0.2.0
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.19
+ARG wrappers_release=0.2.0
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
@@ -748,6 +748,9 @@ COPY --from=pgroonga-source /tmp/*.deb /tmp/
 # 25-wrappers.yml
 ####################
 FROM rust-toolchain as wrappers-source
+# Required by wrappers 0.2.0
+RUN cargo install cargo-pgrx --version 0.11.0 --locked
+RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
 # Download and extract
 ARG wrappers_release
 ARG wrappers_release_checksum
