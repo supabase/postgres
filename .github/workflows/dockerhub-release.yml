@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/fly-fixes-redux
     paths:
       - ".github/workflows/dockerhub-release.yml"
       - "common.vars*"
