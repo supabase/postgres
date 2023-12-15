@@ -145,6 +145,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim-tiny \
     less \
     libnuma1 \
+    logrotate \
     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
@@ -197,6 +198,10 @@ COPY docker/all-in-one/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/bootstrap.sh /etc/postgrest/bootstrap.sh
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/base.conf /etc/postgrest/base.conf
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf /etc/postgrest/generated.conf
+
+# Customizations for logrotate
+COPY docker/all-in-one/etc/logrotate.d/walg.conf /etc/logrotate.d/walg.conf
+COPY docker/all-in-one/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgresql.conf
 
 # Customizations for gotrue
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
@@ -276,5 +281,6 @@ COPY docker/all-in-one/init /init
 COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
+COPY docker/all-in-one/run-logrotate.sh /usr/local/bin/run-logrotate.sh
 
 ENTRYPOINT [ "entrypoint.sh" ]

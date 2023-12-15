@@ -3,7 +3,7 @@ set -eou pipefail
 
 mkdir -p /etc/supa-shutdown
 
-AUTOSHUTDOWN_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/supa-shutdown"
+AUTOSHUTDOWN_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/supa-shutdown"
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   mkdir -p "${AUTOSHUTDOWN_CUSTOM_DIR}"
 

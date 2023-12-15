@@ -4,10 +4,8 @@ set -eou pipefail
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
-DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
+export DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
-
-LSN_CHECKPOINT_FILE_PATH="${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
 
 export MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
 
@@ -240,6 +238,8 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   done
 
   chown -R postgres:postgres "${BASE_LOGS_FOLDER}"
+
+  mkdir -p "${DATA_VOLUME_MOUNTPOINT}/etc/logrotate"
 fi
 
 # Process init payload

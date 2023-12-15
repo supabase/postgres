@@ -19,6 +19,10 @@ all_in_one_envs = {
     "MACHINE_TYPE": "shared_cpu_1x_512m",
     "PLATFORM_DEPLOYMENT": "true",
     "SWAP_DISABLED": "true",
+    "AUTOSHUTDOWN_ENABLED": "true",
+    "ENV_MAX_IDLE_TIME_MINUTES": "60",
+    "PGDATA": "/var/lib/postgresql/data",
+    "PGDATA_REAL": "/data/pgdata",
 }
 
 # TODO: spin up local Logflare for Vector tests.
@@ -93,9 +97,19 @@ def host():
     container.remove(v=True, force=True)
 
 
-def test_postgrest_is_running(host):
-    postgrest = host.supervisor("services:postgrest")
-    assert postgrest.is_running
+@pytest.mark.parametrize("service_name", [
+    'adminapi',
+    'lsn-checkpoint-push',
+    'pg_egress_collect',
+    'postgresql',
+    'logrotate',
+    'supa-shutdown',
+    'services:kong',
+    'services:postgrest',
+    'services:gotrue',
+])
+def test_service_is_running(host, service_name):
+    assert host.supervisor(service_name).is_running
 
 
 def test_postgrest_responds_to_requests():
