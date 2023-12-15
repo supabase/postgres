@@ -53,7 +53,7 @@ curl -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm
 - [x] generate dynamic JWT
 - [ ] ufw / nftables
 - [x] log rotation
-- [ ] egress metrics
+- [x] egress metrics
 - [x] vector
 - [ ] apparmor
-- [ ] wal-g
+- [x] wal-g
