@@ -1,10 +1,10 @@
-ARG postgres_version=15.1.0.83
+ARG postgres_version=15.1.0.148
 
 ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
 ARG gotrue_release=2.47.0
-ARG adminapi_release=0.58.0
-ARG adminmgr_release=0.9.0
+ARG adminapi_release=0.58.1
+ARG adminmgr_release=0.14.0
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
 ARG envoy_release=1.28.0
@@ -144,6 +144,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     vim-tiny \
     less \
+    libnuma1 \
+    logrotate \
     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
@@ -196,6 +198,10 @@ COPY docker/all-in-one/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/bootstrap.sh /etc/postgrest/bootstrap.sh
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/base.conf /etc/postgrest/base.conf
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf /etc/postgrest/generated.conf
+
+# Customizations for logrotate
+COPY docker/all-in-one/etc/logrotate.d/walg.conf /etc/logrotate.d/walg.conf
+COPY docker/all-in-one/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgresql.conf
 
 # Customizations for gotrue
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
@@ -264,7 +270,7 @@ RUN mkdir -p /var/log/wal-g \
     && chmod ug+s /dist/admin-mgr \
     && touch /etc/wal-g/config.json \
     && chown adminapi:adminapi /etc/wal-g/config.json \
-    && echo '{}' > /etc/wal-g/config.json
+    && echo '{"WALG_S3_PREFIX": "s3://foo/bar/"}' > /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
 # Add healthcheck and entrypoint scripts
@@ -275,4 +281,6 @@ COPY docker/all-in-one/init /init
 COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
+COPY docker/all-in-one/run-logrotate.sh /usr/local/bin/run-logrotate.sh
+
 ENTRYPOINT [ "entrypoint.sh" ]

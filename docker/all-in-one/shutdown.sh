@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script provides a method of shutting down the machine/container when the database has been idle
 #  for a certain amount of time (configurable via the MAX_IDLE_TIME_MINUTES env var)

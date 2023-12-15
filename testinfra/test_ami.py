@@ -11,7 +11,8 @@ from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLog
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 
-RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run")
+# if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
+RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run-" + os.environ.get("USER", "unknown-user") + '@' + socket.gethostname())
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -268,17 +269,17 @@ runcmd:
             logger.warning("pg not ready")
             return False
 
-        cmd = host.run(f"curl -sf -k https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
+        cmd = host.run(f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
         if cmd.failed is True:
             logger.warning("adminapi not ready")
             return False
 
-        cmd = host.run("curl -sf http://localhost:3001/ready")
+        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready")
         if cmd.failed is True:
             logger.warning("postgrest not ready")
             return False
 
-        cmd = host.run("curl -sf http://localhost:8081/health")
+        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health")
         if cmd.failed is True:
             logger.warning("gotrue not ready")
             return False

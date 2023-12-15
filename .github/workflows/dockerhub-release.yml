@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/dockerhub-release.yml"
       - "common.vars*"
-
+ 
 jobs:
   settings:
     runs-on: ubuntu-latest
@@ -24,6 +24,7 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+
 
   build_image:
     needs: settings
