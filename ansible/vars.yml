@@ -15,8 +15,8 @@ postgrest_release: "12.0.1"
 postgrest_arm_release_checksum: sha1:4d75a7d69f2ed3bfe57f1f6473bab2d3a2981619
 postgrest_x86_release_checksum: sha1:d220282a44780049781f4c77472f1d8c1f3fdf94
 
-gotrue_release: 2.126.0
-gotrue_release_checksum: sha1:832e034d099bebd00b357daa0a9b0e582f35f582
+gotrue_release: 2.130.0
+gotrue_release_checksum: sha1:713b1e51cfb5caac5c3b2026278c3ee061795b02
 
 aws_cli_release: "2.2.7"
 
