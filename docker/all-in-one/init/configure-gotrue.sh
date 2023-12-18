@@ -10,6 +10,7 @@ GOTRUE_CUSTOM_CONFIG_FILE_PATH="${DATA_VOLUME_MOUNTPOINT}/etc/gotrue/gotrue.env"
 
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   mkdir -p "${GOTRUE_CUSTOM_DIR}"
+  chmod g+wrx "${GOTRUE_CUSTOM_DIR}"
   chown adminapi:adminapi "${GOTRUE_CUSTOM_DIR}"
 
   if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
