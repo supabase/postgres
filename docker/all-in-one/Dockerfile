@@ -4,7 +4,7 @@ ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
 ARG gotrue_release=2.47.0
 ARG adminapi_release=0.58.1
-ARG adminmgr_release=0.14.1
+ARG adminmgr_release=0.14.2
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
 ARG envoy_release=1.28.0
@@ -154,8 +154,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy single binary dependencies
 COPY --from=pgrst /bin/postgrest /dist/
-COPY --from=gotrue /usr/local/bin/gotrue /dist/
-COPY --from=gotrue /usr/local/etc/gotrue /opt/gotrue/
+COPY --from=gotrue /usr/local/bin/auth /dist/gotrue
+COPY --from=gotrue /usr/local/etc/auth /opt/gotrue/
 COPY --from=envoy /usr/local/bin/envoy /dist/
 COPY --from=adminapi /tmp/supabase-admin-api /dist/
 COPY --chown=root:root --from=adminmgr /tmp/admin-mgr /dist/

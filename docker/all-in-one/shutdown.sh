@@ -59,7 +59,7 @@ SQL
     # This is to ensure that the WAL file is shipped, just in case
     sleep 1
 
-    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 
     kill -s TERM "$(supervisorctl pid)"
   fi
