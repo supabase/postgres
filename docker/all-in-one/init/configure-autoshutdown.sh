@@ -15,6 +15,7 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
 
   rm -f "/etc/supa-shutdown/shutdown.conf"
   ln -s "${AUTOSHUTDOWN_CUSTOM_CONFIG_FILE_PATH}" "/etc/supa-shutdown/shutdown.conf"
+  chmod g+wrx "${AUTOSHUTDOWN_CUSTOM_DIR}"
   chown -R adminapi:adminapi "/etc/supa-shutdown/shutdown.conf"
   chown -R adminapi:adminapi "${AUTOSHUTDOWN_CUSTOM_CONFIG_FILE_PATH}"
 fi

@@ -51,5 +51,5 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   chown -R adminapi:adminapi "/etc/adminapi"
 
   chown -R adminapi:adminapi "${ADMINAPI_CUSTOM_DIR}"
-  chmod g+rx "${ADMINAPI_CUSTOM_DIR}"
+  chmod g+wrx "${ADMINAPI_CUSTOM_DIR}"
 fi

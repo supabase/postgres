@@ -32,7 +32,7 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   chown -R postgrest:postgrest "/etc/postgrest"
 
   chown -R postgrest:postgrest "${POSTGREST_CUSTOM_DIR}"
-  chmod g+rx "${POSTGREST_CUSTOM_DIR}"
+  chmod g+wrx "${POSTGREST_CUSTOM_DIR}"
 fi
   
 PGRST_CONF=/etc/postgrest/generated.conf
