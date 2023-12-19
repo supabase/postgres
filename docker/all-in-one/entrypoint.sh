@@ -63,14 +63,11 @@ function push_lsn_checkpoint_file {
 
 function graceful_shutdown {
   echo "$(date): Received SIGINT. Shutting down."
-  supervisorctl stop postgresql
 
   # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
   # This is to ensure that the WAL file is shipped, just in case
   sleep 0.2
   push_lsn_checkpoint_file
-
-  kill -s TERM "$(supervisorctl pid)"
 }
 
 function enable_autoshutdown {
@@ -188,6 +185,12 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
+
+  # SUPERVISORD_PID=$(supervisorctl pid)
+
+  # while [ -e "/proc/$SUPERVISORD_PID" ]; do
+  #   sleep 5
+  # done
 }
 
 # Increase max number of open connections

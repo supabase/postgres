@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - pcnc/fix-aio-signal-handling
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"

@@ -146,6 +146,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     less \
     libnuma1 \
     logrotate \
+    dumb-init \
     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
@@ -283,4 +284,6 @@ COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
 COPY docker/all-in-one/run-logrotate.sh /usr/local/bin/run-logrotate.sh
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT [ "/usr/bin/dumb-init" ]
+
+CMD [ "entrypoint.sh"]
