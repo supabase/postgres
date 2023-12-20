@@ -32,6 +32,7 @@ ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
 ARG wrappers_release=0.2.0
 ARG hypopg_release=1.3.1
+ARG columnar_release=1.1.0
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
@@ -909,6 +910,31 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 30-columnar.yml
+####################
+FROM ccache as columnar-source
+# Download and extract
+ARG columnar_release
+ARG columnar_release_checksum
+ADD --checksum=${columnar_release_checksum} \
+    "https://github.com/hydradatabase/hydra/archive/refs/tags/v${columnar_release}.tar.gz" \
+    /tmp/columnar.tar.gz
+RUN tar -xvf /tmp/columnar.tar.gz -C /tmp && \
+    rm -rf /tmp/columnar.tar.gz
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev liblz4-dev libzstd-dev \
+    lsb-release gcc make libssl-dev autoconf pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/hydra-${columnar_release}/columnar
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    ./configure
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+####################
 # internal/supautils.yml
 ####################
 FROM ccache as supautils-source
@@ -972,6 +998,7 @@ COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers-source /tmp/*.deb /tmp/
 COPY --from=hypopg-source /tmp/*.deb /tmp/
+COPY --from=columnar-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/

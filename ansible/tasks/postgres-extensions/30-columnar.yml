@@ -1,0 +1,17 @@
+# columnar
+- name: columnar - download by commit sha
+  git:
+    repo: https://github.com/hydradatabase/hydra.git
+    dest: /tmp/columnar
+    version: "{{ columnar_release }}"
+
+- name: columnar - install
+  make:
+    chdir: /tmp/columnar
+    target: install
+  become: yes
+
+- name: columnar - cleanup
+  file:
+    state: absent
+    path: /tmp/columnar

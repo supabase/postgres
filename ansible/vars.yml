@@ -136,3 +136,6 @@ pgvector_release_checksum: sha256:cc7a8e034a96e30a819911ac79d32f6bc47bdd1aa2de4d
 
 pg_tle_release: "1.0.4"
 pg_tle_release_checksum: sha256:679559584d83fb629c3b56825849fca4ff1fa3355b350aaaf8aa0b7b3460b08a
+
+columnar_release: "1.1.0"
+columnar_release_checksum: sha256:e8107709cc62316da9b2cb8fe0d3cb22ba6e470f
