@@ -185,12 +185,6 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
-
-  # SUPERVISORD_PID=$(supervisorctl pid)
-
-  # while [ -e "/proc/$SUPERVISORD_PID" ]; do
-  #   sleep 5
-  # done
 }
 
 # Increase max number of open connections
