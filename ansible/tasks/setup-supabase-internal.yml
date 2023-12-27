@@ -29,6 +29,10 @@
   shell: "/tmp/aws/install --update"
   become: true
 
+- name: AWS CLI - configure ipv6 support for s3
+  shell: |
+    aws configure set default.s3.use_dualstack_endpoint true
+
 - name: install Vector for logging
   become: yes
   apt:
