@@ -3,8 +3,9 @@ resources:
     name: http_listener
     address:
       socket_address:
-        address: 0.0.0.0
+        address: '::'
         port_value: 80
+        ipv4_compat: true
     filter_chains:
       - filters: &ref_1
           - name: envoy.filters.network.http_connection_manager
@@ -295,8 +296,9 @@ resources:
     name: https_listener
     address:
       socket_address:
-        address: 0.0.0.0
+        address: '::'
         port_value: 443
+        ipv4_compat: true
     filter_chains:
       - filters: *ref_1
         transport_socket:
