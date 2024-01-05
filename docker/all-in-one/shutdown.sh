@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script provides a method of shutting down the machine/container when the database has been idle
 #  for a certain amount of time (configurable via the MAX_IDLE_TIME_MINUTES env var)
@@ -59,7 +59,7 @@ SQL
     # This is to ensure that the WAL file is shipped, just in case
     sleep 1
 
-    /usr/bin/admin-mgr lsn-checkpoint-push || echo "Failed to push LSN checkpoint"
+    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 
     kill -s TERM "$(supervisorctl pid)"
   fi

@@ -17,6 +17,12 @@ all_in_one_envs = {
     "ADMIN_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3VwYWJhc2VfYWRtaW4iLCJpc3MiOiJzdXBhYmFzZS1kZW1vIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.Y9mSNVuTw2TdfryoaqM5wySvwQemGGWfSe9ixcklVfM",
     "DATA_VOLUME_MOUNTPOINT": "/data",
     "MACHINE_TYPE": "shared_cpu_1x_512m",
+    "PLATFORM_DEPLOYMENT": "true",
+    "SWAP_DISABLED": "true",
+    "AUTOSHUTDOWN_ENABLED": "true",
+    "ENV_MAX_IDLE_TIME_MINUTES": "60",
+    "PGDATA": "/var/lib/postgresql/data",
+    "PGDATA_REAL": "/data/pgdata",
 }
 
 # TODO: spin up local Logflare for Vector tests.
@@ -63,10 +69,25 @@ def host():
         inspect_results = docker_client.api.inspect_container(container.name)
         return inspect_results["State"]["Health"]["Status"]
 
+    attempts = 0
+
+    # containers might appear healthy but crash during bootstrap
+    sleep(3)
+    
     while True:
         health = get_health(container)
         if health == "healthy":
             break
+        if attempts > 60 or health == "exited":
+            # print container logs for debugging
+            print(container.logs().decode("utf-8"))
+
+            # write logs to file to be displayed in GHA output
+            with open("testinfra-aio-container-logs.log", "w") as f:
+                f.write(container.logs().decode("utf-8"))
+            
+            raise TimeoutError("Container failed to become healthy.")
+        attempts += 1
         sleep(1)
 
     # return a testinfra connection to the container
@@ -76,9 +97,19 @@ def host():
     container.remove(v=True, force=True)
 
 
-def test_postgrest_is_running(host):
-    postgrest = host.supervisor("services:postgrest")
-    assert postgrest.is_running
+@pytest.mark.parametrize("service_name", [
+    'adminapi',
+    'lsn-checkpoint-push',
+    'pg_egress_collect',
+    'postgresql',
+    'logrotate',
+    'supa-shutdown',
+    'services:kong',
+    'services:postgrest',
+    'services:gotrue',
+])
+def test_service_is_running(host, service_name):
+    assert host.supervisor(service_name).is_running
 
 
 def test_postgrest_responds_to_requests():

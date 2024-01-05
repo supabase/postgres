@@ -30,7 +30,7 @@ ARG pg_jsonschema_release=0.2.0
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.19
+ARG wrappers_release=0.2.0
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
@@ -53,7 +53,7 @@ ENV PGDATA=/var/lib/postgresql/data
 # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_CTYPE=C.UTF-8
-ENV LC_COLLATE=C.UTF-8
+ENV LC_COLLATE=C
 
 FROM base as builder
 # Install build dependencies
@@ -748,6 +748,9 @@ COPY --from=pgroonga-source /tmp/*.deb /tmp/
 # 25-wrappers.yml
 ####################
 FROM rust-toolchain as wrappers-source
+# Required by wrappers 0.2.0
+RUN cargo install cargo-pgrx --version 0.11.0 --locked
+RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
 # Download and extract
 ARG wrappers_release
 ARG wrappers_release_checksum
@@ -1007,13 +1010,16 @@ COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
-    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|g" \
+    -e "s|#max_wal_size = 1GB|max_wal_size = 8GB|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.main_buffers = 1GB" >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.undo_buffers = 256MB" >> /etc/postgresql/postgresql.conf && \
     useradd --create-home --shell /bin/bash wal-g -G postgres && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
@@ -1027,11 +1033,10 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 RUN sed -i \
     -e "s|su-exec|gosu|g" \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
-    /usr/local/bin/docker-entrypoint.sh
+    /usr/local/bin/docker-entrypoint.sh && \
+    mv /usr/local/bin/docker-entrypoint.sh /usr/local/bin/orioledb-entrypoint.sh
 
-# TODO: support s3 credentials once upstream is tested
-# COPY docker/orioledb/entrypoint.sh /
-# ENTRYPOINT ["/entrypoint.sh"]
+COPY docker/orioledb/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT

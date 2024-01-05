@@ -17,7 +17,7 @@
     # currently, we upload gotrue, adminapi, postgrest
     - name: gotrue - download commit archive
       get_url:
-        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/gotrue-v{{ gotrue_release }}-arm64.tar.gz"
+        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
         dest: /tmp/gotrue.tar.gz
         checksum: "{{ gotrue_release_checksum }}"
         timeout: 60

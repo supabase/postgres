@@ -14,7 +14,7 @@ jobs:
           - runner: arm-runner
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
 
@@ -27,7 +27,17 @@ jobs:
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-          pytest -vv testinfra/test_all_in_one.py
+          
+
+          if ! pytest -vv testinfra/test_all_in_one.py; then
+            # display container logs if the test fails
+            
+            if [ -f testinfra-aio-container-logs.log ]; then
+              echo "AIO container logs:"
+              cat testinfra-aio-container-logs.log
+            fi
+            exit 1
+          fi
 
   test-ami:
     strategy:
@@ -132,9 +142,9 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {}
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {}
 
       - name: Cleanup resources on build cancellation
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --instance-ids {} || true
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {} || true
