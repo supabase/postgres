@@ -9,6 +9,7 @@ metric_collectors:
   - loadavg
   - cpu
   - diskstats
+  - vmstat
 node_exporter_additional_args:
   - "--collector.filesystem.ignored-mount-points=^/(boot|sys|dev|run).*"
   - "--collector.netdev.device-exclude=lo"

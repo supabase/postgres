@@ -182,6 +182,7 @@ function setup_chroot_environment {
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
 	chroot /mnt /tmp/chroot-bootstrap.sh
 	rm -f /mnt/tmp/chroot-bootstrap.sh
+	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/root/supabase-release
 
 	# Copy the nvme identification script into /sbin inside the chroot
 	mkdir -p /mnt/sbin

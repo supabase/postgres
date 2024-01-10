@@ -1,13 +1,16 @@
-ARG postgres_version=15.1.0.83
+ARG postgres_version=15.1.0.148
 
 ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
-ARG gotrue_release=2.47.0
-ARG kong_release=2.8.1
-ARG adminapi_release=0.48.0
-ARG adminmgr_release=0.9.0
+ARG gotrue_release=2.130.0
+ARG adminapi_release=0.59.0
+ARG adminmgr_release=0.14.3
 ARG vector_release=0.22.3
 ARG postgres_exporter_release=0.9.0
+ARG envoy_release=1.28.0
+
+# Update `gateway-28` in the URL below if upgrading above v2.8.x.
+ARG kong_release=2.8.1
 
 FROM supabase/postgres:${postgres_version} as base
 ARG TARGETARCH
@@ -61,11 +64,16 @@ FROM postgrest/postgrest:v${postgrest_release} as pgrst
 FROM supabase/gotrue:v${gotrue_release} as gotrue
 
 ####################
+# Install Envoy
+####################
+FROM envoyproxy/envoy:v${envoy_release} as envoy
+
+####################
 # Install Kong
 ####################
 FROM base as kong
 ARG kong_release
-ADD "https://download.konghq.com/gateway-2.x-ubuntu-focal/pool/all/k/kong/kong_${kong_release}_${TARGETARCH}.deb" \
+ADD "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_${kong_release}/kong_${kong_release}_${TARGETARCH}.deb" \
     /tmp/kong.deb
 
 ####################
@@ -136,6 +144,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     vim-tiny \
     less \
+    libnuma1 \
+    logrotate \
+    dumb-init \
     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
@@ -144,8 +155,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy single binary dependencies
 COPY --from=pgrst /bin/postgrest /dist/
-COPY --from=gotrue /usr/local/bin/gotrue /dist/
-COPY --from=gotrue /usr/local/etc/gotrue /opt/gotrue/
+COPY --from=gotrue /usr/local/bin/auth /dist/gotrue
+COPY --from=gotrue /usr/local/etc/auth /opt/gotrue/
+COPY --from=envoy /usr/local/bin/envoy /dist/
 COPY --from=adminapi /tmp/supabase-admin-api /dist/
 COPY --chown=root:root --from=adminmgr /tmp/admin-mgr /dist/
 COPY --from=exporter /tmp/postgres_exporter /opt/postgres_exporter/
@@ -158,7 +170,7 @@ RUN ln -s /data/opt/supabase-admin-api /opt/supabase-admin-api \
     && ln -s /data/opt/admin-mgr /usr/bin/admin-mgr
 
 # Scripts for adminapi
-COPY ansible/files/admin_api_scripts /root 
+COPY ansible/files/admin_api_scripts /root
 COPY --chown=adminapi:adminapi docker/all-in-one/etc/adminapi /etc/adminapi
 COPY docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
 
@@ -188,8 +200,15 @@ COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/bootstrap.sh /e
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/base.conf /etc/postgrest/base.conf
 COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf /etc/postgrest/generated.conf
 
+# Customizations for logrotate
+COPY docker/all-in-one/etc/logrotate.d/walg.conf /etc/logrotate.d/walg.conf
+COPY docker/all-in-one/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgresql.conf
+
 # Customizations for gotrue
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
+
+# Customizations for envoy
+COPY --chmod=775 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
 
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
@@ -214,9 +233,15 @@ ENV GOTRUE_SITE_URL=http://localhost:${PGRST_SERVER_PORT}
 ENV GOTRUE_API_PORT=9999
 EXPOSE ${GOTRUE_API_PORT}
 
+ENV ENVOY_HTTP_PORT=8000
+ENV ENVOY_HTTPS_PORT=8443
+
 ENV KONG_HTTP_PORT=8000
 ENV KONG_HTTPS_PORT=8443
-EXPOSE ${KONG_HTTP_PORT} ${KONG_HTTPS_PORT}
+
+ENV HTTP_PORT=${ENVOY_HTTP_PORT:-KONG_HTTP_PORT}
+ENV HTTP_PORT=${ENVOY_HTTPS_PORT:-KONG_HTTPS_PORT}
+EXPOSE ${HTTP_PORT} ${HTTPS_PORT}
 
 ENV ADMIN_API_CERT_DIR=/etc/ssl/adminapi
 ENV ADMIN_API_PORT=8085
@@ -233,9 +258,9 @@ ENV VECTOR_API_PORT=9001
 # Create system users
 RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
+    useradd --create-home --shell /bin/bash envoy && \
     useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
-    # root,admin,kong,pgbouncer,postgres,postgrest,systemd-journal,wal-g
-    useradd --create-home --shell /bin/bash adminapi -G root,kong,pgbouncer,postgres,postgrest,wal-g && \
+    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
@@ -246,7 +271,7 @@ RUN mkdir -p /var/log/wal-g \
     && chmod ug+s /dist/admin-mgr \
     && touch /etc/wal-g/config.json \
     && chown adminapi:adminapi /etc/wal-g/config.json \
-    && echo '{}' > /etc/wal-g/config.json
+    && echo '{"WALG_S3_PREFIX": "s3://foo/bar/"}' > /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
 
 # Add healthcheck and entrypoint scripts
@@ -257,4 +282,8 @@ COPY docker/all-in-one/init /init
 COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
 COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
-ENTRYPOINT [ "entrypoint.sh" ]
+COPY docker/all-in-one/run-logrotate.sh /usr/local/bin/run-logrotate.sh
+
+ENTRYPOINT [ "/usr/bin/dumb-init" ]
+
+CMD [ "entrypoint.sh"]

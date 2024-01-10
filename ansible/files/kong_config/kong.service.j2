@@ -2,6 +2,7 @@
 Description=Kong server
 After=postgrest.service gotrue.service adminapi.service
 Wants=postgrest.service gotrue.service adminapi.service
+Conflicts=envoy.service
 
 [Service]
 Type=forking

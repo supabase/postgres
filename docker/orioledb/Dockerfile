@@ -30,7 +30,7 @@ ARG pg_jsonschema_release=0.2.0
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.19
+ARG wrappers_release=0.2.0
 ARG hypopg_release=1.3.1
 ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
@@ -41,7 +41,7 @@ ARG wal_g_release=2.0.1
 ####################
 # Install postgres
 ####################
-FROM orioledb/orioledb:beta3-s3-pg${postgresql_major}-ubuntu as base
+FROM orioledb/orioledb:latest-pg${postgresql_major}-ubuntu as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
 ARG postgresql_major
@@ -53,7 +53,7 @@ ENV PGDATA=/var/lib/postgresql/data
 # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_CTYPE=C.UTF-8
-ENV LC_COLLATE=C.UTF-8
+ENV LC_COLLATE=C
 
 FROM base as builder
 # Install build dependencies
@@ -77,10 +77,10 @@ ARG CACHE_EPOCH
 FROM builder as rust-toolchain
 ENV PATH=/root/.cargo/bin:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends curl pkg-config && \
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable && \
-  rustup --version && \
-  rustc --version && \
-  cargo --version 
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable && \
+    rustup --version && \
+    rustc --version && \
+    cargo --version
 
 RUN cargo install cargo-pgrx --version 0.10.2 --locked
 RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
@@ -321,27 +321,11 @@ RUN tar -xvf /tmp/timescaledb.tar.gz -C /tmp && \
 # Build from source
 WORKDIR /tmp/timescaledb-${timescaledb_release}/build
 RUN cmake -DAPACHE_ONLY=1 ..
-# error: too few arguments to function ‘table_multi_insert’
+# error: too few arguments to function ‘table_tuple_update’
+# error: too few arguments to function ‘table_tuple_delete’
 RUN sed -i \
-    -e "358s|^|        bool *insert_indexes = NULL;|g" \
-    -e "364s|);|, insert_indexes);|g" \
-    -e "930s|^|                bool *insert_indexes = NULL;|g" \
-    -e "1115s|);|, insert_indexes);|g" \
-    -e "1134s|);|, insert_indexes);|g" \
-    ../src/copy.c
-# error: static declaration of ‘replace_nestloop_params’ follows non-static declaration
-RUN sed -i \
-    -e "48s|static ||g" \
-    -e "943s|static ||g" \
-    ../src/import/planner.c
-# error: too few arguments to function ‘table_tuple_insert’
-RUN sed -i \
-    -e "1672s|*/|*/ bool *insert_indexes = NULL;|g" \
-    -e "1673s|);|, insert_indexes);|g" \
-    -e "1971s|*/|*/ bool *insert_indexes = NULL;|g" \
-    -e "1981s|);|, insert_indexes);|g" \
-    -e "2559s|}|} bool *insert_indexes = NULL;|g" \
-    -e "2567s|);|, insert_indexes);|g" \
+    -e "1981s|);|, NULL);|g" \
+    -e "2567s|);|, NULL);|g" \
     ../src/nodes/hypertable_modify.c
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
@@ -562,7 +546,7 @@ FROM rust-toolchain as pg_graphql-source
 ARG pg_graphql_release
 ARG pg_graphql_release_checksum
 ADD --checksum=${pg_graphql_release_checksum} \
-  "https://github.com/supabase/pg_graphql/archive/refs/tags/v${pg_graphql_release}.tar.gz" \
+    "https://github.com/supabase/pg_graphql/archive/refs/tags/v${pg_graphql_release}.tar.gz" \
     /tmp/pg_graphql.tar.gz
 RUN tar -xvf /tmp/pg_graphql.tar.gz -C /tmp && \
     rm -rf /tmp/pg_graphql.tar.gz
@@ -642,7 +626,7 @@ FROM rust-toolchain as pg_jsonschema-source
 ARG pg_jsonschema_release
 ARG pg_jsonschema_release_checksum
 ADD --checksum=${pg_jsonschema_release_checksum} \
-  "https://github.com/supabase/pg_jsonschema/archive/refs/tags/v${pg_jsonschema_release}.tar.gz" \
+    "https://github.com/supabase/pg_jsonschema/archive/refs/tags/v${pg_jsonschema_release}.tar.gz" \
     /tmp/pg_jsonschema.tar.gz
 RUN tar -xvf /tmp/pg_jsonschema.tar.gz -C /tmp && \
     rm -rf /tmp/pg_jsonschema.tar.gz
@@ -764,11 +748,14 @@ COPY --from=pgroonga-source /tmp/*.deb /tmp/
 # 25-wrappers.yml
 ####################
 FROM rust-toolchain as wrappers-source
+# Required by wrappers 0.2.0
+RUN cargo install cargo-pgrx --version 0.11.0 --locked
+RUN cargo pgrx init --pg${postgresql_major} $(which pg_config)
 # Download and extract
 ARG wrappers_release
 ARG wrappers_release_checksum
 ADD --checksum=${wrappers_release_checksum} \
-  "https://github.com/supabase/wrappers/archive/refs/tags/v${wrappers_release}.tar.gz" \
+    "https://github.com/supabase/wrappers/archive/refs/tags/v${wrappers_release}.tar.gz" \
     /tmp/wrappers.tar.gz
 RUN tar -xvf /tmp/wrappers.tar.gz -C /tmp && \
     rm -rf /tmp/wrappers.tar.gz
@@ -1024,12 +1011,16 @@ COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, orioledb'|g" \
+    -e "s|#max_wal_size = 1GB|max_wal_size = 8GB|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.main_buffers = 1GB" >> /etc/postgresql/postgresql.conf && \
+    echo "orioledb.undo_buffers = 256MB" >> /etc/postgresql/postgresql.conf && \
     useradd --create-home --shell /bin/bash wal-g -G postgres && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
@@ -1043,7 +1034,10 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 RUN sed -i \
     -e "s|su-exec|gosu|g" \
     -e "s|PGHOST= PGHOSTADDR=|PGHOST=\$POSTGRES_HOST|g" \
-    /usr/local/bin/docker-entrypoint.sh
+    /usr/local/bin/docker-entrypoint.sh && \
+    mv /usr/local/bin/docker-entrypoint.sh /usr/local/bin/orioledb-entrypoint.sh
+
+COPY docker/orioledb/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
 STOPSIGNAL SIGINT

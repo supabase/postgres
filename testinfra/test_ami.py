@@ -11,7 +11,8 @@ from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLog
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 
-RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run")
+# if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
+RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run-" + os.environ.get("USER", "unknown-user") + '@' + socket.gethostname())
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -103,7 +104,7 @@ role-claim-key = ".role"
 openapi-mode = "ignore-privileges"
 db-use-legacy-gucs = true
 admin-server-port = 3001
-server-host = "localhost"
+server-host = "*6"
 db-pool-acquisition-timeout = 10
 max-rows = 1000
 db-extra-search-path = "public, extensions"
@@ -268,21 +269,22 @@ runcmd:
             logger.warning("pg not ready")
             return False
 
-        cmd = host.run(f"curl -sf -k https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
+        cmd = host.run(f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
         if cmd.failed is True:
             logger.warning("adminapi not ready")
             return False
 
-        cmd = host.run("curl -sf http://localhost:3001/ready")
+        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready")
         if cmd.failed is True:
             logger.warning("postgrest not ready")
             return False
 
-        cmd = host.run("curl -sf http://localhost:8081/health")
+        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health")
         if cmd.failed is True:
             logger.warning("gotrue not ready")
             return False
 
+        # TODO(thebengeu): switch to checking Envoy once it's the default.
         cmd = host.run("sudo kong health")
         if cmd.failed is True:
             logger.warning("kong not ready")
@@ -335,6 +337,56 @@ def test_postgrest_can_connect_to_db(host):
             "apikey": service_role_key,
             "authorization": f"Bearer {service_role_key}",
             "accept-profile": "storage",
+        },
+    )
+    assert res.ok
+
+
+# There would be an error if the `apikey` query parameter isn't removed,
+# since PostgREST treats query parameters as conditions.
+#
+# Worth testing since remove_apikey_query_parameter.lua uses regexp instead
+# of parsed query parameters.
+def test_postgrest_starting_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "apikey": service_role_key,
+            "id": "eq.absent",
+            "name": "eq.absent",
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_middle_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "id": "eq.absent",
+            "apikey": service_role_key,
+            "name": "eq.absent",
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_ending_apikey_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "id": "eq.absent",
+            "name": "eq.absent",
+            "apikey": service_role_key,
         },
     )
     assert res.ok

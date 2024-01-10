@@ -13,6 +13,12 @@ sed -i "s|pgrst_jwt_secret|$JWT_SECRET|g" /etc/postgrest/base.conf
 
 /usr/local/bin/configure-shim.sh /dist/postgrest /opt/postgrest
 
+if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
+  echo "init postgrest payload"
+  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgrest/base.conf
+  chown -R postgrest:postgrest /etc/postgrest
+fi
+
 if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   POSTGREST_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgrest"
   mkdir -p "${POSTGREST_CUSTOM_DIR}"
@@ -26,15 +32,9 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   chown -R postgrest:postgrest "/etc/postgrest"
 
   chown -R postgrest:postgrest "${POSTGREST_CUSTOM_DIR}"
-  chmod g+rx "${POSTGREST_CUSTOM_DIR}"
+  chmod g+wrx "${POSTGREST_CUSTOM_DIR}"
 fi
   
-if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
-  echo "init postgrest payload"
-  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgrest/base.conf
-  chown -R postgrest:postgrest /etc/postgrest
-fi
-
 PGRST_CONF=/etc/postgrest/generated.conf
 
 /opt/supabase-admin-api optimize postgrest --destination-config-file-path $PGRST_CONF

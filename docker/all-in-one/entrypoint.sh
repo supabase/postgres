@@ -4,8 +4,10 @@ set -eou pipefail
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
-DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
+export DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
+
+export MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
 
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
@@ -50,14 +52,37 @@ function enable_swap {
   swapon /mnt/swapfile
 }
 
-function create_lsn_checkpoint_file {
-  if [ ! -f "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint" ]; then
-    echo "0/0" > "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
-    chown postgres:postgres "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
-    chmod 0300 "${DATA_VOLUME_MOUNTPOINT}/latest-lsn-checkpoint"
-  fi
+function push_lsn_checkpoint_file {
+    if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
+      echo "Skipping push of LSN checkpoint file"
+      return
+    fi
+
+    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 }
 
+function graceful_shutdown {
+  echo "$(date): Received SIGINT. Shutting down."
+
+  # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
+  # This is to ensure that the WAL file is shipped, just in case
+  sleep 0.2
+  push_lsn_checkpoint_file
+}
+
+function enable_autoshutdown {
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
+}
+
+function enable_lsn_checkpoint_push {
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+}
+
+function disable_fail2ban {
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
+}
 
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
@@ -155,7 +180,7 @@ function report_health {
 }
 
 function start_supervisor {
-  # Start health reporting 
+  # Start health reporting
   report_health &
 
   # Start supervisord
@@ -210,6 +235,8 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   done
 
   chown -R postgres:postgres "${BASE_LOGS_FOLDER}"
+
+  mkdir -p "${DATA_VOLUME_MOUNTPOINT}/etc/logrotate"
 fi
 
 # Process init payload
@@ -229,21 +256,26 @@ find /etc/supervisor/ -type f -exec chmod 0660 {} +
 # Start services in the background
 if [ "${POSTGRES_ONLY:-}" == "true" ]; then
   sed -i "s|    - postgrest|  #  - postgrest|g" /etc/adminapi/adminapi.yaml
-  sed -i "s|files = services/\*.conf db-only/\*.conf|files = db-only/\*.conf|g" $SUPERVISOR_CONF
+  sed -i "s|files = services/\*.conf base-services/\*.conf|files = base-services/\*.conf|g" $SUPERVISOR_CONF
   /init/configure-adminapi.sh
 else
   sed -i "s|  #  - postgrest|    - postgrest|g" /etc/adminapi/adminapi.yaml
-  sed -i "s|files = db-only/\*.conf|files = services/\*.conf db-only/\*.conf|g" $SUPERVISOR_CONF
+  sed -i "s|files = base-services/\*.conf|files = services/\*.conf base-services/\*.conf|g" $SUPERVISOR_CONF
   configure_services
 fi
 
 if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/db-only/supa-shutdown.conf
+  enable_autoshutdown
+fi
+
+if [ "${ENVOY_ENABLED:-}" == "true" ]; then
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
+  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
 fi
 
 if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
+  disable_fail2ban
 fi
 
 if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
@@ -252,9 +284,14 @@ if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
-  enable_swap
-  create_lsn_checkpoint_file
+  if [ "${SWAP_DISABLED:-}" != "true" ]; then
+    enable_swap
+  fi
+  enable_lsn_checkpoint_push
+
+  trap graceful_shutdown SIGINT
 fi
 
 touch "$CONFIGURED_FLAG_PATH"
 start_supervisor
+push_lsn_checkpoint_file

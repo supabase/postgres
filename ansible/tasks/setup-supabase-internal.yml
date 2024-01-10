@@ -29,6 +29,10 @@
   shell: "/tmp/aws/install --update"
   become: true
 
+- name: AWS CLI - configure ipv6 support for s3
+  shell: |
+    aws configure set default.s3.use_dualstack_endpoint true
+
 - name: install Vector for logging
   become: yes
   apt:
@@ -51,6 +55,12 @@
   template:
     src: files/vector.service.j2
     dest: /etc/systemd/system/vector.service
+
+- name: fix permissions for vector config to be managed
+  shell:
+    cmd: |
+      chown -R vector:vector /etc/vector
+      chmod 0775 /etc/vector
 
 - name: vector - reload systemd
   systemd:
