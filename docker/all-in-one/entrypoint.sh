@@ -179,6 +179,12 @@ function report_health {
   fi
 }
 
+function run_prelaunch_hooks {
+    if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
+      sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
+    fi
+}
+
 function start_supervisor {
   # Start health reporting
   report_health &
@@ -293,5 +299,6 @@ if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
 fi
 
 touch "$CONFIGURED_FLAG_PATH"
+run_prelaunch_hooks
 start_supervisor
 push_lsn_checkpoint_file
