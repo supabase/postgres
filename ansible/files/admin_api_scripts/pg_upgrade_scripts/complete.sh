@@ -24,6 +24,30 @@ function cleanup {
     exit "$EXIT_CODE"
 }
 
+function execute_patches {
+    # Patching pg_cron ownership as it resets during upgrade
+    RESULT=$(run_sql -A -t -c "select count(*) > 0 as pg_is_owner from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';")
+
+    if [ "$RESULT" = "t" ]; then
+        QUERY=$(cat <<EOF
+        begin;
+        create temporary table cron_job as select * from cron.job;
+        create temporary table cron_job_run_details as select * from cron.job_run_details;
+        drop extension pg_cron;
+        create extension pg_cron schema pg_catalog;
+        insert into cron.job select * from cron_job;
+        insert into cron.job_run_details select * from cron_job_run_details;
+        select setval('cron.jobid_seq', coalesce(max(jobid), 0) + 1, false) from cron.job;
+        select setval('cron.runid_seq', coalesce(max(runid), 0) + 1, false) from cron.job_run_details;
+        update cron.job set username = 'postgres' where username = 'supabase_admin';
+        commit;
+EOF
+        )
+
+        run_sql -c "$QUERY"
+    fi
+}
+
 function complete_pg_upgrade {
     if [ -f /tmp/pg-upgrade-status ]; then
         echo "Upgrade job already started. Bailing."
@@ -45,9 +69,12 @@ function complete_pg_upgrade {
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
+    echo "4.1. Applying patches"
+    execute_patches || true
+
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-    echo "4.1. Applying authentication scheme updates"
+    echo "4.2. Applying authentication scheme updates"
     retry 3 apply_auth_scheme_updates
 
     sleep 5
