@@ -10,6 +10,8 @@ if [ -f "$REPORTING_CREDENTIALS_FILE" ]; then
     REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
 fi
 
+UPGRADE_STATUS_FILE="/root/pg_upgrade/status"
+
 function run_sql {
     psql -h localhost -U supabase_admin -d postgres "$@"
 }
@@ -32,10 +34,16 @@ function ship_logs {
         return 0
     fi
 
+    if [ ! -f "$UPGRADE_STATUS_FILE" ]; then
+        echo "No upgrade status file found. Skipping log upload."
+        return 0
+    fi
+
     HOSTNAME=$(hostname)
     DERIVED_REF="${HOSTNAME##*-}"
+    STATUS=$(cat "$UPGRADE_STATUS_FILE")
 
-    printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
+    printf -v BODY '{ "ref": "%s", "step": "%s", "status": "%", "content": %s }' "$DERIVED_REF" "completion" "$STATUS" "$(cat "$LOG_FILE" | jq -Rs '.')"
     curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
          -H "apikey: ${REPORTING_ANON_KEY}" \
          -H 'Content-type: application/json' \
@@ -60,4 +68,18 @@ function retry {
     fi
   done
   return 0
+}
+
+function create_pgupgrade_files_dir {
+    if [ ! -d /root/pg_upgrade ]; then
+        mkdir -p /root/pg_upgrade
+        chown postgres:postgres /root/pg_upgrade
+    fi
+}
+
+function report_upgrade_status {
+    create_pgupgrade_files_dir
+
+    STATUS=$1
+    echo "$STATUS" > "$UPGRADE_STATUS_FILE"
 }
