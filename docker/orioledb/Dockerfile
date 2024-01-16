@@ -32,7 +32,6 @@ ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
 ARG wrappers_release=0.2.0
 ARG hypopg_release=1.3.1
-ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.0.3
 ARG supautils_release=1.9.0
@@ -840,34 +839,6 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
-# 27-pg_repack.yml
-####################
-FROM ccache as pg_repack-source
-ARG pg_repack_release
-ARG pg_repack_release_checksum
-ADD --checksum=${pg_repack_release_checksum} \
-    "https://github.com/reorg/pg_repack/archive/refs/tags/ver_${pg_repack_release}.tar.gz" \
-    /tmp/pg_repack.tar.gz
-RUN tar -xvf /tmp/pg_repack.tar.gz -C /tmp && \
-    rm -rf /tmp/pg_repack.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    liblz4-dev \
-    libz-dev \
-    libzstd-dev \
-    libreadline-dev \
-    && rm -rf /var/lib/apt/lists/*
-# Build from source
-WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
-# Makefile:29: *** pg_repack requires PostgreSQL 9.4 or later. This is 3.  Stop.
-RUN sed -i -e "s|904|3|g" Makefile
-ENV USE_PGXS=1
-RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-    make -j$(nproc)
-# Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
-
-####################
 # 28-pgvector.yml
 ####################
 FROM ccache as pgvector-source
@@ -972,7 +943,6 @@ COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers-source /tmp/*.deb /tmp/
 COPY --from=hypopg-source /tmp/*.deb /tmp/
-COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
 COPY --from=supautils-source /tmp/*.deb /tmp/
