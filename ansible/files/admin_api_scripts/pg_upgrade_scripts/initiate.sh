@@ -194,7 +194,7 @@ function initiate_upgrade {
     fi
 
     echo "4. Setup locale if required"
-    if [[ ! "$(cat /etc/locale.gen | grep "^en_US.UTF-8")" ]]; then
+    if ! grep -q "^en_US.UTF-8" /etc/locale.gen ; then
         echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
         locale-gen
     fi
