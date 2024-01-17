@@ -1,3 +1,6 @@
+drop extension pg_cron;
+create extension pg_cron schema pg_catalog;
+
 grant usage on schema cron to postgres with grant option;
 grant all on all functions in schema cron to postgres with grant option;
 
