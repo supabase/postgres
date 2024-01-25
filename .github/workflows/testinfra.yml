@@ -72,12 +72,12 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          load: true
           build-args: |
             ${{ steps.args.outputs.result }}
           target: extensions
           tags: supabase/postgres:extensions
           platforms: linux/${{ matrix.arch }}
+          outputs: type=tar,dest=/tmp/extensions.tar
           cache-from: |
             type=gha,scope=${{ github.ref_name }}-extensions
             type=gha,scope=${{ github.base_ref }}-extensions
@@ -86,11 +86,8 @@ jobs:
 
       - name: Extract built packages
         run: |
-          mkdir -p /tmp/extensions ansible/files/extensions
-          docker save supabase/postgres:extensions | tar xv -C /tmp/extensions
-          for layer in /tmp/extensions/*/layer.tar; do
-            tar xvf "$layer" -C ansible/files/extensions --strip-components 1
-          done
+          mkdir -p ansible/files/extensions
+          tar xvf /tmp/extensions.tar -C ansible/files/extensions --strip-components 1
 
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
@@ -98,7 +95,6 @@ jobs:
       - name: Build Postgres deb
         uses: docker/build-push-action@v5
         with:
-          load: true
           file: docker/Dockerfile
           target: pg-deb
           build-args: |
@@ -109,6 +105,7 @@ jobs:
             CPPFLAGS=-mcpu=${{ matrix.mcpu }}
           tags: supabase/postgres:deb
           platforms: linux/${{ matrix.arch }}
+          outputs: type=tar,dest=/tmp/pg-deb.tar
           cache-from: |
             type=gha,scope=${{ github.ref_name }}-deb
             type=gha,scope=${{ github.base_ref }}-deb
@@ -117,11 +114,8 @@ jobs:
 
       - name: Extract Postgres deb
         run: |
-          mkdir -p /tmp/build ansible/files/postgres
-          docker save supabase/postgres:deb | tar xv -C /tmp/build
-          for layer in /tmp/build/*/layer.tar; do
-            tar xvf "$layer" -C ansible/files/postgres --strip-components 1
-          done
+          mkdir -p ansible/files/postgres
+          tar xvf /tmp/pg-deb.tar -C ansible/files/postgres --strip-components 1
 
       # Packer doesn't support skipping registering the AMI for the ebssurrogate
       # builder, so we register an AMI with a fixed name and run tests on an
