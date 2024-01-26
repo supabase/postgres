@@ -65,6 +65,11 @@ SQL
   fi
 }
 
+# Wait for Postgres to be up
+until pg_isready -h localhost > /dev/null 2>&1; 
+  do sleep 3
+done
+
 # Enable logging of disconnections so the script can check when the last disconnection happened
 run_sql -c "ALTER SYSTEM SET log_disconnections = 'on';"
 run_sql -c "SELECT pg_reload_conf();"
@@ -83,6 +88,9 @@ while true; do
     MAX_IDLE_TIME_MINUTES="$DEFAULT_MAX_IDLE_TIME_MINUTES"
   fi
 
-  check_activity
+  if [ "$MAX_IDLE_TIME_MINUTES" -gt 0 ] && [ "$MAX_IDLE_TIME_MINUTES" -lt 50000000 ]; then
+    check_activity
+  fi
+
   sleep 30
 done
