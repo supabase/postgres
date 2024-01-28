@@ -171,6 +171,8 @@ source "amazon-ebssurrogate" "source" {
     volume_size = 10
     volume_type = "gp2"
   }
+
+  associate_public_ip_address = true
 }
 
 # a build block invokes sources and runs provisioning steps on them.
