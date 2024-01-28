@@ -92,6 +92,15 @@ variable "force-deregister" {
   default = false
 }
 
+packer {
+  required_plugins {
+    amazon = {
+      source  = "github.com/hashicorp/amazon"
+      version = "~> 1"
+    }
+  }
+}
+
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
