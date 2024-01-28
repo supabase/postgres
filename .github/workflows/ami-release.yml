@@ -1,5 +1,6 @@
 name: Release AMI
 
+# no-op change to trigger build
 on:
   push:
     branches:
