@@ -93,8 +93,9 @@ plv8_release_checksum: sha256:1e108d5df639e4c189e1c5bdfa2432a521c126ca89e7e5a969
 
 pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
-pg_net_release: "0.7.1"
-pg_net_release_checksum: sha256:f403019fbffe5b3ec28816957ef81279dea1db5b008e3fb3bc39181a5e361940
+pg_net_release: "0.8.0"
+# To obtain the checksum use `wget https://github.com/supabase/pg_net/archive/refs/tags/v0.8.0.tar.gz -q -O- | sha256sum`
+pg_net_release_checksum: sha256:3a50845fdb2d41b0a1053e9e006d068638515b53efd1ad38a2c26fdf4935ce4e
 
 rum_release: "1.3.13"
 rum_release_checksum: sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
