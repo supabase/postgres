@@ -198,9 +198,12 @@ def host():
             MinCount=1,
             MaxCount=1,
             ImageId=image.id,
-            SecurityGroups=[
-                "supabase-postgres-security-group",
-                "pgbouncer-security-group",
+            NetworkInterfaces=[
+                {
+                    "DeviceIndex": 0,
+                    "AssociatePublicIpAddress": True,
+                    "Groups": ["sg-0a883ca614ebfbae0", "sg-014d326be5a1627dc"],
+                }
             ],
             UserData=f"""#cloud-config
 hostname: db-aaaaaaaaaaaaaaaaaaaa
