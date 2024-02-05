@@ -108,7 +108,7 @@ ENV LC_COLLATE=C.UTF-8
 FROM base as builder
 # Install build dependencies
 COPY --from=pg-dev /tmp /tmp
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
     /tmp/*.deb \
     build-essential \
     checkinstall \
