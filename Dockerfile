@@ -89,6 +89,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN set -ex; \
     export PYTHONDONTWRITEBYTECODE=1; \
     apt-get update; \
+    apt-get install -y --no-install-recommends libssl-dev; \
     apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
     sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
     apt-get install -y --no-install-recommends /tmp/*.deb; \
@@ -106,9 +107,8 @@ ENV LC_COLLATE=C.UTF-8
 
 FROM base as builder
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades libssl1.1="1.1.1f-1ubuntu2.20"
 COPY --from=pg-dev /tmp /tmp
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     build-essential \
     checkinstall \
