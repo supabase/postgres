@@ -158,7 +158,7 @@ FROM base as builder
 # Install build dependencies
 COPY --from=pg-dev /tmp /tmp
 RUN apt-get update && \
-    rm /tmp/libssl-dev* \
+    rm -f /tmp/libssl-dev* && \
     apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     build-essential \
