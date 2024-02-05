@@ -89,7 +89,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN set -ex; \
     export PYTHONDONTWRITEBYTECODE=1; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libssl-dev; \
+    apt-get install -y --no-install-recommends libssl-dev/focal; \
     apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
     sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
     apt-get install -y --no-install-recommends /tmp/*.deb; \
