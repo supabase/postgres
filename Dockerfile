@@ -138,7 +138,6 @@ COPY --from=pg /tmp /tmp
 ENV DEBIAN_FRONTEND=noninteractive
 RUN set -ex; \
     export PYTHONDONTWRITEBYTECODE=1; \
-    echo "Package: libssl-dev\nPin: release a=focal\nPin-Priority: 1000\n" > /etc/apt/preferences.d/99-libssl-dev.pref; \
     apt-get update; \
     apt-get install -y --no-install-recommends /tmp/postgresql-common_*.deb /tmp/postgresql-client-common_*.deb; \
     sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf; \
@@ -158,7 +157,9 @@ ENV LC_COLLATE=C.UTF-8
 FROM base as builder
 # Install build dependencies
 COPY --from=pg-dev /tmp /tmp
-RUN apt-get update && apt-get install -y --no-install-recommends --allow-downgrades \
+RUN apt-get update && \
+    rm /tmp/libssl-dev* \
+    apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     build-essential \
     checkinstall \
