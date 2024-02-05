@@ -106,8 +106,9 @@ ENV LC_COLLATE=C.UTF-8
 
 FROM base as builder
 # Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends libssl1.1="1.1.1f-1ubuntu2.20"
 COPY --from=pg-dev /tmp /tmp
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     build-essential \
     checkinstall \
