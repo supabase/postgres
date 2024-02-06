@@ -293,11 +293,6 @@ runcmd:
             logger.warning("kong not ready")
             return False
 
-        cmd = host.run("printf \\\\0 > '/dev/tcp/localhost/6543'")
-        if cmd.failed is True:
-            logger.warning("pgbouncer not ready")
-            return False
-
         cmd = host.run("sudo fail2ban-client status")
         if cmd.failed is True:
             logger.warning("fail2ban not ready")
