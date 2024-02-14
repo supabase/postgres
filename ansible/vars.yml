@@ -88,8 +88,8 @@ supautils_release_checksum: sha256:bc2f2b6393f865e7db973630334e1ce8b561e8774e23c
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
 
-plv8_release: "3.2.2"
-plv8_release_checksum: sha256:2d1491280505afcdff629191451d0891d3258dbdc483992aa7449a8517335d98
+plv8_release: "3.1.10"
+plv8_release_checksum: sha256:7096c3290928561f0d4901b7a52794295dc47f6303102fae3f8e42dd575ad97d
 
 pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
