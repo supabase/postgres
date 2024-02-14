@@ -208,7 +208,10 @@ COPY docker/all-in-one/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgres
 COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
 
 # Customizations for envoy
+ARG envoy_release
+ADD --chmod=755 --chown=envoy:envoy "https://raw.githubusercontent.com/envoyproxy/envoy/v${envoy_release}/restarter/hot-restarter.py" /opt/envoy-hot-restarter.py
 COPY --chmod=775 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
+COPY --chmod=755 --chown=envoy:envoy ansible/files/start-envoy.sh /opt/
 
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
