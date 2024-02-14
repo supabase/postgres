@@ -456,11 +456,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ninja-build \
     git \
     libtinfo5 \
+    libstdc++-10-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
 ENV DOCKER=1
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    git init && \
+    rm -rf deps/v8-cmake/ && \
+    git submodule add https://github.com/bnoordhuis/v8-cmake.git deps/v8-cmake/ && \
+    git submodule update --init --recursive && \
     make
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
