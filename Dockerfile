@@ -445,7 +445,7 @@ FROM ccache as plv8-source
 ARG plv8_release
 ARG plv8_release_checksum
 ADD --checksum=${plv8_release_checksum} \
-    "https://github.com/plv8/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
+    "https://github.com/supabase/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
     /tmp/plv8.tar.gz
 RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
