@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/plv8
     paths:
       - ".github/workflows/package-plv8.yml"
       - "Dockerfile"
