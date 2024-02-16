@@ -89,7 +89,7 @@ pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
 
 plv8_release: "3.1.5"
-plv8_release_checksum: sha256:1e108d5df639e4c189e1c5bdfa2432a521c126ca89e7e5a969d46899ca7bf106
+plv8_release_checksum: sha256:2edf9a219844b2b6abae09c0bdb840c5b0d6e3dd418631744c7326c0b107cc10
 
 pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
 
