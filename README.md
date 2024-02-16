@@ -26,6 +26,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [plv8](https://github.com/plv8/plv8) | [commit](https://github.com/plv8/plv8/commit/bcddd92f71530e117f2f98b92d206dafe824f73a) | Write in Javascript functions in Postgres. |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | [commit](https://github.com/pgexperts/pg_plan_filter/commit/5081a7b5cb890876e67d8e7486b6a64c38c9a492) | Only allow statements that fulfill set criteria to be executed. |
 | [pg_net](https://github.com/supabase/pg_net) | [v0.6.1](https://github.com/supabase/pg_net/releases/tag/v0.6.1) | Expose the SQL interface for async networking. |
+| [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.5.0](https://github.com/reorg/pg_repack/releases/tag/ver_1.5.0) | Tool to remove bloat from tables and indexes
 | [rum](https://github.com/postgrespro/rum) | [1.3.13](https://github.com/postgrespro/rum/releases/tag/1.3.13) | An alternative to the GIN index. |
 | [pg_hashids](https://github.com/iCyberon/pg_hashids) | [commit](https://github.com/iCyberon/pg_hashids/commit/83398bcbb616aac2970f5e77d93a3200f0f28e74) | Generate unique identifiers from numbers. |
 | [pgsodium](https://github.com/michelp/pgsodium) | [3.1.0](https://github.com/michelp/pgsodium/releases/tag/2.0.0) | Modern encryption API using libsodium. |

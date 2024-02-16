@@ -132,6 +132,9 @@ wrappers_release: "0.2.0"
 hypopg_release: "1.3.1"
 hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
 
+pg_repack_release: "1.5.0"
+pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52
+
 pgvector_release: "0.6.0"
 pgvector_release_checksum: sha256:b0cf4ba1ab016335ac8fb1cada0d2106235889a194fffeece217c5bda90b2f19
 
