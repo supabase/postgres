@@ -56,6 +56,11 @@
     src: files/vector.service.j2
     dest: /etc/systemd/system/vector.service
 
+- name: configure tmpfiles for postgres - overwrites upstream package
+  template:
+    src: files/postgresql_config/tmpfiles.postgresql.conf
+    dest: /etc/tmpfiles.d/postgresql-common.conf
+
 - name: fix permissions for vector config to be managed
   shell:
     cmd: |
