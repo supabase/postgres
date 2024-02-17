@@ -1,7 +1,7 @@
 -- migrate:up
 
-ALTER ROLE supabase_admin SET search_path TO "\$user",public,auth,extensions;
-ALTER ROLE postgres SET search_path TO "\$user",public,extensions;
+ALTER ROLE supabase_admin SET search_path TO "$user",public,auth,extensions;
+ALTER ROLE postgres SET search_path TO "$user",public,extensions;
 
 -- Trigger for pg_cron
 CREATE OR REPLACE FUNCTION extensions.grant_pg_cron_access()
