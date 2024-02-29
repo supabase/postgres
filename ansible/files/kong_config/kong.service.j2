@@ -4,6 +4,9 @@ After=postgrest.service gotrue.service adminapi.service
 Wants=postgrest.service gotrue.service adminapi.service
 Conflicts=envoy.service
 
+# Ensures that Kong service is stopped before Envoy service is started
+Before=envoy.service
+
 [Service]
 Type=forking
 ExecStart=/usr/local/bin/kong start -c /etc/kong/kong.conf
