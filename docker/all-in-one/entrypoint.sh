@@ -88,7 +88,11 @@ function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
 
-  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql-custom/pgsodium_root.key
+  if [ ! -d ./etc/postgresql-custom/pgsodium ]; then
+    mkdir ./etc/postgresql-custom/pgsodium
+  fi
+
+  tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql-custom/pgsodium/pgsodium_root.key
   echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >> $PG_CONF
 
   # TODO (darora): walg enablement is temporarily performed here until changes from https://github.com/supabase/postgres/pull/639 get picked up
@@ -198,7 +202,12 @@ ulimit -n 65536
 
 # Update pgsodium root key
 if [ "${PGSODIUM_ROOT_KEY:-}" ]; then
-  echo "${PGSODIUM_ROOT_KEY}" > /etc/postgresql-custom/pgsodium_root.key
+
+  if [ ! -d /etc/postgresql-custom/pgsodium ]; then
+    mkdir /etc/postgresql-custom/pgsodium
+  fi
+
+  echo "${PGSODIUM_ROOT_KEY}" > /etc/postgresql-custom/pgsodium/pgsodium_root.key
 fi
 
 # Update pgdata directory

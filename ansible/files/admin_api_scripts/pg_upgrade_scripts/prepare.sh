@@ -11,5 +11,9 @@ set -euo pipefail
 
 systemctl stop postgresql
 
-cp /etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+if [ ! -d /data/pgsodium ]; then
+  mkdir /data/pgsodium
+fi
+
+cp /etc/postgresql-custom/pgsodium/pgsodium_root.key /data/pgsodium/pgsodium_root.key
 umount /data
