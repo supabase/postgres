@@ -96,8 +96,8 @@ cleanup() {
         run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
-    echo "Removing SUPERUSER grant from postgres"
-    run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
+    echo "Removing temporary migration superuser role"
+    run_sql -c "REASSIGN OWNED BY temp_migration_superuser TO supabase_admin; DROP ROLE temp_migration_superuser;"
 
     if [ "$IS_DRY_RUN" = false ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
@@ -227,9 +227,9 @@ function initiate_upgrade {
 
     echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
-    
-    echo "8. Granting SUPERUSER to postgres user"
-    run_sql -c "ALTER USER postgres WITH SUPERUSER;"
+
+    echo "8. Creating temporary migration superuser role"
+    run_sql -c "CREATE ROLE temp_migration_superuser LOGIN SUPERUSER;"
 
     if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
         mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
@@ -281,7 +281,8 @@ function initiate_upgrade {
     --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
-    --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
+    --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
+    --username=temp_migration_superuser
 EOF
     )
 
