@@ -285,6 +285,11 @@ function initiate_upgrade {
 EOF
     )
 
+    # copying custom configurations
+    echo "11. Copying custom configurations"
+    mkdir -p "$MOUNT_POINT/conf"
+    cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
+
     if [ "$IS_DRY_RUN" = true ]; then
         UPGRADE_COMMAND="$UPGRADE_COMMAND --check"
     else 
@@ -301,11 +306,6 @@ EOF
     fi
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
-
-    # copying custom configurations
-    echo "11. Copying custom configurations"
-    mkdir -p "$MOUNT_POINT/conf"
-    cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
 
     # removing wal-g config as to allow it to be explicitly enabled on the new instance
     rm -f "$MOUNT_POINT/conf/wal-g.conf"
