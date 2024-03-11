@@ -21,7 +21,6 @@ ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
 ALTER USER supabase_admin WITH PASSWORD 'postgres';
 ALTER USER postgres WITH PASSWORD 'postgres';
 ALTER USER authenticator WITH PASSWORD 'postgres';
-ALTER USER pgbouncer WITH PASSWORD 'postgres';
 ALTER USER supabase_auth_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_storage_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_replication_admin WITH PASSWORD 'postgres';
@@ -48,8 +47,6 @@ node_exporter_additional_args:
 cert_path: /etc/ssl/adminapi/server.crt
 key_path: /etc/ssl/adminapi/server.key
 upstream_metrics_refresh_duration: 60s
-pgbouncer_endpoints:
-    - 'postgres://pgbouncer:postgres@localhost:6543/pgbouncer'
 fail2ban_socket: /var/run/fail2ban/fail2ban.sock
 upstream_metrics_sources:
     -
@@ -80,7 +77,6 @@ firewall:
         - 0.0.0.0/0
     filtered_ports:
         - 5432
-        - 6543
     unfiltered_ports:
         - 80
         - 443
@@ -140,7 +136,6 @@ init_json_content = f"""
   "logflare_api_key": "",
   "logflare_pitr_errors_source": "",
   "logflare_postgrest_source": "",
-  "logflare_pgbouncer_source": "",
   "logflare_db_source": "",
   "logflare_gotrue_source": "",
   "anon_key": "{anon_key}",
@@ -217,7 +212,6 @@ write_files:
     - {{path: /etc/wal-g/config.json, content: {gzip_then_base64_encode(walg_config_json_content)}, permissions: '0664', owner: 'wal-g:wal-g', encoding: gz+b64}}
     - {{path: /tmp/init.json, content: {gzip_then_base64_encode(init_json_content)}, permissions: '0600', encoding: gz+b64}}
 runcmd:
-    - 'sudo echo \"pgbouncer\" \"postgres\" >> /etc/pgbouncer/userlist.txt'
     - 'cd /tmp && aws s3 cp --region ap-southeast-1 s3://init-scripts-staging/project/init.sh .'
     - 'bash init.sh "staging"'
     - 'rm -rf /tmp/*'

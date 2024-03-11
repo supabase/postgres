@@ -20,7 +20,7 @@ variable "ami_regions" {
 
 variable "ansible_arguments" {
   type    = string
-  default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
+  default = "--skip-tags install-postgrest,install-supabase-internal"
 }
 
 variable "aws_access_key" {

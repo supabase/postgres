@@ -43,14 +43,12 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 | Enhancement | Description |
 | ------------- | ------------- |
 | [fail2ban filter](https://github.com/supabase/postgres/blob/develop/ansible/files/fail2ban_config/filter-postgresql.conf.j2) for PostgreSQL access | Monitors for brute force attempts over at port `5432`. |
-| [fail2ban filter](https://github.com/supabase/postgres/blob/develop/ansible/files/fail2ban_config/filter-pgbouncer.conf.j2) for PgBouncer access | Monitors for brute force attempts over at port `6543`. |
 
 ## Additional Goodies
 *This is only available for our AWS EC2/ DO Droplet images*
 
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
-| [PgBouncer](https://www.pgbouncer.org/) | [1.16.1](http://www.pgbouncer.org/changelog.html#pgbouncer-116x) | Set up Connection Pooling. |
 | [PostgREST](https://postgrest.org/en/stable/) | [v10.1.1](https://github.com/PostgREST/postgrest/releases/tag/v10.1.1) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. |
 
@@ -63,18 +61,16 @@ See all installation instructions in the [repo wiki](https://github.com/supabase
 [![AWS](https://github.com/supabase/postgres/blob/develop/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
 ### Marketplace Images
-|   | Postgres & Extensions | PgBouncer | PostgREST | WAL-G |
+|   | Postgres & Extensions | PostgREST | WAL-G |
 |---|:---:|:---:|:---:|:---:|
-| Supabase Postgres |  ✔️   | ❌    | ❌   |  ✔️   |
-| Supabase Postgres: PgBouncer Bundle  |  ✔️   |  ✔️  | ❌    |   ✔️ |
-| Supabase Postgres: PostgREST Bundle |  ✔️   |  ❌  |  ✔️   |   ✔️ |
-| Supabase Postgres: Complete Bundle |  ✔️  |  ✔️   | ✔️   | ✔️   |
+| Supabase Postgres |  ✔️   | ❌   |  ✔️   |
+| Supabase Postgres: PostgREST Bundle |  ✔️   |  ✔️   |   ✔️ |
+| Supabase Postgres: Complete Bundle |  ✔️  | ✔️   | ✔️   |
 
 #### Availability
 |   | AWS ARM | AWS x86 | Digital Ocean x86 |
 |---|:---:|:---:|:---:|
 | Supabase Postgres | Coming Soon | Coming Soon | Coming Soon |
-| Supabase Postgres: PgBouncer Bundle  | Coming Soon | Coming Soon | Coming Soon |
 | Supabase Postgres: PostgREST Bundle | Coming Soon | Coming Soon | Coming Soon |
 | Supabase Postgres: Complete Bundle | Coming Soon | Coming Soon | Coming Soon |
 

@@ -245,11 +245,6 @@ function clean_system {
 	# https://github.com/fail2ban/fail2ban/issues/1593
 	touch /mnt/var/log/auth.log
 
-	touch /mnt/var/log/pgbouncer.log
-	if [ -f /usr/bin/chown ]; then
-		chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
-	fi
-
 	# Setup postgresql logs
 	mkdir -p /mnt/var/log/postgresql
 	if [ -f /usr/bin/chown ]; then

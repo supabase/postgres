@@ -52,7 +52,6 @@
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$' }
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$' }
     - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$' }
-    - { line: '              ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""pgbouncer".*$' }
   become: yes
   tags:
     - install-supabase-internal

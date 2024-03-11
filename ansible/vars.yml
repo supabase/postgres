@@ -6,10 +6,6 @@ postgresql_major: "15"
 postgresql_release: "15.1"
 postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
 
-# Non Postgres Extensions
-pgbouncer_release: "1.19.0"
-pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
-
 # to get these use `wget https://github.com/PostgREST/postgrest/releases/download/v12.0.2/postgrest-v12.0.2-ubuntu-aarch64.tar.xz -q -O- | sha1sum`
 postgrest_release: "12.0.2"
 postgrest_arm_release_checksum: sha1:a08eaa2af548d44b4c8ea61b0223fb7019f5c768
