@@ -1,11 +1,11 @@
-ARG postgres_version=15.1.0.148
+ARG postgres_version=15.1.1.24
 
 ARG postgrest_release=10.1.2
 ARG gotrue_release=2.130.0
 ARG adminapi_release=0.62.0
 ARG adminmgr_release=0.14.3
 ARG vector_release=0.22.3
-ARG postgres_exporter_release=0.9.0
+ARG postgres_exporter_release=0.15.0
 ARG envoy_release=1.28.0
 
 # Update `gateway-28` in the URL below if upgrading above v2.8.x.
