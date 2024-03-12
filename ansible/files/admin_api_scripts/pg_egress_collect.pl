@@ -2,13 +2,13 @@
 
 # This script receive tcpdump output through STDIN and does:
 #
-# 1. extract outgoing TCP packet length on the 1st non-loopback device port 5432 and 6543
+# 1. extract outgoing TCP packet length on the 1st non-loopback device port 5432
 # 2. sum the length up to one minute
 # 3. save the total length to file (default is /tmp/pg_egress_collect.txt) per minute
 #
 # Usage:
 #
-# tcpdump -s 128 -Q out -nn -tt -vv -p -l 'tcp and (port 5432 or port 6543)' | perl pg_egress_collect.pl -o /tmp/output.txt
+# tcpdump -s 128 -Q out -nn -tt -vv -p -l 'tcp and port 5432' | perl pg_egress_collect.pl -o /tmp/output.txt
 #
 
 use POSIX;

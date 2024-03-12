@@ -12,7 +12,6 @@
   with_items:
     - snapd
     - postgresql
-    - pgbouncer
     - fail2ban
     - motd-news
     - vector

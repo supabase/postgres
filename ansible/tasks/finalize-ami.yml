@@ -14,13 +14,6 @@
     rule: allow
     port: "5432"
 
-- name: UFW - Allow connections to postgreSQL (6543)
-  ufw:
-    rule: allow
-    port: "6543"
-  tags:
-    - install-pgbouncer
-
 - name: UFW - Allow connections to http (80)
   ufw:
     rule: allow
