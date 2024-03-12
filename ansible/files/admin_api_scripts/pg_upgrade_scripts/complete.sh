@@ -24,6 +24,32 @@ function cleanup {
     exit "$EXIT_CODE"
 }
 
+function execute_patches {
+    # Patch pg_net grants
+    PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';")
+
+    if [ "$PG_NET_ENABLED" = "t" ]; then
+        PG_NET_GRANT_QUERY=$(cat <<EOF
+        GRANT USAGE ON SCHEMA net TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+
+        ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
+        ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
+
+        ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
+        ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
+
+        REVOKE ALL ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
+        REVOKE ALL ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
+
+        GRANT EXECUTE ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+        GRANT EXECUTE ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+EOF
+        )
+
+        run_sql -c "$PG_NET_GRANT_QUERY"
+    fi
+}
+
 function complete_pg_upgrade {
     if [ -f /tmp/pg-upgrade-status ]; then
         echo "Upgrade job already started. Bailing."
@@ -45,9 +71,12 @@ function complete_pg_upgrade {
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
+    echo "4.1. Applying patches"
+    execute_patches || true
+
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-    echo "4.1. Applying authentication scheme updates"
+    echo "4.2. Applying authentication scheme updates"
     retry 3 apply_auth_scheme_updates
 
     sleep 5
