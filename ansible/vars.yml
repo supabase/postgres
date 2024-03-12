@@ -140,3 +140,6 @@ pgvector_release_checksum: sha256:b0cf4ba1ab016335ac8fb1cada0d2106235889a194fffe
 
 pg_tle_release: "1.3.2"
 pg_tle_release_checksum: sha256:d04f72d88b21b954656609743560684ac42645b64a36c800d4d2f84d1f180de1
+
+plrust_release: "1.2.8"
+plrust_language_version: "1.72.0"
