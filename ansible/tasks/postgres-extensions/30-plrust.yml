@@ -70,9 +70,9 @@
   args:
     executable: /bin/bash
 
-- name: install plrust
-  ansible.builtin.apt:
-    deb: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-bullseye-pg{{ postgresql_major }}-{{ platform }}.deb"
+- name: plrust - download package
+  get_url:
+    url: "https://github.com/tcdi/plrust/releases/download/v{{ plrust_release }}/plrust-trusted-{{ plrust_release }}_{{ plrust_language_version }}-debian-bullseye-pg{{ postgresql_major }}-{{ platform }}.deb"
     dest: /tmp/plrust-{{ plrust_release }}.deb
     timeout: 60
 
