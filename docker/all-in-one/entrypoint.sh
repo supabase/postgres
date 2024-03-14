@@ -84,6 +84,17 @@ function disable_fail2ban {
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
 }
 
+function disable_gotrue {
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+}
+
+function replace_kong_envoy {
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
+  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
+}
+
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
@@ -274,19 +285,18 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   enable_autoshutdown
 fi
 
+
 if [ "${ENVOY_ENABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
-  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
+  replace_kong_envoy
 fi
 
 if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
   disable_fail2ban
 fi
 
+
 if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+  disable_gotrue
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
