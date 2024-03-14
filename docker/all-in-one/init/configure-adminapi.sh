@@ -20,12 +20,10 @@ if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   chmod 700 -R $ADMIN_API_CERT_DIR
 else
   PROJECT_REF=${PROJECT_REF:-default}
-  PGBOUNCER_PASSWORD=${PGBOUNCER_PASSWORD:-$POSTGRES_PASSWORD}
   SUPABASE_URL=${SUPABASE_URL:-https://api.supabase.io/system}
   REPORTING_TOKEN=${REPORTING_TOKEN:-token}
 
   sed -i "s|{{ .JwtSecret }}|$JWT_SECRET|g" $ADMIN_API_CONF
-  sed -i "s|{{ .PgbouncerPassword }}|$PGBOUNCER_PASSWORD|g" $ADMIN_API_CONF
   sed -i "s|{{ .ProjectRef }}|$PROJECT_REF|g" $ADMIN_API_CONF
   sed -i "s|{{ .SupabaseUrl }}|$SUPABASE_URL|g" $ADMIN_API_CONF
   sed -i "s|{{ .ReportingToken }}|$REPORTING_TOKEN|g" $ADMIN_API_CONF
