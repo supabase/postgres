@@ -179,30 +179,6 @@ auth_users:
         usage: "GAUGE"
         description: "Number of users in the project db"
 
-auth_stats:
-  master: true
-  cache_seconds: 3600
-  query: |
-    select
-      count(*) filter (
-        where payload ->> 'action' = 'user_invited'
-           or (payload ->> 'action' in ('user_confirmation_requested', 'user_recovery_requested')
-               and payload ->> 'actor_username' like '%@%')
-      ) as total_auth_emails,
-      count(*) filter (
-        where payload ->> 'action' in ('user_confirmation_requested', 'user_recovery_requested')
-          and payload ->> 'actor_username' not like '%@%'
-        ) as total_auth_texts
-    from
-      auth.audit_log_entries
-  metrics:
-    - total_auth_emails:
-        usage: "COUNTER"
-        description: "Total number of auth emails sent"
-    - total_auth_texts:
-        usage: "COUNTER"
-        description: "Total number of auth texts sent"
-
 realtime:
   master: true
   cache_seconds: 60
