@@ -17,7 +17,7 @@ https://github.com/NixOS/nixpkgs/pull/249030
 ## Adding the major version to this repository
 
 It isn't well abstracted, unfortunately. In short: look for the strings `14` and
-`15` under `flake.nix` and `tools/`. More specifically:
+`15` under `flake.nix` and `nix/tools/`. More specifically:
 
 - Add `psql_XX` to `basePackages` in `flake.nix`
 - Ditto with `checks` in `flake.nix`

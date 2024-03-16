@@ -32,3 +32,5 @@ anything that depends on it.
 The names `final` and `prev` are used to refer to packages in terms of other
 overlays. For more information about this, see the
 [NixOS Wiki Page for Overlays](https://nixos.wiki/wiki/Overlays).
+
+We also use an overlay to override the default build recipe for `postgresql_16`, and instead feed it the specially patched postgres for use with orioledb extension. This experimental variant can be built with `nix build .#psql_orioledb_16/bin`. This will build this patched version of postgres, along with all extensions and wrappers that currently are known to work with orioledb.

@@ -29,12 +29,13 @@ For a good example of a pgTAP test as a pull request, check out
 
 `nix flake check` gets its results cached, so if you do it again the tests won't rerun. If you change a file then it will run again.
 
-If you want to force rerun without modifying a file, you can do:
+<!-- If you want to force rerun without modifying a file, you can do:
 
 ```
-nix build .#checks.x86_64-linux.psql_14 --rebuild
 nix build .#checks.x86_64-linux.psql_15 --rebuild
+nix build .#checks.x86_64-linux.psql_16 --rebuild
 ```
+-->
 
 Limitation: currently there's no way to rerun all the tests, so you have to specify the check attribute.
 
@@ -57,7 +58,7 @@ extension authors), step 3 isn't guaranteed, so that's what the whole idea is
 designed to test.
 
 To add data into the database, modify the
-[data.sql](../tests/migrations/data.sql) script and add whatever you want into
+[data.sql](../nix/tests/migrations/data.sql) script and add whatever you want into
 it. This script gets loaded into the old version of the database at startup, and
 it's expected that the new version of the database can handle it.
 

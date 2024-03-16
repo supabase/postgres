@@ -18,7 +18,7 @@ nix-update --flake psql_15/exts/pg_foobar
 git commit -asm "pg_foobar: update to latest release"
 ```
 
-It doesn't matter if you use `psql_14` or `psql_15` here, because `nix-update`
+It doesn't matter if you use `psql_15` or `psql_16` here, because `nix-update`
 will look at the _file_ that extension is defined in, in order to update the
 source code.
 
@@ -56,13 +56,13 @@ No extra arguments are necessary. You can specify an exact release tag using the
 `--version=<xyz>` flag. Using the syntax `--version=branch` means "update to the
 latest version on the default branch."
 
-## Example PRs
+<!-- ## Example PRs
 
 - https://github.com/supabase/nix-postgres/pull/9 updates `pg_net` to the latest
   release
 - https://github.com/supabase/nix-postgres/pull/7 updates `pg_hashids` to the
   latest `trunk` tip
-
+-->
 ## Other notes
 
 See issue [#5](https://github.com/supabase/nix-postgres/issues/5) for more

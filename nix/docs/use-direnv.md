@@ -88,54 +88,6 @@ What just happened is that we populated the ambient shell environment with tools
 specified inside of `flake.nix` &mdash; we'll cover Flakes later. But for now,
 your tools are provisioned!
 
-## Run `just` to build the code
-
-Previously, we needed to run `nix develop` to get access to the `just` command.
-No longer! It's now available in your shell:
-
-```
-$ which just
-/nix/store/1di6nb4qsv86907l3xarw4llzdss2g89-just-1.14.0/bin/just
-```
-
-```
-$ just b
-...
-```
-
-Viola, done!
-
-## Go back `$HOME` and return again
-
-When you `cd ~`, direnv will automatically unload the `.envrc` file for you:
-
-```
-$ cd ~
-direnv: unloading
-```
-
-Now, `just` is no longer available:
-
-```
-$ just build-all
-just: command not found
-```
-
-And if you go back, it is!
-
-```
-$ cd $HOME/nix-postgres
-direnv: loading ~/work/nix-postgres/.envrc
-direnv: loading ~/work/nix-postgres/.envrc.recommended
-direnv: loading https://raw.githubusercontent.com/nix-community/nix-direnv/2.3.0/direnvrc (sha256-Dmd+j63L84wuzgyjITIfSxSD57Tx7v51DMxVZOsiUD8=)
-direnv: using flake
-...
-```
-
-```
-$ just build-all
-...
-```
 
 ## The power of `direnv`
 

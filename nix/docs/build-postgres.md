@@ -1,10 +1,10 @@
-# 01 &mdash; Use this repository
+# 01 &mdash; Using supabase nix
 
 Let's clone this repo:
 
 ```bash
-git clone https://github.com/supabase/nix-postgres $HOME/tmp-nix-postgres
-cd $HOME/tmp-nix-postgres
+git clone https://github.com/supabase/postgres $HOME/supabase-postgres
+cd $HOME/supabase-postgres
 ```
 
 ## Hashes for everyone
@@ -97,12 +97,12 @@ _new_ hash.
 The ability to refer to a piece of data by its hash, by some notion of
 _content_, is a very powerful primitive, as we'll see later.
 
-## Build a different version: v14
+## Build a different version: v16
 
-What if we wanted PostgreSQL 14 and plugins? Just replace `_15` with `_14`:
+What if we wanted PostgreSQL 16 and plugins? Just replace `_15` with `_16`:
 
 ```
-nix build .#psql_14/bin
+nix build .#psql_16/bin
 ```
 
 You're done:
@@ -112,69 +112,13 @@ $ readlink result
 /nix/store/p7ziflx0000s28bfb213jsghrczknkc4-postgresql-and-plugins-14.8
 ```
 
-## Do it all at once: using `just`
-
-But remembering that long name is tedious. (Don't worry, there's a method to
-query the names, and we will go over it later.) What if we just wanted to build
-something quickly?
-
-There's a great tool for this. It's called
-[**Just**](https://github.com/casey/just), and all it does is make it easy to
-run commands. Let's use that.
-
-Luckily, there's a `justfile` that can be used to build multiple things. Here's
-the `build-all` rule in our [`justfile`](../justfile). It should be obvious if
-you're familiar with `make` and `Makefile`s:
-
-```
-build-all:
-    nix build .#psql_14/bin .#psql_14/docker
-    nix build .#psql_15/bin .#psql_15/docker
-```
-
-So this actually builds _four_ things: v14 and v15 of Postgres, both as a binary
-distribution _and_ as a Docker image. That's handy, instead of writing it all
-out. So we run `just build-all`, and...
-
-```
-$ just build-all
-Command 'just' not found, did you mean:
-...
-```
-
-Ouch. So we have to install `just` using Cargo or something else first. Or do
-we?
 
 ## Using `nix develop`
 
-Nope! Here's how we can add `just` to our `$PATH`, transparently in a subshell:
 
-```
-$ which just
-
-$ echo $$
-766420
-
-$ nix develop
-
-$ which just
-/nix/store/1di6nb4qsv86907l3xarw4llzdss2g89-just-1.14.0/bin/just
-
-$ echo $$
-996868
-
-$ just build-all
-...
-
-$ exit
-
-$ echo $$
-766420
-```
-
-Done! As you can see, `nix develop .` will just drop you in a subshell with
+`nix develop .` will just drop you in a subshell with
 tools you need _ready to go instantly_. That's all you need to do! And once that
-shell goes away, `just` will be removed from your `$PATH` as well.
+shell goes away, nix installed tools will be removed from your `$PATH` as well.
 
 There's an even easier way to do this
 [that is completely transparent to you, as well](./use-direnv.md).
