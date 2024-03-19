@@ -47,7 +47,7 @@
             (import ./nix/overlays/cargo-pgrx.nix)
             (import ./nix/overlays/gdal-small.nix)
             (import ./nix/overlays/psql_16-oriole.nix)
-            
+
           ];
         };
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
@@ -61,7 +61,7 @@
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx.nix)
             (import ./nix/overlays/gdal-small.nix)
-            
+
           ];
         };
 
@@ -79,7 +79,7 @@
               --set LOCALE_ARCHIVE "${pkgs.glibcLocales}/lib/locale/locale-archive"
           done
         '';
-        
+
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
@@ -150,7 +150,7 @@
 
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
-        orioledbExtension = ourExtensions ++ [./nix/ext/orioledb.nix ];
+        orioledbExtension = ourExtensions ++ [ ./nix/ext/orioledb.nix ];
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
