@@ -22,7 +22,7 @@ buildPgrxExtension rec {
   meta = with lib; {
     description = "GraphQL support for PostreSQL";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

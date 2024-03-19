@@ -54,7 +54,7 @@ buildPgrxExtension_0_11_2 rec {
   meta = with lib; {
     description = "Various Foreign Data Wrappers (FDWs) for PostreSQL";
     homepage = "https://github.com/supabase/wrappers";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "HTTP client for Postgres";
     homepage = "https://github.com/pramsey/${pname}";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

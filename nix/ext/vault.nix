@@ -23,7 +23,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Store encrypted secrets in PostgreSQL";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

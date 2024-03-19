@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Modern cryptography for PostgreSQL";
     homepage = "https://github.com/michelp/${pname}";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

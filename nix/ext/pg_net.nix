@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Async networking for Postgres";
     homepage = "https://github.com/supabase/pg_net";
-    maintainers = with maintainers; [ thoughtpolice ];
+    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };
