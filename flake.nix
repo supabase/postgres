@@ -131,9 +131,6 @@
         # rollout new versions of these critical things easier without having to
         # go through the upstream release engineering process.
         ourExtensions = [
-          # see comment in ./nix/ext/citus.nix
-          # for why citus is deactivated
-          #./nix/ext/citus.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
           ./nix/ext/pg_net.nix

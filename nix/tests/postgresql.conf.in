@@ -717,8 +717,6 @@ default_text_search_config = 'pg_catalog.english'
 
 #local_preload_libraries = ''
 #session_preload_libraries = ''
-#FIXME if we re-activate citus we'll need to add it back in here
-#shared_preload_libraries = 'citus,auto_explain,pgsodium'
 shared_preload_libraries = 'auto_explain,pgsodium'
 #jit_provider = 'llvmjit'		# JIT library to use
 
