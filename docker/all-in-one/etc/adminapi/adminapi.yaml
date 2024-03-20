@@ -16,6 +16,8 @@ node_exporter_additional_args:
 # cert_path: /etc/ssl/adminapi/server.crt
 # key_path: /etc/ssl/adminapi/server.key
 upstream_metrics_refresh_duration: 60s
+pgbouncer_endpoints:
+  - "postgres://pgbouncer:{{ .PgbouncerPassword }}@localhost:6543/pgbouncer"
 fail2ban_socket: /var/run/fail2ban/fail2ban.sock
 upstream_metrics_sources:
   - name: system
@@ -60,6 +62,7 @@ firewall:
     - 0.0.0.0/0
   filtered_ports:
     - 5432
+    - 6543
   unfiltered_ports:
     - 80
     - 443

@@ -927,6 +927,7 @@ RUN sed -i \
 
 # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Add upstream entrypoint script
