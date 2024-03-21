@@ -1,5 +1,6 @@
 ARG postgres_version=15.1.1.24
 
+ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
 ARG gotrue_release=2.130.0
 ARG adminapi_release=0.62.0
@@ -24,6 +25,33 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     cmake \
     && rm -rf /var/lib/apt/lists/*
+
+####################
+# Install pgbouncer
+####################
+FROM builder as pgbouncer-source
+# Download and extract
+ARG pgbouncer_release
+ADD "https://www.pgbouncer.org/downloads/files/${pgbouncer_release}/pgbouncer-${pgbouncer_release}.tar.gz" /tmp/pgbouncer.tar.gz
+RUN tar -xvf /tmp/pgbouncer.tar.gz -C /tmp && \
+    rm -rf /tmp/pgbouncer.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    libevent-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/pgbouncer-${pgbouncer_release}
+RUN ./configure --prefix=/usr/local
+RUN make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libevent-2.1-7 --nodoc
+
+FROM base as pgbouncer
+# Download pre-built packages
+RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
+    pgbouncer \
+    && rm -rf /var/lib/apt/lists/*
+RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # Install PostgREST
@@ -98,6 +126,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 FROM base as production
 
 # Copy dependencies from previous build stages
+COPY --from=pgbouncer /tmp/*.deb /tmp/
 COPY --from=vector /tmp/*.deb /tmp/
 COPY --from=kong /tmp/*.deb /tmp/
 COPY --from=supervisor /tmp/*.deb /tmp/
@@ -147,6 +176,11 @@ COPY docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
 
 # Script for pg_egress_collect
 COPY --chown=adminapi:adminapi docker/all-in-one/opt/pg_egress_collect /opt/pg_egress_collect
+
+# Customizations for pgbouncer
+COPY docker/all-in-one/etc/pgbouncer /etc/pgbouncer
+COPY docker/all-in-one/etc/pgbouncer-custom /etc/pgbouncer-custom
+COPY docker/all-in-one/etc/tmpfiles.d /etc/tmpfiles.d
 
 # Customizations for postgres
 COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql/pg_hba.conf /etc/postgresql/
@@ -216,6 +250,9 @@ ENV ADMIN_API_CERT_DIR=/etc/ssl/adminapi
 ENV ADMIN_API_PORT=8085
 EXPOSE ${ADMIN_API_PORT}
 
+ENV PGBOUNCER_PORT=6543
+EXPOSE ${PGBOUNCER_PORT}
+
 ENV PGEXPORTER_PORT=9187
 EXPOSE ${PGEXPORTER_PORT}
 
@@ -225,7 +262,8 @@ ENV VECTOR_API_PORT=9001
 RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
-    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,postgres,postgrest,wal-g && \
+    useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
+    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \
