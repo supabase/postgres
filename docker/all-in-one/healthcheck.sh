@@ -22,8 +22,10 @@ fi
 # postgrest up
 curl -sSfI "http://localhost:$PGRST_ADMIN_SERVER_PORT/ready"
 
-# gotrue up
-curl -sSf "http://localhost:$GOTRUE_API_PORT/health"
+if [ "${GOTRUE_DISABLED:-}" != "true" ]; then
+  # gotrue up
+  curl -sSf "http://localhost:$GOTRUE_API_PORT/health"
+fi
 
 if [ "${ENVOY_ENABLED:-}" == "true" ]; then
   # envoy up
@@ -33,11 +35,10 @@ else
   kong health
 fi
 
-# pgbouncer up
-printf \\0 > "/dev/tcp/localhost/$PGBOUNCER_PORT"
-
-# fail2ban up
-fail2ban-client status
+if [ "${FAIL2BAN_DISABLED:-}" != "true" ]; then
+  # fail2ban up
+  fail2ban-client status
+fi
 
 # prometheus exporter up
 curl -sSfI "http://localhost:$PGEXPORTER_PORT/metrics"
