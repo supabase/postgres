@@ -5,6 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     nix2container.url = "github:nlewo/nix2container";
+    nix-editor.url = "github:snowfallorg/nix-editor";
   };
 
   nixConfig = {
@@ -17,7 +18,7 @@
     ];
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix2container }:
+  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, ... }:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -477,6 +478,16 @@
               --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' 
             chmod +x $out/bin/start-postgres-replica
           '';
+          sync-versions = pkgs.runCommand "sync-versions" { } ''
+            mkdir -p $out/bin
+            substitute ${./nix/tools/sync-versions.sh.in} $out/bin/sync-versions \
+              --subst-var-by 'YQ' '${pkgs.yq}/bin/yq' \
+              --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
+              --subst-var-by 'NIX_EDITOR' '${nix-editor}/bin/nix-editor' \
+              --subst-var-by 'NIXPREFETCHGIT' '${pkgs.nix-prefetch-url}/bin/nix-prefetch-url' \
+              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_14}/bin/nix' 
+            chmod +x $out/bin/sync-versions
+          '';
         };
 
         # Create a testing harness for a PostgreSQL package. This is used for
@@ -545,6 +556,7 @@
             start-client = mkApp "start-client" "start-postgres-client";
             start-replica = mkApp "start-replica" "start-postgres-replica";
             migration-test = mkApp "migrate-tool" "migrate-postgres";
+            sync-versions = mkApp "sync-versions" "sync-versions";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
@@ -558,11 +570,11 @@
             nix-update
             pg_prove
             shellcheck
-
             basePackages.start-server
             basePackages.start-client
             basePackages.start-replica
             basePackages.migrate-tool
+            basePackages.sync-versions
           ];
           shellHook = ''
             export HISTFILE=.history

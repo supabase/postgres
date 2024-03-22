@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+[ ! -z "$DEBUG" ] && set -x
+
+yq=@YQ@
+jq=@JQ@
+editor=@NIX_EDITOR@
+ansible_vars=$($yq '.' $PWD/ansible/vars.yml) 
+prefetchgit=@NIXPREFETCHGIT@
+_nix=@NIX@
+fetch_nix_url() {
+    local source_url="$1"
+    
+    # Check if the source URL is provided
+    if [ -z "$source_url" ]; then
+        echo "Usage: fetch_nix_url <source_url>"
+        return 1
+    fi
+    
+    # Run nix-prefetch-url command
+    $prefetchgit "$source_url"
+}
+
+
+keys=$(echo "$ansible_vars" | $jq -r 'keys[]')
+
+for key in $keys; do
+    case $key in
+        "pgvector_release")
+            value=$(echo $ansible_vars |  $jq -r '.pgvector_release')
+            echo "Name: $value"
+            ;;
+        *)
+            ;;
+    esac
+done
+
+url=$($_nix eval .#psql_16/exts/pgvector.src.url )
+
+fetch_nix_url "$url"
+
+#res=$editor /home/sam/postgres/nix/ext/pgvector.nix src 
+#echo $res
+$_nix eval .#psql_16/exts/pgvector.src.url
+
