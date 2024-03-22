@@ -35,7 +35,7 @@ jobs:
         run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
       - id: base_docker
         run: |
-          if [[ "${{ inputs.baseDockerVersion }}" != ""]]; then
+          if [[ "${{ inputs.baseDockerVersion }}" != "" ]]; then
             echo "base-docker-version=${{ inputs.baseDockerVersion }}" >> $GITHUB_OUTPUT
           else
             echo "base-docker-version=${{ steps.settings.outputs.postgres-version }}" >> $GITHUB_OUTPUT
