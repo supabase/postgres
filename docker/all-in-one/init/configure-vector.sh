@@ -12,6 +12,7 @@ if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   LOGFLARE_GOTRUE_SOURCE=$(jq -r '.["logflare_gotrue_source"]' /etc/vector/init.json)
   LOGFLARE_POSTGREST_SOURCE=$(jq -r '.["logflare_postgrest_source"]' /etc/vector/init.json)
   LOGFLARE_PGBOUNCER_SOURCE=$(jq -r '.["logflare_pgbouncer_source"]' /etc/vector/init.json)
+  LOGFLARE_PITR_ERRORS_SOURCE=$(jq -r '.["logflare_pitr_errors_source"]' /etc/vector/init.json)
   LOGFLARE_API_KEY=$(jq -r '.["logflare_api_key"]' /etc/vector/init.json)
 fi
 
@@ -42,6 +43,7 @@ LOGFLARE_DB_SOURCE=${LOGFLARE_DB_SOURCE:-postgres.logs}
 LOGFLARE_GOTRUE_SOURCE=${LOGFLARE_GOTRUE_SOURCE:-gotrue.logs.prod}
 LOGFLARE_POSTGREST_SOURCE=${LOGFLARE_POSTGREST_SOURCE:-postgREST.logs.prod}
 LOGFLARE_PGBOUNCER_SOURCE=${LOGFLARE_PGBOUNCER_SOURCE:-pgbouncer.logs.prod}
+LOGFLARE_PITR_ERRORS_SOURCE=${LOGFLARE_PITR_ERRORS_SOURCE:-pitr_errors.logs.prod}
 
 sed -i "s|{{ .ApiPort }}|$VECTOR_API_PORT|g" $VECTOR_CONF
 sed -i "s|{{ .ProjectRef }}|$PROJECT_REF|g" $VECTOR_CONF
@@ -51,3 +53,4 @@ sed -i "s|{{ .DbSource }}|$LOGFLARE_DB_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .GotrueSource }}|$LOGFLARE_GOTRUE_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .PostgrestSource }}|$LOGFLARE_POSTGREST_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .PgbouncerSource }}|$LOGFLARE_PGBOUNCER_SOURCE|g" $VECTOR_CONF
+sed -i "s|{{ .PitrErrorsSource }}|$LOGFLARE_PITR_ERRORS_SOURCE|g" $VECTOR_CONF

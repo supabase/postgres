@@ -15,6 +15,12 @@ sources:
     include: 
       - /var/log/services/pgbouncer.log
 
+  pitr_log:
+    type: file
+    include:
+      - /var/log/wal-g/pitr.log
+    read_from: end
+
   postgres_log:
     type: file
     include:
@@ -208,6 +214,33 @@ transforms:
                 del(._UID)
                 del(.__MONOTONIC_TIMESTAMP)
                 del(.__REALTIME_TIMESTAMP)
+
+  pitr_to_object:
+    inputs:
+      - pitr_log
+    type: remap
+    source: |2-
+                .project = "{{ .ProjectRef }}"
+
+                .parsed, err = parse_key_value(.message)
+                if err == null {
+                  .metadata = .parsed
+                  .metadata.host = del(.host)
+                  .message = del(.metadata.msg)
+                  .timestamp = del(.metadata.time)
+                }
+
+                del(.parsed)
+                del(.source_type)
+                del(.file)
+
+  filter_pitr_error:
+    inputs:
+      - pitr_to_object
+    type: filter
+    condition: >
+      .metadata.level != "info"
+
 sinks:
   http_gotrue:
     type: "http"
@@ -241,6 +274,15 @@ sinks:
       codec: json
     compression: none
     uri: "https://{{ .LogflareHost }}/logs?api_key={{ .ApiKey }}&source={{ .PgbouncerSource }}"
+
+  http_pitr_error:
+    type: http
+    inputs:
+      - filter_pitr_error
+    encoding:
+      codec: json
+    compression: none
+    uri: "https://{{ .LogflareHost }}/logs?api_key={{ .ApiKey }}&source={{ .PitrErrorsSource }}"
 
   http_postgres:
     type: http
