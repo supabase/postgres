@@ -172,7 +172,7 @@ RUN ln -s /data/opt/supabase-admin-api /opt/supabase-admin-api \
 # Scripts for adminapi
 COPY ansible/files/admin_api_scripts /root
 COPY --chown=adminapi:adminapi docker/all-in-one/etc/adminapi /etc/adminapi
-COPY docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
+COPY --chmod=644 docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
 
 # Script for pg_egress_collect
 COPY --chown=adminapi:adminapi docker/all-in-one/opt/pg_egress_collect /opt/pg_egress_collect
