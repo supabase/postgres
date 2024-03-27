@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+[ ! -z "$DEBUG" ] && set -x
+
+#pass in env vars supplied by nix
+yq=@YQ@
+jq=@JQ@
+editor=@NIX_EDITOR@
+ansible_vars=$($yq '.' $PWD/ansible/vars.yml) 
+prefetchurl=@NIXPREFETCHURL@
+_nix=@NIX@
+fetch_source_url() {
+    local source_url=${1//\"/}  # Remove double quotes
+    source_url=${source_url//\'/}  # Remove single quotes
+    
+    # Check if the source URL is provided
+    if [ -z "$source_url" ]; then
+        echo "Usage: fetch_nix_url <source_url>"
+        return 1
+    fi
+    
+    echo "$source_url"
+    
+    # Run nix-prefetch-url command
+    local val=$($prefetchurl --type sha256 "$source_url" | cut -d ' ' -f 2)
+    echo $val
+}
+
+#iterate values in ansible vars, case statement
+# to match ansible var to package name
+keys=$(echo "$ansible_vars" | $jq -r 'keys[]')
+
+for key in $keys; do
+    case $key in
+        "pgvector_release")
+            value=$(echo $ansible_vars |  $jq -r '.pgvector_release')
+            echo "$key: $value"
+            url=$($_nix eval .#psql_16/exts/pgvector.src.url)
+            hash=$(fetch_source_url $url | tail -n 1)
+            echo "$hash"
+
+            ;;
+        *)
+            ;;
+    esac
+done
+
+# url=$($_nix eval .#psql_16/exts/pgvector.src.url)
+
+# fetch_nix_url "$url"
+
+#res=$editor /home/sam/postgres/nix/ext/pgvector.nix src 
+#echo $res
+# url=$($_nix eval .#psql_16/exts/pgvector.src.url)
+# #echo $url
+# hash=$(fetch_source_url $url | tail -n 1)
+# echo "$hash"
