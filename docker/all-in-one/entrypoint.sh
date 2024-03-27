@@ -298,6 +298,16 @@ if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   trap graceful_shutdown SIGINT
 fi
 
+REMOTE_INIT_SCRIPT=${REMOTE_INIT_SCRIPT:-}
+if [ -n "$REMOTE_INIT_SCRIPT" ]; then
+  curl -fsSL "$REMOTE_INIT_SCRIPT" -o "/tmp/remote-init.sh" || true
+  if [ -f "/tmp/remote-init.sh" ]; then
+    chmod +x /tmp/remote-init.sh
+    bash /tmp/remote-init.sh
+  fi
+fi
+
+
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
 start_supervisor
