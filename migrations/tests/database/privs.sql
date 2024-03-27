@@ -28,3 +28,7 @@ SELECT schema_privs_are('extensions', 'postgres', array['CREATE', 'USAGE']);
 SELECT schema_privs_are('extensions', 'anon', array['USAGE']);
 SELECT schema_privs_are('extensions', 'authenticated', array['USAGE']);
 SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
+
+-- Verify auth schema privileges
+SELECT schema_privs_are('auth', 'postgres', array['CREATE', 'USAGE']);
+SELECT table_privs_are('auth', 'schema_migrations', 'postgres', array['SELECT']);
