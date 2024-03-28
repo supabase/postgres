@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+[ ! -z "$DEBUG" ] && set -x
+
+# first argument should be '15' or '16' for the version
+if [ "$1" == "15" ]; then
+    echo "Starting client for PSQL 15"
+    PSQL15=@PSQL15_BINDIR@
+    BINDIR="$PSQL15"
+elif [ "$1" == "16" ]; then
+    echo "Starting client for PSQL 16"
+    PSQL16=@PSQL16_BINDIR@
+    BINDIR="$PSQL16"
+elif [ "$1" == "orioledb-16" ]; then
+    echo "Starting client for PSQL ORIOLEDB 16"
+    PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
+    BINDIR="$PSQLORIOLEDB16"
+else
+    echo "Please provide a valid Postgres version (15, 16, or orioledb-16)"
+    exit 1
+fi
+
+export PATH=$BINDIR/bin:$PATH
+
+PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
+PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
+
+exec psql -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost postgres

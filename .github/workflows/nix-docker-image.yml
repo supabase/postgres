@@ -1,0 +1,43 @@
+name: Nix Docker
+
+on:
+  push:
+    branches: [ 'main' ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: "update: build and deploy postgres server images"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+        with:
+          fetch-depth: 0
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: actions/checkout@v3
+
+      - name: Build images
+        run: |
+          nix build .#psql_15/docker -o result-docker-15
+          nix build .#psql_16/docker -o result-docker-16
+          nix build .#psql_orioledb_16/docker -o result-docker-orioledb-16
+      - name: Log in to the Container registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image to the Container registry
+        run: |
+          set -x
+          for x in 15 16 orioledb_16; do
+            nix build .#psql_$x/docker.copyToRegistry          
+          done
