@@ -24,7 +24,7 @@ fetch_source_url() {
     
     # Run nix-prefetch-url command
     local val=$($prefetchurl --type sha256 "$source_url" | cut -d ' ' -f 2)
-    echo $val
+    echo "$val"
 }
 
 #iterate values in ansible vars, case statement
