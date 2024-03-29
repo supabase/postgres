@@ -23,8 +23,53 @@ fetch_source_url() {
     echo "$source_url"
     
     # Run nix-prefetch-url command
-    local val=$($prefetchurl --type sha256 "$source_url" | cut -d ' ' -f 2)
-    echo "$val"
+    local initial_hash=$($prefetchurl --type sha256 "$source_url" --unpack | cut -d ' ' -f 2)
+    #once we can bump up nix version, we can use nix hash convert --hash-algo sha256
+    local final_hash=$($_nix hash to-sri --type sha256 $initial_hash)
+    echo "$final_hash"
+}
+
+sync_version() {
+
+    local package_name=$1
+    local version="\"$2\""
+    local hash="\"$3\""
+
+
+    # Update the version and hash in the Nix expression
+    $editor $PWD/nix/ext/$package_name.nix version --inplace -v "$version"
+    $editor $PWD/nix/ext/$package_name.nix src.hash --inplace -v $hash
+}
+
+run_sync() {
+    local varname=$1
+    local package_name=$2
+
+    version=$(echo $ansible_vars |  $jq -r '.'$varname'')
+    echo "$key: $version"
+    url=$($_nix eval .#psql_16/exts/$package_name.src.url)
+    hash=$(fetch_source_url $url | tail -n 1)
+    $(sync_version $package_name $version $hash)
+    echo "synced $package_name to version $version with hash $hash"
+
+
+}
+
+update_cargo_vendor_hash() {
+    local package_name=$1
+    output=$($_nix build .#psql_16/exts/$package_name 2>&1)
+
+    # Check if the command exited with an error
+    if [ $? -ne 0 ]; then
+        # Extract the hash value after "got: "
+        hash_value_scraped=$(echo "$output" | grep "got:" | awk '{for (i=1; i<=NF; i++) if ($i ~ /^sha/) print $i}')
+        hash_value="\"$hash_value_scraped\""
+        # Continue using the captured hash value
+        $editor $PWD/nix/ext/$package_name.nix cargoHash --inplace -v $hash_value
+        echo "Updated cargoHash for $package_name to $hash_value"
+    else
+        echo "$package_name builds successfully, moving on..."
+    fi
 }
 
 #iterate values in ansible vars, case statement
@@ -34,12 +79,20 @@ keys=$(echo "$ansible_vars" | $jq -r 'keys[]')
 for key in $keys; do
     case $key in
         "pgvector_release")
-            value=$(echo $ansible_vars |  $jq -r '.pgvector_release')
-            echo "$key: $value"
-            url=$($_nix eval .#psql_16/exts/pgvector.src.url)
-            hash=$(fetch_source_url $url | tail -n 1)
-            echo "$hash"
-
+            varname="pgvector_release"
+            package_name="pgvector"
+            run_sync $varname $package_name
+            ;;
+        "hypopg_release")
+            varname="hypopg_release"
+            package_name="hypopg"
+            run_sync $varname $package_name
+            ;;
+        "pg_graphql_release")
+            varname="pg_graphql_release"
+            package_name="pg_graphql"
+            run_sync $varname $package_name
+            update_cargo_vendor_hash $package_name
             ;;
         *)
             ;;

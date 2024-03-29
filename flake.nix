@@ -483,7 +483,7 @@
             substitute ${./nix/tools/sync-exts-versions.sh.in} $out/bin/sync-exts-versions \
               --subst-var-by 'YQ' '${pkgs.yq}/bin/yq' \
               --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
-              --subst-var-by 'NIX_EDITOR' '${nix-editor}/bin/nix-editor' \
+              --subst-var-by 'NIX_EDITOR' '${nix-editor.packages.${system}.nix-editor}/bin/nix-editor' \
               --subst-var-by 'NIXPREFETCHURL' '${pkgs.nixVersions.nix_2_14}/bin/nix-prefetch-url' \
               --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_14}/bin/nix' 
             chmod +x $out/bin/sync-exts-versions
