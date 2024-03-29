@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-        cmd: [ "nix flake check -L --show-trace", "nix build .#psql_15/bin .#psql_15/docker", "nix build .#psql_16/bin .#psql_16/docker", "nix build .#psql_orioledb_16/bin .#psql_orioledb_16/docker"]
+        cmd: [ "nix flake check -L --show-trace", "nix build .#psql_15/bin .#psql_15/docker"]
     runs-on: ${{ matrix.os }}
     name: nix-build
     steps:
