@@ -61,6 +61,7 @@
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx.nix)
+            (import ./nix/overlays/cargo-pgrx-0-10-2.nix)
             (import ./nix/overlays/gdal-small.nix)
 
           ];
@@ -414,8 +415,8 @@
         basePackages = {
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
-          psql_16 = makePostgres "16";
-          psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          #psql_16 = makePostgres "16";
+          #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
 
           # Start a version of the server.
           start-server =
@@ -429,8 +430,6 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
-                --subst-var-by 'PSQLORIOLEDB16_BINDIR' '${basePackages.psql_orioledb_16.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
 
@@ -444,8 +443,6 @@
               --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
               --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
-              --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
-              --subst-var-by 'PSQLORIOLEDB16_BINDIR' '${basePackages.psql_orioledb_16.bin}'
             chmod +x $out/bin/start-postgres-client
           '';
 
@@ -461,7 +458,6 @@
               mkdir -p $out/bin
               substitute ${./nix/tools/migrate-tool.sh.in} $out/bin/migrate-postgres \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
                 --subst-var-by 'PRIMING_SCRIPT' '${primingScript}' \
@@ -475,7 +471,6 @@
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
               --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
-              --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' 
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
@@ -529,7 +524,7 @@
           # set can go here.
           inherit (pkgs)
             # NOTE: comes from our cargo-pgrx.nix overlay
-            cargo-pgrx_0_11_2;
+            cargo-pgrx_0_11_0 cargo-pgrx_0_10_2;
 
         };
 
@@ -537,8 +532,8 @@
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          psql_16 = makeCheckHarness basePackages.psql_16.bin;
-          psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
+          #psql_16 = makeCheckHarness basePackages.psql_16.bin;
+          #psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';

@@ -2,14 +2,14 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_hashids";
-  version = "unstable-2022-09-17";
+  version = "cd0e1b31d52b394a0df64079406a14a4f7387cd6";
 
   buildInputs = [ postgresql ];
 
   src = fetchFromGitHub {
     owner = "iCyberon";
     repo = pname;
-    rev = "cd0e1b31d52b394a0df64079406a14a4f7387cd6";
+    rev = "${version}";
     hash = "sha256-Nmb7XLqQflYZfqj0yrewfb1Hl5YgEB5wfjBunPwIuOU=";
   };
 

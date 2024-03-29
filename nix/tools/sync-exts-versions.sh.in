@@ -47,7 +47,7 @@ run_sync() {
 
     version=$(echo $ansible_vars |  $jq -r '.'$varname'')
     echo "$key: $version"
-    url=$($_nix eval .#psql_16/exts/$package_name.src.url)
+    url=$($_nix eval .#psql_15/exts/$package_name.src.url)
     hash=$(fetch_source_url $url | tail -n 1)
     $(sync_version $package_name $version $hash)
     echo "synced $package_name to version $version with hash $hash"
@@ -57,7 +57,8 @@ run_sync() {
 
 update_cargo_vendor_hash() {
     local package_name=$1
-    output=$($_nix build .#psql_16/exts/$package_name 2>&1)
+    $editor $PWD/nix/ext/$package_name.nix cargoHash --inplace -v ""
+    output=$($_nix build .#psql_15/exts/$package_name 2>&1)
 
     # Check if the command exited with an error
     if [ $? -ne 0 ]; then
@@ -78,11 +79,12 @@ keys=$(echo "$ansible_vars" | $jq -r 'keys[]')
 
 for key in $keys; do
     case $key in
-        "pgvector_release")
-            varname="pgvector_release"
-            package_name="pgvector"
+        "pg_hashids_release")
+            varname="pg_hashids_release"
+            package_name="pg_hashids"
             run_sync $varname $package_name
             ;;
+
         "hypopg_release")
             varname="hypopg_release"
             package_name="hypopg"
@@ -93,6 +95,17 @@ for key in $keys; do
             package_name="pg_graphql"
             run_sync $varname $package_name
             update_cargo_vendor_hash $package_name
+            ;;
+        "pg_jsonschema_release")
+            varname="pg_jsonschema_release"
+            package_name="pg_jsonschema"
+            run_sync $varname $package_name
+            update_cargo_vendor_hash $package_name
+            ;;
+        "pgvector_release")
+            varname="pgvector_release"
+            package_name="pgvector"
+            run_sync $varname $package_name
             ;;
         *)
             ;;
