@@ -88,38 +88,13 @@
         # listing their name. Anytime the version of nixpkgs is upgraded, these
         # may also bring in new versions of the extensions.
         psqlExtensions = [
-          "postgis"
-          "pgrouting"
-          "pgtap"
-          "pg_cron"
-          "pgaudit"
-          "pgjwt"
-          "plpgsql_check"
-          "pg_safeupdate"
-          "wal2json"
           /* pljava */
-          "rum"
-          "pg_repack"
-          "pgroonga"
-          "timescaledb"
         ];
 
         #FIXME for now, timescaledb is not included in the orioledb version of supabase extensions, as there is an issue
         # with building timescaledb with the orioledb patched version of postgresql
         orioledbPsqlExtensions = [
-          "postgis"
-          "pgrouting"
-          "pgtap"
-          "pg_cron"
-          "pgaudit"
-          "pgjwt"
-          "plpgsql_check"
-          "pg_safeupdate"
-          "wal2json"
           /* pljava */
-          "rum"
-          "pg_repack"
-          "pgroonga"
           /*"timescaledb"*/
         ];
 
@@ -133,6 +108,19 @@
         # rollout new versions of these critical things easier without having to
         # go through the upstream release engineering process.
         ourExtensions = [
+          ./nix/ext/rum.nix
+          ./nix/ext/timescaledb.nix
+          ./nix/ext/pgroonga.nix
+          ./nix/ext/wal2json.nix
+          ./nix/ext/pg_repack.nix
+          ./nix/ext/pg-safeupdate.nix
+          ./nix/ext/plpgsql-check.nix
+          ./nix/ext/pgjwt.nix
+          ./nix/ext/pgaudit.nix
+          ./nix/ext/postgis.nix
+          ./nix/ext/pgrouting.nix
+          ./nix/ext/pgtap.nix
+          ./nix/ext/pg_cron.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
           ./nix/ext/pg_net.nix
@@ -156,6 +144,7 @@
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
+        postgis_override = pkgs.postgis_override;
 
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
@@ -442,7 +431,7 @@
             substitute ${./nix/tools/run-client.sh.in} $out/bin/start-postgres-client \
               --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-client
           '';
 

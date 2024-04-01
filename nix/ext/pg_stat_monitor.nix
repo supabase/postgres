@@ -10,14 +10,14 @@ let
   #
   # this seems to all be cleaned up in version 2.0 of the extension, so ideally
   # we could upgrade to it later on and nuke this.
-  # sqlFilename = if lib.versionOlder postgresql.version "14"
+  # DEPRECATED sqlFilename = if lib.versionOlder postgresql.version "14"
   #   then "pg_stat_monitor--1.0.13.sql.in"
   #   else "pg_stat_monitor--1.0.14.sql.in";
 
 in
 stdenv.mkDerivation rec {
   pname = "pg_stat_monitor";
-  version = "2.0.4";
+  version = "1.1.1";
 
   buildInputs = [ postgresql ];
 
@@ -25,7 +25,7 @@ stdenv.mkDerivation rec {
     owner = "percona";
     repo = pname;
     rev = "refs/tags/${version}";
-    hash = "sha256-57Ji/KltIHNf81OxT0+4JIDqydST5RKMqrybNBZochg=";
+    hash = "sha256-S4N4Xnbkz57ue6f/eGjuRi64xT0NXjpMJiNNZnbbvbU=";
   };
 
   makeFlags = [ "USE_PGXS=1" ];
@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
   
-    cp pg_stat_monitor--2.0.sql pg_stat_monitor--1.0--2.0.sql
+    cp pg_stat_monitor--1.0.15.sql.in pg_stat_monitor--1.0.sql
   
     cp *.so      $out/lib
     cp *.sql     $out/share/postgresql/extension

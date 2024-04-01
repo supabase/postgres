@@ -15,13 +15,13 @@ stdenv.mkDerivation (finalAttrs: {
   # plv8 latest is https://github.com/plv8/plv8/releases/tag/v3.2.2
   # FIXME we need to increment this build toward 3.2.2 
   # 3.1.7 is the highest version that can be built with pg 16
-  version = "3.1.7";
+  version = "3.1.5";
 
   src = fetchFromGitHub {
     owner = "plv8";
     repo = "plv8";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-kTID3Zo3YwNZUno8kdQE7ihtiddsIAZNuBN91IKgaC4=";
+    hash = "sha256-LodC2eQJSm5fLckrjm2RuejZhmOyQMJTv9b0iPCnzKQ=";
   };
 
   patches = [

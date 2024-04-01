@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgsql-http";
-  version = "1.6.0";
+  version = "1.5.0";
 
   buildInputs = [ curl postgresql ];
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner = "pramsey";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-CPHfx7vhWfxkXsoKTzyFuTt47BPMvzi/pi1leGcuD60=";
+    hash = "sha256-+N/CXm4arRgvhglanfvO0FNOBUWV5RL8mn/9FpNvcjY=";
   };
 
   installPhase = ''

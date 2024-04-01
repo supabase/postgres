@@ -109,3 +109,12 @@ $ time packer build -timestamp-ui \
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves.
 
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
+
+
+## Experimental Nix Packaging of resources
+
+There is a `/nix` folder in this repo, plus a `flake.nix` and `flake.lock` that facilitate using the Nix package management system to package supabase/postgres, and all of our extensions and wrappers. A user will need nix installed on their machine. As of 4/1/2024 the package set only builds on target machines (`x86_64-linux` and `aarch64-linux`), however work is under way to also support building and using directly on `aarch64-darwin` (macOs). As of 4/1/2024, versions of packages and extensions are synced from `/ansible/vars.yml` via a utility that can be run by executing `nix run .#sync-exts-versions` (you must have nix installed and be on the supported `x86_64-linux` and `aarch64-linux` for this command to work). The short term goal is to sync these versions as they are updated by our infrastructure and postgres teams, then to see the nix packaged versions build successfully in parallel over time, along with tests of the nix packaged versions passing. 
+
+The supabase/postgres repo will continue to source it's dependencies from ansible for the short term, while we stabilize this nix build. 
+
+Forthcoming PR's will include: integrating the nix work into our ansible/packer builds, building natively on aarch64-darwin (macOs), more testing
