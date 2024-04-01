@@ -551,7 +551,7 @@
             start-client = mkApp "start-client" "start-postgres-client";
             start-replica = mkApp "start-replica" "start-postgres-replica";
             migration-test = mkApp "migrate-tool" "migrate-postgres";
-            sync-ext-versions = mkApp "sync-exts-versions" "sync-ext-versions";
+            sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
