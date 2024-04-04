@@ -993,7 +993,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
-COPY --from=index_advisor-source /tmp/*.deb /tmp/
+COPY --from=index_advisor /tmp/*.deb /tmp/
 COPY --from=supautils-source /tmp/*.deb /tmp/
 
 ####################
