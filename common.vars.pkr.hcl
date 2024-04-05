@@ -1,2 +1,2 @@
-postgres-version = "15.1.1.37-wrappers"
+postgres-version = "15.1.1.38"
 
