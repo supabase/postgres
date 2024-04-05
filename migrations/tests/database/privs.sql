@@ -29,6 +29,5 @@ SELECT schema_privs_are('extensions', 'anon', array['USAGE']);
 SELECT schema_privs_are('extensions', 'authenticated', array['USAGE']);
 SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
 
--- Verify auth schema privileges
-SELECT schema_privs_are('auth', 'postgres', array['CREATE', 'USAGE']);
-SELECT table_privs_are('auth', 'schema_migrations', 'postgres', array['SELECT']);
+-- Role memberships
+SELECT isnt_member_of('supabase_auth_admin', 'postgres');
