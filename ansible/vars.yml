@@ -15,8 +15,8 @@ postgrest_release: "12.0.2"
 postgrest_arm_release_checksum: sha1:a08eaa2af548d44b4c8ea61b0223fb7019f5c768
 postgrest_x86_release_checksum: sha1:40f65ded06b9de6567fbe2cd7a317196e22dd595
 
-gotrue_release: 2.145.0
-gotrue_release_checksum: sha1:b3301a41637008f1f2b0c3c2969fd2ddf28a2f7a
+gotrue_release: 2.146.0
+gotrue_release_checksum: sha1:d9538779ae954516fccc38fdd6be89f5db522499
 
 aws_cli_release: "2.2.7"
 
@@ -46,8 +46,8 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: 0.63.1
-adminmgr_release: 0.15.0
+adminapi_release: 0.63.3
+adminmgr_release: 0.19.0
 
 # Postgres Extensions
 postgis_release: "3.3.2"
