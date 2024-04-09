@@ -11,9 +11,11 @@ buildPgrxExtension_0_11_2 rec {
     rev = "v${version}";
     hash = "sha256-cAiD2iSFmZwC+Zy0x+MABseWCxXRtRY74Dj0oBKet+o=";
   };
+
+
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ openssl ];
-}
+
   #borrowed from https://github.com/pgcentralfoundation/pgrx/blob/develop/flake.nix#L98C7-L104C23
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
   PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
