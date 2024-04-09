@@ -1,6 +1,6 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension }:
+{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_11_2 }:
 
-buildPgrxExtension rec {
+buildPgrxExtension_0_11_2 rec {
   pname = "pg_graphql";
   version = "1.5.1";
   inherit postgresql;
