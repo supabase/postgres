@@ -63,6 +63,7 @@
             (import ./nix/overlays/cargo-pgrx.nix)
             (import ./nix/overlays/cargo-pgrx-0-10-2.nix)
             (import ./nix/overlays/cargo-pgrx-0-11-2.nix)
+            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             (import ./nix/overlays/gdal-small.nix)
 
           ];
@@ -515,7 +516,7 @@
           # set can go here.
           inherit (pkgs)
             # NOTE: comes from our cargo-pgrx.nix overlay
-            cargo-pgrx_0_11_0 cargo-pgrx_0_10_2 cargo-pgrx_0_11_2;
+            cargo-pgrx_0_11_0 cargo-pgrx_0_10_2 cargo-pgrx_0_11_2 cargo-pgrx_0_11_3;
 
         };
 
