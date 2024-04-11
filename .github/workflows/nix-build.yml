@@ -6,8 +6,11 @@ on:
       - main
   pull_request:
 
-permissions: read-all
-
+permissions:
+  contents: write
+  packages: write
+  id-token: write    
+    
 jobs:
   build:
     strategy:
