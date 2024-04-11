@@ -142,6 +142,6 @@ stdenv.mkDerivation (finalAttrs: {
     maintainers = with maintainers; [ samrose ];
     platforms = [ "x86_64-linux" "aarch64-linux" ];
     license = licenses.postgresql;
-    broken = postgresql.jitSupport;
+    #broken = postgresql.jitSupport;
   };
 })
