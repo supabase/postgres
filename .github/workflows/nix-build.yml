@@ -26,9 +26,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Build docker images
-        run: docker build -t local < ./docker/nix/Dockerfile
+        run: docker build -t base_nix -f docker/nix/Dockerfile .
       - name: Run tests
-        run: docker run -it -v $PWD:/srv -w/srv local nix --version
+        run: docker run -it -v $PWD:/srv -w/srv base_nix nix --version
     name: build and run container from Dockerfile
   build:
     strategy:
