@@ -12,10 +12,15 @@ jobs:
   build:
     strategy:
       fail-fast: false
+    strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        include:
+          - runner: [self-hosted, X64]
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
         cmd: [ "nix flake check -L --show-trace", "nix build .#psql_15/bin .#psql_15/docker"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     name: nix-build
     steps:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9

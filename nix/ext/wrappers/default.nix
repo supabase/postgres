@@ -16,7 +16,7 @@ buildPgrxExtension_0_11_3 rec {
   src = fetchFromGitHub {
     owner = "supabase";
     repo = "wrappers";
-    rev = "1185a47ead097b7f134c2aadddafa38a3e3a65af";
+    rev = "v${version}";
     hash = "sha256-ZwTw0USJC/F/ZW5usX7p0CB8p2YzeUb6OLiMF3D1+J4=";
   };
 

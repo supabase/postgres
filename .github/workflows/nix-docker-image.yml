@@ -10,8 +10,17 @@ env:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+        strategy:
+      matrix:
+        include:
+          - runner: [self-hosted, X64]
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     name: "update: build and deploy postgres server images"
-    runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write

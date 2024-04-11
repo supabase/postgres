@@ -8,7 +8,7 @@ buildPgrxExtension_0_11_3 rec {
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
-    rev = "b0032a5ad04eb583a3623e012a03615add68b4e4";
+    rev = "v${version}";
     hash = "sha256-npza6cGKyUyufabaUcGzV3knNa7vhR+xbZeaZy5CJ8c= ";
   };
 
