@@ -12,7 +12,6 @@ jobs:
   build:
     strategy:
       fail-fast: false
-    strategy:
       matrix:
         include:
           - runner: [self-hosted, X64]
