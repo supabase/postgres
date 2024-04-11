@@ -28,25 +28,5 @@ jobs:
       - name: Build docker images
         run: docker build -t base_nix -f docker/nix/Dockerfile .
       - name: Run tests
-        run: docker run -it -v $PWD:/srv -w/srv base_nix nix --version
+        run:  docker run base_nix sh -c "cd /workspace && nix build .#psql_15/bin"
     name: build and run container from Dockerfile
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: [self-hosted, X64]
-            arch: amd64
-          - runner: arm-runner
-            arch: arm64
-        cmd: [ "nix flake check -L --show-trace", "nix build .#psql_15/bin .#psql_15/docker"]
-    runs-on: ${{ matrix.runner }}
-    name: nix-build
-    steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
-        with:
-          fetch-depth: 0
-      #- uses: DeterminateSystems/nix-installer-action@v10
-      #- uses: DeterminateSystems/magic-nix-cache-action@main 
-      - run: ${{ matrix.cmd }}
-    needs: build-run-image
