@@ -29,5 +29,5 @@ jobs:
         with:
           fetch-depth: 0
       - uses: DeterminateSystems/nix-installer-action@v10
-      - uses: DeterminateSystems/magic-nix-cache-action@main 
+      #- uses: DeterminateSystems/magic-nix-cache-action@main 
       - run: ${{ matrix.cmd }}
