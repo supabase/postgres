@@ -21,7 +21,7 @@ jobs:
             arch: amd64
           - runner: arm-runner
             arch: arm64
-        cmd: [ "/nix/nix-installer uninstall"]
+        cmd: [ "sudo /nix/nix-installer uninstall"]
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -46,3 +46,4 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@v10
       #- uses: DeterminateSystems/magic-nix-cache-action@main 
       - run: ${{ matrix.cmd }}
+    needs: unintall-nix
