@@ -21,11 +21,10 @@ jobs:
             arch: amd64
           - runner: arm-runner
             arch: arm64
-        cmd: [ "sudo /nix/nix-installer uninstall"]
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - run: /nix/nix-installer uninstall
+      - run: sudo /nix/nix-installer uninstall
     name: uninstall-nix
   build:
     strategy:
