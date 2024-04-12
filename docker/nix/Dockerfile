@@ -1,13 +1,12 @@
-FROM nixos/nix
-
-# Enable flakes
-RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+FROM nixpkgs/nix-flakes
 
 USER $USER
 
 RUN mkdir -p /workspace
 
 COPY ./ /workspace
+
+RUN chmod +x /workspace/docker/nix/build.sh
 
 RUN chown -R $USER:$USER /workspace
 

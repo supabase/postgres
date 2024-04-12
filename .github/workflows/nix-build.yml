@@ -28,5 +28,5 @@ jobs:
       - name: Build docker images
         run: docker build -t base_nix -f docker/nix/Dockerfile .
       - name: Run build psql bundle
-        run:  docker run base_nix sh -c "cd /workspace && nix build .#psql_15/bin"
+        run:  docker run -e REGISTRY_USERNAME=${{ secrets.DOCKER_REGISTRY_USERNAME }} -e REGISTRY_PASSWORD=${{ secrets.DOCKER_REGISTRY_PASSWORD }} -e REGISTRY=${{ env.REGISTRY }} base_nix bash -c "./workspace/docker/nix/build.sh"
     name: build psql bundle on ${{ matrix.arch }}
