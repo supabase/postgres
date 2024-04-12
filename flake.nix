@@ -313,7 +313,7 @@
             '';
           in
           nix2img.buildImage {
-            name = "postgresql-${version}";
+            name = "nix-experimental-postgresql-${version}-${system}";
             tag = "latest";
 
             nixUid = l.toInt uid;
