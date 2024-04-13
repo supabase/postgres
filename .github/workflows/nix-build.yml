@@ -42,5 +42,5 @@ jobs:
       - name: Build docker images
         run: docker build -t base_nix -f docker/nix/Dockerfile .
       - name: Run build psql bundle
-        run:  docker run -e AWS_ACCESS_KEY_ID=${{ steps.aws-creds.outputs.aws-access-key-id }} -e AWS_SECRET_ACCESS_KEY=${{ steps.aws-creds.outputs.aws-secret-access-key }} -e AWS_SESSION_TOKEN=${{ steps.aws-creds.outputs.aws-session-token }} base_nix bash -c "./workspace/docker/nix/build.sh"
+        run:  docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} base_nix bash -c "./workspace/docker/nix/build.sh"
     name: build psql bundle on ${{ matrix.arch }}
