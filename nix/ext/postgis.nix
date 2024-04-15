@@ -50,7 +50,7 @@ stdenv.mkDerivation rec {
 
     # postgis' build system assumes it is being installed to the same place as postgresql, and looks
     # for the postgres binary relative to $PREFIX. We gently support this system using an illusion.
-    ln -s ${postgresql}/bin/postgres $out/bin/postgres
+    ln -s ${postgresql_15}/bin/postgres $out/bin/postgres
   '';
 
   # create aliases for all commands adding version information

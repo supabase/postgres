@@ -4,31 +4,35 @@
 , openssl
 , pkg-config
 , postgresql
-, buildPgrxExtension_0_11_0
+, buildPgrxExtension_0_11_3
+, cargo
 }:
 
-buildPgrxExtension_0_11_0 rec {
+buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
-  version = "0.3.0";
+  version = "0.3.1";
   inherit postgresql;
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = "wrappers";
     rev = "v${version}";
-    hash = "sha256-ogpF8NJ7kW3Ut8jaKMDiKYIXnI38nfRq2mMK4rqFAIA=";
+    hash = "sha256-ZwTw0USJC/F/ZW5usX7p0CB8p2YzeUb6OLiMF3D1+J4=";
   };
 
-  nativeBuildInputs = [ pkg-config ];
+  nativeBuildInputs = [ pkg-config cargo ];
+
   buildInputs = [ openssl ];
 
   # Needed to get openssl-sys to use pkg-config.
   OPENSSL_NO_VENDOR = 1;
+  
+  CARGO="${cargo}/bin/cargo";
 
   cargoLock = {
     #TODO when we move to newer versions this lockfile will need to be sourced
     # from ${src}/Cargo.lock
-    lockFile = "${src}/wrappers/Cargo.lock";
+    lockFile = "${src}/Cargo.lock";
     outputHashes = {
       "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
     };

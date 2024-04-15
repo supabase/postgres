@@ -13,3 +13,5 @@ __pycache__/
 
 #nix related
 result*
+.env-local
+.history

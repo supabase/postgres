@@ -60,9 +60,8 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-            (import ./nix/overlays/cargo-pgrx.nix)
-            (import ./nix/overlays/cargo-pgrx-0-10-2.nix)
-            (import ./nix/overlays/gdal-small.nix)
+            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
+            #(import ./nix/overlays/gdal-small.nix)
 
           ];
         };
@@ -89,6 +88,7 @@
         # may also bring in new versions of the extensions.
         psqlExtensions = [
           /* pljava */
+          "postgis"
         ];
 
         #FIXME for now, timescaledb is not included in the orioledb version of supabase extensions, as there is an issue
@@ -118,7 +118,7 @@
           ./nix/ext/plpgsql-check.nix
           ./nix/ext/pgjwt.nix
           ./nix/ext/pgaudit.nix
-          ./nix/ext/postgis.nix
+          #./nix/ext/postgis.nix
           ./nix/ext/pgrouting.nix
           ./nix/ext/pgtap.nix
           ./nix/ext/pg_cron.nix
@@ -313,7 +313,7 @@
             '';
           in
           nix2img.buildImage {
-            name = "postgresql-${version}";
+            name = "nix-experimental-postgresql-${version}-${system}";
             tag = "latest";
 
             nixUid = l.toInt uid;
@@ -469,8 +469,8 @@
               --subst-var-by 'YQ' '${pkgs.yq}/bin/yq' \
               --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
               --subst-var-by 'NIX_EDITOR' '${nix-editor.packages.${system}.nix-editor}/bin/nix-editor' \
-              --subst-var-by 'NIXPREFETCHURL' '${pkgs.nixVersions.nix_2_14}/bin/nix-prefetch-url' \
-              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_14}/bin/nix' 
+              --subst-var-by 'NIXPREFETCHURL' '${pkgs.nixVersions.nix_2_20}/bin/nix-prefetch-url' \
+              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix' 
             chmod +x $out/bin/sync-exts-versions
           '';
         };
@@ -513,8 +513,8 @@
           # Any extra packages we might want to include in our package
           # set can go here.
           inherit (pkgs)
-            # NOTE: comes from our cargo-pgrx.nix overlay
-            cargo-pgrx_0_11_0 cargo-pgrx_0_10_2;
+            # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
+            cargo-pgrx_0_11_3;
 
         };
 

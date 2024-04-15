@@ -3,24 +3,44 @@ name: Nix CI
 on:
   push:
     branches:
-      - main
+      - develop
   pull_request:
 
-permissions: read-all
-
+permissions:
+  contents: read
+  id-token: write    
+    
 jobs:
-  build:
+  build-run-image:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
-        cmd: [ "nix flake check -L --show-trace", "nix build .#psql_15/bin .#psql_15/docker"]
-    runs-on: ${{ matrix.os }}
-    name: nix-build
+        include:
+          - runner: larger-runner-4cpu
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
     steps:
-      - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
+
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          fetch-depth: 0
-      - uses: DeterminateSystems/nix-installer-action@65d7c888b2778e8cf30a07a88422ccb23499bfb8
-      - uses: DeterminateSystems/magic-nix-cache-action@749fc5bbc9fa49d60c2b93f6c4bc867b82e1d295
-      - run: ${{ matrix.cmd }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+      - name: write secret key
+        # use python so we don't interpolate the secret into the workflow logs, in case of bugs
+        run: |
+          python -c "import os; file = open('nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
+        env:
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+  
+      - name: Build docker images
+        run: docker build -t base_nix -f docker/nix/Dockerfile .
+      - name: Run build psql bundle
+        run:  docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} base_nix bash -c "./workspace/docker/nix/build.sh"
+    name: build psql bundle on ${{ matrix.arch }}

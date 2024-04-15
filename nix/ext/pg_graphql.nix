@@ -1,18 +1,22 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension }:
+{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_11_3, cargo }:
 
-buildPgrxExtension rec {
+buildPgrxExtension_0_11_3 rec {
   pname = "pg_graphql";
-  version = "1.5.1";
+  version = "1.5.2";
   inherit postgresql;
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-cAiD2iSFmZwC+Zy0x+MABseWCxXRtRY74Dj0oBKet+o=";
+    hash = "sha256-npza6cGKyUyufabaUcGzV3knNa7vhR+xbZeaZy5CJ8c= ";
   };
 
-  cargoHash = "sha256-BOw4SafWD8z2Oj8KPVv7GQEOQ1TCShhcG7XmQiM9W68=";
+  nativeBuildInputs = [ cargo ];
+  
+  CARGO="${cargo}/bin/cargo";
+  
+  cargoHash = "sha256-9XyUJsYptP0KanMJDAzQ4rFSN1vqZnyUdFBPQf6ryS4=";
 
   # FIXME (aseipp): disable the tests since they try to install .control
   # files into the wrong spot, aside from that the one main test seems
