@@ -8,16 +8,6 @@
     nix-editor.url = "github:snowfallorg/nix-editor";
   };
 
-  nixConfig = {
-    extra-substituters = [
-      "https://nix-postgres-artifacts.s3.amazonaws.com"
-    ];
-
-    extra-trusted-public-keys = [
-      "nix-cache.supabase.com-1:ZfEc7Qb7SN+qOTJGMtCz54rnVQ1W2ZI2ROCSSD6YQYc="
-    ];
-  };
-
   outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, ...}:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
