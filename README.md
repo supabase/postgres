@@ -88,6 +88,12 @@ $ time packer build -timestamp-ui \
   amazon-arm.json
 ```
 
+### Container Images
+
+- `/Dockerfile` - the Postgres image used by the [Supabase CLI](https://github.com/supabase/cli/)
+- `/docker/all-in-one/Dockerfile` - image with additional services used for the full Supabase stack. Used for projects created on fly.io
+- `/docker/orioledb/Dockerfile` - experimental image for OrioleDB testing
+
 ## Motivation
 
 - Make it fast and simple to get started with Postgres.

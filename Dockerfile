@@ -4,40 +4,39 @@ ARG postgresql_release=${postgresql_major}.1
 
 # Bump default build arg to build a package from source
 # Bump vars.yml to specify runtime package version
-ARG sfcgal_release=1.3.10
-ARG postgis_release=3.3.2
-ARG pgrouting_release=3.4.1
-ARG pgtap_release=1.2.0
-ARG pg_cron_release=1.6.2
-ARG pgaudit_release=1.7.0
-ARG pgjwt_release=9742dab1b2f297ad3811120db7b21451bca2d3c9
-ARG pgsql_http_release=1.5.0
-ARG plpgsql_check_release=2.2.5
-ARG pg_safeupdate_release=1.4
-ARG timescaledb_release=2.9.1
-ARG wal2json_release=2_5
-ARG pljava_release=1.6.4
-ARG plv8_release=3.1.5
-ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
-ARG pg_net_release=0.7.1
-ARG rum_release=1.3.13
-ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
-ARG libsodium_release=1.0.18
-ARG pgsodium_release=3.1.6
-ARG pg_graphql_release=1.5.1
-ARG pg_stat_monitor_release=1.1.1
-ARG pg_jsonschema_release=0.1.4
-ARG pg_repack_release=1.4.8
-ARG vault_release=0.2.8
-ARG groonga_release=12.0.8
-ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.3.0
-ARG hypopg_release=1.3.1
-ARG pgvector_release=0.4.0
-ARG pg_tle_release=1.3.2
-ARG index_advisor_release=0.2.0
-ARG supautils_release=2.2.0
-ARG wal_g_release=2.0.1
+ARG sfcgal_release
+ARG postgis_release
+ARG pgrouting_release
+ARG pgtap_release
+ARG pg_cron_release
+ARG pgaudit_release
+ARG pgjwt_release
+ARG pgsql_http_release
+ARG plpgsql_check_release
+ARG pg_safeupdate_release
+ARG timescaledb_release
+ARG wal2json_release
+ARG pljava_release
+ARG plv8_release
+ARG pg_plan_filter_release
+ARG pg_net_release
+ARG rum_release
+ARG pg_hashids_release
+ARG libsodium_release
+ARG pgsodium_release
+ARG pg_graphql_release
+ARG pg_stat_monitor_release
+ARG pg_jsonschema_release
+ARG pg_repack_release
+ARG vault_release
+ARG groonga_release
+ARG pgroonga_release
+ARG wrappers_release
+ARG hypopg_release
+ARG pgvector_release
+ARG pg_tle_release
+ARG supautils_release
+ARG wal_g_release
 
 ####################
 # Setup Postgres PPA
