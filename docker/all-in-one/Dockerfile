@@ -276,6 +276,7 @@ RUN mkdir -p /var/log/wal-g \
     && chown adminapi:adminapi /etc/wal-g/config.json \
     && echo '{"WALG_S3_PREFIX": "s3://foo/bar/"}' > /etc/wal-g/config.json
 RUN chown -R adminapi:adminapi /etc/adminapi
+RUN sed -i "s;#include = '/etc/postgresql-custom/generated-optimizations.conf';include = '/etc/postgresql-custom/generated-optimizations.conf';" /etc/postgresql/postgresql.conf
 
 # Add healthcheck and entrypoint scripts
 COPY docker/all-in-one/healthcheck.sh /usr/local/bin/
