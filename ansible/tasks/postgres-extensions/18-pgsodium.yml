@@ -7,7 +7,7 @@
 
 - name: libsodium - download libsodium
   get_url:
-    url: "https://download.libsodium.org/libsodium/releases/libsodium-{{ libsodium_release }}.tar.gz"
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/libsodium/libsodium-{{ libsodium_release }}.tar.gz"
     dest: /tmp/libsodium-{{ libsodium_release }}.tar.gz
     checksum: "{{ libsodium_release_checksum }}"
     timeout: 60

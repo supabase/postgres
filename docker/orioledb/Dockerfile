@@ -512,7 +512,7 @@ FROM ccache as libsodium
 ARG libsodium_release
 ARG libsodium_release_checksum
 ADD --checksum=${libsodium_release_checksum} \
-    "https://download.libsodium.org/libsodium/releases/libsodium-${libsodium_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/libsodium/libsodium-${libsodium_release}.tar.gz" \
     /tmp/libsodium.tar.gz
 RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
     rm -rf /tmp/libsodium.tar.gz
