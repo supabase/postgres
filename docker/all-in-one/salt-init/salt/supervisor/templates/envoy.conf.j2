@@ -1,0 +1,9 @@
+[program:envoy]
+command=/opt/envoy-hot-restarter.py /opt/start-envoy.sh
+user=envoy
+autorestart={{ envoy_autostart }}
+autostart={{ envoy_autostart }}
+stopasgroup=true
+stdout_logfile=/var/log/services/envoy.log
+redirect_stderr=true
+stdout_logfile_maxbytes=10MB

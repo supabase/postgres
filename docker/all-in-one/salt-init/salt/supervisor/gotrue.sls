@@ -2,7 +2,7 @@
 gotrue_config:
   file.managed:
     - name: /etc/supervisor/services/gotrue.conf
-    - source: salt://gotrue/templates/gotrue.conf.j2
+    - source: salt://supervisor/templates/gotrue.conf.j2
     - makedirs: True
     - user: root
     - group: root

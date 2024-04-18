@@ -2,7 +2,7 @@
 fail2ban_config:
   file.managed:
     - name: /etc/supervisor/services/fail2ban.conf
-    - source: salt://fail2ban/templates/fail2ban.conf.j2
+    - source: salt://supervisor/templates/fail2ban.conf.j2
     - makedirs: True
     - user: root
     - group: root

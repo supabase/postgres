@@ -4,5 +4,3 @@ base:
   '*':
     - core
     - supervisor
-    - gotrue
-    - fail2ban

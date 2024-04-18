@@ -10,3 +10,9 @@
       - user
       - group
       - mode
+
+include:
+  - supervisor/gotrue
+  - supervisor/fail2ban
+  - supervisor/envoykong
+  - supervisor/group
