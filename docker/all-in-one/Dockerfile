@@ -153,6 +153,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && mkdir -p /dist \
     && mkdir -p /data/opt && chmod go+rwx /data/opt
 
+####################
+# Install salt
+####################
+ENV DEBIAN_FRONTEND noninteractive
+ENV SALT_VERSION 3006.7
+
+# Install one-dir salt
+RUN mkdir /etc/apt/keyrings \
+    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/latest focal main" | tee /etc/apt/sources.list.d/salt.list \
+    && apt-get clean && apt-get update \
+    && apt-get install -y salt-minion
+
+ADD docker/all-in-one/salt-init/docker/etc/minion /etc/salt/minion
+ADD docker/all-in-one/salt-init/salt /opt/salt
+
+
 # Copy single binary dependencies
 COPY --from=pgrst /bin/postgrest /dist/
 COPY --from=gotrue /usr/local/bin/auth /dist/gotrue

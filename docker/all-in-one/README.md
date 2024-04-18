@@ -20,6 +20,7 @@ docker run --rm -it \
     -e ADMIN_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic3VwYWJhc2VfYWRtaW4iLCJpc3MiOiJzdXBhYmFzZS1kZW1vIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjE3OTk1MzU2MDB9.Y9mSNVuTw2TdfryoaqM5wySvwQemGGWfSe9ixcklVfM \
     -e DATA_VOLUME_MOUNTPOINT=/data \
     -e MACHINE_TYPE=shared_cpu_1x_512m \
+    -e GOTRUE_DISABLED=true \
     -p 5432:5432 \
     -p 8000:8000 \
     supabase/all-in-one

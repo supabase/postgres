@@ -280,14 +280,8 @@ if [ "${ENVOY_ENABLED:-}" == "true" ]; then
   sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
 fi
 
-if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
-  disable_fail2ban
-fi
-
-if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
-fi
+# configure gotrue and fail2ban runtime with salt
+/usr/bin/salt-call --local state.apply # -l debug
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   if [ "${SWAP_DISABLED:-}" != "true" ]; then
