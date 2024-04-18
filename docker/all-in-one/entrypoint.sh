@@ -298,12 +298,12 @@ if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   trap graceful_shutdown SIGINT
 fi
 
-REMOTE_INIT_SCRIPT=${REMOTE_INIT_SCRIPT:-}
-if [ -n "$REMOTE_INIT_SCRIPT" ]; then
-  curl -fsSL "$REMOTE_INIT_SCRIPT" -o "/tmp/remote-init.sh" || true
+REMOTE_INIT_UTIL=${REMOTE_INIT_UTIL:-}
+if [ -n "$REMOTE_INIT_UTIL" ]; then
+  curl -fsSL "$REMOTE_INIT_UTIL" -o "/tmp/remote-init" || true
   if [ -f "/tmp/remote-init.sh" ]; then
     chmod +x /tmp/remote-init.sh
-    bash /tmp/remote-init.sh
+    /tmp/remote-init.sh || true
   fi
 fi
 
