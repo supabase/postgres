@@ -1,0 +1,6 @@
+master: salt-master
+features:
+  x509_v2: true
+file_roots:
+  base:
+    - /opt/salt
