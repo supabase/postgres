@@ -79,11 +79,6 @@ function enable_lsn_checkpoint_push {
     sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
 }
 
-function disable_fail2ban {
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
-}
-
 function setup_postgres {
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql.schema.sql
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
@@ -274,14 +269,8 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   enable_autoshutdown
 fi
 
-if [ "${ENVOY_ENABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
-  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
-fi
-
 # configure gotrue and fail2ban runtime with salt
-/usr/bin/salt-call --local state.apply # -l debug
+/usr/bin/salt-call state.apply # -l debug
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   if [ "${SWAP_DISABLED:-}" != "true" ]; then

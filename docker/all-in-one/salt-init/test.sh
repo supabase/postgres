@@ -7,4 +7,4 @@ export FAIL2BAN_DISABLE=true
 docker run --rm -ti -v "$(pwd)"/salt:/opt/salt \
   --name salt-minion \
   salt-minion \
-  /usr/bin/salt-call --local state.apply # -l debug
+  /usr/bin/salt-call state.apply # -l debug

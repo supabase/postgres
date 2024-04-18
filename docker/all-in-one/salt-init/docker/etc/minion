@@ -1,6 +1,7 @@
-master: salt-master
+master_type: disable
 features:
   x509_v2: true
+file_client: local
 file_roots:
   base:
     - /opt/salt
