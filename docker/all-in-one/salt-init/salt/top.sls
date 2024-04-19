@@ -3,4 +3,5 @@
 base:
   '*':
     - core
+    - base
     - supervisor

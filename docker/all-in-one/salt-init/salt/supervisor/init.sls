@@ -1,6 +1,10 @@
 ---
-/etc/supervisor/services:
+create_directories:
   file.directory:
+    - names:
+      - /etc/supervisor/
+      - /etc/supervisor/base-services
+      - /etc/supervisor/services
     - user: root
     - group: root
     - dir_mode: 0755

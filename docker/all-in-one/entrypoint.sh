@@ -45,13 +45,6 @@ function configure_services {
   done
 }
 
-function enable_swap {
-  fallocate -l 1G /mnt/swapfile
-  chmod 600 /mnt/swapfile
-  mkswap /mnt/swapfile
-  swapon /mnt/swapfile
-}
-
 function push_lsn_checkpoint_file {
     if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
       echo "Skipping push of LSN checkpoint file"
@@ -72,11 +65,6 @@ function graceful_shutdown {
 
 function enable_autoshutdown {
     sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
-}
-
-function enable_lsn_checkpoint_push {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
-    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
 }
 
 function setup_postgres {
@@ -273,11 +261,6 @@ fi
 /usr/bin/salt-call state.apply # -l debug
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
-  if [ "${SWAP_DISABLED:-}" != "true" ]; then
-    enable_swap
-  fi
-  enable_lsn_checkpoint_push
-
   trap graceful_shutdown SIGINT
 fi
 
