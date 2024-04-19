@@ -270,9 +270,10 @@ build {
     direction = "download"
   }
 
-  provisioner "file" {
-    source = "/tmp/pg_binaries.tar.gz"
-    destination = "/tmp/pg_binaries.tar.gz"
-    direction = "download"
-  }
+  // provisioner "file" {
+  //   source = "/tmp/pg_binaries.tar.gz"
+  //   destination = "/tmp/pg_binaries.tar.gz"
+  //   direction = "download"
+  // }
+  // TODO RESOLVE IN NEW BUILD
 }
