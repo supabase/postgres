@@ -166,6 +166,9 @@ function run_prelaunch_hooks {
     if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
       sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
     fi
+    if [ -f /usr/local/bin/delegated-entry.sh ]; then
+      bash -c "/usr/local/bin/delegated-entry.sh"
+    fi
 }
 
 function start_supervisor {
@@ -257,7 +260,16 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   enable_autoshutdown
 fi
 
+function get_latest_salt {
+  SALT_ARCHIVE=salt-init-latest.tgz
+  echo "Pulling latest salt archive"
+  curl -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
+  tar -xvzf $SALT_ARCHIVE -C /opt
+}
+
 # configure gotrue and fail2ban runtime with salt
+get_latest_salt
+echo "Applying salt state"
 /usr/bin/salt-call state.apply # -l debug
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
