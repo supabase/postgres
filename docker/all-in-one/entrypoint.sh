@@ -263,8 +263,16 @@ fi
 function get_latest_salt {
   SALT_ARCHIVE=salt-init-latest.tgz
   echo "Pulling latest salt archive"
-  curl -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
-  tar -xvzf $SALT_ARCHIVE -C /opt
+  # pull salt archive if newer than existing tarball
+  if [ -f /opt/$SALT_ARCHIVE ]; then
+    curl --connect-timeout 2 -L --time-cond /opt/$SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o /opt/$SALT_ARCHIVE
+  else
+    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o /opt/$SALT_ARCHIVE
+  fi
+  # only extract a valid archive
+  if [[ $(tar -tzf /opt/$SALT_ARCHIVE) ]]; then
+    tar -xvzf $SALT_ARCHIVE -C /opt
+  fi
 }
 
 # configure gotrue and fail2ban runtime with salt
