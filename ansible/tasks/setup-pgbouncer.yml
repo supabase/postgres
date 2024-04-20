@@ -1,7 +1,7 @@
 # PgBouncer
-- name: create postgres group
+- name: create ssl-cert group
   group:
-    name: postgres
+    name: ssl-cert
     state: present
 
 - name: PgBouncer - download & install dependencies
