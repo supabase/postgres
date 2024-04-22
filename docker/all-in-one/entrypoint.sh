@@ -257,9 +257,6 @@ fi
 
 mkdir -p /var/log/services
 
-SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
-find /etc/supervisor/ -type d -exec chmod 0770 {} +
-find /etc/supervisor/ -type f -exec chmod 0660 {} +
 
 # Start services in the background
 if [ "${POSTGRES_ONLY:-}" == "true" ]; then

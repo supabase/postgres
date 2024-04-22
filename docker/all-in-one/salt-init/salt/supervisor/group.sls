@@ -6,8 +6,8 @@ group_config:
     - makedirs: True
     - user: root
     - group: root
-    - mode: 0644
-    - dir_mode: 0755
+    - mode: 0660
+    - dir_mode: 0770
     - template: jinja
     - backup: minion
     - defaults:

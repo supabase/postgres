@@ -7,8 +7,8 @@ create_directories:
       - /etc/supervisor/services
     - user: root
     - group: root
-    - dir_mode: 0755
-    - file_mode: 0644
+    - dir_mode: 0770
+    - file_mode: 0660
     - makedirs: True
     - recurse:
       - user
