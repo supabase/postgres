@@ -1,3 +1,23 @@
+variable "ami_name" {
+  type    = string
+  default = "supabase-postgres"
+}
+
+variable "ami_regions" {
+  type    = list(string)
+  default = ["ap-southeast-2"]
+}
+
+variable "environment" {
+  type    = string
+  default = "prod"
+}
+
+variable "region" {
+  type    = string
+}
+
+
 packer {
   required_plugins {
     amazon = {
@@ -8,12 +28,12 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "nix-packer-ubuntu"
-  instance_type = "t4g.xlarge"
-  region        = "us-east-1"
+  ami_name      = "${var.ami_name}-stage-2"
+  instance_type = "c6g.4xlarge"
+  region        = "${var.region}"
   source_ami_filter {
     filters = {
-      image-id          = "ami-0f96dd7e4b73241d8"
+      name          = "supabase-postgres-15.1.1.41-stage-1"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -22,33 +42,6 @@ source "amazon-ebs" "ubuntu" {
   }
   ssh_username = "ubuntu"
   ena_support = true
-  launch_block_device_mappings {
-    device_name = "/dev/sda1"
-    volume_size = 40
-    volume_type = "gp3"
-    delete_on_termination = true
-  }
-  launch_block_device_mappings {
-    device_name = "/dev/xvdf"
-    delete_on_termination = true
-    volume_size = 30
-    volume_type = "gp3"
-   }
-
-  launch_block_device_mappings {
-    device_name = "/dev/xvdh"
-    delete_on_termination = true
-    volume_size = 30
-    volume_type = "gp3"
-   }
-  
-  launch_block_device_mappings {
-    device_name = "/dev/xvda"
-    delete_on_termination = true
-    volume_size = 30
-    volume_type = "gp3"
-   }
- 
 
 }
 
@@ -57,6 +50,23 @@ build {
   sources = [
     "source.amazon-ebs.ubuntu"
   ]
+
+  # Copy ansible playbook
+  provisioner "shell" {
+    inline = ["mkdir /tmp/ansible-playbook"]
+  }
+
+  provisioner "file" {
+    source = "ansible/tasks/stage2"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    source = "ansible/files"
+    destination = "/tmp/ansible-playbook"
+  }
+
+
  provisioner "shell" {
      script = "scripts/nix-provision.sh"
   }

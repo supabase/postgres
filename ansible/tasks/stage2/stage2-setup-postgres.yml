@@ -1,0 +1,154 @@
+- name: Install Postgres from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres#psql_15/bin"
+
+- name: Ensure /usr/lib/postgresql/bin directory exists
+  file:
+    path: /usr/lib/postgresql/bin
+    state: directory
+    owner: postgres
+    group: postgres
+
+
+- name: Ensure /usr/lib/postgresql/share directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/contrib directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/timezonesets directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/timezonesets
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/tsearch_data directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/tsearch_data
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/extension directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/extension
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/lib/postgresql/bin
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/bin/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/bin/*"
+  become: yes
+
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/*"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/extension/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/extension/*"
+  become: yes
+
+
+# - name: Create directories recursively
+#   file:
+#     path: "/usr/lib/postgresql/share/postgresql/contrib/{{ item | dirname }}"
+#     state: directory
+#   with_fileglob:
+#     - "/home/postgres/.nix-profile/share/postgresql/contrib/*"
+
+# - name: Create symbolic links for files
+#   file:
+#     src: "{{ item }}"
+#     dest: "/usr/lib/postgresql/share/postgresql/contrib/{{ item | regex_replace('^/home/postgres/.nix-profile/share/postgresql/contrib/', '') }}"
+#     state: link
+#   with_find:
+#     paths: "/home/postgres/.nix-profile/share/postgresql/contrib/"
+#     recurse: yes
+#     patterns: "*"
+#     file_type: any
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/timezonesets/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/timezonesets/*"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/tsearch_data/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/tsearch_data/*"
+  become: yes
+
+
+# Install extensions before init
+# - name: Install Postgres extensions
+#   import_tasks: tasks/setup-docker.yml
+# TODO resolve in new build
+
+- name: Link database data_dir to data volume directory
+  file:
+    src: "/data/pgdata"
+    path: "/var/lib/postgresql/data"
+    state: link
+    force: yes
+    owner: postgres
+    group: postgres
+
+- name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  vars:
+    ansible_command_timeout: 60
+#     # Circumvents the following error:
+#     # "Timeout (12s) waiting for privilege escalation prompt"
+
+- name: copy PG systemd unit
+  template:
+    src: files/postgresql_config/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+
+- name: copy optimizations systemd unit
+  template:
+    src: files/database-optimizations.service.j2
+    dest: /etc/systemd/system/database-optimizations.service
+
+# # # Reload
+- name: System - systemd reload
+  systemd:
+    enabled: yes
+    name: postgresql
+    daemon_reload: yes

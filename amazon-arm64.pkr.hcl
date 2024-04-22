@@ -106,7 +106,7 @@ source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
   #access_key    = "${var.aws_access_key}"
   #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  ami_name = "${var.ami_name}-${var.postgres-version}"
+  ami_name = "${var.ami_name}-${var.postgres-version}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"

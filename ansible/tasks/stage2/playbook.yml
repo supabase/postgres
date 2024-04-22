@@ -1,0 +1,15 @@
+- hosts: localhost
+  become: yes
+
+
+  tasks:
+    - set_fact:
+        supabase_internal: true
+      tags:
+        - install-supabase-internal
+
+    - set_fact:
+        parallel_jobs: 16
+
+    - name: Install Postgres from nix binary cache
+      import_tasks: stage2-setup-postgres.yml

@@ -29,6 +29,7 @@
         # it also serves as a base for importing the orioldb/postgres overlay to 
         #build the orioledb postgres patched version of postgresql16
         oriole_pkgs = import nixpkgs {
+          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -44,6 +45,7 @@
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
+          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -450,7 +452,7 @@
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
@@ -545,7 +547,11 @@
             nix-update
             pg_prove
             shellcheck
-
+            ansible
+            ansible-lint
+            (packer.overrideAttrs (oldAttrs: {
+              version = "1.7.8";
+            }))
             basePackages.start-server
             basePackages.start-client
             basePackages.start-replica
