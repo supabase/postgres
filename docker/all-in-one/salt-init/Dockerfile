@@ -18,6 +18,7 @@ RUN mkdir /etc/apt/keyrings \
 
 ADD docker/etc/minion /etc/salt/minion
 ADD docker/etc/grains /etc/salt/grains
+ADD docker/etc/_grains /etc/salt/_grains
 
 # Start minion only for now
 ADD docker/start.sh /start.sh

@@ -5,3 +5,5 @@ file_client: local
 file_roots:
   base:
     - /opt/salt
+grains:
+  custom_grains: /srv/salt/_grains/initjson.py

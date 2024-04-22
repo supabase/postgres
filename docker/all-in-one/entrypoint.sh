@@ -184,6 +184,8 @@ function run_prelaunch_hooks {
     fi
     if [ -f /usr/local/bin/delegated-entry.sh ]; then
       bash -c "/usr/local/bin/delegated-entry.sh"
+      DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+      echo "Execution time after delegated entry: $DURATION milliseconds"
     fi
 }
 
