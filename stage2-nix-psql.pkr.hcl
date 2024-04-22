@@ -63,7 +63,7 @@ build {
 
   provisioner "file" {
     source = "ansible/files"
-    destination = "/tmp/ansible-playbook"
+    destination = "/tmp/ansible-playbook/files"
   }
 
 

@@ -138,12 +138,12 @@
 
 - name: copy PG systemd unit
   template:
-    src: files/postgresql_config/postgresql.service.j2
+    src: /tmp/ansible-playbook/files/postgresql_config/postgresql.service.j2
     dest: /etc/systemd/system/postgresql.service
 
 - name: copy optimizations systemd unit
   template:
-    src: files/database-optimizations.service.j2
+    src: /tmp/ansible-playbook/files/database-optimizations.service.j2
     dest: /etc/systemd/system/database-optimizations.service
 
 # # # Reload
