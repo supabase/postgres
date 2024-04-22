@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eou pipefail
 
+START_TIME=$(date +%s%N)
+
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
@@ -8,6 +10,16 @@ export DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
 export MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
+
+function calculate_duration {
+  local start_time=$1
+  local end_time=$2
+
+  local duration=$((end_time - start_time))
+  local milliseconds=$((duration / 1000000))
+
+  echo "$milliseconds"
+}
 
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
@@ -139,6 +151,8 @@ function setup_postgres {
     chmod g+rx "/etc/wal-g"
     chmod g+rx "${WALG_CONF_DIR}"
   fi
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "Execution time to setting up postgresql: $DURATION milliseconds"
 }
 
 function setup_credentials {
@@ -148,6 +162,8 @@ function setup_credentials {
   export SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$(jq -r '.["service_key"]' /tmp/init.json)}
   export ADMIN_API_KEY=${ADMIN_API_KEY:-$(jq -r '.["supabase_admin_key"]' /tmp/init.json)}
   export JWT_SECRET=${JWT_SECRET:-$(jq -r '.["jwt_secret"]' /tmp/init.json)}
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "Execution time to setting up credentials: $DURATION milliseconds"
 }
 
 function report_health {
@@ -261,24 +277,28 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
 fi
 
 function get_latest_salt {
-  SALT_ARCHIVE=salt-init-latest.tgz
+  SALT_ARCHIVE="/data/salt-init-latest.tgz"
   echo "Pulling latest salt archive"
   # pull salt archive if newer than existing tarball
   if [ -f /opt/$SALT_ARCHIVE ]; then
-    curl --connect-timeout 2 -L --time-cond /opt/$SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o /opt/$SALT_ARCHIVE
+    curl --connect-timeout 2 -L --time-cond $SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
   else
-    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o /opt/$SALT_ARCHIVE
+    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
   fi
   # only extract a valid archive
-  if [[ $(tar -tzf /opt/$SALT_ARCHIVE) ]]; then
+  if [[ $(tar -tzf $SALT_ARCHIVE) ]]; then
     tar -xvzf $SALT_ARCHIVE -C /opt
   fi
+  local DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "Execution time to unpacking salt-init: $DURATION milliseconds"
 }
 
 # configure gotrue and fail2ban runtime with salt
 get_latest_salt
 echo "Applying salt state"
 /usr/bin/salt-call state.apply # -l debug
+DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+echo "Execution time to finishing salt apply: $DURATION milliseconds"
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
   trap graceful_shutdown SIGINT
@@ -286,5 +306,7 @@ fi
 
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
+DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+echo "Execution time to starting supervisor: $DURATION milliseconds"
 start_supervisor
 push_lsn_checkpoint_file
