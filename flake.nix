@@ -137,7 +137,6 @@
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
-        #postgis_override = pkgs.postgis_override;
 
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
@@ -399,7 +398,7 @@
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
-
+          pg_prove = pg_prove;
           # Start a version of the server.
           start-server =
             let

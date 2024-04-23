@@ -71,45 +71,10 @@
       tags:
         - install-supabase-internal
 
-    # - name: Start Postgres Database
-    #   systemd:
-    #     name: postgresql
-    #     state: started
-    #   when: not ebssurrogate_mode
-
-    # - name: Start Postgres Database without Systemd
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
-    #   when: ebssurrogate_mode
-    # TODO bring into 2nd phase 
-
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
-
-    # - name: Transfer init SQL files
-    #   copy:
-    #     src: files/{{ item.source }}
-    #     dest: /tmp/{{ item.dest }}
-    #   loop: "{{ sql_files }}"
-
-    # - name: Execute init SQL files
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
-    #   loop: "{{ sql_files }}"
-
-    # - name: Delete SQL scripts
-    #   file:
-    #     path: /tmp/{{ item.dest }}
-    #     state: absent
-    #   loop: "{{ sql_files }}"
-    # TODO bring into 2nd phase
-
 
     - name: First boot optimizations
       import_tasks: tasks/internal/optimizations.yml
@@ -143,32 +108,8 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    # - name: Clean out build dependencies
-    #   import_tasks: tasks/clean-build-dependencies.yml
-
-    # - name: Restart Postgres Database without Systemd
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
-    #   when: ebssurrogate_mode
-
-    # - name: Run migrations
-    #   import_tasks: tasks/setup-migrations.yml
-    #   tags:
-    #     - migrations
-
-    # - name: Stop Postgres Database without Systemd
-    #   become: yes
-    #   become_user: postgres
-    #   shell:
-    #     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
-    #   when: ebssurrogate_mode
-
-    # - name: Run unit tests
-    #   import_tasks: tasks/test-image.yml
-    #   tags:
-    #     - unit-tests
+    - name: Clean out build dependencies
+      import_tasks: tasks/clean-build-dependencies.yml
 
     # - name: Collect Postgres binaries
     #   import_tasks: tasks/internal/collect-pg-binaries.yml

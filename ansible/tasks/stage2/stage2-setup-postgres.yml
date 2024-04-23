@@ -74,24 +74,26 @@
     - "/home/postgres/.nix-profile/share/postgresql/extension/*"
   become: yes
 
+- name: Recursively create destination directory
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib/
+    state: directory
+    recurse: yes
 
-# - name: Create directories recursively
-#   file:
-#     path: "/usr/lib/postgresql/share/postgresql/contrib/{{ item | dirname }}"
-#     state: directory
-#   with_fileglob:
-#     - "/home/postgres/.nix-profile/share/postgresql/contrib/*"
+- name: Create symbolic link for each directory
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
+  loop:
+    - { src: "/home/postgres/.nix-profile/share/postgresql/contrib/", dest: "/usr/lib/postgresql/share/postgresql/contrib/" }
 
-# - name: Create symbolic links for files
-#   file:
-#     src: "{{ item }}"
-#     dest: "/usr/lib/postgresql/share/postgresql/contrib/{{ item | regex_replace('^/home/postgres/.nix-profile/share/postgresql/contrib/', '') }}"
-#     state: link
-#   with_find:
-#     paths: "/home/postgres/.nix-profile/share/postgresql/contrib/"
-#     recurse: yes
-#     patterns: "*"
-#     file_type: any
+- name: Create symbolic link for each file
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
+  loop: "{{ query('fileglob', '/home/postgres/.nix-profile/share/postgresql/contrib/*') }}"
 
 - name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
@@ -115,7 +117,7 @@
 # Install extensions before init
 # - name: Install Postgres extensions
 #   import_tasks: tasks/setup-docker.yml
-# TODO resolve in new build
+# TODO resolve in this stage
 
 - name: Link database data_dir to data volume directory
   file:
@@ -146,9 +148,46 @@
     src: /tmp/ansible-playbook/files/database-optimizations.service.j2
     dest: /etc/systemd/system/database-optimizations.service
 
+# - name: Transfer init SQL files
+#   copy:
+#     src: files/{{ item.source }}
+#     dest: /tmp/{{ item.dest }}
+#   loop: "{{ sql_files }}"
+# probably do not need this step
+
+- name: Execute init SQL files
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/psql -f /tmp/ansible-playbook/files/{{ item.dest }}
+  loop: "{{ sql_files }}"
+
+- name: Delete SQL scripts
+  file:
+    path: /tmp/{{ item.dest }}
+    state: absent
+  loop: "{{ sql_files }}"
+
 # # # Reload
 - name: System - systemd reload
   systemd:
     enabled: yes
     name: postgresql
     daemon_reload: yes
+
+
+- name: Run migrations
+  import_tasks: tasks/setup-migrations.yml
+  tags:
+    - migrations
+
+- name: Stop Postgres with systemd
+  systemd:
+    state: stopped
+    name: postgresql
+
+
+- name: Run unit tests
+  import_tasks: tasks/test-image.yml
+  tags:
+    - unit-tests
