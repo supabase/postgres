@@ -53,6 +53,7 @@
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
+            # (import ./nix/overlays/postgis.nix)
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
