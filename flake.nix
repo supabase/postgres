@@ -53,6 +53,7 @@
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
+            # (import ./nix/overlays/postgis.nix)
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
@@ -80,7 +81,7 @@
         # may also bring in new versions of the extensions.
         psqlExtensions = [
           /* pljava */
-          "postgis"
+          /*"postgis"*/
         ];
 
         #FIXME for now, timescaledb is not included in the orioledb version of supabase extensions, as there is an issue
@@ -110,7 +111,7 @@
           ./nix/ext/plpgsql-check.nix
           ./nix/ext/pgjwt.nix
           ./nix/ext/pgaudit.nix
-          #./nix/ext/postgis.nix
+          ./nix/ext/postgis.nix
           ./nix/ext/pgrouting.nix
           ./nix/ext/pgtap.nix
           ./nix/ext/pg_cron.nix
@@ -137,7 +138,7 @@
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
-        postgis_override = pkgs.postgis_override;
+        #postgis_override = pkgs.postgis_override;
 
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
