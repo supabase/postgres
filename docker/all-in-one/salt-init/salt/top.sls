@@ -5,4 +5,3 @@ base:
     - core
     - base
     - supervisor
-    - delegated-entry

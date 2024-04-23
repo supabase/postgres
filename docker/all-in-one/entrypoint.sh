@@ -57,6 +57,13 @@ function configure_services {
   done
 }
 
+function enable_swap {
+  fallocate -l 1G /mnt/swapfile
+  chmod 600 /mnt/swapfile
+  mkswap /mnt/swapfile
+  swapon /mnt/swapfile
+}
+
 function push_lsn_checkpoint_file {
     if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
       echo "Skipping push of LSN checkpoint file"
@@ -77,6 +84,16 @@ function graceful_shutdown {
 
 function enable_autoshutdown {
     sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
+}
+
+function enable_lsn_checkpoint_push {
+    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+}
+
+function disable_fail2ban {
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
 }
 
 function setup_postgres {
@@ -152,7 +169,7 @@ function setup_postgres {
     chmod g+rx "${WALG_CONF_DIR}"
   fi
   DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "Execution time to setting up postgresql: $DURATION milliseconds"
+  echo "E: Execution time to setting up postgresql: $DURATION milliseconds"
 }
 
 function setup_credentials {
@@ -163,7 +180,7 @@ function setup_credentials {
   export ADMIN_API_KEY=${ADMIN_API_KEY:-$(jq -r '.["supabase_admin_key"]' /tmp/init.json)}
   export JWT_SECRET=${JWT_SECRET:-$(jq -r '.["jwt_secret"]' /tmp/init.json)}
   DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "Execution time to setting up credentials: $DURATION milliseconds"
+  echo "E: Execution time to setting up credentials: $DURATION milliseconds"
 }
 
 function report_health {
@@ -179,14 +196,9 @@ function report_health {
 }
 
 function run_prelaunch_hooks {
-    if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
-      sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
-    fi
-    if [ -f /usr/local/bin/delegated-entry.sh ]; then
-      bash -c "/usr/local/bin/delegated-entry.sh"
-      DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-      echo "Execution time after delegated entry: $DURATION milliseconds"
-    fi
+  if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
+    sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
+  fi
 }
 
 function start_supervisor {
@@ -195,6 +207,37 @@ function start_supervisor {
 
   # Start supervisord
   /usr/bin/supervisord -c $SUPERVISOR_CONF
+}
+
+function execute_delegated_entrypoint {
+  SALT_ARCHIVE="/data/salt-init-latest.tgz"
+  echo "Pulling latest salt archive"
+  # pull salt archive if newer than existing tarball
+  if [ -f $SALT_ARCHIVE ]; then
+    curl --connect-timeout 2 -L --time-cond $SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
+  else
+    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
+  fi
+  # only extract a valid archive
+  if [[ $(tar -tzf $SALT_ARCHIVE) ]]; then
+    if [ -d /data/salt ]; then
+      # Only extract newer tar archives
+      TAR_MTIME=$(stat -c "%Y" $SALT_ARCHIVE)
+      DIR_MTIME=$(stat -c "%Y" /data/salt)
+      if [ $TAR_MTIME -gt $DIR_MTIME ]; then
+        tar -xvzf $SALT_ARCHIVE -C /data
+      fi
+    else
+      tar -xvzf $SALT_ARCHIVE -C /data
+    fi
+  fi
+  local DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "E: Execution time to unpacking salt-init: $DURATION milliseconds"
+  # Run our delegated entry script here
+  if [ -f /data/salt/delegated-entry.sh ]; then
+    chmod +x /data/salt/delegated-entry.sh
+    bash -c "/data/salt/delegated-entry.sh $START_TIME"
+  fi
 }
 
 # Increase max number of open connections
@@ -259,6 +302,9 @@ fi
 
 mkdir -p /var/log/services
 
+SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
+find /etc/supervisor/ -type d -exec chmod 0770 {} +
+find /etc/supervisor/ -type f -exec chmod 0660 {} +
 
 # Start services in the background
 if [ "${POSTGRES_ONLY:-}" == "true" ]; then
@@ -275,37 +321,38 @@ if [ "${AUTOSHUTDOWN_ENABLED:-}" == "true" ]; then
   enable_autoshutdown
 fi
 
-function get_latest_salt {
-  SALT_ARCHIVE="/data/salt-init-latest.tgz"
-  echo "Pulling latest salt archive"
-  # pull salt archive if newer than existing tarball
-  if [ -f /opt/$SALT_ARCHIVE ]; then
-    curl --connect-timeout 2 -L --time-cond $SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
-  else
-    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
-  fi
-  # only extract a valid archive
-  if [[ $(tar -tzf $SALT_ARCHIVE) ]]; then
-    tar -xvzf $SALT_ARCHIVE -C /opt
-  fi
-  local DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "Execution time to unpacking salt-init: $DURATION milliseconds"
-}
+if [ "${ENVOY_ENABLED:-}" == "true" ]; then
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/services/envoy.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/kong.conf
+  sed -i "s/kong/envoy/" /etc/supervisor/services/group.conf
+fi
 
-# configure gotrue and fail2ban runtime with salt
-get_latest_salt
-echo "Applying salt state"
-/usr/bin/salt-call state.apply # -l debug
-DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-echo "Execution time to finishing salt apply: $DURATION milliseconds"
+if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
+  disable_fail2ban
+fi
+
+if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
+  if [ "${SWAP_DISABLED:-}" != "true" ]; then
+    enable_swap
+  fi
+  enable_lsn_checkpoint_push
+
   trap graceful_shutdown SIGINT
 fi
 
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
-DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-echo "Execution time to starting supervisor: $DURATION milliseconds"
-start_supervisor
-push_lsn_checkpoint_file
+
+if [ ! -z "${DELEGATED_INIT_LOCATION:-}" ]; then
+  execute_delegated_entrypoint
+else
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "E: Execution time to starting supervisor: $DURATION milliseconds"
+  start_supervisor
+  push_lsn_checkpoint_file
+fi
