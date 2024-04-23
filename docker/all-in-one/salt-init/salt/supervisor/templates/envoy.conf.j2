@@ -1,7 +1,7 @@
 [program:envoy]
 command=/opt/envoy-hot-restarter.py /opt/start-envoy.sh
 user=envoy
-autorestart={{ envoy_autostart }}
+autorestart=true
 autostart={{ envoy_autostart }}
 stopasgroup=true
 stdout_logfile=/var/log/services/envoy.log
