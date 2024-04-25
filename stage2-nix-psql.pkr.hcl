@@ -33,7 +33,7 @@ source "amazon-ebs" "ubuntu" {
   region        = "${var.region}"
   source_ami_filter {
     filters = {
-      name          = "supabase-postgres-15.1.1.41-stage-1"
+      name          = "supabase-postgres-15.1.1.42-stage-1"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -62,10 +62,14 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible/files"
+    source      = "ansible/files"
     destination = "/tmp/ansible-playbook/files"
   }
 
+  provisioner "file" {
+    source = "migrations"
+    destination = "/tmp"
+  }
 
  provisioner "shell" {
      script = "scripts/nix-provision.sh"

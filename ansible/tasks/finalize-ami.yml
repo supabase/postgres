@@ -70,12 +70,3 @@
         sed -i -e 's;daily;*:0/5;' /etc/systemd/system/logrotate.timer
         systemctl reenable logrotate.timer
   become: yes
-
-# - name: import pgsodium_getkey script
-#   template:
-#     src: files/pgsodium_getkey_readonly.sh.j2
-#     dest: "{{ pg_bindir }}/pgsodium_getkey.sh"
-#     owner: postgres
-#     group: postgres
-#     mode: 0700
-# TODO bring into 2nd phase

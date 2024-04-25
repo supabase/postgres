@@ -1,6 +1,11 @@
 - hosts: localhost
   become: yes
 
+  vars:
+    sql_files:
+      - "/tmp/ansible-playbook/files/pgbouncer_config/pgbouncer_auth_schema.sql"
+      - "/tmp/ansible-playbook/files/stat_extension.sql"
+
 
   tasks:
     - set_fact:
@@ -13,3 +18,11 @@
 
     - name: Install Postgres from nix binary cache
       import_tasks: stage2-setup-postgres.yml
+
+    - name: First boot optimizations
+      import_tasks: optimizations.yml
+
+    - name: Run unit tests
+      import_tasks: test-image.yml
+      tags:
+        - unit-tests

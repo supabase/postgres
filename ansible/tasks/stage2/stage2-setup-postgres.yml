@@ -3,6 +3,13 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres#psql_15/bin"
 
+- name: Install glibcLocales from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#glibcLocales"
+
+#TODO include ls $(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale-archive
+
 - name: Ensure /usr/lib/postgresql/bin directory exists
   file:
     path: /usr/lib/postgresql/bin
@@ -46,6 +53,14 @@
     owner: postgres
     group: postgres
 
+- name: import pgsodium_getkey script
+  template:
+    src: /tmp/ansible-playbook/files/pgsodium_getkey_readonly.sh.j2
+    dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+    owner: postgres
+    group: postgres
+    mode: 0700
+
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/lib/postgresql/bin
   file:
     src: "{{ item }}"
@@ -74,26 +89,19 @@
     - "/home/postgres/.nix-profile/share/postgresql/extension/*"
   become: yes
 
-- name: Recursively create destination directory
+- name: create destination directory
   file:
     path: /usr/lib/postgresql/share/postgresql/contrib/
     state: directory
     recurse: yes
 
-- name: Create symbolic link for each directory
-  file:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    state: link
-  loop:
-    - { src: "/home/postgres/.nix-profile/share/postgresql/contrib/", dest: "/usr/lib/postgresql/share/postgresql/contrib/" }
-
-- name: Create symbolic link for each file
-  file:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    state: link
-  loop: "{{ query('fileglob', '/home/postgres/.nix-profile/share/postgresql/contrib/*') }}"
+# TODO check that these dirs were created correctly in final AMI
+- name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
+  shell: >
+    sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
+    sudo find /home/postgres/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+    && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
+  become: yes
 
 - name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
@@ -114,10 +122,9 @@
   become: yes
 
 
-# Install extensions before init
-# - name: Install Postgres extensions
-#   import_tasks: tasks/setup-docker.yml
-# TODO resolve in this stage
+#Install configure before init
+- name: Install Postgres extensions
+  import_tasks: setup-extensions.yml
 
 - name: Link database data_dir to data volume directory
   file:
@@ -128,11 +135,20 @@
     owner: postgres
     group: postgres
 
+- name: Ensure en_US.UTF-8 locale is enabled
+  shell: |
+    if ! grep -q "^en_US.UTF-8" /etc/locale.gen ; then
+        echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+        locale-gen
+    fi
+  become: yes
+
 - name: Initialize the database
   become: yes
   become_user: postgres
-  shell:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  shell: |
+    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access --locale=en_US.UTF-8"
   vars:
     ansible_command_timeout: 60
 #     # Circumvents the following error:
@@ -148,25 +164,39 @@
     src: /tmp/ansible-playbook/files/database-optimizations.service.j2
     dest: /etc/systemd/system/database-optimizations.service
 
-# - name: Transfer init SQL files
-#   copy:
-#     src: files/{{ item.source }}
-#     dest: /tmp/{{ item.dest }}
-#   loop: "{{ sql_files }}"
-# probably do not need this step
+- name: Restart Postgres Database without Systemd
+  become: yes
+  become_user: postgres
+  shell: |
+    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
 
 - name: Execute init SQL files
   become: yes
   become_user: postgres
   shell:
-    cmd: /usr/lib/postgresql/bin/psql -f /tmp/ansible-playbook/files/{{ item.dest }}
+    cmd: /usr/lib/postgresql/bin/psql -f {{ item }}
   loop: "{{ sql_files }}"
 
 - name: Delete SQL scripts
   file:
-    path: /tmp/{{ item.dest }}
+    path: "{{ item }}"
     state: absent
   loop: "{{ sql_files }}"
+
+- name: Restart Postgres Database without Systemd
+  become: yes
+  become_user: postgres
+  shell: |
+    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
+
+
+- name: Run migrations
+  import_tasks: setup-migrations.yml
+  tags:
+    - migrations
+
 
 # # # Reload
 - name: System - systemd reload
@@ -175,19 +205,7 @@
     name: postgresql
     daemon_reload: yes
 
-
-- name: Run migrations
-  import_tasks: tasks/setup-migrations.yml
-  tags:
-    - migrations
-
 - name: Stop Postgres with systemd
   systemd:
     state: stopped
     name: postgresql
-
-
-- name: Run unit tests
-  import_tasks: tasks/test-image.yml
-  tags:
-    - unit-tests

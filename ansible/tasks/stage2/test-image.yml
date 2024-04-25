@@ -12,7 +12,8 @@
 - name: Start Postgres Database to load all extensions.
   become: yes
   become_user: postgres
-  shell:
+  shell: |
+    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive  
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
@@ -34,7 +35,11 @@
     cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
 
 - name: Reset db stats
-  shell: /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
+  become: yes
+  become_user: postgres
+  shell: |
+    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
 
 - name: remove pg_prove
   apt:

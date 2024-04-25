@@ -1,14 +1,16 @@
-- name: Copy extension packages
-  copy:
-    src: files/extensions/
-    dest: /tmp/extensions/
+# - name: Copy extension packages
+#   copy:
+#     src: files/extensions/
+#     dest: /tmp/extensions/
 
-# Builtin apt module does not support wildcard for deb paths
-- name: Install extensions
-  shell: |
-    set -e
-    apt-get update
-    apt-get install -y --no-install-recommends /tmp/extensions/*.deb
+# # Builtin apt module does not support wildcard for deb paths
+# - name: Install extensions
+#   shell: |
+#     set -e
+#     apt-get update
+#     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
+# TODO remove
+
 
 - name: pg_cron - set cron.database_name
   become: yes
@@ -17,11 +19,8 @@
     state: present
     line: cron.database_name = 'postgres'
 
-- name: pgsodium - determine postgres bin directory
-  shell: pg_config --bindir
-  register: pg_bindir_output
 - set_fact:
-    pg_bindir: "{{ pg_bindir_output.stdout }}"
+    pg_bindir: "/usr/lib/postgresql/bin"
 
 - name: pgsodium - set pgsodium.getkey_script
   become: yes
@@ -48,7 +47,7 @@
 
 - name: supautils - write custom supautils.conf
   template:
-    src: "files/postgresql_config/supautils.conf.j2"
+    src: "/tmp/ansible-playbook/files/postgresql_config/supautils.conf.j2"
     dest: /etc/postgresql-custom/supautils.conf
     mode: 0664
     owner: postgres
@@ -56,7 +55,7 @@
 
 - name: supautils - copy extension custom scripts
   copy:
-    src: files/postgresql_extension_custom_scripts/
+    src: /tmp/ansible-playbook/files/postgresql_extension_custom_scripts/
     dest: /etc/postgresql-custom/extension-custom-scripts
   become: yes
 
@@ -76,7 +75,8 @@
     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
     replace: "include = '/etc/postgresql-custom/supautils.conf'"
 
-- name: Cleanup - extension packages
-  file:
-    path: /tmp/extensions
-    state: absent
+# - name: Cleanup - extension packages
+#   file:
+#     path: /tmp/extensions
+#     state: absent
+# TODO remove
