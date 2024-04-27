@@ -8,6 +8,34 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#glibcLocales"
 
+
+# - name: Generate en_US.UTF-8 locale
+#   command: sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
+
+# - name: Add LOCALE_ARCHIVE to .bashrc
+#   ansible.builtin.lineinfile:
+#     dest: "/home/postgres/.bashrc"
+#     line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
+#     create: yes
+#   become: yes
+#   become_user: postgres
+
+# - name: Add LANG items to .bashrc
+#   ansible.builtin.lineinfile:
+#     dest: "/home/postgres/.bashrc"
+#     line: "{{ item }}"
+    
+#   loop: 
+#     - 'export LANG="en_US.UTF-8"'
+#     - 'export LANGUAGE="en_US.UTF-8"'
+#     - 'export LC_ALL="en_US.UTF-8"'
+#     - 'export LANG="en_US.UTF-8"'
+#     - 'export LC_CTYPE="en_US.UTF-8"'
+#   become: yes
+#   become_user: postgres
+
+
 #TODO include ls $(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale-archive
 
 - name: Ensure /usr/lib/postgresql/bin directory exists
@@ -135,20 +163,26 @@
     owner: postgres
     group: postgres
 
-- name: Ensure en_US.UTF-8 locale is enabled
-  shell: |
-    if ! grep -q "^en_US.UTF-8" /etc/locale.gen ; then
-        echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-        locale-gen
-    fi
-  become: yes
+# - name: Set LANG environment variable
+#   environment:
+#     LANG: en_US.UTF-8
+#   #become: yes
+#source /home/postgres/.bashrc &&
 
 - name: Initialize the database
   become: yes
   become_user: postgres
-  shell: |
-    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
-    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access --locale=en_US.UTF-8"
+  shell: source /home/postgres/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+  #   LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+  #   LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   vars:
     ansible_command_timeout: 60
 #     # Circumvents the following error:
@@ -168,8 +202,14 @@
   become: yes
   become_user: postgres
   shell: |
-    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    source /home/postgres/.bashrc
     /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
 
 - name: Execute init SQL files
   become: yes
@@ -188,9 +228,16 @@
   become: yes
   become_user: postgres
   shell: |
-    export LOCALE_ARCHIVE=$(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale/locale-archive
+    source /home/postgres/.bashrc && \
     /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
-
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
 
 - name: Run migrations
   import_tasks: setup-migrations.yml
@@ -209,3 +256,10 @@
   systemd:
     state: stopped
     name: postgresql
+
+
+- name: Stop Postgres Database without systemd
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop

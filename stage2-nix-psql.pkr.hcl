@@ -70,8 +70,13 @@ build {
     source = "migrations"
     destination = "/tmp"
   }
-
- provisioner "shell" {
+  
+  provisioner "shell" {
      script = "scripts/nix-provision.sh"
+  }
+  
+  provisioner "file" {
+    source = "ebssurrogate/files/unit-tests"
+    destination = "/tmp"
   }
 }
