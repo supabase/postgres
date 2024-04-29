@@ -3,11 +3,12 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres#psql_15/bin"
 
-- name: Install glibcLocales from nix binary cache
+- name: Install pg_prove from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#glibcLocales"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
 
+#TODO switch pg_prove sourcing to develop branch once PR is merged
 
 # - name: Generate en_US.UTF-8 locale
 #   command: sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8

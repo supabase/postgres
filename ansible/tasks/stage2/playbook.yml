@@ -15,7 +15,16 @@
 
     - set_fact:
         parallel_jobs: 16
-    
+
+    - name: stat unit test file copy
+      copy:
+        src: /tmp/unit-tests/unit-test-01.sql
+        dest: /home/postgres/unit-test-01.sql
+        # state: present
+        owner: postgres
+        group: postgres
+        mode: '0644'
+
     - name: locale-gen
       command: sudo locale-gen en_US.UTF-8
 
