@@ -27,9 +27,11 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
 fi
 
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
-  echo "init gotrue payload"
-  tar -h --overwrite -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/gotrue.env
-  chown -R adminapi:adminapi /etc/gotrue.env
+  if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
+    echo "init gotrue payload"
+    tar -h --overwrite -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/gotrue.env
+    chown -R adminapi:adminapi /etc/gotrue.env
+  fi
 else
   sed -i "s|api_external_url|${API_EXTERNAL_URL:-http://localhost}|g" /etc/gotrue.env
   sed -i "s|gotrue_api_host|${GOTRUE_API_HOST:-0.0.0.0}|g" /etc/gotrue.env
