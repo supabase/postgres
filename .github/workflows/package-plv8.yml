@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/package-plv8.yml"
       - "Dockerfile"
+  workflow_dispatch:
 
 env:
   image: ghcr.io/supabase/plv8
