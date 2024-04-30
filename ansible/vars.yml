@@ -129,8 +129,8 @@ pgroonga_release_checksum: sha256:885ff3878cc30e9030e5fc56d561bc8b66df3ede1562c9
 
 wrappers_release: "0.3.0"
 
-hypopg_release: "1.3.1"
-hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
+hypopg_release: "1.4.1"
+hypopg_release_checksum: sha256:9afe6357fd389d8d33fad81703038ce520b09275ec00153c6c89282bcdedd6bc
 
 pg_repack_release: "1.5.0"
 pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52

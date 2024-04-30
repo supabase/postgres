@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "hypopg";
-  version = "1.3.1";
+  version = "1.4.1";
 
   buildInputs = [ postgresql ];
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner = "HypoPG";
     repo = pname;
     rev = "refs/tags/${version}";
-    hash = "sha256-AIBXy+LxyHUo+1hd8gQTwaBdFiTEzKaCVc4cx5tZgME=";
+    hash = "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM=";
   };
 
   installPhase = ''
