@@ -57,8 +57,10 @@
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
+
         };
 
+        sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
 
         # FIXME (aseipp): pg_prove is yet another perl program that needs
         # LOCALE_ARCHIVE set in non-NixOS environments. upstream this. once that's done, we
@@ -139,6 +141,7 @@
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
 
+        
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -400,6 +403,8 @@
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           pg_prove = pg_prove;
+          sfcgal = sfcgal;
+         
           # Start a version of the server.
           start-server =
             let

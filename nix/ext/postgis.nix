@@ -13,10 +13,12 @@
 , libiconv
 , pcre2
 , nixosTests
+, callPackage
 }:
 
 let
   gdal = gdalMinimal;
+  sfcgal = callPackage ./sfcgal/sfcgal.nix { };
 in
 stdenv.mkDerivation rec {
   pname = "postgis";
@@ -29,7 +31,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-miohnaAFoXMKOdGVmhx87GGbHvsAm2W+gP/CW60pkGg=";
   };
 
-  buildInputs = [ libxml2 postgresql geos proj gdal json_c protobufc pcre2.dev ]
+  buildInputs = [ libxml2 postgresql geos proj gdal json_c protobufc pcre2.dev sfcgal ]
                 ++ lib.optional stdenv.isDarwin libiconv;
   nativeBuildInputs = [ perl pkg-config ];
   dontDisableStatic = true;
@@ -40,7 +42,7 @@ stdenv.mkDerivation rec {
 
   preConfigure = ''
     sed -i 's@/usr/bin/file@${file}/bin/file@' configure
-    configureFlags="--datadir=$out/share/postgresql --datarootdir=$out/share/postgresql --bindir=$out/bin --docdir=$doc/share/doc/${pname} --with-gdalconfig=${gdal}/bin/gdal-config --with-jsondir=${json_c.dev} --disable-extension-upgrades-install"
+    configureFlags="--datadir=$out/share/postgresql --datarootdir=$out/share/postgresql --bindir=$out/bin --docdir=$doc/share/doc/${pname} --with-gdalconfig=${gdal}/bin/gdal-config --with-jsondir=${json_c.dev} --disable-extension-upgrades-install --with-sfcgal"
 
     makeFlags="PERL=${perl}/bin/perl datadir=$out/share/postgresql pkglibdir=$out/lib bindir=$out/bin docdir=$doc/share/doc/${pname}"
   '';

@@ -11,6 +11,10 @@
 #     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
 # TODO remove
 
+# The following tasks were moved to stage 2 from the original ansible/tasks/setup-docker.yml
+# due to these configurations being required to be applied at this stage, after the database package
+# has been installed and before the database is started.
+# These tasks are required to be run before the database is started, as they modify the database configuration
 
 - name: pg_cron - set cron.database_name
   become: yes
@@ -79,4 +83,4 @@
 #   file:
 #     path: /tmp/extensions
 #     state: absent
-# TODO remove
+# TODO remove extensions are already packaged in the nix build
