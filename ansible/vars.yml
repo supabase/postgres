@@ -15,8 +15,8 @@ postgrest_release: "12.0.2"
 postgrest_arm_release_checksum: sha1:a08eaa2af548d44b4c8ea61b0223fb7019f5c768
 postgrest_x86_release_checksum: sha1:40f65ded06b9de6567fbe2cd7a317196e22dd595
 
-gotrue_release: 2.144.0
-gotrue_release_checksum: sha1:32c700fbe555ad347dfedb009dbafbc369831c50
+gotrue_release: 2.150.0
+gotrue_release_checksum: sha1:d785c1a4aadcee88738c3e016ac12f9a7c3db858
 
 aws_cli_release: "2.2.7"
 
@@ -46,8 +46,8 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: 0.63.0
-adminmgr_release: 0.15.0
+adminapi_release: 0.63.5
+adminmgr_release: 0.19.0
 
 # Postgres Extensions
 postgis_release: "3.3.2"
@@ -82,8 +82,8 @@ timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4
 wal2json_release: "2_5"
 wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
 
-supautils_release: "2.1.0"
-supautils_release_checksum: sha256:a84056d3e200710f6a547e0f7b88910420ddfe7fe06b6fa7bafa9b0598d13fee
+supautils_release: "2.2.0"
+supautils_release_checksum: sha256:0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
@@ -127,7 +127,7 @@ groonga_release_checksum: sha256:1c2d1a6981c1ad3f02a11aff202b15ba30cb1c6147f1fa9
 pgroonga_release: "3.0.7"
 pgroonga_release_checksum: sha256:885ff3878cc30e9030e5fc56d561bc8b66df3ede1562c9d802bc0ea04fe5c203
 
-wrappers_release: "0.2.0"
+wrappers_release: "0.3.0"
 
 hypopg_release: "1.3.1"
 hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
@@ -135,8 +135,11 @@ hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada
 pg_repack_release: "1.5.0"
 pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52
 
-pgvector_release: "0.6.0"
-pgvector_release_checksum: sha256:b0cf4ba1ab016335ac8fb1cada0d2106235889a194fffeece217c5bda90b2f19
+pgvector_release: "0.6.2"
+pgvector_release_checksum: sha256:a11cc249a9f3f3d7b13069a1696f2915ac28991a72d7ba4e2bcfdceddbaeae49
 
 pg_tle_release: "1.3.2"
 pg_tle_release_checksum: sha256:d04f72d88b21b954656609743560684ac42645b64a36c800d4d2f84d1f180de1
+
+index_advisor_release: "0.2.0"
+index_advisor_checksum: sha256:2d3642012a9185cda51f1e82ba43d64a81b24a2655a3ac3afdcbbd95d46a1a27

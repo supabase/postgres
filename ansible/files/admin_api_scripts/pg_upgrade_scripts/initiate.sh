@@ -306,6 +306,8 @@ EOF
     echo "11. Copying custom configurations"
     mkdir -p "$MOUNT_POINT/conf"
     cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
+    # removing supautils config as to allow the latest one provided by the latest image to be used
+    rm -f "$MOUNT_POINT/conf/supautils.conf" || true
 
     # removing wal-g config as to allow it to be explicitly enabled on the new instance
     rm -f "$MOUNT_POINT/conf/wal-g.conf"

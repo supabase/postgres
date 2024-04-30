@@ -1,0 +1,46 @@
+name: Nix CI
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write    
+    
+jobs:
+  build-run-image:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: larger-runner-4cpu
+            arch: amd64
+          - runner: arm-runner
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+      - name: write secret key
+        # use python so we don't interpolate the secret into the workflow logs, in case of bugs
+        run: |
+          python -c "import os; file = open('nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
+        env:
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+  
+      - name: Build docker images
+        run: docker build -t base_nix -f docker/nix/Dockerfile .
+      - name: Run build psql bundle
+        run:  docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} base_nix bash -c "./workspace/docker/nix/build.sh"
+    name: build psql bundle on ${{ matrix.arch }}

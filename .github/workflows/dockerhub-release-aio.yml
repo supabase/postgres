@@ -13,11 +13,17 @@ on:
       - develop
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      baseDockerVersion:
+        description: 'Base Docker Version. E.g., 15.1.1.27'
+        required: false
 
 jobs:
   settings:
     runs-on: ubuntu-latest
     outputs:
+      base_docker_version: ${{ steps.base_docker.outputs.base-docker-version }}
       docker_version: ${{ steps.settings.outputs.postgres-version }}
       image_tag: supabase/postgres:aio-${{ steps.settings.outputs.postgres-version }}
       fly_image_tag: supabase-postgres-image:aio-${{ steps.settings.outputs.postgres-version }}
@@ -27,6 +33,13 @@ jobs:
       - id: settings
         # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
+      - id: base_docker
+        run: |
+          if [[ "${{ inputs.baseDockerVersion }}" != "" ]]; then
+            echo "base-docker-version=${{ inputs.baseDockerVersion }}" >> $GITHUB_OUTPUT
+          else
+            echo "base-docker-version=${{ steps.settings.outputs.postgres-version }}" >> $GITHUB_OUTPUT
+          fi
       - id: args
         uses: mikefarah/yq@master
         with:
@@ -60,7 +73,7 @@ jobs:
           file: docker/all-in-one/Dockerfile
           push: true
           build-args: |
-            postgres_version=${{ needs.settings.outputs.docker_version }}
+            postgres_version=${{ needs.settings.outputs.base_docker_version }}
             ${{ needs.settings.outputs.build_args }}
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}

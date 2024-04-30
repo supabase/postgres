@@ -67,7 +67,7 @@
   shell:
     cmd: |
         cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
-        sed -i -e 's;daily;*:0/10;' /etc/systemd/system/logrotate.timer
+        sed -i -e 's;daily;*:0/5;' /etc/systemd/system/logrotate.timer
         systemctl reenable logrotate.timer
   become: yes
 

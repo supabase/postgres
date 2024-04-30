@@ -48,6 +48,28 @@ EOF
 
         run_sql -c "$PG_NET_GRANT_QUERY"
     fi
+
+    # Patching pg_cron ownership as it resets during upgrade
+    HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';")
+
+    if [ "$HAS_PG_CRON_OWNED_BY_POSTGRES" = "t" ]; then
+        RECREATE_PG_CRON_QUERY=$(cat <<EOF
+        begin;
+        create temporary table cron_job as select * from cron.job;
+        create temporary table cron_job_run_details as select * from cron.job_run_details;
+        drop extension pg_cron;
+        create extension pg_cron schema pg_catalog;
+        insert into cron.job select * from cron_job;
+        insert into cron.job_run_details select * from cron_job_run_details;
+        select setval('cron.jobid_seq', coalesce(max(jobid), 0) + 1, false) from cron.job;
+        select setval('cron.runid_seq', coalesce(max(runid), 0) + 1, false) from cron.job_run_details;
+        update cron.job set username = 'postgres' where username = 'supabase_admin';
+        commit;
+EOF
+        )
+
+        run_sql -c "$RECREATE_PG_CRON_QUERY"
+    fi
 }
 
 function complete_pg_upgrade {

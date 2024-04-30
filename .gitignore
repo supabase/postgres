@@ -10,3 +10,8 @@ ansible/image-manifest*.json
 __pycache__/
 *.py[cod]
 *$py.class
+
+#nix related
+result*
+.env-local
+.history

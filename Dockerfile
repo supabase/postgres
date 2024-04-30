@@ -31,11 +31,12 @@ ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.2.0
+ARG wrappers_release=0.3.0
 ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.3.2
-ARG supautils_release=2.1.0
+ARG index_advisor_release=0.2.0
+ARG supautils_release=2.2.0
 ARG wal_g_release=2.0.1
 
 ####################
@@ -556,7 +557,7 @@ FROM ccache as libsodium
 ARG libsodium_release
 ARG libsodium_release_checksum
 ADD --checksum=${libsodium_release_checksum} \
-    "https://download.libsodium.org/libsodium/releases/libsodium-${libsodium_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/libsodium/libsodium-${libsodium_release}.tar.gz" \
     /tmp/libsodium.tar.gz
 RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
     rm -rf /tmp/libsodium.tar.gz
@@ -803,6 +804,24 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
+######################
+# 30-index_advisor.yml
+######################
+FROM ccache as index_advisor
+ARG index_advisor_release
+ARG index_advisor_release_checksum
+ADD --checksum=${index_advisor_release_checksum} \
+    "https://github.com/olirice/index_advisor/archive/refs/tags/v${index_advisor_release}.tar.gz" \
+    /tmp/index_advisor.tar.gz
+RUN tar -xvf /tmp/index_advisor.tar.gz -C /tmp && \
+    rm -rf /tmp/index_advisor.tar.gz
+# Build from source
+WORKDIR /tmp/index_advisor-${index_advisor_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
 ####################
 # internal/supautils.yml
 ####################
@@ -857,6 +876,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
+COPY --from=index_advisor /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
@@ -927,6 +947,7 @@ RUN sed -i \
 
 # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Add upstream entrypoint script
