@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
-ARG postgresql_major=15
-ARG postgresql_release=${postgresql_major}.1
+ARG postgresql_major=16
+ARG postgresql_release=${postgresql_major}.2
 
 # Bump default build arg to build a package from source
 # Bump vars.yml to specify runtime package version
