@@ -24,7 +24,8 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "A wrapper around CGAL that intents to implement 2D and 3D operations on OGC standards models";
     homepage = "https://sfcgal.gitlab.io/SFCGAL/";
-    license = licenses.gpl2Only;
+    license = with licenses; [ gpl3Plus lgpl3Plus];
+    platforms = platforms.all;
     maintainers = with maintainers; [ samrose ];
   };
 }
