@@ -80,19 +80,19 @@ function enable_lsn_checkpoint_push {
 }
 
 function disable_fail2ban {
-  sed -i "s/command=.*/command=sleep 1/" /etc/supervisor/services/fail2ban.conf
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
 }
 
 function disable_gotrue {
-  sed -i "s/command=.*/command=sleep 1/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/gotrue.conf
   sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
 }
 
 function disable_pgbouncer {
-  sed -i "s/command=.*/command=sleep 1/" /etc/supervisor/services/pgbouncer.conf
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/pgbouncer.conf
   sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/pgbouncer.conf
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/pgbouncer.conf
 }
