@@ -1,7 +1,7 @@
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres#psql_15/bin"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#psql_15/bin"
 
 - name: Install pg_prove from nix binary cache
   become: yes
