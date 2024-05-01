@@ -57,7 +57,7 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible/tasks/stage2"
+    source = "ansible-nix/tasks/stage2"
     destination = "/tmp/ansible-playbook"
   }
 

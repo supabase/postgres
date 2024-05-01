@@ -1,0 +1,145 @@
+supabase_internal: true
+ebssurrogate_mode: true
+async_mode: true
+
+postgresql_major: "15"
+postgresql_release: "15.1"
+postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
+
+# Non Postgres Extensions
+pgbouncer_release: "1.19.0"
+pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
+
+# to get these use `wget https://github.com/PostgREST/postgrest/releases/download/v12.0.2/postgrest-v12.0.2-ubuntu-aarch64.tar.xz -q -O- | sha1sum`
+postgrest_release: "12.0.2"
+postgrest_arm_release_checksum: sha1:a08eaa2af548d44b4c8ea61b0223fb7019f5c768
+postgrest_x86_release_checksum: sha1:40f65ded06b9de6567fbe2cd7a317196e22dd595
+
+gotrue_release: 2.148.0
+gotrue_release_checksum: sha1:e3ab39c10605b6a00a953528022b563c8fa1ca33
+
+aws_cli_release: "2.2.7"
+
+golang_version: "1.19.3"
+golang_version_checksum:
+  arm64: sha256:99de2fe112a52ab748fb175edea64b313a0c8d51d6157dba683a6be163fd5eab
+  amd64: sha256:74b9640724fd4e6bb0ed2a1bc44ae813a03f1e72a4c76253e2d5c015494430ba
+
+envoy_release: 1.28.0
+envoy_release_checksum: sha1:b0a06e9cfb170f1993f369beaa5aa9d7ec679ce5
+envoy_hot_restarter_release_checksum: sha1:6d43b89d266fb2427a4b51756b649883b0617eda
+
+kong_release_target: focal # if it works, it works
+kong_deb: kong_2.8.1_arm64.deb
+kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
+
+nginx_release: 1.22.0
+nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
+
+wal_g_release: "2.0.1"
+
+sfcgal_release: "1.3.10"
+sfcgal_release_checksum: sha256:4e39b3b2adada6254a7bdba6d297bb28e1a9835a9f879b74f37e2dab70203232
+
+postgres_exporter_release: "0.15.0"
+postgres_exporter_release_checksum:
+  arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+  amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
+
+adminapi_release: 0.63.5
+adminmgr_release: 0.19.0
+
+# Postgres Extensions
+postgis_release: "3.3.2"
+postgis_release_checksum: sha256:9a2a219da005a1730a39d1959a1c7cec619b1efb009b65be80ffc25bad299068
+
+pgrouting_release: "3.4.1"
+pgrouting_release_checksum: sha256:a4e034efee8cf67582b67033d9c3ff714a09d8f5425339624879df50aff3f642
+
+pgtap_release: "1.2.0"
+pgtap_release_checksum: sha256:9c7c3de67ea41638e14f06da5da57bac6f5bd03fea05c165a0ec862205a5c052
+
+pg_cron_release: "1.6.2"
+pg_cron_release_checksum: sha256:9f4eb3193733c6fa93a6591406659aac54b82c24a5d91ffaf4ec243f717d94a0
+
+pgaudit_release: "1.7.0"
+pgaudit_release_checksum: sha256:8f4a73e451c88c567e516e6cba7dc1e23bc91686bb6f1f77f8f3126d428a8bd8
+
+pgjwt_release: 9742dab1b2f297ad3811120db7b21451bca2d3c9
+
+pgsql_http_release: "1.5.0"
+pgsql_http_release_checksum: sha256:43efc9e82afcd110f205b86b8d28d1355d39b6b134161e9661a33a1346818f5d
+
+plpgsql_check_release: "2.2.5"
+plpgsql_check_release_checksum: sha256:6c3a3c5faf3f9689425c6db8a6b20bf4cd5e7144a055e29538eae980c7232573
+
+pg_safeupdate_release: "1.4"
+pg_safeupdate_release_checksum: sha256:ff01d3d444d35924bd3d745c5695696292e2855042da4c30fe728fb3b6648122
+
+timescaledb_release: "2.9.1"
+timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4c799919d363f04089b47b
+
+wal2json_release: "2_5"
+wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
+
+supautils_release: "2.2.0"
+supautils_release_checksum: sha256:0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5
+
+pljava_release: master
+pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
+
+plv8_release: "3.1.5"
+plv8_release_checksum: sha256:2edf9a219844b2b6abae09c0bdb840c5b0d6e3dd418631744c7326c0b107cc10
+
+pg_plan_filter_release: 5081a7b5cb890876e67d8e7486b6a64c38c9a492
+
+pg_net_release: "0.8.0"
+# To obtain the checksum use `wget https://github.com/supabase/pg_net/archive/refs/tags/v0.8.0.tar.gz -q -O- | sha256sum`
+pg_net_release_checksum: sha256:3a50845fdb2d41b0a1053e9e006d068638515b53efd1ad38a2c26fdf4935ce4e
+
+rum_release: "1.3.13"
+rum_release_checksum: sha256:6ab370532c965568df6210bd844ac6ba649f53055e48243525b0b7e5c4d69a7d
+
+pg_hashids_release: cd0e1b31d52b394a0df64079406a14a4f7387cd6
+
+vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
+vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
+
+libsodium_release: "1.0.18"
+libsodium_release_checksum: sha256:6f504490b342a4f8a4c4a02fc9b866cbef8622d5df4e5452b46be121e46636c1
+
+pgsodium_release: "3.1.8"
+pgsodium_release_checksum: sha256:4d027aeee5163f3f33740d269938a120d1593a41c3701c920d2a1de80aa97486
+
+pg_graphql_release: "1.5.1"
+
+pg_jsonschema_release: "0.2.0"
+
+pg_stat_monitor_release: "1.1.1"
+pg_stat_monitor_release_checksum: sha256:1756a02d5a6dd66b892d15920257c69a17a67d48d3d4e2f189b681b83001ec2a
+
+vault_release: "0.2.9"
+vault_release_checksum: sha256:1e813216395c59bb94c92be47ce8b70ba19ccc0efbcdb1fb14ed6d34a42c6cdb
+
+groonga_release: "13.0.1"
+groonga_release_checksum: sha256:1c2d1a6981c1ad3f02a11aff202b15ba30cb1c6147f1fa9195b519a2b728f8ba
+
+pgroonga_release: "3.0.7"
+pgroonga_release_checksum: sha256:885ff3878cc30e9030e5fc56d561bc8b66df3ede1562c9d802bc0ea04fe5c203
+
+wrappers_release: "0.3.0"
+
+hypopg_release: "1.3.1"
+hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
+
+pg_repack_release: "1.5.0"
+pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52
+
+pgvector_release: "0.6.2"
+pgvector_release_checksum: sha256:a11cc249a9f3f3d7b13069a1696f2915ac28991a72d7ba4e2bcfdceddbaeae49
+
+pg_tle_release: "1.3.2"
+pg_tle_release_checksum: sha256:d04f72d88b21b954656609743560684ac42645b64a36c800d4d2f84d1f180de1
+
+index_advisor_release: "0.2.0"
+index_advisor_checksum: sha256:2d3642012a9185cda51f1e82ba43d64a81b24a2655a3ac3afdcbbd95d46a1a27

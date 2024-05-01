@@ -1,27 +1,40 @@
-# - name: Postgres - install commons
-#   apt:
-#     name: postgresql-common
-#     install_recommends: no
+- name: Postgres - copy package
+  copy:
+    src: files/postgres/
+    dest: /tmp/build/
 
-# - name: Do not create main cluster
-#   shell:
-#     cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
-#
-# TODO These lines appear to be installing and configuring https://launchpad.net/ubuntu/+source/postgresql-common 
-# as far as I can see, we don't need this now.
-
-- name: create postgres group
-  group:
-    name: postgres
+- name: Postgres - add PPA
+  apt_repository:
+    repo: "deb [ trusted=yes ] file:///tmp/build ./"
     state: present
 
-- name: create users
-  user:
-    name: postgres 
-    groups: postgres
-    createhome: yes
-    shell: /bin/bash  # Set shell if needed, default is /bin/bash
-    password: ''
+- name: Postgres - install commons
+  apt:
+    name: postgresql-common
+    install_recommends: no
+
+- name: Do not create main cluster
+  shell:
+    cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
+
+- name: Postgres - install server
+  apt:
+    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
+    install_recommends: no
+
+- name: Postgres - remove PPA
+  apt_repository:
+    repo: "deb [ trusted=yes ] file:///tmp/build ./"
+    state: absent
+
+- name: Postgres - cleanup package
+  file:
+    path: /tmp/build
+    state: absent
+
+- name: Create symlink to /usr/lib/postgresql/bin
+  shell:
+    cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
 
 - name: Create relevant directories
   file:
@@ -58,31 +71,6 @@
     - 'generated-optimizations.conf'
     - 'custom-overrides.conf'
 
-- name: locale-gen
-  command: sudo locale-gen en_US.UTF-8
-
-- name: Add LOCALE_ARCHIVE to .bashrc
-  lineinfile:
-    dest: "/home/postgres/.bashrc"
-    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
-    create: yes
-  become: yes
-
-
-- name: Add LANG items to .bashrc
-  lineinfile:
-    dest: "/home/postgres/.bashrc"
-    line: "{{ item }}"
-    
-  loop: 
-    - 'export LANG="en_US.UTF-8"'
-    - 'export LANGUAGE="en_US.UTF-8"'
-    - 'export LC_ALL="en_US.UTF-8"'
-    - 'export LANG="en_US.UTF-8"'
-    - 'export LC_CTYPE="en_US.UTF-8"'
-  become: yes
-
-
 # Move Postgres configuration files into /etc/postgresql
 # Add postgresql.conf
 - name: import postgresql.conf
@@ -114,11 +102,9 @@
     owner: postgres
     group: postgres
 
-# # Install extensions before init
-# - name: Install Postgres extensions
-#   import_tasks: tasks/setup-docker.yml
-# TODO resolve in new build
-
+# Install extensions before init
+- name: Install Postgres extensions
+  import_tasks: tasks/setup-docker.yml
 
 # init DB
 - name: Create directory on data volume
@@ -131,3 +117,37 @@
     mode: 0750
   with_items:
     - "/data/pgdata"
+
+- name: Link database data_dir to data volume directory
+  file:
+    src: "/data/pgdata"
+    path: "/var/lib/postgresql/data"
+    state: link
+    force: yes
+
+- name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  vars:
+    ansible_command_timeout: 60
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
+
+- name: copy PG systemd unit
+  template:
+    src: files/postgresql_config/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+
+- name: copy optimizations systemd unit
+  template:
+    src: files/database-optimizations.service.j2
+    dest: /etc/systemd/system/database-optimizations.service
+
+# Reload
+- name: System - systemd reload
+  systemd:
+    enabled: yes
+    name: postgresql
+    daemon_reload: yes

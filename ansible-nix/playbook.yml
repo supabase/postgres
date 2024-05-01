@@ -1,0 +1,107 @@
+- hosts: all
+  become: yes
+
+  pre_tasks:
+    - import_tasks: tasks/setup-system.yml
+
+  vars_files:
+    - ./vars.yml
+
+  vars:
+    sql_files:
+      - {
+          source: "pgbouncer_config/pgbouncer_auth_schema.sql",
+          dest: "00-schema.sql",
+        }
+      - { source: "stat_extension.sql", dest: "01-extension.sql" }
+
+  environment:
+    PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
+
+  tasks:
+    - set_fact:
+        supabase_internal: true
+      tags:
+        - install-supabase-internal
+
+    - set_fact:
+        parallel_jobs: 16
+
+    - name: Prepare machine for Postgres installation
+      import_tasks: tasks/setup-postgres.yml
+
+    - name: Install PgBouncer
+      import_tasks: tasks/setup-pgbouncer.yml
+      tags:
+        - install-pgbouncer
+        - install-supabase-internal
+
+    - name: Install WAL-G
+      import_tasks: tasks/setup-wal-g.yml
+
+    - name: Install Gotrue
+      import_tasks: tasks/setup-gotrue.yml
+      tags:
+        - install-gotrue
+        - install-supabase-internal
+
+    - name: Install PostgREST
+      import_tasks: tasks/setup-postgrest.yml
+      tags:
+        - install-postgrest
+        - install-supabase-internal
+
+    - name: Install Envoy
+      import_tasks: tasks/setup-envoy.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Install Kong
+      import_tasks: tasks/setup-kong.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Install nginx
+      import_tasks: tasks/setup-nginx.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Install Supabase specific content
+      import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Adjust APT update intervals
+      copy:
+        src: files/apt_periodic
+        dest: /etc/apt/apt.conf.d/10periodic
+
+    - name: Finalize AMI
+      import_tasks: tasks/finalize-ami.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Enhance fail2ban
+      import_tasks: tasks/setup-fail2ban.yml
+
+    # Install EC2 instance connect
+    # Only for AWS images
+    - name: install EC2 instance connect
+      become: yes
+      apt:
+        pkg:
+          - ec2-instance-connect
+      tags:
+        - aws-only
+
+    # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
+    - name: Install security tools
+      become: yes
+      apt:
+        pkg:
+          - unattended-upgrades
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Clean out build dependencies
+      import_tasks: tasks/clean-build-dependencies.yml

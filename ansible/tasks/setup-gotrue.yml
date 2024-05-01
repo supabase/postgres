@@ -39,10 +39,10 @@
 
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
-- name: gotrue - system dependencies
-  apt:
-    pkg:
-      - libpq-dev
+# - name: gotrue - system dependencies
+#   apt:
+#     pkg:
+#       - libpq-dev
 
 - name: gotrue - create service file
   template:

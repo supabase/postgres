@@ -80,7 +80,7 @@
 - name: Install hypopg
   import_tasks: tasks/postgres-extensions/26-hypopg.yml
 
-- name: Install pg_repack
+ - name: Install pg_repack
   import_tasks: tasks/postgres-extensions/27-pg_repack.yml
   
 - name: Install pgvector
