@@ -204,8 +204,8 @@ build {
   }
 
   provisioner "file" {
-    source = "ebssurrogate/scripts/chroot-bootstrap.sh"
-    destination = "/tmp/chroot-bootstrap.sh"
+    source = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
+    destination = "/tmp/chroot-bootstrap-nix.sh"
   }
 
   provisioner "file" {
@@ -258,7 +258,7 @@ build {
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}"
     ]
     use_env_var_file = true
-    script = "ebssurrogate/scripts/surrogate-bootstrap.sh"
+    script = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
     execute_command = "sudo -S sh -c '. {{.EnvVarFile}} && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean = true

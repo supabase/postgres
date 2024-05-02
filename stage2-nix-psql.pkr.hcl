@@ -1,6 +1,6 @@
-variable "ami_name" {
+variable "profile" {
   type    = string
-  default = "supabase-postgres"
+  default = "${env("AWS_PROFILE")}"
 }
 
 variable "ami_regions" {
@@ -17,6 +17,15 @@ variable "region" {
   type    = string
 }
 
+variable "ami_name" {
+  type    = string
+  default = "supabase-postgres"
+}
+
+variable "postgres-version" {
+  type = string
+  default = ""
+}
 
 packer {
   required_plugins {
@@ -28,12 +37,12 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "${var.ami_name}-stage-2"
+  ami_name      = "${var.ami_name}-${var.postgres-version}-nix"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
   source_ami_filter {
     filters = {
-      name          = "supabase-postgres-15.1.1.42-stage-1"
+      name   = "${var.ami_name}-${var.postgres-version}-stage-1"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -62,7 +71,7 @@ build {
   }
 
   provisioner "file" {
-    source      = "ansible/files"
+    source      = "ansible-nix/files"
     destination = "/tmp/ansible-playbook/files"
   }
 

@@ -1,0 +1,169 @@
+name: Release AMI
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/ami-release-nix.yml'
+      - 'common-nix.vars.pkr.hcl'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - runner: arm-runner
+            arch: arm64
+            ubuntu_release: focal
+            ubuntu_version: 20.04
+            mcpu: neoverse-n1
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Run checks if triggered manually
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        # Update `ci.yaml` too if changing constraints.
+        run: |
+          SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common-nix.vars.pkr.hcl)
+          if [[ -z $SUFFIX ]] ; then
+            echo "Version must include non-numeric characters if built manually."
+            exit 1
+          fi
+
+      # - id: args
+      #   uses: mikefarah/yq@master
+      #   with:
+      #     cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+      # - run: docker context create builders
+      # - uses: docker/setup-buildx-action@v3
+      #   with:
+      #     endpoint: builders
+      # - uses: docker/build-push-action@v5
+      #   with:
+      #     build-args: |
+      #       ${{ steps.args.outputs.result }}
+      #     target: extensions
+      #     tags: supabase/postgres:extensions
+      #     platforms: linux/${{ matrix.arch }}
+      #     outputs: type=tar,dest=/tmp/extensions.tar
+      #     cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+      #     # No need to export extensions cache because latest depends on it
+
+      # - name: Extract built packages
+      #   run: |
+      #     mkdir -p ansible/files/extensions
+      #     tar xvf /tmp/extensions.tar -C ansible/files/extensions --strip-components 1
+      # TODO remove this block as extensions are build in nix prior to this step
+
+      - id: version
+        run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
+      - name: Build Postgres deb
+        uses: docker/build-push-action@v5
+        with:
+          file: docker/Dockerfile
+          target: pg-deb
+          build-args: |
+            ubuntu_release=${{ matrix.ubuntu_release }}
+            ubuntu_release_no=${{ matrix.ubuntu_version }}
+            postgresql_major=${{ steps.version.outputs.postgresql_major }}
+            postgresql_release=${{ steps.version.outputs.postgresql_release }}
+            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+          tags: supabase/postgres:deb
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=tar,dest=/tmp/pg-deb.tar
+          cache-from: type=gha,scope=${{ github.ref_name }}-deb
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
+      # - name: Extract Postgres deb
+      #   run: |
+      #     mkdir -p ansible/files/postgres
+      #     tar xvf /tmp/pg-deb.tar -C ansible/files/postgres --strip-components 1
+      #TODO remove this block as deb is build in nix prior to this step
+
+      - name: Build AMI stage 1
+        run: |
+          packer init amazon-arm64-nix.pkr.hcl
+          GIT_SHA=${{github.sha}}
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
+
+      - name: Build AMI stage 1
+        run: |
+          packer init amazon-arm64-nix.pkr.hcl
+          GIT_SHA=${{github.sha}}
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
+  
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload software manifest to s3 staging
+        run: |
+          cd ansible
+          ansible-playbook -i localhost \
+            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+            manifest-playbook.yml
+
+      # - name: Upload pg binaries to s3 staging
+      #   run: |
+      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+      # #TODO look to see if this only pg binaries and if so, remove this as it is covered by nix build
+      # TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
+      - name: configure aws credentials - prod
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload software manifest to s3 prod
+        run: |
+          cd ansible
+          ansible-playbook -i localhost \
+            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
+            manifest-playbook.yml
+
+      # - name: Upload pg binaries to s3 prod
+      #   run: |
+      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+      #TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
+      
+      
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.process_release_version.outputs.version }}
+          tag_name: ${{ steps.process_release_version.outputs.version }}
+          target_commitish: ${{github.sha}}
+
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Building Postgres AMI failed'
+          SLACK_FOOTER: ''
+
+      - name: Cleanup resources on build cancellation
+        if: ${{ cancelled() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
