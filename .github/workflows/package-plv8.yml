@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: [self-hosted, X64]
+          - runner: ubuntu-22.04
             arch: amd64
           - runner: arm-runner
             arch: arm64
