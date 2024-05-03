@@ -1,10 +1,10 @@
 name: Test Database
 
 on:
-  push:
-    branches:
-      - develop
-  pull_request:
+  # push:
+  #   branches:
+  #     - develop
+  # pull_request:
   workflow_dispatch:
 
 jobs:

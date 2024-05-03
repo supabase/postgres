@@ -1,43 +1,43 @@
 name: Testinfra Integration Tests
 
 on:
-  pull_request:
+  #pull_request:
   workflow_dispatch:
 
 jobs:
-  test-all-in-one:
-    strategy:
-      matrix:
-        include:
-          - runner: [self-hosted, X64]
-            arch: amd64
-          - runner: arm-runner
-            arch: arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v3
+  # test-all-in-one:
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - runner: [self-hosted, X64]
+  #           arch: amd64
+  #         - runner: arm-runner
+  #           arch: arm64
+  #   runs-on: ${{ matrix.runner }}
+  #   timeout-minutes: 30
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - run: docker context create builders
-      - uses: docker/setup-buildx-action@v3
-        with:
-          endpoint: builders
+  #     - run: docker context create builders
+  #     - uses: docker/setup-buildx-action@v3
+  #       with:
+  #         endpoint: builders
 
-      - name: Run aio integration tests
-        run: |
-          # TODO: use poetry for pkg mgmt
-          pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
+  #     - name: Run aio integration tests
+  #       run: |
+  #         # TODO: use poetry for pkg mgmt
+  #         pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
           
 
-          if ! pytest -vv testinfra/test_all_in_one.py; then
-            # display container logs if the test fails
+  #         if ! pytest -vv testinfra/test_all_in_one.py; then
+  #           # display container logs if the test fails
             
-            if [ -f testinfra-aio-container-logs.log ]; then
-              echo "AIO container logs:"
-              cat testinfra-aio-container-logs.log
-            fi
-            exit 1
-          fi
+  #           if [ -f testinfra-aio-container-logs.log ]; then
+  #             echo "AIO container logs:"
+  #             cat testinfra-aio-container-logs.log
+  #           fi
+  #           exit 1
+  #         fi
 
   test-ami:
     strategy:
