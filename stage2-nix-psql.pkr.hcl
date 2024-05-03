@@ -27,6 +27,26 @@ variable "postgres-version" {
   default = ""
 }
 
+variable "git-head-version" {
+  type = string
+  default = "unknown"
+}
+
+variable "packer-execution-id" {
+  type = string
+  default = "unknown"
+}
+
+variable "force-deregister" {
+  type    = bool
+  default = false
+}
+
+variable "ami-owner-id" {
+  type    = string
+  default = ""
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -47,7 +67,7 @@ source "amazon-ebs" "ubuntu" {
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["194568623217"]
+    owners      = ["${var.ami-owner-id}"]
   }
   ssh_username = "ubuntu"
   ena_support = true

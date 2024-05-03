@@ -67,39 +67,28 @@ jobs:
 
       - id: version
         run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
-      - name: Build Postgres deb
-        uses: docker/build-push-action@v5
-        with:
-          file: docker/Dockerfile
-          target: pg-deb
-          build-args: |
-            ubuntu_release=${{ matrix.ubuntu_release }}
-            ubuntu_release_no=${{ matrix.ubuntu_version }}
-            postgresql_major=${{ steps.version.outputs.postgresql_major }}
-            postgresql_release=${{ steps.version.outputs.postgresql_release }}
-            CPPFLAGS=-mcpu=${{ matrix.mcpu }}
-          tags: supabase/postgres:deb
-          platforms: linux/${{ matrix.arch }}
-          outputs: type=tar,dest=/tmp/pg-deb.tar
-          cache-from: type=gha,scope=${{ github.ref_name }}-deb
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
+      # - name: Build Postgres deb
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     file: docker/Dockerfile
+      #     target: pg-deb
+      #     build-args: |
+      #       ubuntu_release=${{ matrix.ubuntu_release }}
+      #       ubuntu_release_no=${{ matrix.ubuntu_version }}
+      #       postgresql_major=${{ steps.version.outputs.postgresql_major }}
+      #       postgresql_release=${{ steps.version.outputs.postgresql_release }}
+      #       CPPFLAGS=-mcpu=${{ matrix.mcpu }}
+      #     tags: supabase/postgres:deb
+      #     platforms: linux/${{ matrix.arch }}
+      #     outputs: type=tar,dest=/tmp/pg-deb.tar
+      #     cache-from: type=gha,scope=${{ github.ref_name }}-deb
+      #     cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
       # - name: Extract Postgres deb
       #   run: |
       #     mkdir -p ansible/files/postgres
       #     tar xvf /tmp/pg-deb.tar -C ansible/files/postgres --strip-components 1
       #TODO remove this block as deb is build in nix prior to this step
 
-      - name: Build AMI stage 1
-        run: |
-          packer init amazon-arm64-nix.pkr.hcl
-          GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
-
-      - name: Build AMI stage 1
-        run: |
-          packer init amazon-arm64-nix.pkr.hcl
-          GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
   
       - name: Grab release version
         id: process_release_version
@@ -108,7 +97,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -127,7 +116,7 @@ jobs:
       # #TODO look to see if this only pg binaries and if so, remove this as it is covered by nix build
       # TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -140,6 +129,32 @@ jobs:
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
 
+      - name: Build AMI stage 1
+        run: |
+          packer init amazon-arm64-nix.pkr.hcl
+          GIT_SHA=${{github.sha}}
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
+
+      - name: Set Environment Variables
+        id: set-env-vars
+        run: |
+          POSTGRES_VERSION=$(grep -oP '(?<=postgres-version = ").*(?=")' common-nix.vars.pkr.hcl)
+          echo "::set-output name=postgres-version::$POSTGRES_VERSION"          
+
+      - name: Get AMI Owner
+        id: get-ami-owner
+        run: |
+          POSTGRES_VERSION="${{ steps.set-env-vars.outputs.postgres-version }}"
+          AMI_NAME="supabase-postgres-$POSTGRES_VERSION-stage-1"
+          OWNER=$(aws ec2 describe-images --filters "Name=name,Values=$AMI_NAME" "Name=state,Values=available" --query 'Images[].OwnerId' --output text)
+          echo "::set-output name=ami-owner::$OWNER"  
+
+      - name: Build AMI stage 2
+        run: |
+          packer init stage2-nix-psql.pkr.hcl
+          GIT_SHA=${{github.sha}}
+          packer build -var "ami-owner-id=${OWNER}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+    
       # - name: Upload pg binaries to s3 prod
       #   run: |
       #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
