@@ -1,4 +1,4 @@
-name: Release AMI
+name: Release AMI Nix
 
 on:
   push:
