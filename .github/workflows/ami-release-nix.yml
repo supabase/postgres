@@ -65,8 +65,8 @@ jobs:
       #     tar xvf /tmp/extensions.tar -C ansible/files/extensions --strip-components 1
       # TODO remove this block as extensions are build in nix prior to this step
 
-      - id: version
-        run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
+      # - id: version
+      #   run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
       # - name: Build Postgres deb
       #   uses: docker/build-push-action@v5
       #   with:
