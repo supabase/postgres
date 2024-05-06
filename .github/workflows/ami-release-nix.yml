@@ -126,6 +126,12 @@ jobs:
       #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
       # #TODO look to see if this only pg binaries and if so, remove this as it is covered by nix build
       # TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
+
+      #Our self hosted github runner already has permissions to publish images 
+      #but they're limited to only that; 
+      #so if we want s3 access we'll need to config credentials with the below steps 
+      # (which overwrites existing perms) after the ami build
+
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v4
         with:
