@@ -68,7 +68,7 @@ source "amazon-ebs" "ubuntu" {
   communicator = "ssh"
   ssh_pty = true
   ssh_username = "ubuntu"
-  ssh_timeout = "5m"
+  ssh_timeout = "10m"
   ssh_interface = "public_ip"
 
   ena_support = true
