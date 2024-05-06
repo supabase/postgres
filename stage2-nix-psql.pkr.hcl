@@ -42,11 +42,6 @@ variable "force-deregister" {
   default = false
 }
 
-variable "ami-owner-id" {
-  type    = string
-  default = ""
-}
-
 packer {
   required_plugins {
     amazon = {
@@ -67,7 +62,7 @@ source "amazon-ebs" "ubuntu" {
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["${var.ami-owner-id}"]
+    owners      = ["amazon", "self"]
   }
   ssh_username = "ubuntu"
   ena_support = true
