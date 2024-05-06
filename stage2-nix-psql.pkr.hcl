@@ -69,7 +69,10 @@ source "amazon-ebs" "ubuntu" {
   ssh_pty = true
   ssh_username = "ubuntu"
   ssh_timeout = "5m"
+  ssh_interface = "public_ip"
+
   ena_support = true
+  
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
