@@ -69,7 +69,9 @@ source "amazon-ebs" "ubuntu" {
   ssh_pty = true
   ssh_username = "ubuntu"
   ssh_timeout = "5m"
-  ssh_interface = "public_ip"
+  
+  associate_public_ip_address = true
+
 
   ena_support = true
   
