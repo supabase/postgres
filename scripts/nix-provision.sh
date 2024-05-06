@@ -33,7 +33,7 @@ EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
-	ansible-playbook  /tmp/ansible-playbook/stage2/playbook.yml -vvv $ARGS
+	ansible-playbook  /tmp/ansible-playbook/stage2/playbook.yml  $ARGS
 }
 
 

@@ -214,7 +214,7 @@ EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible-nix/playbook.yml -vvv $ARGS
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible-nix/playbook.yml  $ARGS
 }
 
 function update_systemd_services {

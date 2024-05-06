@@ -66,7 +66,25 @@ source "amazon-ebs" "ubuntu" {
   }
   ssh_username = "ubuntu"
   ena_support = true
-
+  run_tags = {
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
+  }
+  run_volume_tags = {
+    creator = "packer"
+    appType = "postgres"
+  }
+  snapshot_tags = {
+    creator = "packer"
+    appType = "postgres"
+  }
+  tags = {
+    creator = "packer"
+    appType = "postgres"
+    postgresVersion = "${var.postgres-version}"
+    sourceSha = "${var.git-head-version}"
+  }
 }
 
 build {
