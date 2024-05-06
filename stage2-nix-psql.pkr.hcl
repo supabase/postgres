@@ -64,7 +64,11 @@ source "amazon-ebs" "ubuntu" {
     most_recent = true
     owners      = ["amazon", "self"]
   }
+  
+  communicator = "ssh"
+  ssh_pty = true
   ssh_username = "ubuntu"
+  ssh_timeout = "5m"
   ena_support = true
   run_tags = {
     creator           = "packer"
