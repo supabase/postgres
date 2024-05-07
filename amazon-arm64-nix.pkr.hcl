@@ -164,7 +164,7 @@ source "amazon-ebssurrogate" "source" {
   tags = {
     creator = "packer"
     appType = "postgres"
-    postgresVersion = "${var.postgres-version}"
+    postgresVersion = "${var.postgres-version}-stage1"
     sourceSha = "${var.git-head-version}"
   }
 
