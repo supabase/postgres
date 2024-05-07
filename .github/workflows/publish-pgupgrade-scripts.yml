@@ -23,7 +23,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
+          VERSION=$(grep 'postgres-version' common.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
