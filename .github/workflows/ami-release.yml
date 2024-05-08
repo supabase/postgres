@@ -16,8 +16,8 @@ jobs:
         include:
           - runner: arm-runner
             arch: arm64
-            ubuntu_release: focal
-            ubuntu_version: 20.04
+            ubuntu_release: noble
+            ubuntu_version: 24.04
             mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150

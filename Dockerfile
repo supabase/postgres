@@ -4,8 +4,8 @@ ARG postgresql_release=${postgresql_major}.2
 
 # Bump default build arg to build a package from source
 # Bump vars.yml to specify runtime package version
-ARG sfcgal_release=1.3.10
-ARG postgis_release=3.3.2
+ARG sfcgal_release=1.5.1
+ARG postgis_release=3.4.2
 ARG pgrouting_release=3.4.1
 ARG pgtap_release=1.2.0
 ARG pg_cron_release=1.6.2
@@ -14,23 +14,23 @@ ARG pgjwt_release=9742dab1b2f297ad3811120db7b21451bca2d3c9
 ARG pgsql_http_release=1.5.0
 ARG plpgsql_check_release=2.2.5
 ARG pg_safeupdate_release=1.4
-ARG timescaledb_release=2.9.1
+ARG timescaledb_release=2.14.2
 ARG wal2json_release=2_5
 ARG pljava_release=1.6.4
-ARG plv8_release=3.1.5
+ARG plv8_commit_checksum=fa9f0146a2eeb11083566b647d153432cd9b976e
 ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
-ARG pg_net_release=0.7.1
+ARG pg_net_release=0.9.0
 ARG rum_release=1.3.13
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
 ARG libsodium_release=1.0.18
 ARG pgsodium_release=3.1.6
 ARG pg_graphql_release=1.5.1
-ARG pg_stat_monitor_release=1.1.1
-ARG pg_jsonschema_release=0.1.4
+ARG pg_stat_monitor_release=2.0.4
+ARG pg_jsonschema_release=0.3.1
 ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
-ARG groonga_release=12.0.8
-ARG pgroonga_release=2.4.0
+# ARG groonga_release=12.0.8
+# ARG pgroonga_release=3.2.0
 ARG wrappers_release=0.3.0
 ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
@@ -42,7 +42,7 @@ ARG wal_g_release=2.0.1
 ####################
 # Setup Postgres PPA
 ####################
-FROM ubuntu:focal as ppa
+FROM ubuntu:noble as ppa
 # Redeclare args for use in subsequent stages
 ARG postgresql_major
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -55,7 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 #  gpg --export --armor $NEW_POSTGRESQL_GPG_KEY > postgresql.gpg.key
 COPY postgresql.gpg.key /tmp/postgresql.gpg.key
 RUN apt-key add /tmp/postgresql.gpg.key && \
-    echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
+    echo "deb https://apt-archive.postgresql.org/pub/repos/apt noble-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
 ####################
 # Download pre-built postgres
@@ -64,7 +64,7 @@ FROM ppa as pg
 ARG postgresql_release
 # Download .deb packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    postgresql-${postgresql_major}=${postgresql_release}-1.pgdg24.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -72,14 +72,14 @@ FROM ppa as pg-dev
 ARG postgresql_release
 # Download .deb packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-server-dev-${postgresql_major}=${postgresql_release}-1.pgdg20.04+1 \
+    postgresql-server-dev-${postgresql_major}=${postgresql_release}-1.pgdg24.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 ####################
 # Install postgres
 ####################
-FROM ubuntu:focal as base
+FROM ubuntu:noble as base
 # Redeclare args for use in subsequent stages
 ARG TARGETARCH
 ARG postgresql_major
@@ -132,36 +132,12 @@ ARG CACHE_EPOCH
 ####################
 # 01-postgis.yml
 ####################
-FROM ccache as sfcgal
-# Download and extract
-ARG sfcgal_release
-ARG sfcgal_release_checksum
-ADD --checksum=${sfcgal_release_checksum} \
-    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/sfcgal/SFCGAL-v${sfcgal_release}.tar.gz" \
-    /tmp/sfcgal.tar.gz
-RUN tar -xvf /tmp/sfcgal.tar.gz -C /tmp --one-top-level --strip-components 1 && \
-    rm -rf /tmp/sfcgal.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcgal-dev \
-    libboost-serialization1.71-dev \
-    libmpfr-dev \
-    libgmp-dev \
-    && rm -rf /var/lib/apt/lists/*
-# Build from source
-WORKDIR /tmp/sfcgal/build
-RUN cmake ..
-RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-    make -j$(nproc)
-# Create debian package
-RUN checkinstall -D --install=yes --fstrans=no --backup=no --pakdir=/tmp --pkgname=sfcgal --pkgversion=${sfcgal_release} --requires=libgmpxx4ldbl,libboost-serialization1.71.0,libmpfr6 --nodoc
-
-FROM sfcgal as postgis-source
+FROM ccache as postgis-source
 # Download and extract
 ARG postgis_release
 ARG postgis_release_checksum
 ADD --checksum=${postgis_release_checksum} \
-    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgis-${postgis_release}.tar.gz" \
+    "https://download.osgeo.org/postgis/source/postgis-${postgis_release}.tar.gz" \
     /tmp/postgis.tar.gz
 RUN tar -xvf /tmp/postgis.tar.gz -C /tmp && \
     rm -rf /tmp/postgis.tar.gz
@@ -174,6 +150,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjson-c-dev \
     libxml2-dev \
     libprotobuf-c-dev \
+    libsfcgal-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/postgis-${postgis_release}
@@ -181,14 +158,14 @@ RUN ./configure --with-sfcgal
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libgeos-c1v5,libproj15,libjson-c4,libprotobuf-c1,libgdal26 --nodoc
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM ppa as postgis
 # Latest available is 3.3.2
 ARG postgis_release
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-postgis-3=${postgis_release}+dfsg-1.pgdg20.04+1 \
+    postgresql-${postgresql_major}-postgis-3=${postgis_release}+dfsg-1.pgdg24.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -220,7 +197,7 @@ FROM ppa as pgrouting
 ARG pgrouting_release
 # Download pre-built packages
 RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    postgresql-${postgresql_major}-pgrouting=${pgrouting_release}-1.pgdg20.04+1 \
+    postgresql-${postgresql_major}-pgrouting=${pgrouting_release}-1.pgdg24.04+1 \
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
@@ -444,13 +421,7 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 FROM ccache as plv8-source
 # Download and extract
-ARG plv8_release
 ARG plv8_release_checksum
-ADD --checksum=${plv8_release_checksum} \
-    "https://github.com/supabase/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
-    /tmp/plv8.tar.gz
-RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
-    rm -rf /tmp/plv8.tar.gz
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -461,7 +432,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++-10-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
-WORKDIR /tmp/plv8-${plv8_release}
+RUN git clone --depth 1 --branch "${plv8_release_checksum}" https://github.com/plv8/plv8 "/tmp/plv8"
+WORKDIR /tmp/plv8
 ENV DOCKER=1
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make
@@ -470,8 +442,6 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM scratch as plv8-deb
 COPY --from=plv8-source /tmp/*.deb /tmp/
-
-FROM ghcr.io/supabase/plv8:${plv8_release}-pg${postgresql_major} as plv8
 
 ####################
 # 14-pg_plan_filter.yml
@@ -870,7 +840,7 @@ COPY --from=pg_graphql /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
 COPY --from=pg_jsonschema /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
-COPY --from=pgroonga-source /tmp/*.deb /tmp/
+# COPY --from=pgroonga-source /tmp/*.deb /tmp/
 COPY --from=wrappers /tmp/*.deb /tmp/
 COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
@@ -882,7 +852,7 @@ COPY --from=supautils /tmp/*.deb /tmp/
 ####################
 # Download gosu for easy step-down from root
 ####################
-FROM ubuntu:focal as gosu
+FROM ubuntu:noble as gosu
 ARG TARGETARCH
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

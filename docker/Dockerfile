@@ -1,10 +1,10 @@
-ARG ubuntu_release=focal
+ARG ubuntu_release=noble
 FROM ubuntu:${ubuntu_release} as base
 
-ARG ubuntu_release=flocal
-ARG ubuntu_release_no=20.04
-ARG postgresql_major=15
-ARG postgresql_release=${postgresql_major}.1
+ARG ubuntu_release=${ubuntu_release}
+ARG ubuntu_release_no=24.04
+ARG postgresql_major=16
+ARG postgresql_release=${postgresql_major}.2
 
 FROM base as pg-source
 
@@ -39,11 +39,6 @@ ARG CPPFLAGS=""
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
 ARG DEB_BUILD_PROFILES="pkg.postgresql.nozstd"
 ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
-
-RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
-    apt-get source --compile postgresql-common pgdg-keyring && \
-    dpkg-scanpackages . > Packages && \
-    apt-get -o Acquire::GzipIndexes=false update
 
 RUN apt-get build-dep -y "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1" && \
     apt-get source --compile "postgresql-${postgresql_major}=${postgresql_release}-1.pgdg${ubuntu_release_no}+1" && \
