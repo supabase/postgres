@@ -13,6 +13,8 @@ set -eu
 #   0 if migration succeeds, non-zero on error.
 #######################################
 
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -d postgres -c "create role postgres superuser login password '$POSTGRES_PASSWORD'"
+
 export PGDATABASE="${POSTGRES_DB:-postgres}"
 export PGHOST="${POSTGRES_HOST:-localhost}"
 export PGPORT="${POSTGRES_PORT:-5432}"

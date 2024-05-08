@@ -932,6 +932,8 @@ STOPSIGNAL SIGINT
 EXPOSE 5432
 
 ENV POSTGRES_HOST=/var/run/postgresql
+ENV POSTGRES_USER=supabase_admin
+ENV POSTGRES_DB=postgres
 CMD ["postgres", "-D", "/etc/postgresql"]
 
 ####################
