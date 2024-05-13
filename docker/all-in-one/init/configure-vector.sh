@@ -51,3 +51,4 @@ sed -i "s|{{ .DbSource }}|$LOGFLARE_DB_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .GotrueSource }}|$LOGFLARE_GOTRUE_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .PostgrestSource }}|$LOGFLARE_POSTGREST_SOURCE|g" $VECTOR_CONF
 sed -i "s|{{ .PitrErrorsSource }}|$LOGFLARE_PITR_ERRORS_SOURCE|g" $VECTOR_CONF
+
