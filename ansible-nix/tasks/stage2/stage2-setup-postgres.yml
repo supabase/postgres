@@ -39,6 +39,45 @@
 
 #TODO include ls $(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale-archive
 
+- name: Set permissions for postgresql.env
+  become: yes
+  file:
+    path: /etc/environment.d/postgresql.env
+    owner: postgres
+    group: postgres
+    mode: '0644'
+
+- name: Set ownership of /etc/ssl/private directory
+  become: yes
+  file:
+    path: /etc/ssl/private
+    owner: root
+    group: ssl-cert
+    state: directory
+
+- name: Set permissions for /etc/ssl/private directory
+  become: yes
+  file:
+    path: /etc/ssl/private
+    mode: '0750'
+    state: directory
+
+
+- name: Set ownership of private key file
+  become: yes
+  file:
+    path: /etc/ssl/private/server.key
+    owner: root
+    group: ssl-cert
+    state: file
+
+- name: Set permissions for private key file
+  become: yes
+  file:
+    path: /etc/ssl/private/server.key
+    mode: '0640'
+    state: file
+
 - name: Ensure /usr/lib/postgresql/bin directory exists
   file:
     path: /usr/lib/postgresql/bin
@@ -182,12 +221,10 @@
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  #   LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  #   LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   vars:
     ansible_command_timeout: 60
-#     # Circumvents the following error:
-#     # "Timeout (12s) waiting for privilege escalation prompt"
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
 
 - name: copy PG systemd unit
   template:

@@ -18,6 +18,7 @@ TimeoutStartSec=86400
 Restart=always
 RestartSec=5
 OOMScoreAdjust=-1000
+EnvironmentFile=-/etc/environment.d/postgresql.env
 
 [Install]
 WantedBy=multi-user.target
