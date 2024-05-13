@@ -225,7 +225,8 @@ ENV VECTOR_API_PORT=9001
 RUN useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
-    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,postgres,postgrest,wal-g && \
+    useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
+    useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
     chown -R adminapi:adminapi /etc/wal-g && \

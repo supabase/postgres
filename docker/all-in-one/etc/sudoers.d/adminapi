@@ -23,3 +23,4 @@ Cmnd_Alias GOTRUE = /usr/bin/supervisorctl start services\:gotrue, /usr/bin/supe
 %adminapi ALL= NOPASSWD: KONG
 %adminapi ALL= NOPASSWD: POSTGREST
 %adminapi ALL= NOPASSWD: GOTRUE
+%adminapi ALL= NOPASSWD: PGBOUNCER
