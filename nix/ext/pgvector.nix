@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgvector";
-  version = "0.6.0";
+  version = "0.7.0";
 
   buildInputs = [ postgresql ];
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner = "pgvector";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-hXm+k0BZ9xZP1Tnek14jPoKCPQkA5ovscu9IX2mW7Kc=";
+    hash = "sha256-vFn7sNphOYyig6Jl1HILMaC2t9strFQBQ8ywL8Ibx1M=";
   };
 
   installPhase = ''
