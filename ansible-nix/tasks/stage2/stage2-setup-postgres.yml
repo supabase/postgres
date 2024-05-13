@@ -39,10 +39,12 @@
 
 #TODO include ls $(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale-archive
 
-- name: Set permissions to 750 for /etc/ssl/private
+- name: Set ownership and permissions for /etc/ssl/private
   become: yes
   file:
     path: /etc/ssl/private
+    owner: root
+    group: postgres
     mode: '0750'
 
 - name: Set permissions for postgresql.env
