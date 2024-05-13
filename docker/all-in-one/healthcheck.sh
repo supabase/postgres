@@ -33,9 +33,6 @@ else
   kong health
 fi
 
-# pgbouncer up
-printf \\0 > "/dev/tcp/localhost/$PGBOUNCER_PORT"
-
 # fail2ban up
 fail2ban-client status
 
