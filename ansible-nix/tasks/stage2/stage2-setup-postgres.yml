@@ -47,37 +47,6 @@
     group: postgres
     mode: '0644'
 
-- name: Set ownership of /etc/ssl/private directory
-  become: yes
-  file:
-    path: /etc/ssl/private
-    owner: root
-    group: ssl-cert
-    state: directory
-
-- name: Set permissions for /etc/ssl/private directory
-  become: yes
-  file:
-    path: /etc/ssl/private
-    mode: '0750'
-    state: directory
-
-
-- name: Set ownership of private key file
-  become: yes
-  file:
-    path: /etc/ssl/private/server.key
-    owner: root
-    group: ssl-cert
-    state: file
-
-- name: Set permissions for private key file
-  become: yes
-  file:
-    path: /etc/ssl/private/server.key
-    mode: '0640'
-    state: file
-
 - name: Ensure /usr/lib/postgresql/bin directory exists
   file:
     path: /usr/lib/postgresql/bin
