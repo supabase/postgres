@@ -80,8 +80,21 @@ function enable_lsn_checkpoint_push {
 }
 
 function disable_fail2ban {
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
+}
+
+function disable_gotrue {
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+}
+
+function disable_pgbouncer {
+  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/pgbouncer.conf
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/pgbouncer.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/pgbouncer.conf
 }
 
 function setup_postgres {
@@ -285,8 +298,11 @@ if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
 fi
 
 if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
+  disable_gotrue
+fi
+
+if [ "${PGBOUNCER_DISABLED:-}" == "true" ]; then
+  disable_pgbouncer
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
