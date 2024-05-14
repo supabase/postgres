@@ -170,6 +170,15 @@ pg_stat_statements:
         usage: "COUNTER"
         description: "Total time spent, in seconds"
 
+pg_ls_archive_statusdir:
+  master: true
+  cache_seconds: 60
+  query: "select count(*) as wal_pending_count from pg_ls_archive_statusdir() where name like '%.ready'"
+  metrics:
+    - wal_pending_count:
+        usage: "COUNTER"
+        description: "Number of not yet archived WAL files"
+         
 auth_users:
   master: true
   cache_seconds: 60
