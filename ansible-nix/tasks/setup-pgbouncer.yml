@@ -1,9 +1,4 @@
 # PgBouncer
-- name: create ssl-cert group
-  group:
-    name: ssl-cert
-    state: present
-
 - name: PgBouncer - download & install dependencies
   apt:
     pkg:

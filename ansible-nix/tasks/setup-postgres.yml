@@ -10,6 +10,14 @@
 # TODO These lines appear to be installing and configuring https://launchpad.net/ubuntu/+source/postgresql-common 
 # as far as I can see, we don't need this now.
 
+- name: create ssl-cert group
+  group:
+    name: ssl-cert
+    state: present
+
+# the old method of installing from debian creates this group, but we must create it explicitly
+# for the nix built version
+
 - name: create postgres group
   group:
     name: postgres
