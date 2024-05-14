@@ -117,11 +117,9 @@
 
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
   file:
-    src: "{{ item }}"
-    dest: "/usr/bin/{{ item | basename }}"
+    src: "/home/postgres/.nix-profile/bin/psql"
+    dest: "/usr/bin/psql"
     state: link
-  with_fileglob:
-    - "/home/postgres/.nix-profile/bin/*"
   become: yes
 
 - name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
