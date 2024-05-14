@@ -18,8 +18,10 @@
 - name: create users
   user:
     name: postgres 
-    groups: postgres
+    groups: postgres, ssl-cert
     createhome: yes
+    append: yes
+    remove: users
     shell: /bin/bash  # Set shell if needed, default is /bin/bash
     password: ''
 
