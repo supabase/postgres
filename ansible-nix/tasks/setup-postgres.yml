@@ -39,7 +39,7 @@
   become: yes
 
 - name: add postgres user to postgres group
-  shell: usermod -a -g ssl-cert postgres
+  shell: usermod -a -G ssl-cert postgres
   args:
     executable: /bin/bash
   become: yes
