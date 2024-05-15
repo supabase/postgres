@@ -33,23 +33,16 @@
 #     password: ''
 
 - name: create postgres user
-  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres 
+  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres
   args:
     executable: /bin/bash
   become: yes
 
 - name: add postgres user to postgres group
-  shell: usermod -a -G postgres postgres
+  shell: usermod -a -g ssl-cert postgres
   args:
     executable: /bin/bash
   become: yes
-
-- name: add postgres user to ssl-cert group
-  shell: usermod -a -G ssl-cert postgres
-  args:
-    executable: /bin/bash
-  become: yes
-
 
 - name: Create relevant directories
   file:
