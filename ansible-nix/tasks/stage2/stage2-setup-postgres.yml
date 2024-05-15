@@ -8,10 +8,6 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
 
-- name: Remove postgres user from users group
-  become: yes
-  command: gpasswd -d postgres users
-
 
 #TODO switch pg_prove sourcing to develop branch once PR is merged
 
