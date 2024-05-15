@@ -39,13 +39,13 @@
   become: yes
 
 - name: add postgres user to postgres group
-  shell: usermod -aG postgres postgres
+  shell: usermod -a -G postgres postgres
   args:
     executable: /bin/bash
   become: yes
 
 - name: add postgres user to ssl-cert group
-  shell: usermod -aG ssl-cert postgres
+  shell: usermod -a -G ssl-cert postgres
   args:
     executable: /bin/bash
   become: yes
