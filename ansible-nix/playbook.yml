@@ -107,10 +107,12 @@
       import_tasks: tasks/clean-build-dependencies.yml
 
     - name: Check if postgres user is part of users group
-      command: "id -nG postgres | grep -qw users"
+      shell: "id -nG postgres | grep -qw users"
       register: check_user_group
       ignore_errors: yes
       become: yes
+      args:
+        executable: /bin/bash
 
     - name: Print result to Ansible log output
       debug:
