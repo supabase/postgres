@@ -18,10 +18,10 @@
 # the old method of installing from debian creates this group, but we must create it explicitly
 # for the nix built version
 
-# - name: create postgres group
-#   group:
-#     name: postgres
-#     state: present
+- name: create postgres group
+  group:
+    name: postgres
+    state: present
 
 # - name: create users
 #   user:
@@ -33,11 +33,11 @@
 #     password: ''
 
 - name: create postgres user
-  shell: useradd -m -r -s /bin/bash postgres
+  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -G postgres,ssl-cert
   args:
     executable: /bin/bash
   become: yes
-  
+
 - name: Create relevant directories
   file:
     path: '{{ item }}'
