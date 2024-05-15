@@ -105,3 +105,6 @@
 
     - name: Clean out build dependencies
       import_tasks: tasks/clean-build-dependencies.yml
+    - name: Remove postgres user from users group
+      become: yes
+      command: gpasswd -d postgres users
