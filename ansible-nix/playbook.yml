@@ -105,6 +105,13 @@
 
     - name: Clean out build dependencies
       import_tasks: tasks/clean-build-dependencies.yml
-    - name: Remove postgres user from users group
+
+    - name: Check if postgres user is part of users group
+      command: "id -nG postgres | grep -qw users"
+      register: check_user_group
+      ignore_errors: yes
       become: yes
-      command: gpasswd -d postgres users
+
+    - name: Print result to Ansible log output
+      debug:
+        msg: "The postgres user is {{ 'not ' if check_user_group.rc != 0 else '' }}part of the users group"
