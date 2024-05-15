@@ -18,21 +18,26 @@
 # the old method of installing from debian creates this group, but we must create it explicitly
 # for the nix built version
 
-- name: create postgres group
-  group:
-    name: postgres
-    state: present
+# - name: create postgres group
+#   group:
+#     name: postgres
+#     state: present
 
-- name: create users
-  user:
-    name: postgres 
-    groups: postgres, ssl-cert
-    createhome: yes
-    append: no
-    shell: /bin/bash  # Set shell if needed, default is /bin/bash
-    password: ''
+# - name: create users
+#   user:
+#     name: postgres 
+#     groups: postgres, ssl-cert
+#     createhome: yes
+#     append: no
+#     shell: /bin/bash  # Set shell if needed, default is /bin/bash
+#     password: ''
 
-
+- name: create postgres user
+  shell: useradd -m -r -s /bin/bash postgres
+  args:
+    executable: /bin/bash
+  become: yes
+  
 - name: Create relevant directories
   file:
     path: '{{ item }}'
