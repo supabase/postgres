@@ -33,7 +33,7 @@
 #     password: ''
 
 - name: create postgres user
-  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres,ssl-cert
+  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres -g ssl-cert
   args:
     executable: /bin/bash
   become: yes
