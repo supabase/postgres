@@ -32,10 +32,6 @@
     shell: /bin/bash  # Set shell if needed, default is /bin/bash
     password: ''
 
-- name: Remove postgres user from users group
-  become: yes
-  command: gpasswd -d postgres users
-
 
 - name: Create relevant directories
   file:
