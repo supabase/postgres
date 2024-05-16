@@ -71,6 +71,11 @@
       tags:
         - install-supabase-internal
 
+    - name: Fix IPv6 NDisc issues
+      import_tasks: tasks/fix_ipv6_ndisc.yml
+      tags:
+        - install-supabase-internal
+
     - name: Start Postgres Database
       systemd:
         name: postgresql
