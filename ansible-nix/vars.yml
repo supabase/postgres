@@ -15,8 +15,8 @@ postgrest_release: "12.0.2"
 postgrest_arm_release_checksum: sha1:a08eaa2af548d44b4c8ea61b0223fb7019f5c768
 postgrest_x86_release_checksum: sha1:40f65ded06b9de6567fbe2cd7a317196e22dd595
 
-gotrue_release: 2.148.0
-gotrue_release_checksum: sha1:e3ab39c10605b6a00a953528022b563c8fa1ca33
+gotrue_release: 2.151.0
+gotrue_release_checksum: sha1:5a43a9879499d85714ba34356f62f5e8063b549d
 
 aws_cli_release: "2.2.7"
 
@@ -129,14 +129,14 @@ pgroonga_release_checksum: sha256:885ff3878cc30e9030e5fc56d561bc8b66df3ede1562c9
 
 wrappers_release: "0.3.0"
 
-hypopg_release: "1.3.1"
-hypopg_release_checksum: sha256:e7f01ee0259dc1713f318a108f987663d60f3041948c2ada57a94b469565ca8e
+hypopg_release: "1.4.1"
+hypopg_release_checksum: sha256:9afe6357fd389d8d33fad81703038ce520b09275ec00153c6c89282bcdedd6bc
 
 pg_repack_release: "1.5.0"
 pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52
 
-pgvector_release: "0.6.2"
-pgvector_release_checksum: sha256:a11cc249a9f3f3d7b13069a1696f2915ac28991a72d7ba4e2bcfdceddbaeae49
+pgvector_release: "0.7.0"
+pgvector_release_checksum: sha256:1b5503a35c265408b6eb282621c5e1e75f7801afc04eecb950796cfee2e3d1d8
 
 pg_tle_release: "1.3.2"
 pg_tle_release_checksum: sha256:d04f72d88b21b954656609743560684ac42645b64a36c800d4d2f84d1f180de1
