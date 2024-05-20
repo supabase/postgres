@@ -81,7 +81,7 @@ function complete_pg_upgrade {
     echo "running" > /tmp/pg-upgrade-status
 
     echo "1. Mounting data disk"
-    retry 3 mount -a -v
+    retry 8 mount -a -v
 
     # copying custom configurations
     echo "2. Copying custom configurations"
