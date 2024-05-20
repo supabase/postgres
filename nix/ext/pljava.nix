@@ -24,10 +24,7 @@ maven.buildMavenPackage rec {
   '';
   buildOffline = true;
 
-  # Installing
   installPhase = ''
-    set -x
-    which pg_config
     mkdir -p $out/pljavabuild
     cp -r *   $out/pljavabuild
     mkdir -p $out/share/postgresql/extension/pljava
@@ -36,21 +33,14 @@ maven.buildMavenPackage rec {
     mkdir -p $out/etc
     java -Dpgconfig=${postgresql}/bin/pg_config \
       -Dpgconfig.sharedir=$out/share \
-      -Dpgconfig.sysconfdir==$out/etc/pljava.policy \
+      -Dpgconfig.sysconfdir=$out/etc/pljava.policy \
       -Dpgconfig.pkglibdir=$out/lib \
       -jar $out/pljavabuild/pljava-packaging/target/pljava-pg15.jar
     cp $out/share/pljava/* $out/share/postgresql/extension/pljava
     cp $out/share/pljava/* $out/share/postgresql/pljava
     cp $out/share/extension/*.control $out/share/postgresql/extension
     rm -r $out/pljavabuild
-    #makeWrapper $out/bin/java $out/bin/pljava
-    set +x
   '';
-
-  # # Post-installation steps
-  # postInstall = ''
-  #   makeWrapper $out/bin/java $out/bin/pljava
-  # '';
 
   meta = with lib; {
     description = "PL/Java extension for PostgreSQL";
