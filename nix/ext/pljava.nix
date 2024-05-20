@@ -1,23 +1,23 @@
-{ stdenv, lib, fetchFromGitHub, openssl, openjdk, maven, postgresql, libkrb5, makeWrapper, gcc, pkg-config }:
+{ stdenv, lib, fetchFromGitHub, openssl, openjdk, maven, postgresql, libkrb5, makeWrapper, gcc, pkg-config, which }:
 
 maven.buildMavenPackage rec {
   pname = "pljava";
 
-  version = "1.6.7";  # Update with the actual version
+  version = "1.6.7"; 
 
   src = fetchFromGitHub {
     owner = "tada";
     repo = "pljava";
-    rev = "V1_6_7";  # Update with the actual version
-    sha256 = "sha256-M17adSLsw47KZ2BoUwxyWkXKRD8TcexDAy61Yfw4fNU=";  # You need to calculate this
+    rev = "V1_6_7";  
+    sha256 = "sha256-M17adSLsw47KZ2BoUwxyWkXKRD8TcexDAy61Yfw4fNU=";  
     
   };
 
-  mvnParameters = "clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true";  # Update with actual build parameters
+  mvnParameters = "clean install -Dmaven.test.skip -DskipTests -Dmaven.javadoc.skip=true";  
   mvnHash = "sha256-lcxRduh/nKcPL6YQIVTsNH0L4ga0LgJpQKgX5IPkRzs=";
   
   nativeBuildInputs = [ makeWrapper maven openjdk postgresql openssl postgresql gcc libkrb5 pkg-config ];
-  buildInputs = [ stdenv.cc.cc.lib];
+  buildInputs = [ stdenv.cc.cc.lib which];
   buildPhase = ''
     export PATH=$(lib.makeBinPath [ postgresql ]):$PATH
 
@@ -27,14 +27,17 @@ maven.buildMavenPackage rec {
   # Installing
   installPhase = ''
     set -x
-
-
-    ls -la pljava-packaging/target
-    ls -la .m2/org/postgresql/pljava-packaging/1.6.7
+    which pg_config
     mkdir -p $out
     cp -r *   $out
-    ls -la $out
-    java -jar $out/pljava-packaging/target/pljava-pg15.jar
+    mkdir -p $out/share
+    mkdir -p $out/lib
+    mkdir -p $out/etc
+    java -Dpgconfig=${postgresql}/bin/pg_config \
+      -Dpgconfig.sharedir=$out/share \
+      -Dpgconfig.sysconfdir==$out/etc/pljava.policy \
+      -Dpgconfig.pkglibdir=$out/lib \
+      -jar $out/pljava-packaging/target/pljava-pg15.jar
     #makeWrapper $out/bin/java $out/bin/pljava
     set +x
   '';
