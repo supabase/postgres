@@ -62,3 +62,31 @@
     - name: Print result to Ansible log output
       debug:
         msg: "The postgres user is {{ 'not ' if check_user_group.rc != 0 else '' }}part of the users group"
+
+    - name: Install osquery from nixpkgs binary cache
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#osquery"
+
+    - name: Install osquery permission check script
+      become: yes
+      copy:
+        src: files/permission_check.py
+        dest: /home/ubuntu/permission_check.py
+        mode: "0755"
+
+    - name: Run osquery permission checks
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c "python3 /home/ubuntu/permission_check.py"
+
+    - name: Remove osquery permission check script
+      become: yes
+      file:
+        path: /home/ubuntu/permission_check.py
+        state: absent
+
+    - name: Remove osquery    
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile osquery"
