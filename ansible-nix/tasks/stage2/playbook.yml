@@ -68,23 +68,10 @@
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#osquery"
 
-    - name: Install osquery permission check script
-      become: yes
-      copy:
-        src: /tmp/ansible-playbook/files/permission_check.py
-        dest: /home/ubuntu/permission_check.py
-        mode: "0755"
-
     - name: Run osquery permission checks
       become: yes
       shell: |
-        sudo -u ubuntu bash -c "python3 /home/ubuntu/permission_check.py"
-
-    - name: Remove osquery permission check script
-      become: yes
-      file:
-        path: /home/ubuntu/permission_check.py
-        state: absent
+        sudo -u ubuntu bash -c "python3 /tmp/ansible-playbook/files/permission_check.py"
 
     - name: Remove osquery    
       become: yes
