@@ -172,6 +172,24 @@ def compare_results(username, query_result):
         print("Got:", query_result)
         sys.exit(1)
 
+def check_nixbld_users():
+    query = """
+    SELECT u.username, g.groupname 
+    FROM users u 
+    JOIN user_groups ug ON u.uid = ug.uid 
+    JOIN groups g ON ug.gid = g.gid 
+    WHERE u.username LIKE 'nixbld%';
+    """
+    query_result = run_osquery(query)
+    parsed_result = parse_json(query_result)
+    
+    for user in parsed_result:
+        if user['groupname'] != 'nixbld':
+            print(f"User '{user['username']}' is in group '{user['groupname']}' instead of 'nixbld'.")
+            sys.exit(1)
+    
+    print("All nixbld users are in the 'nixbld' group.")
+
 # Define usernames for which you want to compare results
 usernames = ["postgres", "ubuntu", "root", "daemon", "bin", "sys", "sync", "games","man","lp","mail","news","uucp","proxy","www-data","backup","list","irc","gnats","nobody","systemd-network","systemd-resolve","systemd-timesync","messagebus","ec2-instance-connect","sshd","wal-g","pgbouncer","gotrue","envoy","kong","nginx","vector","adminapi","postgrest","tcpdump","systemd-coredump"]
 
@@ -181,3 +199,6 @@ for username in usernames:
     query_result = run_osquery(query)
     parsed_result = parse_json(query_result)
     compare_results(username, parsed_result)
+
+# Check if all nixbld users are in the nixbld group
+check_nixbld_users()
