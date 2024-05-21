@@ -71,7 +71,7 @@
     - name: Run osquery permission checks
       become: yes
       shell: |
-        sudo -u ubuntu bash -c "python3 /tmp/ansible-playbook/files/permission_check.py"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && /usr/bin/python3 /tmp/ansible-playbook/files/permission_check.py"
 
     - name: Remove osquery    
       become: yes
