@@ -793,3 +793,4 @@ shared_preload_libraries = 'auto_explain,pgsodium'
 # Add settings for extensions here
 
 pgsodium.getkey_script = '@PGSODIUM_GETKEY_SCRIPT@'
+pljava.libjvm_location = '@PLJAVA_LIBJVM_LOCATION@'
