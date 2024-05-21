@@ -76,4 +76,4 @@
     - name: Remove osquery    
       become: yes
       shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile osquery"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove osquery"

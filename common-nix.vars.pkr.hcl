@@ -1,1 +1,1 @@
-postgres-version = "15.6.1.50-nix-staged"
+postgres-version = "15.6.1.51-nix-staged"
