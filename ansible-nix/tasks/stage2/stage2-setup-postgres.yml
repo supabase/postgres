@@ -8,6 +8,10 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
 
+- name: Install pg_prove from nix binary cache
+  become: yes
+  shell: |
+    sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#osquery"
 
 #TODO switch pg_prove sourcing to develop branch once PR is merged
 
