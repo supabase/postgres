@@ -71,7 +71,7 @@
     - name: Install osquery permission check script
       become: yes
       copy:
-        src: files/permission_check.py
+        src: /tmp/ansible-playbook/files/permission_check.py
         dest: /home/ubuntu/permission_check.py
         mode: "0755"
 
