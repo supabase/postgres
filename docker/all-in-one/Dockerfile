@@ -56,7 +56,8 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 ####################
 # Install PostgREST
 ####################
-FROM postgrest/postgrest:v${postgrest_release} as pgrst
+# temporarily hardcoded
+FROM postgrest/postgrest:v12.0.2 as pgrst
 
 ####################
 # Install GoTrue
