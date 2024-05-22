@@ -18,4 +18,5 @@ result*
 
 
 #IDE
-.vscode
+.idea/
+.vscode/
