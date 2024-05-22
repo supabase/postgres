@@ -16,8 +16,8 @@ postgrest_release: "12.0.2-listeners-alpha"
 postgrest_arm_release_checksum: sha1:a61633a4118eaefd5351ad236744fd84fbb7886e
 postgrest_x86_release_checksum: sha1:d57eecdf732b7fd2a38889b35f1ed484a719d003
 
-gotrue_release: 2.151.0
-gotrue_release_checksum: sha1:5a43a9879499d85714ba34356f62f5e8063b549d
+gotrue_release: 2.152.0
+gotrue_release_checksum: sha1:5f220e9f322cc13f93401ab927d32dd0d1f85b40
 
 aws_cli_release: "2.2.7"
 
