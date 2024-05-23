@@ -1,0 +1,149 @@
+[
+	{
+		"Ref": "docker.io/library/ubuntu:focal@sha256:cc9cc8169c9517ae035cf293b15f06922cb8c6c864d625a72b7b18667f264b70",
+		"Descriptor": {
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"digest": "sha256:cc9cc8169c9517ae035cf293b15f06922cb8c6c864d625a72b7b18667f264b70",
+			"size": 424,
+			"platform": {
+				"architecture": "amd64",
+				"os": "linux"
+			}
+		},
+		"Raw": "eyJzY2hlbWFWZXJzaW9uIjogMiwgIm1lZGlhVHlwZSI6ICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCAiY29uZmlnIjogeyJtZWRpYVR5cGUiOiAiYXBwbGljYXRpb24vdm5kLm9jaS5pbWFnZS5jb25maWcudjEranNvbiIsICJzaXplIjogMjI5NCwgImRpZ2VzdCI6ICJzaGEyNTY6MmFiYzRkZmQ4MzE4MjU0NmRhNDBkZmFlM2UzOTFkYjA4MTBhZDRhMTMwZmI1YTg4N2M2Y2ViM2RmOGUxZDMxMCJ9LCAibGF5ZXJzIjogW3sibWVkaWFUeXBlIjogImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubGF5ZXIudjEudGFyK2d6aXAiLCAic2l6ZSI6IDI3NTExNjU3LCAiZGlnZXN0IjogInNoYTI1NjpkNGMzYzk0ZTVlMTBlZDE1NTAzYmRhN2UxNDVhMzY1MmVlOTM1YzBiMmU5ZGU5YjVjOThkZjdlYzBhMGNkOTI1In1dfQ==",
+		"OCIManifest": {
+			"schemaVersion": 2,
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": 2294,
+				"digest": "sha256:2abc4dfd83182546da40dfae3e391db0810ad4a130fb5a887c6ceb3df8e1d310"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+					"size": 27511657,
+					"digest": "sha256:d4c3c94e5e10ed15503bda7e145a3652ee935c0b2e9de9b5c98df7ec0a0cd925"
+				}
+			]
+		}
+	},
+	{
+		"Ref": "docker.io/library/ubuntu:focal@sha256:c90819a01d32d552ec8faf5bffc7ea2f3c9cf130ba5ce78804a07aa75a36751a",
+		"Descriptor": {
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"digest": "sha256:c90819a01d32d552ec8faf5bffc7ea2f3c9cf130ba5ce78804a07aa75a36751a",
+			"size": 424,
+			"platform": {
+				"architecture": "arm",
+				"os": "linux",
+				"variant": "v7"
+			}
+		},
+		"Raw": "eyJzY2hlbWFWZXJzaW9uIjogMiwgIm1lZGlhVHlwZSI6ICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCAiY29uZmlnIjogeyJtZWRpYVR5cGUiOiAiYXBwbGljYXRpb24vdm5kLm9jaS5pbWFnZS5jb25maWcudjEranNvbiIsICJzaXplIjogMjMxMCwgImRpZ2VzdCI6ICJzaGEyNTY6MjZiNjkzMTg1MDRmNDY2YTIyNjcyZTlmYzBmY2I4ZjRhZmI5ZDg3MDFmODhkZGE0ODVjNmE3ODZiZjhlM2MyMSJ9LCAibGF5ZXJzIjogW3sibWVkaWFUeXBlIjogImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubGF5ZXIudjEudGFyK2d6aXAiLCAic2l6ZSI6IDIzNjIzNjUwLCAiZGlnZXN0IjogInNoYTI1NjoxMDEyZWQ2YTVkNDQ0YTA1NmI3MWYwMmUxMmNjNDZlYjc1M2Q3ZTQ1NDc3ZTEwNmViZDlmNmU5NDE4OGE4MmY1In1dfQ==",
+		"OCIManifest": {
+			"schemaVersion": 2,
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": 2310,
+				"digest": "sha256:26b69318504f466a22672e9fc0fcb8f4afb9d8701f88dda485c6a786bf8e3c21"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+					"size": 23623650,
+					"digest": "sha256:1012ed6a5d444a056b71f02e12cc46eb753d7e45477e106ebd9f6e94188a82f5"
+				}
+			]
+		}
+	},
+	{
+		"Ref": "docker.io/library/ubuntu:focal@sha256:9bfe2c7a24b46c861ffea8b27dd1015e3b52e93e5581a09eacecd5a3cd601924",
+		"Descriptor": {
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"digest": "sha256:9bfe2c7a24b46c861ffea8b27dd1015e3b52e93e5581a09eacecd5a3cd601924",
+			"size": 424,
+			"platform": {
+				"architecture": "arm64",
+				"os": "linux",
+				"variant": "v8"
+			}
+		},
+		"Raw": "eyJzY2hlbWFWZXJzaW9uIjogMiwgIm1lZGlhVHlwZSI6ICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCAiY29uZmlnIjogeyJtZWRpYVR5cGUiOiAiYXBwbGljYXRpb24vdm5kLm9jaS5pbWFnZS5jb25maWcudjEranNvbiIsICJzaXplIjogMjMxNCwgImRpZ2VzdCI6ICJzaGEyNTY6N2JlMGEyNDAzMTRiY2I0Y2E0MjViOWMxZjRiYTY0YzJhY2Q3MGQ5YTQ2ZDYxMWZlOTg4NGI5NGY0YzFkNGIyNCJ9LCAibGF5ZXJzIjogW3sibWVkaWFUeXBlIjogImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubGF5ZXIudjEudGFyK2d6aXAiLCAic2l6ZSI6IDI1OTc1NTAwLCAiZGlnZXN0IjogInNoYTI1NjpkNzA0NDEwOGU2ZDRkOGIyNGVhNjhjN2VlNjc1Zjc4Y2I1NmQ5NTlkMDg3OGI3OGM5N2U4Y2E3YzZiNWZhMmNjIn1dfQ==",
+		"OCIManifest": {
+			"schemaVersion": 2,
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": 2314,
+				"digest": "sha256:7be0a240314bcb4ca425b9c1f4ba64c2acd70d9a46d611fe9884b94f4c1d4b24"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+					"size": 25975500,
+					"digest": "sha256:d7044108e6d4d8b24ea68c7ee675f78cb56d959d0878b78c97e8ca7c6b5fa2cc"
+				}
+			]
+		}
+	},
+	{
+		"Ref": "docker.io/library/ubuntu:focal@sha256:c287e7d93b7e18b772ef68a2770bd361260b2f2272a7e10c36920743a28ca7f2",
+		"Descriptor": {
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"digest": "sha256:c287e7d93b7e18b772ef68a2770bd361260b2f2272a7e10c36920743a28ca7f2",
+			"size": 424,
+			"platform": {
+				"architecture": "ppc64le",
+				"os": "linux"
+			}
+		},
+		"Raw": "eyJzY2hlbWFWZXJzaW9uIjogMiwgIm1lZGlhVHlwZSI6ICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCAiY29uZmlnIjogeyJtZWRpYVR5cGUiOiAiYXBwbGljYXRpb24vdm5kLm9jaS5pbWFnZS5jb25maWcudjEranNvbiIsICJzaXplIjogMjI5OCwgImRpZ2VzdCI6ICJzaGEyNTY6MWFiNDFhYTMxYThlYzE1YTc4MzhjODkzNjk2MWU0MjNmZjllNjJhMWQxYjJjMjM1MWVmYzU2YTg0MjJiMTkwNCJ9LCAibGF5ZXJzIjogW3sibWVkaWFUeXBlIjogImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubGF5ZXIudjEudGFyK2d6aXAiLCAic2l6ZSI6IDMyMDc2OTk4LCAiZGlnZXN0IjogInNoYTI1Njo0OGZmMDg5OWVlZDRkMTRlY2RjZjJlZmMzYTI2OTliYzM5ZjUwOGU1ZjgxN2ZhZTllOGZmYzZkNGEyYTlhZTkyIn1dfQ==",
+		"OCIManifest": {
+			"schemaVersion": 2,
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": 2298,
+				"digest": "sha256:1ab41aa31a8ec15a7838c8936961e423ff9e62a1d1b2c2351efc56a8422b1904"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+					"size": 32076998,
+					"digest": "sha256:48ff0899eed4d14ecdcf2efc3a2699bc39f508e5f817fae9e8ffc6d4a2a9ae92"
+				}
+			]
+		}
+	},
+	{
+		"Ref": "docker.io/library/ubuntu:focal@sha256:88a3990f01d156a9cf839813b633b8dd046fbf17cb1d7fd35195275ba1361736",
+		"Descriptor": {
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"digest": "sha256:88a3990f01d156a9cf839813b633b8dd046fbf17cb1d7fd35195275ba1361736",
+			"size": 424,
+			"platform": {
+				"architecture": "s390x",
+				"os": "linux"
+			}
+		},
+		"Raw": "eyJzY2hlbWFWZXJzaW9uIjogMiwgIm1lZGlhVHlwZSI6ICJhcHBsaWNhdGlvbi92bmQub2NpLmltYWdlLm1hbmlmZXN0LnYxK2pzb24iLCAiY29uZmlnIjogeyJtZWRpYVR5cGUiOiAiYXBwbGljYXRpb24vdm5kLm9jaS5pbWFnZS5jb25maWcudjEranNvbiIsICJzaXplIjogMjI5NywgImRpZ2VzdCI6ICJzaGEyNTY6MjkyNjJiZjM2N2Y2NGU2YjgyYjNkODNhMDdiNTkzNmJkNWQ0YjUwZDgwMmYwYTNhNzA2YjVhY2YyMGVlMWFjOCJ9LCAibGF5ZXJzIjogW3sibWVkaWFUeXBlIjogImFwcGxpY2F0aW9uL3ZuZC5vY2kuaW1hZ2UubGF5ZXIudjEudGFyK2d6aXAiLCAic2l6ZSI6IDI2MzY3NzQ0LCAiZGlnZXN0IjogInNoYTI1Njo5ZWI0NzMxZWQxNDcwODc1NzBkNjJjMDFjOWVlOWY5ZjIyYjZkNGJjMmIwZjEyMTU2ODhkYjE5MTFhOGM3Y2IyIn1dfQ==",
+		"OCIManifest": {
+			"schemaVersion": 2,
+			"mediaType": "application/vnd.oci.image.manifest.v1+json",
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": 2297,
+				"digest": "sha256:29262bf367f64e6b82b3d83a07b5936bd5d4b50d802f0a3a706b5acf20ee1ac8"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+					"size": 26367744,
+					"digest": "sha256:9eb4731ed147087570d62c01c9ee9f9f22b6d4bc2b0f1215688db1911a8c7cb2"
+				}
+			]
+		}
+	}
+]

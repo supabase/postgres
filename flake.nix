@@ -267,7 +267,7 @@
 
             postgresqlConfig = pkgs.runCommand "postgresql.conf" { } ''
               mkdir -p $out/etc/
-              substitute ${./nix/tests/postgresql.conf.in} $out/etc/postgresql.conf \
+              substitute ${./nix/docker/postgresql.conf.in} $out/etc/postgresql.conf \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}"
             '';
@@ -288,6 +288,9 @@
               echo "${group}:x:${gid}:" > $out/etc/group
               echo "${group}:x::" > $out/etc/gshadow
 
+              echo "root:x:0:0::/root:/bin/bash" >> $out/etc/passwd
+              echo "root:x:0:" >> $out/etc/group
+
               cat > $out/etc/pam.d/other <<EOF
               account sufficient pam_unix.so
               auth sufficient pam_rootok.so
@@ -306,6 +309,12 @@
             pgconf = pkgs.runCommand "pgconf" { } ''
               mkdir -p $out/data/pgconf
             '';
+            ubuntuFocal = nix2img.pullImage {
+              imageName = "ubuntu";
+              imageDigest = "sha256:874aca52f79ae5f8258faff03e10ce99ae836f6e7d2df6ecd3da5c1cad3a912b";
+              arch = "arm64";
+              sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
+            };
           in
           nix2img.buildImage {
             name = "samrose/nix-experimental-postgresql-${version}-${system}";
@@ -313,7 +322,7 @@
 
             nixUid = l.toInt uid;
             nixGid = l.toInt gid;
-
+            fromImage = ubuntuFocal;
             copyToRoot = [
               (pkgs.buildEnv {
                 name = "image-root";

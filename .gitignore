@@ -20,3 +20,8 @@ result*
 #IDE
 .idea/
 .vscode/
+
+
+#misc
+
+container.sh
