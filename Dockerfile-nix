@@ -830,10 +830,10 @@ FROM base as gosu
 ARG TARGETARCH
 USER root
 # Install dependencies
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#    gnupg \
-#    ca-certificates \
-#    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 # Download binary
 ARG GOSU_VERSION=1.16
 ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
@@ -850,8 +850,8 @@ RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY &&
 # ####################
 # # Build final image
 # ####################
-FROM gosu as production
-USER root
+FROM base as production
+
 # # Setup extensions
 # COPY --from=extensions /tmp /tmp
 COPY --from=walg /tmp/wal-g /usr/local/bin/
@@ -865,6 +865,7 @@ COPY --from=walg /tmp/wal-g /usr/local/bin/
 #     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # # Initialise configs
+COPY --chown=postgres:postgres ansible-nix/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible-nix/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible-nix/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible-nix/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
@@ -876,37 +877,37 @@ COPY --chown=postgres:postgres ansible-nix/files/postgresql_config/custom_walg.c
 COPY --chown=postgres:postgres ansible-nix/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible-nix/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
-RUN sed -i \
-    -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
-    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
-    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
-    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
-    echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
-    #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
-    echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
-    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
-    useradd --create-home --shell /bin/bash wal-g -G postgres && \
-    mkdir -p /etc/postgresql-custom && \
-    chown postgres:postgres /etc/postgresql-custom
+ RUN sed -i \
+     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
+     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
+     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
+     #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
+     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+     useradd --create-home --shell /bin/bash wal-g -G postgres && \
+     mkdir -p /etc/postgresql-custom && \
+     chown postgres:postgres /etc/postgresql-custom
 
 # # Include schema migrations
-COPY migrations/db /docker-entrypoint-initdb.d/
-COPY ansible-nix/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
-COPY ansible-nix/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
+ COPY migrations/db /docker-entrypoint-initdb.d/
+ COPY ansible-nix/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
+ COPY ansible-nix/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # # Add upstream entrypoint script
-COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
-ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
-    /usr/local/bin/
-ENTRYPOINT ["docker-entrypoint.sh"]
+ COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+ ADD --chmod=0755 \
+     https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+     /usr/local/bin/
+ ENTRYPOINT ["docker-entrypoint.sh"]
 
-HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
-STOPSIGNAL SIGINT
-EXPOSE 5432
+ HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+ STOPSIGNAL SIGINT
+ EXPOSE 5432
 
-ENV POSTGRES_HOST=/var/run/postgresql
-CMD ["postgres", "-D", "/etc/postgresql"]
+# ENV POSTGRES_HOST=/var/run/postgresql
+# CMD ["postgres", "-D", "/etc/postgresql"]
 
 # ####################
 # # Update build cache
