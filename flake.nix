@@ -15,6 +15,7 @@
       ourSystems = with flake-utils.lib; [
         system.x86_64-linux
         system.aarch64-linux
+        system.aarch64-darwin
       ];
     in
     flake-utils.lib.eachSystem ourSystems (system:
@@ -118,17 +119,17 @@
           ./nix/ext/pg_net.nix
           ./nix/ext/pg_hashids.nix
           ./nix/ext/pgsodium.nix
-          ./nix/ext/pg_graphql.nix
+          #./nix/ext/pg_graphql.nix
           ./nix/ext/pg_stat_monitor.nix
-          ./nix/ext/pg_jsonschema.nix
+          #./nix/ext/pg_jsonschema.nix
           ./nix/ext/pgvector.nix
           ./nix/ext/vault.nix
           ./nix/ext/hypopg.nix
           ./nix/ext/pg_tle.nix
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
-          ./nix/ext/plv8.nix
-          ./nix/ext/pljava.nix
+          #./nix/ext/plv8.nix
+          #./nix/ext/pljava.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions

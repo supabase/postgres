@@ -6,6 +6,7 @@
 , postgresql
 , buildPgrxExtension_0_11_3
 , cargo
+, darwin
 }:
 
 buildPgrxExtension_0_11_3 rec {
@@ -22,7 +23,7 @@ buildPgrxExtension_0_11_3 rec {
 
   nativeBuildInputs = [ pkg-config cargo ];
 
-  buildInputs = [ openssl ];
+  buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin)  [ darwin.apple_sdk.frameworks.CoreFoundation darwin.apple_sdk.frameworks.Security darwin.apple_sdk.frameworks.SystemConfiguration ];
 
   # Needed to get openssl-sys to use pkg-config.
   OPENSSL_NO_VENDOR = 1;
