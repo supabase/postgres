@@ -1,0 +1,11 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index d9f26e3..b25f426 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -39,5 +39,5 @@ lto = "thin"
+ [profile.release]
+ panic = "unwind"
+ opt-level = 3
+-lto = "fat"
++lto = "off"
+ codegen-units = 1
