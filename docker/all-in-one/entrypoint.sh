@@ -65,12 +65,12 @@ function enable_swap {
 }
 
 function push_lsn_checkpoint_file {
-    if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
-      echo "Skipping push of LSN checkpoint file"
-      return
-    fi
+  if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
+    echo "Skipping push of LSN checkpoint file"
+    return
+  fi
 
-    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
+  /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 }
 
 function graceful_shutdown {
@@ -83,12 +83,12 @@ function graceful_shutdown {
 }
 
 function enable_autoshutdown {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
 }
 
 function enable_lsn_checkpoint_push {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
-    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+  sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
 }
 
 function disable_fail2ban {
@@ -101,15 +101,15 @@ function setup_postgres {
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
 
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql-custom/pgsodium_root.key
-  echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >> $PG_CONF
+  echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >>$PG_CONF
 
   # TODO (darora): walg enablement is temporarily performed here until changes from https://github.com/supabase/postgres/pull/639 get picked up
   # other things will still be needed in the future (auth_delay config)
   sed -i \
-      -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
-      -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, auth_delay'|" \
-      -e "/# Automatically generated optimizations/i auth_delay.milliseconds = '3000'" \
-      "${PG_CONF}"
+    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, auth_delay'|" \
+    -e "/# Automatically generated optimizations/i auth_delay.milliseconds = '3000'" \
+    "${PG_CONF}"
 
   # Setup ssl certs
   mkdir -p /etc/ssl/certs/postgres
@@ -209,34 +209,43 @@ function start_supervisor {
   /usr/bin/supervisord -c $SUPERVISOR_CONF
 }
 
-function execute_delegated_entrypoint {
-  SALT_ARCHIVE="/data/salt-init-latest.tgz"
-  echo "Pulling latest salt archive"
-  # pull salt archive if newer than existing tarball
-  if [ -f $SALT_ARCHIVE ]; then
-    curl --connect-timeout 2 -L --time-cond $SALT_ARCHIVE https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
-  else
-    curl --connect-timeout 2 -L https://supabase-public-artifacts-bucket.s3.amazonaws.com/salt-init/salt-init-latest.tgz -o $SALT_ARCHIVE
+DELEGATED_ARCHIVE_PATH=/data/delegated-init.tar.gz
+
+fetch_delegated_payload() {
+  DELEGATED_PAYLOAD_URL=$(curl -XPOST -sf "$SUPABASE_URL/$DELEGATED_INIT_LOCATION" -H 'Content-Type: application/json' -d '{"reportingToken":"'"$REPORTING_TOKEN"'"}')
+
+  if [ -z "$DELEGATED_PAYLOAD_URL" ]; then
+    echo "Failed to get response, bailing"
+    return
   fi
+
+  curl -s --time-cond $DELEGATED_ARCHIVE_PATH -o $DELEGATED_ARCHIVE_PATH "$DELEGATED_PAYLOAD_URL"
+}
+
+function execute_delegated_entrypoint {
+  if [ ! -f $DELEGATED_ARCHIVE_PATH ]; then
+    echo "No delegated payload found, bailing"
+    return
+  fi
+
   # only extract a valid archive
-  if [[ $(tar -tzf $SALT_ARCHIVE) ]]; then
-    if [ -d /data/salt ]; then
+  if [[ $(tar -tzf $DELEGATED_ARCHIVE_PATH) ]]; then
+    if [ -d /data/delegated-init ]; then
       # Only extract newer tar archives
-      TAR_MTIME=$(stat -c "%Y" $SALT_ARCHIVE)
-      DIR_MTIME=$(stat -c "%Y" /data/salt)
+      TAR_MTIME=$(stat -c "%Y" $DELEGATED_ARCHIVE_PATH)
+      DIR_MTIME=$(stat -c "%Y" /data/delegated-init)
       if [ $TAR_MTIME -gt $DIR_MTIME ]; then
-        tar -xvzf $SALT_ARCHIVE -C /data
+        tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
       fi
     else
-      tar -xvzf $SALT_ARCHIVE -C /data
+      tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
     fi
   fi
-  local DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "E: Execution time to unpacking salt-init: $DURATION milliseconds"
+
   # Run our delegated entry script here
-  if [ -f /data/salt/delegated-entry.sh ]; then
-    chmod +x /data/salt/delegated-entry.sh
-    bash -c "/data/salt/delegated-entry.sh $START_TIME"
+  if [ -f /data/delegated-init/delegated-entry.sh ]; then
+    chmod +x /data/delegated-init/delegated-entry.sh
+    bash -c "/data/delegated-init/delegated-entry.sh $START_TIME"
   fi
 }
 
@@ -245,14 +254,14 @@ ulimit -n 65536
 
 # Update pgsodium root key
 if [ "${PGSODIUM_ROOT_KEY:-}" ]; then
-  echo "${PGSODIUM_ROOT_KEY}" > /etc/postgresql-custom/pgsodium_root.key
+  echo "${PGSODIUM_ROOT_KEY}" >/etc/postgresql-custom/pgsodium_root.key
 fi
 
 # Update pgdata directory
 if [ "${PGDATA_REAL:-}" ]; then
-    mkdir -p "${PGDATA_REAL}"
-    chown -R postgres:postgres "${PGDATA_REAL}"
-    chmod -R g+rx "${PGDATA_REAL}"
+  mkdir -p "${PGDATA_REAL}"
+  chown -R postgres:postgres "${PGDATA_REAL}"
+  chmod -R g+rx "${PGDATA_REAL}"
 fi
 
 if [ "${PGDATA:-}" ]; then
@@ -273,7 +282,7 @@ export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
   curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz" || true
-  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ] ; then
+  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ]; then
     mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
   fi
 fi
@@ -348,7 +357,7 @@ fi
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
 
-if [ ! -z "${DELEGATED_INIT_LOCATION:-}" ]; then
+if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
   execute_delegated_entrypoint
 else
   DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
