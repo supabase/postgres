@@ -72,6 +72,7 @@ ENV PATH=/usr/lib/ccache:$PATH
 # Used to update ccache
 ARG CACHE_EPOCH
 
+
 # ####################
 # # 01-postgis.yml
 # ####################
@@ -905,9 +906,26 @@ COPY ansible-nix/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_cha
  HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
  STOPSIGNAL SIGINT
  EXPOSE 5432
-
-# ENV POSTGRES_HOST=/var/run/postgresql
-# CMD ["postgres", "-D", "/etc/postgresql"]
+#Make the "en_US.UTF-8" locale so postgres will be utf-8 enabled by default
+USER root
+RUN apt-get update && \
+    apt-get install -y locales && \
+    rm -rf /var/lib/apt/lists/*
+#RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+RUN locale-gen en_US.UTF-8
+RUN update-locale LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_CTYPE=en_US.UTF-8
+ENV LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+RUN mkdir -p  /var/lib/postgresql/data 
+RUN chown -R postgres:postgres /var/lib/postgresql/data
+RUN chmod -R 0700 /var/lib/postgresql/data
+ENV POSTGRES_HOST=/var/run/postgresql
+ENV PGDATA=/var/lib/postgresql/data
+ENV POSTGRES_INITDB_ARGS="-D /var/lib/postgresql/data"
+CMD ["postgres", "-D", "/etc/postgresql"]
 
 # ####################
 # # Update build cache
