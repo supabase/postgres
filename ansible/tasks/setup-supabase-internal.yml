@@ -106,3 +106,6 @@
 
 - name: Install pg_egress_collect
   import_tasks: internal/pg_egress_collect.yml
+
+- name: Install PostgreSQL prestart script
+  import_tasks: internal/postgresql-prestart.yml

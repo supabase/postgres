@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ $(cat /etc/locale.gen | grep -c en_US.UTF-8) -eq 0 ]; then
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+fi
+
+if [ $(locale -a | grep -c en_US.utf8) -eq 0 ]; then
+    locale-gen
+fi
