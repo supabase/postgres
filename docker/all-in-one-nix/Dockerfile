@@ -1,4 +1,8 @@
-ARG postgres_version=15.1.1.24
+# This is the base all-in-one-nix image
+# this image inherits the supabase/postgres image, 
+# which in turn inherits an image produced by
+# our nix build for the core postgres bundle/extensions/wrappers
+ARG postgres_version=15.6.1.52-nix-staged
 
 ARG pgbouncer_release=1.18.0
 ARG postgrest_release=10.1.2
@@ -12,23 +16,28 @@ ARG envoy_release=1.28.0
 # Update `gateway-28` in the URL below if upgrading above v2.8.x.
 ARG kong_release=2.8.1
 
-FROM supabase/postgres:${postgres_version} as base
+FROM samrose/supabase-postgres-nix:${postgres_version} as base
 ARG TARGETARCH
 ARG postgresql_major
 
 FROM base as builder
+#USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tzdata
+
+RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    postgresql-server-dev-${postgresql_major} \
     build-essential \
     checkinstall \
     pkg-config \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-####################
-# Install pgbouncer
-####################
+# ####################
+# # Install pgbouncer
+# ####################
 FROM builder as pgbouncer-source
 # Download and extract
 ARG pgbouncer_release
@@ -38,6 +47,7 @@ RUN tar -xvf /tmp/pgbouncer.tar.gz -C /tmp && \
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     libevent-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pgbouncer-${pgbouncer_release}
@@ -53,66 +63,66 @@ RUN apt-get update && apt-get install -y --no-install-recommends --download-only
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
-####################
-# Install PostgREST
-####################
+# ####################
+# # Install PostgREST
+# ####################
 FROM postgrest/postgrest:v${postgrest_release} as pgrst
 
-####################
-# Install GoTrue
-####################
+# ####################
+# # Install GoTrue
+# ####################
 FROM supabase/gotrue:v${gotrue_release} as gotrue
 
-####################
-# Install Envoy
-####################
+# ####################
+# # Install Envoy
+# ####################
 FROM envoyproxy/envoy:v${envoy_release} as envoy
 
-####################
-# Install Kong
-####################
+# ####################
+# # Install Kong
+# ####################
 FROM base as kong
 ARG kong_release
 ADD "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_${kong_release}/kong_${kong_release}_${TARGETARCH}.deb" \
     /tmp/kong.deb
 
-####################
-# Install admin api
-####################
+# ####################
+# # Install admin api
+# ####################
 FROM base as adminapi
 ARG adminapi_release
 ADD "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v${adminapi_release}/supabase-admin-api_${adminapi_release}_linux_${TARGETARCH}.tar.gz" /tmp/supabase-admin-api.tar.gz
 RUN tar -xvf /tmp/supabase-admin-api.tar.gz -C /tmp && \
     rm -rf /tmp/supabase-admin-api.tar.gz
 
-####################
-# Install admin mgr
-####################
+# ####################
+# # Install admin mgr
+# ####################
 FROM base as adminmgr
 ARG adminmgr_release
 ADD "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v${adminmgr_release}/admin-mgr_${adminmgr_release}_linux_${TARGETARCH}.tar.gz" /tmp/admin-mgr.tar.gz
 RUN tar -xvf /tmp/admin-mgr.tar.gz -C /tmp && \
     rm -rf /tmp/admin-mgr.tar.gz
 
-####################
-# Install Prometheus Exporter
-####################
+# ####################
+# # Install Prometheus Exporter
+# ####################
 FROM base as exporter
 ARG postgres_exporter_release
 ADD "https://github.com/prometheus-community/postgres_exporter/releases/download/v${postgres_exporter_release}/postgres_exporter-${postgres_exporter_release}.linux-${TARGETARCH}.tar.gz" /tmp/postgres_exporter.tar.gz
 RUN tar -xvf /tmp/postgres_exporter.tar.gz -C /tmp --strip-components 1 && \
     rm -rf /tmp/postgres_exporter.tar.gz
 
-####################
-# Install vector
-####################
+# ####################
+# # Install vector
+# ####################
 FROM base as vector
 ARG vector_release
 ADD "https://packages.timber.io/vector/${vector_release}/vector_${vector_release}-1_${TARGETARCH}.deb" /tmp/vector.deb
 
-####################
-# Install supervisord
-####################
+# ####################
+# # Install supervisord
+# ####################
 FROM base as supervisor
 # Download pre-built packages
 RUN apt-get update -y && apt-get install -y --no-install-recommends --download-only \
@@ -120,40 +130,42 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends --download-o
     && rm -rf /var/lib/apt/lists/*
 RUN mv /var/cache/apt/archives/*.deb /tmp/
 
-####################
-# Create the final image for production
-####################
+# ####################
+# # Create the final image for production
+# ####################
 FROM base as production
 
-# Copy dependencies from previous build stages
+# # Copy dependencies from previous build stages
 COPY --from=pgbouncer /tmp/*.deb /tmp/
 COPY --from=vector /tmp/*.deb /tmp/
 COPY --from=kong /tmp/*.deb /tmp/
 COPY --from=supervisor /tmp/*.deb /tmp/
 
-# Install runtime dependencies
+# # Install runtime dependencies
+RUN groupadd _apt -g 3999
+RUN adduser --force-badname --system --no-create-home --gid 3999 _apt 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     /tmp/*.deb \
-    # For health check
+#     # For health check
     curl \
-    # For parsing init payload
+#     # For parsing init payload
     jq \
-    # Security tools
-    fail2ban \
-    # sudo
+#     # Security tools
+    #fail2ban \
+#     # sudo
     sudo \
     vim-tiny \
     less \
     libnuma1 \
     logrotate \
     dumb-init \
-    # pg_egress_collect deps
+#     # pg_egress_collect deps
     tcpdump libio-async-perl \
     && rm -rf /var/lib/apt/lists/* /tmp/* \
     && mkdir -p /dist \
     && mkdir -p /data/opt && chmod go+rwx /data/opt
 
-# Copy single binary dependencies
+# # Copy single binary dependencies
 COPY --from=pgrst /bin/postgrest /dist/
 COPY --from=gotrue /usr/local/bin/auth /dist/gotrue
 COPY --from=gotrue /usr/local/etc/auth /opt/gotrue/
@@ -161,73 +173,73 @@ COPY --from=envoy /usr/local/bin/envoy /dist/
 COPY --from=adminapi /tmp/supabase-admin-api /dist/
 COPY --chown=root:root --from=adminmgr /tmp/admin-mgr /dist/
 COPY --from=exporter /tmp/postgres_exporter /opt/postgres_exporter/
-COPY docker/all-in-one/opt/postgres_exporter /opt/postgres_exporter/
+COPY docker/all-in-one-nix/opt/postgres_exporter /opt/postgres_exporter/
 
-# Configuring dangling symlinks for binaries
+# # Configuring dangling symlinks for binaries
 RUN ln -s /data/opt/supabase-admin-api /opt/supabase-admin-api \
     && ln -s /data/opt/postgrest /opt/postgrest \
     && ln -s /data/opt/gotrue /opt/gotrue/gotrue \
     && ln -s /data/opt/admin-mgr /usr/bin/admin-mgr
 
-# Scripts for adminapi
+# # Scripts for adminapi
 COPY ansible/files/admin_api_scripts /root
-COPY --chown=adminapi:adminapi docker/all-in-one/etc/adminapi /etc/adminapi
-COPY --chmod=644 docker/all-in-one/etc/sudoers.d /etc/sudoers.d/
+COPY --chown=adminapi:adminapi docker/all-in-one-nix/etc/adminapi /etc/adminapi
+COPY --chmod=644 docker/all-in-one-nix/etc/sudoers.d /etc/sudoers.d/
 
-# Script for pg_egress_collect
-COPY --chown=adminapi:adminapi docker/all-in-one/opt/pg_egress_collect /opt/pg_egress_collect
+# # Script for pg_egress_collect
+COPY --chown=adminapi:adminapi docker/all-in-one-nix/opt/pg_egress_collect /opt/pg_egress_collect
 
-# Customizations for pgbouncer
-COPY docker/all-in-one/etc/pgbouncer /etc/pgbouncer
-COPY docker/all-in-one/etc/pgbouncer-custom /etc/pgbouncer-custom
-COPY docker/all-in-one/etc/tmpfiles.d /etc/tmpfiles.d
+# # Customizations for pgbouncer
+COPY docker/all-in-one-nix/etc/pgbouncer /etc/pgbouncer
+COPY docker/all-in-one-nix/etc/pgbouncer-custom /etc/pgbouncer-custom
+COPY docker/all-in-one-nix/etc/tmpfiles.d /etc/tmpfiles.d
 
-# Customizations for postgres
-COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql/pg_hba.conf /etc/postgresql/
-COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql/logging.conf /etc/postgresql/
-COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql-custom /etc/postgresql-custom
-COPY --chown=postgres:postgres docker/all-in-one/etc/postgresql.schema.sql /etc/postgresql.schema.sql
+# # Customizations for postgres
+COPY --chown=postgres:postgres docker/all-in-one-nix/etc/postgresql/pg_hba.conf /etc/postgresql/
+COPY --chown=postgres:postgres docker/all-in-one-nix/etc/postgresql/logging.conf /etc/postgresql/
+COPY --chown=postgres:postgres docker/all-in-one-nix/etc/postgresql-custom /etc/postgresql-custom
+COPY --chown=postgres:postgres docker/all-in-one-nix/etc/postgresql.schema.sql /etc/postgresql.schema.sql
 
-# Customizations for postgres_exporter
-COPY --chown=postgres:postgres docker/all-in-one/opt/postgres_exporter/queries.yml /opt/postgres_exporter/queries.yml
+# # Customizations for postgres_exporter
+COPY --chown=postgres:postgres docker/all-in-one-nix/opt/postgres_exporter/queries.yml /opt/postgres_exporter/queries.yml
 
-# Customizations for fail2ban
-COPY docker/all-in-one/etc/fail2ban/filter.d /etc/fail2ban/filter.d/
-COPY docker/all-in-one/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
+# # Customizations for fail2ban
+COPY docker/all-in-one-nix/etc/fail2ban/filter.d /etc/fail2ban/filter.d/
+COPY docker/all-in-one-nix/etc/fail2ban/jail.d /etc/fail2ban/jail.d/
 
-# Customizations for postgrest
-COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/bootstrap.sh /etc/postgrest/bootstrap.sh
-COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/base.conf /etc/postgrest/base.conf
-COPY --chown=postgrest:postgrest docker/all-in-one/etc/postgrest/generated.conf /etc/postgrest/generated.conf
+# # Customizations for postgrest
+COPY --chown=postgrest:postgrest docker/all-in-one-nix/etc/postgrest/bootstrap.sh /etc/postgrest/bootstrap.sh
+COPY --chown=postgrest:postgrest docker/all-in-one-nix/etc/postgrest/base.conf /etc/postgrest/base.conf
+COPY --chown=postgrest:postgrest docker/all-in-one-nix/etc/postgrest/generated.conf /etc/postgrest/generated.conf
 
-# Customizations for logrotate
-COPY docker/all-in-one/etc/logrotate.d/walg.conf /etc/logrotate.d/walg.conf
-COPY docker/all-in-one/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgresql.conf
+# # Customizations for logrotate
+COPY docker/all-in-one-nix/etc/logrotate.d/walg.conf /etc/logrotate.d/walg.conf
+COPY docker/all-in-one-nix/etc/logrotate.d/postgresql.conf /etc/logrotate.d/postgresql.conf
 
-# Customizations for gotrue
-COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
+# # Customizations for gotrue
+COPY docker/all-in-one-nix/etc/gotrue.env /etc/gotrue.env
 
-# Customizations for envoy
+# # Customizations for envoy
 ARG envoy_release
 ADD --chmod=755 --chown=envoy:envoy "https://raw.githubusercontent.com/envoyproxy/envoy/v${envoy_release}/restarter/hot-restarter.py" /opt/envoy-hot-restarter.py
 COPY --chmod=775 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
 COPY --chmod=755 --chown=envoy:envoy ansible/files/start-envoy.sh /opt/
 
-# Customizations for kong
-COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf
-COPY docker/all-in-one/etc/kong/kong.yml /etc/kong/kong.yml
+# # Customizations for kong
+COPY docker/all-in-one-nix/etc/kong/kong.conf /etc/kong/kong.conf
+COPY docker/all-in-one-nix/etc/kong/kong.yml /etc/kong/kong.yml
 
-# Customizations for vector
-COPY --chown=vector:vector docker/all-in-one/etc/vector/vector.yaml /etc/vector/vector.yaml
+# # Customizations for vector
+COPY --chown=vector:vector docker/all-in-one-nix/etc/vector/vector.yaml /etc/vector/vector.yaml
 
-# Customizations for supervisor
-COPY docker/all-in-one/etc/supervisor /etc/supervisor
+# # Customizations for supervisor
+COPY docker/all-in-one-nix/etc/supervisor /etc/supervisor
 
-# Customizations for supa-shutdown
-COPY --chown=adminapi:adminapi docker/all-in-one/etc/supa-shutdown /etc/supa-shutdown
-COPY docker/all-in-one/configure-shim.sh /usr/local/bin/configure-shim.sh
+# # Customizations for supa-shutdown
+COPY --chown=adminapi:adminapi docker/all-in-one-nix/etc/supa-shutdown /etc/supa-shutdown
+COPY docker/all-in-one-nix/configure-shim.sh /usr/local/bin/configure-shim.sh
 
-# Configure service ports
+# # Configure service ports
 ENV PGRST_SERVER_PORT=3000
 ENV PGRST_ADMIN_SERVER_PORT=3001
 EXPOSE ${PGRST_SERVER_PORT}
@@ -258,8 +270,13 @@ EXPOSE ${PGEXPORTER_PORT}
 
 ENV VECTOR_API_PORT=9001
 
-# Create system users
-RUN useradd --create-home --shell /bin/bash postgrest && \
+# # Create system users
+RUN groupadd postgrest && \
+    groupadd gotrue && \
+    groupadd envoy && \
+    groupadd pgbouncer && \
+    groupadd adminapi && \
+    useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
     useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
@@ -278,15 +295,15 @@ RUN mkdir -p /var/log/wal-g \
 RUN chown -R adminapi:adminapi /etc/adminapi
 RUN sed -i "s;#include = '/etc/postgresql-custom/generated-optimizations.conf';include = '/etc/postgresql-custom/generated-optimizations.conf';" /etc/postgresql/postgresql.conf
 
-# Add healthcheck and entrypoint scripts
-COPY docker/all-in-one/healthcheck.sh /usr/local/bin/
+# # Add healthcheck and entrypoint scripts
+COPY docker/all-in-one-nix/healthcheck.sh /usr/local/bin/
 HEALTHCHECK --interval=3s --timeout=2s --start-period=4s --retries=10 CMD [ "healthcheck.sh" ]
 
-COPY docker/all-in-one/init /init
-COPY docker/all-in-one/entrypoint.sh /usr/local/bin/
-COPY docker/all-in-one/postgres-entrypoint.sh /usr/local/bin/
-COPY docker/all-in-one/shutdown.sh /usr/local/bin/supa-shutdown.sh
-COPY docker/all-in-one/run-logrotate.sh /usr/local/bin/run-logrotate.sh
+COPY docker/all-in-one-nix/init /init
+COPY docker/all-in-one-nix/entrypoint.sh /usr/local/bin/
+COPY docker/all-in-one-nix/postgres-entrypoint.sh /usr/local/bin/
+COPY docker/all-in-one-nix/shutdown.sh /usr/local/bin/supa-shutdown.sh
+COPY docker/all-in-one-nix/run-logrotate.sh /usr/local/bin/run-logrotate.sh
 
 ENTRYPOINT [ "/usr/bin/dumb-init" ]
 
