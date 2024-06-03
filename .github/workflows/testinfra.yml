@@ -134,12 +134,10 @@ jobs:
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
           pytest -vv -s testinfra/test_ami.py
 
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
-        run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {}
-
-      - name: Cleanup resources on build cancellation
+      - name: Cleanup resources on completion or cancellation
         if: ${{ always() }}
+        env:
+          AWS_REGION: ap-southeast-1
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {} || true
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {} --no-cli-pager
+          aws ec2 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {} --no-cli-pager
