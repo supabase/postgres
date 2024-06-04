@@ -211,18 +211,9 @@ function start_supervisor {
 
 DELEGATED_ARCHIVE_PATH=/data/delegated-init.tar.gz
 
-fetch_delegated_payload() {
-  DELEGATED_PAYLOAD_URL=$(curl -XPOST -sf "$SUPABASE_URL/$DELEGATED_INIT_LOCATION" -H 'Content-Type: application/json' -d '{"reportingToken":"'"$REPORTING_TOKEN"'"}')
+function fetch_and_execute_delegated_payload {
+  curl -s --time-cond $DELEGATED_ARCHIVE_PATH -o $DELEGATED_ARCHIVE_PATH "$DELEGATED_INIT_LOCATION"
 
-  if [ -z "$DELEGATED_PAYLOAD_URL" ]; then
-    echo "Failed to get response, bailing"
-    return
-  fi
-
-  curl -s --time-cond $DELEGATED_ARCHIVE_PATH -o $DELEGATED_ARCHIVE_PATH "$DELEGATED_PAYLOAD_URL"
-}
-
-function execute_delegated_entrypoint {
   if [ ! -f $DELEGATED_ARCHIVE_PATH ]; then
     echo "No delegated payload found, bailing"
     return
@@ -358,7 +349,7 @@ touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
 
 if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
-  execute_delegated_entrypoint
+  fetch_and_execute_delegated_payload
 else
   DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
   echo "E: Execution time to starting supervisor: $DURATION milliseconds"
