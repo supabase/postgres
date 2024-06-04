@@ -20,48 +20,6 @@ FROM samrose/supabase-postgres-nix:${postgres_version} as base
 ARG TARGETARCH
 ARG postgresql_major
 
-FROM base as builder
-#USER root
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata
-
-RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    checkinstall \
-    pkg-config \
-    cmake \
-    && rm -rf /var/lib/apt/lists/*
-
-# ####################
-# # Install pgbouncer
-# ####################
-FROM builder as pgbouncer-source
-# Download and extract
-ARG pgbouncer_release
-ADD "https://www.pgbouncer.org/downloads/files/${pgbouncer_release}/pgbouncer-${pgbouncer_release}.tar.gz" /tmp/pgbouncer.tar.gz
-RUN tar -xvf /tmp/pgbouncer.tar.gz -C /tmp && \
-    rm -rf /tmp/pgbouncer.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    libevent-dev \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-# Build from source
-WORKDIR /tmp/pgbouncer-${pgbouncer_release}
-RUN ./configure --prefix=/usr/local
-RUN make -j$(nproc)
-# Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libevent-2.1-7 --nodoc
-
-FROM base as pgbouncer
-# Download pre-built packages
-RUN apt-get update && apt-get install -y --no-install-recommends --download-only \
-    pgbouncer \
-    && rm -rf /var/lib/apt/lists/*
-RUN mv /var/cache/apt/archives/*.deb /tmp/
 
 # ####################
 # # Install PostgREST
@@ -134,9 +92,46 @@ RUN mv /var/cache/apt/archives/*.deb /tmp/
 # # Create the final image for production
 # ####################
 FROM base as production
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    tzdata \
+    #libpq-dev needed by postgrest
+    libpq-dev 
+
+RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    checkinstall \
+    pkg-config \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+RUN groupadd ssl-cert && \
+    groupadd pgbouncer && \
+    useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert
+
+ARG pgbouncer_release
+ADD "https://www.pgbouncer.org/downloads/files/${pgbouncer_release}/pgbouncer-${pgbouncer_release}.tar.gz" /tmp/pgbouncer.tar.gz
+RUN tar -xvf /tmp/pgbouncer.tar.gz -C /tmp && \
+    rm -rf /tmp/pgbouncer.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    libevent-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/pgbouncer-${pgbouncer_release}
+RUN ./configure --prefix=/usr
+RUN make -j$(nproc)
+RUN make install
+RUN mkdir -p /usr/sbin 
+RUN mv /usr/bin/pgbouncer /usr/sbin/pgbouncer
+RUN mkdir -p /etc/pgbouncer
+RUN cp -rp /usr/share/doc/pgbouncer /etc/pgbouncer
+
 
 # # Copy dependencies from previous build stages
-COPY --from=pgbouncer /tmp/*.deb /tmp/
+#COPY --from=pgbouncer /tmp/*.deb /tmp/
 COPY --from=vector /tmp/*.deb /tmp/
 COPY --from=kong /tmp/*.deb /tmp/
 COPY --from=supervisor /tmp/*.deb /tmp/
@@ -144,26 +139,42 @@ COPY --from=supervisor /tmp/*.deb /tmp/
 # # Install runtime dependencies
 RUN groupadd _apt -g 3999
 RUN adduser --force-badname --system --no-create-home --gid 3999 _apt 
+
+run groupadd adm
+
+# Environment variable to suppress interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install fail2ban separately and capture logs
+RUN apt-get update && apt-get install -y --no-install-recommends  fail2ban 
+
+# Required by Kong
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    /tmp/*.deb \
-#     # For health check
+    perl \
+    zlib1g-dev
+    
+RUN ls -la /tmp
+RUN apt-get update && \
+    # Install all .deb files in /tmp directory
+    for deb in /tmp/*.deb; do \
+        [ -e "$deb" ] && dpkg -i "$deb" || exit 1; \
+    done && \
+    #apt-get install -f -y && \
+    apt-get install -y --no-install-recommends \
     curl \
-#     # For parsing init payload
     jq \
-#     # Security tools
-    #fail2ban \
-#     # sudo
     sudo \
     vim-tiny \
     less \
     libnuma1 \
     logrotate \
     dumb-init \
-#     # pg_egress_collect deps
-    tcpdump libio-async-perl \
-    && rm -rf /var/lib/apt/lists/* /tmp/* \
-    && mkdir -p /dist \
-    && mkdir -p /data/opt && chmod go+rwx /data/opt
+    tcpdump \
+    libio-async-perl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* && \
+    mkdir -p /dist && \
+    mkdir -p /data/opt && chmod go+rwx /data/opt
 
 # # Copy single binary dependencies
 COPY --from=pgrst /bin/postgrest /dist/
@@ -274,12 +285,13 @@ ENV VECTOR_API_PORT=9001
 RUN groupadd postgrest && \
     groupadd gotrue && \
     groupadd envoy && \
-    groupadd pgbouncer && \
+    #groupadd pgbouncer && \
     groupadd adminapi && \
+    #groupadd ssl-cert && \
     useradd --create-home --shell /bin/bash postgrest && \
     useradd --create-home --shell /bin/bash gotrue && \
     useradd --create-home --shell /bin/bash envoy && \
-    useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
+    #useradd --create-home --shell /bin/bash pgbouncer -G postgres,ssl-cert && \
     useradd --create-home --shell /bin/bash adminapi -G root,envoy,kong,pgbouncer,postgres,postgrest,wal-g && \
     usermod --append --shell /bin/bash -G postgres vector
 RUN mkdir -p /etc/wal-g && \
