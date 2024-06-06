@@ -1,4 +1,3 @@
-
 SELECT database_privs_are(
     'postgres', 'postgres', ARRAY['CONNECT', 'TEMPORARY', 'CREATE']
 );
@@ -28,3 +27,6 @@ SELECT schema_privs_are('extensions', 'postgres', array['CREATE', 'USAGE']);
 SELECT schema_privs_are('extensions', 'anon', array['USAGE']);
 SELECT schema_privs_are('extensions', 'authenticated', array['USAGE']);
 SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
+
+-- Role memberships
+SELECT isnt_member_of('supabase_storage_admin', 'postgres');
