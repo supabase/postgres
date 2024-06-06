@@ -40,54 +40,9 @@ jobs:
             exit 1
           fi
 
-      # - id: args
-      #   uses: mikefarah/yq@master
-      #   with:
-      #     cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
-      # - run: docker context create builders
-      # - uses: docker/setup-buildx-action@v3
-      #   with:
-      #     endpoint: builders
-      # - uses: docker/build-push-action@v5
-      #   with:
-      #     build-args: |
-      #       ${{ steps.args.outputs.result }}
-      #     target: extensions
-      #     tags: supabase/postgres:extensions
-      #     platforms: linux/${{ matrix.arch }}
-      #     outputs: type=tar,dest=/tmp/extensions.tar
-      #     cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-      #     # No need to export extensions cache because latest depends on it
-
-      # - name: Extract built packages
-      #   run: |
-      #     mkdir -p ansible/files/extensions
-      #     tar xvf /tmp/extensions.tar -C ansible/files/extensions --strip-components 1
-      # TODO remove this block as extensions are build in nix prior to this step
-
-      # - id: version
-      #   run: echo "${{ steps.args.outputs.result }}" | grep "postgresql" >> "$GITHUB_OUTPUT"
-      # - name: Build Postgres deb
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     file: docker/Dockerfile
-      #     target: pg-deb
-      #     build-args: |
-      #       ubuntu_release=${{ matrix.ubuntu_release }}
-      #       ubuntu_release_no=${{ matrix.ubuntu_version }}
-      #       postgresql_major=${{ steps.version.outputs.postgresql_major }}
-      #       postgresql_release=${{ steps.version.outputs.postgresql_release }}
-      #       CPPFLAGS=-mcpu=${{ matrix.mcpu }}
-      #     tags: supabase/postgres:deb
-      #     platforms: linux/${{ matrix.arch }}
-      #     outputs: type=tar,dest=/tmp/pg-deb.tar
-      #     cache-from: type=gha,scope=${{ github.ref_name }}-deb
-      #     cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-deb
-      # - name: Extract Postgres deb
-      #   run: |
-      #     mkdir -p ansible/files/postgres
-      #     tar xvf /tmp/pg-deb.tar -C ansible/files/postgres --strip-components 1
-      #TODO remove this block as deb is build in nix prior to this step
+      # extensions are build in nix prior to this step
+      # so we can just use the binaries from the nix store
+      # for postgres, extensions and wrappers
 
       - name: Build AMI stage 1
         run: |

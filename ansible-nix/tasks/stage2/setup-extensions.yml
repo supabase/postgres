@@ -1,21 +1,3 @@
-# - name: Copy extension packages
-#   copy:
-#     src: files/extensions/
-#     dest: /tmp/extensions/
-
-# # Builtin apt module does not support wildcard for deb paths
-# - name: Install extensions
-#   shell: |
-#     set -e
-#     apt-get update
-#     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
-# TODO remove
-
-# The following tasks were moved to stage 2 from the original ansible/tasks/setup-docker.yml
-# due to these configurations being required to be applied at this stage, after the database package
-# has been installed and before the database is started.
-# These tasks are required to be run before the database is started, as they modify the database configuration
-
 - name: pg_cron - set cron.database_name
   become: yes
   lineinfile:
@@ -78,9 +60,3 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
     replace: "include = '/etc/postgresql-custom/supautils.conf'"
-
-# - name: Cleanup - extension packages
-#   file:
-#     path: /tmp/extensions
-#     state: absent
-# TODO remove extensions are already packaged in the nix build

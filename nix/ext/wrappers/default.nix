@@ -30,8 +30,6 @@ buildPgrxExtension_0_11_3 rec {
   CARGO="${cargo}/bin/cargo";
 
   cargoLock = {
-    #TODO when we move to newer versions this lockfile will need to be sourced
-    # from ${src}/Cargo.lock
     lockFile = "${src}/Cargo.lock";
     outputHashes = {
       "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";

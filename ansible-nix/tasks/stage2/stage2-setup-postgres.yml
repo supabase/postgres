@@ -2,42 +2,12 @@
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#psql_15/bin"
+#TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
 
 - name: Install pg_prove from nix binary cache
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
-
-#TODO switch pg_prove sourcing to develop branch once PR is merged
-
-# - name: Generate en_US.UTF-8 locale
-#   command: sudo localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-
-
-# - name: Add LOCALE_ARCHIVE to .bashrc
-#   ansible.builtin.lineinfile:
-#     dest: "/home/postgres/.bashrc"
-#     line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
-#     create: yes
-#   become: yes
-#   become_user: postgres
-
-# - name: Add LANG items to .bashrc
-#   ansible.builtin.lineinfile:
-#     dest: "/home/postgres/.bashrc"
-#     line: "{{ item }}"
-    
-#   loop: 
-#     - 'export LANG="en_US.UTF-8"'
-#     - 'export LANGUAGE="en_US.UTF-8"'
-#     - 'export LC_ALL="en_US.UTF-8"'
-#     - 'export LANG="en_US.UTF-8"'
-#     - 'export LC_CTYPE="en_US.UTF-8"'
-#   become: yes
-#   become_user: postgres
-
-
-#TODO include ls $(nix profile list | grep glibc-locales | tail -n 1 | cut -d ':' -f 2 | sed 's/^[ \t]*//')/lib/locale-archive
 
 - name: Set ownership and permissions for /etc/ssl/private
   become: yes
@@ -146,7 +116,6 @@
     state: directory
     recurse: yes
 
-# TODO check that these dirs were created correctly in final AMI
 - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
   shell: >
     sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
@@ -185,12 +154,6 @@
     force: yes
     owner: postgres
     group: postgres
-
-# - name: Set LANG environment variable
-#   environment:
-#     LANG: en_US.UTF-8
-#   #become: yes
-#source /home/postgres/.bashrc &&
 
 - name: Initialize the database
   become: yes

@@ -1,17 +1,9 @@
-# - name: ensure services are stopped
-#   community.general.snap:
-#     name: amazon-ssm-agent
-#     state: absent
-# TODO taking this out as machine at this stage reports
-# that aws-ssm-agent is not installed at all
-
 - name: ensure services are stopped and disabled for first boot
   systemd:
     enabled: no
     name: '{{ item }}'
     state: stopped
   with_items:
-    #- snapd
     - postgresql
     - pgbouncer
     - fail2ban
@@ -23,17 +15,6 @@
     state: absent
     pkg:
       - snapd
-
-# - name: ensure services are stopped and disabled for first boot
-#   systemd:
-#     enabled: no
-#     name: '{{ item }}'
-#     state: stopped
-#     masked: yes
-#   with_items:
-#     - lvm2-monitor
-# machine at this stage reports this service is stopped and disabled
-
 
 - name: disable man-db
   become: yes

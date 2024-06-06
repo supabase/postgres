@@ -1,15 +1,3 @@
-# - name: Postgres - install commons
-#   apt:
-#     name: postgresql-common
-#     install_recommends: no
-
-# - name: Do not create main cluster
-#   shell:
-#     cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
-#
-# TODO These lines appear to be installing and configuring https://launchpad.net/ubuntu/+source/postgresql-common 
-# as far as I can see, we don't need this now.
-
 - name: create ssl-cert group
   group:
     name: ssl-cert
@@ -22,15 +10,6 @@
   group:
     name: postgres
     state: present
-
-# - name: create users
-#   user:
-#     name: postgres 
-#     groups: postgres, ssl-cert
-#     createhome: yes
-#     append: no
-#     shell: /bin/bash  # Set shell if needed, default is /bin/bash
-#     password: ''
 
 - name: create postgres user
   shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres
@@ -136,9 +115,8 @@
     group: postgres
 
 # # Install extensions before init
-# - name: Install Postgres extensions
-#   import_tasks: tasks/setup-docker.yml
-# TODO resolve in new build
+# (samrose) moved to tasks/stage2/setup-extensions.yml
+# now called from stage2/stage2-setup-postgres.yml
 
 
 # init DB
