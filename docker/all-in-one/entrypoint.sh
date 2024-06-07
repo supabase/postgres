@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eou pipefail
 
+START_TIME=$(date +%s%N)
+
 PG_CONF=/etc/postgresql/postgresql.conf
 SUPERVISOR_CONF=/etc/supervisor/supervisord.conf
 
@@ -8,6 +10,16 @@ export DATA_VOLUME_MOUNTPOINT=${DATA_VOLUME_MOUNTPOINT:-/data}
 export CONFIGURED_FLAG_PATH=${CONFIGURED_FLAG_PATH:-$DATA_VOLUME_MOUNTPOINT/machine.configured}
 
 export MAX_IDLE_TIME_MINUTES=${MAX_IDLE_TIME_MINUTES:-5}
+
+function calculate_duration {
+  local start_time=$1
+  local end_time=$2
+
+  local duration=$((end_time - start_time))
+  local milliseconds=$((duration / 1000000))
+
+  echo "$milliseconds"
+}
 
 # Ref: https://gist.github.com/sj26/88e1c6584397bb7c13bd11108a579746
 function retry {
@@ -53,12 +65,12 @@ function enable_swap {
 }
 
 function push_lsn_checkpoint_file {
-    if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
-      echo "Skipping push of LSN checkpoint file"
-      return
-    fi
+  if [ "${PLATFORM_DEPLOYMENT:-}" != "true" ]; then
+    echo "Skipping push of LSN checkpoint file"
+    return
+  fi
 
-    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
+  /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 }
 
 function graceful_shutdown {
@@ -71,30 +83,17 @@ function graceful_shutdown {
 }
 
 function enable_autoshutdown {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/supa-shutdown.conf
 }
 
 function enable_lsn_checkpoint_push {
-    sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
-    sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+  sed -i "s/autostart=.*/autostart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
+  sed -i "s/autorestart=.*/autorestart=true/" /etc/supervisor/base-services/lsn-checkpoint-push.conf
 }
 
 function disable_fail2ban {
-  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/fail2ban.conf
   sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/fail2ban.conf
-}
-
-function disable_gotrue {
-  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/gotrue.conf
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
-}
-
-function disable_pgbouncer {
-  sed -i "s/command=.*/command=sleep 5/" /etc/supervisor/services/pgbouncer.conf
-  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/pgbouncer.conf
-  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/pgbouncer.conf
 }
 
 function setup_postgres {
@@ -102,15 +101,15 @@ function setup_postgres {
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
 
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql-custom/pgsodium_root.key
-  echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >> $PG_CONF
+  echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >>$PG_CONF
 
   # TODO (darora): walg enablement is temporarily performed here until changes from https://github.com/supabase/postgres/pull/639 get picked up
   # other things will still be needed in the future (auth_delay config)
   sed -i \
-      -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
-      -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, auth_delay'|" \
-      -e "/# Automatically generated optimizations/i auth_delay.milliseconds = '3000'" \
-      "${PG_CONF}"
+    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
+    -e "s|shared_preload_libraries = '\(.*\)'|shared_preload_libraries = '\1, auth_delay'|" \
+    -e "/# Automatically generated optimizations/i auth_delay.milliseconds = '3000'" \
+    "${PG_CONF}"
 
   # Setup ssl certs
   mkdir -p /etc/ssl/certs/postgres
@@ -169,6 +168,8 @@ function setup_postgres {
     chmod g+rx "/etc/wal-g"
     chmod g+rx "${WALG_CONF_DIR}"
   fi
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "E: Execution time to setting up postgresql: $DURATION milliseconds"
 }
 
 function setup_credentials {
@@ -178,6 +179,8 @@ function setup_credentials {
   export SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY:-$(jq -r '.["service_key"]' /tmp/init.json)}
   export ADMIN_API_KEY=${ADMIN_API_KEY:-$(jq -r '.["supabase_admin_key"]' /tmp/init.json)}
   export JWT_SECRET=${JWT_SECRET:-$(jq -r '.["jwt_secret"]' /tmp/init.json)}
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "E: Execution time to setting up credentials: $DURATION milliseconds"
 }
 
 function report_health {
@@ -193,9 +196,9 @@ function report_health {
 }
 
 function run_prelaunch_hooks {
-    if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
-      sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
-    fi
+  if [ -f "/etc/postgresql-custom/supautils.conf" ]; then
+    sed -i -e 's/dblink, //' "/etc/postgresql-custom/supautils.conf"
+  fi
 }
 
 function start_supervisor {
@@ -206,19 +209,50 @@ function start_supervisor {
   /usr/bin/supervisord -c $SUPERVISOR_CONF
 }
 
+DELEGATED_ARCHIVE_PATH=/data/delegated-init.tar.gz
+
+function fetch_and_execute_delegated_payload {
+  curl -s --time-cond $DELEGATED_ARCHIVE_PATH -o $DELEGATED_ARCHIVE_PATH "$DELEGATED_INIT_LOCATION"
+
+  if [ ! -f $DELEGATED_ARCHIVE_PATH ]; then
+    echo "No delegated payload found, bailing"
+    return
+  fi
+
+  # only extract a valid archive
+  if [[ $(tar -tzf $DELEGATED_ARCHIVE_PATH) ]]; then
+    if [ -d /data/delegated-init ]; then
+      # Only extract newer tar archives
+      TAR_MTIME=$(stat -c "%Y" $DELEGATED_ARCHIVE_PATH)
+      DIR_MTIME=$(stat -c "%Y" /data/delegated-init)
+      if [ $TAR_MTIME -gt $DIR_MTIME ]; then
+        tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
+      fi
+    else
+      tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
+    fi
+  fi
+
+  # Run our delegated entry script here
+  if [ -f /data/delegated-init/delegated-entry.sh ]; then
+    chmod +x /data/delegated-init/delegated-entry.sh
+    bash -c "/data/delegated-init/delegated-entry.sh $START_TIME"
+  fi
+}
+
 # Increase max number of open connections
 ulimit -n 65536
 
 # Update pgsodium root key
 if [ "${PGSODIUM_ROOT_KEY:-}" ]; then
-  echo "${PGSODIUM_ROOT_KEY}" > /etc/postgresql-custom/pgsodium_root.key
+  echo "${PGSODIUM_ROOT_KEY}" >/etc/postgresql-custom/pgsodium_root.key
 fi
 
 # Update pgdata directory
 if [ "${PGDATA_REAL:-}" ]; then
-    mkdir -p "${PGDATA_REAL}"
-    chown -R postgres:postgres "${PGDATA_REAL}"
-    chmod -R g+rx "${PGDATA_REAL}"
+  mkdir -p "${PGDATA_REAL}"
+  chown -R postgres:postgres "${PGDATA_REAL}"
+  chmod -R g+rx "${PGDATA_REAL}"
 fi
 
 if [ "${PGDATA:-}" ]; then
@@ -239,7 +273,7 @@ export INIT_PAYLOAD_PATH=${INIT_PAYLOAD_PATH:-/tmp/payload.tar.gz}
 
 if [ "${INIT_PAYLOAD_PRESIGNED_URL:-}" ]; then
   curl -fsSL "$INIT_PAYLOAD_PRESIGNED_URL" -o "/tmp/payload.tar.gz" || true
-  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ] ; then
+  if [ -f "/tmp/payload.tar.gz" ] && [ "/tmp/payload.tar.gz" != "$INIT_PAYLOAD_PATH" ]; then
     mv "/tmp/payload.tar.gz" "$INIT_PAYLOAD_PATH"
   fi
 fi
@@ -298,11 +332,8 @@ if [ "${FAIL2BAN_DISABLED:-}" == "true" ]; then
 fi
 
 if [ "${GOTRUE_DISABLED:-}" == "true" ]; then
-  disable_gotrue
-fi
-
-if [ "${PGBOUNCER_DISABLED:-}" == "true" ]; then
-  disable_pgbouncer
+  sed -i "s/autostart=.*/autostart=false/" /etc/supervisor/services/gotrue.conf
+  sed -i "s/autorestart=.*/autorestart=false/" /etc/supervisor/services/gotrue.conf
 fi
 
 if [ "${PLATFORM_DEPLOYMENT:-}" == "true" ]; then
@@ -316,5 +347,12 @@ fi
 
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
-start_supervisor
-push_lsn_checkpoint_file
+
+if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
+  fetch_and_execute_delegated_payload
+else
+  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+  echo "E: Execution time to starting supervisor: $DURATION milliseconds"
+  start_supervisor
+  push_lsn_checkpoint_file
+fi
