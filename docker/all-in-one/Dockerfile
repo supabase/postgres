@@ -167,8 +167,7 @@ RUN mkdir /etc/apt/keyrings \
     && apt-get clean && apt-get update \
     && apt-get install -y salt-minion
 
-ADD docker/all-in-one/salt-init/docker/etc/minion /etc/salt/minion
-ADD docker/all-in-one/salt-init/salt /opt/salt
+ADD docker/all-in-one/etc/salt/minion /etc/salt/minion
 
 
 # Copy single binary dependencies
