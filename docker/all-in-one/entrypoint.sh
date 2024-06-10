@@ -221,16 +221,8 @@ function fetch_and_execute_delegated_payload {
 
   # only extract a valid archive
   if [[ $(tar -tzf $DELEGATED_ARCHIVE_PATH) ]]; then
-    if [ -d /data/delegated-init ]; then
-      # Only extract newer tar archives
-      TAR_MTIME=$(stat -c "%Y" $DELEGATED_ARCHIVE_PATH)
-      DIR_MTIME=$(stat -c "%Y" /data/delegated-init)
-      if [ $TAR_MTIME -gt $DIR_MTIME ]; then
-        tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
-      fi
-    else
-      tar -xvzf $DELEGATED_ARCHIVE_PATH -C /data
-    fi
+    # TODO: (tom) Only extract newer tar archives
+    tar -xvzf $DELEGATED_ARCHIVE_PATH -C /
   fi
 
   # Run our delegated entry script here
