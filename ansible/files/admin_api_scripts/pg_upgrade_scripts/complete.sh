@@ -93,9 +93,9 @@ function complete_pg_upgrade {
 
     echo "3. Starting postgresql"
     if [ -z "$IS_CI" ]; then
-        retry 3 start_postgres
+        retry 3 systemctl start postgresql
     else
-        start_postgres --new-bin
+        CI_start_postgres --new-bin
     fi
 
     echo "4. Running generated SQL files"
@@ -112,13 +112,13 @@ function complete_pg_upgrade {
     sleep 5
 
     echo "5. Restarting postgresql"
-    retry 3 stop_postgres || true
-    retry 3 start_postgres
-
     if [ -z "$IS_CI" ]; then
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
         retry 3 service postgrest restart
+    else
+        retry 3 CI_stop_postgres || true
+        retry 3 CI_start_postgres
     fi
 
     echo "6. Starting vacuum analyze"
