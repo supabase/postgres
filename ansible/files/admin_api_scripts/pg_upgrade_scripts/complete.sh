@@ -168,7 +168,7 @@ trap cleanup ERR
 if [ -z "$IS_CI" ]; then
     complete_pg_upgrade >> $LOG_FILE 2>&1 &
 else 
-    stop_postgres || true
+    CI_stop_postgres || true
 
     rm -f /tmp/pg-upgrade-status
     mv /data_migration /data
