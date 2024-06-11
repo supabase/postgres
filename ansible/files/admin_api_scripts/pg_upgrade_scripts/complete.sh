@@ -113,7 +113,7 @@ function complete_pg_upgrade {
 
     echo "5. Restarting postgresql"
     if [ -z "$IS_CI" ]; then
-        service postgresql restart
+        retry 3 service postgresql restart
         
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
