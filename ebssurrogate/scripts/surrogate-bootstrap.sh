@@ -182,6 +182,7 @@ function setup_chroot_environment {
 	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
 	chroot /mnt /tmp/chroot-bootstrap.sh
 	rm -f /mnt/tmp/chroot-bootstrap.sh
+	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/root/supabase-release
 
 	# Copy the nvme identification script into /sbin inside the chroot
 	mkdir -p /mnt/sbin
@@ -257,7 +258,10 @@ function clean_system {
 
 	# Setup wal-g logs
 	mkdir /mnt/var/log/wal-g
-	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log}
+	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
+
+	#Creatre Sysstat directory for SAR
+	mkdir /mnt/var/log/sysstat
 
 	if [ -f /usr/bin/chown ]; then
 		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g

@@ -1,32 +1,45 @@
-name: Release AIO image on Dockerhub
+name: Release AIO image
 
 on:
   push:
     branches:
-      - pcnc/trigger-build
+      - develop
     paths:
       - ".github/workflows/dockerhub-release-aio.yml"
       - "docker/all-in-one/*"
-      - "common.vars*"
   workflow_run:
     workflows: [Release on Dockerhub]
     branches:
       - develop
     types:
       - completed
-    
+  workflow_dispatch:
+    inputs:
+      baseDockerVersion:
+        description: 'Base Docker Version. E.g., 15.1.1.27'
+        required: false
+
 jobs:
   settings:
     runs-on: ubuntu-latest
     outputs:
+      base_docker_version: ${{ steps.base_docker.outputs.base-docker-version }}
       docker_version: ${{ steps.settings.outputs.postgres-version }}
       image_tag: supabase/postgres:aio-${{ steps.settings.outputs.postgres-version }}
+      fly_image_tag: supabase-postgres-image:aio-${{ steps.settings.outputs.postgres-version }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
       - id: settings
         # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common.vars.pkr.hcl >> $GITHUB_OUTPUT
+      - id: base_docker
+        run: |
+          if [[ "${{ inputs.baseDockerVersion }}" != "" ]]; then
+            echo "base-docker-version=${{ inputs.baseDockerVersion }}" >> $GITHUB_OUTPUT
+          else
+            echo "base-docker-version=${{ steps.settings.outputs.postgres-version }}" >> $GITHUB_OUTPUT
+          fi
       - id: args
         uses: mikefarah/yq@master
         with:
@@ -47,7 +60,7 @@ jobs:
       image_digest: ${{ steps.build.outputs.digest }}
     steps:
       - run: docker context create builders
-      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v3
         with:
           endpoint: builders
       - uses: docker/login-action@v2
@@ -55,18 +68,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - id: build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           file: docker/all-in-one/Dockerfile
           push: true
           build-args: |
-            postgres_version=${{ needs.settings.outputs.docker_version }}
+            postgres_version=${{ needs.settings.outputs.base_docker_version }}
             ${{ needs.settings.outputs.build_args }}
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.ref_name }}-aio-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-aio-${{ matrix.arch }}
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
@@ -81,7 +94,7 @@ jobs:
     needs: [settings, build_image]
     runs-on: ubuntu-latest
     steps:
-      - uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -106,5 +119,39 @@ jobs:
     # Call workflow explicitly because events from actions cannot trigger more actions
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ needs.settings.outputs.docker_version }}
+      version: aio-${{ needs.settings.outputs.docker_version }}
     secrets: inherit
+
+  publish_to_fly:
+    needs: [settings, build_image]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push to Fly
+        uses: superfly/flyctl-actions/setup-flyctl@dfdfedc86b296f5e5384f755a18bf400409a15d0
+        with:
+          version: 0.1.64
+      - run: |
+          docker pull ${{ needs.settings.outputs.image_tag }}_amd64
+          docker tag ${{ needs.settings.outputs.image_tag }}_amd64 "registry.fly.io/staging-${{ needs.settings.outputs.fly_image_tag }}"
+          docker tag ${{ needs.settings.outputs.image_tag }}_amd64 "registry.fly.io/prod-${{ needs.settings.outputs.fly_image_tag }}"
+
+          flyctl auth docker
+          docker push "registry.fly.io/staging-${{ needs.settings.outputs.fly_image_tag }}"
+          docker push "registry.fly.io/prod-${{ needs.settings.outputs.fly_image_tag }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          
+      - name: Slack Notification
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: "gha-failures-notifier"
+          SLACK_COLOR: "danger"
+          SLACK_MESSAGE: "Failed pushing AIO image to Fly.io"
+          SLACK_FOOTER: ""

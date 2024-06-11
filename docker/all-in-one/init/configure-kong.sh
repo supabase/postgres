@@ -2,6 +2,8 @@
 set -eou pipefail
 
 KONG_CONF=/etc/kong/kong.yml
+KONG_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/kong"
+
 touch /var/log/services/kong.log
 
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
@@ -29,3 +31,18 @@ sed -i -e "s|anon_key|$ANON_KEY|g" \
 # Update kong ports
 sed -i "s|:80 |:$KONG_HTTP_PORT |g" /etc/kong/kong.conf
 sed -i "s|:443 |:$KONG_HTTPS_PORT |g" /etc/kong/kong.conf
+
+if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+  mkdir -p "${KONG_CUSTOM_DIR}"
+  if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
+    echo "Copying existing custom kong config from /etc/kong/kong.yml to ${KONG_CUSTOM_DIR}"
+    cp /etc/kong/kong.yml "${KONG_CUSTOM_DIR}/kong.yml"
+  fi
+
+  rm -rf "/etc/kong/kong.yml"
+  ln -s "${KONG_CUSTOM_DIR}/kong.yml" "/etc/kong/kong.yml"
+  chown -R adminapi:adminapi "/etc/kong/kong.yml"
+
+  chown -R adminapi:adminapi "${KONG_CUSTOM_DIR}"
+  chmod g+wrx "${KONG_CUSTOM_DIR}"
+fi

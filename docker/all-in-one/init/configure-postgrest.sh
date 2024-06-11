@@ -11,25 +11,30 @@ sed -i "s|pgrst_db_extra_search_path|${PGRST_DB_SCHEMAS:-public,extensions}|g" /
 sed -i "s|pgrst_db_anon_role|${PGRST_DB_ANON_ROLE:-anon}|g" /etc/postgrest/base.conf
 sed -i "s|pgrst_jwt_secret|$JWT_SECRET|g" /etc/postgrest/base.conf
 
-POSTGREST_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgrest"
-mkdir -p "${POSTGREST_CUSTOM_DIR}"
-if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
-  echo "Copying existing custom PostgREST config from /etc/postgrest/ to ${POSTGREST_CUSTOM_DIR}"
-  cp -R "/etc/postgrest/." "${POSTGREST_CUSTOM_DIR}/"
-fi
+/usr/local/bin/configure-shim.sh /dist/postgrest /opt/postgrest
 
-rm -rf "/etc/postgrest"
-ln -s "${POSTGREST_CUSTOM_DIR}" "/etc/postgrest"
-chown -R postgrest:postgrest "/etc/postgrest"
-chown -R postgrest:postgrest "${POSTGREST_CUSTOM_DIR}"
-chmod g+rx "${POSTGREST_CUSTOM_DIR}"
-  
 if [ -f "${INIT_PAYLOAD_PATH:-}" ]; then
   echo "init postgrest payload"
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgrest/base.conf
   chown -R postgrest:postgrest /etc/postgrest
 fi
 
+if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
+  POSTGREST_CUSTOM_DIR="${DATA_VOLUME_MOUNTPOINT}/etc/postgrest"
+  mkdir -p "${POSTGREST_CUSTOM_DIR}"
+  if [ ! -f "${CONFIGURED_FLAG_PATH}" ]; then
+    echo "Copying existing custom PostgREST config from /etc/postgrest/ to ${POSTGREST_CUSTOM_DIR}"
+    cp -R "/etc/postgrest/." "${POSTGREST_CUSTOM_DIR}/"
+  fi
+
+  rm -rf "/etc/postgrest"
+  ln -s "${POSTGREST_CUSTOM_DIR}" "/etc/postgrest"
+  chown -R postgrest:postgrest "/etc/postgrest"
+
+  chown -R postgrest:postgrest "${POSTGREST_CUSTOM_DIR}"
+  chmod g+wrx "${POSTGREST_CUSTOM_DIR}"
+fi
+  
 PGRST_CONF=/etc/postgrest/generated.conf
 
 /opt/supabase-admin-api optimize postgrest --destination-config-file-path $PGRST_CONF

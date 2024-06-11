@@ -7,13 +7,10 @@
 ## which can then be subsequently checked through check.sh.
 
 # Extensions to disable before running pg_upgrade.
-# Running an upgrade with these extensions enabled will result in errors due to 
-# them depending on regtypes referencing system OIDs or outdated library files. 
+# Running an upgrade with these extensions enabled will result in errors due to
+# them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
-    "plv8"
-    "plcoffee"
-    "plls"
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -39,15 +36,22 @@ MOUNT_POINT="/data_migration"
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
+POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
+PGBINOLD="/usr/lib/postgresql/bin"
+PGLIBOLD="/usr/lib/postgresql/lib"
+
 # If upgrading from older major PG versions, disable specific extensions
-if [[ "$OLD_PGVERSION" =~ 14* ]]; then
+if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG14_EXTENSIONS_TO_DISABLE[@]}")
-fi
-if [[ "$OLD_PGVERSION" =~ 13* ]]; then
+elif [[ "$OLD_PGVERSION" =~ ^13.* ]]; then
     EXTENSIONS_TO_DISABLE+=("${PG13_EXTENSIONS_TO_DISABLE[@]}")
+elif [[ "$OLD_PGVERSION" =~ ^12.* ]]; then
+    POSTGRES_CONFIG_PATH="/etc/postgresql/12/main/postgresql.conf"
+    PGBINOLD="/usr/lib/postgresql/12/bin"
 fi
 
 PGBINOLD="$(pg_config --bindir)"
+echo "Detected PG version: $PGVERSION"
 
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
@@ -71,21 +75,19 @@ cleanup() {
 
     if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
         rm "/usr/share/postgresql/${PGVERSION}"
-    fi
 
-    if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-        rm -f "/usr/share/postgresql/${PGVERSION}"
-        mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
-    fi
+        if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+        fi
 
-    if [ -f "/usr/lib/postgresql/lib/aarch64/libpq.so.5.bak" ]; then
-        rm /usr/lib/postgresql/lib/aarch64/libpq.so.5
-        mv /usr/lib/postgresql/lib/aarch64/libpq.so.5.bak /usr/lib/postgresql/lib/aarch64/libpq.so.5
+        if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+        fi
     fi
 
     echo "Restarting postgresql"
-    stop_postgres || true
-    start_postgres
+    systemctl enable postgresql
+    retry 5 systemctl restart postgresql
 
     echo "Re-enabling extensions"
     if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
@@ -145,15 +147,16 @@ EOF
 
 function initiate_upgrade {
     mkdir -p "$MOUNT_POINT"
-    SHARED_PRELOAD_LIBRARIES=$(cat /etc/postgresql/postgresql.conf | grep shared_preload_libraries | sed "s/shared_preload_libraries = '\(.*\)'.*/\1/")
+    SHARED_PRELOAD_LIBRARIES=$(cat "$POSTGRES_CONFIG_PATH" | grep shared_preload_libraries | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
 
     # Wrappers officially launched in PG15; PG14 version is incompatible
     if [[ "$OLD_PGVERSION" =~ 14* ]]; then
-        SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers, //")
+        SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers,//" | xargs)
     fi
-    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_cron, //")
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_cron,//" | xargs)
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/check_role_membership,//" | xargs)
 
-    PGDATAOLD=$(cat /etc/postgresql/postgresql.conf | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
+    PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
     PGDATANEW="$MOUNT_POINT/pgdata"
     PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
@@ -179,13 +182,6 @@ function initiate_upgrade {
 
     chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
-    # Make latest libpq available to pg_upgrade
-    mkdir -p /usr/lib/aarch64-linux-gnu
-    if [ -f "/usr/lib/aarch64-linux-gnu/libpq.so.5" ]; then
-        mv /usr/lib/aarch64-linux-gnu/libpq.so.5 /usr/lib/aarch64-linux-gnu/libpq.so.5.bak
-    fi
-    ln -s "$PG_UPGRADE_BIN_DIR/libpq.so.5" /usr/lib/aarch64-linux-gnu/libpq.so.5
-
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/
     chown -R postgres:postgres /tmp/pg_upgrade/
@@ -202,15 +198,21 @@ function initiate_upgrade {
         apt --fix-broken install -y libprotobuf-c1 libicu66 || true
     fi
 
+    echo "4. Setup locale if required"
+    if ! grep -q "^en_US.UTF-8" /etc/locale.gen ; then
+        echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+        locale-gen
+    fi
+
     if [ "$IS_CI" = false ]; then
         # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
         # excluding nvme0 since it is the root disk
-        echo "4. Determining block device to mount"
+        echo "5. Determining block device to mount"
         BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
         echo "Block device found: $BLOCK_DEVICE"
 
         mkdir -p "$MOUNT_POINT"
-        echo "5. Mounting block device"
+        echo "6. Mounting block device"
 
         sleep 5
         e2fsck -pf "$BLOCK_DEVICE"
@@ -230,10 +232,10 @@ function initiate_upgrade {
         chmod 600 /etc/postgresql-custom/pgsodium_root.key
     fi
 
-    echo "6. Disabling extensions and generating post-upgrade script"
+    echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
     
-    echo "7. Granting SUPERUSER to postgres user"
+    echo "8. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
     if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
@@ -244,7 +246,34 @@ function initiate_upgrade {
     cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
     cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
 
-    echo "8. Creating new data directory, initializing database"
+    # This is a workaround for older versions of wrappers which don't have the expected
+    #  naming scheme, containing the version in their library's file name
+    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
+    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
+    #  library directory, so we're making sure the new version has the expected (old version's)
+    #  file name.
+    # After the upgrade completes, the new version's library file is used.
+    # i.e. 
+    #  - old version: wrappers-0.1.16.so
+    #  - new version: wrappers-0.1.18.so
+    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
+    if [ -d "$PGLIBOLD" ]; then
+        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
+        if [ -f "$WRAPPERS_LIB_PATH" ]; then
+            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
+            if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
+                LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+                if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
+                    echo "Copying $OLD_WRAPPER_LIB_PATH to $WRAPPERS_LIB_PATH"
+                    cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                fi
+            fi
+        fi
+    fi
+
+    export LD_LIBRARY_PATH="${PGLIBNEW}"
+
+    echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
     su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
@@ -256,7 +285,7 @@ function initiate_upgrade {
     --old-datadir=${PGDATAOLD} \
     --new-datadir=${PGDATANEW} \
     --jobs="${WORKERS}" \
-    --old-options='-c config_file=/etc/postgresql/postgresql.conf' \
+    --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
     --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
@@ -264,24 +293,36 @@ EOF
     )
 
     su -c "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
-    
-    echo "9. Stopping postgres; running pg_upgrade"
-    stop_postgres
+
+    echo "10. Stopping postgres; running pg_upgrade"
+    # Extra work to ensure postgres is actually stopped
+    #  Mostly needed for PG12 projects with odd systemd unit behavior
+    retry 5 systemctl restart postgresql
+    systemctl disable postgresql
+    retry 5 systemctl stop postgresql
+
+    sleep 3
+    systemctl stop postgresql
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
 
     # copying custom configurations
-    echo "10. Copying custom configurations"
+    echo "11. Copying custom configurations"
     mkdir -p "$MOUNT_POINT/conf"
     cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
+    # removing supautils config as to allow the latest one provided by the latest image to be used
+    rm -f "$MOUNT_POINT/conf/supautils.conf" || true
+
+    # removing wal-g config as to allow it to be explicitly enabled on the new instance
+    rm -f "$MOUNT_POINT/conf/wal-g.conf"
 
     # copy sql files generated by pg_upgrade
-    echo "11. Copying sql files generated by pg_upgrade"
+    echo "12. Copying sql files generated by pg_upgrade"
     mkdir -p "$MOUNT_POINT/sql"
     cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
     chown -R postgres:postgres "$MOUNT_POINT/sql/"
 
-    echo "12. Cleaning up"
+    echo "13. Cleaning up"
     cleanup "complete"
 }
 

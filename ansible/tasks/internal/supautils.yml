@@ -6,16 +6,6 @@
       - clang-11
     update_cache: yes
     cache_valid_time: 3600
-  when: ansible_distribution_version != "18.04"
-
-- name: supautils - download & install dependencies - Ubuntu 18.04
-  apt:
-    pkg:
-      - build-essential
-      - clang-12
-    update_cache: yes
-    cache_valid_time: 3600
-  when: ansible_distribution_version == "18.04"
 
 - name: supautils - download latest release
   get_url:

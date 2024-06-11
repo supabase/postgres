@@ -42,5 +42,5 @@ if [ "${DATA_VOLUME_MOUNTPOINT}" ]; then
   ln -s "${PGBOUNCER_DIR}" "/etc/pgbouncer"
   chown -R pgbouncer:pgbouncer "/etc/pgbouncer"
   chown -R pgbouncer:pgbouncer "${PGBOUNCER_DIR}"
-  chmod -R g+rx "${PGBOUNCER_DIR}"
+  chmod -R g+wrx "${PGBOUNCER_DIR}"
 fi

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script provides a method of shutting down the machine/container when the database has been idle
 #  for a certain amount of time (configurable via the MAX_IDLE_TIME_MINUTES env var)
@@ -51,22 +51,24 @@ SQL
   TIME_SINCE_LAST_DISCONNECT="$((NOW - LAST_DISCONNECT_TIME))"
 
   if [ $TIME_SINCE_LAST_DISCONNECT -gt "$((MAX_IDLE_TIME_MINUTES * 60))" ]; then
-    LAST_WAL_FILE_NAME=$(run_sql -tA -c "SELECT pg_walfile_name(pg_switch_wal())")
-    NEW_WAL_FILE_NAME=$(run_sql -tA -c "SELECT pg_walfile_name(pg_current_wal_lsn())")
-
     echo "$(date): No active connections for $MAX_IDLE_TIME_MINUTES minutes. Shutting down."
 
     supervisorctl stop postgresql
 
     # Postgres ships the latest WAL file using archive_command during shutdown, in a blocking operation
     # This is to ensure that the WAL file is shipped, just in case
-    if [ "$LAST_WAL_FILE_NAME" != "$NEW_WAL_FILE_NAME" ]; then
-        sleep 2
-    fi
+    sleep 1
+
+    /usr/bin/admin-mgr lsn-checkpoint-push --immediately || echo "Failed to push LSN checkpoint"
 
     kill -s TERM "$(supervisorctl pid)"
   fi
 }
+
+# Wait for Postgres to be up
+until pg_isready -h localhost > /dev/null 2>&1; 
+  do sleep 3
+done
 
 # Enable logging of disconnections so the script can check when the last disconnection happened
 run_sql -c "ALTER SYSTEM SET log_disconnections = 'on';"
@@ -86,6 +88,9 @@ while true; do
     MAX_IDLE_TIME_MINUTES="$DEFAULT_MAX_IDLE_TIME_MINUTES"
   fi
 
-  check_activity
+  if [ "$MAX_IDLE_TIME_MINUTES" -gt 0 ] && [ "$MAX_IDLE_TIME_MINUTES" -lt 50000000 ]; then
+    check_activity
+  fi
+
   sleep 30
 done

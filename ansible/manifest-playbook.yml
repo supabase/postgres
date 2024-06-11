@@ -17,7 +17,7 @@
     # currently, we upload gotrue, adminapi, postgrest
     - name: gotrue - download commit archive
       get_url:
-        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/gotrue-v{{ gotrue_release }}-arm64.tar.gz"
+        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
         dest: /tmp/gotrue.tar.gz
         checksum: "{{ gotrue_release_checksum }}"
         timeout: 60
@@ -40,7 +40,8 @@
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
-        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
+        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgrest/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
+        # url: "https://github.com/PostgREST/postgrest/releases/download/{{ postgrest_release }}/postgrest-{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
         dest: /tmp/postgrest-{{ postgrest_release }}-arm64.tar.xz
         checksum: "{{ postgrest_arm_release_checksum }}"
         timeout: 60
@@ -61,6 +62,22 @@
       shell: |
         cd /tmp && tar -cJf supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz supabase-admin-api
 
+    - name: Download admin-mgr archive
+      get_url:
+        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
+        dest: "/tmp/admin-mgr.tar.gz"
+        timeout: 90
+
+    - name: admin-mgr - unpack archive in /tmp
+      unarchive:
+        remote_src: yes
+        src: /tmp/admin-mgr.tar.gz
+        dest: /tmp
+
+    - name: admin-mgr - pack archive
+      shell: |
+        cd /tmp && tar -cJf admin-mgr-{{ adminmgr_release }}-arm64.tar.xz admin-mgr
+
     - name: upload archives
       shell: |
         aws s3 cp /tmp/{{ item.file }} s3://{{ internal_artifacts_bucket }}/upgrades/{{ item.service }}/{{ item.file }}
@@ -71,3 +88,5 @@
           file: postgrest-{{ postgrest_release }}-arm64.tar.xz
         - service: supabase-admin-api
           file: supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz
+        - service: admin-mgr
+          file: admin-mgr-{{ adminmgr_release }}-arm64.tar.xz

@@ -170,6 +170,15 @@ pg_stat_statements:
         usage: "COUNTER"
         description: "Total time spent, in seconds"
 
+pg_ls_archive_statusdir:
+  master: true
+  cache_seconds: 60
+  query: "select count(*) as wal_pending_count from pg_ls_archive_statusdir() where name like '%.ready'"
+  metrics:
+    - wal_pending_count:
+        usage: "COUNTER"
+        description: "Number of not yet archived WAL files"
+         
 auth_users:
   master: true
   cache_seconds: 60
@@ -178,30 +187,6 @@ auth_users:
     - user_count:
         usage: "GAUGE"
         description: "Number of users in the project db"
-
-auth_stats:
-  master: true
-  cache_seconds: 3600
-  query: |
-    select
-      count(*) filter (
-        where payload ->> 'action' = 'user_invited'
-           or (payload ->> 'action' in ('user_confirmation_requested', 'user_recovery_requested')
-               and payload ->> 'actor_username' like '%@%')
-      ) as total_auth_emails,
-      count(*) filter (
-        where payload ->> 'action' in ('user_confirmation_requested', 'user_recovery_requested')
-          and payload ->> 'actor_username' not like '%@%'
-        ) as total_auth_texts
-    from
-      auth.audit_log_entries
-  metrics:
-    - total_auth_emails:
-        usage: "COUNTER"
-        description: "Total number of auth emails sent"
-    - total_auth_texts:
-        usage: "COUNTER"
-        description: "Total number of auth texts sent"
 
 realtime:
   master: true

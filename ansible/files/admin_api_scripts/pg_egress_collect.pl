@@ -26,18 +26,24 @@ my $captured_len = 0;
 
 # extract tcp packet length captured by tcpdump
 #
-# Sample input lines:
+# Sample IPv4 input lines:
 #
 # 1674013833.940253 IP (tos 0x0, ttl 64, id 0, offset 0, flags [DF], proto TCP (6), length 60)
 #     10.112.101.122.5432 > 220.235.16.223.62599: Flags [S.], cksum 0x5de3 (incorrect -> 0x63da), seq 2314200657, ack 2071735457, win 62643, options [mss 8961,sackOK,TS val 3358598837 ecr 1277499190,nop,wscale 7], length 0
 # 1674013833.989257 IP (tos 0x0, ttl 64, id 24975, offset 0, flags [DF], proto TCP (6), length 52)
 #     10.112.101.122.5432 > 220.235.16.223.62599: Flags [.], cksum 0x5ddb (incorrect -> 0xa25b), seq 1, ack 9, win 490, options [nop,nop,TS val 3358598885 ecr 1277499232], length 0
+#
+# Sample IPv6 input lines:
+#
+# 1706483718.836526 IP6 (flowlabel 0x0bf27, hlim 64, next-header TCP (6) payload length: 125) 2406:da18:4fd:9b00:959:c52:ce68:10c8.5432 > 2406:da12:d78:f501:1273:296c:2482:c7a7.50530: Flags [P.], seq 25:118, ack 125, win 488, options [nop,nop,TS val 1026340732 ecr 1935666426], length 93
+# 1706483718.912083 IP6 (flowlabel 0x0bf27, hlim 64, next-header TCP (6) payload length: 501) 2406:da18:4fd:9b00:959:c52:ce68:10c8.5432 > 2406:da12:d78:f501:1273:296c:2482:c7a7.50530: Flags [P.], seq 118:587, ack 234, win 488, options [nop,nop,TS val 1026340807 ecr 1935666497], length 469
+# 1706483718.984001 IP6 (flowlabel 0x0bf27, hlim 64, next-header TCP (6) payload length: 151) 2406:da18:4fd:9b00:959:c52:ce68:10c8.5432 > 2406:da12:d78:f501:1273:296c:2482:c7a7.50530: Flags [P.], seq 587:706, ack 448, win 487, options [nop,nop,TS val 1026340879 ecr 1935666569], length 119
 sub extract_packet_length {
     my ($line) = @_;
 
     #print("debug: >> " . $line);
 
-    if ($line =~ /^\s+\d+\.\d+\.\d+\.\d+\..*, length (\d+)$/) {
+    if ($line =~ /^.*, length (\d+)$/) {
         # extract tcp packet length and add it up
         my $len = $1;
         $captured_len += $len;

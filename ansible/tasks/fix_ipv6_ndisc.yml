@@ -1,0 +1,33 @@
+---
+- name: fix Network - systemd timer file
+  copy:
+    dest: /etc/systemd/system/systemd-networkd-check-and-fix.timer
+    src: "files/systemd-networkd/systemd-networkd-check-and-fix.timer"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: fix Network - systemd service file
+  copy:
+    dest: /etc/systemd/system/systemd-networkd-check-and-fix.service
+    src: "files/systemd-networkd/systemd-networkd-check-and-fix.service"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: fix Network - detect script
+  copy:
+    dest: /usr/local/bin/systemd-networkd-check-and-fix.sh
+    src: "files/systemd-networkd/systemd-networkd-check-and-fix.sh"
+    owner: root
+    group: root
+    mode: 0700
+
+- name: fix Network - reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: fix Network - enable systemd timer
+  systemd:
+    name: systemd-networkd-check-and-fix.timer
+    enabled: true

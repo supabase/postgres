@@ -12,7 +12,9 @@ RestartSec=3
 MemoryAccounting=true
 MemoryMax=50%
 
+EnvironmentFile=-/etc/gotrue.generated.env
 EnvironmentFile=/etc/gotrue.env
+EnvironmentFile=-/etc/gotrue.overrides.env
 
 Slice=services.slice
 

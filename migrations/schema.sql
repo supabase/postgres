@@ -210,17 +210,14 @@ $$;
 CREATE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
     LANGUAGE plpgsql
     AS $$
-DECLARE
-  schema_is_cron bool;
 BEGIN
-  schema_is_cron = (
-    SELECT n.nspname = 'cron'
+  IF EXISTS (
+    SELECT
     FROM pg_event_trigger_ddl_commands() AS ev
-    LEFT JOIN pg_catalog.pg_namespace AS n
-      ON ev.objid = n.oid
-  );
-
-  IF schema_is_cron
+    JOIN pg_extension AS ext
+    ON ev.objid = ext.oid
+    WHERE ext.extname = 'pg_cron'
+  )
   THEN
     grant usage on schema cron to postgres with grant option;
 
@@ -236,9 +233,9 @@ BEGIN
         on functions to postgres with grant option;
 
     grant all privileges on all tables in schema cron to postgres with grant option;
-
+    revoke all on table cron.job from postgres;
+    grant select on table cron.job to postgres with grant option;
   END IF;
-
 END;
 $$;
 
@@ -298,6 +295,10 @@ BEGIN
         alter default privileges in schema graphql grant all on tables to postgres, anon, authenticated, service_role;
         alter default privileges in schema graphql grant all on functions to postgres, anon, authenticated, service_role;
         alter default privileges in schema graphql grant all on sequences to postgres, anon, authenticated, service_role;
+
+        -- Allow postgres role to allow granting usage on graphql and graphql_public schemas to custom roles
+        grant usage on schema graphql_public to postgres with grant option;
+        grant usage on schema graphql to postgres with grant option;
     END IF;
 
 END;
@@ -1014,7 +1015,7 @@ CREATE EVENT TRIGGER issue_graphql_placeholder ON sql_drop
 --
 
 CREATE EVENT TRIGGER issue_pg_cron_access ON ddl_command_end
-         WHEN TAG IN ('CREATE SCHEMA')
+         WHEN TAG IN ('CREATE EXTENSION')
    EXECUTE FUNCTION extensions.grant_pg_cron_access();
 
 

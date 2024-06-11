@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.5-labs
+# syntax=docker/dockerfile:1.6
 ARG postgresql_major=15
 ARG postgresql_release=${postgresql_major}.1
 
@@ -8,7 +8,7 @@ ARG sfcgal_release=1.3.10
 ARG postgis_release=3.3.2
 ARG pgrouting_release=3.4.1
 ARG pgtap_release=1.2.0
-ARG pg_cron_release=1.4.2
+ARG pg_cron_release=1.6.2
 ARG pgaudit_release=1.7.0
 ARG pgjwt_release=9742dab1b2f297ad3811120db7b21451bca2d3c9
 ARG pgsql_http_release=1.5.0
@@ -24,18 +24,19 @@ ARG rum_release=1.3.13
 ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
 ARG libsodium_release=1.0.18
 ARG pgsodium_release=3.1.6
-ARG pg_graphql_release=1.2.2
+ARG pg_graphql_release=1.5.1
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_jsonschema_release=0.1.4
+ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.1.14
+ARG wrappers_release=0.3.0
 ARG hypopg_release=1.3.1
-ARG pg_repack_release=1.4.8
 ARG pgvector_release=0.4.0
-ARG pg_tle_release=1.0.3
-ARG supautils_release=1.7.2
+ARG pg_tle_release=1.3.2
+ARG index_advisor_release=0.2.0
+ARG supautils_release=2.2.1
 ARG wal_g_release=2.0.1
 
 ####################
@@ -49,8 +50,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 # Add Postgres PPA
-ARG postgresql_gpg_key=B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "${postgresql_gpg_key}" && \
+# In the off-chance that the key in the repository expires, it can be replaced by running the following in the repository's root:
+#  gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys $NEW_POSTGRESQL_GPG_KEY
+#  gpg --export --armor $NEW_POSTGRESQL_GPG_KEY > postgresql.gpg.key
+COPY postgresql.gpg.key /tmp/postgresql.gpg.key
+RUN apt-key add /tmp/postgresql.gpg.key && \
     echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
 
 ####################
@@ -100,11 +104,14 @@ ENV PGDATA=/var/lib/postgresql/data
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_CTYPE=C.UTF-8
+ENV LC_COLLATE=C.UTF-8
 
 FROM base as builder
 # Install build dependencies
 COPY --from=pg-dev /tmp /tmp
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+    rm -f /tmp/libssl-dev* && \
+    apt-get install -y --no-install-recommends \
     /tmp/*.deb \
     build-essential \
     checkinstall \
@@ -440,7 +447,7 @@ FROM ccache as plv8-source
 ARG plv8_release
 ARG plv8_release_checksum
 ADD --checksum=${plv8_release_checksum} \
-    "https://github.com/plv8/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
+    "https://github.com/supabase/plv8/archive/refs/tags/v${plv8_release}.tar.gz" \
     /tmp/plv8.tar.gz
 RUN tar -xvf /tmp/plv8.tar.gz -C /tmp && \
     rm -rf /tmp/plv8.tar.gz
@@ -451,6 +458,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ninja-build \
     git \
     libtinfo5 \
+    libstdc++-10-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
@@ -549,7 +557,7 @@ FROM ccache as libsodium
 ARG libsodium_release
 ARG libsodium_release_checksum
 ADD --checksum=${libsodium_release_checksum} \
-    "https://download.libsodium.org/libsodium/releases/libsodium-${libsodium_release}.tar.gz" \
+    "https://supabase-public-artifacts-bucket.s3.amazonaws.com/libsodium/libsodium-${libsodium_release}.tar.gz" \
     /tmp/libsodium.tar.gz
 RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
     rm -rf /tmp/libsodium.tar.gz
@@ -731,30 +739,30 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
-# 27-pg_repack.yml
-####################
-FROM ccache as pg_repack-source
-ARG pg_repack_release
-ARG pg_repack_release_checksum
-ADD --checksum=${pg_repack_release_checksum} \
-    "https://github.com/reorg/pg_repack/archive/refs/tags/ver_${pg_repack_release}.tar.gz" \
-    /tmp/pg_repack.tar.gz
-RUN tar -xvf /tmp/pg_repack.tar.gz -C /tmp && \
-    rm -rf /tmp/pg_repack.tar.gz
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    liblz4-dev \
-    libz-dev \
-    libzstd-dev \
-    libreadline-dev \
-    && rm -rf /var/lib/apt/lists/*
-# Build from source
-WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
-ENV USE_PGXS=1
-RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-    make -j$(nproc)
-# Create debian package
-RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
+ # 27-pg_repack.yml
+ ####################
+ FROM ccache as pg_repack-source
+ ARG pg_repack_release
+ ARG pg_repack_release_checksum
+ ADD --checksum=${pg_repack_release_checksum} \
+     "https://github.com/reorg/pg_repack/archive/refs/tags/ver_${pg_repack_release}.tar.gz" \
+     /tmp/pg_repack.tar.gz
+ RUN tar -xvf /tmp/pg_repack.tar.gz -C /tmp && \
+     rm -rf /tmp/pg_repack.tar.gz
+ # Install build dependencies
+ RUN apt-get update && apt-get install -y --no-install-recommends \
+     liblz4-dev \
+     libz-dev \
+     libzstd-dev \
+     libreadline-dev \
+     && rm -rf /var/lib/apt/lists/*
+ # Build from source
+ WORKDIR /tmp/pg_repack-ver_${pg_repack_release}
+ ENV USE_PGXS=1
+ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+     make -j$(nproc)
+ # Create debian package
+ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=${pg_repack_release} --nodoc
 
 ####################
 # 28-pgvector.yml
@@ -787,9 +795,28 @@ RUN tar -xvf /tmp/pg_tle.tar.gz -C /tmp && \
     rm -rf /tmp/pg_tle.tar.gz
 RUN apt-get update && apt-get install -y --no-install-recommends \
     flex \
+    libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
 # Build from source
 WORKDIR /tmp/pg_tle-${pg_tle_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+    make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+######################
+# 30-index_advisor.yml
+######################
+FROM ccache as index_advisor
+ARG index_advisor_release
+ARG index_advisor_release_checksum
+ADD --checksum=${index_advisor_release_checksum} \
+    "https://github.com/olirice/index_advisor/archive/refs/tags/v${index_advisor_release}.tar.gz" \
+    /tmp/index_advisor.tar.gz
+RUN tar -xvf /tmp/index_advisor.tar.gz -C /tmp && \
+    rm -rf /tmp/index_advisor.tar.gz
+# Build from source
+WORKDIR /tmp/index_advisor-${index_advisor_release}
 RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
     make -j$(nproc)
 # Create debian package
@@ -849,6 +876,7 @@ COPY --from=hypopg-source /tmp/*.deb /tmp/
 COPY --from=pg_repack-source /tmp/*.deb /tmp/
 COPY --from=pgvector-source /tmp/*.deb /tmp/
 COPY --from=pg_tle-source /tmp/*.deb /tmp/
+COPY --from=index_advisor /tmp/*.deb /tmp/
 COPY --from=supautils /tmp/*.deb /tmp/
 
 ####################
@@ -899,6 +927,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf.j2 /etc/postgresql-custom/read-replica.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.j2 /etc/postgresql-custom/wal-g.conf
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh

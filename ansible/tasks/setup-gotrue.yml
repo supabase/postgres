@@ -19,7 +19,7 @@
 
 - name: gotrue - download commit archive
   get_url:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/gotrue-v{{ gotrue_release }}-{{ arch }}.tar.gz"
+    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
     dest: /tmp/gotrue.tar.gz
     checksum: "{{ gotrue_release_checksum }}"
 
@@ -48,6 +48,11 @@
   template:
     src: files/gotrue.service.j2
     dest: /etc/systemd/system/gotrue.service
+
+- name: gotrue - create optimizations file
+  template:
+    src: files/gotrue-optimizations.service.j2
+    dest: /etc/systemd/system/gotrue-optimizations.service
 
 - name: gotrue - reload systemd
   systemd:

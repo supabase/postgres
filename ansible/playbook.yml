@@ -51,6 +51,11 @@
         - install-postgrest
         - install-supabase-internal
 
+    - name: Install Envoy
+      import_tasks: tasks/setup-envoy.yml
+      tags:
+        - install-supabase-internal
+
     - name: Install Kong
       import_tasks: tasks/setup-kong.yml
       tags:
@@ -63,6 +68,11 @@
 
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
+      tags:
+        - install-supabase-internal
+
+    - name: Fix IPv6 NDisc issues
+      import_tasks: tasks/fix_ipv6_ndisc.yml
       tags:
         - install-supabase-internal
 

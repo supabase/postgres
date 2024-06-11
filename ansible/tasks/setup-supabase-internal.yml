@@ -29,6 +29,10 @@
   shell: "/tmp/aws/install --update"
   become: true
 
+- name: AWS CLI - configure ipv6 support for s3
+  shell: |
+    aws configure set default.s3.use_dualstack_endpoint true
+
 - name: install Vector for logging
   become: yes
   apt:
@@ -51,6 +55,17 @@
   template:
     src: files/vector.service.j2
     dest: /etc/systemd/system/vector.service
+
+- name: configure tmpfiles for postgres - overwrites upstream package
+  template:
+    src: files/postgresql_config/tmpfiles.postgresql.conf
+    dest: /etc/tmpfiles.d/postgresql-common.conf
+
+- name: fix permissions for vector config to be managed
+  shell:
+    cmd: |
+      chown -R vector:vector /etc/vector
+      chmod 0775 /etc/vector
 
 - name: vector - reload systemd
   systemd:
@@ -91,3 +106,6 @@
 
 - name: Install pg_egress_collect
   import_tasks: internal/pg_egress_collect.yml
+
+- name: Install PostgreSQL prestart script
+  import_tasks: internal/postgresql-prestart.yml

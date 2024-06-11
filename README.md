@@ -15,7 +15,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [PostGIS](https://postgis.net/) | [3.3.2](https://git.osgeo.org/gitea/postgis/postgis/raw/tag/3.3.2/NEWS) | Postgres' most popular extension - support for geographic objects. |
 | [pgRouting](https://pgrouting.org/) | [v3.4.1](https://github.com/pgRouting/pgrouting/releases/tag/v3.4.1) | Extension of PostGIS - provides geospatial routing functionalities. |
 | [pgTAP](https://pgtap.org/) | [v1.2.0](https://github.com/theory/pgtap/releases/tag/v1.2.0) | Unit Testing for Postgres. |
-| [pg_cron](https://github.com/citusdata/pg_cron) | [v1.4.2](https://github.com/citusdata/pg_cron/releases/tag/v1.4.2) | Run CRON jobs inside Postgres. |
+| [pg_cron](https://github.com/citusdata/pg_cron) | [v1.6.2](https://github.com/citusdata/pg_cron/releases/tag/v1.6.2) | Run CRON jobs inside Postgres. |
 | [pgAudit](https://www.pgaudit.org/) | [1.7.0](https://github.com/pgaudit/pgaudit/releases/tag/1.7.0) | Generate highly compliant audit logs. |
 | [pgjwt](https://github.com/michelp/pgjwt) | [commit](https://github.com/michelp/pgjwt/commit/9742dab1b2f297ad3811120db7b21451bca2d3c9) | Generate JSON Web Tokens (JWT) in Postgres. |
 | [pgsql-http](https://github.com/pramsey/pgsql-http) | [1.5.0](https://github.com/pramsey/pgsql-http/releases/tag/v1.5.0) | HTTP client for Postgres. |
@@ -26,12 +26,12 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [plv8](https://github.com/plv8/plv8) | [commit](https://github.com/plv8/plv8/commit/bcddd92f71530e117f2f98b92d206dafe824f73a) | Write in Javascript functions in Postgres. |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter) | [commit](https://github.com/pgexperts/pg_plan_filter/commit/5081a7b5cb890876e67d8e7486b6a64c38c9a492) | Only allow statements that fulfill set criteria to be executed. |
 | [pg_net](https://github.com/supabase/pg_net) | [v0.6.1](https://github.com/supabase/pg_net/releases/tag/v0.6.1) | Expose the SQL interface for async networking. |
+| [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.5.0](https://github.com/reorg/pg_repack/releases/tag/ver_1.5.0) | Tool to remove bloat from tables and indexes
 | [rum](https://github.com/postgrespro/rum) | [1.3.13](https://github.com/postgrespro/rum/releases/tag/1.3.13) | An alternative to the GIN index. |
 | [pg_hashids](https://github.com/iCyberon/pg_hashids) | [commit](https://github.com/iCyberon/pg_hashids/commit/83398bcbb616aac2970f5e77d93a3200f0f28e74) | Generate unique identifiers from numbers. |
 | [pgsodium](https://github.com/michelp/pgsodium) | [3.1.0](https://github.com/michelp/pgsodium/releases/tag/2.0.0) | Modern encryption API using libsodium. |
 | [pg_stat_monitor](https://github.com/percona/pg_stat_monitor) | [1.0.1](https://github.com/percona/pg_stat_monitor/releases/tag/1.0.1) | Query Performance Monitoring Tool for PostgreSQL
 | [pgvector](https://github.com/pgvector/pgvector) | [v0.4.0](https://github.com/pgvector/pgvector/releases/tag/v0.4.0) | Open-source vector similarity search for Postgres
-| [pg_repack](https://github.com/reorg/pg_repack) | [ver_1.4.8](https://github.com/reorg/pg_repack/releases/tag/ver_1.4.8) | Tool to remove bloat from tables and indexes 
 
 
 Can't find your favorite extension? Suggest for it to be added into future releases [here](https://github.com/supabase/supabase/discussions/679)!
@@ -58,9 +58,9 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 
 See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
 
-[![Docker](https://github.com/supabase/postgres/blob/master/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
-[![Digital Ocean](https://github.com/supabase/postgres/blob/master/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
-[![AWS](https://github.com/supabase/postgres/blob/master/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
+[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
+[![Digital Ocean](https://github.com/supabase/postgres/blob/develop/docs/img/digital-ocean.png)](https://github.com/supabase/postgres/wiki/Digital-Ocean)
+[![AWS](https://github.com/supabase/postgres/blob/develop/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
 
 ### Marketplace Images
 |   | Postgres & Extensions | PgBouncer | PostgREST | WAL-G |
@@ -109,3 +109,12 @@ $ time packer build -timestamp-ui \
 We are building the features of Firebase using enterprise-grade, open source products. We support existing communities wherever possible, and if the products don’t exist we build them and open source them ourselves.
 
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
+
+
+## Experimental Nix Packaging of resources
+
+There is a `/nix` folder in this repo, plus a `flake.nix` and `flake.lock` that facilitate using the Nix package management system to package supabase/postgres, and all of our extensions and wrappers. A user will need nix installed on their machine. As of 4/1/2024 the package set only builds on target machines (`x86_64-linux` and `aarch64-linux`), however work is under way to also support building and using directly on `aarch64-darwin` (macOs). As of 4/1/2024, versions of packages and extensions are synced from `/ansible/vars.yml` via a utility that can be run by executing `nix run .#sync-exts-versions` (you must have nix installed and be on the supported `x86_64-linux` and `aarch64-linux` for this command to work). The short term goal is to sync these versions as they are updated by our infrastructure and postgres teams, then to see the nix packaged versions build successfully in parallel over time, along with tests of the nix packaged versions passing. 
+
+The supabase/postgres repo will continue to source it's dependencies from ansible for the short term, while we stabilize this nix build. 
+
+Forthcoming PR's will include: integrating the nix work into our ansible/packer builds, building natively on aarch64-darwin (macOs), more testing
