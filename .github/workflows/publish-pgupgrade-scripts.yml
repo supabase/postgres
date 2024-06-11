@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - pcnc/auto-pg_upgrade-testing
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common.vars.pkr.hcl'

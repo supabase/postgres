@@ -93,7 +93,7 @@ function complete_pg_upgrade {
 
     echo "3. Starting postgresql"
     if [ -z "$IS_CI" ]; then
-        retry 3 systemctl start postgresql
+        retry 3 service postgresql start
     else
         CI_start_postgres --new-bin
     fi
@@ -113,6 +113,8 @@ function complete_pg_upgrade {
 
     echo "5. Restarting postgresql"
     if [ -z "$IS_CI" ]; then
+        service postgresql restart
+        
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
         retry 3 service postgrest restart
