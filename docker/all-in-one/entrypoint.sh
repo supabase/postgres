@@ -210,6 +210,7 @@ function start_supervisor {
 }
 
 DELEGATED_ARCHIVE_PATH=/data/delegated-init.tar.gz
+DELEGATED_ENTRY_PATH=/data/delegated-entry.sh
 
 function fetch_and_execute_delegated_payload {
   curl -s --time-cond $DELEGATED_ARCHIVE_PATH -o $DELEGATED_ARCHIVE_PATH "$DELEGATED_INIT_LOCATION"
@@ -220,15 +221,29 @@ function fetch_and_execute_delegated_payload {
   fi
 
   # only extract a valid archive
-  if [[ $(tar -tzf $DELEGATED_ARCHIVE_PATH) ]]; then
-    # TODO: (tom) Only extract newer tar archives
-    tar -xvzf $DELEGATED_ARCHIVE_PATH -C /
+  if tar -tzf "$DELEGATED_ARCHIVE_PATH" &>/dev/null; then
+    TAR_MTIME_EPOCH=$(tar -tvzf "$DELEGATED_ARCHIVE_PATH" data/delegated-entry.sh | awk '{print $4, $5}' | xargs -I {} date -d {} +%s)
+
+    if [ -f $DELEGATED_ENTRY_PATH ]; then
+      FILE_MTIME_EPOCH=$(stat -c %Y "$DELEGATED_ENTRY_PATH")
+
+      if [ "$TAR_MTIME_EPOCH" -gt "$FILE_MTIME_EPOCH" ]; then
+        tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /
+      else
+        echo "TAR archive is not newer, skipping extraction"
+      fi
+    else
+      tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /
+    fi
+  else
+    echo "Invalid TAR archive"
+    return
   fi
 
   # Run our delegated entry script here
-  if [ -f /data/delegated-init/delegated-entry.sh ]; then
-    chmod +x /data/delegated-init/delegated-entry.sh
-    bash -c "/data/delegated-init/delegated-entry.sh $START_TIME"
+  if [ -f "$DELEGATED_ENTRY_PATH" ]; then
+    chmod +x $DELEGATED_ENTRY_PATH
+    bash -c "$DELEGATED_ENTRY_PATH $START_TIME"
   fi
 }
 
