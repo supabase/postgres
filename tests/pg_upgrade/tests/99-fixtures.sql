@@ -1,5 +1,6 @@
 -- enable JIT to ensure the upgrade process disables it
 alter system set jit = on;
+alter system set password_encryption = 'md5';
 select pg_reload_conf();
 
 -- create materialized view

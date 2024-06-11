@@ -17,6 +17,7 @@ jobs:
       matrix:
         base_pg_version:
           - 15.1.0.100
+          - 15.1.0.60
     runs-on: arm-runner
     timeout-minutes: 30
     defaults:

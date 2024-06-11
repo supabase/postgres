@@ -115,9 +115,11 @@ function complete_pg_upgrade {
     retry 3 stop_postgres || true
     retry 3 start_postgres
 
-    echo "5.1. Restarting gotrue and postgrest"
-    retry 3 service gotrue restart
-    retry 3 service postgrest restart
+    if [ -z "$IS_CI" ]; then
+        echo "5.1. Restarting gotrue and postgrest"
+        retry 3 service gotrue restart
+        retry 3 service postgrest restart
+    fi
 
     echo "6. Starting vacuum analyze"
     retry 3 start_vacuum_analyze
@@ -146,7 +148,10 @@ function apply_auth_scheme_updates {
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
         run_sql -c "ALTER SYSTEM SET password_encryption TO 'scram-sha-256';"
         run_sql -c "SELECT pg_reload_conf();"
-        run_sql -f /etc/postgresql.schema.sql
+
+        if [ -z "$IS_CI" ]; then
+            run_sql -f /etc/postgresql.schema.sql
+        fi
     fi
 }
 

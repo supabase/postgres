@@ -7,9 +7,19 @@ export PGUSER=supabase_admin
 export PGHOST=localhost
 export PGDATABASE=postgres
 
-INITIAL_PG_VERSION=$1
+ARTIFACTS_BUCKET_NAME=${1:-}
+if [ -z "$ARTIFACTS_BUCKET_NAME" ]; then
+  echo "Usage: $0 <ARTIFACTS_BUCKET_NAME> [INITIAL_PG_VERSION]"
+  exit 1
+fi
+
+INITIAL_PG_VERSION=${2:-15.1.1.60}
+LATEST_PG_VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' ../../common.vars.pkr.hcl)
+
+aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/pg_upgrade_scripts.tar.gz" scripts/pg_upgrade_scripts.tar.gz
+aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/20.04.tar.gz" scripts/pg_upgrade_bin.tar.gz
+
 docker rm -f pg_upgrade_test || true
-trap "docker rm -f pg_upgrade_test || true" EXIT SIGINT SIGTERM ERR
 
 docker run -t --name pg_upgrade_test --env-file .env \
    -v "$(pwd)/scripts:/tmp/upgrade" \
@@ -36,7 +46,7 @@ docker exec -it pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/initiat
 
 sleep 3
 echo "Completing pg_upgrade"
-docker exec -it pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
+docker exec -it pg_upgrade_test bash -c 'rm -f /tmp/pg-upgrade-status; /tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
 
 pg_prove tests/01-schema.sql
 pg_prove tests/02-data.sql

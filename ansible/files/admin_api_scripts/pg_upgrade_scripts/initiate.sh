@@ -86,8 +86,12 @@ cleanup() {
     fi
 
     echo "Restarting postgresql"
-    systemctl enable postgresql
-    retry 5 systemctl restart postgresql
+    if [ -z "$IS_CI" ]; then
+        systemctl enable postgresql
+        retry 5 systemctl restart postgresql
+    else
+        CI_start_postgres
+    fi
 
     echo "Re-enabling extensions"
     if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
@@ -97,13 +101,13 @@ cleanup() {
     echo "Removing SUPERUSER grant from postgres"
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-    if [ "$IS_CI" = false ]; then
+    if [ -z "$IS_CI" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
         umount $MOUNT_POINT
     fi
     echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
-    if [ "$IS_CI" = false ]; then
+    if [ -z "$IS_CI" ]; then
         exit "$EXIT_CODE"
     else 
         echo "CI run complete with code ${EXIT_CODE}. Exiting."
@@ -204,7 +208,7 @@ function initiate_upgrade {
         locale-gen
     fi
 
-    if [ "$IS_CI" = false ]; then
+    if [ -z "$IS_CI" ]; then
         # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
         # excluding nvme0 since it is the root disk
         echo "5. Determining block device to mount"
@@ -297,12 +301,16 @@ EOF
     echo "10. Stopping postgres; running pg_upgrade"
     # Extra work to ensure postgres is actually stopped
     #  Mostly needed for PG12 projects with odd systemd unit behavior
-    retry 5 systemctl restart postgresql
-    systemctl disable postgresql
-    retry 5 systemctl stop postgresql
+    if [ -z "$IS_CI" ]; then
+        retry 5 systemctl restart postgresql
+        systemctl disable postgresql
+        retry 5 systemctl stop postgresql
 
-    sleep 3
-    systemctl stop postgresql
+        sleep 3
+        systemctl stop postgresql
+    else
+        CI_stop_postgres
+    fi
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
 
@@ -329,10 +337,10 @@ EOF
 trap cleanup ERR
 
 echo "running" > /tmp/pg-upgrade-status
-if [ "$IS_CI" = true ]; then
-    rm -f /tmp/pg-upgrade-status
-    initiate_upgrade
-else 
+if [ -z "$IS_CI" ]; then
     initiate_upgrade >> "$LOG_FILE" 2>&1 &
     echo "Upgrade initiate job completed"
+else
+    rm -f /tmp/pg-upgrade-status
+    initiate_upgrade
 fi
