@@ -43,15 +43,15 @@ jobs:
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
 
-      - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: "us-east-1"
+      # - name: configure aws credentials - prod
+      #   uses: aws-actions/configure-aws-credentials@v1
+      #   with:
+      #     role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+      #     aws-region: "us-east-1"
   
-      - name: Upload pg_upgrade scripts to s3 prod
-        run: |
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
+      # - name: Upload pg_upgrade scripts to s3 prod
+      #   run: |
+      #     aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
