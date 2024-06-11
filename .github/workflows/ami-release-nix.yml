@@ -76,11 +76,6 @@ jobs:
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
 
-      # - name: Upload pg binaries to s3 staging
-      #   run: |
-      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-      # #TODO look to see if this only pg binaries and if so, remove this as it is covered by nix build
-      # TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
 
       #Our self hosted github runner already has permissions to publish images 
       #but they're limited to only that; 
@@ -101,10 +96,6 @@ jobs:
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
     
-      # - name: Upload pg binaries to s3 prod
-      #   run: |
-      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-      #TODO deactivate this block to assure binaries from this file are not uploaded. This is covered by nix build
       
       
       - name: Create release
