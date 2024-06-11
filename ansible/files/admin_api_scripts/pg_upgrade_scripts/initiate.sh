@@ -50,8 +50,11 @@ elif [[ "$OLD_PGVERSION" =~ ^12.* ]]; then
     PGBINOLD="/usr/lib/postgresql/12/bin"
 fi
 
-PGBINOLD="$(pg_config --bindir)"
-echo "Detected PG version: $PGVERSION"
+if [ -n "$IS_CI" ]; then
+    PGBINOLD="$(pg_config --bindir)"
+    echo "Running in CI mode; using pg_config bindir: $PGBINOLD"
+    echo "PGVERSION: $PGVERSION"
+fi
 
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
