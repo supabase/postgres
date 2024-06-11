@@ -6,7 +6,7 @@ SCRIPT_DIR=$(dirname -- "$0";)
 
 ls -la "$SCRIPT_DIR"
 
-# tar -xzf "${SCRIPT_DIR}/pg_upgrade_scripts.tar.gz" -C "${SCRIPT_DIR}"
+tar -xzf "${SCRIPT_DIR}/pg_upgrade_scripts.tar.gz" -C "${SCRIPT_DIR}"
 
 mkdir -p /tmp/persistent
 cp "$SCRIPT_DIR/pg_upgrade_bin.tar.gz" /tmp/persistent
