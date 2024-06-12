@@ -222,18 +222,18 @@ function fetch_and_execute_delegated_payload {
 
   # only extract a valid archive
   if tar -tzf "$DELEGATED_ARCHIVE_PATH" &>/dev/null; then
-    TAR_MTIME_EPOCH=$(tar -tvzf "$DELEGATED_ARCHIVE_PATH" data/delegated-entry.sh | awk '{print $4, $5}' | xargs -I {} date -d {} +%s)
+    TAR_MTIME_EPOCH=$(tar -tvzf "$DELEGATED_ARCHIVE_PATH" delegated-entry.sh | awk '{print $4, $5}' | xargs -I {} date -d {} +%s)
 
     if [ -f $DELEGATED_ENTRY_PATH ]; then
       FILE_MTIME_EPOCH=$(stat -c %Y "$DELEGATED_ENTRY_PATH")
 
       if [ "$TAR_MTIME_EPOCH" -gt "$FILE_MTIME_EPOCH" ]; then
-        tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /
+        tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /data
       else
         echo "TAR archive is not newer, skipping extraction"
       fi
     else
-      tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /
+      tar -xvzf "$DELEGATED_ARCHIVE_PATH" -C /data
     fi
   else
     echo "Invalid TAR archive"
