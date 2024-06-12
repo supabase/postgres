@@ -132,7 +132,7 @@
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
           ./nix/ext/plv8.nix
-          ./nix/ext/pljava.nix
+          #./nix/ext/pljava.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
@@ -419,8 +419,7 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
-                --subst-var-by 'LIBJVM_LOCATION' '${pkgs.openjdk11}/lib/openjdk/lib/server/libjvm.so'
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' 
 
               chmod +x $out/bin/start-postgres-server
             '';
@@ -490,8 +489,7 @@
             initdb --locale=C
 
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
-              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}" \
-              --subst-var-by PLJAVA_LIBJVM_LOCATION "${pkgs.openjdk11}/lib/openjdk/lib/server/libjvm.so"
+              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}" 
 
 
             postgres -k /tmp >logfile 2>&1 &
