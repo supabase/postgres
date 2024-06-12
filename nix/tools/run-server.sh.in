@@ -39,9 +39,9 @@ echo
 initdb -U "$PGSQL_SUPERUSER" -D "$DATDIR" --locale=C
 
 echo "NOTE: patching postgresql.conf files"
-
+echo "pljava libjvm location: $PLJAVA_LIBJVM_LOCATION"
 sed -e "s#@PGSODIUM_GETKEY_SCRIPT@#$PGSODIUM_GETKEY_SCRIPT#g" \
-
+    -e "s#@PLJAVA_LIBJVM_LOCATION@#$PLJAVA_LIBJVM_LOCATION#g" \
     $PSQL_CONF_FILE > "$DATDIR/postgresql.conf"
 
 exec postgres -p "$PORTNO" -D "$DATDIR" -k /tmp
