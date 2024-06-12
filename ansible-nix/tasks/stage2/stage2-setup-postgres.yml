@@ -1,8 +1,8 @@
-- name: Install openjdk11 for pljava from nix binary cache
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
-
+# - name: Install openjdk11 for pljava from nix binary cache
+#   become: yes
+#   shell: |
+#     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
@@ -73,12 +73,13 @@
     owner: postgres
     group: postgres
 
-- name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql/pljava
-    state: directory
-    owner: postgres
-    group: postgres
+# - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
+#   file:
+#     path: /usr/lib/postgresql/share/postgresql/pljava
+#     state: directory
+#     owner: postgres
+#     group: postgres
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: import pgsodium_getkey script
   template:
@@ -104,14 +105,15 @@
     state: link
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/home/postgres/.nix-profile/share/pljava/*"
-  become: yes
+# - name: Create symbolic links from /home/postgres/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
+#   file:
+#     src: "{{ item }}"
+#     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
+#     state: link
+#   with_fileglob:
+#     - "/home/postgres/.nix-profile/share/pljava/*"
+#   become: yes
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
   file:

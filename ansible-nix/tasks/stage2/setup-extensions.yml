@@ -1,9 +1,10 @@
-- name: pljava - libjvm.so location in postgresql.conf
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: pljava.libjvm_location = '/home/postgres/.nix-profile/lib/openjdk/lib/server/libjvm.so'
+# - name: pljava - libjvm.so location in postgresql.conf
+#   become: yes
+#   lineinfile:
+#     path: /etc/postgresql/postgresql.conf
+#     state: present
+#     line: pljava.libjvm_location = '/home/postgres/.nix-profile/lib/openjdk/lib/server/libjvm.so'
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: pg_cron - set cron.database_name
   become: yes

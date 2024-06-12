@@ -132,7 +132,7 @@
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
           ./nix/ext/plv8.nix
-          ./nix/ext/pljava.nix
+          #./nix/ext/pljava.nix it was decided to remove pljava from the list of extensions at https://github.com/supabase/postgres/pull/690 therefore removing this task
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
