@@ -1,3 +1,8 @@
+- name: Install openjdk11 for pljava from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
+
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
@@ -84,7 +89,23 @@
   with_fileglob:
     - "/home/postgres/.nix-profile/bin/*"
   become: yes
+sudo ln -s /home/postgres/.nix-profile/share/pljava /usr/lib/postgresql/share/postgresql/pljava
+- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
+  file:
+    src: "/home/postgres/.nix-profile/bin/psql"
+    dest: "/usr/bin/psql"
+    state: link
+  become: yes
 
+- name: Create symbolic links from /home/postgres/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/pljava/*"
+  become: yes
+  
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
   file:
     src: "/home/postgres/.nix-profile/bin/psql"

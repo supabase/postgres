@@ -1,3 +1,10 @@
+- name: pljava - libjvm.so location in postgresql.conf
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: pljava.libjvm_location = '/home/postgres/.nix-profile/lib/openjdk/lib/server/libjvm.so'
+
 - name: pg_cron - set cron.database_name
   become: yes
   lineinfile:
