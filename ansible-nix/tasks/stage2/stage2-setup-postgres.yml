@@ -89,7 +89,7 @@
   with_fileglob:
     - "/home/postgres/.nix-profile/bin/*"
   become: yes
-sudo ln -s /home/postgres/.nix-profile/share/pljava /usr/lib/postgresql/share/postgresql/pljava
+
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
   file:
     src: "/home/postgres/.nix-profile/bin/psql"
@@ -105,7 +105,7 @@ sudo ln -s /home/postgres/.nix-profile/share/pljava /usr/lib/postgresql/share/po
   with_fileglob:
     - "/home/postgres/.nix-profile/share/pljava/*"
   become: yes
-  
+
 - name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
   file:
     src: "/home/postgres/.nix-profile/bin/psql"
