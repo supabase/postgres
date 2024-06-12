@@ -73,6 +73,13 @@
     owner: postgres
     group: postgres
 
+- name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/pljava
+    state: directory
+    owner: postgres
+    group: postgres
+
 - name: import pgsodium_getkey script
   template:
     src: /tmp/ansible-playbook/files/pgsodium_getkey_readonly.sh.j2
