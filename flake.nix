@@ -29,7 +29,6 @@
         # it also serves as a base for importing the orioldb/postgres overlay to 
         #build the orioledb postgres patched version of postgresql16
         oriole_pkgs = import nixpkgs {
-          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -45,7 +44,6 @@
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
-          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -57,10 +55,8 @@
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
-
         };
 
-        sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
 
         # FIXME (aseipp): pg_prove is yet another perl program that needs
         # LOCALE_ARCHIVE set in non-NixOS environments. upstream this. once that's done, we
@@ -132,7 +128,7 @@
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
           ./nix/ext/plv8.nix
-          #./nix/ext/pljava.nix
+          ./nix/ext/pljava.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
@@ -141,8 +137,8 @@
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
+        #postgis_override = pkgs.postgis_override;
 
-        
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -309,7 +305,7 @@
             '';
           in
           nix2img.buildImage {
-            name = "samrose/nix-experimental-postgresql-${version}-${system}";
+            name = "nix-experimental-postgresql-${version}-${system}";
             tag = "latest";
 
             nixUid = l.toInt uid;
@@ -403,9 +399,7 @@
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
-          pg_prove = pg_prove;
-          sfcgal = sfcgal;
-         
+
           # Start a version of the server.
           start-server =
             let
@@ -419,7 +413,8 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' 
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+                --subst-var-by 'LIBJVM_LOCATION' '${pkgs.openjdk11}/lib/openjdk/lib/server/libjvm.so'
 
               chmod +x $out/bin/start-postgres-server
             '';
@@ -458,7 +453,7 @@
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
@@ -489,7 +484,8 @@
             initdb --locale=C
 
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
-              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}" 
+              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}" \
+              --subst-var-by PLJAVA_LIBJVM_LOCATION "${pkgs.openjdk11}/lib/openjdk/lib/server/libjvm.so"
 
 
             postgres -k /tmp >logfile 2>&1 &
@@ -555,11 +551,7 @@
             nix-update
             pg_prove
             shellcheck
-            ansible
-            ansible-lint
-            (packer.overrideAttrs (oldAttrs: {
-              version = "1.7.8";
-            }))
+
             basePackages.start-server
             basePackages.start-client
             basePackages.start-replica
