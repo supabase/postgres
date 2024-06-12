@@ -29,6 +29,7 @@
         # it also serves as a base for importing the orioldb/postgres overlay to 
         #build the orioledb postgres patched version of postgresql16
         oriole_pkgs = import nixpkgs {
+          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -44,6 +45,7 @@
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
+          config = { allowUnfree = true; };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -57,6 +59,7 @@
           ];
         };
 
+        sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
 
         # FIXME (aseipp): pg_prove is yet another perl program that needs
         # LOCALE_ARCHIVE set in non-NixOS environments. upstream this. once that's done, we
@@ -304,7 +307,8 @@
             '';
           in
           nix2img.buildImage {
-            name = "nix-experimental-postgresql-${version}-${system}";
+            #TODO (samrose) update this with the correct image name for supabase registry
+            name = "samrose/nix-experimental-postgresql-${version}-${system}"; 
             tag = "latest";
 
             nixUid = l.toInt uid;
@@ -398,7 +402,8 @@
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
-
+          pg_prove = pg_prove;
+          sfcgal = sfcgal;
           # Start a version of the server.
           start-server =
             let
@@ -546,6 +551,11 @@
             nix-update
             pg_prove
             shellcheck
+            ansible
+            ansible-lint
+            (packer.overrideAttrs (oldAttrs: {
+              version = "1.7.8";
+            }))
 
             basePackages.start-server
             basePackages.start-client
