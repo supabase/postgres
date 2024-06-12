@@ -162,8 +162,10 @@ ENV SALT_VERSION 3006
 
 # Install one-dir salt
 RUN mkdir /etc/apt/keyrings \
-    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/$SALT_VERSION focal main" | tee /etc/apt/sources.list.d/salt.list \
+    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023-arm.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/$SALT_VERSION focal main" | tee /etc/apt/sources.list.d/salt.list \
+    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023-amd.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/$SALT_VERSION focal main" | tee -a /etc/apt/sources.list.d/salt.list \
     && apt-get clean && apt-get update \
     && apt-get install -y salt-minion
 
