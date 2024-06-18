@@ -16,8 +16,20 @@ fi
 INITIAL_PG_VERSION=${2:-15.1.1.60}
 LATEST_PG_VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' ../../common.vars.pkr.hcl)
 
-aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/pg_upgrade_scripts.tar.gz" scripts/pg_upgrade_scripts.tar.gz
-aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/20.04.tar.gz" scripts/pg_upgrade_bin.tar.gz
+LATEST_VERSION_SCRIPTS="scripts/pg_upgrade_scripts-${LATEST_PG_VERSION}.tar.gz"
+LATEST_VERSION_BIN="scripts/pg_upgrade_bin-${LATEST_PG_VERSION}.tar.gz"
+
+if [ ! -f "$LATEST_VERSION_SCRIPTS" ]; then
+  aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/pg_upgrade_scripts.tar.gz" "$LATEST_VERSION_SCRIPTS"
+fi
+
+if [ ! -f "$LATEST_VERSION_BIN" ]; then
+  aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/20.04.tar.gz" "$LATEST_VERSION_BIN"
+fi
+
+rm -rf scripts/pg_upgrade_scripts
+cp "$LATEST_VERSION_SCRIPTS" scripts/pg_upgrade_scripts.tar.gz
+cp "$LATEST_VERSION_BIN" scripts/pg_upgrade_bin.tar.gz
 
 docker rm -f pg_upgrade_test || true
 
@@ -34,7 +46,11 @@ while ! docker exec -it pg_upgrade_test bash -c "pg_isready"; do
 done
 
 echo "Running migrations"
-docker exec -it pg_upgrade_test bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
+docker exec -it pg_upgrade_test bash -c '/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1; exit $?'
+if [ $? -ne 0 ]; then
+  echo "Running migrations failed. Exiting."
+  exit 1
+fi
 
 echo "Running tests"
 pg_prove "../../migrations/tests/test.sql"
@@ -43,10 +59,18 @@ psql -f "./tests/99-fixtures.sql"
 
 echo "Initiating pg_upgrade"
 docker exec -it pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/initiate.sh "$PG_MAJOR_VERSION"; exit $?'
+if [ $? -ne 0 ]; then
+  echo "Initiating pg_upgrade failed. Exiting."
+  exit 1
+fi
 
 sleep 3
 echo "Completing pg_upgrade"
 docker exec -it pg_upgrade_test bash -c 'rm -f /tmp/pg-upgrade-status; /tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
+if [ $? -ne 0 ]; then
+  echo "Completing pg_upgrade failed. Exiting."
+  exit 1
+fi
 
 pg_prove tests/01-schema.sql
 pg_prove tests/02-data.sql
