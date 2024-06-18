@@ -11,6 +11,7 @@ SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh"
 
+IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
 function cleanup {
@@ -81,14 +82,22 @@ function complete_pg_upgrade {
     echo "running" > /tmp/pg-upgrade-status
 
     echo "1. Mounting data disk"
-    retry 8 mount -a -v
+    if [ -z "$IS_CI" ]; then
+        retry 8 mount -a -v
+    else
+        echo "Skipping mount -a -v"
+    fi
 
     # copying custom configurations
     echo "2. Copying custom configurations"
     retry 3 copy_configs
 
     echo "3. Starting postgresql"
-    retry 3 service postgresql start
+    if [ -z "$IS_CI" ]; then
+        retry 3 service postgresql start
+    else
+        CI_start_postgres --new-bin
+    fi
 
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
@@ -104,11 +113,16 @@ function complete_pg_upgrade {
     sleep 5
 
     echo "5. Restarting postgresql"
-    retry 3 service postgresql restart
-
-    echo "5.1. Restarting gotrue and postgrest"
-    retry 3 service gotrue restart
-    retry 3 service postgrest restart
+    if [ -z "$IS_CI" ]; then
+        retry 3 service postgresql restart
+        
+        echo "5.1. Restarting gotrue and postgrest"
+        retry 3 service gotrue restart
+        retry 3 service postgrest restart
+    else
+        retry 3 CI_stop_postgres || true
+        retry 3 CI_start_postgres
+    fi
 
     echo "6. Starting vacuum analyze"
     retry 3 start_vacuum_analyze
@@ -137,7 +151,10 @@ function apply_auth_scheme_updates {
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
         run_sql -c "ALTER SYSTEM SET password_encryption TO 'scram-sha-256';"
         run_sql -c "SELECT pg_reload_conf();"
-        run_sql -f /etc/postgresql.schema.sql
+
+        if [ -z "$IS_CI" ]; then
+            run_sql -f /etc/postgresql.schema.sql
+        fi
     fi
 }
 
@@ -149,5 +166,16 @@ function start_vacuum_analyze {
 
 trap cleanup ERR
 
+if [ -z "$IS_CI" ]; then
+    complete_pg_upgrade >> $LOG_FILE 2>&1 &
+else 
+    CI_stop_postgres || true
 
-complete_pg_upgrade >> $LOG_FILE 2>&1 &
+    rm -f /tmp/pg-upgrade-status
+    mv /data_migration /data
+
+    rm -rf /var/lib/postgresql/data
+    ln -s /data/pgdata /var/lib/postgresql/data
+
+    complete_pg_upgrade
+fi

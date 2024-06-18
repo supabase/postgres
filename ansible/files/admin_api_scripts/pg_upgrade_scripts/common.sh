@@ -61,3 +61,25 @@ function retry {
   done
   return 0
 }
+
+CI_stop_postgres() {
+    BINDIR=$(pg_config --bindir)
+    ARG=${1:-""}
+
+    if [ "$ARG" = "--new-bin" ]; then
+        BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
+    fi
+
+    su postgres -c "$BINDIR/pg_ctl stop -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
+}
+
+CI_start_postgres() {
+    BINDIR=$(pg_config --bindir)
+    ARG=${1:-""}
+
+    if [ "$ARG" = "--new-bin" ]; then
+        BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
+    fi
+
+    su postgres -c "$BINDIR/pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
+}
