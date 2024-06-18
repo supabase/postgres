@@ -11,6 +11,7 @@ SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh"
 
+IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
 function cleanup {
