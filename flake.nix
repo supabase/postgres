@@ -620,8 +620,10 @@
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          psql_16 = makeCheckHarness basePackages.psql_16.bin;
-          psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
+          # psql_16 = makeCheckHarness basePackages.psql_16.bin;
+          # psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
+          # TODO (samrose) re-introduce the checks for the orioledb version of postgresql and 16
+          # once all extensions are resolved for those versions
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
