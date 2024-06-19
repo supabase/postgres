@@ -558,7 +558,7 @@
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
