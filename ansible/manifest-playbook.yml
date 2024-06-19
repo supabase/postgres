@@ -40,8 +40,7 @@
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
-        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/postgrest/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-        # url: "https://github.com/PostgREST/postgrest/releases/download/{{ postgrest_release }}/postgrest-{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
+        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
         dest: /tmp/postgrest-{{ postgrest_release }}-arm64.tar.xz
         checksum: "{{ postgrest_arm_release_checksum }}"
         timeout: 60
