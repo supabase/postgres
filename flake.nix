@@ -36,8 +36,7 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-            (import ./nix/overlays/cargo-pgrx.nix)
-            (import ./nix/overlays/gdal-small.nix)
+            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             (import ./nix/overlays/psql_16-oriole.nix)
 
           ];
@@ -133,10 +132,74 @@
           ./nix/ext/plv8.nix
         ];
 
+        ourExtensions16 = [
+          # ./nix/ext/rum.nix
+          # ./nix/ext/timescaledb.nix
+          # ./nix/ext/pgroonga.nix
+          # ./nix/ext/index_advisor.nix
+          # ./nix/ext/wal2json.nix
+          # ./nix/ext/pg_repack.nix
+          # ./nix/ext/pg-safeupdate.nix
+          # ./nix/ext/plpgsql-check.nix
+          # ./nix/ext/pgjwt.nix
+          # ./nix/ext/pgaudit.nix
+          # ./nix/ext/postgis.nix
+          # ./nix/ext/pgrouting.nix
+          # ./nix/ext/pgtap.nix
+          # ./nix/ext/pg_cron.nix
+          # ./nix/ext/pgsql-http.nix
+          # ./nix/ext/pg_plan_filter.nix
+          # ./nix/ext/pg_net.nix
+          # ./nix/ext/pg_hashids.nix
+          # ./nix/ext/pgsodium.nix
+          # ./nix/ext/pg_graphql.nix
+          ./nix/ext/ext_16/pg_stat_monitor.nix
+          # ./nix/ext/pg_jsonschema.nix
+          # ./nix/ext/pgvector.nix
+          # ./nix/ext/vault.nix
+          # ./nix/ext/hypopg.nix
+          # ./nix/ext/pg_tle.nix
+          # ./nix/ext/wrappers/default.nix
+          # ./nix/ext/supautils.nix
+          # ./nix/ext/plv8.nix
+        ];
+
+        ourExtensionsOdb = [
+          # ./nix/ext/rum.nix
+          # # ./nix/ext/timescaledb.nix
+          # ./nix/ext/pgroonga.nix
+          # ./nix/ext/index_advisor.nix
+          # ./nix/ext/wal2json.nix
+          # ./nix/ext/pg_repack.nix
+          # ./nix/ext/pg-safeupdate.nix
+          # ./nix/ext/plpgsql-check.nix
+          # ./nix/ext/pgjwt.nix
+          # ./nix/ext/pgaudit.nix
+          # ./nix/ext/postgis.nix
+          # ./nix/ext/pgrouting.nix
+          # ./nix/ext/pgtap.nix
+          # ./nix/ext/pg_cron.nix
+          # ./nix/ext/pgsql-http.nix
+          # ./nix/ext/pg_plan_filter.nix
+          # ./nix/ext/pg_net.nix
+          # ./nix/ext/pg_hashids.nix
+          # ./nix/ext/pgsodium.nix
+          # ./nix/ext/pg_graphql.nix
+          ./nix/ext/ext_16/pg_stat_monitor.nix
+          # ./nix/ext/pg_jsonschema.nix
+          # ./nix/ext/pgvector.nix
+          # ./nix/ext/vault.nix
+          # ./nix/ext/hypopg.nix
+          # ./nix/ext/pg_tle.nix
+          # ./nix/ext/wrappers/default.nix
+          # ./nix/ext/supautils.nix
+          # ./nix/ext/plv8.nix
+        ];
+
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
-        orioledbExtension = ourExtensions ++ [ ./nix/ext/orioledb.nix ];
-
+        orioledbExtension = ourExtensionsOdb ++ [ ./nix/ext/orioledb.nix ];
+        postgresql16Extension = ourExtensions16;
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
         #postgis_override = pkgs.postgis_override;
@@ -185,6 +248,10 @@
           let postgresql = pkgs."postgresql_${version}";
           in map (path: pkgs.callPackage path { inherit postgresql; }) ourExtensions;
 
+        makeOurPostgres16Pkgs = version:
+          let postgresql = pkgs."postgresql_16";
+          in map (path: pkgs.callPackage path { inherit postgresql; }) ourExtensions16;
+
         # Create an attrset that contains all the extensions included in a server for the orioledb version of postgresql + extension.
         makeOurOrioleDbPostgresPkgsSet = version: patchedPostgres:
           (builtins.listToAttrs (map
@@ -192,6 +259,14 @@
               { name = drv.pname; value = drv; }
             )
             (makeOurOrioleDbPostgresPkgs version patchedPostgres)))
+          // { recurseForDerivations = true; };
+
+        makeOurPostgres16PkgsSet = version:
+          (builtins.listToAttrs (map
+            (drv:
+              { name = drv.pname; value = drv; }
+            )
+            (makeOurPostgres16Pkgs version)))
           // { recurseForDerivations = true; };
 
         # Create an attrset that contains all the extensions included in a server.
@@ -231,6 +306,27 @@
             inherit (pgbin) name version;
             paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
           };
+
+        makePostgres16Bin = version:
+          let
+            postgresql = pkgs."postgresql_16";
+            upstreamExts = map
+              (ext: {
+                name = postgresql.pkgs."${ext}".pname;
+                version = postgresql.pkgs."${ext}".version;
+              })
+              psqlExtensions;
+            ourExts = map (ext: { name = ext.pname; version = ext.version; }) (makeOurPostgres16Pkgs version);
+
+            pgbin = postgresql.withPackages (ps:
+              (map (ext: ps."${ext}") psqlExtensions) ++ (makeOurPostgres16Pkgs version)
+            );
+          in
+          pkgs.symlinkJoin {
+            inherit (pgbin) name version;
+            paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
+          };
+
 
         makeOrioleDbPostgresBin = version: patchedPostgres:
           let
@@ -386,6 +482,12 @@
           docker = makePostgresDocker version bin;
           recurseForDerivations = true;
         };
+        makePostgres16 = version: rec {
+          bin = makePostgres16Bin version;
+          exts = makeOurPostgres16PkgsSet version;
+          docker = makePostgresDocker version bin;
+          recurseForDerivations = true;
+        };
         makeOrioleDbPostgres = version: patchedPostgres: rec {
           bin = makeOrioleDbPostgresBin version patchedPostgres;
           exts = makeOurOrioleDbPostgresPkgsSet version patchedPostgres;
@@ -400,8 +502,8 @@
         basePackages = {
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
-          #psql_16 = makePostgres "16";
-          #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          psql_16 = makePostgres16 "16";
+          psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           pg_prove = pg_prove;
           sfcgal = sfcgal;
           # Start a version of the server.
@@ -518,8 +620,8 @@
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          #psql_16 = makeCheckHarness basePackages.psql_16.bin;
-          #psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
+          psql_16 = makeCheckHarness basePackages.psql_16.bin;
+          psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
