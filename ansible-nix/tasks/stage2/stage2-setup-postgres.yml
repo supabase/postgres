@@ -89,55 +89,55 @@
     group: postgres
     mode: 0700
 
-- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/lib/postgresql/bin
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/lib/postgresql/bin
   file:
     src: "{{ item }}"
     dest: "/usr/lib/postgresql/bin/{{ item | basename }}"
     state: link
   with_fileglob:
-    - "/home/postgres/.nix-profile/bin/*"
+    - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
   file:
-    src: "/home/postgres/.nix-profile/bin/psql"
+    src: "/var/lib/postgresql/.nix-profile/bin/psql"
     dest: "/usr/bin/psql"
     state: link
   become: yes
 
-# - name: Create symbolic links from /home/postgres/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
+# - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
 #   file:
 #     src: "{{ item }}"
 #     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
 #     state: link
 #   with_fileglob:
-#     - "/home/postgres/.nix-profile/share/pljava/*"
+#     - "/var/lib/postgresql/.nix-profile/share/pljava/*"
 #   become: yes
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
-- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
   file:
-    src: "/home/postgres/.nix-profile/bin/psql"
+    src: "/var/lib/postgresql/.nix-profile/bin/psql"
     dest: "/usr/bin/psql"
     state: link
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
   file:
     src: "{{ item }}"
     dest: "/usr/lib/postgresql/share/postgresql/{{ item | basename }}"
     state: link
   with_fileglob:
-    - "/home/postgres/.nix-profile/share/postgresql/*"
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/*"
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
   file:
     src: "{{ item }}"
     dest: "/usr/lib/postgresql/share/postgresql/extension/{{ item | basename }}"
     state: link
   with_fileglob:
-    - "/home/postgres/.nix-profile/share/postgresql/extension/*"
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/extension/*"
   become: yes
 
 - name: create destination directory
@@ -149,26 +149,26 @@
 - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
   shell: >
     sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
-    sudo find /home/postgres/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+    sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
     && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
     src: "{{ item }}"
     dest: "/usr/lib/postgresql/share/postgresql/timezonesets/{{ item | basename }}"
     state: link
   with_fileglob:
-    - "/home/postgres/.nix-profile/share/postgresql/timezonesets/*"
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/*"
   become: yes
 
-- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
   file:
     src: "{{ item }}"
     dest: "/usr/lib/postgresql/share/postgresql/tsearch_data/{{ item | basename }}"
     state: link
   with_fileglob:
-    - "/home/postgres/.nix-profile/share/postgresql/tsearch_data/*"
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/*"
   become: yes
 
 
@@ -188,7 +188,7 @@
 - name: Initialize the database
   become: yes
   become_user: postgres
-  shell: source /home/postgres/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
   args:
     executable: /bin/bash
   environment:
@@ -216,7 +216,7 @@
   become: yes
   become_user: postgres
   shell: |
-    source /home/postgres/.bashrc
+    source /var/lib/postgresql/.bashrc
     /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
   environment:
     LANG: en_US.UTF-8
@@ -242,7 +242,7 @@
   become: yes
   become_user: postgres
   shell: |
-    source /home/postgres/.bashrc && \
+    source /var/lib/postgresql/.bashrc && \
     /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
   args:
     executable: /bin/bash

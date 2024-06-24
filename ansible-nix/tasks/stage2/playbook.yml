@@ -19,7 +19,7 @@
     - name: stat unit test file copy
       copy:
         src: /tmp/unit-tests/unit-test-01.sql
-        dest: /home/postgres/unit-test-01.sql
+        dest: /var/lib/postgresql/unit-test-01.sql
         # state: present
         owner: postgres
         group: postgres

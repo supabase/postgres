@@ -12,7 +12,7 @@
     state: present
 
 - name: create postgres user
-  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres
+  shell: adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
   args:
     executable: /bin/bash
   become: yes
@@ -31,7 +31,6 @@
     owner: postgres
     group: postgres
   with_items:
-    - '/home/postgres'
     - '/var/log/postgresql'
     - '/var/lib/postgresql'
 
@@ -63,7 +62,7 @@
 
 - name: Add LOCALE_ARCHIVE to .bashrc
   lineinfile:
-    dest: "/home/postgres/.bashrc"
+    dest: "/var/lib/postgressql/.bashrc"
     line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
     create: yes
   become: yes
@@ -71,7 +70,7 @@
 
 - name: Add LANG items to .bashrc
   lineinfile:
-    dest: "/home/postgres/.bashrc"
+    dest: "/var/lib/postgresql/.bashrc"
     line: "{{ item }}"
     
   loop: 
