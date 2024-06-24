@@ -1,0 +1,13 @@
+[Unit]
+Description=AdminAPI
+
+[Service]
+Type=simple
+ExecStart=/opt/supabase-admin-api
+User=adminapi
+Restart=always
+RestartSec=3
+Environment="AWS_USE_DUALSTACK_ENDPOINT=true"
+
+[Install]
+WantedBy=multi-user.target

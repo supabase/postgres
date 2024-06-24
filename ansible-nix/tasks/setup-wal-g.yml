@@ -1,0 +1,130 @@
+# Downloading dependencies
+- name: wal-g dependencies
+  become: yes
+  apt:
+    pkg:
+      - libbrotli-dev
+      - liblzo2-dev
+      - libsodium-dev
+      - cmake
+
+# install go dependency for WAL-G
+- name: wal-g go dependency
+  get_url:
+    url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+    dest: /tmp
+    checksum: "{{ golang_version_checksum[platform] }}"
+    timeout: 60
+
+- name: unpack go archive
+  unarchive:
+    remote_src: yes
+    src: "/tmp/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+    dest: /usr/local
+
+# Download WAL-G
+- name: wal-g - download latest version
+  git:
+    repo: https://github.com/wal-g/wal-g.git
+    dest: /tmp/wal-g
+    version: "v{{ wal_g_release }}"
+  become: yes
+
+- name: wal-g - pg_clean
+  make:
+    chdir: /tmp/wal-g
+    target: pg_clean
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
+  ignore_errors: yes
+
+- name: wal-g - deps
+  make:
+    chdir: /tmp/wal-g
+    target: deps
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
+  ignore_errors: yes
+
+- name: wal-g - build and install
+  community.general.make:
+    chdir: /tmp/wal-g
+    target: pg_install
+    jobs: "{{ parallel_jobs | default(omit) }}"
+    params:
+      GOBIN: "/usr/local/bin"
+      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      USE_LIBSODIUM: true
+  become: yes
+
+- name: Create wal-g group
+  group:
+    name: wal-g
+    state: present
+
+- name: Create wal-g user
+  user:
+    name: wal-g
+    shell: /bin/false
+    comment: WAL-G user
+    group: wal-g
+    groups: wal-g, postgres
+
+- name: Create a config directory owned by wal-g
+  file:
+    path: /etc/wal-g
+    state: directory
+    owner: wal-g
+    group: wal-g
+    mode: '0770'
+
+- name: Create /etc/wal-g/config.json
+  file:
+    path: /etc/wal-g/config.json
+    state: touch
+    owner: wal-g
+    group: wal-g
+    mode: '0664'
+
+- name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
+  template:
+    src: "files/postgresql_config/custom_walg.conf.j2"
+    dest: /etc/postgresql-custom/wal-g.conf
+    mode: 0664
+    owner: postgres
+    group: postgres
+
+- name: Add script to be run for restore_command
+  template:
+    src: "files/walg_helper_scripts/wal_fetch.sh"
+    dest: /home/postgres/wal_fetch.sh
+    mode: 0500
+    owner: postgres
+    group: postgres
+
+- name: Add helper script for wal_fetch.sh
+  template:
+    src: "files/walg_helper_scripts/wal_change_ownership.sh"
+    dest: /root/wal_change_ownership.sh
+    mode: 0700
+    owner: root
+
+- name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
+    replace: "include = '/etc/postgresql-custom/wal-g.conf'"
+
+# Clean up Go
+- name: Uninstall Go
+  become: yes
+  file:
+    path: /usr/local/go
+    state: absent

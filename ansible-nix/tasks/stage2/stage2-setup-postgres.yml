@@ -1,0 +1,279 @@
+# - name: Install openjdk11 for pljava from nix binary cache
+#   become: yes
+#   shell: |
+#     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+- name: Install Postgres from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#psql_15/bin"
+#TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
+
+- name: Install pg_prove from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
+
+- name: Set ownership and permissions for /etc/ssl/private
+  become: yes
+  file:
+    path: /etc/ssl/private
+    owner: root
+    group: postgres
+    mode: '0750'
+
+- name: Set permissions for postgresql.env
+  become: yes
+  file:
+    path: /etc/environment.d/postgresql.env
+    owner: postgres
+    group: postgres
+    mode: '0644'
+
+- name: Ensure /usr/lib/postgresql/bin directory exists
+  file:
+    path: /usr/lib/postgresql/bin
+    state: directory
+    owner: postgres
+    group: postgres
+
+
+- name: Ensure /usr/lib/postgresql/share directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/contrib directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/timezonesets directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/timezonesets
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/tsearch_data directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/tsearch_data
+    state: directory
+    owner: postgres
+    group: postgres
+
+- name: Ensure /usr/lib/postgresql/share/extension directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/extension
+    state: directory
+    owner: postgres
+    group: postgres
+
+# - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
+#   file:
+#     path: /usr/lib/postgresql/share/postgresql/pljava
+#     state: directory
+#     owner: postgres
+#     group: postgres
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: import pgsodium_getkey script
+  template:
+    src: /tmp/ansible-playbook/files/pgsodium_getkey_readonly.sh.j2
+    dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+    owner: postgres
+    group: postgres
+    mode: 0700
+
+- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/lib/postgresql/bin
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/bin/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/bin/*"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
+  file:
+    src: "/home/postgres/.nix-profile/bin/psql"
+    dest: "/usr/bin/psql"
+    state: link
+  become: yes
+
+# - name: Create symbolic links from /home/postgres/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
+#   file:
+#     src: "{{ item }}"
+#     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
+#     state: link
+#   with_fileglob:
+#     - "/home/postgres/.nix-profile/share/pljava/*"
+#   become: yes
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: Create symbolic links from /home/postgres/.nix-profile/bin to /usr/bin
+  file:
+    src: "/home/postgres/.nix-profile/bin/psql"
+    dest: "/usr/bin/psql"
+    state: link
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/*"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/extension/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/extension/*"
+  become: yes
+
+- name: create destination directory
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib/
+    state: directory
+    recurse: yes
+
+- name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
+  shell: >
+    sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
+    sudo find /home/postgres/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+    && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/timezonesets/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/timezonesets/*"
+  become: yes
+
+- name: Create symbolic links from /home/postgres/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/tsearch_data/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/home/postgres/.nix-profile/share/postgresql/tsearch_data/*"
+  become: yes
+
+
+#Install configure before init
+- name: Install Postgres extensions
+  import_tasks: setup-extensions.yml
+
+- name: Link database data_dir to data volume directory
+  file:
+    src: "/data/pgdata"
+    path: "/var/lib/postgresql/data"
+    state: link
+    force: yes
+    owner: postgres
+    group: postgres
+
+- name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell: source /home/postgres/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+  vars:
+    ansible_command_timeout: 60
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
+
+- name: copy PG systemd unit
+  template:
+    src: /tmp/ansible-playbook/files/postgresql_config/postgresql.service.j2
+    dest: /etc/systemd/system/postgresql.service
+
+- name: copy optimizations systemd unit
+  template:
+    src: /tmp/ansible-playbook/files/database-optimizations.service.j2
+    dest: /etc/systemd/system/database-optimizations.service
+
+- name: Restart Postgres Database without Systemd
+  become: yes
+  become_user: postgres
+  shell: |
+    source /home/postgres/.bashrc
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+
+- name: Execute init SQL files
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/psql -f {{ item }}
+  loop: "{{ sql_files }}"
+
+- name: Delete SQL scripts
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ sql_files }}"
+
+- name: Restart Postgres Database without Systemd
+  become: yes
+  become_user: postgres
+  shell: |
+    source /home/postgres/.bashrc && \
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+
+- name: Run migrations
+  import_tasks: setup-migrations.yml
+  tags:
+    - migrations
+
+
+# # # Reload
+- name: System - systemd reload
+  systemd:
+    enabled: yes
+    name: postgresql
+    daemon_reload: yes
+
+- name: Stop Postgres with systemd
+  systemd:
+    state: stopped
+    name: postgresql
+
+
+- name: Stop Postgres Database without systemd
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop

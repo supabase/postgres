@@ -1,0 +1,60 @@
+- name: Envoy - system user
+  ansible.builtin.user:
+    name: envoy
+
+- name: Envoy - download binary
+  ansible.builtin.get_url:
+    checksum: "{{ envoy_release_checksum }}"
+    dest: /opt/envoy
+    group: envoy
+    mode: u+x
+    owner: envoy
+    # yamllint disable-line rule:line-length
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
+
+- name: Envoy - download hot restarter script
+  ansible.builtin.get_url:
+    checksum: "{{ envoy_hot_restarter_release_checksum }}"
+    dest: /opt/envoy-hot-restarter.py
+    group: envoy
+    mode: u+x
+    owner: envoy
+    # yamllint disable-line rule:line-length
+    url: https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py
+
+- name: Envoy - bump up ulimit
+  community.general.pam_limits:
+    domain: envoy
+    limit_item: nofile
+    limit_type: soft
+    value: 4096
+
+- name: Envoy - create script to start envoy
+  ansible.builtin.copy:
+    dest: /opt/start-envoy.sh
+    group: envoy
+    mode: u+x
+    owner: envoy
+    src: files/start-envoy.sh
+
+- name: Envoy - create configuration files
+  ansible.builtin.copy:
+    dest: /etc/envoy/
+    directory_mode: u=rwx,g=rwx,o=rx
+    group: envoy
+    mode: u=rw,g=rw,o=r
+    owner: envoy
+    src: files/envoy_config/
+
+- name: Envoy - create service file
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/envoy.service
+    mode: u=rw,g=r,o=r
+    src: files/envoy.service
+
+- name: Envoy - disable service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    enabled: false
+    name: envoy
+    state: stopped

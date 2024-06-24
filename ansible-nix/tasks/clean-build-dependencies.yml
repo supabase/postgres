@@ -1,0 +1,21 @@
+- name: Remove build dependencies
+  apt:
+    pkg:
+      - bison
+      - build-essential
+      - clang-11
+      - cmake
+      - cpp
+      - flex
+      - g++
+      - g++-10
+      - g++-9
+      - gcc-10
+      - make
+      - manpages
+      - manpages-dev
+      - ninja-build
+      - patch
+      - python2
+    state: absent
+    autoremove: yes

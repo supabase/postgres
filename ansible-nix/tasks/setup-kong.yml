@@ -1,0 +1,62 @@
+- name: Kong - system user
+  user: name=kong
+
+# Kong installation steps from http://archive.vn/3HRQx
+- name: Kong - system dependencies
+  apt:
+    pkg:
+      - openssl
+      - libpcre3
+      - procps
+      - perl
+
+- name: Kong - download deb package
+  get_url:
+    url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/{{ kong_release_target }}/main/k/ko/kong_2.8.1/{{ kong_deb }}"
+    dest: /tmp/kong.deb
+    checksum: "{{ kong_deb_checksum }}"
+
+- name: Kong - deb installation
+  apt: deb=file:///tmp/kong.deb
+
+- name: Kong - ensure it is NOT autoremoved
+  shell: |
+    set -e
+    apt-mark manual kong zlib1g*
+
+- name: Kong - configuration
+  template:
+    src: files/kong_config/kong.conf.j2
+    dest: /etc/kong/kong.conf
+
+- name: Kong - hand over ownership of /usr/local/kong to user kong
+  file:
+    path: /usr/local/kong
+    recurse: yes
+    owner: kong
+
+# [warn] ulimit is currently set to "1024". For better performance set it to at least
+# "4096" using "ulimit -n"
+- name: Kong - bump up ulimit
+  pam_limits:
+    limit_item: nofile
+    limit_type: soft
+    domain: kong
+    value: "4096"
+
+- name: Kong - create env file
+  template:
+    src: files/kong_config/kong.env.j2
+    dest: /etc/kong/kong.env
+
+- name: Kong - create service file
+  template:
+    src: files/kong_config/kong.service.j2
+    dest: /etc/systemd/system/kong.service
+
+- name: Kong - disable service
+  systemd:
+    enabled: no
+    name: kong
+    state: stopped
+    daemon_reload: yes

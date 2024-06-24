@@ -1,0 +1,108 @@
+- name: AWS CLI dep
+  apt:
+    pkg:
+      - unzip
+      - jq
+    install_recommends: no
+
+- name: AWS CLI (arm)
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
+    dest: "/tmp/awscliv2.zip"
+    timeout: 60
+  when: platform == "arm64"
+
+- name: AWS CLI (x86)
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
+    dest: "/tmp/awscliv2.zip"
+    timeout: 60
+  when: platform == "amd64"
+
+- name: AWS CLI - expand
+  unarchive:
+    remote_src: yes
+    src: "/tmp/awscliv2.zip"
+    dest: "/tmp"
+
+- name: AWS CLI - install
+  shell: "/tmp/aws/install --update"
+  become: true
+
+- name: AWS CLI - configure ipv6 support for s3
+  shell: |
+    aws configure set default.s3.use_dualstack_endpoint true
+
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_x86_deb }}"
+  when: platform == "amd64"
+
+- name: install Vector for logging
+  become: yes
+  apt:
+    deb: "{{ vector_arm_deb }}"
+  when: platform == "arm64"
+
+- name: add Vector to postgres group
+  become: yes
+  shell:
+    cmd: |
+      usermod -a -G postgres vector
+
+- name: create service files for Vector
+  template:
+    src: files/vector.service.j2
+    dest: /etc/systemd/system/vector.service
+
+- name: configure tmpfiles for postgres - overwrites upstream package
+  template:
+    src: files/postgresql_config/tmpfiles.postgresql.conf
+    dest: /etc/tmpfiles.d/postgresql-common.conf
+
+- name: fix permissions for vector config to be managed
+  shell:
+    cmd: |
+      chown -R vector:vector /etc/vector
+      chmod 0775 /etc/vector
+
+- name: vector - reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Create checkpoints dir
+  become: yes
+  file:
+    path: /var/lib/vector
+    state: directory
+    owner: vector
+
+- name: Include file for generated optimizations in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
+    replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
+
+- name: Include file for custom overrides in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
+    replace: "include = '/etc/postgresql-custom/custom-overrides.conf'"
+
+- name: Install Postgres exporter
+  import_tasks: internal/postgres-exporter.yml
+
+- name: Install admin-mgr
+  import_tasks: internal/admin-mgr.yml
+
+- name: Install adminapi
+  import_tasks: internal/admin-api.yml
+
+- name: Init nftabless
+  import_tasks: internal/setup-nftables.yml
+
+- name: Install pg_egress_collect
+  import_tasks: internal/pg_egress_collect.yml

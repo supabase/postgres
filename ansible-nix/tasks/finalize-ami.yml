@@ -1,0 +1,72 @@
+- name: PG logging conf
+  template:
+    src: files/postgresql_config/postgresql-csvlog.conf
+    dest: /etc/postgresql/logging.conf
+    group: postgres
+
+- name: UFW - Allow SSH connections
+  ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: UFW - Allow connections to postgreSQL (5432)
+  ufw:
+    rule: allow
+    port: "5432"
+
+- name: UFW - Allow connections to postgreSQL (6543)
+  ufw:
+    rule: allow
+    port: "6543"
+  tags:
+    - install-pgbouncer
+
+- name: UFW - Allow connections to http (80)
+  ufw:
+    rule: allow
+    port: http
+  tags:
+  - install-supabase-internal 
+
+- name: UFW - Allow connections to https (443)
+  ufw:
+    rule: allow
+    port: https
+  tags:
+  - install-supabase-internal           
+
+- name: UFW - Deny all other incoming traffic by default
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Move logrotate files to /etc/logrotate.d/
+  copy:
+    src: "files/logrotate_config/{{ item.file }}"
+    dest: "/etc/logrotate.d/{{ item.file }}"
+    mode: "0700"
+    owner: root
+  loop:
+    - { file: "logrotate-postgres-csv.conf" }
+    - { file: "logrotate-postgres.conf" }
+    - { file: "logrotate-walg.conf" }
+    - { file: "logrotate-postgres-auth.conf" }
+
+- name: Ensure default Postgres logrotate config is removed
+  file:
+    path: /etc/logrotate.d/postgresql-common
+    state: absent
+
+- name: Disable cron access
+  copy:
+    src: files/cron.deny
+    dest: /etc/cron.deny
+
+- name: Configure logrotation to run every hour
+  shell:
+    cmd: |
+        cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
+        sed -i -e 's;daily;*:0/5;' /etc/systemd/system/logrotate.timer
+        systemctl reenable logrotate.timer
+  become: yes
