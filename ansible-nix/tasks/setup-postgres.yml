@@ -1,0 +1,132 @@
+- name: create ssl-cert group
+  group:
+    name: ssl-cert
+    state: present
+
+# the old method of installing from debian creates this group, but we must create it explicitly
+# for the nix built version
+
+- name: create postgres group
+  group:
+    name: postgres
+    state: present
+
+- name: create postgres user
+  shell: useradd -m -r -s /bin/bash -d /home/postgres postgres -g postgres
+  args:
+    executable: /bin/bash
+  become: yes
+
+- name: add postgres user to postgres group
+  shell: usermod -a -G ssl-cert postgres
+  args:
+    executable: /bin/bash
+  become: yes
+
+- name: Create relevant directories
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    state: directory
+    owner: postgres
+    group: postgres
+  with_items:
+    - '/home/postgres'
+    - '/var/log/postgresql'
+    - '/var/lib/postgresql'
+
+- name: Allow adminapi to write custom config
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0775
+  with_items:
+    - '/etc/postgresql'
+    - '/etc/postgresql-custom'
+
+- name: create placeholder config files
+  file:
+    path: '/etc/postgresql-custom/{{ item }}'
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: 0664
+  with_items:
+    - 'generated-optimizations.conf'
+    - 'custom-overrides.conf'
+
+- name: locale-gen
+  command: sudo locale-gen en_US.UTF-8
+
+- name: Add LOCALE_ARCHIVE to .bashrc
+  lineinfile:
+    dest: "/home/postgres/.bashrc"
+    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
+    create: yes
+  become: yes
+
+
+- name: Add LANG items to .bashrc
+  lineinfile:
+    dest: "/home/postgres/.bashrc"
+    line: "{{ item }}"
+    
+  loop: 
+    - 'export LANG="en_US.UTF-8"'
+    - 'export LANGUAGE="en_US.UTF-8"'
+    - 'export LC_ALL="en_US.UTF-8"'
+    - 'export LANG="en_US.UTF-8"'
+    - 'export LC_CTYPE="en_US.UTF-8"'
+  become: yes
+
+
+# Move Postgres configuration files into /etc/postgresql
+# Add postgresql.conf
+- name: import postgresql.conf
+  template:
+    src: files/postgresql_config/postgresql.conf.j2
+    dest: /etc/postgresql/postgresql.conf
+    group: postgres
+
+# Add pg_hba.conf
+- name: import pg_hba.conf
+  template:
+    src: files/postgresql_config/pg_hba.conf.j2
+    dest: /etc/postgresql/pg_hba.conf
+    group: postgres
+
+# Add pg_ident.conf
+- name: import pg_ident.conf
+  template:
+    src: files/postgresql_config/pg_ident.conf.j2
+    dest: /etc/postgresql/pg_ident.conf
+    group: postgres
+
+# Add custom config for read replicas set up
+- name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
+  template:
+    src: "files/postgresql_config/custom_read_replica.conf.j2"
+    dest: /etc/postgresql-custom/read-replica.conf
+    mode: 0664
+    owner: postgres
+    group: postgres
+
+# # Install extensions before init
+# (samrose) moved to tasks/stage2/setup-extensions.yml
+# now called from stage2/stage2-setup-postgres.yml
+
+
+# init DB
+- name: Create directory on data volume
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0750
+  with_items:
+    - "/data/pgdata"

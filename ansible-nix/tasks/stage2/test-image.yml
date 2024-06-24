@@ -1,0 +1,104 @@
+- name: Temporarily disable PG Sodium references in config
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+
+- name: Start Postgres Database to load all extensions.
+  become: yes
+  become_user: postgres
+  shell: source /home/postgres/.bashrc &&  /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+
+
+- name: check contents of unit test file
+  become: yes
+  become_user: postgres
+  shell: cat /home/postgres/unit-test-01.sql && ls -l /home/postgres/unit-test-01.sql
+
+- name: verify postgres server is running
+  become: yes
+  become_user: postgres
+  shell: psql -U postgres -h localhost -c "SELECT version();"
+  register: pg_isready
+  failed_when: pg_isready.rc != 0
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+    PATH: /home/postgres/.nix-profile/bin:$PATH
+
+- name: Run Unit tests (with filename unit-test-*) on Postgres Database
+  become: yes
+  become_user: postgres
+  shell: source /home/postgres/.bashrc && /home/postgres/.nix-profile/bin/pg_prove -U postgres -h localhost -d postgres -f /home/postgres/unit-test-01.sql
+  register: retval
+  failed_when: retval.rc != 0
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+    PATH: /home/postgres/.nix-profile/bin:$PATH
+
+- name: Run migrations tests
+  shell: /home/postgres/.nix-profile/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
+  register: retval
+  failed_when: retval.rc != 0
+  args:
+    executable: /bin/bash
+    chdir: /tmp/migrations
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+    PATH: /home/postgres/.nix-profile/bin:$PATH
+
+- name: Re-enable PG Sodium references in config
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
+
+- name: Reset db stats
+  become: yes
+  become_user: postgres
+  shell: |
+    source /home/postgres/.bashrc && \
+    /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+
+# - name: remove pg_prove
+- name: Remove  pg_prove 
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove pg_prove"
+
+- name: Stop Postgres Database
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop

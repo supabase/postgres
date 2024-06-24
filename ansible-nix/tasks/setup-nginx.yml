@@ -1,0 +1,82 @@
+- name: nginx - system user
+  user: name=nginx
+
+# Kong installation steps from http://archive.vn/3HRQx
+- name: nginx - system dependencies
+  apt:
+    pkg:
+      - openssl
+      - libpcre3-dev
+      - libssl-dev
+      - zlib1g-dev
+
+- name: nginx - download source
+  get_url:
+    url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
+    dest: /tmp/nginx-{{ nginx_release }}.tar.gz
+    checksum: "{{ nginx_release_checksum }}"
+
+- name: nginx - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/nginx-{{ nginx_release }}.tar.gz
+    dest: /tmp
+
+- name: nginx - configure
+  shell:
+    chdir: /tmp/nginx-{{ nginx_release }}
+    cmd: |
+      set -e
+
+      ./configure \
+      --prefix=/usr/local/nginx \
+      --conf-path=/etc/nginx/nginx.conf \
+      --with-http_ssl_module \
+      --with-http_realip_module \
+      --with-threads
+  become: yes
+
+- name: nginx - build
+  community.general.make:
+    target: build
+    chdir: /tmp/nginx-{{ nginx_release }}
+    jobs: "{{ parallel_jobs | default(omit) }}"
+  become: yes
+
+- name: nginx - install
+  make:
+    chdir: /tmp/nginx-{{ nginx_release }}
+    target: install
+  become: yes
+
+- name: nginx - hand over ownership of /usr/local/nginx to user nginx
+  file:
+    path: /usr/local/nginx
+    recurse: yes
+    owner: nginx
+
+- name: nginx - hand over ownership of /etc/nginx to user nginx
+  file:
+    path: /etc/nginx
+    recurse: yes
+    owner: nginx
+
+# [warn] ulimit is currently set to "1024". For better performance set it to at least
+# "4096" using "ulimit -n"
+- name: nginx - bump up ulimit
+  pam_limits:
+    limit_item: nofile
+    limit_type: soft
+    domain: nginx
+    value: "4096"
+
+- name: nginx - create service file
+  template:
+    src: files/nginx.service.j2
+    dest: /etc/systemd/system/nginx.service
+
+# Keep it dormant for the timebeing
+
+# - name: nginx - reload systemd
+#   systemd:
+#     daemon_reload: yes

@@ -1,0 +1,135 @@
+# PgBouncer
+- name: PgBouncer - download & install dependencies
+  apt:
+    pkg:
+      - build-essential
+      - libssl-dev
+      - pkg-config
+      - libevent-dev
+      - libsystemd-dev
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: PgBouncer - download latest release
+  get_url:
+    url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
+    dest: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    checksum: "{{ pgbouncer_release_checksum }}"
+    timeout: 60
+
+- name: PgBouncer - unpack archive
+  unarchive:
+    remote_src: yes
+    src: /tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz
+    dest: /tmp
+  become: yes
+
+- name: PgBouncer - configure
+  shell:
+    cmd: "./configure --prefix=/usr/local --with-systemd"
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - build
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+  become: yes
+
+- name: PgBouncer - install
+  make:
+    chdir: /tmp/pgbouncer-{{ pgbouncer_release }}
+    target: install
+  become: yes
+
+- name: Create pgbouncer user
+  user:
+    name: pgbouncer
+    shell: /bin/false
+    comment: PgBouncer user
+    groups: postgres,ssl-cert
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    path: /etc/pgbouncer
+    state: directory
+    owner: pgbouncer
+    group: pgbouncer
+    mode: '0700'
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    state: directory
+    owner: pgbouncer
+    group: pgbouncer
+    path: '{{ item }}'
+    mode: '0775'
+  with_items:
+    - '/etc/pgbouncer-custom'
+
+- name: create placeholder config files
+  file:
+    path: '/etc/pgbouncer-custom/{{ item }}'
+    state: touch
+    owner: pgbouncer
+    group: pgbouncer
+    mode: 0664
+  with_items:
+    - 'generated-optimizations.ini'
+    - 'custom-overrides.ini'
+    - 'ssl-config.ini'
+
+- name: PgBouncer - adjust pgbouncer.ini
+  copy:
+    src: files/pgbouncer_config/pgbouncer.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+    owner: pgbouncer
+    mode: '0700'
+
+- name: PgBouncer - create a directory if it does not exist
+  file:
+    path: /etc/pgbouncer/userlist.txt
+    state: touch
+    owner: pgbouncer
+    mode: '0700'
+      
+- name: import /etc/tmpfiles.d/pgbouncer.conf
+  template:
+    src: files/pgbouncer_config/tmpfiles.d-pgbouncer.conf.j2
+    dest: /etc/tmpfiles.d/pgbouncer.conf
+  become: yes
+
+- name: PgBouncer - By default allow ssl connections.
+  become: yes
+  copy:
+    dest: /etc/pgbouncer-custom/ssl-config.ini
+    content: |
+      client_tls_sslmode = allow
+
+- name: Grant pg_hba and pgbouncer grp perm for adminapi updates
+  shell: |
+     chmod g+w /etc/postgresql/pg_hba.conf
+     chmod g+w /etc/pgbouncer-custom/ssl-config.ini
+
+# Add fail2ban filter
+- name: import jail.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/jail-pgbouncer.conf.j2
+    dest: /etc/fail2ban/jail.d/pgbouncer.conf
+  become: yes
+
+- name: import filter.d/pgbouncer.conf
+  template:
+    src: files/fail2ban_config/filter-pgbouncer.conf.j2
+    dest: /etc/fail2ban/filter.d/pgbouncer.conf
+  become: yes
+
+# Add systemd file for PgBouncer
+- name: PgBouncer - import postgresql.service
+  template:
+    src: files/pgbouncer_config/pgbouncer.service.j2
+    dest: /etc/systemd/system/pgbouncer.service
+  become: yes
+
+- name: PgBouncer - reload systemd
+  systemd:
+    daemon_reload: yes
