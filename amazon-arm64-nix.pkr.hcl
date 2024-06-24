@@ -250,7 +250,7 @@ build {
 
   provisioner "file" {
     source = "ansible/vars.yml"
-    destination = "/tmp/ansible-playbook"
+    destination = "/tmp/ansible-playbook/ansible-nix/vars.yml"
   }
 
   provisioner "shell" {
