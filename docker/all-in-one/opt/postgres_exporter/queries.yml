@@ -1,13 +1,12 @@
+set_timeout:
+  master: true
+  cache_seconds: 5
+  query: "set statement_timeout to '20s'"
+
 pg_database:
   master: true
   cache_seconds: 60
-  query: |
-    select sum(size_b) / (1024 * 1024) as size_mb
-    from (select sum(pg_database_size(pg_database.datname)) as size_b
-          from pg_database
-          union all
-          select sum(size) as size_b
-          from pg_ls_waldir()) s;
+  query: "SELECT SUM(pg_database_size(pg_database.datname)) / (1024 * 1024) as size_mb FROM pg_database"
   metrics:
     - size_mb:
         usage: "GAUGE"
@@ -178,10 +177,10 @@ pg_ls_archive_statusdir:
     - wal_pending_count:
         usage: "COUNTER"
         description: "Number of not yet archived WAL files"
-         
+
 auth_users:
   master: true
-  cache_seconds: 60
+  cache_seconds: 21600 # 6 hours
   query: "select count(id) as user_count from auth.users"
   metrics:
     - user_count:
@@ -214,6 +213,15 @@ replication:
     - realtime_slot_status:
         usage: "GAUGE"
         description: "Replication Slot Active Status"
+
+replication_slots:
+  master: true
+  cache_seconds: 60
+  query: "SELECT max(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) AS max_lag_bytes FROM pg_replication_slots"
+  metrics:
+    - max_lag_bytes:
+        usage: "GAUGE"
+        description: "Max Replication Lag"
 
 storage:
   master: true
@@ -261,17 +269,23 @@ supabase_usage_metrics:
       and lower(trim(regexp_replace(regexp_replace(query, E'\n', ' ', 'g'), E'\\s+', ' ', 'g'))) not in
           ('with rows as ( select id from net.http_request_queue order by id limit $1 ) delete from net.http_request_queue q using rows where q.id = rows.id returning q.id, q.method, q.url, timeout_milliseconds, array(select key || $2 || value from jsonb_each_text(q.headers)), q.body',
            'with rows as ( select ctid from net._http_response where created < now() - $1 order by created limit $2 ) delete from net._http_response r using rows where r.ctid = rows.ctid',
+            -- version of query above before https://github.com/supabase/pg_net/commit/eaa721e11761da07d01fc04b5114c90cd7973b83
+           'with rows as ( select ctid from net._http_response where created < $1 - $2 order by created limit $3 ) delete from net._http_response r using rows where r.ctid = rows.ctid',
            'select exists ( select $2 from pg_catalog.pg_class c where c.relname = $1 and c.relkind = $3 )',
            'select description from pg_namespace n left join pg_description d on d.objoid = n.oid where n.nspname = $1',
            'select concat(schemaname, $1, tablename, $2, policyname) as policy from pg_policies order by 1 desc',
            'select concat(table_schema, $1, table_name) as table from information_schema.tables where table_schema not like $2 and table_schema <> $3 order by 1 desc',
            'select concat(conrelid::regclass, $1, conname) as fk from pg_constraint where contype = $2 order by 1 desc',
-           'select datname from pg_database where datallowconn = $1 order by oid asc')
+           'select datname from pg_database where datallowconn = $1 order by oid asc',
+           'select count(*) > $1 as pgsodium_enabled from pg_extension where extname = $2',
+           'select count(*) > $1 as keys_created from pgsodium.key')
       and query <> 'insert into schema_migrations (version) values ($1)'
       -- temporarily included for older versions of pg_net
       and query not like 'SELECT%FROM net.http_request_queue%'
       and query not like 'DELETE FROM net.http_request_queue%'
       and query not like '%source: project usage%'
+      and query not like 'select name, setting from pg_settings where name in ($1, $2)%'
+      and userid <> (select oid from pg_roles where rolname = 'authenticator')
   metrics:
     - user_queries_total:
         usage: "COUNTER"
@@ -294,3 +308,38 @@ pg_status:
     - in_recovery:
         usage: "GAUGE"
         description: "Database in recovery"
+
+# specific to read replicas
+# for primary databases, all columns will always return a value of 0
+# ---
+# for checking replication lag (physical_replica_lag_second)
+# we firstly check if the replica is  connected to its primary
+# and if last WAL received is equivalent to last WAL replayed
+# if so return 0
+# otherwise calculate replication lag as per usual
+physical_replication_lag:
+  master: true
+  cache-seconds: 60
+  query: |
+    select
+    case
+      when (select count(*) from pg_stat_wal_receiver) = 1 and pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn()
+      then 0
+      else coalesce(extract(epoch from now() - pg_last_xact_replay_timestamp()),0)
+    end as physical_replication_lag_seconds,
+    case
+      when pg_is_in_recovery()
+      then case when pg_is_wal_replay_paused() = false then 0 else 1 end
+      else 0
+    end as is_wal_replay_paused,
+    (select count(*) from pg_stat_wal_receiver) as is_connected_to_primary
+  metrics:
+    - physical_replication_lag_seconds:
+        usage: "GAUGE"
+        description: "Physical replication lag in seconds"
+    - is_wal_replay_paused:
+        usage: "GAUGE"
+        description: "Check if WAL replay has been paused"
+    - is_connected_to_primary:
+        usage: "GAUGE"
+        description: "Monitor connection to the primary database"
