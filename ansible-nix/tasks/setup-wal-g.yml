@@ -103,7 +103,7 @@
 - name: Add script to be run for restore_command
   template:
     src: "files/walg_helper_scripts/wal_fetch.sh"
-    dest: /home/postgres/wal_fetch.sh
+    dest: /var/lib/postgresql/wal_fetch.sh
     mode: 0500
     owner: postgres
     group: postgres
