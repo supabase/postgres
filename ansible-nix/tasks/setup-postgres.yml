@@ -67,6 +67,12 @@
     create: yes
   become: yes
 
+- name: Make sure .bashrc exists
+  file: 
+    path: /var/lib/postgresql/.bashrc 
+    state: touch
+    owner: postgres
+    group: postgres
 
 - name: Add LANG items to .bashrc
   lineinfile:
