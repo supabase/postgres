@@ -40,8 +40,21 @@ jobs:
         run: |
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
-  
+          AMI_ID=$(packer build -machine-readable -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl | tee >(cat >&2) | awk -F, '$0 ~/artifact,0,id/ {print $6}' | cut -d ':' -f2)
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_ENV
+
+      - name: Wait for AMI to be available
+        run: |
+          while true; do
+            AMI_STATUS=$(aws ec2 describe-images --image-ids ${{ env.AMI_ID }} --query 'Images[0].State' --output text)
+            if [ "$AMI_STATUS" == "available" ]; then
+              echo "AMI is now available."
+              break
+            fi
+            echo "AMI status: $AMI_STATUS. Waiting for 30 seconds..."
+            sleep 30
+          done
+
       - name: Build AMI stage 2
         run: |
           packer init stage2-nix-psql.pkr.hcl
