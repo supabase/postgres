@@ -1,11 +1,11 @@
 name: Release AMI Nix
 
 on:
-  push:
-    branches:
-      - sam/nix-and-conventional-ami
-      - '.github/workflows/ami-release-nix.yml'
-      - 'common-nix.vars.pkr.hcl'
+  # push:
+  #   branches:
+  #     - sam/nix-and-conventional-ami
+  #     - '.github/workflows/ami-release-nix.yml'
+  #     - 'common-nix.vars.pkr.hcl'
   workflow_dispatch:
 
 jobs:
