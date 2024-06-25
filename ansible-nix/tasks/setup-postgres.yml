@@ -60,19 +60,21 @@
 - name: locale-gen
   command: sudo locale-gen en_US.UTF-8
 
-- name: Add LOCALE_ARCHIVE to .bashrc
-  lineinfile:
-    dest: "/var/lib/postgressql/.bashrc"
-    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
-    create: yes
-  become: yes
-
 - name: Make sure .bashrc exists
   file: 
     path: /var/lib/postgresql/.bashrc 
     state: touch
     owner: postgres
     group: postgres
+
+
+- name: Add LOCALE_ARCHIVE to .bashrc
+  lineinfile:
+    dest: "/var/lib/postgresql/.bashrc"
+    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
+    create: yes
+  become: yes
+
 
 - name: Add LANG items to .bashrc
   lineinfile:
