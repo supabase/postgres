@@ -41,27 +41,26 @@ jobs:
         run: |
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' amazon-arm64-nix.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=ci-ami-test" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" stage2-nix-psql.pkr.hcl | tee build.log
-          AMI_NAME=$(grep -oP 'packer-demo-\d{10}' build.log | head -n 1)
-          echo "AMI_NAME=$AMI_NAME" >> $GITHUB_ENV
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" stage2-nix-psql.pkr.hcl 
+
       - name: Run tests
         timeout-minutes: 10
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
           pytest -vv -s testinfra/test_ami_nix.py
-        env:
-          AMI_NAME: ${{ env.AMI_NAME }}
+      
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
           aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {}
+   
       - name: Cleanup resources on build cancellation
         if: ${{ always() }}
         run: |
