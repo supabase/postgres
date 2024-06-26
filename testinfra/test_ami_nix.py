@@ -226,7 +226,7 @@ runcmd:
                 {
                     "ResourceType": "instance",
                     "Tags": [
-                        {"Key": "Name", "Value": "ci-ami-test"},
+                        {"Key": "Name", "Value": "ci-ami-test-nix"},
                         {"Key": "creator", "Value": "testinfra-ci"},
                         {"Key": "testinfra-run-id", "Value": RUN_ID}
                     ],
