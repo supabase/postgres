@@ -167,7 +167,7 @@ def host():
     ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
     images = list(
         ec2.images.filter(
-            Filters=[{"Name": "name", "Values": ["supabase-postgres-ci-ami-test-nix"]}]
+            Filters=[{"Name": "name", "Values": [os.environ["AMI_NAME"]]}]
         )
     )
     assert len(images) == 1
