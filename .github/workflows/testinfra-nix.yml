@@ -7,6 +7,7 @@ on:
 jobs:
   test-ami:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: arm-runner
@@ -46,9 +47,8 @@ jobs:
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" stage2-nix-psql.pkr.hcl
-          AMI_ID=$(grep -oP 'artifact,0,id,ami-\w+' output.txt | cut -d',' -f4)
-          AMI_NAME=$(aws ec2 describe-images --image-ids $AMI_ID --query 'Images[0].Name' --output text)
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" stage2-nix-psql.pkr.hcl | tee build.log
+          AMI_NAME=$(grep -oP 'packer-demo-\d{10}' build.log | head -n 1)
           echo "AMI_NAME=$AMI_NAME" >> $GITHUB_ENV
       - name: Run tests
         timeout-minutes: 10
