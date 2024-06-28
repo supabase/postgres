@@ -37,6 +37,7 @@ ENV DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"
 # Configure processor optimised build
 ARG CPPFLAGS=""
 ENV DEB_CPPFLAGS_APPEND="${CPPFLAGS} -fsigned-char"
+ENV DEB_CFLAGS_APPEND="-g3"
 ARG DEB_BUILD_PROFILES="pkg.postgresql.nozstd"
 ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 

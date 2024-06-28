@@ -37,6 +37,7 @@ docker buildx build \
   --build-arg postgresql_major=15 \
   --build-arg postgresql_release=15.1 \
   --build-arg CPPFLAGS=-mcpu=neoverse-n1 \
+  --build-arg CFLAGS=-g3
   --file=docker/Dockerfile \
   --target=pg-deb \
   --tag=supabase/postgres:deb \
