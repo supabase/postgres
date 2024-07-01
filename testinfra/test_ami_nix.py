@@ -267,7 +267,7 @@ runcmd:
     )
 
     def is_healthy(host) -> bool:
-        cmd = host.run("pg_isready -U postgres")
+        cmd = host.run("sudo -u postgres /var/lib/postgresql/.nix-profile/bin/pg_isready -U postgres")
         if cmd.failed is True:
             logger.warning("pg not ready")
             return False
