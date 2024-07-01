@@ -16,9 +16,6 @@ jobs:
             ubuntu_version: 20.04
             mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
-    concurrency:
-      group: build-${{ github.ref }}
-      cancel-in-progress: false
     timeout-minutes: 150
     permissions:
       contents: write
