@@ -18,9 +18,6 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
-    concurrency:
-      group: build-${{ github.ref }}
-      cancel-in-progress: false
     env:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
