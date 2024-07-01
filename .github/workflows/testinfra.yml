@@ -14,6 +14,9 @@ jobs:
           - runner: arm-runner
             arch: arm64
     runs-on: ${{ matrix.runner }}
+    concurrency:
+      group: build-${{ github.ref }}
+      cancel-in-progress: false
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
