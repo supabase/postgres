@@ -14,9 +14,6 @@ jobs:
           - runner: arm-runner
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    concurrency:
-      group: build-${{ github.ref }}
-      cancel-in-progress: false
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -52,6 +49,9 @@ jobs:
             ubuntu_version: 20.04
             mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
+    concurrency:
+      group: build-${{ github.ref }}
+      cancel-in-progress: false
     timeout-minutes: 150
     permissions:
       contents: write

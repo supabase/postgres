@@ -98,6 +98,19 @@
     - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
 
+- name: Check if /usr/bin/pg_config exists
+  stat:
+    path: /usr/bin/pg_config
+  register: pg_config_stat
+
+- name: Remove existing /usr/bin/pg_config if it is not a symlink
+  file:
+    path: /usr/bin/pg_config
+    state: absent
+  when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk
+  become: yes
+
+
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
   file:
     src: "{{ item }}"
@@ -107,13 +120,14 @@
     - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
 
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
+- name: Ensure postgres user has ownership of symlink
   file:
-    src: "/var/lib/postgresql/.nix-profile/bin/psql"
-    dest: "/usr/bin/psql"
-    state: link
+    path: "/usr/bin/{{ item | basename }}"
+    owner: postgres
+    group: postgres
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
-
 # - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
 #   file:
 #     src: "{{ item }}"
