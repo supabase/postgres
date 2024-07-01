@@ -132,6 +132,7 @@ function copy_configs {
     cp -R /data/conf/* /etc/postgresql-custom/
     chown -R postgres:postgres /var/lib/postgresql/data
     chown -R postgres:postgres /data/pgdata
+    chmod -R 0750 /data/pgdata
 }
 
 function run_generated_sql {
