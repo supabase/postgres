@@ -24,13 +24,6 @@
     target: install
   become: yes
 
-- name: pg_cron - set cron.database_name
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: cron.database_name = 'postgres'
-    
 - name: pg_cron - cleanup
   file:
     state: absent
