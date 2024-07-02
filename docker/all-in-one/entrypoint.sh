@@ -218,12 +218,17 @@ function fetch_and_execute_delegated_payload {
 
   if [ ! -f $DELEGATED_ARCHIVE_PATH ]; then
     echo "No delegated payload found, bailing"
-    return
+    return 1
   fi
 
   # only extract a valid archive
   if tar -tzf "$DELEGATED_ARCHIVE_PATH" &>/dev/null; then
     TAR_MTIME_EPOCH=$(tar -tvzf "$DELEGATED_ARCHIVE_PATH" delegated-entry.sh | awk '{print $4, $5}' | xargs -I {} date -d {} +%s)
+
+    if [ -z "$TAR_MTIME_EPOCH" ]; then
+        echo "Failed to parse delegated-entry.sh timestamp"
+        return 1
+    fi
 
     if [ -f $DELEGATED_ENTRY_PATH ]; then
       FILE_MTIME_EPOCH=$(stat -c %Y "$DELEGATED_ENTRY_PATH")
@@ -238,14 +243,18 @@ function fetch_and_execute_delegated_payload {
     fi
   else
     echo "Invalid TAR archive"
-    return
+    return 1
   fi
 
   # Run our delegated entry script here
   if [ -f "$DELEGATED_ENTRY_PATH" ]; then
     chmod +x $DELEGATED_ENTRY_PATH
     bash -c "$DELEGATED_ENTRY_PATH $START_TIME"
+  else
+    return 1
   fi
+
+  return 0
 }
 
 # Increase max number of open connections
@@ -358,6 +367,12 @@ run_prelaunch_hooks
 
 if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
   fetch_and_execute_delegated_payload
+  DELEGATED_INIT_RETURN_CODE=$?
+  if [ "$DELEGATED_INIT_RETURN_CODE" -ne 0 ]; then
+    echo "Failed to fetch and execute delegated payload. Falling back to default strategy."
+    start_supervisor
+    push_lsn_checkpoint_file
+  fi
 else
   DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
   echo "E: Execution time to starting supervisor: $DURATION milliseconds"
