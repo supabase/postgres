@@ -10,13 +10,6 @@
     apt-get update
     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
 
-- name: pg_cron - set cron.database_name
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: cron.database_name = 'postgres'
-
 - name: pgsodium - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
@@ -30,13 +23,6 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
-
-- name: auto_explain - set auto_explain.log_min_duration
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: auto_explain.log_min_duration = 10s
 
 # supautils
 - name: supautils - add supautils to session_preload_libraries
