@@ -38,6 +38,13 @@
     state: present
     line: auto_explain.log_min_duration = 10s
 
+- name: pg-safeupdate - set safeupdate.enabled
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: safeupdate.enabled = off
+
 # supautils
 - name: supautils - add supautils to session_preload_libraries
   become: yes
