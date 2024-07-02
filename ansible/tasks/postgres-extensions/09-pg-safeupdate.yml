@@ -28,10 +28,3 @@
   file:
     state: absent
     path: /tmp/pg-safeupdate-{{ pg_safeupdate_release }}
-
-- name: pg-safeupdate - set safeupdate.enabled
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: safeupdate.enabled = off
