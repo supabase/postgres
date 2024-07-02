@@ -285,7 +285,7 @@ supabase_usage_metrics:
       and query not like 'DELETE FROM net.http_request_queue%'
       and query not like '%source: project usage%'
       and query not like 'select name, setting from pg_settings where name in ($1, $2)%'
-      and userid <> (select oid from pg_roles where rolname = 'authenticator')
+      and userid not in (select oid from pg_roles where rolname in ('authenticator', 'pgbouncer', 'supabase_admin', 'supabase_storage_admin'))
   metrics:
     - user_queries_total:
         usage: "COUNTER"
@@ -312,7 +312,7 @@ pg_status:
 # specific to read replicas
 # for primary databases, all columns will always return a value of 0
 # ---
-# for checking replication lag (physical_replica_lag_second)
+# for checking replication lag (physical_replication_lag_seconds)
 # we firstly check if the replica is  connected to its primary
 # and if last WAL received is equivalent to last WAL replayed
 # if so return 0
