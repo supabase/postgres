@@ -35,6 +35,7 @@ fi
 chmod g+w /etc
 chmod -R 0775 /etc/postgresql
 chmod -R 0775 /etc/postgresql-custom
+chmod -R 0775 /etc/pgbouncer-custom
 
 # Update api port
 sed -i "s|^port: .*$|port: ${ADMIN_API_PORT:-8085}|g" $ADMIN_API_CONF
