@@ -12,14 +12,6 @@
     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
   when: debpkg_mode
 
-- name: pg_cron - set cron.database_name
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: cron.database_name = 'postgres'
-  when: debpkg_mode or nixpkg_mode and stage2_nix
-
 - name: pgsodium - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
@@ -34,14 +26,6 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
-  when: debpkg_mode or nixpkg_mode and stage2_nix
-
-- name: auto_explain - set auto_explain.log_min_duration
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
-    line: auto_explain.log_min_duration = 10s
   when: debpkg_mode or nixpkg_mode and stage2_nix
 
 # supautils
@@ -85,6 +69,22 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
     replace: "include = '/etc/postgresql-custom/supautils.conf'"
+  when: debpkg_mode or nixpkg_mode and stage2_nix
+
+- name: pg_cron - set cron.database_name
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: cron.database_name = 'postgres'
+  when: debpkg_mode or nixpkg_mode and stage2_nix
+
+- name: auto_explain - set auto_explain.log_min_duration
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    line: auto_explain.log_min_duration = 10s
   when: debpkg_mode or nixpkg_mode and stage2_nix
 
 - name: Cleanup - extension packages
