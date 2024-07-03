@@ -3,7 +3,6 @@
 
   pre_tasks:
     - import_tasks: tasks/setup-system.yml
-    when: debpkg_mode or nixpkg_mode
   vars_files:
     - ./vars.yml
 
