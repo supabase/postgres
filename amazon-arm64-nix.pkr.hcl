@@ -239,7 +239,7 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible-nix"
+    source = "ansible"
     destination = "/tmp/ansible-playbook"
   }
 
