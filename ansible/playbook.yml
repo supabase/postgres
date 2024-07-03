@@ -13,7 +13,10 @@
           dest: "00-schema.sql",
         }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
-
+    debpkg_mode: "{{ debpkg_mode }}"
+    nixpkg_mode: "{{ nixpkg_mode }}"
+    stage2_nix: "{{ stage2_nix }}"
+    
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
