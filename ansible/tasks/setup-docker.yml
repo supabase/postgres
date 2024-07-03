@@ -3,6 +3,7 @@
     src: files/extensions/
     dest: /tmp/extensions/
   when: debpkg_mode
+
 # Builtin apt module does not support wildcard for deb paths
 - name: Install extensions
   shell: |
@@ -24,7 +25,7 @@
   register: pg_bindir_output
 - set_fact:
     pg_bindir: "{{ pg_bindir_output.stdout }}"
-  when: debpkg_mode
+  when: debpkg_mode or nixpkg_mode and stage2_nix
 
 - name: pgsodium - set pgsodium.getkey_script
   become: yes
