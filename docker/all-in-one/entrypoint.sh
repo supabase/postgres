@@ -254,7 +254,7 @@ function fetch_and_execute_delegated_payload {
     return 1
   fi
 
-  return 0
+  exit 0
 }
 
 # Increase max number of open connections
@@ -367,15 +367,9 @@ run_prelaunch_hooks
 
 if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
   fetch_and_execute_delegated_payload
-  DELEGATED_INIT_RETURN_CODE=$?
-  if [ "$DELEGATED_INIT_RETURN_CODE" -ne 0 ]; then
-    echo "Failed to fetch and execute delegated payload. Falling back to default strategy."
-    start_supervisor
-    push_lsn_checkpoint_file
-  fi
-else
-  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "E: Execution time to starting supervisor: $DURATION milliseconds"
-  start_supervisor
-  push_lsn_checkpoint_file
 fi
+
+DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+echo "E: Execution time to starting supervisor: $DURATION milliseconds"
+start_supervisor
+push_lsn_checkpoint_file
