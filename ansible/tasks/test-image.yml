@@ -2,32 +2,33 @@
   apt:
     pkg:
       - libtap-parser-sourcehandler-pgtap-perl
+  when: debpkg_mode
 
 - name: Temporarily disable PG Sodium references in config
   become: yes
   become_user: postgres
   shell:
     cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
 
 - name: Start Postgres Database to load all extensions.
   become: yes
   become_user: postgres
   shell:
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
   register: retval
   failed_when: retval.rc != 0
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
 
 - name: Run migrations tests
   shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
   register: retval
   failed_when: retval.rc != 0
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
   args:
     chdir: /tmp/migrations
 
@@ -36,11 +37,11 @@
   become_user: postgres
   shell:
     cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
 
 - name: Reset db stats
   shell: /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode
 
 - name: remove pg_prove
   apt:
@@ -48,10 +49,11 @@
       - libtap-parser-sourcehandler-pgtap-perl
     state: absent
     autoremove: yes
+  when: debpkg_mode
 
 - name: Stop Postgres Database
   become: yes
   become_user: postgres
   shell:
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
-  when: ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode and stage2_mode

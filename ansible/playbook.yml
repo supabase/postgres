@@ -3,7 +3,7 @@
 
   pre_tasks:
     - import_tasks: tasks/setup-system.yml
-
+    when: debpkg_mode or nixpkg_mode
   vars_files:
     - ./vars.yml
 
@@ -35,46 +35,55 @@
       tags:
         - install-pgbouncer
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install Gotrue
       import_tasks: tasks/setup-gotrue.yml
       tags:
         - install-gotrue
         - install-supabase-internal
-
+      when: debpkg_mode or nixpkg_mode
+  
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
       tags:
         - install-postgrest
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install Envoy
       import_tasks: tasks/setup-envoy.yml
       tags:
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install Kong
       import_tasks: tasks/setup-kong.yml
       tags:
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install nginx
       import_tasks: tasks/setup-nginx.yml
       tags:
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Install Supabase specific content
       import_tasks: tasks/setup-supabase-internal.yml
       tags:
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Fix IPv6 NDisc issues
       import_tasks: tasks/fix_ipv6_ndisc.yml
       tags:
         - install-supabase-internal
+      when: debpkg_mode or nixpkg_mode
 
     - name: Start Postgres Database
       systemd:
@@ -87,18 +96,27 @@
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
-      when: ebssurrogate_mode
+      environment: >
+        {{ 
+          {} | 
+          combine({'PATH': '/var/lib/postgresql/.nix-profile/bin:$PATH'} if nixpkg_mode else {}) | 
+          combine({'LANG': 'en_US.UTF-8', 'LC_ALL': 'en_US.UTF-8', LC_ALL: 'en_US.UTF-8', LC_CTYPE: 'en_US.UTF-8', LOCALE_ARCHIVE: '/usr/lib/locale/locale-archive'} if nixpkg_mode else {})
+        }}
+
+      when: ebssurrogate_mode or nixpkg_mode and stage2_nix
 
     - name: Adjust APT update intervals
       copy:
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
-
+      when: debpkg_mode or nixpkg_mode
+      
     - name: Transfer init SQL files
       copy:
         src: files/{{ item.source }}
         dest: /tmp/{{ item.dest }}
       loop: "{{ sql_files }}"
+      when: debpkg_mode or nixpkg_mode and stage2_nix
 
     - name: Execute init SQL files
       become: yes
@@ -106,23 +124,26 @@
       shell:
         cmd: /usr/lib/postgresql/bin/psql -f /tmp/{{ item.dest }}
       loop: "{{ sql_files }}"
+      when: debpkg_mode or nixpkg_mode and stage2_nix
 
     - name: Delete SQL scripts
       file:
         path: /tmp/{{ item.dest }}
         state: absent
       loop: "{{ sql_files }}"
+      when: debpkg_mode or nixpkg_mode and stage2_nix
 
     - name: First boot optimizations
       import_tasks: tasks/internal/optimizations.yml
       tags:
         - install-supabase-internal
-
+      when: debpkg_mode or nixpkg_mode and stage2_nix
+      
     - name: Finalize AMI
       import_tasks: tasks/finalize-ami.yml
       tags:
         - install-supabase-internal
-
+      when: debpkg_mode or nixpkg_mode
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
 
@@ -159,20 +180,23 @@
       import_tasks: tasks/setup-migrations.yml
       tags:
         - migrations
+      when: debpkg_mode or nixpkg_mode and stage2_nix
 
     - name: Stop Postgres Database without Systemd
       become: yes
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
-      when: ebssurrogate_mode
+      when: ebssurrogate_mode or nixpkg_mode and stage2_nix
 
     - name: Run unit tests
       import_tasks: tasks/test-image.yml
       tags:
         - unit-tests
+      when: debpkg_mode or nixpkg_mode and stage2_nix
 
     - name: Collect Postgres binaries
       import_tasks: tasks/internal/collect-pg-binaries.yml
       tags:
         - collect-binaries
+      when: debpkg_mode or nixpkg_mode and stage2_nix

@@ -108,12 +108,12 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible-nix/tasks/stage2"
+    source = "ansible/tasks"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source      = "ansible-nix/files"
+    source      = "ansible/files"
     destination = "/tmp/ansible-playbook/files"
   }
 
