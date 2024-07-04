@@ -44,31 +44,6 @@
     cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
   when: debpkg_mode
 
-- name: Create relevant directories
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-  with_items:
-    - '/home/postgres'
-    - '/var/log/postgresql'
-    - '/var/lib/postgresql'
-  when: debpkg_mode
-
-- name: Create relevant directories
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-  with_items:
-    - '/var/log/postgresql'
-    - '/var/lib/postgresql'
-  when: nixpkg_mode
-
 - name: create ssl-cert group
   group:
     name: ssl-cert
@@ -96,6 +71,19 @@
     executable: /bin/bash
   become: yes
   when: nixpkg_mode
+
+- name: Create relevant directories
+  file:
+    path: '{{ item }}'
+    recurse: yes
+    state: directory
+    owner: postgres
+    group: postgres
+  with_items:
+    - '/home/postgres'
+    - '/var/log/postgresql'
+    - '/var/lib/postgresql'
+  when: debpkg_mode or nixpkg_mode
 
 - name: Allow adminapi to write custom config
   file:
