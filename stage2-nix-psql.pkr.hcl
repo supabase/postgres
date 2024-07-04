@@ -108,6 +108,11 @@ build {
   }
 
   provisioner "file" {
+    source = "ansible"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
     source = "ansible/tasks"
     destination = "/tmp/ansible-playbook"
   }
