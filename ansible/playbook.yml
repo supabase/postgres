@@ -84,12 +84,6 @@
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
 
-    - name: Start Postgres Database
-      systemd:
-        name: postgresql
-        state: started
-      when: not ebssurrogate_mode
-
     - name: Start Postgres Database without Systemd
       become: yes
       become_user: postgres
@@ -102,7 +96,7 @@
           combine({'LANG': 'en_US.UTF-8', 'LC_ALL': 'en_US.UTF-8', LC_ALL: 'en_US.UTF-8', LC_CTYPE: 'en_US.UTF-8', LOCALE_ARCHIVE: '/usr/lib/locale/locale-archive'} if nixpkg_mode else {})
         }}
 
-      when: ebssurrogate_mode or stage2_nix
+      when: debpkg_mode or stage2_nix
 
     - name: Adjust APT update intervals
       copy:
@@ -173,7 +167,7 @@
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
-      when: ebssurrogate_mode
+      when: debpkg_mode or stage2_nix
 
     - name: Run migrations
       import_tasks: tasks/setup-migrations.yml
@@ -186,7 +180,7 @@
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
-      when: ebssurrogate_mode or stage2_nix
+      when: debpkg_mode or stage2_nix
 
     - name: Run unit tests
       import_tasks: tasks/test-image.yml
