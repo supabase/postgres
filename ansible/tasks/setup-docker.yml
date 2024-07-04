@@ -18,14 +18,14 @@
     path: /etc/postgresql/postgresql.conf
     state: present
     line: cron.database_name = 'postgres'
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: pgsodium - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
 - set_fact:
     pg_bindir: "{{ pg_bindir_output.stdout }}"
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: pgsodium - set pgsodium.getkey_script
   become: yes
@@ -34,7 +34,7 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: auto_explain - set auto_explain.log_min_duration
   become: yes
@@ -42,7 +42,7 @@
     path: /etc/postgresql/postgresql.conf
     state: present
     line: auto_explain.log_min_duration = 10s
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 # supautils
 - name: supautils - add supautils to session_preload_libraries
@@ -51,7 +51,7 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#session_preload_libraries = ''"
     replace: session_preload_libraries = 'supautils'
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - write custom supautils.conf
   template:
@@ -60,14 +60,14 @@
     mode: 0664
     owner: postgres
     group: postgres
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - copy extension custom scripts
   copy:
     src: files/postgresql_extension_custom_scripts/
     dest: /etc/postgresql-custom/extension-custom-scripts
   become: yes
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - chown extension custom scripts
   file:
@@ -77,7 +77,7 @@
     path: /etc/postgresql-custom/extension-custom-scripts
     recurse: yes
   become: yes
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
   become: yes
@@ -85,7 +85,7 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
     replace: "include = '/etc/postgresql-custom/supautils.conf'"
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: Cleanup - extension packages
   file:

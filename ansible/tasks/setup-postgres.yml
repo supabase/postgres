@@ -148,12 +148,12 @@
 # Install extensions before init
 - name: Install Postgres extensions
   import_tasks: tasks/setup-docker.yml
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
   import_tasks: tasks/stage2-setup-postgres.yml
-  when: nixpkg_mode and stage2_nix
+  when: stage2_nix
 
 # init DB
 - name: Create directory on data volume
@@ -181,29 +181,29 @@
   become_user: postgres
   shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
   environment: "{{ {} 
-    | combine({'PATH': '/var/lib/postgresql/.nix-profile/bin:$PATH'} if nixpkg_mode and stage2_nix else {}) 
+    | combine({'PATH': '/var/lib/postgresql/.nix-profile/bin:$PATH'} if stage2_nix else {}) 
     | combine({
         'LANG': 'en_US.UTF-8', 
         'LC_ALL': 'en_US.UTF-8', 
         'LC_CTYPE': 'en_US.UTF-8', 
         'LOCALE_ARCHIVE': '/usr/lib/locale/locale-archive'
-      } if nixpkg_mode and stage2_nix else {})
+      } if stage2_nix else {})
     }}"
   vars:
     ansible_command_timeout: 60
-  when: debpkg_mode or (nixpkg_mode and stage2_nix)
+  when: debpkg_mode or stage2_nix
 
 - name: copy PG systemd unit
   template:
     src: files/postgresql_config/postgresql.service.j2
     dest: /etc/systemd/system/postgresql.service
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: copy optimizations systemd unit
   template:
     src: files/database-optimizations.service.j2
     dest: /etc/systemd/system/database-optimizations.service
-  when: debpkg_mode or nixpkg_mode and stage2_nix
+  when: debpkg_mode or stage2_nix
 
 - name: Restart Postgres Database without Systemd
   become: yes
@@ -217,7 +217,7 @@
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  when: nixpkg_mode and stage2_nix
+  when: stage2_nix
 
 
 # Reload
@@ -229,7 +229,7 @@
 
 - name: locale-gen
   command: sudo locale-gen en_US.UTF-8
-  when: nixpkg_mode and stage2_nix
+  when: stage2_nix
 
 - name: Make sure .bashrc exists
   file: 
