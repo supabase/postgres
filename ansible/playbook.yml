@@ -137,6 +137,7 @@
       tags:
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
+      
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
 
