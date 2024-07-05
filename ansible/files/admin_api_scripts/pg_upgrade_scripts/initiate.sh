@@ -162,6 +162,7 @@ function initiate_upgrade {
         SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers,//" | xargs)
     fi
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_cron,//" | xargs)
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_net,//" | xargs)
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/check_role_membership,//" | xargs)
 
     PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
