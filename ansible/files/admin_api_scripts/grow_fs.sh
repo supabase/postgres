@@ -9,9 +9,13 @@ if [ -b /dev/nvme1n1 ] ; then
         resize2fs /dev/nvme1n1
 
     elif [[ "${VOLUME_TYPE}" == "root" ]] ; then
+        PLACEHOLDER_FL=/home/ubuntu/50M_PLACEHOLDER
+        rm -f "${PLACEHOLDER_FL}" || true
         growpart /dev/nvme0n1 2
         resize2fs /dev/nvme0n1p2
-
+        if [[ ! -f "${PLACEHOLDER_FL}" ]] ; then
+            fallocate -l50M "${PLACEHOLDER_FL}"
+        fi
     else
         echo "Invalid disk specified: ${VOLUME_TYPE}"
         exit 1
