@@ -155,7 +155,7 @@
     mode: 0644
     owner: root
     group: root
-  when: debpkg_mode or nixpkg_mode or stage2_nix
+  when: debpkg_mode or stage2_nix
 
 #Set Sysctl params for restarting the OS on oom after 10
 - name: Set vm.panic_on_oom=1
