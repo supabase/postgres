@@ -8,11 +8,13 @@
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#psql_15/bin"
 #TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
+  when: stage2_nix
 
 - name: Install pg_prove from nix binary cache
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
+  when: stage2_nix
 
 - name: Set ownership and permissions for /etc/ssl/private
   become: yes
@@ -21,6 +23,7 @@
     owner: root
     group: postgres
     mode: '0750'
+  when: stage2_nix
 
 - name: Set permissions for postgresql.env
   become: yes
@@ -29,6 +32,7 @@
     owner: postgres
     group: postgres
     mode: '0644'
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/bin directory exists
   file:
@@ -36,7 +40,7 @@
     state: directory
     owner: postgres
     group: postgres
-
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/share directory exists
   file:
@@ -44,6 +48,7 @@
     state: directory
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/share/contrib directory exists
   file:
@@ -51,6 +56,7 @@
     state: directory
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/share/timezonesets directory exists
   file:
@@ -58,6 +64,7 @@
     state: directory
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/share/tsearch_data directory exists
   file:
@@ -65,6 +72,7 @@
     state: directory
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Ensure /usr/lib/postgresql/share/extension directory exists
   file:
@@ -72,6 +80,7 @@
     state: directory
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 # - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
 #   file:
@@ -79,6 +88,7 @@
 #     state: directory
 #     owner: postgres
 #     group: postgres
+#   when: stage2_nix
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: import pgsodium_getkey script
@@ -88,6 +98,7 @@
     owner: postgres
     group: postgres
     mode: 0700
+  when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/lib/postgresql/bin
   file:
@@ -97,19 +108,20 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
+  when: stage2_nix
 
 - name: Check if /usr/bin/pg_config exists
   stat:
     path: /usr/bin/pg_config
   register: pg_config_stat
+  when: stage2_nix
 
 - name: Remove existing /usr/bin/pg_config if it is not a symlink
   file:
     path: /usr/bin/pg_config
     state: absent
-  when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk
+  when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk and stage2_nix
   become: yes
-
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
   file:
@@ -119,6 +131,7 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
+  when: stage2_nix
 
 - name: Ensure postgres user has ownership of symlink
   file:
@@ -128,6 +141,7 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/bin/*"
   become: yes
+  when: stage2_nix
 
 # - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
 #   file:
@@ -147,6 +161,7 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/share/postgresql/*"
   become: yes
+  when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
   file:
@@ -156,12 +171,14 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/share/postgresql/extension/*"
   become: yes
+  when: stage2_nix
 
 - name: create destination directory
   file:
     path: /usr/lib/postgresql/share/postgresql/contrib/
     state: directory
     recurse: yes
+  when: stage2_nix
 
 - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
   shell: >
@@ -169,6 +186,7 @@
     sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
     && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
   become: yes
+  when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
@@ -178,6 +196,7 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/*"
   become: yes
+  when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
   file:
@@ -187,3 +206,4 @@
   with_fileglob:
     - "/var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/*"
   become: yes
+  when: stage2_nix
