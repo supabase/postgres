@@ -23,9 +23,11 @@
 - name: pgsodium - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
+  when: debpkg_mode
+  
 - set_fact:
     pg_bindir: "{{ pg_bindir_output.stdout }}"
-  when: debpkg_mode or stage2_nix
+  when: debpkg_mode 
 
 - name: pgsodium - set pgsodium.getkey_script
   become: yes
@@ -34,7 +36,7 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
-  when: debpkg_mode or stage2_nix
+  when: debpkg_mode
 
 - name: auto_explain - set auto_explain.log_min_duration
   become: yes
