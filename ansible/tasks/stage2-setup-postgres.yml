@@ -93,7 +93,7 @@
 
 - name: import pgsodium_getkey script
   template:
-    src: /tmp/ansible-playbook/files/pgsodium_getkey_readonly.sh.j2
+    src: /tmp/ansible-playbook/ansible/files/pgsodium_getkey_readonly.sh.j2
     dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
     owner: postgres
     group: postgres
