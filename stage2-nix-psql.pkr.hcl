@@ -122,6 +122,11 @@ build {
     destination  = "/tmp/unit-tests"
   }
 
+  provisioner "file" {
+    source = "scripts"
+    destination = "/tmp/ansible-playbook"
+  }
+  
   provisioner "shell" {
      script = "scripts/nix-provision.sh"
   }
