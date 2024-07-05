@@ -113,16 +113,6 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible/tasks"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
-    source      = "ansible/files"
-    destination = "/tmp/ansible-playbook/files"
-  }
-
-  provisioner "file" {
     source = "migrations"
     destination = "/tmp"
   }
