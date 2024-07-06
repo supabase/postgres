@@ -1,1 +1,1 @@
-postgres-version = "15.1.1.74-wrapper"
+postgres-version = "15.1.1.74"
