@@ -162,7 +162,7 @@
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data restart -o "-c shared_preload_libraries='pg_tle'"
-      when: debpkg_mode or stage2_nix
+      when: debpkg_mode
 
     - name: Run migrations
       import_tasks: tasks/setup-migrations.yml
@@ -175,7 +175,7 @@
       become_user: postgres
       shell:
         cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data stop
-      when: debpkg_mode or stage2_nix
+      when: debpkg_mode
 
     - name: Run unit tests
       import_tasks: tasks/test-image.yml
