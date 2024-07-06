@@ -1,9 +1,3 @@
-- name: ensure services are stopped
-  community.general.snap:
-    name: amazon-ssm-agent
-    state: absent
-  when: debpkg_mode or stage2_nix
-
 - name: ensure services are stopped and disabled for first boot
   systemd:
     enabled: no
