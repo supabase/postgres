@@ -180,18 +180,27 @@
   become: yes
   become_user: postgres
   shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
-  environment: "{{ {} 
-    | combine({'PATH': '/var/lib/postgresql/.nix-profile/bin:$PATH'} if stage2_nix else {}) 
-    | combine({
-        'LANG': 'en_US.UTF-8', 
-        'LC_ALL': 'en_US.UTF-8', 
-        'LC_CTYPE': 'en_US.UTF-8', 
-        'LOCALE_ARCHIVE': '/usr/lib/locale/locale-archive'
-      } if stage2_nix else {})
-    }}"
   vars:
     ansible_command_timeout: 60
-  when: debpkg_mode or stage2_nix
+  when: debpkg_mode
+
+ - name: Initialize the database
+  become: yes
+  become_user: postgres
+  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+  vars:
+    ansible_command_timeout: 60
+    # Circumvents the following error:
+    # "Timeout (12s) waiting for privilege escalation prompt"
+  when: stage2_nix 
 
 - name: copy PG systemd unit
   template:
