@@ -105,7 +105,7 @@
   template:
     src: files/services.slice.j2
     dest: /etc/systemd/system/services.slice
-  when: debpkg_mode or nixpkg_mode or not ebssurrogate_mode
+  when: debpkg_mode or nixpkg_mode
 
 
 - name: System - systemd reload

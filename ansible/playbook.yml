@@ -133,6 +133,7 @@
       
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
+      when: debpkg_mode or nixpkg_mode
 
     # Install EC2 instance connect
     # Only for AWS images
