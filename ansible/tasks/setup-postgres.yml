@@ -184,7 +184,7 @@
     ansible_command_timeout: 60
   when: debpkg_mode
 
- - name: Initialize the database
+- name: Initialize the database
   become: yes
   become_user: postgres
   shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
