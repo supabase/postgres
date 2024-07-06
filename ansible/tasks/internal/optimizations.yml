@@ -1,4 +1,4 @@
-- name: ensure services are stopped and disabled for first boot
+- name: ensure services are stopped and disabled for first boot debian build
   systemd:
     enabled: no
     name: '{{ item }}'
@@ -10,7 +10,20 @@
     - motd-news
     - vector
     - lvm2-monitor
-  when: debpkg_mode or stage2_nix
+  when: debpkg_mode 
+
+- name: ensure services are stopped and disabled for first boot nix build
+  systemd:
+    enabled: no
+    name: '{{ item }}'
+    state: stopped
+  with_items:
+    - postgresql
+    - pgbouncer
+    - fail2ban
+    - motd-news
+    - vector
+  when: stage2_nix
 
 - name: disable man-db
   become: yes
