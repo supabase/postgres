@@ -16,22 +16,6 @@
     - fail2ban
     - motd-news
     - vector
-  when: debpkg_mode or stage2_nix
-
-- name: Remove snapd
-  apt:
-    state: absent
-    pkg:
-      - snapd
-  when: debpkg_mode or stage2_nix
-
-- name: ensure services are stopped and disabled for first boot
-  systemd:
-    enabled: no
-    name: '{{ item }}'
-    state: stopped
-    masked: yes
-  with_items:
     - lvm2-monitor
   when: debpkg_mode or stage2_nix
 
