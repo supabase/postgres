@@ -10,7 +10,6 @@
     name: '{{ item }}'
     state: stopped
   with_items:
-    - snapd
     - postgresql
     - pgbouncer
     - fail2ban
