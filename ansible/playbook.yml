@@ -187,4 +187,4 @@
       import_tasks: tasks/internal/collect-pg-binaries.yml
       tags:
         - collect-binaries
-      when: debpkg_mode or stage2_nix
+      when: debpkg_mode
