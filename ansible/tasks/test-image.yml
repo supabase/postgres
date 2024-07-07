@@ -16,7 +16,7 @@
   become_user: postgres
   shell:
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
-  when: debpkg_mode
+  when: debpkg_mode or stage2_nix
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
