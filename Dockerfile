@@ -830,8 +830,8 @@ ARG supautils_release_amd64_checksum
 
 # Set the correct checksum based on TARGETARCH
 RUN set -eux; \
-    if [ "${TARGETARCH}" = "x86_64" ]; then \
-        export supautils_release_checksum=${supautils_release_x86_64_checksum}; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        export supautils_release_checksum=${supautils_release_amd64_checksum}; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
         export supautils_release_checksum=${supautils_release_arm64_checksum}; \
     else \
