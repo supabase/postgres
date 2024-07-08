@@ -824,8 +824,25 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM base as supautils
 # Download package archive
 ARG supautils_release
-ARG supautils_release_checksum
-ADD --checksum=${supautils_release_checksum} \
+# Define checksums for different architectures
+ARG supautils_release_arm64_checksum
+ARG supautils_release_amd64_checksum
+
+# Set the correct checksum based on TARGETARCH
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        echo "${supautils_release_amd64_checksum}" > /tmp/checksum; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        echo "${supautils_release_arm64_checksum}" > /tmp/checksum; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
+    fi
+
+# Set supautils_release_checksum based on TARGETARCH
+ARG supautils_release_checksum=$(cat /tmp/checksum)
+
+# Download package archive
+ADD --checksum=sha256:${supautils_release_checksum} \
     "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/supautils.deb
 
