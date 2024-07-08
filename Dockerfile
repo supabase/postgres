@@ -825,15 +825,15 @@ FROM base as supautils
 # Download package archive
 ARG supautils_release
 # Define checksums for different architectures
-ARG supautils_release_arm64_checksum
-ARG supautils_release_amd64_checksum
+ARG supautils_release_arm64_deb_checksum
+ARG supautils_release_amd64_deb_checksum
 
 # Set the correct checksum based on TARGETARCH
 RUN set -eux; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        export supautils_release_checksum=${supautils_release_amd64_checksum}; \
+        export supautils_release_checksum=${supautils_release_amd64_deb_checksum}; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
-        export supautils_release_checksum=${supautils_release_arm64_checksum}; \
+        export supautils_release_checksum=${supautils_release_arm64_deb_checksum}; \
     else \
         echo "Unsupported architecture ${TARGETARCH}"; \
         exit 1; \
