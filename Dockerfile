@@ -850,7 +850,7 @@ RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
     chmod +x /tmp/download_supautils.sh
 
 # Run the script to download and verify the package
-RUN /tmp/download_supautils.sh && rm /tmp/download_supautils.sh /tmp/checksum
+RUN /tmp/download_supautils.sh && rm /tmp/download_supautils.sh
 
 ####################
 # setup-wal-g.yml
