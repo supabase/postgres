@@ -828,21 +828,33 @@ ARG supautils_release
 ARG supautils_release_arm64_deb_checksum
 ARG supautils_release_amd64_deb_checksum
 
-# Set the correct checksum based on TARGETARCH
-RUN set -eux; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
-        export supautils_release_checksum=${supautils_release_amd64_deb_checksum}; \
-    elif [ "${TARGETARCH}" = "arm64" ]; then \
-        export supautils_release_checksum=${supautils_release_arm64_deb_checksum}; \
+# AMD64 download
+ADD --checksum=sha256:${supautils_release_amd64_deb_checksum} \
+    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-amd64-linux-gnu.deb" \
+    /tmp/supautils_amd64.deb \
+    2>/dev/null || true
+
+# ARM64 download
+ADD --checksum=sha256:${supautils_release_arm64_deb_checksum} \
+    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-arm64-linux-gnu.deb" \
+    /tmp/supautils_arm64.deb \
+    2>/dev/null || true
+
+# Move the correct file based on TARGETARCH
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        if [ ! -f /tmp/supautils_amd64.deb ]; then \
+            echo "AMD64 package not found" && exit 1; \
+        fi; \
+        mv /tmp/supautils_amd64.deb /tmp/supautils.deb; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        if [ ! -f /tmp/supautils_arm64.deb ]; then \
+            echo "ARM64 package not found" && exit 1; \
+        fi; \
+        mv /tmp/supautils_arm64.deb /tmp/supautils.deb; \
     else \
-        echo "Unsupported architecture ${TARGETARCH}"; \
-        exit 1; \
+        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
     fi; \
-    echo "Using checksum: ${supautils_release_checksum}"; 
-# Download package archive
-ADD --checksum=sha256:${supautils_release_checksum} \
-    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/supautils.deb
+    rm -f /tmp/supautils_amd64.deb /tmp/supautils_arm64.deb
 
 ####################
 # setup-wal-g.yml
