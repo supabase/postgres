@@ -86,6 +86,7 @@ wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc12567
 
 supautils_release: "2.2.1"
 supautils_release_checksum: sha256:1a2d2b8fe604d38921ed9cf3a0d56dd142a274035d0dca17ad21cdc81ddd9569
+supautils_release_tar_checksum: sha256:f1f33371390322ac830645b8b0b8e249cb8ca10b19fdeae917f383014ed01b5d
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
