@@ -829,13 +829,13 @@ ARG supautils_release_arm64_deb_checksum
 ARG supautils_release_amd64_deb_checksum
 
 # AMD64 download
-ADD --checksum=sha256:${supautils_release_amd64_deb_checksum} \
+ADD --checksum=${supautils_release_amd64_deb_checksum} \
     "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-amd64-linux-gnu.deb" \
     /tmp/supautils_amd64.deb \
     2>/dev/null || true
 
 # ARM64 download
-ADD --checksum=sha256:${supautils_release_arm64_deb_checksum} \
+ADD --checksum=${supautils_release_arm64_deb_checksum} \
     "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-arm64-linux-gnu.deb" \
     /tmp/supautils_arm64.deb \
     2>/dev/null || true
