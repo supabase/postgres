@@ -39,6 +39,14 @@
     state: absent
   when: debpkg_mode
 
+- name: locale-gen
+  command: sudo locale-gen en_US.UTF-8
+  when: stage2_nix
+
+- name: update-locale
+  command: sudo update-locale
+  when: stage2_nix
+
 - name: Create symlink to /usr/lib/postgresql/bin
   shell:
     cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
@@ -184,7 +192,7 @@
     ansible_command_timeout: 60
   when: debpkg_mode
 
-- name: Initialize the database
+- name: Initialize the database stage2_nix
   become: yes
   become_user: postgres
   shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
@@ -236,10 +244,6 @@
     name: postgresql
     daemon_reload: yes
   when: debpkg_mode or stage2_nix
-  
-- name: locale-gen
-  command: sudo locale-gen en_US.UTF-8
-  when: stage2_nix
 
 - name: Make sure .bashrc exists
   file: 
