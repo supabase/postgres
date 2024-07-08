@@ -824,8 +824,33 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM base as supautils
 # Download package archive
 ARG supautils_release
-ADD "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
-    /tmp/supautils.deb
+# Define checksums for different architectures
+ARG supautils_release_arm64_deb_checksum
+ARG supautils_release_amd64_deb_checksum
+
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Set up a script to download the correct package
+RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
+    echo 'set -e' >> /tmp/download_supautils.sh && \
+    echo 'if [ "$TARGETARCH" = "amd64" ]; then' >> /tmp/download_supautils.sh && \
+    echo '    CHECKSUM="${supautils_release_amd64_deb_checksum}"' >> /tmp/download_supautils.sh && \
+    echo '    ARCH="amd64"' >> /tmp/download_supautils.sh && \
+    echo 'elif [ "$TARGETARCH" = "arm64" ]; then' >> /tmp/download_supautils.sh && \
+    echo '    CHECKSUM="${supautils_release_arm64_deb_checksum}"' >> /tmp/download_supautils.sh && \
+    echo '    ARCH="arm64"' >> /tmp/download_supautils.sh && \
+    echo 'else' >> /tmp/download_supautils.sh && \
+    echo '    echo "Unsupported architecture: $TARGETARCH" >&2' >> /tmp/download_supautils.sh && \
+    echo '    exit 1' >> /tmp/download_supautils.sh && \
+    echo 'fi' >> /tmp/download_supautils.sh && \
+    echo 'CHECKSUM=$(echo $CHECKSUM | sed "s/^sha256://")' >> /tmp/download_supautils.sh && \
+    echo 'curl -fsSL -o /tmp/supautils.deb \\' >> /tmp/download_supautils.sh && \
+    echo '    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-$ARCH-linux-gnu.deb"' >> /tmp/download_supautils.sh && \
+    echo 'echo "$CHECKSUM  /tmp/supautils.deb" | sha256sum -c -' >> /tmp/download_supautils.sh && \
+    chmod +x /tmp/download_supautils.sh
+
+# Run the script to download and verify the package
+RUN /tmp/download_supautils.sh && rm /tmp/download_supautils.sh
 
 ####################
 # setup-wal-g.yml
