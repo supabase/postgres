@@ -828,6 +828,8 @@ ARG supautils_release
 ARG supautils_release_arm64_deb_checksum
 ARG supautils_release_amd64_deb_checksum
 
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Set up a script to download the correct package
 RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
     echo 'set -e' >> /tmp/download_supautils.sh && \
