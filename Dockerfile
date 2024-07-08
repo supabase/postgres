@@ -843,6 +843,7 @@ RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
     echo '    echo "Unsupported architecture: $TARGETARCH" >&2' >> /tmp/download_supautils.sh && \
     echo '    exit 1' >> /tmp/download_supautils.sh && \
     echo 'fi' >> /tmp/download_supautils.sh && \
+    echo 'CHECKSUM=$(echo $CHECKSUM | sed "s/^sha256://")' >> /tmp/download_supautils.sh && \
     echo 'curl -fsSL -o /tmp/supautils.deb \\' >> /tmp/download_supautils.sh && \
     echo '    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-$ARCH-linux-gnu.deb"' >> /tmp/download_supautils.sh && \
     echo 'echo "$CHECKSUM  /tmp/supautils.deb" | sha256sum -c -' >> /tmp/download_supautils.sh && \
