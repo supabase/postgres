@@ -824,7 +824,9 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 FROM base as supautils
 # Download package archive
 ARG supautils_release
-ADD "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
+ARG supautils_release_checksum
+ADD --checksum=${supautils_release_checksum} \
+    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
     /tmp/supautils.deb
 
 ####################
