@@ -834,10 +834,10 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
     echo 'set -e' >> /tmp/download_supautils.sh && \
     echo 'if [ "$TARGETARCH" = "amd64" ]; then' >> /tmp/download_supautils.sh && \
-    echo '    echo "${supautils_release_amd64_deb_checksum}  /tmp/supautils.deb" > /tmp/checksum' >> /tmp/download_supautils.sh && \
+    echo '    CHECKSUM="${supautils_release_amd64_deb_checksum}"' >> /tmp/download_supautils.sh && \
     echo '    ARCH="amd64"' >> /tmp/download_supautils.sh && \
     echo 'elif [ "$TARGETARCH" = "arm64" ]; then' >> /tmp/download_supautils.sh && \
-    echo '    echo "${supautils_release_arm64_deb_checksum}  /tmp/supautils.deb" > /tmp/checksum' >> /tmp/download_supautils.sh && \
+    echo '    CHECKSUM="${supautils_release_arm64_deb_checksum}"' >> /tmp/download_supautils.sh && \
     echo '    ARCH="arm64"' >> /tmp/download_supautils.sh && \
     echo 'else' >> /tmp/download_supautils.sh && \
     echo '    echo "Unsupported architecture: $TARGETARCH" >&2' >> /tmp/download_supautils.sh && \
@@ -845,7 +845,7 @@ RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
     echo 'fi' >> /tmp/download_supautils.sh && \
     echo 'curl -fsSL -o /tmp/supautils.deb \\' >> /tmp/download_supautils.sh && \
     echo '    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-$ARCH-linux-gnu.deb"' >> /tmp/download_supautils.sh && \
-    echo 'sha256sum -c /tmp/checksum' >> /tmp/download_supautils.sh && \
+    echo 'echo "$CHECKSUM  /tmp/supautils.deb" | sha256sum -c -' >> /tmp/download_supautils.sh && \
     chmod +x /tmp/download_supautils.sh
 
 # Run the script to download and verify the package
