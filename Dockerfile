@@ -838,7 +838,7 @@ RUN set -eux; \
         echo "Unsupported architecture ${TARGETARCH}"; \
         exit 1; \
     fi; \
-    echo "Using checksum: ${supautils_release_checksum}"; \
+    echo "Using checksum: ${supautils_release_checksum}"; 
 # Download package archive
 ADD --checksum=sha256:${supautils_release_checksum} \
     "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
