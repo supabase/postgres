@@ -17,8 +17,8 @@ postgrest_release: "12.2.1"
 postgrest_arm_release_checksum: sha1:045e84d58c73b2d84e1b5c2450b0a8472b5f9b86
 postgrest_x86_release_checksum: sha1:9750edb7b43fe205d4bbcc65f64d23de39d4da39
 
-gotrue_release: 2.155.0
-gotrue_release_checksum: sha1:49b0062709d087913a60ea5c3131078049752c1f
+gotrue_release: 2.155.1
+gotrue_release_checksum: sha1:0646ef33e994f122b313c4e20ce925c670d93a9d
 
 aws_cli_release: "2.2.7"
 
@@ -49,7 +49,7 @@ postgres_exporter_release_checksum:
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
 adminapi_release: 0.64.2
-adminmgr_release: 0.22.0
+adminmgr_release: 0.22.1
 
 # Postgres Extensions
 postgis_release: "3.3.2"
@@ -87,6 +87,7 @@ wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc12567
 supautils_release: "2.2.1"
 supautils_release_arm64_deb_checksum: sha256:1a2d2b8fe604d38921ed9cf3a0d56dd142a274035d0dca17ad21cdc81ddd9569
 supautils_release_amd64_deb_checksum: sha256:4674fac146976dc179f5871271830718112f5eaa853bc461df9e303c8df2e1ab
+supautils_release_tar_checksum: sha256:f1f33371390322ac830645b8b0b8e249cb8ca10b19fdeae917f383014ed01b5d
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6

@@ -927,8 +927,8 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 ####################
 FROM ccache as supautils-source
 ARG supautils_release
-ARG supautils_release_checksum
-ADD --checksum=${supautils_release_checksum} \
+ARG supautils_release_tar_checksum
+ADD --checksum=${supautils_release_tar_checksum} \
     "https://github.com/supabase/supautils/archive/refs/tags/v${supautils_release}.tar.gz" \
     /tmp/supautils.tar.gz
 RUN tar -xvf /tmp/supautils.tar.gz -C /tmp && \
