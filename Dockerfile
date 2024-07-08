@@ -829,18 +829,16 @@ ARG supautils_release_arm64_checksum
 ARG supautils_release_amd64_checksum
 
 # Set the correct checksum based on TARGETARCH
-ARG TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        echo "${supautils_release_amd64_checksum}" > /tmp/checksum; \
-    elif [ "$TARGETARCH" = "arm64" ]; then \
-        echo "${supautils_release_arm64_checksum}" > /tmp/checksum; \
+RUN set -eux; \
+    if [ "${TARGETARCH}" = "x86_64" ]; then \
+        export supautils_release_checksum=${supautils_release_x86_64_checksum}; \
+    elif [ "${TARGETARCH}" = "arm64" ]; then \
+        export supautils_release_checksum=${supautils_release_arm64_checksum}; \
     else \
-        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
-    fi
-
-# Set supautils_release_checksum based on TARGETARCH
-ARG supautils_release_checksum=$(cat /tmp/checksum)
-
+        echo "Unsupported architecture ${TARGETARCH}"; \
+        exit 1; \
+    fi; \
+    echo "Using checksum: ${supautils_release_checksum}"; \
 # Download package archive
 ADD --checksum=sha256:${supautils_release_checksum} \
     "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-${TARGETARCH}-linux-gnu.deb" \
