@@ -828,33 +828,26 @@ ARG supautils_release
 ARG supautils_release_arm64_deb_checksum
 ARG supautils_release_amd64_deb_checksum
 
-# AMD64 download
-ADD --checksum=${supautils_release_amd64_deb_checksum} \
-    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-amd64-linux-gnu.deb" \
-    /tmp/supautils_amd64.deb \
-    2>/dev/null || true
+# Set up a script to download the correct package
+RUN echo '#!/bin/sh' > /tmp/download_supautils.sh && \
+    echo 'set -e' >> /tmp/download_supautils.sh && \
+    echo 'if [ "$TARGETARCH" = "amd64" ]; then' >> /tmp/download_supautils.sh && \
+    echo '    echo "${supautils_release_amd64_deb_checksum}  /tmp/supautils.deb" > /tmp/checksum' >> /tmp/download_supautils.sh && \
+    echo '    ARCH="amd64"' >> /tmp/download_supautils.sh && \
+    echo 'elif [ "$TARGETARCH" = "arm64" ]; then' >> /tmp/download_supautils.sh && \
+    echo '    echo "${supautils_release_arm64_deb_checksum}  /tmp/supautils.deb" > /tmp/checksum' >> /tmp/download_supautils.sh && \
+    echo '    ARCH="arm64"' >> /tmp/download_supautils.sh && \
+    echo 'else' >> /tmp/download_supautils.sh && \
+    echo '    echo "Unsupported architecture: $TARGETARCH" >&2' >> /tmp/download_supautils.sh && \
+    echo '    exit 1' >> /tmp/download_supautils.sh && \
+    echo 'fi' >> /tmp/download_supautils.sh && \
+    echo 'curl -fsSL -o /tmp/supautils.deb \\' >> /tmp/download_supautils.sh && \
+    echo '    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-$ARCH-linux-gnu.deb"' >> /tmp/download_supautils.sh && \
+    echo 'sha256sum -c /tmp/checksum' >> /tmp/download_supautils.sh && \
+    chmod +x /tmp/download_supautils.sh
 
-# ARM64 download
-ADD --checksum=${supautils_release_arm64_deb_checksum} \
-    "https://github.com/supabase/supautils/releases/download/v${supautils_release}/supautils-v${supautils_release}-pg${postgresql_major}-arm64-linux-gnu.deb" \
-    /tmp/supautils_arm64.deb \
-    2>/dev/null || true
-
-# Move the correct file based on TARGETARCH
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        if [ ! -f /tmp/supautils_amd64.deb ]; then \
-            echo "AMD64 package not found" && exit 1; \
-        fi; \
-        mv /tmp/supautils_amd64.deb /tmp/supautils.deb; \
-    elif [ "$TARGETARCH" = "arm64" ]; then \
-        if [ ! -f /tmp/supautils_arm64.deb ]; then \
-            echo "ARM64 package not found" && exit 1; \
-        fi; \
-        mv /tmp/supautils_arm64.deb /tmp/supautils.deb; \
-    else \
-        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
-    fi; \
-    rm -f /tmp/supautils_amd64.deb /tmp/supautils_arm64.deb
+# Run the script to download and verify the package
+RUN /tmp/download_supautils.sh && rm /tmp/download_supautils.sh /tmp/checksum
 
 ####################
 # setup-wal-g.yml
