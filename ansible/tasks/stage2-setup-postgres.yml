@@ -207,3 +207,16 @@
     - "/var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/*"
   become: yes
   when: stage2_nix
+
+- set_fact:
+    pg_bindir: "/usr/lib/postgresql/bin"
+  when: stage2_nix
+
+- name: pgsodium - set pgsodium.getkey_script
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    # script is expected to be placed by finalization tasks for different target platforms
+    line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
+  when: stage2_nix
