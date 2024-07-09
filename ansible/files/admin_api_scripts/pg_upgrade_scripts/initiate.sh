@@ -128,6 +128,14 @@ function handle_extensions {
         echo "ALTER SYSTEM SET password_encryption = 'md5';" >> $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
+    # Persisting pg_net.batch_size setting if it exists, setting it to the default of 200 if it doesn't
+    PG_NET_BATCH_SIZE_SETTING=$(run_sql -A -t -c "SELECT COALESCE( (SELECT setting from pg_settings where name = 'pg_net.batch_size'), '200')")
+    echo "ALTER SYSTEM SET pg_net.batch_size = $PG_NET_BATCH_SIZE_SETTING;" >> $POST_UPGRADE_EXTENSION_SCRIPT
+
+    # Setting batch_size to zero to disable pg_net requests during upgrade; restarting pg_net worker processes to make setting active
+    run_sql -c "ALTER SYSTEM SET pg_net.batch_size = 0;"
+    run_sql -c "SELECT pg_reload_conf(); SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE backend_type ILIKE '%pg_net%';"
+
     cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
 ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
