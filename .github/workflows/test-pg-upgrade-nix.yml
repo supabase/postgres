@@ -91,7 +91,7 @@ jobs:
             fi
           done
         env:
-          retries: 20
+          retries: 50
 
       # - name: Run migrations
       #   run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
