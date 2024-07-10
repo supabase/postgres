@@ -72,6 +72,7 @@ cleanup() {
     if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
         echo "Copying pg_upgrade output to /var/log"
         cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
+        chmod -R 777 /var/log/pg_upgrade_output.d/
         ship_logs "$LOG_FILE" || true
         tail -n +1 /var/log/pg_upgrade_output.d/*/* > /var/log/pg_upgrade_output.d/pg_upgrade.log || true
         ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
