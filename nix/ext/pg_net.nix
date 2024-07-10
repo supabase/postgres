@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_net";
-  version = "0.8.0";
+  version = "0.9.2";
 
   buildInputs = [ curl postgresql ];
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-ZPsRPWV1G3lMM2mT+H139Wvgoy8QnmeUbzEnGeDJmZA=";
+    hash = "sha256-Ac3lpHhBFTxeSb/HERwZ4fT8PJ7Ibrivn/hDkrs0IYE=";
   };
 
   env.NIX_CFLAGS_COMPILE = "-Wno-error";
