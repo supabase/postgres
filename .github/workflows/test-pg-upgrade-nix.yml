@@ -38,7 +38,7 @@ jobs:
         id: process_release_version
         working-directory: ./
         run: |
-          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common.vars.pkr.hcl)
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: configure aws credentials - staging
