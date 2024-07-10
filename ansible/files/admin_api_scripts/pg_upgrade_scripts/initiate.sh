@@ -72,6 +72,8 @@ cleanup() {
     if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
         echo "Copying pg_upgrade output to /var/log"
         cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
+        chown -R postgres:postgres /var/log/pg_upgrade_output.d/
+        chmod -R 0750 /var/log/pg_upgrade_output.d/
         ship_logs "$LOG_FILE" || true
         tail -n +1 /var/log/pg_upgrade_output.d/*/* > /var/log/pg_upgrade_output.d/pg_upgrade.log || true
         ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
@@ -298,7 +300,7 @@ function initiate_upgrade {
     --new-bindir=${PGBINNEW} \
     --old-datadir=${PGDATAOLD} \
     --new-datadir=${PGDATANEW} \
-    --jobs="${WORKERS}" \
+    --jobs="${WORKERS}" -r \
     --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
