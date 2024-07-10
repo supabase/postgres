@@ -63,7 +63,6 @@ jobs:
           docker rm -f "$container" || true
           docker run --name "$container" --env-file .env \
           -v "$(pwd)/scripts:/tmp/upgrade" \
-          --entrypoint "/tmp/upgrade/entrypoint-nix.sh" -d \
           -p ${PGPORT}:5432 \
           "samrose/nix-experimental-postgresql-15-aarch64-linux:${{ matrix.base_pg_version }}"
 
@@ -91,7 +90,7 @@ jobs:
             fi
           done
         env:
-          retries: 50
+          retries: 20
 
       # - name: Run migrations
       #   run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
