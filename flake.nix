@@ -318,11 +318,15 @@
               arch = "arm64";
               sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
             };
+            fileContents = builtins.readFile ./common-nix.vars.pkr.hcl;
+    
+            # Extract the version using string manipulation
+            amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" fileContents);
           in
           nix2img.buildImage {
             #TODO (samrose) update this with the correct image name for supabase registry
             name = "samrose/nix-experimental-postgresql-${version}-${system}"; 
-            tag = "latest";
+            tag = "${amiVersion}";
 
             nixUid = l.toInt uid;
             nixGid = l.toInt gid;
