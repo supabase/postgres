@@ -65,7 +65,7 @@ jobs:
           -v "$(pwd)/scripts:/tmp/upgrade" \
           --entrypoint "/tmp/upgrade/entrypoint-nix.sh" -d \
           -p 5432:5432 \
-          "samrose/postgresql-15-aarch64-linux:${{ matrix.base_pg_version }}"
+          "samrose/postgresql-15-aarch64-linux-pg-upgrade-test:${{ matrix.base_pg_version }}"
           docker logs "$container"
       - name: Check container status
         run: |

@@ -21,7 +21,8 @@ ls -la "$SCRIPT_DIR"
 
 export PATH="$(pg_config --bindir):$PATH"
 echo "PATH is $PATH"
-whoami
+current_user=$(whoami)
+echo "Current user: $current_user"
 perl -i -pe 's/\|--version//g' /usr/local/bin/docker-entrypoint.sh
 /usr/local/bin/docker-entrypoint.sh postgres --version || true
 #ls -la /data/postgresql
@@ -46,7 +47,16 @@ echo "pg pass is $POSTGRES_PASSWORD"
 # export LC_ALL=en_US.UTF-8 \
 # export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive"
 #gosu postgres /bin/bash -c "$postgres_env_vars $(pg_config --bindir)/postgres -D /var/lib/postgresql/data 'config_file=/etc/postgresql/postgresql.conf'"
-gosu postgres /bin/bash -c "$(pg_config --bindir)/pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
+if [ "$current_user" = "postgres" ]; then
+    # Already running as postgres, no need for gosu
+    pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log
+elif command -v gosu &> /dev/null; then
+    # Use gosu if available
+    gosu postgres pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log
+else
+    # Fallback to su-exec if gosu is not available
+    su-exec postgres pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log
+fi
 #cat /tmp/postgres.log
 RECEIVED_EXIT_SIGNAL=false
 trap 'RECEIVED_EXIT_SIGNAL=true' SIGINT SIGTERM SIGUSR1
