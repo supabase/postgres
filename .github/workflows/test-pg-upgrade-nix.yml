@@ -62,8 +62,7 @@ jobs:
         run: |
           docker rm -f "$container" || true
           docker run --name "$container" --env-file .env \
-          -v "$(pwd)/scripts:/tmp/upgrade" \
-          --entrypoint "/tmp/upgrade/entrypoint-nix.sh" -d \
+          -v "$(pwd)/scripts:/tmp/upgrade" -d \
           -p ${PGPORT}:5432 \
           "samrose/nix-experimental-postgresql-15-aarch64-linux:${{ matrix.base_pg_version }}"
 
