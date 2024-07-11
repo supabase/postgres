@@ -98,8 +98,9 @@ jobs:
           done
           
           echo "Database is ready after ${elapsed} seconds."
-      # - name: Run migrations
-      #   run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
+
+      - name: Run migrations
+        run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
 
       # - name: Run initial tests
       #   run: pg_prove "../../migrations/tests/test.sql"
