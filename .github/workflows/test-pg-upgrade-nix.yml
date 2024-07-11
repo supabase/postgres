@@ -119,10 +119,10 @@ jobs:
         env:
           PERL5LIB: /usr/local/lib/perl5
 
-      # - name: Apply pre-upgrade fixtures
-      #   run: |
-      #     psql -f "./tests/98-data-fixtures.sql"
-      #     psql -f "./tests/99-fixtures.sql"
+      - name: Apply pre-upgrade fixtures
+        run: |
+          psql -f "./tests/98-data-fixtures.sql"
+          psql -f "./tests/99-fixtures.sql"
           
       # - name: Initiate upgrade
       #   run: docker exec "$container" bash -c '/tmp/upgrade/pg_upgrade_scripts/initiate.sh "$PG_MAJOR_VERSION"; exit $?'
