@@ -22,7 +22,7 @@ ls -la "$SCRIPT_DIR"
 export PATH="$(pg_config --bindir):$PATH"
 echo "PATH is $PATH"
 whoami
-sed -i "s/|--version//g" /usr/local/bin/docker-entrypoint.sh
+gosu root sed -i "s/|--version//g" /usr/local/bin/docker-entrypoint.sh
 /usr/local/bin/docker-entrypoint.sh postgres --version || true
 #ls -la /data/postgresql
 #ls -la /etc/postgresql
