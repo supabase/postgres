@@ -66,6 +66,12 @@ jobs:
           --entrypoint "/tmp/upgrade/entrypoint-nix.sh" -d \
           -p 5432:5432 \
           "samrose/postgresql-15-aarch64-linux:${{ matrix.base_pg_version }}"
+          docker logs "$container"
+      - name: Check container status
+        run: |
+          docker ps -a
+          docker inspect "$container" --format '{{.State.Status}}'
+          docker inspect "$container" --format '{{.State.ExitCode}}'
 
       - name: Install pg_prove
         run: |
