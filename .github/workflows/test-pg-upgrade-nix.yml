@@ -72,6 +72,11 @@ jobs:
           docker ps -a
           docker inspect "$container" --format '{{.State.Status}}'
           docker inspect "$container" --format '{{.State.ExitCode}}'
+      
+      - name: Install psql
+        run: |
+          sudo apt update
+          sudo apt install -y --no-install-recommends postgresql-client
 
       - name: Install pg_prove
         run: |
