@@ -335,7 +335,7 @@
               (pkgs.buildEnv {
                 name = "image-root";
                 paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
-                pathsToLink = [ "/bin" "/etc" "/var" "/share" "/data" "/run" ];
+                pathsToLink = [ "/bin" "/etc" "/var" "/share" "/run" ];
               })
               mkUser
             ];
