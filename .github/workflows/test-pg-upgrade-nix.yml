@@ -89,7 +89,7 @@ jobs:
           start_time=$(date +%s)
           timeout=600  # 10 minutes in seconds
           
-          while ! docker exec "$container" bash -c "pg_isready -p 5435"; do
+          while ! docker exec "$container" bash -c "pg_isready -p 5432"; do
             current_time=$(date +%s)
             elapsed=$((current_time - start_time))
             
