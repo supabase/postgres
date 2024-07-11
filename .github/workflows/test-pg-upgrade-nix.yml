@@ -63,7 +63,7 @@ jobs:
           docker rm -f "$container" || true
           docker run --name "$container" --env-file .env \
           -v "$(pwd)/scripts:/tmp/upgrade" -d \
-          -p 5435:5432 \
+          -p 5435:5435 \
           "samrose/nix-experimental-postgresql-15-aarch64-linux:${{ matrix.base_pg_version }}"
 
       - name: Install pg_prove
