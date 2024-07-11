@@ -42,7 +42,7 @@ ARG wal_g_release=2.0.1
 
 
 
-FROM samrose/nix-experimental-postgresql-15-aarch64-linux:latest as base
+FROM samrose/nix-experimental-postgresql-15-aarch64-linux-base:15.6.1.90-nix-staged as base
 
 
 FROM base as builder

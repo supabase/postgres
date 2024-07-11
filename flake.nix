@@ -325,7 +325,7 @@
           in
           nix2img.buildImage {
             #TODO (samrose) update this with the correct image name for supabase registry
-            name = "samrose/nix-experimental-postgresql-${version}-${system}"; 
+            name = "samrose/nix-experimental-postgresql-${version}-${system}-base"; 
             tag = "${amiVersion}";
 
             nixUid = l.toInt uid;
