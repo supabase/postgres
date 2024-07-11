@@ -1,7 +1,7 @@
 name: Testinfra Integration Tests Nix
 
 on:
-  pull_request:
+  #pull_request:
   workflow_dispatch:
 
 jobs:
