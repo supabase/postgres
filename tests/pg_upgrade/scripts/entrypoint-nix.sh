@@ -13,8 +13,8 @@ ls -la "$SCRIPT_DIR"
 
 export PATH="$(pg_config --bindir):$PATH"
 
-sed -i "s/|--version//g" /usr/local/bin/docker-entrypoint.sh
-/usr/local/bin/docker-entrypoint.sh postgres --version || true
+# sed -i "s/|--version//g" /usr/local/bin/docker-entrypoint.sh
+# /usr/local/bin/docker-entrypoint.sh postgres --version || true
 
 su postgres -c "$(pg_config --bindir)/pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
 
