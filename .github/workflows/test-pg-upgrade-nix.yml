@@ -79,19 +79,25 @@ jobs:
 
       - name: Wait for healthy database
         run: |
-          count=0
+          start_time=$(date +%s)
+          timeout=600  # 10 minutes in seconds
+          
           while ! docker exec "$container" bash -c "pg_isready"; do
-            count=$((count + 1))
-            if [ $count -ge "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, no more retries left."
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            
+            if [ $elapsed -ge $timeout ]; then
+                echo "Timeout reached after ${elapsed} seconds. Database is not ready."
                 docker logs "$container"
                 docker rm -f "$container"
                 exit 1
             fi
+            
+            echo "Database not ready. Waiting..."
+            sleep 5
           done
-        env:
-          retries: 20
-
+          
+          echo "Database is ready after ${elapsed} seconds."
       # - name: Run migrations
       #   run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
 
