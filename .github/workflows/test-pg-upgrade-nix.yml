@@ -109,10 +109,10 @@ jobs:
       - name: Run migrations
         run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh 2>&1"
 
-      # - name: Run initial tests
-      #   run: pg_prove "../../migrations/tests/test.sql"
-      #   env:
-      #     PERL5LIB: /usr/local/lib/perl5
+      - name: Run initial tests
+        run: pg_prove "../../migrations/tests/test.sql"
+        env:
+          PERL5LIB: /usr/local/lib/perl5
 
       # - name: Apply pre-upgrade fixtures
       #   run: |
