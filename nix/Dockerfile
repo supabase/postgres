@@ -48,8 +48,7 @@ FROM samrose/nix-experimental-postgresql-15-aarch64-linux-base:15.6.1.90-nix-sta
 FROM base as builder
 # # Install build dependencies
 # COPY --from=pg-dev /tmp /tmp
-
-USER root
+#USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends tzdata
 
@@ -78,7 +77,6 @@ ARG CACHE_EPOCH
 # setup-wal-g.yml
 ####################
 FROM base as walg
-USER root
 ARG wal_g_release
 # ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
 RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
@@ -93,7 +91,6 @@ RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") 
 # ####################
 FROM base as gosu
 ARG TARGETARCH
-USER root
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
    gnupg \
@@ -116,7 +113,7 @@ RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY &&
 # # Build final image
 # ####################
 FROM gosu as production
-USER root
+RUN id postgres || (echo "postgres user does not exist" && exit 1)
 # # Setup extensions
 # COPY --from=extensions /tmp /tmp
 COPY --from=walg /tmp/wal-g /usr/local/bin/
@@ -128,7 +125,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
-COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/bin/pgsodium_getkey.sh
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf.j2 /etc/postgresql-custom/read-replica.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.j2 /etc/postgresql-custom/wal-g.conf
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
@@ -141,7 +138,7 @@ RUN sed -i \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
-    echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
     mkdir -p /etc/postgresql-custom && \
@@ -170,20 +167,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
-USER root
-RUN mkdir -p /data/postgresql && \
-    chown postgres:postgres /data/postgresql && \
-    chmod 700 /data/postgresql
-RUN mkdir -p /var/lib/postgresql/data && \
-    chown postgres:postgres /var/lib/postgresql/data && \
-    chmod 700 /var/lib/postgresql/data && \
-    ln -s /data/postgresql /var/lib/postgresql/data
-USER postgres
+# USER root
+# RUN mkdir -p /data/postgresql && \
+#     chown postgres:postgres /data/postgresql && \
+#     chmod 700 /data/postgresql
+# RUN mkdir -p /var/lib/postgresql/data && \
+#     chown postgres:postgres /var/lib/postgresql/data && \
+#     chmod 700 /var/lib/postgresql/data && \
+#     ln -s /data/postgresql /var/lib/postgresql/data
+# USER postgres
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
-ENV PGDATA /data/postgresql
+# ENV PGDATA /data/postgresql
+#USER postgres
 CMD ["postgres", "-D", "/data/postgresql"]
 
 # ####################
