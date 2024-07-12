@@ -136,13 +136,6 @@
       tags:
         - aws-only
 
-    # Install salt minion
-    # Only for AWS images
-    - name: install salt minion
-      import_tasks: tasks/install-salt.yml
-      tags:
-        - aws-only
-
     # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
     - name: Install security tools
       become: yes
