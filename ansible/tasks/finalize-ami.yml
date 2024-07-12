@@ -78,3 +78,4 @@
     owner: postgres
     group: postgres
     mode: 0700
+  when: debpkg_mode or stage2_nix
