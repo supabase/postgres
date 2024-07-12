@@ -42,83 +42,109 @@ ARG wal_g_release=2.0.1
 
 
 
-FROM samrose/nix-experimental-postgresql-15-aarch64-linux-base:15.6.1.90-nix-staged as base
+FROM ubuntu:focal as base
 
 
-FROM base as builder
+FROM base as production
 # # Install build dependencies
 # COPY --from=pg-dev /tmp /tmp
-#USER root
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata
+USER root
+RUN groupadd -r postgres
+RUN groupadd -r wal-g
+RUN useradd --create-home --shell /bin/bash postgres -g postgres
+RUN useradd --shell /bin/bash wal-g -g wal-g
+RUN apt update -y
+RUN apt install curl -y
+RUN  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux \
+    --no-confirm \
+    --init none \
+    --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+    --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" \
+    --extra-conf "sandbox = false" 
 
-RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
+ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
+# RUN mkdir -p /nix/var/nix/profiles/per-user/postgres
+# RUN chown -R postgres:postgres /nix/var/nix/profiles/per-user/postgres
+#RUN chmod -R 755 /nix/var/nix/profiles/per-user
+#USER postgres
+RUN nix profile install github:supabase/postgres/sam/nix-docker-build#psql_15/bin
+RUN mkdir -p /var/lib/postgresql/data && \
+    chown postgres:postgres /var/lib/postgresql/data && \
+    chmod 700 /var/lib/postgresql/data
+RUN mkdir -p /run/postgresql && \
+    chown postgres:postgres /run/postgresql && \
+    chmod 700 /run/postgresql
+ 
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends tzdata
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    checkinstall \
-    cmake 
+# RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+#     dpkg-reconfigure --frontend noninteractive tzdata
 
-FROM builder as ccache
-# Cache large build artifacts
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang \
-    ccache \
-    && rm -rf /var/lib/apt/lists/*
-ENV CCACHE_DIR=/ccache
-ENV PATH=/usr/lib/ccache:$PATH
-# Used to update ccache
-ARG CACHE_EPOCH
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     build-essential \
+#     checkinstall \
+#     cmake 
 
+# FROM builder as ccache
+# # Cache large build artifacts
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     clang \
+#     ccache \
+#     && rm -rf /var/lib/apt/lists/*
+# ENV CCACHE_DIR=/ccache
+# ENV PATH=/usr/lib/ccache:$PATH
+# # Used to update ccache
+# ARG CACHE_EPOCH
 
-####################
-# setup-wal-g.yml
-####################
-FROM base as walg
-ARG wal_g_release
-# ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
-RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
-    apt-get update && apt-get install -y --no-install-recommends curl && \
-    curl -kL "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-aarch64.tar.gz" -o /tmp/wal-g.tar.gz && \
-    tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
-    rm -rf /tmp/wal-g.tar.gz && \
-    mv /tmp/wal-g-pg-ubuntu*20.04-aarch64 /tmp/wal-g
-
-# ####################
-# # Download gosu for easy step-down from root
-# ####################
-FROM base as gosu
-ARG TARGETARCH
-# Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-   gnupg \
-   ca-certificates \
-   && rm -rf /var/lib/apt/lists/*
-# Download binary
-ARG GOSU_VERSION=1.16
-ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
-ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
-    /usr/local/bin/gosu
-ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH.asc \
-    /usr/local/bin/gosu.asc
-# Verify checksum
-RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY && \
-    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
-    gpgconf --kill all && \
-    chmod +x /usr/local/bin/gosu
 
 # ####################
-# # Build final image
+# # setup-wal-g.yml
 # ####################
-FROM gosu as production
-RUN id postgres || (echo "postgres user does not exist" && exit 1)
-# # Setup extensions
-# COPY --from=extensions /tmp /tmp
-COPY --from=walg /tmp/wal-g /usr/local/bin/
+# FROM base as walg
+# ARG wal_g_release
+# # ADD "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-${TARGETARCH}.tar.gz" /tmp/wal-g.tar.gz
+# RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "$TARGETARCH") && \
+#     apt-get update && apt-get install -y --no-install-recommends curl && \
+#     curl -kL "https://github.com/wal-g/wal-g/releases/download/v${wal_g_release}/wal-g-pg-ubuntu-20.04-aarch64.tar.gz" -o /tmp/wal-g.tar.gz && \
+#     tar -xvf /tmp/wal-g.tar.gz -C /tmp && \
+#     rm -rf /tmp/wal-g.tar.gz && \
+#     mv /tmp/wal-g-pg-ubuntu*20.04-aarch64 /tmp/wal-g
 
-# # Initialise configs
+# # ####################
+# # # Download gosu for easy step-down from root
+# # ####################
+# FROM base as gosu
+# ARG TARGETARCH
+# # Install dependencies
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#    gnupg \
+#    ca-certificates \
+#    && rm -rf /var/lib/apt/lists/*
+# # Download binary
+# ARG GOSU_VERSION=1.16
+# ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
+# ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
+#     /usr/local/bin/gosu
+# ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH.asc \
+#     /usr/local/bin/gosu.asc
+# # Verify checksum
+# RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY && \
+#     gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
+#     gpgconf --kill all && \
+#     chmod +x /usr/local/bin/gosu
+
+# # ####################
+# # # Build final image
+# # ####################
+# FROM gosu as production
+# RUN id postgres || (echo "postgres user does not exist" && exit 1)
+# # # Setup extensions
+# # COPY --from=extensions /tmp /tmp
+# COPY --from=walg /tmp/wal-g /usr/local/bin/
+USER root
+# # # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
@@ -144,57 +170,59 @@ RUN sed -i \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
 
-# # Include schema migrations
+# # # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# # Add upstream entrypoint script
-COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
-ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
-    /usr/local/bin/
-RUN chmod a+w /usr/local/bin/docker-entrypoint.sh
+# # # Add upstream entrypoint script
+# COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+# ADD --chmod=0755 \
+#     https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+#     /usr/local/bin/
+# RUN chmod a+w /usr/local/bin/docker-entrypoint.sh
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+# ENTRYPOINT ["docker-entrypoint.sh"]
 
-HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
-STOPSIGNAL SIGINT
-EXPOSE 5432
+# HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+# STOPSIGNAL SIGINT
+# EXPOSE 5432
 
-ENV POSTGRES_HOST=/var/run/postgresql
+# ENV POSTGRES_HOST=/var/run/postgresql
 RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     && rm -rf /var/lib/apt/lists/* && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
-# USER root
-# RUN mkdir -p /data/postgresql && \
-#     chown postgres:postgres /data/postgresql && \
-#     chmod 700 /data/postgresql
-# RUN mkdir -p /var/lib/postgresql/data && \
-#     chown postgres:postgres /var/lib/postgresql/data && \
-#     chmod 700 /var/lib/postgresql/data && \
-#     ln -s /data/postgresql /var/lib/postgresql/data
-# USER postgres
+# # USER root
+# # RUN mkdir -p /data/postgresql && \
+# #     chown postgres:postgres /data/postgresql && \
+# #     chmod 700 /data/postgresql
+# # RUN mkdir -p /var/lib/postgresql/data && \
+# #     chown postgres:postgres /var/lib/postgresql/data && \
+# #     chmod 700 /var/lib/postgresql/data && \
+# #     ln -s /data/postgresql /var/lib/postgresql/data
+# # USER postgres
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
-# ENV PGDATA /data/postgresql
-#USER postgres
-CMD ["postgres", "-D", "/data/postgresql"]
+# # ENV PGDATA /data/postgresql
+USER postgres
+RUN initdb -D /var/lib/postgresql/data
+USER root
+#CMD ["postgres", "-D", "/var/lib/postgresql/data"]
 
-# ####################
-# # Update build cache
-# ####################
-# FROM ccache as stats
-# COPY --from=extensions /tmp/*.deb /dev/null
-# # Additional packages that are separately built from source
-# # COPY --from=plv8-deb /tmp/*.deb /dev/null
-# # Cache mount is only populated by docker build --no-cache
-# RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
-#     ccache -s && \
-#     cp -r /ccache/* /tmp
-# FROM scratch as buildcache
-# COPY --from=stats /tmp /
+# # ####################
+# # # Update build cache
+# # ####################
+# # FROM ccache as stats
+# # COPY --from=extensions /tmp/*.deb /dev/null
+# # # Additional packages that are separately built from source
+# # # COPY --from=plv8-deb /tmp/*.deb /dev/null
+# # # Cache mount is only populated by docker build --no-cache
+# # RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+# #     ccache -s && \
+# #     cp -r /ccache/* /tmp
+# # FROM scratch as buildcache
+# # COPY --from=stats /tmp /

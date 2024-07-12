@@ -10,9 +10,9 @@ if [ $# -gt 0 ]; then
     exec "$@"
 fi
 
-SCRIPT_DIR=$(dirname -- "$0";)
+# SCRIPT_DIR=$(dirname -- "$0";)
 
-ls -la "$SCRIPT_DIR"
+# ls -la "$SCRIPT_DIR"
 
 #tar -xzf "${SCRIPT_DIR}/pg_upgrade_scripts.tar.gz" -C "${SCRIPT_DIR}"
 
@@ -23,8 +23,8 @@ export PATH="$(pg_config --bindir):$PATH"
 echo "PATH is $PATH"
 current_user=$(whoami)
 echo "Current user: $current_user"
-perl -i -pe 's/\|--version//g' /usr/local/bin/docker-entrypoint.sh
-/usr/local/bin/docker-entrypoint.sh postgres --version || true
+# perl -i -pe 's/\|--version//g' /usr/local/bin/docker-entrypoint.sh
+# /usr/local/bin/docker-entrypoint.sh postgres --version || true
 #ls -la /data/postgresql
 #ls -la /etc/postgresql
 # ls -la /data/postgresql
@@ -33,7 +33,6 @@ perl -i -pe 's/\|--version//g' /usr/local/bin/docker-entrypoint.sh
 # ls -la /usr/lib/postgresql/bin
 # echo $PGDATA
 # whoami
-echo "pg pass is $POSTGRES_PASSWORD"
 #/bin/initdb --username="$POSTGRES_USER" --pwfile=<(printf "%s\n" "$POSTGRES_PASSWORD")  
 # #cat /etc/postgresql/postgresql.conf 
 # echo  "###############################################"

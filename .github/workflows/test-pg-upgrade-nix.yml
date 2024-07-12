@@ -47,10 +47,9 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
 
-      # - name: Download pg_upgrade_scripts and binaries
-      #   run: |
-      #     aws s3 cp s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz scripts/pg_upgrade_scripts.tar.gz
-      # TODO replace with revised script 
+      - name: copy needed scripts
+        run: cp -r ../../nix/tools/pg_upgrade_scripts scripts/
+
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v2
         with:
@@ -67,6 +66,7 @@ jobs:
           -p ${PGPORT}:5432 \
           "samrose/postgresql-15-aarch64-linux-pg-upgrade-test:${{ matrix.base_pg_version }}"
           docker logs "$container"
+
       - name: Check container status
         run: |
           docker ps -a
@@ -125,7 +125,7 @@ jobs:
           psql -f "./tests/99-fixtures.sql"
           
       - name: Initiate upgrade
-        run: docker exec "$container" bash -c '/tmp/upgrade/pg_upgrade_scripts/initiate.sh "$PG_MAJOR_VERSION"; exit $?'
+        run: docker exec "$container" bash -c '/tmp/upgrade/initiate-nix.sh "github:supabase/postgres/sam/nix-docker-build#pg_15_bin" "github:supabase/postgres/develop#pg_15_bin"; exit $?'
 
       - name: Complete pg_upgrade
         run: docker exec pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
