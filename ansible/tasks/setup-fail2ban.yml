@@ -5,16 +5,19 @@
     path: /etc/fail2ban/jail.conf
     regexp: bantime  = 10m
     replace: bantime  = 3600
+  when: debpkg_mode or nixpkg_mode
 
 - name: Configure journald
   copy:
     src: files/fail2ban_config/jail-ssh.conf
     dest: /etc/fail2ban/jail.d/sshd.local
+  when: debpkg_mode or nixpkg_mode
 
 - name: configure fail2ban to use nftables
   copy:
     src: files/fail2ban_config/jail.local
     dest: /etc/fail2ban/jail.local
+  when: debpkg_mode or nixpkg_mode
 
 # postgresql
 - name: import jail.d/postgresql.conf
@@ -22,12 +25,14 @@
     src: files/fail2ban_config/jail-postgresql.conf.j2
     dest: /etc/fail2ban/jail.d/postgresql.conf
   become: yes
+  when: debpkg_mode or nixpkg_mode
 
 - name: import filter.d/postgresql.conf
   template:
     src: files/fail2ban_config/filter-postgresql.conf.j2
     dest: /etc/fail2ban/filter.d/postgresql.conf
   become: yes
+  when: debpkg_mode or nixpkg_mode
 
 - name: create overrides dir
   file:
@@ -36,11 +41,13 @@
     group: root
     path: /etc/systemd/system/fail2ban.service.d
     mode: '0700'
+  when: debpkg_mode or nixpkg_mode
 
 - name: Custom systemd overrides
   copy:
     src: files/fail2ban_config/fail2ban.service.conf
     dest: /etc/systemd/system/fail2ban.service.d/overrides.conf
+  when: debpkg_mode or nixpkg_mode
 
 - name: add in supabase specific ignore filters
   lineinfile:
@@ -56,15 +63,18 @@
   become: yes
   tags:
     - install-supabase-internal
+  when: debpkg_mode or nixpkg_mode
 
 # Restart
 - name: fail2ban - restart
   systemd:
     name: fail2ban
     state: restarted
+  when: debpkg_mode or nixpkg_mode
 
 - name: fail2ban - disable service
   systemd:
     name: fail2ban
     enabled: no
     daemon_reload: yes
+  when: debpkg_mode or nixpkg_mode

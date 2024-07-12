@@ -1,7 +1,7 @@
 - name: Run migrate.sh script
   shell: ./migrate.sh
   register: retval
-  when: ebssurrogate_mode
+  when: debpkg_mode or stage2_nix
   args:
     chdir: /tmp/migrations/db
   failed_when: retval.rc != 0
@@ -10,4 +10,4 @@
   file:
     path: "/root/MIGRATION-AMI"
     state: touch
-  when: ebssurrogate_mode
+  when: debpkg_mode or stage2_nix
