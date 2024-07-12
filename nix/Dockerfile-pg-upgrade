@@ -68,6 +68,7 @@ ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 #RUN chmod -R 755 /nix/var/nix/profiles/per-user
 #USER postgres
 RUN nix profile install github:supabase/postgres/sam/nix-docker-build#psql_15/bin
+RUN nix profile install nixpkgs#su-exec
 RUN mkdir -p /var/lib/postgresql/data && \
     chown postgres:postgres /var/lib/postgresql/data && \
     chmod 700 /var/lib/postgresql/data
