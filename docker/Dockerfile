@@ -41,7 +41,7 @@ ENV DEB_CFLAGS_APPEND="-g3"
 ARG DEB_BUILD_PROFILES="pkg.postgresql.nozstd"
 ENV DEB_BUILD_PROFILES="${DEB_BUILD_PROFILES}"
 
-RUN apt-get build-dep -y postgresql-common pgdg-keyring && \
+RUN apt-get -o Acquire::GzipIndexes=false update && apt-get build-dep -y postgresql-common pgdg-keyring && \
     apt-get source --compile postgresql-common pgdg-keyring && \
     dpkg-scanpackages . > Packages && \
     apt-get -o Acquire::GzipIndexes=false update
