@@ -13,9 +13,13 @@ buildPgrxExtension_0_11_3 rec {
   };
 
   nativeBuildInputs = [ cargo ];
+  buildInputs = [ postgresql ];
   
   CARGO="${cargo}/bin/cargo";
-  
+  env = lib.optionalAttrs stdenv.isDarwin {
+    POSTGRES_LIB = "${postgresql}/lib";
+    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+  };
   cargoHash = "sha256-yc0lO4BZdbArBujRynl/ItkLLAiVZ2Wf3S7voQ2x6xM=";
 
   # FIXME (aseipp): disable the tests since they try to install .control
