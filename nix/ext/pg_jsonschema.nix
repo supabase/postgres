@@ -13,10 +13,13 @@ buildPgrxExtension_0_11_3 rec {
   };
 
   nativeBuildInputs = [ cargo ];
+  buildInputs = [ postgresql ];
   
   CARGO="${cargo}/bin/cargo";
-
-
+  env = lib.optionalAttrs stdenv.isDarwin {
+    POSTGRES_LIB = "${postgresql}/lib";
+    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+  };
   cargoHash = "sha256-VcS+efMDppofuFW2zNrhhsbC28By3lYekDFquHPta2g=";
 
   # FIXME (aseipp): testsuite tries to write files into /nix/store; we'll have
