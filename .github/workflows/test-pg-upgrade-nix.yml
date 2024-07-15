@@ -124,8 +124,8 @@ jobs:
           psql -f "./tests/98-data-fixtures.sql"
           psql -f "./tests/99-fixtures.sql"
           
-      # - name: Initiate upgrade
-      #   run: docker exec "$container" bash -c '/tmp/upgrade/initiate-nix.sh "github:supabase/postgres/sam/nix-docker-build#pg_15_bin" "github:supabase/postgres/develop#pg_15_bin"; exit $?'
+      - name: Initiate upgrade
+        run: docker exec "$container" bash -c '/tmp/upgrade/initiate-nix.sh "github:supabase/postgres/sam/nix-docker-build#psql_15/bin" "github:supabase/postgres/develop#psql_15/bin"; exit $?'
 
       # - name: Complete pg_upgrade
       #   run: docker exec pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'

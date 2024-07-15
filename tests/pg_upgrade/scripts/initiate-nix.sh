@@ -31,7 +31,8 @@ source "$SCRIPT_DIR/common-nix.sh"
 
 get_bindir_from_flake() {
     local flake_url="$1"
-    nix build "$flake_url" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes
+    nix_out=$(nix build "$flake_url" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
+    echo "$nix_out"
 }
 
 # Check if nix is available
@@ -72,7 +73,10 @@ IS_DRY_RUN=${2:-false}
 if [ "$IS_DRY_RUN" != false ]; then
     IS_DRY_RUN=true
 fi
-
+echo "OLDVER"
+ls -la $OLDVER
+echo "NEWVER"
+ls -la $NEWVER
 MOUNT_POINT="/data_migration"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
@@ -92,7 +96,7 @@ elif [[ "$OLD_PGVERSION" =~ ^12.* ]]; then
     PGBINOLD="/usr/lib/postgresql/12/bin"
 fi
 
-echo "Detected PG version: $PGVERSION"
+echo "Old PG version: $PGVERSION"
 
 
 
@@ -196,10 +200,13 @@ function initiate_upgrade {
 
     PGDATANEW="$MOUNT_POINT/pgdata"
     #PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
+    echo "PGDATANEW: $PGDATANEW"
     PGBINNEW="$NEWVER/bin"
     PGLIBNEW="$NEWVER/lib"
-    PGSHARENEW="$NEWVER/share"
-
+    PGSHARENEW="$NEWVER/share/postgresql"
+    echo "PGBINNEW: $PGBINNEW"
+    echo "PGLIBNEW: $PGLIBNEW"
+    echo "PGSHARENEW: $PGSHARENEW"
     # running upgrade using at least 1 cpu core
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
     
@@ -208,14 +215,16 @@ function initiate_upgrade {
     # tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
 
     # copy upgrade-specific pgsodium_getkey script into the share dir
-    chmod +x "$SCRIPT_DIR/pgsodium_getkey.sh"
-    cp  "$SCRIPT_DIR/pgsodium_getkey.sh" "$PGSHARENEW/extension/pgsodium_getkey"
+    chmod +x /usr/lib/postgresql/bin/pgsodium_getkey.sh
+    #cp  /usr/lib/postgresql/bin/pgsodium_getkey.sh "$PGSHARENEW/extension/pgsodium_getkey"
     if [ -d "/var/lib/postgresql/extension/" ]; then
-        cp  "$SCRIPT_DIR/pgsodium_getkey.sh" "/var/lib/postgresql/extension/pgsodium_getkey"
+        mkdir -p "/var/lib/postgresql/extension/"
+        chown postgres:postgres "/var/lib/postgresql/extension/"
+        cp  /usr/lib/postgresql/bin/pgsodium_getkey.sh "/var/lib/postgresql/extension/pgsodium_getkey"
         chown postgres:postgres "/var/lib/postgresql/extension/pgsodium_getkey"
     fi
 
-    chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
+    #chown -R postgres:postgres "/tmp/pg_upgrade_bin/$PGVERSION"
 
     # upgrade job outputs a log in the cwd; needs write permissions
     mkdir -p /tmp/pg_upgrade/
@@ -270,10 +279,10 @@ function initiate_upgrade {
     echo "8. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
-    if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
-        mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
-    fi
-    ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
+    # if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
+    #     mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
+    # fi
+    #ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
 
     #not need as libs, binaries are handled already by nix
     #cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
@@ -322,7 +331,8 @@ function initiate_upgrade {
     --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
-    --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
+    --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
+    --new-options="-c pgsodium.getkey_script=/usr/lib/postgresql/bin/pgsodium_getkey.sh" 
 EOF
     )
 
@@ -339,6 +349,22 @@ EOF
 
         sleep 3
         systemctl stop postgresql
+    fi
+
+    if pgrep -x "postgres" > /dev/null; then
+        echo "PostgreSQL is still running. Attempting to stop it..."
+        pg_ctl_data_dir=$(su -c "pg_ctl -V" -s "$SHELL" postgres | grep "Data directory" | awk '{print $NF}')
+        if [ -n "$pg_ctl_data_dir" ]; then
+            su -c "pg_ctl stop -D $pg_ctl_data_dir" -s "$SHELL" postgres
+            sleep 3
+            if pgrep -x "postgres" > /dev/null; then
+                echo "Warning: Unable to stop PostgreSQL. Please check manually."
+            else
+                echo "PostgreSQL stopped successfully."
+            fi
+        else
+            echo "Warning: Unable to determine PostgreSQL data directory."
+        fi
     fi
 
     su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
