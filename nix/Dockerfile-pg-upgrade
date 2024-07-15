@@ -66,6 +66,7 @@ RUN  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 #chng workdir into a copy of this checkout, and install psql bundle bins and libs
 WORKDIR /tmp/postgres
+COPY . .
 RUN nix profile install .#psql_15/bin
 RUN nix profile install nixpkgs#su-exec
 RUN mkdir -p /var/lib/postgresql/data && \
