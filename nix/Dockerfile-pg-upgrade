@@ -46,6 +46,7 @@ FROM ubuntu:focal as base
 
 
 FROM base as production
+WORKDIR /
 # # Install build dependencies
 # COPY --from=pg-dev /tmp /tmp
 USER root
@@ -63,11 +64,9 @@ RUN  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems
     --extra-conf "sandbox = false" 
 
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
-# RUN mkdir -p /nix/var/nix/profiles/per-user/postgres
-# RUN chown -R postgres:postgres /nix/var/nix/profiles/per-user/postgres
-#RUN chmod -R 755 /nix/var/nix/profiles/per-user
-#USER postgres
-RUN nix profile install github:supabase/postgres/sam/nix-docker-build#psql_15/bin
+#chng workdir into a copy of this checkout, and install psql bundle bins and libs
+WORKDIR /tmp/postgres
+RUN nix profile install .#psql_15/bin
 RUN nix profile install nixpkgs#su-exec
 RUN mkdir -p /var/lib/postgresql/data && \
     chown postgres:postgres /var/lib/postgresql/data && \
@@ -144,6 +143,7 @@ RUN mkdir -p /run/postgresql && \
 # # # Setup extensions
 # # COPY --from=extensions /tmp /tmp
 # COPY --from=walg /tmp/wal-g /usr/local/bin/
+WORKDIR /
 USER root
 # # # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
@@ -204,6 +204,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # #     chmod 700 /var/lib/postgresql/data && \
 # #     ln -s /data/postgresql /var/lib/postgresql/data
 # # USER postgres
+#We need to set these values because the nix package doesn't cover 
+# configuration of the locale
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
