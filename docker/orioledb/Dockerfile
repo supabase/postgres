@@ -616,6 +616,10 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 ####################
+# 21-auto_explain.yml
+####################
+
+####################
 # 22-pg_jsonschema.yml
 ####################
 FROM rust-toolchain as pg_jsonschema-source
@@ -1029,8 +1033,10 @@ RUN sed -i \
     -e "s|#max_wal_size = 1GB|max_wal_size = 8GB|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
+    echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
     echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/${postgresql_major}/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
     echo "orioledb.main_buffers = 1GB" >> /etc/postgresql/postgresql.conf && \
     echo "orioledb.undo_buffers = 256MB" >> /etc/postgresql/postgresql.conf && \
     useradd --create-home --shell /bin/bash wal-g -G postgres && \

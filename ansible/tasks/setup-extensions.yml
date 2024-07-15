@@ -65,6 +65,9 @@
 - name: Install pg_stat_monitor
   import_tasks: tasks/postgres-extensions/20-pg_stat_monitor.yml
 
+- name: Install auto_explain
+  import_tasks: tasks/postgres-extensions/21-auto_explain.yml
+
 - name: Install vault
   import_tasks: tasks/postgres-extensions/23-vault.yml
 
