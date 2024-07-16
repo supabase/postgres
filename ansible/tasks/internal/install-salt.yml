@@ -7,7 +7,7 @@
 
     - name: salt apt repo
       ansible.builtin.apt_repository:
-         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/$SALT_VERSION focal main
+         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/{{ salt_minion_version }} focal main
          state: present
   when: platform == "arm64"
 
@@ -20,7 +20,7 @@
 
     - name: salt apt repo
       ansible.builtin.apt_repository:
-         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/$SALT_VERSION focal main
+         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/{{ salt_minon_version }} focal main
          state: present
   when: platform == "amd64"
 
