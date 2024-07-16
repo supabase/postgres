@@ -107,10 +107,6 @@ cleanup() {
     echo "Removing SUPERUSER grant from postgres"
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-    if [ -z "$IS_CI" ]; then
-        echo "Unmounting data disk from ${MOUNT_POINT}"
-        umount $MOUNT_POINT
-    fi
     echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
     if [ -z "$IS_CI" ]; then
@@ -220,27 +216,7 @@ function initiate_upgrade {
         locale-gen
     fi
 
-    if [ -z "$IS_CI" ]; then
-        # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-        # excluding nvme0 since it is the root disk
-        echo "5. Determining block device to mount"
-        BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
-        echo "Block device found: $BLOCK_DEVICE"
-
-        mkdir -p "$MOUNT_POINT"
-        echo "6. Mounting block device"
-
-        sleep 5
-        e2fsck -pf "$BLOCK_DEVICE"
-
-        sleep 1
-        mount "$BLOCK_DEVICE" "$MOUNT_POINT"
-
-        sleep 1
-        resize2fs "$BLOCK_DEVICE"
-    else 
-        mkdir -p "$MOUNT_POINT"
-    fi
+    mkdir -p "$MOUNT_POINT"
 
     if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
         cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
@@ -349,10 +325,4 @@ EOF
 trap cleanup ERR
 
 echo "running" > /tmp/pg-upgrade-status
-if [ -z "$IS_CI" ]; then
-    initiate_upgrade >> "$LOG_FILE" 2>&1 &
-    echo "Upgrade initiate job completed"
-else
-    rm -f /tmp/pg-upgrade-status
-    initiate_upgrade
-fi
+initiate_upgrade
