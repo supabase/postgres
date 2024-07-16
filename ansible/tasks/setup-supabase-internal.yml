@@ -109,3 +109,8 @@
 
 - name: Install PostgreSQL prestart script
   import_tasks: internal/postgresql-prestart.yml
+
+- name: Install salt minion
+  import_tasks: internal/install-salt.yml
+  tags:
+    - aws-only

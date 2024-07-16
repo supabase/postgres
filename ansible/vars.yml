@@ -22,6 +22,8 @@ gotrue_release_checksum: sha1:585643943fd669e8a9b916e318b241f67fc9cc93
 
 aws_cli_release: "2.2.7"
 
+salt_minion_version: 3007
+
 golang_version: "1.19.3"
 golang_version_checksum:
   arm64: sha256:99de2fe112a52ab748fb175edea64b313a0c8d51d6157dba683a6be163fd5eab

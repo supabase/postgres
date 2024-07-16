@@ -1,0 +1,29 @@
+- name: Add apt repository for Saltstack (arm)
+  block:
+    - name: salt gpg key
+      ansible.builtin.apt_key:
+        url: https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+        keyring: /etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg
+
+    - name: salt apt repo
+      ansible.builtin.apt_repository:
+         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/{{ salt_minion_version }} focal main
+         state: present
+  when: platform == "arm64"
+
+- name: Add apt repository for Saltstack (amd)
+  block:
+    - name: salt gpg key
+      ansible.builtin.apt_key:
+        url: https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+        keyring: /etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg
+
+    - name: salt apt repo
+      ansible.builtin.apt_repository:
+         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/{{ salt_minon_version }} focal main
+         state: present
+  when: platform == "amd64"
+
+- name: Salt minion install
+  apt:
+    name: salt-minion
