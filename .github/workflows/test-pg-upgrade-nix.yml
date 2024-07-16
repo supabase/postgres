@@ -127,14 +127,14 @@ jobs:
       - name: Initiate upgrade
         run: docker exec "$container" bash -c '/tmp/upgrade/initiate-nix.sh "github:supabase/postgres/sam/nix-docker-build#psql_15/bin" "github:supabase/postgres/develop#psql_15/bin"; exit $?'
 
-      # - name: Complete pg_upgrade
-      #   run: docker exec pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
+      - name: Complete pg_upgrade
+        run: docker exec pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/complete-nix.sh; exit $?'
 
-      # - name: Run post-upgrade tests
-      #   run: |
-      #     pg_prove tests/01-schema.sql
-      #     pg_prove tests/02-data.sql
-      #     pg_prove tests/03-settings.sql
+      - name: Run post-upgrade tests
+        run: |
+          pg_prove ./tests/01-schema.sql
+          pg_prove ./tests/02-data.sql
+          pg_prove ./tests/03-settings.sql
 
       - name: Clean up container
         if: ${{ always() }}

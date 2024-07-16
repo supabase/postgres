@@ -8,6 +8,7 @@ export PGPORT=5432
 export PGPASSWORD=postgres
 
 
-pg_prove ../../tests/pg_upgrade/tests/01-schema.sql
-pg_prove ../../tests/pg_upgrade/tests/02-data.sql
-pg_prove ../../tests/pg_upgrade/tests/03-settings.sql
+
+
+psql -c "select * from pg_extension;"
+psql -c "ALTER SYSTEM SET password_encryption TO 'scram-sha-256';"

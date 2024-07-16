@@ -5,7 +5,7 @@
 ## The following commands copy custom PG configs and enable previously disabled
 ## extensions, containing regtypes referencing system OIDs.
 
-set -eEuo pipefail
+set -eEuox pipefail
 
 SCRIPT_DIR=$(dirname -- "$0";)
 # shellcheck disable=SC1091
