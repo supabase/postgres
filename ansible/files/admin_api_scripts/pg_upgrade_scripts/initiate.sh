@@ -202,7 +202,7 @@ function initiate_upgrade {
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
     # TODO(pcnc: decide if to switch based on the tarball's contents, or through other means)
-    if [ -f "/tmp/pg_upgrade_bin/nix_flake_version" ]; then
+    if [ -f "$PG_UPGRADE_BIN_DIR/nix_flake_version" ]; then
         IS_NIX_BASED="true"
         NIX_FLAKE_VERSION=$(cat "$PG_UPGRADE_BIN_DIR/nix_flake_version")
         PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/$NIX_FLAKE_VERSION#psql_15/bin" --no-link --print-out-paths)
