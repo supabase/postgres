@@ -40,5 +40,4 @@ which sed
 echo "NOTE: patching postgresql.conf files"
 sed -e "s#@PGSODIUM_GETKEY_SCRIPT@#$PGSODIUM_GETKEY_SCRIPT#g" \
     $PSQL_CONF_FILE > "$DATDIR/postgresql.conf"
-cat "$DATDIR/postgresql.conf"
 exec postgres -p "$PORTNO" -D "$DATDIR" -k /tmp
