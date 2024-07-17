@@ -27,7 +27,6 @@ PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PGSODIUM_GETKEY_SCRIPT=@PGSODIUM_GETKEY@
 PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
-PLJAVA_LIBJVM_LOCATION=@LIBJVM_LOCATION@
 DATDIR=$(mktemp -d)
 mkdir -p "$DATDIR"
 
@@ -35,13 +34,11 @@ echo "NOTE: using port $PORTNO for server"
 echo "NOTE: using temporary directory $DATDIR for data, which will not be removed"
 echo "NOTE: you are free to re-use this data directory at will"
 echo
-
+echo $PGSODIUM_GETKEY_SCRIPT
 initdb -U "$PGSQL_SUPERUSER" -D "$DATDIR" --locale=C
-
+which sed
 echo "NOTE: patching postgresql.conf files"
-echo "pljava libjvm location: $PLJAVA_LIBJVM_LOCATION"
 sed -e "s#@PGSODIUM_GETKEY_SCRIPT@#$PGSODIUM_GETKEY_SCRIPT#g" \
-    -e "s#@PLJAVA_LIBJVM_LOCATION@#$PLJAVA_LIBJVM_LOCATION#g" \
     $PSQL_CONF_FILE > "$DATDIR/postgresql.conf"
-
+cat "$DATDIR/postgresql.conf"
 exec postgres -p "$PORTNO" -D "$DATDIR" -k /tmp
