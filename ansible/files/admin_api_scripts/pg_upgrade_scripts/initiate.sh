@@ -29,6 +29,8 @@ SCRIPT_DIR=$(dirname -- "$0";)
 source "$SCRIPT_DIR/common.sh"
 
 IS_CI=${IS_CI:-}
+IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
+IS_NIX_BASED=${IS_NIX_BASED:-}
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 PGVERSION=$1
@@ -40,6 +42,7 @@ OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
 PGLIBOLD="/usr/lib/postgresql/lib"
+PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
@@ -107,7 +110,7 @@ cleanup() {
     echo "Removing SUPERUSER grant from postgres"
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-    if [ -z "$IS_CI" ]; then
+    if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
         umount $MOUNT_POINT
     fi
@@ -175,17 +178,39 @@ function initiate_upgrade {
     PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
     PGDATANEW="$MOUNT_POINT/pgdata"
-    PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
-    PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
-    PGLIBNEW="$PG_UPGRADE_BIN_DIR/lib"
-    PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
     # running upgrade using at least 1 cpu core
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
+
+    # To make nix-based upgrades work for testing, create a pg binaries tarball with the following contents:
+    #  - nix_flake_version - cc133e79ed767f04cf787c0e7add41d7c4b8adfd
+
+    # Temp workaround to have the tarball present for testing purposes
+    # Requires nix to be installed, as well as the flake:
+    # 1. Install nix - https://github.com/supabase/postgres/blob/4afe5f07f9f4c873ace895fa6ef8060eb63527cb/scripts/nix-provision.sh#L19-L22
+    # 2. Install flake: nix build "github:supabase/postgres/cc133e79ed767f04cf787c0e7add41d7c4b8adfd#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes
+    mkdir -p "$PG_UPGRADE_BIN_DIR"
+    mkdir -p /tmp/persistent/
+    echo "cc133e79ed767f04cf787c0e7add41d7c4b8adfd" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
+    tar -czf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin" .
+    rm -rf /tmp/pg_upgrade_bin/
     
     echo "1. Extracting pg_upgrade binaries"
     mkdir -p "/tmp/pg_upgrade_bin"
     tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
+
+    PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
+
+    # TODO(pcnc: decide if to switch based on the tarball's contents, or through other means)
+    if [ -f "/tmp/pg_upgrade_bin/nix_flake_version" ]; then
+        IS_NIX_BASED="true"
+        NIX_FLAKE_VERSION=$(cat "$PG_UPGRADE_BIN_DIR/nix_flake_version")
+        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/$NIX_FLAKE_VERSION#psql_15/bin" --no-link --print-out-paths)
+        PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
+    fi
+
+    PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
+    PGLIBNEW="$PG_UPGRADE_BIN_DIR/lib"
 
     # copy upgrade-specific pgsodium_getkey script into the share dir
     chmod +x "$SCRIPT_DIR/pgsodium_getkey.sh"
@@ -220,7 +245,7 @@ function initiate_upgrade {
         locale-gen
     fi
 
-    if [ -z "$IS_CI" ]; then
+    if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
         # excluding nvme0 since it is the root disk
         echo "5. Determining block device to mount"
@@ -259,8 +284,10 @@ function initiate_upgrade {
     fi
     ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
 
-    cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
-    cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+    if [ -z "$IS_NIX_BASED" ]; then
+        cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
+        cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+    fi
 
     # This is a workaround for older versions of wrappers which don't have the expected
     #  naming scheme, containing the version in their library's file name
@@ -287,7 +314,9 @@ function initiate_upgrade {
         fi
     fi
 
-    export LD_LIBRARY_PATH="${PGLIBNEW}"
+    if [ -z "$IS_NIX_BASED" ]; then
+        export LD_LIBRARY_PATH="${PGLIBNEW}"
+    fi
 
     echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
@@ -349,7 +378,7 @@ EOF
 trap cleanup ERR
 
 echo "running" > /tmp/pg-upgrade-status
-if [ -z "$IS_CI" ]; then
+if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
     initiate_upgrade >> "$LOG_FILE" 2>&1 &
     echo "Upgrade initiate job completed"
 else
