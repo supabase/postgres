@@ -15,6 +15,7 @@
       ourSystems = with flake-utils.lib; [
         system.x86_64-linux
         system.aarch64-linux
+        system.aarch64-darwin
       ];
     in
     flake-utils.lib.eachSystem ourSystems (system:
@@ -127,8 +128,8 @@
           ./nix/ext/pg_tle.nix
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
-          ./nix/ext/plv8.nix
-          ./nix/ext/pljava.nix
+          # ./nix/ext/plv8.nix
+          # ./nix/ext/pljava.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
