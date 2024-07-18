@@ -46,6 +46,7 @@ while ! docker exec -it pg_upgrade_test bash -c "pg_isready"; do
 done
 
 echo "Running migrations"
+docker cp ../../migrations/db/migrations "pg_upgrade_test:/docker-entrypoint-initdb.d/"
 docker exec -it pg_upgrade_test bash -c '/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1; exit $?'
 if [ $? -ne 0 ]; then
   echo "Running migrations failed. Exiting."
@@ -54,6 +55,7 @@ fi
 
 echo "Running tests"
 pg_prove "../../migrations/tests/test.sql"
+psql -f "./tests/97-enable-extensions.sql"
 psql -f "./tests/98-data-fixtures.sql"
 psql -f "./tests/99-fixtures.sql"
 
