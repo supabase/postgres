@@ -182,18 +182,17 @@ function initiate_upgrade {
     # running upgrade using at least 1 cpu core
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
 
-    # To make nix-based upgrades work for testing, create a pg binaries tarball with the following contents:
-    #  - nix_flake_version - cc133e79ed767f04cf787c0e7add41d7c4b8adfd
+    if [ -n "$IS_LOCAL_UPGRADE" ]; then
+        # To make nix-based upgrades work for testing, create a pg binaries tarball with the following contents:
+        #  - nix_flake_version - a7189a68ed4ea78c1e73991b5f271043636cf074
+        # Where the value is the commit hash of the nix flake that contains the binaries
 
-    # Temp workaround to have the tarball present for testing purposes
-    # Requires nix to be installed, as well as the flake:
-    # 1. Install nix - https://github.com/supabase/postgres/blob/4afe5f07f9f4c873ace895fa6ef8060eb63527cb/scripts/nix-provision.sh#L19-L22
-    # 2. Install flake: nix build "github:supabase/postgres/cc133e79ed767f04cf787c0e7add41d7c4b8adfd#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes
-    mkdir -p "$PG_UPGRADE_BIN_DIR"
-    mkdir -p /tmp/persistent/
-    echo "cc133e79ed767f04cf787c0e7add41d7c4b8adfd" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
-    tar -czf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin" .
-    rm -rf /tmp/pg_upgrade_bin/
+        mkdir -p "$PG_UPGRADE_BIN_DIR"
+        mkdir -p /tmp/persistent/
+        echo "a7189a68ed4ea78c1e73991b5f271043636cf074" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
+        tar -czf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin" .
+        rm -rf /tmp/pg_upgrade_bin/
+    fi
     
     echo "1. Extracting pg_upgrade binaries"
     mkdir -p "/tmp/pg_upgrade_bin"
@@ -201,11 +200,21 @@ function initiate_upgrade {
 
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
-    # TODO(pcnc: decide if to switch based on the tarball's contents, or through other means)
     if [ -f "$PG_UPGRADE_BIN_DIR/nix_flake_version" ]; then
         IS_NIX_BASED="true"
         NIX_FLAKE_VERSION=$(cat "$PG_UPGRADE_BIN_DIR/nix_flake_version")
-        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/$NIX_FLAKE_VERSION#psql_15/bin" --no-link --print-out-paths)
+
+        if ! command -v nix &> /dev/null; then
+            echo "1.1. Nix is not installed; installing."
+
+            curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
+            --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+            --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        fi
+
+        # shellcheck source=/dev/null
+        source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
         PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
     fi
 
@@ -287,6 +296,8 @@ function initiate_upgrade {
     if [ -z "$IS_NIX_BASED" ]; then
         cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
         cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
+
+        export LD_LIBRARY_PATH="${PGLIBNEW}"
     fi
 
     # This is a workaround for older versions of wrappers which don't have the expected
@@ -312,10 +323,6 @@ function initiate_upgrade {
                 fi
             fi
         fi
-    fi
-
-    if [ -z "$IS_NIX_BASED" ]; then
-        export LD_LIBRARY_PATH="${PGLIBNEW}"
     fi
 
     echo "9. Creating new data directory, initializing database"
