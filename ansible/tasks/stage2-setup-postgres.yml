@@ -6,7 +6,7 @@
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#psql_15/bin"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#psql_15/bin"
 #TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
   when: stage2_nix
 
