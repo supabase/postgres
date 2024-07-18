@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+[ ! -z "$DEBUG" ] && set -x
+
+# first argument should be '15' or '16' for the version
+if [ "$1" == "15" ]; then
+    echo "Starting client for PSQL 15"
+    PSQL15=@PSQL15_BINDIR@
+    BINDIR="$PSQL15"
+elif [ "$1" == "16" ]; then
+    echo "Starting client for PSQL 16"
+    PSQL16=@PSQL16_BINDIR@
+    BINDIR="$PSQL16"
+elif [ "$1" == "orioledb-16" ]; then
+    echo "Starting client for PSQL ORIOLEDB 16"
+    PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
+    BINDIR="$PSQLORIOLEDB16"
+else
+    echo "Please provide a valid Postgres version (15, 16, or orioledb-16)"
+    exit 1
+fi
+#vars for migration.sh
+export PATH=$BINDIR/bin:$PATH
+export POSTGRES_DB=postgres
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=@PGSQL_DEFAULT_PORT@
+PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
+PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
+MIGRATIONS_DIR=@MIGRATIONS_DIR@
+POSTGRESQL_SCHEMA_SQL=@POSTGRESQL_SCHEMA_SQL@
+for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
+    echo "$0: running $sql"
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f  "$sql" postgres
+done
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'" postgres
+# run migrations as super user - postgres user demoted in post-setup
+for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
+    echo "$0: running $sql"
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$sql" postgres
+done
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres
+# TODO Do we need to reset stats when running migrations locally?
+#psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
+
+exec psql -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost postgres
