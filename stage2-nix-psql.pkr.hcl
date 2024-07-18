@@ -41,6 +41,10 @@ variable "force-deregister" {
   type    = bool
   default = false
 }
+variable "git_sha" {
+  type    = string
+  default = env("GIT_SHA")
+}
 
 packer {
   required_plugins {
@@ -128,6 +132,9 @@ build {
   }
   
   provisioner "shell" {
+    environment_vars = [
+      "GIT_SHA=${var.git_sha}"
+    ]
      script = "scripts/nix-provision.sh"
   }
   
