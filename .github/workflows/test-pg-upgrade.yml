@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - develop
-      - pcnc/auto-pg_upgrade-testing
+      - pcnc/pg_upgrade-test-extensions
   workflow_dispatch:
 
 permissions:
@@ -16,6 +16,7 @@ jobs:
       matrix:
         base_pg_version:
           - 15.1.1.60
+          - 15.1.1.70
     runs-on: arm-runner
     timeout-minutes: 30
     defaults:
@@ -99,7 +100,9 @@ jobs:
           retries: 20
 
       - name: Run migrations
-        run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
+        run: |
+          docker cp ../../migrations/db/migrations "$container:/docker-entrypoint-initdb.d/"
+          docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
 
       - name: Run initial tests
         run: pg_prove "../../migrations/tests/test.sql"
@@ -108,6 +111,7 @@ jobs:
 
       - name: Apply pre-upgrade fixtures
         run: |
+          psql -f "./tests/97-enable-extensions.sql"
           psql -f "./tests/98-data-fixtures.sql"
           psql -f "./tests/99-fixtures.sql"
           
