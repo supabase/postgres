@@ -40,7 +40,7 @@
   when: debpkg_mode
 
 - name: locale-gen
-  command: sudo locale-gen en_US.UTF-8
+  command: sudo locale-gen en_US.UTF-8 C.UTF-8
   when: stage2_nix
 
 - name: update-locale

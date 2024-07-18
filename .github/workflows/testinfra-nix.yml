@@ -65,3 +65,24 @@ jobs:
         if: ${{ always() }}
         run: |
           aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --region ap-southeast-1 --instance-ids {} || true
+
+      - name: Cleanup AMIs
+        if: always()
+        run: |
+          # Define AMI name patterns
+          STAGE1_AMI_NAME="supabase-postgres-ci-ami-test-stage-1"
+          STAGE2_AMI_NAME="supabase-postgres-ci-ami-test-nix"
+          
+          # Function to deregister AMIs by name pattern
+          deregister_ami_by_name() {
+            local ami_name_pattern=$1
+            local ami_ids=$(aws ec2 describe-images --region ap-southeast-1 --owners self --filters "Name=name,Values=${ami_name_pattern}" --query 'Images[*].ImageId' --output text)
+            for ami_id in $ami_ids; do
+              echo "Deregistering AMI: $ami_id"
+              aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id
+            done
+          }
+          
+          # Deregister AMIs
+          deregister_ami_by_name "$STAGE1_AMI_NAME"
+          deregister_ami_by_name "$STAGE2_AMI_NAME"
