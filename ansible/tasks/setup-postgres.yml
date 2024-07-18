@@ -39,8 +39,20 @@
     state: absent
   when: debpkg_mode
 
+- name: install locales
+  apt:
+    name: locales
+    state: present
+  become: yes
+  when: stage2_nix
+
+- name: configure locales
+  command: echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+  become: yes
+  when: stage2_nix
+
 - name: locale-gen
-  command: sudo locale-gen en_US.UTF-8 C.UTF-8
+  command: sudo locale-gen
   when: stage2_nix
 
 - name: update-locale
