@@ -170,7 +170,7 @@ function initiate_upgrade {
 
     # Exclude empty-string entries, as well as leading/trailing commas and spaces resulting from the above lib exclusions
     #  i.e. " , pg_stat_statements, , pgsodium, " -> "pg_stat_statements, pgsodium"
-    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | grep -oP '\S+[,$]' | tr "\n" " " | sed "s/,\s*$//" | xargs)
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | tr ',' ' ' | tr -s ' ' | tr ' ' ', ')
 
     PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
