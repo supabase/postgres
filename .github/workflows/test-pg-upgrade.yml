@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         base_pg_version:
-          - 15.1.1.70
+          - 15.1.1.60
     runs-on: arm-runner
     timeout-minutes: 30
     defaults:
@@ -99,7 +99,9 @@ jobs:
           retries: 20
 
       - name: Run migrations
-        run: docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
+        run: |
+          docker cp ../../migrations/db/migrations "$container:/docker-entrypoint-initdb.d/"
+          docker exec "$container" bash -c "/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1"
 
       - name: Run initial tests
         run: pg_prove "../../migrations/tests/test.sql"
