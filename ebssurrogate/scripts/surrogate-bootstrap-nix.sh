@@ -179,9 +179,9 @@ function setup_chroot_environment {
 	cp -r /tmp/unit-tests /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
-	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
-	chroot /mnt /tmp/chroot-bootstrap.sh
-	rm -f /mnt/tmp/chroot-bootstrap.sh
+	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
+	chroot /mnt /tmp/chroot-bootstrap-nix.sh
+	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
 	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/root/supabase-release
 
 	# Copy the nvme identification script into /sbin inside the chroot
@@ -214,7 +214,7 @@ EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars '{"debpkg_mode": true, "nixpkg_mode": false, "stage2_nix": false}' $ARGS
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false}' $ARGS
 }
 
 function update_systemd_services {

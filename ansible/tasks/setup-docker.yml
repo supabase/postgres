@@ -2,6 +2,7 @@
   copy:
     src: files/extensions/
     dest: /tmp/extensions/
+  when: debpkg_mode
 
 # Builtin apt module does not support wildcard for deb paths
 - name: Install extensions
@@ -9,12 +10,16 @@
     set -e
     apt-get update
     apt-get install -y --no-install-recommends /tmp/extensions/*.deb
+  when: debpkg_mode
 
 - name: pgsodium - determine postgres bin directory
   shell: pg_config --bindir
   register: pg_bindir_output
+  when: debpkg_mode
+  
 - set_fact:
     pg_bindir: "{{ pg_bindir_output.stdout }}"
+  when: debpkg_mode 
 
 - name: pgsodium - set pgsodium.getkey_script
   become: yes
@@ -23,6 +28,7 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
+  when: debpkg_mode
 
 # supautils
 - name: supautils - add supautils to session_preload_libraries
@@ -31,6 +37,7 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#session_preload_libraries = ''"
     replace: session_preload_libraries = 'supautils'
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - write custom supautils.conf
   template:
@@ -39,12 +46,14 @@
     mode: 0664
     owner: postgres
     group: postgres
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - copy extension custom scripts
   copy:
     src: files/postgresql_extension_custom_scripts/
     dest: /etc/postgresql-custom/extension-custom-scripts
   become: yes
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - chown extension custom scripts
   file:
@@ -54,6 +63,7 @@
     path: /etc/postgresql-custom/extension-custom-scripts
     recurse: yes
   become: yes
+  when: debpkg_mode or stage2_nix
 
 - name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
   become: yes
@@ -61,8 +71,10 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
     replace: "include = '/etc/postgresql-custom/supautils.conf'"
+  when: debpkg_mode or stage2_nix
 
 - name: Cleanup - extension packages
   file:
     path: /tmp/extensions
     state: absent
+  when: debpkg_mode

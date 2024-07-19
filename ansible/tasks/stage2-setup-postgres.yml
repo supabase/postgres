@@ -1,0 +1,222 @@
+# - name: Install openjdk11 for pljava from nix binary cache
+#   become: yes
+#   shell: |
+#     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+- name: Install Postgres from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#psql_15/bin"
+#TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
+  when: stage2_nix
+
+- name: Install pg_prove from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
+  when: stage2_nix
+
+- name: Set ownership and permissions for /etc/ssl/private
+  become: yes
+  file:
+    path: /etc/ssl/private
+    owner: root
+    group: postgres
+    mode: '0750'
+  when: stage2_nix
+
+- name: Set permissions for postgresql.env
+  become: yes
+  file:
+    path: /etc/environment.d/postgresql.env
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/bin directory exists
+  file:
+    path: /usr/lib/postgresql/bin
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/share directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/share/contrib directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/share/timezonesets directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/timezonesets
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/share/tsearch_data directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/tsearch_data
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Ensure /usr/lib/postgresql/share/extension directory exists
+  file:
+    path: /usr/lib/postgresql/share/postgresql/extension
+    state: directory
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+# - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
+#   file:
+#     path: /usr/lib/postgresql/share/postgresql/pljava
+#     state: directory
+#     owner: postgres
+#     group: postgres
+#   when: stage2_nix
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: import pgsodium_getkey script
+  template:
+    src: /tmp/ansible-playbook/ansible/files/pgsodium_getkey_readonly.sh.j2
+    dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+    owner: postgres
+    group: postgres
+    mode: 0700
+  when: stage2_nix
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/lib/postgresql/bin
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/bin/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/bin/*"
+  become: yes
+  when: stage2_nix
+
+- name: Check if /usr/bin/pg_config exists
+  stat:
+    path: /usr/bin/pg_config
+  register: pg_config_stat
+  when: stage2_nix
+
+- name: Remove existing /usr/bin/pg_config if it is not a symlink
+  file:
+    path: /usr/bin/pg_config
+    state: absent
+  when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk and stage2_nix
+  become: yes
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
+  file:
+    src: "{{ item }}"
+    dest: "/usr/bin/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/bin/*"
+  become: yes
+  when: stage2_nix
+
+- name: Ensure postgres user has ownership of symlink
+  file:
+    path: "/usr/bin/{{ item | basename }}"
+    owner: postgres
+    group: postgres
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/bin/*"
+  become: yes
+  when: stage2_nix
+
+# - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
+#   file:
+#     src: "{{ item }}"
+#     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
+#     state: link
+#   with_fileglob:
+#     - "/var/lib/postgresql/.nix-profile/share/pljava/*"
+#   become: yes
+# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/*"
+  become: yes
+  when: stage2_nix
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/extension/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/extension/*"
+  become: yes
+  when: stage2_nix
+
+- name: create destination directory
+  file:
+    path: /usr/lib/postgresql/share/postgresql/contrib/
+    state: directory
+    recurse: yes
+  when: stage2_nix
+
+- name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
+  shell: >
+    sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
+    sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+    && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
+  become: yes
+  when: stage2_nix
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/timezonesets/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/*"
+  become: yes
+  when: stage2_nix
+
+- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
+  file:
+    src: "{{ item }}"
+    dest: "/usr/lib/postgresql/share/postgresql/tsearch_data/{{ item | basename }}"
+    state: link
+  with_fileglob:
+    - "/var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/*"
+  become: yes
+  when: stage2_nix
+
+- set_fact:
+    pg_bindir: "/usr/lib/postgresql/bin"
+  when: stage2_nix
+
+- name: pgsodium - set pgsodium.getkey_script
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/postgresql.conf
+    state: present
+    # script is expected to be placed by finalization tasks for different target platforms
+    line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
+  when: stage2_nix

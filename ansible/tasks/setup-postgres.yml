@@ -2,39 +2,95 @@
   copy:
     src: files/postgres/
     dest: /tmp/build/
+  when: debpkg_mode
 
 - name: Postgres - add PPA
   apt_repository:
     repo: "deb [ trusted=yes ] file:///tmp/build ./"
     state: present
+  when: debpkg_mode
 
 - name: Postgres - install commons
   apt:
     name: postgresql-common
     install_recommends: no
+  when: debpkg_mode
 
 - name: Do not create main cluster
   shell:
     cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
+  when: debpkg_mode
 
 - name: Postgres - install server
   apt:
     name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
     install_recommends: no
+  when: debpkg_mode
 
 - name: Postgres - remove PPA
   apt_repository:
     repo: "deb [ trusted=yes ] file:///tmp/build ./"
     state: absent
+  when: debpkg_mode
 
 - name: Postgres - cleanup package
   file:
     path: /tmp/build
     state: absent
+  when: debpkg_mode
+
+- name: install locales
+  apt:
+    name: locales
+    state: present
+  become: yes
+  when: stage2_nix
+
+- name: configure locales
+  command: echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+  become: yes
+  when: stage2_nix
+
+- name: locale-gen
+  command: sudo locale-gen
+  when: stage2_nix
+
+- name: update-locale
+  command: sudo update-locale
+  when: stage2_nix
 
 - name: Create symlink to /usr/lib/postgresql/bin
   shell:
     cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
+  when: debpkg_mode
+
+- name: create ssl-cert group
+  group:
+    name: ssl-cert
+    state: present
+  when: nixpkg_mode
+# the old method of installing from debian creates this group, but we must create it explicitly
+# for the nix built version
+
+- name: create postgres group
+  group:
+    name: postgres
+    state: present
+  when: nixpkg_mode
+
+- name: create postgres user
+  shell: adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
+  args:
+    executable: /bin/bash
+  become: yes
+  when: nixpkg_mode
+
+- name: add postgres user to postgres group
+  shell: usermod -a -G ssl-cert postgres
+  args:
+    executable: /bin/bash
+  become: yes
+  when: nixpkg_mode
 
 - name: Create relevant directories
   file:
@@ -47,6 +103,7 @@
     - '/home/postgres'
     - '/var/log/postgresql'
     - '/var/lib/postgresql'
+  when: debpkg_mode or nixpkg_mode
 
 - name: Allow adminapi to write custom config
   file:
@@ -59,6 +116,7 @@
   with_items:
     - '/etc/postgresql'
     - '/etc/postgresql-custom'
+  when: debpkg_mode or nixpkg_mode
 
 - name: create placeholder config files
   file:
@@ -70,6 +128,7 @@
   with_items:
     - 'generated-optimizations.conf'
     - 'custom-overrides.conf'
+  when: debpkg_mode or nixpkg_mode
 
 # Move Postgres configuration files into /etc/postgresql
 # Add postgresql.conf
@@ -78,6 +137,7 @@
     src: files/postgresql_config/postgresql.conf.j2
     dest: /etc/postgresql/postgresql.conf
     group: postgres
+  when: debpkg_mode or nixpkg_mode
 
 # Add pg_hba.conf
 - name: import pg_hba.conf
@@ -85,6 +145,7 @@
     src: files/postgresql_config/pg_hba.conf.j2
     dest: /etc/postgresql/pg_hba.conf
     group: postgres
+  when: debpkg_mode or nixpkg_mode
 
 # Add pg_ident.conf
 - name: import pg_ident.conf
@@ -92,6 +153,7 @@
     src: files/postgresql_config/pg_ident.conf.j2
     dest: /etc/postgresql/pg_ident.conf
     group: postgres
+  when: debpkg_mode or nixpkg_mode
 
 # Add custom config for read replicas set up
 - name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
@@ -101,10 +163,17 @@
     mode: 0664
     owner: postgres
     group: postgres
+  when: debpkg_mode or nixpkg_mode
 
 # Install extensions before init
 - name: Install Postgres extensions
   import_tasks: tasks/setup-docker.yml
+  when: debpkg_mode or stage2_nix
+
+#stage 2 postgres tasks
+- name: stage2 postgres tasks
+  import_tasks: tasks/stage2-setup-postgres.yml
+  when: stage2_nix
 
 # init DB
 - name: Create directory on data volume
@@ -117,6 +186,7 @@
     mode: 0750
   with_items:
     - "/data/pgdata"
+  when: debpkg_mode or nixpkg_mode
 
 - name: Link database data_dir to data volume directory
   file:
@@ -124,26 +194,60 @@
     path: "/var/lib/postgresql/data"
     state: link
     force: yes
+  when: debpkg_mode or nixpkg_mode
 
 - name: Initialize the database
   become: yes
   become_user: postgres
-  shell:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  vars:
+    ansible_command_timeout: 60
+  when: debpkg_mode
+
+- name: Initialize the database stage2_nix
+  become: yes
+  become_user: postgres
+  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   vars:
     ansible_command_timeout: 60
     # Circumvents the following error:
     # "Timeout (12s) waiting for privilege escalation prompt"
+  when: stage2_nix 
 
 - name: copy PG systemd unit
   template:
     src: files/postgresql_config/postgresql.service.j2
     dest: /etc/systemd/system/postgresql.service
+  when: debpkg_mode or stage2_nix
 
 - name: copy optimizations systemd unit
   template:
     src: files/database-optimizations.service.j2
     dest: /etc/systemd/system/database-optimizations.service
+  when: debpkg_mode or stage2_nix
+
+- name: Restart Postgres Database without Systemd
+  become: yes
+  become_user: postgres
+  shell: |
+    source /var/lib/postgresql/.bashrc
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
+  environment:
+    LANG: en_US.UTF-8
+    LANGUAGE: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
+    LC_CTYPE: en_US.UTF-8
+    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+  when: stage2_nix
+
 
 # Reload
 - name: System - systemd reload
@@ -151,3 +255,33 @@
     enabled: yes
     name: postgresql
     daemon_reload: yes
+  when: debpkg_mode or stage2_nix
+
+- name: Make sure .bashrc exists
+  file: 
+    path: /var/lib/postgresql/.bashrc 
+    state: touch
+    owner: postgres
+    group: postgres
+  when: nixpkg_mode 
+
+- name: Add LOCALE_ARCHIVE to .bashrc
+  lineinfile:
+    dest: "/var/lib/postgresql/.bashrc"
+    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
+    create: yes
+  become: yes
+  when: nixpkg_mode
+
+- name: Add LANG items to .bashrc
+  lineinfile:
+    dest: "/var/lib/postgresql/.bashrc"
+    line: "{{ item }}"
+  loop: 
+    - 'export LANG="en_US.UTF-8"'
+    - 'export LANGUAGE="en_US.UTF-8"'
+    - 'export LC_ALL="en_US.UTF-8"'
+    - 'export LANG="en_US.UTF-8"'
+    - 'export LC_CTYPE="en_US.UTF-8"'
+  become: yes
+  when: nixpkg_mode
