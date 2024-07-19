@@ -338,7 +338,12 @@ function initiate_upgrade {
     echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
-    su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+
+    if [ "$IS_NIX_UPGRADE" = "true" ]; then
+        LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+    else
+        su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+    fi
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
@@ -354,11 +359,12 @@ function initiate_upgrade {
 EOF
     )
 
-    if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
+    if [ "$IS_NIX_UPGRADE" = "true" ]; then
         UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
+        LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    else 
+        su -c "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
     fi
-    
-    su -c "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
 
     echo "10. Stopping postgres; running pg_upgrade"
     # Extra work to ensure postgres is actually stopped
@@ -374,7 +380,7 @@ EOF
         CI_stop_postgres
     fi
 
-    if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
+    if [ "$IS_NIX_UPGRADE" = "true" ]; then
         LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
     else
         su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
