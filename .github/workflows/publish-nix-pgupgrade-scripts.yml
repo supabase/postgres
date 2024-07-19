@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - develop
+      - sam/nix-and-conventional-ami
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
-      - 'common.vars.pkr.hcl'
+      - 'common-nix.vars.pkr.hcl'
   workflow_dispatch:
 
 permissions:
@@ -23,7 +24,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(grep 'postgres-version' common.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -63,7 +64,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(grep 'postgres-version' common.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
