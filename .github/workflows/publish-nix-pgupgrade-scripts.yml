@@ -1,0 +1,94 @@
+name: Publish pg_upgrade_scripts
+
+on:
+  push:
+    branches:
+      - develop
+      - sam/nix-and-conventional-ami
+    paths:
+      - '.github/workflows/publish-pgupgrade-scripts.yml'
+      - 'common-nix.vars.pkr.hcl'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+    
+jobs:
+  publish-staging:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create a tarball containing pg_upgrade scripts
+        run: |
+          mkdir -p /tmp/pg_upgrade_scripts
+          cp -r ansible/files/admin_api_scripts/pg_upgrade_scripts/* /tmp/pg_upgrade_scripts
+          tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Upload pg_upgrade scripts to s3 staging
+        run: |
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
+
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
+          SLACK_FOOTER: ''
+
+  publish-prod:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'develop'
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create a tarball containing pg_upgrade scripts
+        run: |
+          mkdir -p /tmp/pg_upgrade_scripts
+          cp -r ansible/files/admin_api_scripts/pg_upgrade_scripts/* /tmp/pg_upgrade_scripts
+          tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
+
+      - name: configure aws credentials - prod
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+          aws-region: "us-east-1"
+  
+      - name: Upload pg_upgrade scripts to s3 prod
+        run: |
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
+
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
+          SLACK_FOOTER: ''
