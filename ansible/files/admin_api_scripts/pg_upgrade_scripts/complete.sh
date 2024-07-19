@@ -161,11 +161,19 @@ function apply_auth_scheme_updates {
 
 function start_vacuum_analyze {
     echo "complete" > /tmp/pg-upgrade-status
-    su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+    if ! command -v nix &> /dev/null; then
+        su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+    else
+        su -c '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+    fi
     echo "Upgrade job completed"
 }
 
 trap cleanup ERR
+
+echo "C.UTF-8 UTF-8" > /etc/locale.gen
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
 
 if [ -z "$IS_CI" ]; then
     complete_pg_upgrade >> $LOG_FILE 2>&1 &
