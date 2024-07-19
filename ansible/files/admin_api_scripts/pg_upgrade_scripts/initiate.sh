@@ -31,7 +31,7 @@ source "$SCRIPT_DIR/common.sh"
 IS_CI=${IS_CI:-}
 IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
 IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
-IS_NIX_BASED_SYSTEM=${IS_NIX_BASED_SYSTEM:-}
+IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
 MOUNT_POINT="/data_migration"
@@ -47,8 +47,8 @@ PGLIBOLD="/usr/lib/postgresql/lib"
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
-    UPGRADE_BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
-    if [[ "$UPGRADE_BINARY_PATH" == *"nix"* ]]; then
+    BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
+    if [[ "$BINARY_PATH" == *"nix"* ]]; then
         IS_NIX_BASED_SYSTEM="true"
     fi
 fi
@@ -213,7 +213,7 @@ function initiate_upgrade {
         IS_NIX_UPGRADE="true"
         NIX_FLAKE_VERSION=$(cat "$PG_UPGRADE_BIN_DIR/nix_flake_version")
 
-        if ! command -v nix &> /dev/null; then
+        if [ "$IS_NIX_BASED_SYSTEM" = "false" ]; then
             echo "1.1. Nix is not installed; installing."
 
             curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
@@ -221,6 +221,7 @@ function initiate_upgrade {
             --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         fi
 
+        echo "1.2. Installing flake revision: $NIX_FLAKE_VERSION"
         # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
