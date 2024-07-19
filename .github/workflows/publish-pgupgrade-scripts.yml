@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - develop
+      - sam/nix-and-conventional-ami
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common.vars.pkr.hcl'
+      - 'common-nix.vars.pkr.hcl'
   workflow_dispatch:
 
 permissions:
