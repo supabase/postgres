@@ -30,11 +30,12 @@ source "$SCRIPT_DIR/common.sh"
 
 IS_CI=${IS_CI:-}
 IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
-IS_NIX_BASED=${IS_NIX_BASED:-}
-LOG_FILE="/var/log/pg-upgrade-initiate.log"
+IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
+IS_NIX_BASED_SYSTEM=${IS_NIX_BASED_SYSTEM:-}
 
 PGVERSION=$1
 MOUNT_POINT="/data_migration"
+LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
@@ -42,7 +43,15 @@ OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
 PGLIBOLD="/usr/lib/postgresql/lib"
+
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
+
+if [ -L "$PGBINOLD/pg_upgrade" ]; then
+    UPGRADE_BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
+    if [[ "$UPGRADE_BINARY_PATH" == *"nix"* ]]; then
+        IS_NIX_BASED_SYSTEM="true"
+    fi
+fi
 
 # If upgrading from older major PG versions, disable specific extensions
 if [[ "$OLD_PGVERSION" =~ ^14.* ]]; then
@@ -182,11 +191,11 @@ function initiate_upgrade {
     # running upgrade using at least 1 cpu core
     WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
 
-    if [ -n "$IS_LOCAL_UPGRADE" ]; then
-        # To make nix-based upgrades work for testing, create a pg binaries tarball with the following contents:
-        #  - nix_flake_version - a7189a68ed4ea78c1e73991b5f271043636cf074
-        # Where the value is the commit hash of the nix flake that contains the binaries
+    # To make nix-based upgrades work for testing, create a pg binaries tarball with the following contents:
+    #  - nix_flake_version - a7189a68ed4ea78c1e73991b5f271043636cf074
+    # Where the value is the commit hash of the nix flake that contains the binaries
 
+    if [ -n "$IS_LOCAL_UPGRADE" ]; then
         mkdir -p "$PG_UPGRADE_BIN_DIR"
         mkdir -p /tmp/persistent/
         echo "a7189a68ed4ea78c1e73991b5f271043636cf074" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
@@ -201,7 +210,7 @@ function initiate_upgrade {
     PGSHARENEW="$PG_UPGRADE_BIN_DIR/share"
 
     if [ -f "$PG_UPGRADE_BIN_DIR/nix_flake_version" ]; then
-        IS_NIX_BASED="true"
+        IS_NIX_UPGRADE="true"
         NIX_FLAKE_VERSION=$(cat "$PG_UPGRADE_BIN_DIR/nix_flake_version")
 
         if ! command -v nix &> /dev/null; then
@@ -212,7 +221,7 @@ function initiate_upgrade {
             --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         fi
 
-        # shellcheck source=/dev/null
+        # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
         PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
@@ -291,9 +300,9 @@ function initiate_upgrade {
     if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
         mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
     fi
-    ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
 
-    if [ -z "$IS_NIX_BASED" ]; then
+    if [ -z "$IS_NIX_UPGRADE" ]; then
+        ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
         cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
         cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
 
@@ -344,6 +353,10 @@ function initiate_upgrade {
 EOF
     )
 
+    if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
+        UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
+    fi
+    
     su -c "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
 
     echo "10. Stopping postgres; running pg_upgrade"
@@ -360,7 +373,11 @@ EOF
         CI_stop_postgres
     fi
 
-    su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
+        LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    else
+        su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    fi
 
     # copying custom configurations
     echo "11. Copying custom configurations"
