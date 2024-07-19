@@ -298,11 +298,11 @@ function initiate_upgrade {
     echo "8. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
-    if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
-        mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
-    fi
-
     if [ -z "$IS_NIX_UPGRADE" ]; then
+        if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
+            mv "/usr/share/postgresql/${PGVERSION}" "/usr/share/postgresql/${PGVERSION}.bak"
+        fi
+
         ln -s "$PGSHARENEW" "/usr/share/postgresql/${PGVERSION}"
         cp --remove-destination "$PGLIBNEW"/*.control "$PGSHARENEW/extension/"
         cp --remove-destination "$PGLIBNEW"/*.sql "$PGSHARENEW/extension/"
