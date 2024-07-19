@@ -61,6 +61,15 @@ jobs:
           VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Create nix flake revision tarball
+        run: |
+          GIT_SHA=${{github.sha}}
+          MAJOR_VERSION=$(echo "${{ steps.process_release_version.outputs.version }}" | cut -d. -f1)
+
+          mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
+          echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
+          tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
+
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -75,6 +84,9 @@ jobs:
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
 
+      - name: Upload nix flake revision to s3 staging
+        run: |
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
 
       #Our self hosted github runner already has permissions to publish images 
       #but they're limited to only that; 
@@ -95,8 +107,10 @@ jobs:
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             manifest-playbook.yml
     
-      
-      
+      - name: Upload nix flake revision to s3 prod
+        run: |
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
