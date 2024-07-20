@@ -1,4 +1,4 @@
-name: Publish pg_upgrade_scripts
+name: Publish nix pg_upgrade_scripts
 
 on:
   push:

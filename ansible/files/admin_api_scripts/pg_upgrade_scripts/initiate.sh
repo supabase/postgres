@@ -40,6 +40,10 @@ LOG_FILE="/var/log/pg-upgrade-initiate.log"
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
+SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
+SERVER_LC_CTYPE=$(run_sql -A -t -c "SHOW lc_ctype;")
+SERVER_ENCODING=$(run_sql -A -t -c "SHOW server_encoding;")
+
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
 PGLIBOLD="/usr/lib/postgresql/lib"
@@ -268,8 +272,11 @@ function initiate_upgrade {
     echo "4. Setup locale if required"
     if ! grep -q "^en_US.UTF-8" /etc/locale.gen ; then
         echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-        locale-gen
     fi
+    if ! grep -q "^C.UTF-8" /etc/locale.gen ; then
+        echo "C.UTF-8 UTF-8" >> /etc/locale.gen
+    fi
+    locale-gen
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
@@ -345,7 +352,12 @@ function initiate_upgrade {
     echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
-    su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+
+    if [ "$IS_NIX_UPGRADE" = "true" ]; then
+        LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+    else
+        su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+    fi
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
@@ -363,9 +375,8 @@ EOF
 
     if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
         UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
-    fi
-    
-    su -c "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+    fi 
+    LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
 
     echo "10. Stopping postgres; running pg_upgrade"
     # Extra work to ensure postgres is actually stopped
@@ -381,11 +392,7 @@ EOF
         CI_stop_postgres
     fi
 
-    if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
-        LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
-    else
-        su -c "$UPGRADE_COMMAND" -s "$SHELL" postgres
-    fi
+    LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 
     # copying custom configurations
     echo "11. Copying custom configurations"
