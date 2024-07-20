@@ -54,6 +54,7 @@ buildPgrxExtension_0_11_3 rec {
     "s3_fdw"
     "airtable_fdw"
     "logflare_fdw"
+    "auth0_fdw"
   ];
 
   # FIXME (aseipp): disable the tests since they try to install .control
