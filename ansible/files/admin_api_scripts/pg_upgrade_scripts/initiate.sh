@@ -184,6 +184,13 @@ function initiate_upgrade {
     #  i.e. " , pg_stat_statements, , pgsodium, " -> "pg_stat_statements, pgsodium"
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | tr ',' ' ' | tr -s ' ' | tr ' ' ', ')
 
+    # Account for trailing comma
+    # eg. "...,auto_explain,pg_tle,plan_filter," -> "...,auto_explain,pg_tle,plan_filter"
+    if [[ "${SHARED_PRELOAD_LIBRARIES: -1}" = "," ]]; then
+        # clean up trailing comma
+        SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/.$//" | xargs)
+    fi
+
     PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
 
     PGDATANEW="$MOUNT_POINT/pgdata"
