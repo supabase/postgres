@@ -432,6 +432,27 @@
             chmod +x $out/bin/start-postgres-client
           '';
 
+          # Start a version of the client and runs migrations script on server.
+          start-client-and-migrate =  
+            let
+              migrationsDir = ./migrations/db;
+              postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
+              pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+              statExtensionSql = ./ansible/files/stat_extension.sql;
+            in
+            pkgs.runCommand "start-postgres-client-migrate" { } ''
+              mkdir -p $out/bin
+              substitute ${./nix/tools/run-client-migrate.sh.in} $out/bin/start-postgres-client-migrate \
+                --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
+                --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
+                --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
+                --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
+                --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
+                --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
+              chmod +x $out/bin/start-postgres-client-migrate
+            '';
+
           # Migrate between two data directories.
           migrate-tool =
             let
@@ -535,6 +556,7 @@
           {
             start-server = mkApp "start-server" "start-postgres-server";
             start-client = mkApp "start-client" "start-postgres-client";
+            start-client-and-migrate = mkApp "start-client-and-migrate" "start-postgres-client-migrate";
             start-replica = mkApp "start-replica" "start-postgres-replica";
             migration-test = mkApp "migrate-tool" "migrate-postgres";
             sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
