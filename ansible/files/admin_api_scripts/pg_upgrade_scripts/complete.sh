@@ -99,6 +99,11 @@ function complete_pg_upgrade {
         CI_start_postgres --new-bin
     fi
 
+    # https://supabase.slack.com/archives/C02BJ2239GA/p1721462356684549
+    if [ -f "/usr/share/postgresql/15/extension/wrappers--0.3.1--0.4.1.sql" ]; then
+        cp /usr/share/postgresql/15/extension/wrappers--0.3.1--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql
+    fi
+
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
 
