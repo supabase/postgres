@@ -25,6 +25,13 @@ function cleanup {
     exit "$EXIT_CODE"
 }
 
+function execute_extension_upgrade_patches {
+    if [ -f "/var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql" ] && [ ! -f "/usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql" ]; then
+        cp /var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql
+        ln -s /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql
+    fi
+}
+
 function execute_patches {
     # Patch pg_net grants
     PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';")
@@ -98,6 +105,8 @@ function complete_pg_upgrade {
     else
         CI_start_postgres --new-bin
     fi
+
+    execute_extension_upgrade_patches || true
 
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql
