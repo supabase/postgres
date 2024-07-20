@@ -505,23 +505,30 @@
             export PGDATA=/tmp/pgdata
             mkdir -p $PGDATA
             initdb --locale=C
-
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
-              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}"
-
-            postgres -k /tmp >logfile 2>&1 &
-            sleep 2
-
+              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey_arb.sh}"
+            echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf
+            echo "port = 5432" >> $PGDATA/postgresql.conf
+            echo "host all all 127.0.0.1/32 trust" >> $PGDATA/pg_hba.conf
+            postgres -k /tmp -h localhost >logfile 2>&1 &
+            for i in {1..30}; do
+              if pg_isready -h localhost; then
+                break
+              fi
+              sleep 1
+              if [ $i -eq 30 ]; then
+                echo "PostgreSQL is not ready after 30 seconds"
+                cat logfile
+                exit 1
+              fi
+            done
             createdb -h localhost testing
-
             psql -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
             pg_prove -h localhost -d testing ${sqlTests}/*.sql
-
             pkill postgres
             mv logfile $out
             echo ${pgpkg}
           '';
-
       in
       rec {
         # The list of all packages that can be built with 'nix build'. The list
