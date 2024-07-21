@@ -148,7 +148,7 @@ function run_generated_sql {
     if [ -d /data/sql ]; then
         for FILE in /data/sql/*.sql; do
             if [ -f "$FILE" ]; then
-                run_sql -f "$FILE"
+                run_sql -f "$FILE" || true
             fi
         done
     fi
