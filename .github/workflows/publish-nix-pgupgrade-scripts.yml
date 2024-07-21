@@ -9,6 +9,10 @@ on:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common-nix.vars.pkr.hcl'
   workflow_dispatch:
+    inputs:
+      postgresVersion:
+        description: 'Optional. Postgres version to publish against, i.e. 15.1.1.78'
+        required: false
 
 permissions:
   id-token: write
@@ -25,6 +29,9 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
+            VERSION=${{ inputs.postgresVersion }}
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
