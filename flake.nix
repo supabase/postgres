@@ -20,7 +20,7 @@
     flake-utils.lib.eachSystem ourSystems (system:
       let
         pgsqlDefaultPort = "5435";
-        pgsqlSuperuser = "postgres";
+        pgsqlSuperuser = "supabase_admin";
         nix2img = nix2container.packages.${system}.nix2container;
 
         # The 'oriole_pkgs' variable holds all the upstream packages in nixpkgs, which
@@ -504,7 +504,7 @@
             } ''
             export PGDATA=/tmp/pgdata
             mkdir -p $PGDATA
-            initdb --locale=C
+            initdb --locale=C --username=supabase_admin
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey_arb.sh}"
             echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf

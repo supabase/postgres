@@ -104,6 +104,13 @@
       loop: "{{ sql_files }}"
       when: debpkg_mode or stage2_nix
 
+    - name: Create postgres role
+      become: yes
+      become_user: postgres
+      shell:
+        cmd: /usr/lib/postgresql/bin/psql --username=supabase_admin -d postgres -c "create role postgres superuser login; alter database postgres owner to postgres;"
+      when: debpkg_mode or stage2_nix
+
     - name: Execute init SQL files
       become: yes
       become_user: postgres
