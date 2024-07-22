@@ -28,6 +28,16 @@ fi
 
 db=$( cd -- "$( dirname -- "$0" )" > /dev/null 2>&1 && pwd )
 if [ -z "${USE_DBMATE:-}" ]; then
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin <<EOSQL
+do \$\$
+begin
+  -- postgres role is pre-created during AMI build
+  if not exists (select from pg_roles where rolname = 'postgres') then
+    create role postgres superuser login password '$PGPASSWORD';
+    alter database postgres owner to postgres;
+  end if;
+end \$\$
+EOSQL
     # run init scripts as postgres user
     for sql in "$db"/init-scripts/*.sql; do
         echo "$0: running $sql"
@@ -40,6 +50,10 @@ if [ -z "${USE_DBMATE:-}" ]; then
         psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -f "$sql"
     done
 else
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin <<EOSQL
+  create role postgres superuser login password '$PGPASSWORD';
+  alter database postgres owner to postgres;
+EOSQL
     # run init scripts as postgres user
     DBMATE_MIGRATIONS_DIR="$db/init-scripts" DATABASE_URL="postgres://postgres:$connect" dbmate --no-dump-schema migrate
     psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
