@@ -199,7 +199,7 @@
 - name: Initialize the database
   become: yes
   become_user: postgres
-  shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
   vars:
     ansible_command_timeout: 60
   when: debpkg_mode
@@ -207,7 +207,7 @@
 - name: Initialize the database stage2_nix
   become: yes
   become_user: postgres
-  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access"
+  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
   args:
     executable: /bin/bash
   environment:

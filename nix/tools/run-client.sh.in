@@ -24,6 +24,5 @@ fi
 export PATH=$BINDIR/bin:$PATH
 
 PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
-PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 
-exec psql -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost postgres
+exec psql -U postgres -p "$PORTNO" -h localhost postgres

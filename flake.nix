@@ -21,7 +21,7 @@
     flake-utils.lib.eachSystem ourSystems (system:
       let
         pgsqlDefaultPort = "5435";
-        pgsqlSuperuser = "postgres";
+        pgsqlSuperuser = "supabase_admin";
         nix2img = nix2container.packages.${system}.nix2container;
 
         # The 'oriole_pkgs' variable holds all the upstream packages in nixpkgs, which
@@ -392,7 +392,7 @@
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
             chmod +x $TMPDIR/getkey.sh            
-            initdb --locale=C
+            initdb --locale=C --username=supabase_admin
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
             echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf

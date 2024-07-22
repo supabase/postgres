@@ -5,7 +5,6 @@
 create publication supabase_realtime;
 
 -- Supabase super admin
-create user supabase_admin;
 alter user  supabase_admin with superuser createdb createrole replication bypassrls;
 
 -- Supabase replication user
