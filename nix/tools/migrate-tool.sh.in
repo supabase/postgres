@@ -59,8 +59,8 @@ echo "NOTE: using temporary directory $DATDIR for PSQL $1 data, which will not b
 echo "NOTE: you are free to re-use this data directory at will"
 echo
 
-$OLDVER/bin/initdb -D "$DATDIR" --locale=C
-$NEWVER/bin/initdb -D "$NEWDAT" --locale=C
+$OLDVER/bin/initdb -D "$DATDIR" --locale=C --username=supabase_admin
+$NEWVER/bin/initdb -D "$NEWDAT" --locale=C --username=supabase_admin
 
 # NOTE (aseipp): we need to patch postgresql.conf to have the right pgsodium_getkey script
 PSQL_CONF_FILE=@PSQL_CONF_FILE@

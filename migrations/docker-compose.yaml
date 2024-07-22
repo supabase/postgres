@@ -6,22 +6,15 @@ version: "3.8"
 
 services:
   db:
-    image: supabase/postgres:15.1.0.45
+    image: supabase_postgres
     restart: "no"
-    ports:
-      - 5478:5432
     healthcheck:
       test: pg_isready -U postgres -h localhost
       interval: 2s
       timeout: 2s
       retries: 10
     environment:
-      POSTGRES_HOST: /var/run/postgresql
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ./db/init-scripts:/docker-entrypoint-initdb.d/init-scripts
-      - ./db/migrations:/docker-entrypoint-initdb.d/migrations
-      - ./db/migrate.sh:/docker-entrypoint-initdb.d/migrate.sh
 
   pg_prove:
     image: horrendo/pg_prove

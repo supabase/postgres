@@ -21,7 +21,7 @@
     flake-utils.lib.eachSystem ourSystems (system:
       let
         pgsqlDefaultPort = "5435";
-        pgsqlSuperuser = "postgres";
+        pgsqlSuperuser = "supabase_admin";
         nix2img = nix2container.packages.${system}.nix2container;
 
         # The 'oriole_pkgs' variable holds all the upstream packages in nixpkgs, which
@@ -393,7 +393,7 @@
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
             chmod +x $TMPDIR/getkey.sh
-            initdb --locale=C
+            initdb --locale=C --username=supabase_admin
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
             echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf
@@ -416,14 +416,14 @@
                 exit 1
               fi
             done
-            createdb -p 5432 -h localhost testing
-            if ! psql -p 5432 -h localhost -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+            createdb -p 5432 -h localhost --username=supabase_admin testing
+            if ! psql -p 5432 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file. PostgreSQL log content:"
               cat $TMPDIR/logfile/postgresql.log
               pg_ctl -D "$PGDATA" stop
               exit 1
             fi
-            pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
+            pg_prove -p 5432 -h localhost --username=supabase_admin -d testing ${sqlTests}/*.sql
 
             mkdir -p $out/regression_output
             pg_regress \
@@ -433,6 +433,7 @@
               --outputdir=$out/regression_output \
               --host=localhost \
               --port=5432 \
+              --user=supabase_admin \
               $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort )
 
             pg_ctl -D "$PGDATA" stop

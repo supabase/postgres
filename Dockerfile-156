@@ -206,6 +206,8 @@ STOPSIGNAL SIGINT
 EXPOSE 5432
 
 ENV POSTGRES_HOST=/var/run/postgresql
+ENV POSTGRES_USER=supabase_admin
+ENV POSTGRES_DB=postgres
 RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     && rm -rf /var/lib/apt/lists/* && \
@@ -219,4 +221,3 @@ ENV LC_CTYPE=C.UTF-8
 ENV LC_COLLATE=C.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
 CMD ["postgres", "-D", "/etc/postgresql"]
-
