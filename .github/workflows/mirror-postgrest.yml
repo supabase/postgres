@@ -1,0 +1,33 @@
+name: Mirror PostgREST
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/mirror-postgrest.yml"
+      - "common.vars*"
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      postgrest_release: ${{ steps.args.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq '.postgrest_release' 'ansible/vars.yml'
+
+  mirror:
+    needs:
+      - version
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: supabase/cli/.github/workflows/mirror-image.yml@main
+    with:
+      image: postgrest/postgrest:v${{ needs.version.outputs.postgrest_release }}
+    secrets: inherit
