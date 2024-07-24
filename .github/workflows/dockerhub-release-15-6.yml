@@ -6,7 +6,7 @@ on:
       - develop
       - sam/psql156_dockerimg
     paths:
-      - ".github/workflows/dockerhub-release.yml"
+      - ".github/workflows/dockerhub-release-15-6.yml"
       - "common-nix.vars*"
  
 jobs:
