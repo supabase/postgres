@@ -10,5 +10,5 @@ corresponds to a Git commit in the repository &mdash; for example commit
 in this repository has a tag in the container registry which can be used to pull
 exactly that version.
 
-This just starts the server. Client container images are not provided; you can
+This only starts the server. Client container images are not provided; you can
 use `nix run` for that, as outlined [here](./start-client-server.md).
