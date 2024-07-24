@@ -305,20 +305,30 @@
             pgconf = pkgs.runCommand "pgconf" { } ''
               mkdir -p $out/data/pgconf
             '';
+            ubuntuFocal = nix2img.pullImage {
+              imageName = "ubuntu";
+              imageDigest = "sha256:874aca52f79ae5f8258faff03e10ce99ae836f6e7d2df6ecd3da5c1cad3a912b";
+              arch = "arm64";
+              sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
+            };
+            fileContents = builtins.readFile ./common-nix.vars.pkr.hcl;
+
+            # Extract the version using string manipulation
+            amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" fileContents);
           in
           nix2img.buildImage {
             #TODO (samrose) update this with the correct image name for supabase registry
-            name = "samrose/nix-experimental-postgresql-${version}-${system}"; 
-            tag = "latest";
+            name = "supabase/postgres"; 
+            tag = "${amiVersion}-base";
 
             nixUid = l.toInt uid;
             nixGid = l.toInt gid;
-
+            fromImage = ubuntuFocal;
             copyToRoot = [
               (pkgs.buildEnv {
                 name = "image-root";
-                paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage postgresqlConfig pkgs.dockerTools.binSh pkgs.sudo ];
-                pathsToLink = [ "/bin" "/etc" "/var" "/share" "/data" "/run" ];
+             paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
+                pathsToLink = [ "/bin" "/share" ];
               })
               mkUser
             ];
@@ -355,11 +365,11 @@
 
             config = {
               Entrypoint = [ "/bin/init.sh" ];
-              User = "postgres";
-              WorkingDir = "/data";
+              User = "root";
+              WorkingDir = "/var/lib/postgresql/data";
               Env = [
                 "NIX_PAGER=cat"
-                "USER=postgres"
+                "USER=root"
                 "PGDATA=/data/postgresql"
                 "PGHOST=/run/postgresql"
               ];
