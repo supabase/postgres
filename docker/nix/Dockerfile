@@ -15,4 +15,4 @@ RUN chmod +x /workspace/docker/nix/build.sh
 
 RUN chown -R $USER:$USER /workspace
 
-
+RUN nix profile install nixpkgs#python3
