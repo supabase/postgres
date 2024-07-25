@@ -48,33 +48,18 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.ref }}
           fetch-depth: 0
           fetch-tags: true
-      - name: aws-creds
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
-          output-credentials: true
-      - name: write secret key
-        # use python so we don't interpolate the secret into the workflow logs, in case of bugs
-        run: |
-          python -c "import os; file = open('nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
-        env:
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and publish base docker images
-        run: docker build -t base_nix -f docker/nix/Dockerfile .
+        run: docker build -t baseimg_nix -f docker/nix/Dockerfile-baseimg .
       - name: Run build psql bundle
         run:  |
-          docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
-                    -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
-                    -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
-                    -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
+          docker run -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
                     -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-                    base_nix bash -c "./workspace/docker/nix/build_base.sh"
+                    baseimg_nix bash -c "./workspace/docker/nix/build_base.sh"
 
   build_release_image:
     needs: [settings, build_base_image]
