@@ -3,10 +3,9 @@ set -eou pipefail
 
 nix --version
 cd /workspace
-nix build .#psql_15/bin -o psql_15
-nix build .#psql_15/docker
 nix flake check -L --all-systems
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_15
+#pre-check that docker image will build
+nix build .#psql_15/docker
 AUTH_FILE=$(mktemp)
 python3 -c "
 import json

@@ -56,19 +56,6 @@ jobs:
                     -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
                     -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
                     -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-                    base_nix bash -c "./workspace/docker/nix/build.sh"
-      - name: Trigger Release 15.6 workflow
-        # if: |
-        #   success() && 
-        #   (github.ref == 'refs/heads/develop' || 
-        #   github.ref == 'refs/heads/sam/psql156_dockerimg')
-        if: |
-          success()
-        #   (github.ref == 'refs/heads/develop' || 
-        #   github.ref == 'refs/heads/sam/psql156_dockerimg')
-        run: |
-          gh workflow run "Release 15.6 on Dockerhub" -f nix_ci_run_id=${{ github.run_id }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}              
+                    base_nix bash -c "./workspace/docker/nix/build_nix.sh"
     name: build psql bundle on ${{ matrix.arch }}
     
