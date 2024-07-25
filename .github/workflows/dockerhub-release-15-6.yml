@@ -117,8 +117,8 @@ jobs:
       - name: Merge multi-arch manifests
         run: |
           docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }} \
-          ${{ needs.settings.outputs.image_tag }}_amd64 \
-          ${{ needs.settings.outputs.image_tag }}_arm64
+          ${{ needs.settings.outputs.image_tag }}_amd64-dev \
+          ${{ needs.settings.outputs.image_tag }}_arm64-dev
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
