@@ -1,34 +1,17 @@
 name: Release 15.6 on Dockerhub
 
 on:
-  push:
-    branches:
-      - develop
-      - sam/psql156_dockerimg
-    paths:
-      - ".github/workflows/dockerhub-release-15-6.yml"
-      - "common-nix.vars*"
+  # push:
+  #   branches:
+  #     - develop
+  #   paths:
+  #     - ".github/workflows/dockerhub-release-15-6.yml"
+  #     - "common-nix.vars*"
 
-  #this should be removed when the PR is merged
+  #this should be removed and above restored before PR is merged
   pull_request:
  
 jobs:
-  settings:
-    runs-on: ubuntu-latest
-    outputs:
-      docker_version: ${{ steps.settings.outputs.postgres-version }}
-      image_tag: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
-      build_args: ${{ steps.args.outputs.result }}
-    steps:
-      - uses: actions/checkout@v3
-      - id: settings
-        # Remove spaces and quotes to get the raw version string
-        run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
-      - id: args
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
-
   build_base_image:
     strategy:
       fail-fast: false
@@ -55,11 +38,26 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and publish base docker images
         run: docker build -t baseimg_nix -f docker/nix/Dockerfile-baseimg .
-      - name: Run build psql bundle
+      - name: Run build psql bundle base image
         run:  |
           docker run -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
                     -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
                     baseimg_nix bash -c "./workspace/docker/nix/build_base.sh"
+  settings:
+    runs-on: ubuntu-latest
+    outputs:
+      docker_version: ${{ steps.settings.outputs.postgres-version }}
+      image_tag: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+      build_args: ${{ steps.args.outputs.result }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: settings
+        # Remove spaces and quotes to get the raw version string
+        run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
+      - id: args
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
   build_release_image:
     needs: [settings, build_base_image]
