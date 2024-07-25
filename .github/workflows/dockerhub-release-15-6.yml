@@ -5,6 +5,10 @@ on:
     branches:
       - develop
       - sam/psql156_dockerimg
+  #this should be removed when the PR is merged
+  pull_request:
+    branches:
+      - develop
     paths:
       - ".github/workflows/dockerhub-release-15-6.yml"
       - "common-nix.vars*"
