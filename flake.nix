@@ -315,7 +315,7 @@
               imageName = "ubuntu";
               imageDigest = "sha256:b6b83d3c331794420340093eb706a6f152d9c1fa51b262d9bf34594887c2c7ac";
               arch = "amd64";
-              sha256 = "sha256-A5UzIlAlzDWx1hwGP1+Zb6KiE6XBz7vbMVvMlpJfBCU=";
+              sha256 = "sha256-ugDTb83zbUxVO9IWIv/ukP0z52KiqEM/qSre7ijtBZc=";
             };
 
             ubuntuFocalArm64 = nix2img.pullImage {

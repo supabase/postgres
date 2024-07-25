@@ -1,6 +1,10 @@
 name: Release 15.6 on Dockerhub
 
 on:
+  workflow_run:
+    workflows: ["Nix CI"]
+    types:
+      - completed
   push:
     branches:
       - develop
@@ -11,6 +15,8 @@ on:
  
 jobs:
   settings:
+    #if nix ci completes successfully, run this job
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       docker_version: ${{ steps.settings.outputs.postgres-version }}
