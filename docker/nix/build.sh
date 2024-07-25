@@ -25,8 +25,10 @@ with open('$AUTH_FILE', 'w') as f:
     json.dump(config, f)
 " 2>/dev/null
 
-# Run the copyToRegistry command with the auth file
-DOCKER_CONFIG=$(dirname "$AUTH_FILE") nix run .#psql_15/docker.copyToRegistry
+export REGISTRY_AUTH_FILE="$AUTH_FILE"
 
-# Clean up the temporary auth file
+# Run the copyToRegistry 
+nix run .#psql_15/docker.copyToRegistry
+
+# Clean up the temporary file
 rm "$AUTH_FILE"
