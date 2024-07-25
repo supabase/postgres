@@ -5,13 +5,12 @@ on:
     branches:
       - develop
       - sam/psql156_dockerimg
-  #this should be removed when the PR is merged
-  pull_request:
-    branches:
-      - develop
     paths:
       - ".github/workflows/dockerhub-release-15-6.yml"
       - "common-nix.vars*"
+
+  #this should be removed when the PR is merged
+  pull_request:
  
 jobs:
   settings:
@@ -76,7 +75,6 @@ jobs:
                     -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
                     -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
                     base_nix bash -c "./workspace/docker/nix/build_base.sh"
-  name: build psql bundle on ${{ matrix.arch }}
 
   build_release_image:
     needs: [settings, build-base-image]
