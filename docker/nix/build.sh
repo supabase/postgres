@@ -16,7 +16,7 @@ import os
 auth = base64.b64encode(f'{os.environ['DOCKER_USERNAME']}:{os.environ['DOCKER_PASSWORD']}'.encode()).decode()
 config = {
     'auths': {
-        'https://index.docker.io/v1/': {
+        'docker.io': {
             'auth': auth
         }
     }
