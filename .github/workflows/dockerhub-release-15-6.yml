@@ -29,7 +29,7 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
-  build-base-image:
+  build_base_image:
     strategy:
       fail-fast: false
       matrix:
@@ -77,7 +77,7 @@ jobs:
                     base_nix bash -c "./workspace/docker/nix/build_base.sh"
 
   build_release_image:
-    needs: [settings, build-base-image]
+    needs: [settings, build_base_image]
     strategy:
       matrix:
         include:
@@ -123,7 +123,7 @@ jobs:
           SLACK_FOOTER: ""
 
   merge_manifest:
-    needs: [settings, build_image]
+    needs: [settings, build_release_image]
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
