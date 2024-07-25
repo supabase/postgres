@@ -5,9 +5,6 @@ on:
     branches:
       - develop
   pull_request:
-  paths:
-    - ".github/workflows/dockerhub-release-15-6.yml"
-    - "common-nix.vars*"
 
 permissions:
   contents: read
@@ -64,8 +61,7 @@ jobs:
         if: |
           success() && 
           (github.ref == 'refs/heads/develop' || 
-          github.ref == 'refs/heads/sam/psql156_dockerimg' ||
-          github.ref == 'refs/heads/another-branch')
+          github.ref == 'refs/heads/sam/psql156_dockerimg')
         run: |
           gh workflow run "Release 15.6 on Dockerhub" -f nix_ci_run_id=${{ github.run_id }}
         env:
