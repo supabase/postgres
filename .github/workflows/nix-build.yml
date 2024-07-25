@@ -5,6 +5,9 @@ on:
     branches:
       - develop
   pull_request:
+  paths:
+    - ".github/workflows/dockerhub-release-15-6.yml"
+    - "common-nix.vars*"
 
 permissions:
   contents: read
@@ -57,4 +60,15 @@ jobs:
                     -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
                     -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
                     base_nix bash -c "./workspace/docker/nix/build.sh"
+      - name: Trigger Release 15.6 workflow
+        if: |
+          success() && 
+          (github.ref == 'refs/heads/develop' || 
+          github.ref == 'refs/heads/sam/psql156_dockerimg' ||
+          github.ref == 'refs/heads/another-branch')
+        run: |
+          gh workflow run "Release 15.6 on Dockerhub" -f nix_ci_run_id=${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}              
     name: build psql bundle on ${{ matrix.arch }}
+    

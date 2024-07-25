@@ -1,22 +1,13 @@
 name: Release 15.6 on Dockerhub
 
 on:
-  workflow_run:
-    workflows: ["Nix CI"]
-    types:
-      - completed
-  push:
-    branches:
-      - develop
-      - sam/psql156_dockerimg
-    paths:
-      - ".github/workflows/dockerhub-release-15-6.yml"
-      - "common-nix.vars*"
- 
+  workflow_dispatch:
+    inputs:
+      nix_ci_run_id:
+        description: 'Nix CI Run ID'
+        required: true
 jobs:
   settings:
-    #if nix ci completes successfully, run this job
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       docker_version: ${{ steps.settings.outputs.postgres-version }}
