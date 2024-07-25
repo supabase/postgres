@@ -55,7 +55,7 @@ jobs:
           push: true
           build-args: |
             ${{ needs.settings.outputs.build_args }}
-            BASE_VERISON=${{ needs.settings.outputs.image_tag }}-base
+            BASE_VERISON=${{ needs.settings.outputs.image_tag }}-${{ matrix.arch }}-base
           target: production
           #delete -dev suffix when this PR is merged
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-dev
