@@ -1,10 +1,6 @@
 name: Release 15.6 on Dockerhub
 
 on:
-  workflow_run:
-    workflows: ["Nix CI"]
-    types:
-      - completed
   push:
     branches:
       - develop
