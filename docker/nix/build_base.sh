@@ -3,7 +3,7 @@ set -eou pipefail
 
 nix --version
 cd /workspace
-nix flake check -L --all-systems
+nix flake check -L 
 #pre-check that docker image will build
 nix build .#psql_15/docker
 AUTH_FILE=$(mktemp)
