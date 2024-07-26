@@ -42,8 +42,7 @@ ARG BASE_VERSION
 
 
 
-FROM supabase/postgresql:${BASE_VERSION} as base
-
+FROM ${BASE_VERSION} as base
 
 FROM base as builder
 RUN apt-get update && \
