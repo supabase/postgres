@@ -282,7 +282,9 @@
             group = "postgres";
             uid = "1001";
             gid = "1001";
-
+            wguid = "1002";
+            wggid = "1002";
+            
             mkUser = pkgs.runCommand "mkUser" { } ''
               mkdir -p $out/etc/pam.d
 
@@ -291,6 +293,12 @@
 
               echo "${group}:x:${gid}:" > $out/etc/group
               echo "${group}:x::" > $out/etc/gshadow
+
+              echo "root:x:0:0::/root:/bin/bash" >> $out/etc/passwd
+              echo "root:x:0:" >> $out/etc/group
+
+              echo "wal-g:x:${wguid}:${wggid}::" >> $out/etc/passwd
+              echo "wal-g:x:${wggid}:" >> $out/etc/group
 
               cat > $out/etc/pam.d/other <<EOF
               account sufficient pam_unix.so
@@ -326,13 +334,12 @@
             };
 
             ubuntuFocal = if archString == "amd64" then ubuntuFocalAmd64 else ubuntuFocalArm64;
-            fileContents = builtins.readFile ./common-nix.vars.pkr.hcl;
+            commonVars = builtins.readFile ./common-nix.vars.pkr.hcl;
 
             # Extract the version using string manipulation
-            amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" fileContents);
+            amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" commonVars);
           in
           nix2img.buildImage {
-            #TODO (samrose) update this with the correct image name for supabase registry
             name = "supabase/postgres"; 
             tag = "${amiVersion}-${archString}-base";
 
