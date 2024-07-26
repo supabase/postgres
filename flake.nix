@@ -387,11 +387,11 @@
 
             config = {
               Entrypoint = [ "/bin/init.sh" ];
-              User = "postgres";
+              User = "root";
               WorkingDir = "/var/lib/postgresql/data";
               Env = [
                 "NIX_PAGER=cat"
-                "USER=postgres"
+                "USER=root"
                 "PGDATA=/data/postgresql"
                 "PGHOST=/run/postgresql"
               ];
