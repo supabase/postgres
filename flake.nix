@@ -350,7 +350,7 @@
               (pkgs.buildEnv {
                 name = "image-root";
              paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
-                pathsToLink = [ "/bin" "/share" ];
+                pathsToLink = [ "/bin" "/share" "/lib"];
               })
               mkUser
             ];
@@ -387,11 +387,11 @@
 
             config = {
               Entrypoint = [ "/bin/init.sh" ];
-              User = "root";
+              User = "postgres";
               WorkingDir = "/var/lib/postgresql/data";
               Env = [
                 "NIX_PAGER=cat"
-                "USER=root"
+                "USER=postgres"
                 "PGDATA=/data/postgresql"
                 "PGHOST=/run/postgresql"
               ];

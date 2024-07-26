@@ -92,8 +92,8 @@ jobs:
           #delete -dev suffix when this PR is merged
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-dev
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-${{ github.sha }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ github.sha }}-${{ matrix.arch }}
           dockerfile: "Dockerfile-156"
       - name: Slack Notification
         if: ${{ failure() }}
