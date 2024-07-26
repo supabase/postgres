@@ -12,37 +12,6 @@ on:
   pull_request:
  
 jobs:
-  build_base_image:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: larger-runner-4cpu
-            arch: amd64
-          - runner: arm-runner
-            arch: arm64
-    runs-on: ${{ matrix.runner }}
-
-    steps:
-
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref }}
-          fetch-depth: 0
-          fetch-tags: true
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and publish base docker images
-        run: docker build -t baseimg_nix -f docker/nix/Dockerfile-baseimg .
-      - name: Run build psql bundle base image
-        run:  |
-          docker run -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-                    -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-                    baseimg_nix bash -c "./workspace/docker/nix/build_base.sh"
   settings:
     runs-on: ubuntu-latest
     outputs:
@@ -60,7 +29,7 @@ jobs:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
   build_release_image:
-    needs: [settings, build_base_image]
+    needs: [settings]
     strategy:
       matrix:
         include:
@@ -87,7 +56,6 @@ jobs:
           push: true
           build-args: |
             ${{ needs.settings.outputs.build_args }}
-            BASE_VERSION=${{ needs.settings.outputs.image_tag }}-${{ matrix.arch }}-base
           target: production
           #delete -dev suffix when this PR is merged
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-dev

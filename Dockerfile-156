@@ -38,13 +38,62 @@ ARG pg_tle_release=1.3.2
 ARG index_advisor_release=0.2.0
 ARG supautils_release=2.2.0
 ARG wal_g_release=2.0.1
-ARG BASE_VERSION
+
+FROM ubuntu:focal as base
+
+RUN apt update -y && apt install -y \
+    curl \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    wget \
+    sudo \
+    && apt clean
+
+
+RUN adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
+RUN adduser --system  --no-create-home --shell /bin/bash --group  wal-g
+RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux \
+--init none \
+--no-confirm \
+--extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+
+ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
+
+COPY . /nixpg
+
+WORKDIR /nixpg
+
+RUN nix profile install .#psql_15/bin 
 
 
 
-FROM ${BASE_VERSION} as base
+WORKDIR /
 
-FROM base as builder
+
+RUN mkdir -p /usr/lib/postgresql/bin \
+    /usr/lib/postgresql/share/postgresql \
+    # /usr/lib/postgresql/share/postgresql/contrib \
+    # /usr/lib/postgresql/share/postgresql/timezonesets \
+    # /usr/lib/postgresql/share/postgresql/tsearch_data \
+    # /usr/lib/postgresql/share/postgresql/extension \
+    && chown -R postgres:postgres /usr/lib/postgresql
+
+# Create symbolic links
+RUN ln -s /nix/var/nix/profiles/default/bin/* /usr/lib/postgresql/bin/ \
+    && ln -s /nix/var/nix/profiles/default/bin/* /usr/bin/ \
+    && chown -R postgres:postgres /usr/bin
+
+# Create symbolic links for PostgreSQL shares
+RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/share/postgresql/ 
+# Create symbolic links for contrib directory
+RUN mkdir -p /usr/lib/postgresql/share/postgresql/contrib \
+    && find /nix/var/nix/profiles/default/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+    && chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/contrib/
+
+
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends tzdata
 
