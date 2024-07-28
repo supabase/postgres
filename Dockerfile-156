@@ -75,7 +75,7 @@ WORKDIR /
 RUN mkdir -p /usr/lib/postgresql/bin \
     /usr/lib/postgresql/share/postgresql \
     # /usr/lib/postgresql/share/postgresql/contrib \
-    /usr/lib/postgresql/share/postgresql/timezonesets \
+    #/usr/lib/postgresql/share/postgresql/timezonesets \
     #/usr/lib/postgresql/share/postgresql/tsearch_data \
     # /usr/lib/postgresql/share/postgresql/extension \
     && chown -R postgres:postgres /usr/lib/postgresql
@@ -92,6 +92,9 @@ RUN mkdir -p /usr/lib/postgresql/share/postgresql/contrib \
     && find /nix/var/nix/profiles/default/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
     && chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/contrib/
 
+RUN chown -R postgres:postgres /usr/lib/postgresql
+
+RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
 
 
 RUN apt-get update && \
