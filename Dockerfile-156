@@ -106,6 +106,8 @@ RUN apt-get update && \
     checkinstall \
     cmake 
 
+ENV PGDATA=/var/lib/postgresql/data
+
 ####################
 # setup-wal-g.yml
 ####################
@@ -186,6 +188,8 @@ COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
     /usr/local/bin/
+
+RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
