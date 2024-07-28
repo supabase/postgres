@@ -74,11 +74,13 @@ WORKDIR /
 
 RUN mkdir -p /usr/lib/postgresql/bin \
     /usr/lib/postgresql/share/postgresql \
+    /usr/share/postgresql \
     # /usr/lib/postgresql/share/postgresql/contrib \
     #/usr/lib/postgresql/share/postgresql/timezonesets \
     #/usr/lib/postgresql/share/postgresql/tsearch_data \
     # /usr/lib/postgresql/share/postgresql/extension \
-    && chown -R postgres:postgres /usr/lib/postgresql
+    && chown -R postgres:postgres /usr/lib/postgresql \
+    && chown -R postgres:postgres /usr/share/postgresql
 
 # Create symbolic links
 RUN ln -s /nix/var/nix/profiles/default/bin/* /usr/lib/postgresql/bin/ \
