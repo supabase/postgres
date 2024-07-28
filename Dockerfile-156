@@ -206,5 +206,5 @@ ENV LC_ALL en_US.UTF-8
 ENV LC_CTYPE=C.UTF-8
 ENV LC_COLLATE=C.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
-CMD ["postgres", "-D", "/data/postgresql"]
+CMD ["postgres", "-D", "/etc/postgresql"]
 
