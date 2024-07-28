@@ -75,8 +75,8 @@ WORKDIR /
 RUN mkdir -p /usr/lib/postgresql/bin \
     /usr/lib/postgresql/share/postgresql \
     # /usr/lib/postgresql/share/postgresql/contrib \
-    # /usr/lib/postgresql/share/postgresql/timezonesets \
-    # /usr/lib/postgresql/share/postgresql/tsearch_data \
+    /usr/lib/postgresql/share/postgresql/timezonesets \
+    #/usr/lib/postgresql/share/postgresql/tsearch_data \
     # /usr/lib/postgresql/share/postgresql/extension \
     && chown -R postgres:postgres /usr/lib/postgresql
 
