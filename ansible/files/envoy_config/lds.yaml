@@ -140,6 +140,7 @@ resources:
                         hint: '%RESPONSE_CODE_DETAILS%'
                       json_format_options:
                         sort_properties: false
+              merge_slashes: true
               route_config:
                 name: route_config_0
                 virtual_hosts:
@@ -247,6 +248,7 @@ resources:
                         route:
                           cluster: admin_api
                           prefix_rewrite: /
+                          timeout: 600s
                       - match:
                           prefix: /customer/v1/privileged/
                         route:

@@ -173,3 +173,13 @@
     state: present
     reload: yes
   when: debpkg_mode or nixpkg_mode
+
+- name: configure system
+  ansible.posix.sysctl:
+    name: 'net.core.somaxconn'
+    value: 16834
+
+- name: configure system
+  ansible.posix.sysctl:
+    name: 'net.ipv4.ip_local_port_range'
+    value: '1025 65000'
