@@ -1,15 +1,12 @@
 name: Release 15.6 on Dockerhub
 
 on:
-  # push:
-  #   branches:
-  #     - develop
-  #   paths:
-  #     - ".github/workflows/dockerhub-release-15-6.yml"
-  #     - "common-nix.vars*"
-
-  #this should be removed and above restored before PR is merged
-  pull_request:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/dockerhub-release-15-6.yml"
+      - "common-nix.vars*"
  
 jobs:
   settings:
@@ -57,8 +54,7 @@ jobs:
           build-args: |
             ${{ needs.settings.outputs.build_args }}
           target: production
-          #delete -dev suffix when this PR is merged
-          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-dev
+          tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           #cache-from: type=gha,scope=${{ github.ref_name }}-${{ github.sha }}-${{ matrix.arch }}
           #cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ github.sha }}-${{ matrix.arch }}
@@ -84,9 +80,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }}-dev \
-          ${{ needs.settings.outputs.image_tag }}_amd64-dev \
-          ${{ needs.settings.outputs.image_tag }}_arm64-dev
+          docker buildx imagetools create -t ${{ needs.settings.outputs.image_tag }} \
+          ${{ needs.settings.outputs.image_tag }}_amd64 \
+          ${{ needs.settings.outputs.image_tag }}_arm64
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
