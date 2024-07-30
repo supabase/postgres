@@ -54,8 +54,6 @@ jobs:
           docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
                     -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
                     -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
-                    -e DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-                    -e DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
                     base_nix bash -c "./workspace/docker/nix/build_nix.sh"
     name: build psql bundle on ${{ matrix.arch }}
     
