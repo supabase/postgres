@@ -11,8 +11,6 @@ RUN mkdir -p /workspace
 
 COPY ./ /workspace
 
-RUN chmod +x /workspace/docker/nix/build.sh
+RUN chmod +x /workspace/docker/nix/build_nix.sh
 
 RUN chown -R $USER:$USER /workspace
-
-
