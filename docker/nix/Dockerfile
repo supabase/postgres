@@ -12,11 +12,5 @@ RUN mkdir -p /workspace
 COPY ./ /workspace
 
 RUN chmod +x /workspace/docker/nix/build_nix.sh
-RUN chmod +x /workspace/docker/nix/build_base.sh
 
 RUN chown -R $USER:$USER /workspace
-
-RUN nix profile install nixpkgs#python3 nixpkgs#gh
-
-ENV DOCKER_USERNAME=""
-ENV DOCKER_PASSWORD=""
