@@ -315,12 +315,20 @@ function initiate_upgrade {
     echo "8. TODO"
     run_sql -c "alter role postgres superuser;"
     run_sql -c "create role supabase_tmp login superuser;"
-    psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
-begin;
-alter role postgres rename to supabase_admin_;
-alter role supabase_admin rename to postgres;
-alter role supabase_admin_ rename to supabase_admin;
-commit;
+    PGOPTIONS='-c pg_stat_statements.track=none' psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
+do $$
+declare
+  postgres_rolpassword text := select rolpassword from pg_authid where rolname = 'postgres';
+  supabase_admin_rolpassword text := select rolpassword from pg_authid where rolname = 'supabase_admin';
+begin
+  alter role postgres rename to supabase_admin_;
+  alter role supabase_admin rename to postgres;
+  alter role supabase_admin_ rename to supabase_admin;
+
+  execute(format('alter role postgres password %L', postgres_rolpassword));
+  execute(format('alter role supabase_admin password %L', supabase_admin_rolpassword));
+end
+$$;
 EOSQL
     run_sql -c "drop role supabase_tmp;"
 
