@@ -62,21 +62,6 @@
 
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
 
-        # FIXME (aseipp): pg_prove is yet another perl program that needs
-        # LOCALE_ARCHIVE set in non-NixOS environments. upstream this. once that's done, we
-        # can remove this wrapper.
-        # pg_prove = pkgs.runCommand "pg_prove"
-        #   {
-        #     nativeBuildInputs = [ pkgs.makeWrapper ];
-        #   } ''
-        #   mkdir -p $out/bin
-        #   for x in pg_prove pg_tapgen; do
-        #     makeWrapper "${pkgs.perlPackages.TAPParserSourceHandlerpgTAP}/bin/$x" "$out/bin/$x" \
-        #       --set LOCALE_ARCHIVE "${pkgs.glibcLocales}/lib/locale/locale-archive"
-        #   done
-        # '';
-
-
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
