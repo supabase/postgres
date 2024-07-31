@@ -308,10 +308,11 @@ function initiate_upgrade {
 
     echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
+
+    # TODO: Only do postgres <-> supabase_admin swap if upgrading from postgres
+    # as bootstrap user to supabase_admin as bootstrap user.
     
     echo "8. TODO"
-    echo "local all all trust
-$(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
     run_sql -c "alter role postgres superuser;"
     run_sql -c "create role supabase_tmp login superuser;"
     psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
@@ -369,6 +370,14 @@ EOSQL
     else
         su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
     fi
+
+    # TODO: Make this declarative, replace file with the most up to date content
+    # of pg_hba.conf.j2. Otherwise we'd need to supply the password for
+    # supabase_admin, because pg_upgrade connects to the db as supabase_admin
+    # using unix sockets, which is gated behind scram-sha-256 per the current
+    # pg_hba.conf.j2.
+    echo "local all all trust
+$(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
