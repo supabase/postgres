@@ -310,14 +310,16 @@ function initiate_upgrade {
     handle_extensions
     
     echo "8. TODO"
-    # run_sql -c "ALTER USER postgres WITH SUPERUSER;"
-    run_sql <<-EOSQL
+    run_sql -c "alter role postgres superuser;"
+    run_sql -c "create role supabase_tmp login superuser;"
+    psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
 begin;
 alter role postgres rename to supabase_admin_;
 alter role supabase_admin rename to postgres;
 alter role supabase_admin_ rename to supabase_admin;
 commit;
 EOSQL
+    run_sql -c "drop role supabase_tmp;"
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
         if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
@@ -372,6 +374,7 @@ EOSQL
     --new-bindir=${PGBINNEW} \
     --old-datadir=${PGDATAOLD} \
     --new-datadir=${PGDATANEW} \
+    --username=supabase_admin \
     --jobs="${WORKERS}" -r \
     --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
