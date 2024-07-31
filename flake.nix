@@ -253,153 +253,6 @@
             paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
           };
 
-        # Make a Docker Image from a given PostgreSQL version and binary package.
-        # updated to use https://github.com/nlewo/nix2container (samrose)
-        # makePostgresDocker = version: binPackage:
-        #   let
-        #     #system = builtins.currentSystem;
-        #     archString = if system == "aarch64-linux" then "arm64"
-        #          else if system == "x86_64-linux" then "amd64"
-        #          else throw "Unsupported system: ${system}";
-
-        #     initScript = pkgs.runCommand "docker-init.sh" { } ''
-        #       mkdir -p $out/bin
-        #       substitute ${./nix/docker/init.sh.in} $out/bin/init.sh \
-        #         --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}'
-
-        #       chmod +x $out/bin/init.sh
-        #     '';
-
-        #     postgresqlConfig = pkgs.runCommand "postgresql.conf" { } ''
-        #       mkdir -p $out/etc/
-        #       substitute ${./nix/tests/postgresql.conf.in} $out/etc/postgresql.conf \
-        #         --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
-        #         --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}"
-        #     '';
-
-        #     l = pkgs.lib // builtins;
-
-        #     user = "postgres";
-        #     group = "postgres";
-        #     uid = "1001";
-        #     gid = "1001";
-        #     wguid = "1002";
-        #     wggid = "1002";
-            
-        #     mkUser = pkgs.runCommand "mkUser" { } ''
-        #       mkdir -p $out/etc/pam.d
-
-        #       echo "${user}:x:${uid}:${gid}::" > $out/etc/passwd
-        #       echo "${user}:!x:::::::" > $out/etc/shadow
-
-        #       echo "${group}:x:${gid}:" > $out/etc/group
-        #       echo "${group}:x::" > $out/etc/gshadow
-
-        #       echo "root:x:0:0::/root:/bin/bash" >> $out/etc/passwd
-        #       echo "root:x:0:" >> $out/etc/group
-
-        #       echo "wal-g:x:${wguid}:${wggid}::" >> $out/etc/passwd
-        #       echo "wal-g:x:${wggid}:" >> $out/etc/group
-
-        #       cat > $out/etc/pam.d/other <<EOF
-        #       account sufficient pam_unix.so
-        #       auth sufficient pam_rootok.so
-        #       password requisite pam_unix.so nullok sha512
-        #       session required pam_unix.so
-        #       EOF
-
-        #       touch $out/etc/login.defs
-        #     '';
-        #     run = pkgs.runCommand "run" { } ''
-        #       mkdir -p $out/run/postgresql
-        #     '';
-        #     data = pkgs.runCommand "data" { } ''
-        #       mkdir -p $out/data/postgresql
-        #     '';
-        #     pgconf = pkgs.runCommand "pgconf" { } ''
-        #       mkdir -p $out/data/pgconf
-        #     '';
-
-        #     ubuntuFocalAmd64 = nix2img.pullImage {
-        #       imageName = "ubuntu";
-        #       imageDigest = "sha256:b6b83d3c331794420340093eb706a6f152d9c1fa51b262d9bf34594887c2c7ac";
-        #       arch = "amd64";
-        #       sha256 = "sha256-ugDTb83zbUxVO9IWIv/ukP0z52KiqEM/qSre7ijtBZc=";
-        #     };
-
-        #     ubuntuFocalArm64 = nix2img.pullImage {
-        #       imageName = "ubuntu";
-        #       imageDigest = "sha256:874aca52f79ae5f8258faff03e10ce99ae836f6e7d2df6ecd3da5c1cad3a912b";
-        #       arch = "arm64";
-        #       sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
-        #     };
-
-        #     ubuntuFocal = if archString == "amd64" then ubuntuFocalAmd64 else ubuntuFocalArm64;
-        #     commonVars = builtins.readFile ./common-nix.vars.pkr.hcl;
-
-        #     # Extract the version using string manipulation
-        #     amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" commonVars);
-        #   in
-        #   nix2img.buildImage {
-        #     name = "supabase/postgres"; 
-        #     tag = "${amiVersion}-${archString}-base";
-
-        #     nixUid = l.toInt uid;
-        #     nixGid = l.toInt gid;
-        #     fromImage = ubuntuFocal;
-        #     copyToRoot = [
-        #       (pkgs.buildEnv {
-        #         name = "image-root";
-        #      paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
-        #         pathsToLink = [ "/bin" "/share" "/lib"];
-        #       })
-        #       mkUser
-        #     ];
-
-        #     perms = [
-        #       {
-        #         path = data;
-        #         regex = "";
-        #         mode = "0744";
-        #         uid = l.toInt uid;
-        #         gid = l.toInt gid;
-        #         uname = user;
-        #         gname = group;
-        #       }
-        #       {
-        #         path = pgconf;
-        #         regex = "";
-        #         mode = "0744";
-        #         uid = l.toInt uid;
-        #         gid = l.toInt gid;
-        #         uname = user;
-        #         gname = group;
-        #       }
-        #       {
-        #         path = run;
-        #         regex = "";
-        #         mode = "0744";
-        #         uid = l.toInt uid;
-        #         gid = l.toInt gid;
-        #         uname = user;
-        #         gname = group;
-        #       }
-        #     ];
-
-        #     config = {
-        #       Entrypoint = [ "/bin/init.sh" ];
-        #       User = "root";
-        #       WorkingDir = "/var/lib/postgresql/data";
-        #       Env = [
-        #         "NIX_PAGER=cat"
-        #         "USER=root"
-        #         "PGDATA=/data/postgresql"
-        #         "PGHOST=/run/postgresql"
-        #       ];
-        #       ExposedPorts = { "${pgsqlDefaultPort}/tcp" = { }; };
-        #       Volumes = { "/data" = { }; };
-        #     };
-        #   };
 
         # Create an attribute set, containing all the relevant packages for a
         # PostgreSQL install, wrapped up with a bow on top. There are three
@@ -410,19 +263,14 @@
         #    install.
         #  - exts: an attrset containing all the extensions, mapped to their
         #    package names.
-        #  - docker: a docker image containing the postgresql package, with all
-        #    the extensions installed, and a receipt.json file containing
-        #    metadata about the install.
         makePostgres = version: rec {
           bin = makePostgresBin version;
           exts = makeOurPostgresPkgsSet version;
-          #docker = makePostgresDocker version bin;
           recurseForDerivations = true;
         };
         makeOrioleDbPostgres = version: patchedPostgres: rec {
           bin = makeOrioleDbPostgresBin version patchedPostgres;
           exts = makeOurOrioleDbPostgresPkgsSet version patchedPostgres;
-          #docker = makePostgresDocker version bin;
           recurseForDerivations = true;
         };
 
