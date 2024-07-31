@@ -310,6 +310,7 @@ function initiate_upgrade {
     handle_extensions
     
     echo "8. TODO"
+    echo "local all all trust" >> /etc/postgresql/pg_hba.conf
     run_sql -c "alter role postgres superuser;"
     run_sql -c "create role supabase_tmp login superuser;"
     psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
