@@ -42,19 +42,23 @@ jobs:
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=ci-ami-test" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" amazon-arm64-nix.pkr.hcl
+      
+      - name: Generate random string
+        id: random
+        run: echo "random_string=$(openssl rand -hex 8)" >> $GITHUB_OUTPUT
 
       - name: Build AMI stage 2
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=ci-ami-test" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
 
       - name: Run tests
         timeout-minutes: 10
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-          pytest -vv -s testinfra/test_ami_nix.py
+          pytest -vv -s testinfra/test_ami_nix.py --ami-name "${{ steps.random.outputs.random_string }}"
       
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
@@ -71,7 +75,7 @@ jobs:
         run: |
           # Define AMI name patterns
           STAGE1_AMI_NAME="supabase-postgres-ci-ami-test-stage-1"
-          STAGE2_AMI_NAME="supabase-postgres-ci-ami-test-nix"
+          STAGE2_AMI_NAME="${{ steps.random.outputs.random_string }}"
           
           # Function to deregister AMIs by name pattern
           deregister_ami_by_name() {
