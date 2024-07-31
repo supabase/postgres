@@ -378,6 +378,7 @@ EOSQL
     # pg_hba.conf.j2.
     echo "local all all trust
 $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
+    run_sql -c "select pg_reload_conf();"
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
