@@ -398,6 +398,21 @@
             echo "host all all 127.0.0.1/32 trust" >> $PGDATA/pg_hba.conf
             #postgres -D "$PGDATA" -k "$TMPDIR" -h localhost -p 5432 >$TMPDIR/logfile/postgresql.log 2>&1 &
             pg_ctl -D "$PGDATA" -l $TMPDIR/logfile/postgresql.log -o "-k $TMPDIR -p 5432" start
+            for i in {1..60}; do
+              if pg_isready -h localhost -p 5432; then
+                echo "PostgreSQL is ready"
+                break
+              fi
+              sleep 1
+              if [ $i -eq 60 ]; then
+                echo "PostgreSQL is not ready after 60 seconds"
+                echo "PostgreSQL status:"
+                pg_ctl -D "$PGDATA" status
+                echo "PostgreSQL log content:"
+                cat $TMPDIR/logfile/postgresql.log
+                exit 1
+              fi
+            done
             createdb -p 5432 -h localhost testing
             psql -p 5432 -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
             pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
