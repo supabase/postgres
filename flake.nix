@@ -65,16 +65,16 @@
         # FIXME (aseipp): pg_prove is yet another perl program that needs
         # LOCALE_ARCHIVE set in non-NixOS environments. upstream this. once that's done, we
         # can remove this wrapper.
-        pg_prove = pkgs.runCommand "pg_prove"
-          {
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-          } ''
-          mkdir -p $out/bin
-          for x in pg_prove pg_tapgen; do
-            makeWrapper "${pkgs.perlPackages.TAPParserSourceHandlerpgTAP}/bin/$x" "$out/bin/$x" \
-              --set LOCALE_ARCHIVE "${pkgs.glibcLocales}/lib/locale/locale-archive"
-          done
-        '';
+        # pg_prove = pkgs.runCommand "pg_prove"
+        #   {
+        #     nativeBuildInputs = [ pkgs.makeWrapper ];
+        #   } ''
+        #   mkdir -p $out/bin
+        #   for x in pg_prove pg_tapgen; do
+        #     makeWrapper "${pkgs.perlPackages.TAPParserSourceHandlerpgTAP}/bin/$x" "$out/bin/$x" \
+        #       --set LOCALE_ARCHIVE "${pkgs.glibcLocales}/lib/locale/locale-archive"
+        #   done
+        # '';
 
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
@@ -131,7 +131,7 @@
           ./nix/ext/pg_tle.nix
           ./nix/ext/wrappers/default.nix
           ./nix/ext/supautils.nix
-          #./nix/ext/plv8.nix
+          ./nix/ext/plv8.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
@@ -255,151 +255,151 @@
 
         # Make a Docker Image from a given PostgreSQL version and binary package.
         # updated to use https://github.com/nlewo/nix2container (samrose)
-        makePostgresDocker = version: binPackage:
-          let
-            #system = builtins.currentSystem;
-            archString = if system == "aarch64-linux" then "arm64"
-                 else if system == "x86_64-linux" then "amd64"
-                 else throw "Unsupported system: ${system}";
+        # makePostgresDocker = version: binPackage:
+        #   let
+        #     #system = builtins.currentSystem;
+        #     archString = if system == "aarch64-linux" then "arm64"
+        #          else if system == "x86_64-linux" then "amd64"
+        #          else throw "Unsupported system: ${system}";
 
-            initScript = pkgs.runCommand "docker-init.sh" { } ''
-              mkdir -p $out/bin
-              substitute ${./nix/docker/init.sh.in} $out/bin/init.sh \
-                --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}'
+        #     initScript = pkgs.runCommand "docker-init.sh" { } ''
+        #       mkdir -p $out/bin
+        #       substitute ${./nix/docker/init.sh.in} $out/bin/init.sh \
+        #         --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}'
 
-              chmod +x $out/bin/init.sh
-            '';
+        #       chmod +x $out/bin/init.sh
+        #     '';
 
-            postgresqlConfig = pkgs.runCommand "postgresql.conf" { } ''
-              mkdir -p $out/etc/
-              substitute ${./nix/tests/postgresql.conf.in} $out/etc/postgresql.conf \
-                --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
-                --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}"
-            '';
+        #     postgresqlConfig = pkgs.runCommand "postgresql.conf" { } ''
+        #       mkdir -p $out/etc/
+        #       substitute ${./nix/tests/postgresql.conf.in} $out/etc/postgresql.conf \
+        #         --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
+        #         --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey.sh}"
+        #     '';
 
-            l = pkgs.lib // builtins;
+        #     l = pkgs.lib // builtins;
 
-            user = "postgres";
-            group = "postgres";
-            uid = "1001";
-            gid = "1001";
-            wguid = "1002";
-            wggid = "1002";
+        #     user = "postgres";
+        #     group = "postgres";
+        #     uid = "1001";
+        #     gid = "1001";
+        #     wguid = "1002";
+        #     wggid = "1002";
             
-            mkUser = pkgs.runCommand "mkUser" { } ''
-              mkdir -p $out/etc/pam.d
+        #     mkUser = pkgs.runCommand "mkUser" { } ''
+        #       mkdir -p $out/etc/pam.d
 
-              echo "${user}:x:${uid}:${gid}::" > $out/etc/passwd
-              echo "${user}:!x:::::::" > $out/etc/shadow
+        #       echo "${user}:x:${uid}:${gid}::" > $out/etc/passwd
+        #       echo "${user}:!x:::::::" > $out/etc/shadow
 
-              echo "${group}:x:${gid}:" > $out/etc/group
-              echo "${group}:x::" > $out/etc/gshadow
+        #       echo "${group}:x:${gid}:" > $out/etc/group
+        #       echo "${group}:x::" > $out/etc/gshadow
 
-              echo "root:x:0:0::/root:/bin/bash" >> $out/etc/passwd
-              echo "root:x:0:" >> $out/etc/group
+        #       echo "root:x:0:0::/root:/bin/bash" >> $out/etc/passwd
+        #       echo "root:x:0:" >> $out/etc/group
 
-              echo "wal-g:x:${wguid}:${wggid}::" >> $out/etc/passwd
-              echo "wal-g:x:${wggid}:" >> $out/etc/group
+        #       echo "wal-g:x:${wguid}:${wggid}::" >> $out/etc/passwd
+        #       echo "wal-g:x:${wggid}:" >> $out/etc/group
 
-              cat > $out/etc/pam.d/other <<EOF
-              account sufficient pam_unix.so
-              auth sufficient pam_rootok.so
-              password requisite pam_unix.so nullok sha512
-              session required pam_unix.so
-              EOF
+        #       cat > $out/etc/pam.d/other <<EOF
+        #       account sufficient pam_unix.so
+        #       auth sufficient pam_rootok.so
+        #       password requisite pam_unix.so nullok sha512
+        #       session required pam_unix.so
+        #       EOF
 
-              touch $out/etc/login.defs
-            '';
-            run = pkgs.runCommand "run" { } ''
-              mkdir -p $out/run/postgresql
-            '';
-            data = pkgs.runCommand "data" { } ''
-              mkdir -p $out/data/postgresql
-            '';
-            pgconf = pkgs.runCommand "pgconf" { } ''
-              mkdir -p $out/data/pgconf
-            '';
+        #       touch $out/etc/login.defs
+        #     '';
+        #     run = pkgs.runCommand "run" { } ''
+        #       mkdir -p $out/run/postgresql
+        #     '';
+        #     data = pkgs.runCommand "data" { } ''
+        #       mkdir -p $out/data/postgresql
+        #     '';
+        #     pgconf = pkgs.runCommand "pgconf" { } ''
+        #       mkdir -p $out/data/pgconf
+        #     '';
 
-            ubuntuFocalAmd64 = nix2img.pullImage {
-              imageName = "ubuntu";
-              imageDigest = "sha256:b6b83d3c331794420340093eb706a6f152d9c1fa51b262d9bf34594887c2c7ac";
-              arch = "amd64";
-              sha256 = "sha256-ugDTb83zbUxVO9IWIv/ukP0z52KiqEM/qSre7ijtBZc=";
-            };
+        #     ubuntuFocalAmd64 = nix2img.pullImage {
+        #       imageName = "ubuntu";
+        #       imageDigest = "sha256:b6b83d3c331794420340093eb706a6f152d9c1fa51b262d9bf34594887c2c7ac";
+        #       arch = "amd64";
+        #       sha256 = "sha256-ugDTb83zbUxVO9IWIv/ukP0z52KiqEM/qSre7ijtBZc=";
+        #     };
 
-            ubuntuFocalArm64 = nix2img.pullImage {
-              imageName = "ubuntu";
-              imageDigest = "sha256:874aca52f79ae5f8258faff03e10ce99ae836f6e7d2df6ecd3da5c1cad3a912b";
-              arch = "arm64";
-              sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
-            };
+        #     ubuntuFocalArm64 = nix2img.pullImage {
+        #       imageName = "ubuntu";
+        #       imageDigest = "sha256:874aca52f79ae5f8258faff03e10ce99ae836f6e7d2df6ecd3da5c1cad3a912b";
+        #       arch = "arm64";
+        #       sha256 = "sha256-uFypzzRrSw9Yveyp6wVpiiQhrvlqgjI9h+uw0ES6yy0=";
+        #     };
 
-            ubuntuFocal = if archString == "amd64" then ubuntuFocalAmd64 else ubuntuFocalArm64;
-            commonVars = builtins.readFile ./common-nix.vars.pkr.hcl;
+        #     ubuntuFocal = if archString == "amd64" then ubuntuFocalAmd64 else ubuntuFocalArm64;
+        #     commonVars = builtins.readFile ./common-nix.vars.pkr.hcl;
 
-            # Extract the version using string manipulation
-            amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" commonVars);
-          in
-          nix2img.buildImage {
-            name = "supabase/postgres"; 
-            tag = "${amiVersion}-${archString}-base";
+        #     # Extract the version using string manipulation
+        #     amiVersion = builtins.head (builtins.match ".*postgres-version = \"([^\"]*)\".*" commonVars);
+        #   in
+        #   nix2img.buildImage {
+        #     name = "supabase/postgres"; 
+        #     tag = "${amiVersion}-${archString}-base";
 
-            nixUid = l.toInt uid;
-            nixGid = l.toInt gid;
-            fromImage = ubuntuFocal;
-            copyToRoot = [
-              (pkgs.buildEnv {
-                name = "image-root";
-             paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
-                pathsToLink = [ "/bin" "/share" "/lib"];
-              })
-              mkUser
-            ];
+        #     nixUid = l.toInt uid;
+        #     nixGid = l.toInt gid;
+        #     fromImage = ubuntuFocal;
+        #     copyToRoot = [
+        #       (pkgs.buildEnv {
+        #         name = "image-root";
+        #      paths = [ data run pkgs.coreutils pkgs.which pkgs.bash pkgs.nix pkgs.less initScript binPackage pkgs.dockerTools.binSh pkgs.sudo ];
+        #         pathsToLink = [ "/bin" "/share" "/lib"];
+        #       })
+        #       mkUser
+        #     ];
 
-            perms = [
-              {
-                path = data;
-                regex = "";
-                mode = "0744";
-                uid = l.toInt uid;
-                gid = l.toInt gid;
-                uname = user;
-                gname = group;
-              }
-              {
-                path = pgconf;
-                regex = "";
-                mode = "0744";
-                uid = l.toInt uid;
-                gid = l.toInt gid;
-                uname = user;
-                gname = group;
-              }
-              {
-                path = run;
-                regex = "";
-                mode = "0744";
-                uid = l.toInt uid;
-                gid = l.toInt gid;
-                uname = user;
-                gname = group;
-              }
-            ];
+        #     perms = [
+        #       {
+        #         path = data;
+        #         regex = "";
+        #         mode = "0744";
+        #         uid = l.toInt uid;
+        #         gid = l.toInt gid;
+        #         uname = user;
+        #         gname = group;
+        #       }
+        #       {
+        #         path = pgconf;
+        #         regex = "";
+        #         mode = "0744";
+        #         uid = l.toInt uid;
+        #         gid = l.toInt gid;
+        #         uname = user;
+        #         gname = group;
+        #       }
+        #       {
+        #         path = run;
+        #         regex = "";
+        #         mode = "0744";
+        #         uid = l.toInt uid;
+        #         gid = l.toInt gid;
+        #         uname = user;
+        #         gname = group;
+        #       }
+        #     ];
 
-            config = {
-              Entrypoint = [ "/bin/init.sh" ];
-              User = "root";
-              WorkingDir = "/var/lib/postgresql/data";
-              Env = [
-                "NIX_PAGER=cat"
-                "USER=root"
-                "PGDATA=/data/postgresql"
-                "PGHOST=/run/postgresql"
-              ];
-              ExposedPorts = { "${pgsqlDefaultPort}/tcp" = { }; };
-              Volumes = { "/data" = { }; };
-            };
-          };
+        #     config = {
+        #       Entrypoint = [ "/bin/init.sh" ];
+        #       User = "root";
+        #       WorkingDir = "/var/lib/postgresql/data";
+        #       Env = [
+        #         "NIX_PAGER=cat"
+        #         "USER=root"
+        #         "PGDATA=/data/postgresql"
+        #         "PGHOST=/run/postgresql"
+        #       ];
+        #       ExposedPorts = { "${pgsqlDefaultPort}/tcp" = { }; };
+        #       Volumes = { "/data" = { }; };
+        #     };
+        #   };
 
         # Create an attribute set, containing all the relevant packages for a
         # PostgreSQL install, wrapped up with a bow on top. There are three
@@ -416,13 +416,13 @@
         makePostgres = version: rec {
           bin = makePostgresBin version;
           exts = makeOurPostgresPkgsSet version;
-          docker = makePostgresDocker version bin;
+          #docker = makePostgresDocker version bin;
           recurseForDerivations = true;
         };
         makeOrioleDbPostgres = version: patchedPostgres: rec {
           bin = makeOrioleDbPostgresBin version patchedPostgres;
           exts = makeOurOrioleDbPostgresPkgsSet version patchedPostgres;
-          docker = makePostgresDocker version bin;
+          #docker = makePostgresDocker version bin;
           recurseForDerivations = true;
         };
 
@@ -435,8 +435,8 @@
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
-          pg_prove = pg_prove;
           sfcgal = sfcgal;
+          pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           # Start a version of the server.
           start-server =
             let
@@ -530,36 +530,46 @@
         makeCheckHarness = pgpkg:
           let
             sqlTests = ./nix/tests/smoke;
+            pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
               nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove procps ];
             } ''
-            export PGDATA=/tmp/pgdata
+            TMPDIR=$(mktemp -d)
+            if [ $? -ne 0 ]; then
+              echo "Failed to create temp directory" >&2
+              exit 1
+            fi
+
+            # Ensure the temporary directory is removed on exit
+            trap 'rm -rf "$TMPDIR"' EXIT
+
+            export PGDATA="$TMPDIR/pgdata"
+            export PGSODIUM_DIR="$TMPDIR/pgsodium"
+
             mkdir -p $PGDATA
+            mkdir -p $TMPDIR/logfile
+            # Generate a random key and store it in an environment variable
+            export PGSODIUM_KEY=$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n')
+
+            # Create a simple script to echo the key
+            echo '#!/bin/sh' > $TMPDIR/getkey.sh
+            echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
+            chmod +x $TMPDIR/getkey.sh            
             initdb --locale=C
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
-              --subst-var-by PGSODIUM_GETKEY_SCRIPT "${./nix/tests/util/pgsodium_getkey_arb.sh}"
+              --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
             echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf
             echo "port = 5432" >> $PGDATA/postgresql.conf
             echo "host all all 127.0.0.1/32 trust" >> $PGDATA/pg_hba.conf
-            postgres -k /tmp -h localhost >logfile 2>&1 &
-            for i in {1..30}; do
-              if pg_isready -h localhost; then
-                break
-              fi
-              sleep 1
-              if [ $i -eq 30 ]; then
-                echo "PostgreSQL is not ready after 30 seconds"
-                cat logfile
-                exit 1
-              fi
-            done
-            createdb -h localhost testing
-            psql -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
-            pg_prove -h localhost -d testing ${sqlTests}/*.sql
-            pkill postgres
-            mv logfile $out
+            #postgres -D "$PGDATA" -k "$TMPDIR" -h localhost -p 5432 >$TMPDIR/logfile/postgresql.log 2>&1 &
+            pg_ctl -D "$PGDATA" -l $TMPDIR/logfile/postgresql.log -o "-k $TMPDIR -p 5432" start
+            createdb -p 5432 -h localhost testing
+            psql -p 5432 -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
+            pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
+            pg_ctl -D "$PGDATA" stop
+            mv $TMPDIR/logfile/postgresql.log $out
             echo ${pgpkg}
           '';
       in
@@ -611,7 +621,7 @@
             coreutils
             just
             nix-update
-            pg_prove
+            #pg_prove
             shellcheck
             ansible
             ansible-lint
