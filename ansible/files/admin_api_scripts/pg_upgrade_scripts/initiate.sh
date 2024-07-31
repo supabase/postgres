@@ -309,8 +309,15 @@ function initiate_upgrade {
     echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
     
-    echo "8. Granting SUPERUSER to postgres user"
-    run_sql -c "ALTER USER postgres WITH SUPERUSER;"
+    echo "8. TODO"
+    # run_sql -c "ALTER USER postgres WITH SUPERUSER;"
+    run_sql <<-EOSQL
+begin;
+alter role postgres rename to supabase_admin_;
+alter role supabase_admin rename to postgres;
+alter role supabase_admin_ rename to supabase_admin;
+commit;
+EOSQL
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
         if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
