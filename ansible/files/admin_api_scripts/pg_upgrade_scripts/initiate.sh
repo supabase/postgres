@@ -73,6 +73,8 @@ if [ -n "$IS_CI" ]; then
     echo "PGVERSION: $PGVERSION"
 fi
 
+OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
+
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
@@ -314,8 +316,9 @@ function initiate_upgrade {
     
     echo "8. TODO"
     run_sql -c "alter role postgres superuser;"
-    run_sql -c "create role supabase_tmp login superuser;"
-    psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
+    if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
+        run_sql -c "create role supabase_tmp login superuser;"
+        psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
 begin;
 do $$
 declare
@@ -469,7 +472,8 @@ end
 $$;
 rollback;
 EOSQL
-    run_sql -c "drop role supabase_tmp;"
+        run_sql -c "drop role supabase_tmp;"
+    fi
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
         if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
