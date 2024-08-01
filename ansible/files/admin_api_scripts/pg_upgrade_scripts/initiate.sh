@@ -315,9 +315,8 @@ function initiate_upgrade {
     # as bootstrap user to supabase_admin as bootstrap user.
     
     echo "8. TODO"
-    run_sql -c "alter role postgres superuser;"
     if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
-        run_sql -c "create role supabase_tmp login superuser;"
+        run_sql -c "alter role postgres superuser; create role supabase_tmp login superuser;"
         psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
 begin;
 do $$
@@ -472,7 +471,7 @@ end
 $$;
 rollback;
 EOSQL
-        run_sql -c "drop role supabase_tmp;"
+        run_sql -c "alter role postgres nosuperuser; drop role supabase_tmp;"
     fi
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
