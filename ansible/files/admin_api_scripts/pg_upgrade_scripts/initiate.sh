@@ -319,7 +319,7 @@ function initiate_upgrade {
         run_sql -c "alter role postgres superuser; create role supabase_tmp login superuser;"
         psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
 begin;
-do $$
+do \$\$
 declare
   postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
   supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
@@ -468,8 +468,7 @@ begin
     execute(format('alter table %I.%I owner to postgres;', rec.relnamespace::regnamespace, rec.relname));
   end loop;
 end
-$$;
-rollback;
+\$\$;
 EOSQL
         run_sql -c "alter role postgres nosuperuser; drop role supabase_tmp;"
     fi
