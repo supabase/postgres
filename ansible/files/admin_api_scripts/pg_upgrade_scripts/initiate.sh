@@ -312,8 +312,9 @@ function initiate_upgrade {
     handle_extensions
 
     echo "8. Swap postgres & supabase_admin roles if upgrading from a project with postgres as bootstrap user"
+    run_sql -c "ALTER USER postgres WITH SUPERUSER;"
     if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
-        run_sql -c "alter role postgres superuser; create role supabase_tmp login superuser;"
+        run_sql -c "create role supabase_tmp login superuser;"
         # TODO: move to its own file
         psql -h localhost -U supabase_tmp -d postgres <<'EOSQL'
 do $$
@@ -383,6 +384,8 @@ begin
   alter role supabase_admin_ rename to supabase_admin;
 
   -- role grants
+  -- FIXME: restore the GRANTED BY value
+  -- FIXME: restore ADMIN OPTION value
   for rec in
     select * from pg_auth_members where member = 'supabase_admin'::regrole
   loop
