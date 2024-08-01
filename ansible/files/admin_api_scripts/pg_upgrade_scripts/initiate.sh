@@ -311,15 +311,11 @@ function initiate_upgrade {
     echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
 
-    # TODO: Only do postgres <-> supabase_admin swap if upgrading from postgres
-    # as bootstrap user to supabase_admin as bootstrap user.
-    
-    echo "8. TODO"
+    echo "8. Swap postgres & supabase_admin roles if upgrading from a project with postgres as bootstrap user"
     if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
         run_sql -c "alter role postgres superuser; create role supabase_tmp login superuser;"
-        psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
-begin;
-do \$\$
+        psql -h localhost -U supabase_tmp -d postgres <<'EOSQL'
+do $$
 declare
   postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
   supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
@@ -468,7 +464,7 @@ begin
     execute(format('alter table %I.%I owner to postgres;', rec.relnamespace::regnamespace, rec.relname));
   end loop;
 end
-\$\$;
+$$;
 EOSQL
         run_sql -c "alter role postgres nosuperuser; drop role supabase_tmp;"
     fi
