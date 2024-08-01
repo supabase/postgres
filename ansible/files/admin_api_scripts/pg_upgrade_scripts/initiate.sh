@@ -314,6 +314,7 @@ function initiate_upgrade {
     echo "8. Swap postgres & supabase_admin roles if upgrading from a project with postgres as bootstrap user"
     if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
         run_sql -c "alter role postgres superuser; create role supabase_tmp login superuser;"
+        # TODO: move to its own file
         psql -h localhost -U supabase_tmp -d postgres <<'EOSQL'
 do $$
 declare
@@ -466,7 +467,7 @@ begin
 end
 $$;
 EOSQL
-        run_sql -c "alter role postgres nosuperuser; drop role supabase_tmp;"
+        run_sql -c "drop role supabase_tmp;"
     fi
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
