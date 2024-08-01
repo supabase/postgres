@@ -315,20 +315,159 @@ function initiate_upgrade {
     echo "8. TODO"
     run_sql -c "alter role postgres superuser;"
     run_sql -c "create role supabase_tmp login superuser;"
-    PGOPTIONS='-c pg_stat_statements.track=none' psql -h localhost -U supabase_tmp -d postgres "$@" <<-EOSQL
+    psql -h localhost -U supabase_tmp -d postgres <<-EOSQL
+begin;
 do $$
 declare
-  postgres_rolpassword text := select rolpassword from pg_authid where rolname = 'postgres';
-  supabase_admin_rolpassword text := select rolpassword from pg_authid where rolname = 'supabase_admin';
+  postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
+  supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
+  postgres_role_settings text[] := (select setconfig from pg_db_role_setting where setdatabase = 0 and setrole = 'postgres'::regrole);
+  supabase_admin_role_settings text[] := (select setconfig from pg_db_role_setting where setdatabase = 0 and setrole = 'supabase_admin'::regrole);
+  schemas oid[] := (select coalesce(array_agg(oid), '{}') from pg_namespace where nspowner = 'postgres'::regrole);
+  types oid[] := (
+    select coalesce(array_agg(t.oid), '{}')
+    from pg_type t
+    join pg_namespace n on n.oid = t.typnamespace
+    join pg_authid a on a.oid = t.typowner
+    where true
+      and n.nspname != 'information_schema'
+      and not starts_with(n.nspname, 'pg_')
+      and a.rolname = 'postgres'
+      and (
+        t.typrelid = 0
+        or (
+          select
+            c.relkind = 'c'
+          from
+            pg_class c
+          where
+            c.oid = t.typrelid
+        )
+      )
+      and not exists (
+        select
+        from
+          pg_type el
+        where
+          el.oid = t.typelem
+          and el.typarray = t.oid
+      )
+  );
+  routines oid[] := (
+    select coalesce(array_agg(p.oid), '{}')
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    join pg_authid a on a.oid = p.proowner
+    where true
+      and n.nspname != 'information_schema'
+      and not starts_with(n.nspname, 'pg_')
+      and a.rolname = 'postgres'
+  );
+  relations oid[] := (
+    select coalesce(array_agg(c.oid), '{}')
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_authid a on a.oid = c.relowner
+    where true
+      and n.nspname != 'information_schema'
+      and not starts_with(n.nspname, 'pg_')
+      and a.rolname = 'postgres'
+      and c.relkind not in ('c', 'i')
+  );
+  rec record;
+  objid oid;
 begin
+  set local search_path = '';
+
   alter role postgres rename to supabase_admin_;
   alter role supabase_admin rename to postgres;
   alter role supabase_admin_ rename to supabase_admin;
 
-  execute(format('alter role postgres password %L', postgres_rolpassword));
-  execute(format('alter role supabase_admin password %L', supabase_admin_rolpassword));
+  -- role grants
+  for rec in
+    select * from pg_auth_members where member = 'supabase_admin'::regrole
+  loop
+    execute(format('revoke %I from supabase_admin;', rec.roleid::regrole));
+    execute(format('grant %I to postgres;', rec.roleid::regrole));
+  end loop;
+
+  -- role passwords
+  execute(format('alter role postgres password %L;', postgres_rolpassword));
+  execute(format('alter role supabase_admin password %L;', supabase_admin_rolpassword));
+
+  -- role settings
+  -- TODO: don't modify system catalog directly
+  update pg_db_role_setting set setconfig = postgres_role_settings where setdatabase = 0 and setrole = 'postgres'::regrole;
+  update pg_db_role_setting set setconfig = supabase_admin_role_settings where setdatabase = 0 and setrole = 'supabase_admin'::regrole;
+
+  reassign owned by postgres to supabase_admin;
+
+  -- databases
+  for rec in
+    select * from pg_database where datname not in ('template0')
+  loop
+    execute(format('alter database %I owner to postgres;', rec.datname));
+  end loop;
+
+  -- publications
+  for rec in
+    select * from pg_publication
+  loop
+    execute(format('alter publication %I owner to postgres;', rec.pubname));
+  end loop;
+
+  -- FDWs
+  for rec in
+    select * from pg_foreign_data_wrapper
+  loop
+    execute(format('alter foreign data wrapper %I owner to postgres;', rec.fdwname));
+  end loop;
+
+  -- foreign servers
+  for rec in
+    select * from pg_foreign_server
+  loop
+    execute(format('alter server %I owner to postgres;', rec.srvname));
+  end loop;
+
+  -- user mappings
+  -- TODO: don't modify system catalog directly
+  update pg_user_mapping set umuser = 'postgres'::regrole where umuser = 'supabase_admin'::regrole;
+
+  -- default acls
+  -- TODO: don't modify system catalog directly
+  update pg_default_acl set defaclrole = 0 where defaclrole = 'postgres'::regrole;
+  update pg_default_acl set defaclrole = 'postgres'::regrole where defaclrole = 'supabase_admin'::regrole;
+  update pg_default_acl set defaclrole = 'supabase_admin'::regrole where defaclrole = 0;
+
+  -- schemas
+  foreach objid in array schemas
+  loop
+    execute(format('alter schema %I owner to postgres;', objid::regnamespace));
+  end loop;
+
+  -- types
+  foreach objid in array types
+  loop
+    execute(format('alter type %I owner to postgres;', objid::regtype));
+  end loop;
+
+  -- functions
+  for rec in
+    select * from pg_proc where oid = any(routines)
+  loop
+    execute(format('alter routine %I.%I(%s) owner to postgres;', rec.pronamespace::regnamespace, rec.proname, pg_get_function_identity_arguments(rec.oid)));
+  end loop;
+
+  -- relations
+  for rec in
+    select * from pg_class where oid = any(relations)
+  loop
+    execute(format('alter table %I.%I owner to postgres;', rec.relnamespace::regnamespace, rec.relname));
+  end loop;
 end
 $$;
+rollback;
 EOSQL
     run_sql -c "drop role supabase_tmp;"
 
