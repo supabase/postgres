@@ -6,7 +6,6 @@ import os
 import pytest
 import requests
 import socket
-import sys
 import testinfra
 from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
@@ -14,7 +13,7 @@ from time import sleep
 
 # if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run-" + os.environ.get("USER", "unknown-user") + '@' + socket.gethostname())
-
+AMI_NAME = os.environ.get('AMI_NAME')
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
@@ -160,19 +159,15 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
-def get_ami_name():
-    if len(sys.argv) > 1:
-        return sys.argv[1]
-    else:
-        raise ValueError("AMI name must be provided as a command-line argument")
+
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
-def host(ami_name):
+def host():
     ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
     images = list(
         ec2.images.filter(
-            Filters=[{"Name": "name", "Values": [ami_name]}]
+            Filters=[{"Name": "name", "Values": [AMI_NAME]}],
         )
     )
     assert len(images) == 1
