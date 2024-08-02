@@ -391,8 +391,15 @@ begin
     execute(format(
       'grant %I to postgres %s granted by %I;',
       rec.roleid::regrole,
-      case when rec.admin_option then 'with admin option' else '' end,
-      rec.grantor::regrole
+      case
+        when rec.admin_option then 'with admin option'
+        else ''
+      end,
+      case
+        when rec.grantor = 'postgres'::regrole then 'supabase_admin'
+        when rec.grantor = 'supabase_admin'::regrole then 'postgres'
+        else rec.grantor::regrole
+      end
     ));
   end loop;
 
