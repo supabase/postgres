@@ -384,13 +384,16 @@ begin
   alter role supabase_admin_ rename to supabase_admin;
 
   -- role grants
-  -- FIXME: restore the GRANTED BY value
-  -- FIXME: restore ADMIN OPTION value
   for rec in
     select * from pg_auth_members where member = 'supabase_admin'::regrole
   loop
     execute(format('revoke %I from supabase_admin;', rec.roleid::regrole));
-    execute(format('grant %I to postgres;', rec.roleid::regrole));
+    execute(format(
+      'grant %I to postgres %s granted by %I;',
+      rec.roleid::regrole,
+      case when rec.admin_option then 'with admin option' else '' end,
+      rec.grantor::regrole
+    ));
   end loop;
 
   -- role passwords
