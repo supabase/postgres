@@ -385,12 +385,21 @@ begin
 
   -- role grants
   for rec in
-    select * from pg_auth_members where member = 'supabase_admin'::regrole
+    select * from pg_auth_members
   loop
-    execute(format('revoke %I from supabase_admin;', rec.roleid::regrole));
+    execute(format('revoke %I from %I;', rec.roleid::regrole, rec.member::regrole));
     execute(format(
-      'grant %I to postgres %s granted by %I;',
-      rec.roleid::regrole,
+      'grant %I to %I %s granted by %I;',
+      case
+        when rec.roleid = 'postgres'::regrole then 'supabase_admin'
+        when rec.roleid = 'supabase_admin'::regrole then 'postgres'
+        else rec.roleid::regrole
+      end,
+      case
+        when rec.member = 'postgres'::regrole then 'supabase_admin'
+        when rec.member = 'supabase_admin'::regrole then 'postgres'
+        else rec.member::regrole
+      end,
       case
         when rec.admin_option then 'with admin option'
         else ''
