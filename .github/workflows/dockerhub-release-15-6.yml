@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/dockerhub-release-15-6.yml"
       - "common-nix.vars*"
- 
+  workflow_dispatch:
 jobs:
   settings:
     runs-on: ubuntu-latest
