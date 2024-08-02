@@ -56,8 +56,8 @@ jobs:
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}-dev
           platforms: linux/${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}-dev
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}-dev
           file: "Dockerfile-156"
       - name: Upload image artifact
         uses: actions/upload-artifact@v3
@@ -85,10 +85,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: docker-image-${{ matrix.arch }}
-          path: /tmp
       - run: docker load < /tmp/image.tar
       - uses: supabase/setup-cli@v1
         with:
