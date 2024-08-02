@@ -99,3 +99,4 @@ create extension xml2;
  
  
 
+CREATE EXTENSION IF NOT EXISTS pg_backtrace;
