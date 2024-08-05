@@ -421,18 +421,16 @@
 
             #pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
 
-			mkdir regression_output
+			      mkdir -p $out/regression_output
             pg_regress \
               --use-existing \
               --dbname=testing \
               --inputdir=${./nix/tests} \
-              --outputdir=regression_output \
+              --outputdir=$out/regression_output \
+              --host=localhost \
+              --port=5432 \
               $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort )
 			
-
-            mv regression.diffs $PWD
-            mv regression_output $PWD
-
             pg_ctl -D "$PGDATA" stop
             mv $TMPDIR/logfile/postgresql.log $out
             echo ${pgpkg}
