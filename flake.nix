@@ -418,10 +418,9 @@
             createdb -p 5432 -h localhost testing
             psql -p 5432 -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
 
+            pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
 
-            #pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
-
-			mkdir -p $out/regression_output
+            mkdir -p $out/regression_output
             pg_regress \
               --use-existing \
               --dbname=testing \
