@@ -61,6 +61,7 @@
         };
 
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
+        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
@@ -269,6 +270,7 @@
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
+          pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           # Start a version of the server.
           start-server =
