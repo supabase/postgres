@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ postgresql msgpack-c groonga ];
+  buildInputs = [ postgresql msgpack-c groonga libmecab-dev mecab-naist-jdic ];
 
   makeFlags = [
     "HAVE_MSGPACK=1"
