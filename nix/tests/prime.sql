@@ -29,7 +29,14 @@ create extension moddatetime;
 create extension old_snapshot;
 create extension pageinspect;
 create extension pg_buffercache;
-create extension pg_cron;
+
+/*
+TODO: Does not enable locally mode
+requires a change to postgresql.conf to set
+cron.database_name = 'testing'
+*/
+-- create extension pg_cron;
+
 create extension pg_net;
 create extension pg_graphql;
 create extension pg_freespacemap;
@@ -54,9 +61,16 @@ create extension pgsodium;
 create extension pgrowlocks;
 create extension pgstattuple;
 create extension plpgsql_check;
-create extension plv8;
-create extension plcoffee;
-create extension plls;
+
+/*
+TODO: PLs can not be enabled on M1 Macs locally
+ERROR:  could not load library "/nix/store/..../lib/plv8-3.1.5.so
+symbol not found in flat namespace
+*/
+-- create extension plv8;
+-- create extension plcoffee;
+-- create extension plls;
+
 create extension postgis;
 create extension postgis_raster;
 create extension postgis_sfcgal;
