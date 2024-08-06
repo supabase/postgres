@@ -1,3 +1,4 @@
+create role postgres;
 create extension address_standardizer;
 create extension address_standardizer_data_us;
 create extension adminpack;
