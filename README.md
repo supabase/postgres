@@ -121,7 +121,7 @@ The package set builds on target machines (`x86_64-linux` and `aarch64-linux`) w
 
 To update our nix.conf to support the binary caches used by supabase:
 
-1. open `/etc/nix/nix.cong` 
+1. open `/etc/nix/nix.conf` 
 2. Add the following lines
 
   ```
