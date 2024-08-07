@@ -62,7 +62,7 @@
 
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
-
+        supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
@@ -265,6 +265,7 @@
         # name in 'nix flake show' in order to make sure exactly what name you
         # want.
         basePackages = {
+          supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
@@ -285,7 +286,8 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'\
+                --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so'
 
               chmod +x $out/bin/start-postgres-server
             '';

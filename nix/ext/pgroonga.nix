@@ -1,5 +1,7 @@
-{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c, groonga }:
-
+{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c, mecab, callPackage}:
+let 
+  supabase-groonga = callPackage ../supabase-groonga.nix { };
+in
 stdenv.mkDerivation rec {
   pname = "pgroonga";
   version = "3.0.7";
@@ -10,11 +12,26 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ postgresql msgpack-c groonga ];
+  buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
+
+  preConfigure = ''
+    export MECAB_CONFIG=${mecab}/bin/mecab-config
+    export MECAB_DICDIR=${mecab}/lib/mecab/dic/ipadic
+    export GRN_PLUGINS_DIR=$out/lib/groonga/plugins
+    export GROONGA_TOKENIZER_MECAB_DIR=${supabase-groonga}/lib/groonga/plugins/tokenizers
+  '';
+
+  configureFlags = [
+    "--with-mecab=${mecab}"
+    "--enable-tokenizer-mecab"
+    "--with-groonga-tokenizer-mecab=$out/lib/groonga/plugins/tokenizer_mecab.so"
+    "--with-groonga-plugin-dir=${supabase-groonga}/lib/groonga/plugins"
+  ];
 
   makeFlags = [
     "HAVE_MSGPACK=1"
     "MSGPACK_PACKAGE_NAME=msgpack-c"
+    "HAVE_MECAB=1"
   ];
 
   installPhase = ''
@@ -25,6 +42,11 @@ stdenv.mkDerivation rec {
     install -D pgroonga_database${postgresql.dlSuffix} -t $out/lib/
     install -D pgroonga_database.control -t $out/share/postgresql/extension
     install -D data/pgroonga_database-*.sql -t $out/share/postgresql/extension
+    
+    mkdir -p $out/lib/groonga/plugins
+  
+    # Create symbolic link for MeCab tokenizer
+    cp ${supabase-groonga}/lib/groonga/plugins/tokenizers/mecab.so $out/lib/groonga/plugins/tokenizer_mecab.so
   '';
 
   meta = with lib; {
