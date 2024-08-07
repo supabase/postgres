@@ -43,11 +43,11 @@ jobs:
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
-          tags: supabase/postgres:${{ steps.settings.outputs.postgres_version }}
+          tags: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
           cache-from: |
-            type=gha,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
-            type=gha,scope=${{ github.base_ref }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
+            type=gha,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
+            type=gha,scope=${{ github.base_ref }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
 
       - name: Start Postgres
         run: |
@@ -55,7 +55,7 @@ jobs:
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
-          -d supabase/postgres:${{ steps.settings.outputs.postgres_version }}
+          -d supabase/postgres:${{ steps.settings.outputs.postgres-version }}
       - name: Install psql
         run: |
           sudo apt update
