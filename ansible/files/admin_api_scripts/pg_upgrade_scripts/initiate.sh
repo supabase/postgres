@@ -323,9 +323,9 @@ declare
   supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
   postgres_role_settings text[] := (select setconfig from pg_db_role_setting where setdatabase = 0 and setrole = 'postgres'::regrole);
   supabase_admin_role_settings text[] := (select setconfig from pg_db_role_setting where setdatabase = 0 and setrole = 'supabase_admin'::regrole);
-  schemas oid[] := (select coalesce(array_agg(oid), '{}') from pg_namespace where nspowner = 'postgres'::regrole);
-  types oid[] := (
-    select coalesce(array_agg(t.oid), '{}')
+  schemas jsonb[] := (select coalesce(array_agg(jsonb_build_object('oid', oid, 'acl', nspacl::text)), '{}') from pg_namespace where nspowner = 'postgres'::regrole);
+  types jsonb[] := (
+    select coalesce(array_agg(jsonb_build_object('oid', t.oid, 'acl', t.typacl::text)), '{}')
     from pg_type t
     join pg_namespace n on n.oid = t.typnamespace
     join pg_authid a on a.oid = t.typowner
@@ -353,8 +353,8 @@ declare
           and el.typarray = t.oid
       )
   );
-  routines oid[] := (
-    select coalesce(array_agg(p.oid), '{}')
+  routines jsonb[] := (
+    select coalesce(array_agg(jsonb_build_object('oid', p.oid, 'acl', p.proacl::text)), '{}')
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     join pg_authid a on a.oid = p.proowner
@@ -363,8 +363,8 @@ declare
       and not starts_with(n.nspname, 'pg_')
       and a.rolname = 'postgres'
   );
-  relations oid[] := (
-    select coalesce(array_agg(c.oid), '{}')
+  relations jsonb[] := (
+    select coalesce(array_agg(jsonb_build_object('oid', c.oid, 'acl', c.relacl::text)), '{}')
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
     join pg_authid a on a.oid = c.relowner
@@ -375,7 +375,7 @@ declare
       and c.relkind not in ('c', 'i')
   );
   rec record;
-  objid oid;
+  obj jsonb;
 begin
   set local search_path = '';
 
@@ -462,29 +462,36 @@ begin
   update pg_default_acl set defaclrole = 'supabase_admin'::regrole where defaclrole = 0;
 
   -- schemas
-  foreach objid in array schemas
+  foreach obj in array schemas
   loop
-    execute(format('alter schema %I owner to postgres;', objid::regnamespace));
+    execute(format('alter schema %s owner to postgres;', (obj->>'oid')::regnamespace));
+    -- TODO: don't modify system catalog directly
+    update pg_namespace set nspacl = (obj->>'acl')::aclitem[] where nspname = obj->>'oid';
   end loop;
 
   -- types
-  foreach objid in array types
+  foreach obj in array types
   loop
-    execute(format('alter type %I owner to postgres;', objid::regtype));
+    execute(format('alter type %s owner to postgres;', (obj->>'oid')::regtype));
+    -- TODO: don't modify system catalog directly
+    update pg_type set typacl = (obj->>'acl')::aclitem[] where oid = obj->>'oid';
   end loop;
 
   -- functions
-  for rec in
-    select * from pg_proc where oid = any(routines)
+  foreach obj in array routines
   loop
-    execute(format('alter routine %I.%I(%s) owner to postgres;', rec.pronamespace::regnamespace, rec.proname, pg_get_function_identity_arguments(rec.oid)));
+    execute(format('alter routine %s(%s) owner to postgres;', (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc)));
+    -- TODO: don't modify system catalog directly
+    update pg_proc set proacl = (obj->>'acl')::aclitem[] where oid = (obj->>'oid')::regproc;
   end loop;
 
   -- relations
-  for rec in
-    select * from pg_class where oid = any(relations)
+  foreach obj in array relations
   loop
-    execute(format('alter table %I.%I owner to postgres;', rec.relnamespace::regnamespace, rec.relname));
+    -- obj->>'oid' (text) needs to be casted to oid first for some reason
+    execute(format('alter table %s owner to postgres;', (obj->>'oid')::oid::regclass));
+    -- TODO: don't modify system catalog directly
+    update pg_class set relacl = (obj->>'acl')::aclitem[] where oid = (obj->>'oid')::oid::regclass;
   end loop;
 end
 $$;
