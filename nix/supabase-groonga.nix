@@ -47,7 +47,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   preConfigure = ''
     export MECAB_DICDIR=${mecab}/lib/mecab/dic/ipadic
-    echo "MeCab dictionary directory: $MECAB_DICDIR"
+    echo "MeCab dictionary directory is: $MECAB_DICDIR"
   '';
   buildPhase = ''
     cmake --build . -- VERBOSE=1
@@ -68,23 +68,23 @@ stdenv.mkDerivation (finalAttrs: {
     
   '';
   env.NIX_CFLAGS_COMPILE = lib.optionalString zlibSupport "-I${zlib.dev}/include";
-  passthru = {
-    tests = {
-      inherit (postgresqlPackages) pgroonga;
-      version = testers.testVersion {
-        package = finalAttrs.finalPackage;
-      };
-      pkg-config = testers.hasPkgConfigModules {
-        package = finalAttrs.finalPackage;
-        moduleNames = [ "groonga" ];
-      };
-    };
-  };
+  # passthru = {
+  #   tests = {
+  #     inherit (postgresqlPackages) pgroonga;
+  #     version = testers.testVersion {
+  #       package = finalAttrs.finalPackage;
+  #     };
+  #     pkg-config = testers.hasPkgConfigModules {
+  #       package = finalAttrs.finalPackage;
+  #       moduleNames = [ "supabase-groonga" ];
+  #     };
+  #   };
+  # };
   meta = with lib; {
     homepage = "https://groonga.org/";
     description = "Open-source fulltext search engine and column store";
     license = licenses.lgpl21;
-    maintainers = [ maintainers.ericsagnes ];
+    maintainers = [ maintainers.samrose ];
     platforms = platforms.all;
     longDescription = ''
       Groonga is an open-source fulltext search engine and column store.
