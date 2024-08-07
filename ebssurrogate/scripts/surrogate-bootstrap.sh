@@ -258,7 +258,9 @@ function clean_system {
 
 	# Setup wal-g logs
 	mkdir /mnt/var/log/wal-g
+
 	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
+	mkdir /mnt/var/log/wal-g/wal-verification-results
 
 	#Creatre Sysstat directory for SAR
 	mkdir /mnt/var/log/sysstat
