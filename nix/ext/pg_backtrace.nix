@@ -2,15 +2,15 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_backtrace";
-  version = "1.0";
+  version = "1.1";
 
   buildInputs = [ postgresql ];
 
   src = fetchFromGitHub {
     owner  = "pashkinelfe";
     repo   = pname;
-    rev    = "fddeeb4ae0a8aa8993336463ef0d5fcd5b4b7cfd";
-    hash = "sha256-o3bgPckh5KMHBgSiEmhmFSibbJzeIPOUTNyeLVh6Pkk=";
+    rev    = "d100bac815a7365e199263f5b3741baf71b14c70";
+    hash = "sha256-IVCL4r4oj1Ams03D8y+XCFkckPFER/W9tQ68GkWQQMY=";
   };
 
   makeFlags = [ "USE_PGXS=1" ];
