@@ -51,6 +51,7 @@
     - { file: "logrotate-postgres-csv.conf" }
     - { file: "logrotate-postgres.conf" }
     - { file: "logrotate-walg.conf" }
+    - { file: "logrotate-wal-verify.conf" }
     - { file: "logrotate-postgres-auth.conf" }
 
 - name: Ensure default Postgres logrotate config is removed
