@@ -40,6 +40,7 @@ jobs:
         with:
           load: true
           context: .
+          file: "Dockerfile-156"
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
