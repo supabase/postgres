@@ -12,19 +12,25 @@ stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ pkg-config ];
+
   buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
+
+  runtimeDependencies = [ mecab ];
 
   preConfigure = ''
     export MECAB_CONFIG=${mecab}/bin/mecab-config
     export MECAB_DICDIR=${mecab}/lib/mecab/dic/ipadic
     export GRN_PLUGINS_DIR=$out/lib/groonga/plugins
     export GROONGA_TOKENIZER_MECAB_DIR=${supabase-groonga}/lib/groonga/plugins/tokenizers
+    export GROONGA_TOKENIZER_MECAB=$out/lib/groonga/plugins/tokenizer_mecab.so
   '';
 
   configureFlags = [
     "--with-mecab=${mecab}"
     "--enable-tokenizer-mecab"
-    "--with-groonga-tokenizer-mecab=$out/lib/groonga/plugins/tokenizer_mecab.so"
+    "--with-groonga=${supabase-groonga}"
+    "--with-groonga-token-mecab-dir=${supabase-groonga}/lib/groonga/plugins/tokenizers"
+    "--with-groonga-tokenizer-mecab=${supabase-groonga}/lib/groonga/plugins/tokenizers/mecab.so"
     "--with-groonga-plugin-dir=${supabase-groonga}/lib/groonga/plugins"
   ];
 
@@ -43,10 +49,6 @@ stdenv.mkDerivation rec {
     install -D pgroonga_database.control -t $out/share/postgresql/extension
     install -D data/pgroonga_database-*.sql -t $out/share/postgresql/extension
     
-    mkdir -p $out/lib/groonga/plugins
-  
-    # Create symbolic link for MeCab tokenizer
-    cp ${supabase-groonga}/lib/groonga/plugins/tokenizers/mecab.so $out/lib/groonga/plugins/tokenizer_mecab.so
   '';
 
   meta = with lib; {
