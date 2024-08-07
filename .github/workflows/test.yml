@@ -23,6 +23,10 @@ jobs:
       POSTGRES_PASSWORD: password
     steps:
       - uses: actions/checkout@v3
+      - id: settings
+        # Remove spaces and quotes to get the raw version string
+        run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
+
       - id: args
         uses: mikefarah/yq@master
         with:
@@ -39,11 +43,11 @@ jobs:
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
-          tags: supabase/postgres:latest
+          tags: supabase/postgres:${{ steps.settings.outputs.postgres_version }}
           cache-from: |
-            type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-            type=gha,scope=${{ github.base_ref }}-latest-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+            type=gha,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
+            type=gha,scope=${{ github.base_ref }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres_version }}-${{ matrix.arch }}
 
       - name: Start Postgres
         run: |
@@ -51,8 +55,7 @@ jobs:
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
-          -d supabase/postgres:latest
-
+          -d supabase/postgres:${{ steps.settings.outputs.postgres_version }}
       - name: Install psql
         run: |
           sudo apt update
