@@ -1,0 +1,12 @@
+[Unit]
+Description=Async WAL verification
+
+[Service]
+Type=simple
+User=adminapi
+ExecStart=/usr/bin/admin-mgr wal-verify-timeline --save-output-to-file true
+Restart=no
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target

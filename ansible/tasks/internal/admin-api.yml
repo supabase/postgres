@@ -79,6 +79,11 @@
     src: files/adminapi.service.j2
     dest: /etc/systemd/system/adminapi.service
 
+- name: adminapi - create service file for verify wal process
+  template:
+    src: files/verify-wal.service.j2
+    dest: /etc/systemd/system/verify-wal.service
+
 - name: UFW - Allow connections to adminapi ports
   ufw:
     rule: allow
