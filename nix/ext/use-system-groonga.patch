@@ -1,0 +1,21 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 33b34477..f4ffefe5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -12,7 +12,6 @@ if(MSVC_VERSION LESS 1800)
+   message(FATAL_ERROR "PGroonga supports only MSVC 2013 or later")
+ endif()
+ 
+-add_subdirectory(vendor/groonga)
+ 
+ set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
+   CACHE PATH "PostgreSQL binary directory")
+@@ -52,8 +51,6 @@ string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\3"
+ string(REGEX REPLACE ".*comment = '([^']+)'.*" "\\1"
+   PGRN_DESCRIPTION "${PGRN_CONTROL}")
+ 
+-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/bundled_message_pack_version"
+-  PGRN_BUNDLED_MESSAGE_PACK_VERSION)
+ string(STRIP
+   "${PGRN_BUNDLED_MESSAGE_PACK_VERSION}"
+   PGRN_BUNDLED_MESSAGE_PACK_VERSION)
