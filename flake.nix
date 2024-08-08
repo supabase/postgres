@@ -78,6 +78,7 @@
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
+        mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
@@ -316,6 +317,7 @@
               platforms = platforms.all;
             };
           };
+          mecab_naist_jdic = mecab-naist-jdic;
           # Start a version of the server.
           start-server =
             let
