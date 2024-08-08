@@ -1,0 +1,23 @@
+# pg_backtrace
+- name: pg_backtrace - download latest release
+  git:
+    repo: https://github.com/pashkinelfe/pg_backtrace.git
+    dest: /tmp/pg_backtrace
+    version: 'v{{ pg_backtrace_release }}'
+  become: yes
+  
+- name: pg_backtrace - build
+  make:
+    chdir: /tmp/pg_backtrace
+  become: yes
+
+- name: pg_backtrace - install
+  make:
+    chdir: /tmp/pg_backtrace
+    target: install
+  become: yes
+
+- name: pg_backtrace - cleanup
+  file:
+    state: absent
+    path: /tmp/pg_backtrace
