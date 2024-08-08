@@ -288,8 +288,7 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'\
-                --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so'
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
 
               chmod +x $out/bin/start-postgres-server
             '';
