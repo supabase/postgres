@@ -51,18 +51,7 @@ in stdenv.mkDerivation (finalAttrs: {
   '';
   env.NIX_CFLAGS_COMPILE =
     lib.optionalString zlibSupport "-I${zlib.dev}/include";
-  # passthru = {
-  #   tests = {
-  #     inherit (postgresqlPackages) pgroonga;
-  #     version = testers.testVersion {
-  #       package = finalAttrs.finalPackage;
-  #     };
-  #     pkg-config = testers.hasPkgConfigModules {
-  #       package = finalAttrs.finalPackage;
-  #       moduleNames = [ "supabase-groonga" ];
-  #     };
-  #   };
-  # };
+
   meta = with lib; {
     homepage = "https://groonga.org/";
     description = "Open-source fulltext search engine and column store";
