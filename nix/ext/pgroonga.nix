@@ -60,12 +60,6 @@ EOF
     ls -l ${supabase-groonga}/lib/groonga/plugins/tokenizers/
   '';
 
-  postFixup = ''
-    for f in $out/lib/*.so; do
-      patchelf --set-rpath "${lib.makeLibraryPath buildInputs}:${supabase-groonga}/lib:$out/lib:${supabase-groonga}/lib/groonga/plugins/tokenizers" $f
-    done
-  '';
-
   meta = with lib; {
     description = "A PostgreSQL extension to use Groonga as the index";
     longDescription = ''
