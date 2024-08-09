@@ -189,7 +189,7 @@ function patch_wrappers {
         OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
         OLD_LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
 
-        find /nix/store/ -name "wrappers*so" -print0 | while read -d $'\0' WRAPPERS_LIB_PATH; do
+        find /nix/store/ -name "wrappers*so" -print0 | while read -r -d $'\0' WRAPPERS_LIB_PATH; do
             if [ -f "$WRAPPERS_LIB_PATH" ]; then
                 WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
                 if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
