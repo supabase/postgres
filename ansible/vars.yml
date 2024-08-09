@@ -40,7 +40,7 @@ kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
 nginx_release: 1.22.0
 nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
 
-wal_g_release: "2.0.1"
+wal_g_release: "3.0.3"
 
 sfcgal_release: "1.3.10"
 sfcgal_release_checksum: sha256:4e39b3b2adada6254a7bdba6d297bb28e1a9835a9f879b74f37e2dab70203232
