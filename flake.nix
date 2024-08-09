@@ -27,7 +27,7 @@
         # The 'oriole_pkgs' variable holds all the upstream packages in nixpkgs, which
         # we can use to build our own images; it is the common name to refer to
         # a copy of nixpkgs which contains all its packages.
-        # it also serves as a base for importing the orioldb/postgres overlay to 
+        # it also serves as a base for importing the orioldb/postgres overlay to
         #build the orioledb postgres patched version of postgresql16
         oriole_pkgs = import nixpkgs {
           config = { allowUnfree = true; };
@@ -302,7 +302,7 @@
           '';
 
           # Start a version of the client and runs migrations script on server.
-          start-client-and-migrate =  
+          start-client-and-migrate =
             let
               migrationsDir = ./migrations/db;
               postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
@@ -346,7 +346,7 @@
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
@@ -356,7 +356,7 @@
               --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
               --subst-var-by 'NIX_EDITOR' '${nix-editor.packages.${system}.nix-editor}/bin/nix-editor' \
               --subst-var-by 'NIXPREFETCHURL' '${pkgs.nixVersions.nix_2_20}/bin/nix-prefetch-url' \
-              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix' 
+              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix'
             chmod +x $out/bin/sync-exts-versions
           '';
         };
@@ -392,7 +392,7 @@
             # Create a simple script to echo the key
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
-            chmod +x $TMPDIR/getkey.sh            
+            chmod +x $TMPDIR/getkey.sh
             initdb --locale=C
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
@@ -430,7 +430,7 @@
               --host=localhost \
               --port=5432 \
               $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort )
-			
+
             pg_ctl -D "$PGDATA" stop
             mv $TMPDIR/logfile/postgresql.log $out
             echo ${pgpkg}
