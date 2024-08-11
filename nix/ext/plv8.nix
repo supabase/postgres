@@ -8,7 +8,6 @@
 , runCommand
 , coreutils
 , gnugrep
-, gcc
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -33,8 +32,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     perl
-  ] ++ lib.optionals stdenv.isDarwin [
-    gcc
   ];
 
   buildInputs = [
@@ -49,13 +46,6 @@ stdenv.mkDerivation (finalAttrs: {
     "USE_SYSTEM_V8=1"
     "SHLIB_LINK=-lv8"
     "V8_OUTDIR=${v8}/lib"
-  ];
-  NIX_LDFLAGS = lib.optionalString (stdenv.isDarwin && stdenv.isAarch64)
-    "-undefined dynamic_lookup";
-
-  NIX_CFLAGS_COMPILE = lib.optionals (stdenv.isDarwin && stdenv.isAarch64) [
-    "-I${v8}/include"
-    "-I${postgresql}/include"
   ];
   installFlags = [
     # PGXS only supports installing to postgresql prefix so we need to redirect this
@@ -149,7 +139,7 @@ stdenv.mkDerivation (finalAttrs: {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
     homepage = "https://plv8.github.io/";
     maintainers = with maintainers; [ samrose ];
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
     license = licenses.postgresql;
     #broken = postgresql.jitSupport;
   };

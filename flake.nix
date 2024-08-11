@@ -15,7 +15,6 @@
       ourSystems = with flake-utils.lib; [
         system.x86_64-linux
         system.aarch64-linux
-        system.aarch64-darwin
       ];
     in
     flake-utils.lib.eachSystem ourSystems (system:
