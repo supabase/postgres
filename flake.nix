@@ -54,6 +54,7 @@
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
+            (import ./nix/overlays/buildPgrxWrappers.nix)
             # (import ./nix/overlays/postgis.nix)
             #(import ./nix/overlays/gdal-small.nix)
 
@@ -273,6 +274,7 @@
           sfcgal = sfcgal;
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+
           # Start a version of the server.
           start-server =
             let

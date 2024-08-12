@@ -4,12 +4,11 @@
 , openssl
 , pkg-config
 , postgresql
-, buildPgrxExtension_0_11_3
 , cargo
 , darwin
+, buildPgrxWrappers_0_11_3
 }:
-
-buildPgrxExtension_0_11_3 rec {
+buildPgrxWrappers_0_11_3 rec {
   pname = "supabase-wrappers";
   version = "0.4.1";
   inherit postgresql;
