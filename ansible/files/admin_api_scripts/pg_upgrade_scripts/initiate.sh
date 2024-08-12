@@ -186,18 +186,20 @@ function patch_wrappers {
     #  - new version: wrappers-0.1.18.so
     #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
     if [ "$IS_NIX_UPGRADE" = "true" ]; then
-        OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
-        OLD_LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+        if [ -d "$PGLIBOLD" ]; then
+            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
+            OLD_LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
 
-        find /nix/store/ -name "wrappers*so" -print0 | while read -r -d $'\0' WRAPPERS_LIB_PATH; do
-            if [ -f "$WRAPPERS_LIB_PATH" ]; then
-                WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
-                if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
-                    echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
-                    cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+            find /nix/store/ -name "wrappers*so" -print0 | while read -r -d $'\0' WRAPPERS_LIB_PATH; do
+                if [ -f "$WRAPPERS_LIB_PATH" ]; then
+                    WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
+                    if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
+                        echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                    fi
                 fi
-            fi
-        done
+            done
+        fi
     else
         if [ -d "$PGLIBOLD" ]; then
             WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
