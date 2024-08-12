@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - develop
-      - sam/nix-and-conventional-ami
+      - release/*
     paths:
       - '.github/workflows/publish-pgupgrade-scripts.yml'
       - 'common-nix.vars.pkr.hcl'
@@ -62,7 +62,7 @@ jobs:
 
   publish-prod:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'develop'
+    if: github.ref_name == 'develop' || contains( github.ref, 'release' )
 
     steps:
       - name: Checkout Repo
