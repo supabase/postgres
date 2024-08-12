@@ -11,7 +11,7 @@
 
 buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
-  version = "0.4.1";
+  version = "0.3.1";
   inherit postgresql;
 
   src = fetchFromGitHub {
@@ -58,7 +58,6 @@ buildPgrxExtension_0_11_3 rec {
     "mssql_fdw"
     "redis_fdw"
     "cognito_fdw"
-    "wasm_fdw"
   ];
 
   # FIXME (aseipp): disable the tests since they try to install .control
