@@ -53,71 +53,119 @@ echo "Upgrade method: $UPGRADE_METHOD"
 PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
 DATDIR=$(mktemp -d)
 NEWDAT=$(mktemp -d)
+PGUSER=${PGUSER:-postgres}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+PG_PROVE=@PG_PROVE@
+PGUPGRADE_TESTS=@PGUPGRADE_TESTS@
 mkdir -p "$DATDIR" "$NEWDAT"
 
-echo "NOTE: using temporary directory $DATDIR for PSQL $1 data, which will not be removed"
-echo "NOTE: you are free to re-use this data directory at will"
+echo "using temporary directory $DATDIR for PSQL $1 data, which will not be removed"
+echo "you are free to re-use this data directory at will"
 echo
 
-$OLDVER/bin/initdb -D "$DATDIR" --locale=C
-$NEWVER/bin/initdb -D "$NEWDAT" --locale=C
+echo "PGUSER IS $PGUSER"
+
+$OLDVER/bin/initdb -U "$PGUSER" -D "$DATDIR" --locale=C
+$NEWVER/bin/initdb -U "$PGUSER" -D "$NEWDAT" --locale=C
 
 # NOTE (aseipp): we need to patch postgresql.conf to have the right pgsodium_getkey script
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PGSODIUM_GETKEY_SCRIPT=@PGSODIUM_GETKEY@
-echo "NOTE: patching postgresql.conf files"
+echo "patching postgresql.conf files"
 for x in "$DATDIR" "$NEWDAT"; do
   sed \
     "s#@PGSODIUM_GETKEY_SCRIPT@#$PGSODIUM_GETKEY_SCRIPT#g" \
     $PSQL_CONF_FILE > "$x/postgresql.conf"
 done
 
-echo "NOTE: Starting first server (v${1}) to load data into the system"
+echo "Starting first server (v${1}) to load data into the system"
 $OLDVER/bin/pg_ctl start -D "$DATDIR"
 
 PRIMING_SCRIPT=@PRIMING_SCRIPT@
-MIGRATION_DATA=@MIGRATION_DATA@
+MIGRATIONS_DIR=@MIGRATIONS_DIR@
 
-$OLDVER/bin/psql -h localhost -d postgres -Xf "$PRIMING_SCRIPT"
-$OLDVER/bin/psql -h localhost -d postgres -Xf "$MIGRATION_DATA"
+echo "MIGRATIONS_DIR IS $MIGRATIONS_DIR"
+
+# $OLDVER/bin/psql -h localhost -d postgres -Xf "$PRIMING_SCRIPT"
+for sql in "$MIGRATIONS_DIR"/db/init-scripts/*.sql; do
+    echo "$0: running $sql"
+    $OLDVER/bin/psql -h localhost -d postgres -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -f "$sql"
+done
+
+$OLDVER/bin/psql -h localhost -d postgres -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
+# run migrations as super user - postgres user demoted in post-setup
+for sql in "$MIGRATIONS_DIR"/db/migrations/*.sql; do
+    echo "$0: running $sql"
+    $OLDVER/bin/psql -h localhost -d postgres -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -f "$sql"
+done
 
 if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then
-  echo "NOTE: Stopping old server (v${1}) to prepare for migration"
+#   echo "Ensuring proper permissions on $DATDIR"
+#   chmod 700 "$DATDIR"
+
+  echo "Stopping old server"
   $OLDVER/bin/pg_ctl stop -D "$DATDIR"
 
-  echo "NOTE: Migrating old data $DATDIR to $NEWDAT using pg_upgrade"
+  echo "Starting old server"
+  $OLDVER/bin/pg_ctl start -D "$DATDIR" 
+
+  echo "Ensuring $PGUSER is a superuser in the old database"
+  "$OLDVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -c "ALTER USER $PGUSER WITH SUPERUSER;" || true
+
+  echo "Running pre-migration checks"
+  "$PG_PROVE"/bin/pg_prove --psql="$OLDVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 "$MIGRATIONS_DIR"/tests/test.sql
+
+  echo "Running fixtures"
+  "$OLDVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$PGUPGRADE_TESTS/pg_upgrade/tests/97-enable-extensions.sql"
+  "$OLDVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$PGUPGRADE_TESTS/pg_upgrade/tests/98-data-fixtures.sql"
+  "$OLDVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$PGUPGRADE_TESTS/pg_upgrade/tests/99-fixtures.sql"
+
+  echo "Stopping old server"
+  $OLDVER/bin/pg_ctl stop -D "$DATDIR"
+
+  echo "Migrating old data $DATDIR to $NEWDAT using pg_upgrade"
 
   export PGDATAOLD="$DATDIR"
   export PGDATANEW="$NEWDAT"
   export PGBINOLD="$OLDVER/bin"
   export PGBINNEW="$NEWVER/bin"
 
-  if ! $NEWVER/bin/pg_upgrade --check; then
+  if ! $NEWVER/bin/pg_upgrade -U "$PGUSER" --check; then
       echo "ERROR: pg_upgrade check failed"
       exit 1
   fi
 
-  echo "NOTE: pg_upgrade check passed, proceeding with migration"
-  $NEWVER/bin/pg_upgrade
+  echo "pg_upgrade check passed, proceeding with migration"
+  $NEWVER/bin/pg_upgrade -U "$PGUSER"
   rm -f delete_old_cluster.sh # we don't need this
+  echo "Migration complete, running post-migration checks"
+  $NEWVER/bin/pg_ctl start -D "$NEWDAT"
+  "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
+    "$PGUPGRADE_TESTS/pg_upgrade/tests/01-schema.sql"
+  "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
+    "$PGUPGRADE_TESTS/pg_upgrade/tests/02-data.sql"
+  "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
+    "$PGUPGRADE_TESTS/pg_upgrade/tests/03-settings.sql"
+  $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
   exit 0
 fi
 
-if [ "$UPGRADE_METHOD" == "pg_dumpall" ]; then
-    SQLDAT="$DATDIR/dump.sql"
-    echo "NOTE: Exporting data via pg_dumpall ($SQLDAT)"
-    $NEWVER/bin/pg_dumpall -h localhost > "$SQLDAT"
 
-    echo "NOTE: Stopping old server (v${1}) to prepare for migration"
-    $OLDVER/bin/pg_ctl stop -D "$DATDIR"
+# if [ "$UPGRADE_METHOD" == "pg_dumpall" ]; then
+#     SQLDAT="$DATDIR/dump.sql"
+#     echo "Exporting data via pg_dumpall ($SQLDAT)"
+#     $NEWVER/bin/pg_dumpall -h localhost > "$SQLDAT"
 
-    echo "NOTE: Starting second server (v${2}) to load data into the system"
-    $NEWVER/bin/pg_ctl start -D "$NEWDAT"
+#     echo "Stopping old server (v${1}) to prepare for migration"
+#     $OLDVER/bin/pg_ctl stop -D "$DATDIR"
 
-    echo "NOTE: Loading data into new server (v${2}) via 'cat | psql'"
-    cat "$SQLDAT" | $NEWVER/bin/psql -h localhost -d postgres
+#     echo "Starting second server (v${2}) to load data into the system"
+#     $NEWVER/bin/pg_ctl start -D "$NEWDAT"
 
-    printf "\n\n\n\n"
-    echo "NOTE: Done, check logs. Stopping the server; new database is located at $NEWDAT"
-    $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
-fi
+#     echo "Loading data into new server (v${2}) via 'cat | psql'"
+#     cat "$SQLDAT" | $NEWVER/bin/psql -h localhost -d postgres
+
+#     printf "\n\n\n\n"
+#     echo "Done, check logs. Stopping the server; new database is located at $NEWDAT"
+#     $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
+# fi
