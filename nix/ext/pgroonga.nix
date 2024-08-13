@@ -37,11 +37,6 @@ stdenv.mkDerivation rec {
     install -D pgroonga_database.control -t $out/share/postgresql/extension
     install -D data/pgroonga_database-*.sql -t $out/share/postgresql/extension
 
-    # Modify the main PGroonga SQL file to include MeCab plugin registration
-    for sql_file in $out/share/postgresql/extension/pgroonga-*.sql; do
-      echo "SELECT pgroonga_command('plugin_register ${supabase-groonga}/lib/groonga/plugins/tokenizers/mecab.so');" >> $sql_file
-    done
-
     cat << EOF > $out/share/postgresql/extension/pgroonga_set_paths.sql
     DO \$\$
     BEGIN
