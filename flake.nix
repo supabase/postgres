@@ -417,7 +417,14 @@
               fi
             done
             createdb -p 5432 -h localhost testing
-            psql -p 5432 -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
+            if ! psql -p 5432 -h localhost -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql} > $TMPDIR/psql_output.log 2>&1; then
+              echo "Error executing SQL file. Error output:"
+              cat $TMPDIR/psql_output.log
+              echo "PostgreSQL log content:"
+              cat $TMPDIR/logfile/postgresql.log
+              pg_ctl -D "$PGDATA" stop
+              exit 1
+            fi
 
             pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
 

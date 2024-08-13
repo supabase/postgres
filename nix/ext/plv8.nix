@@ -9,6 +9,8 @@
 , coreutils
 , gnugrep
 , gcc
+, patchelf
+, xcbuild
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -35,10 +37,13 @@ stdenv.mkDerivation (finalAttrs: {
     perl
   ] ++ lib.optionals stdenv.isDarwin [
     gcc
+    xcbuild
   ];
 
   buildInputs = [
-    v8
+    (v8.overrideAttrs (oldAttrs: {
+      version = "9.7.106.18";  
+    }))
     postgresql
   ];
 
@@ -47,7 +52,7 @@ stdenv.mkDerivation (finalAttrs: {
   makeFlags = [
     # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
-    "SHLIB_LINK=-lv8"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,--no-as-needed"
     "V8_OUTDIR=${v8}/lib"
   ];
   NIX_LDFLAGS = lib.optionalString (stdenv.isDarwin && stdenv.isAarch64)
@@ -78,6 +83,12 @@ stdenv.mkDerivation (finalAttrs: {
     # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
+
+       # Use install_name_tool for macOS
+    ${lib.optionalString stdenv.isDarwin ''
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+    ''}
   '';
 
   passthru = {
