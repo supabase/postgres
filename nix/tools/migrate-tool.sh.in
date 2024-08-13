@@ -140,6 +140,14 @@ if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then
   rm -f delete_old_cluster.sh # we don't need this
   echo "Migration complete, running post-migration checks"
   $NEWVER/bin/pg_ctl start -D "$NEWDAT"
+  echo "TURN off jit"
+  POST_UPGRADE_EXTENSION_SCRIPT=$(mktemp)  
+  cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
+  ALTER SYSTEM SET jit = off;
+  SELECT pg_reload_conf();
+EOF
+  "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$POST_UPGRADE_EXTENSION_SCRIPT"  
+
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
     "$PGUPGRADE_TESTS/pg_upgrade/tests/01-schema.sql"
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
