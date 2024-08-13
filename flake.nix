@@ -69,7 +69,7 @@
           mkdir -p $out/bin
           for x in pg_prove pg_tapgen; do
             makeWrapper "${pkgs.perlPackages.TAPParserSourceHandlerpgTAP}/bin/$x" "$out/bin/$x" \
-              --set LOCALE_ARCHIVE "${pkgs.glibcLocales}/lib/locale/locale-archive"
+              ${pkgs.lib.optionalString pkgs.stdenv.isLinux "--set LOCALE_ARCHIVE \"${pkgs.glibcLocales}/lib/locale/locale-archive\""}
           done
         '';
 
