@@ -1,3 +1,5 @@
+
+
 { stdenv
 , lib
 , fetchFromGitHub
@@ -8,16 +10,14 @@
 , runCommand
 , coreutils
 , gnugrep
-, gcc
+, clang
 , patchelf
 , xcbuild
+, darwin
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "plv8";
-  # plv8 latest is https://github.com/plv8/plv8/releases/tag/v3.2.2
-  # FIXME we need to increment this build toward 3.2.2 
-  # 3.1.7 is the highest version that can be built with pg 16
   version = "3.1.5";
 
   src = fetchFromGitHub {
@@ -28,15 +28,13 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   patches = [
-    # Allow building with system v8.
-    # https://github.com/plv8/plv8/pull/505 (rejected)
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
   nativeBuildInputs = [
     perl
   ] ++ lib.optionals stdenv.isDarwin [
-    gcc
+    clang
     xcbuild
   ];
 
@@ -45,49 +43,76 @@ stdenv.mkDerivation (finalAttrs: {
       version = "9.7.106.18";  
     }))
     postgresql
+  ] ++ lib.optionals stdenv.isDarwin [
+    darwin.apple_sdk.frameworks.CoreFoundation
+    darwin.apple_sdk.frameworks.Kerberos
   ];
 
   buildFlags = [ "all" ];
 
   makeFlags = [
-    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,--no-as-needed"
     "V8_OUTDIR=${v8}/lib"
+    "PG_CONFIG=${postgresql}/bin/pg_config"
+  ] ++ lib.optionals stdenv.isDarwin [
+    "CC=${clang}/bin/clang"
+    "CXX=${clang}/bin/clang++"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
   ];
-  NIX_LDFLAGS = lib.optionalString (stdenv.isDarwin && stdenv.isAarch64)
-    "-undefined dynamic_lookup";
 
-  NIX_CFLAGS_COMPILE = lib.optionals (stdenv.isDarwin && stdenv.isAarch64) [
+  NIX_LDFLAGS = lib.optionals stdenv.isDarwin (lib.concatStringsSep " " [
+    "-L${postgresql}/lib"
+    "-L${v8}/lib"
+    "-lv8_monolith"
+    "-lpq"
+    "-lpgcommon"
+    "-lpgport"
+    "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
+    "-framework CoreFoundation"
+    "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
+    "-framework Kerberos"
+    "-undefined dynamic_lookup"
+    "-flat_namespace"
+  ]);
+
+  NIX_CFLAGS_COMPILE = lib.optionals stdenv.isDarwin [
     "-I${v8}/include"
     "-I${postgresql}/include"
+    "-I${postgresql}/include/server"
+    "-I${postgresql}/include/internal"
   ];
+
   installFlags = [
-    # PGXS only supports installing to postgresql prefix so we need to redirect this
     "DESTDIR=${placeholder "out"}"
   ];
 
-  # No configure script.
   dontConfigure = true;
 
   postPatch = ''
     patchShebangs ./generate_upgrade.sh
-    # https://github.com/plv8/plv8/pull/506
     substituteInPlace generate_upgrade.sh \
       --replace " 2.3.10 " " 2.3.10 2.3.11 2.3.12 2.3.13 2.3.14 2.3.15 "
+    
+    ${lib.optionalString stdenv.isDarwin ''
+      # Replace g++ with clang++ in Makefile
+      sed -i 's/g++/clang++/g' Makefile
+    ''}
+  '';
+
+  preBuild = lib.optionalString stdenv.isDarwin ''
+    export CC=${clang}/bin/clang
+    export CXX=${clang}/bin/clang++
   '';
 
   postInstall = ''
-    # Move the redirected to proper directory.
-    # There appear to be no references to the install directories
-    # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
 
-       # Use install_name_tool for macOS
     ${lib.optionalString stdenv.isDarwin ''
       install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
       install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
     ''}
   '';
 

@@ -68,8 +68,8 @@ ERROR:  could not load library "/nix/store/..../lib/plv8-3.1.5.so
 symbol not found in flat namespace
 */
 create extension plv8;
--- create extension plcoffee;
--- create extension plls;
+create extension plcoffee;
+create extension plls;
 
 create extension postgis;
 create extension postgis_raster;
