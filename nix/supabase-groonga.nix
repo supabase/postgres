@@ -19,16 +19,15 @@ in stdenv.mkDerivation (finalAttrs: {
     ++ lib.optionals suggestSupport [ zeromq libevent ];
   cmakeFlags = [
     "-DWITH_MECAB=ON"
-    "-DMECAB_DICDIR=${mecab-naist-jdic}/lib/mecab/dic/naist-jdic"
-    "-DMECAB_CONFIG=${mecab}/bin/mecab-config"
+    # "-DMECAB_DICDIR=${mecab-naist-jdic}/lib/mecab/dic/naist-jdic"
+    # "-DMECAB_CONFIG=${mecab}/bin/mecab-config"
     "-DENABLE_MECAB_TOKENIZER=ON"
-    "-DMECAB_INCLUDE_DIR=${mecab}/include"
-    "-DMECAB_LIBRARY=${mecab}/lib/libmecab.so"
+    # "-DMECAB_INCLUDE_DIR=${mecab}/include"
+    # "-DMECAB_LIBRARY=${mecab}/lib/libmecab.so"
     "-DGROONGA_ENABLE_TOKENIZER_MECAB=YES"
     "-DGRN_WITH_MECAB=YES"
   ];
   preConfigure = ''
-    export MECAB_DICDIR=${mecab-naist-jdic}/lib/mecab/dic/naist-jdic
     echo "MeCab dictionary directory is: $MECAB_DICDIR"
   '';
   buildPhase = ''
