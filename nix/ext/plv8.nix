@@ -1,5 +1,3 @@
-
-
 { stdenv
 , lib
 , fetchFromGitHub
@@ -58,9 +56,11 @@ stdenv.mkDerivation (finalAttrs: {
     "CC=${clang}/bin/clang"
     "CXX=${clang}/bin/clang++"
     "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+  ] ++ lib.optionals (!stdenv.isDarwin) [
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
   ];
 
-  NIX_LDFLAGS = lib.optionals stdenv.isDarwin (lib.concatStringsSep " " [
+  NIX_LDFLAGS = (lib.optionals stdenv.isDarwin [
     "-L${postgresql}/lib"
     "-L${v8}/lib"
     "-lv8_monolith"
@@ -68,14 +68,21 @@ stdenv.mkDerivation (finalAttrs: {
     "-lpgcommon"
     "-lpgport"
     "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
-    "-framework CoreFoundation"
+    "-framework" "CoreFoundation"
     "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
-    "-framework Kerberos"
-    "-undefined dynamic_lookup"
+    "-framework" "Kerberos"
+    "-undefined" "dynamic_lookup"
     "-flat_namespace"
+  ]) ++ (lib.optionals (!stdenv.isDarwin) [
+    "-L${postgresql}/lib"
+    "-L${v8}/lib"
+    "-lv8_monolith"
+    "-lpq"
+    "-lpgcommon"
+    "-lpgport"
   ]);
 
-  NIX_CFLAGS_COMPILE = lib.optionals stdenv.isDarwin [
+  NIX_CFLAGS_COMPILE = [
     "-I${v8}/include"
     "-I${postgresql}/include"
     "-I${postgresql}/include/server"
@@ -113,6 +120,10 @@ stdenv.mkDerivation (finalAttrs: {
       install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
       install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
       install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+    ''}
+
+    ${lib.optionalString (!stdenv.isDarwin) ''
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
     ''}
   '';
 
