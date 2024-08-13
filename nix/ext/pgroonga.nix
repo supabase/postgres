@@ -13,8 +13,7 @@ stdenv.mkDerivation rec {
   buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
   
   configureFlags = [
-    "--with-mecab=${mecab}"
-    "--enable-mecab"
+    "--with-mecab"
     "--with-groonga=${supabase-groonga}"
     "--with-groonga-plugin-dir=${supabase-groonga}/lib/groonga/plugins"
   ];
@@ -22,13 +21,11 @@ stdenv.mkDerivation rec {
   makeFlags = [
     "HAVE_MSGPACK=1"
     "MSGPACK_PACKAGE_NAME=msgpack-c"
-    "HAVE_MECAB=1"
   ];
 
   preConfigure = ''
     export GROONGA_LIBS="-L${supabase-groonga}/lib -lgroonga"
     export GROONGA_CFLAGS="-I${supabase-groonga}/include"
-    export MECAB_CONFIG="${mecab}/bin/mecab-config"
   '';
 
   installPhase = ''
