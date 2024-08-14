@@ -65,7 +65,7 @@ buildPgrxExtension_0_11_3 rec {
 
   preBuild = ''
     echo "Processing git tags..."
-    echo '${concatStringsSep "," previousVersions }' | sed 's/,/\n/g' > git_tags.txt
+    echo '${builtins.concatStringsSep "," previousVersions }' | sed 's/,/\n/g' > git_tags.txt
   '';
 
   postInstall = ''
