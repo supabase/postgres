@@ -28,7 +28,9 @@ create extension ltree;
 create extension moddatetime;
 create extension old_snapshot;
 create extension pageinspect;
+create extension pg_backtrace;
 create extension pg_buffercache;
+create extension pgmq;
 
 /*
 TODO: Does not enable locally mode
@@ -42,6 +44,7 @@ create extension pg_graphql;
 create extension pg_freespacemap;
 create extension pg_hashids;
 create extension pg_prewarm;
+create extension pg_partman;
 create extension pg_jsonschema;
 create extension pg_repack;
 create extension pg_stat_monitor;
@@ -61,11 +64,9 @@ create extension pgsodium;
 create extension pgrowlocks;
 create extension pgstattuple;
 create extension plpgsql_check;
-
 create extension plv8;
 create extension plcoffee;
 create extension plls;
-
 create extension postgis;
 create extension postgis_raster;
 create extension postgis_sfcgal;
@@ -88,10 +89,3 @@ create extension "uuid-ossp";
 create extension vector;
 create extension wrappers;
 create extension xml2;
-
-
- 
- 
- 
-
-CREATE EXTENSION IF NOT EXISTS pg_backtrace;

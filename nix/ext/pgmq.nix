@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgmq";
-  version = "1.4.0";
+  version = "1.4.4";
 
   buildInputs = [ postgresql ];
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation rec {
     owner  = "tembo-io";
     repo   = pname;
     rev    = "v${version}";
-    hash = "sha256-k7iKp2CZY3M8POUqIOIbKxrofoOfn2FxfVW01KYojPA=";
+    hash = "";
   };
 
   buildPhase = ''
