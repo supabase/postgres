@@ -174,6 +174,12 @@ EOF
 function patch_wrappers {
     local IS_NIX_UPGRADE=$1
 
+    WRAPPERS_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'wrappers');")
+    if [ "$WRAPPERS_ENABLED" = "f" ]; then
+        echo "Wrappers extension not enabled. Skipping."
+        return
+    fi
+
     # This is a workaround for older versions of wrappers which don't have the expected
     #  naming scheme, containing the version in their library's file name
     #  e.g. wrappers-0.1.16.so, rather than wrappers.so
