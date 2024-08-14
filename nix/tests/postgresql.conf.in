@@ -793,7 +793,7 @@ jit_provider = 'llvmjit'		# JIT library to use
 #------------------------------------------------------------------------------
 
 # Add settings for extensions here
-
+include = '@SUPAUTILS_CONFIG_FILE@'
 pgsodium.getkey_script = '@PGSODIUM_GETKEY_SCRIPT@'
 
 auto_explain.log_min_duration = 10s
