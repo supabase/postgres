@@ -13,7 +13,6 @@
 let
   gitTags = builtins.fromJSON (builtins.readFile (builtins.fetchurl {
     url = "https://api.github.com/repos/supabase/wrappers/tags";
-    sha256 = "0am40yspir70wp8pik1c7qmfvbby3nyxza115pi9klp6fyv2s93j"; # Replace with actual hash
   }));
 in
 buildPgrxExtension_0_11_3 rec {
