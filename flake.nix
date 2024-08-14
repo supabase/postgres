@@ -407,18 +407,29 @@
           # Start a version of the server.
           start-server =
             let
-              configFile = ./nix/tests/postgresql.conf.in;
+              pgconfigFile = ./nix/tests/postgresql.conf.in;
+              supautilsConfigFile = builtins.path {
+                name = "supautils.conf";
+                path = ./ansible/files/postgresql_config/supautils.conf.j2;
+              };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
             in
             pkgs.runCommand "start-postgres-server" { } ''
-              mkdir -p $out/bin
+              mkdir -p $out/bin $out/etc/postgresql-custom
+              echo "Copying from: ${supautilsConfigFile}"
+              echo "Copying to: $out/etc/postgresql-custom/supautils.conf"
+              cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
+              echo "Copy operation completed"
+              chmod 644 $out/etc/postgresql-custom/supautils.conf
+              cat $out/etc/postgresql-custom/supautils.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
-
+                --subst-var-by 'PSQL_CONF_FILE' '${pgconfigFile}' \
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+                --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf"
+                
               chmod +x $out/bin/start-postgres-server
             '';
 
