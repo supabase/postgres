@@ -10,16 +10,10 @@
 , jq
 }:
 
-let
-  gitTags = builtins.fromJSON (builtins.readFile (builtins.fetchurl {
-    url = "https://api.github.com/repos/supabase/wrappers/tags";
-    sha256 = "0pvavn0f8wnaszq4bmvjkadm6xbvf91rbhcmmgjasqajb69vskv9"; # Replace with actual hash
-  }));
-in
 buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
   version = "0.4.1";
-  # update this when the wrappers version is updated
+  # update the following array when the wrappers version is updated
   # required to ensure that extensions update scripts from previous versions are generated
   previousVersions = ["0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
   inherit postgresql;
@@ -29,7 +23,7 @@ buildPgrxExtension_0_11_3 rec {
     rev = "v${version}";
     hash = "sha256-AU9Y43qEMcIBVBThu+Aor1HCtfFIg+CdkzK9IxVdkzM=";
   };
-  nativeBuildInputs = [ pkg-config cargo jq ];
+  nativeBuildInputs = [ pkg-config cargo ];
   buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
     darwin.apple_sdk.frameworks.Security 
@@ -65,7 +59,7 @@ buildPgrxExtension_0_11_3 rec {
 
   preBuild = ''
     echo "Processing git tags..."
-    echo '${builtins.concatStringsSep "," previousVersions }' | sed 's/,/\n/g' > git_tags.txt
+    echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
   '';
 
   postInstall = ''
