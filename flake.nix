@@ -301,7 +301,9 @@
                 path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
               };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-              localeArchive = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+              localeArchive = if pkgs.stdenv.isDarwin
+                then "${pkgs.darwin.locale}/share/locale"
+                else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
               mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql
