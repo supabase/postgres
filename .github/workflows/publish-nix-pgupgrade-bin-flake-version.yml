@@ -1,11 +1,6 @@
 name: Publish nix pg_upgrade_bin flake version
 
 on:
-  push:
-    branches:
-      - pcnc/nix-flake-workflow
-    paths:
-      - '.github/workflows/publish-nix-pgupgrade-bin-flake-version.yml'
   workflow_dispatch:
     inputs:
       postgresVersion:
@@ -79,10 +74,11 @@ jobs:
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing the latest nix flake version
+        working-directory: /tmp/
         run: |
-          mkdir -p /tmp/${{ steps.process_release_version.outputs.major_version }}
-          echo $GITHUB_SHA > /tmp/${{ steps.process_release_version.outputs.major_version }}/nix_flake_version
-          tar -czvf pg_upgrade_bin.tar.gz -C /tmp/ /${{ steps.process_release_version.outputs.major_version }}
+          mkdir -p ${{ steps.process_release_version.outputs.major_version }}
+          echo $GITHUB_SHA > ${{ steps.process_release_version.outputs.major_version }}/nix_flake_version
+          tar -czvf pg_upgrade_bin.tar.gz ${{ steps.process_release_version.outputs.major_version }}
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v1
