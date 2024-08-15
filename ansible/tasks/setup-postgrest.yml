@@ -36,6 +36,7 @@
 - name: postgis - ensure dependencies do not get autoremoved
   shell: |
     set -e
+    apt-mark manual libpq5*
     apt-mark manual libnuma*
     apt-mark auto libnuma*-dev
 
