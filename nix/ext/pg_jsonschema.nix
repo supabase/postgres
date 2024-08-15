@@ -14,6 +14,9 @@ buildPgrxExtension_0_11_3 rec {
 
   nativeBuildInputs = [ cargo ];
   buildInputs = [ postgresql ];
+  # update the following array when the pg_jsonschema version is updated
+  # required to ensure that extensions update scripts from previous versions are generated
+
   previousVersions = ["0.3.0" "0.2.0" "0.1.4" "0.1.4" "0.1.2" "0.1.1" "0.1.0"];
   CARGO="${cargo}/bin/cargo";
   env = lib.optionalAttrs stdenv.isDarwin {
