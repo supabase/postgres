@@ -26,10 +26,6 @@ resources:
                       type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
               generate_request_id: false
               http_filters:
-                - name: envoy.filters.http.cors
-                  typed_config:
-                    '@type': >-
-                      type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                 - name: envoy.filters.http.rbac
                   typed_config:
                     '@type': >-
@@ -147,16 +143,6 @@ resources:
                   - name: virtual_host_0
                     domains:
                       - '*'
-                    typed_per_filter_config:
-                      envoy.filters.http.cors:
-                        '@type': >-
-                          type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
-                        allow_origin_string_match:
-                          - safe_regex:
-                              regex: \*
-                        allow_methods: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS,TRACE,CONNECT
-                        allow_headers: apikey,authorization,x-client-info
-                        max_age: '3600'
                     routes:
                       - match:
                           path: /health
