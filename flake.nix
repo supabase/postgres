@@ -275,6 +275,7 @@
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           mecab_naist_jdic = mecab-naist-jdic;
+          supabase_groonga = supabase-groonga;
           # Start a version of the server.
           start-server =
             let
@@ -288,7 +289,8 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+                --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' \
 
               chmod +x $out/bin/start-postgres-server
             '';
@@ -369,10 +371,11 @@
           let
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+            supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
-              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps ];
+              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps supabase-groonga ];
             } ''
             TMPDIR=$(mktemp -d)
             if [ $? -ne 0 ]; then
@@ -390,7 +393,7 @@
             mkdir -p $TMPDIR/logfile
             # Generate a random key and store it in an environment variable
             export PGSODIUM_KEY=$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n')
-
+            export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
             # Create a simple script to echo the key
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh

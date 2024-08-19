@@ -37,6 +37,15 @@ in stdenv.mkDerivation (finalAttrs: {
     echo "CMake cache contents related to MeCab:"
     grep -i mecab CMakeCache.txt
   '';
+
+  # installPhase = ''
+  #   mkdir -p $out/bin $out/lib/groonga/plugins
+  #   cp -r lib/groonga/plugins/* $out/lib/groonga/plugins
+  #   cp -r bin/* $out/bin
+  #   echo "Installed Groonga plugins:"
+  #   ls -l $out/lib/groonga/plugins
+  # '';
+
   postInstall = ''
     echo "Searching for MeCab-related files:"
     find $out -name "*mecab*"

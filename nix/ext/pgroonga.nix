@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
   };
   nativeBuildInputs = [ pkg-config makeWrapper ];
   buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
-  
+  propagatedBuildInputs = [ supabase-groonga ];
   configureFlags = [
     "--with-mecab=${mecab}"
     "--enable-mecab"
@@ -39,19 +39,6 @@ stdenv.mkDerivation rec {
     install -D pgroonga_database${postgresql.dlSuffix} -t $out/lib/
     install -D pgroonga_database.control -t $out/share/postgresql/extension
     install -D data/pgroonga_database-*.sql -t $out/share/postgresql/extension
-
-    # Modify the main PGroonga SQL file to include MeCab plugin registration
-    for sql_file in $out/share/postgresql/extension/pgroonga-*.sql; do
-      echo "SELECT pgroonga_command('plugin_register ${supabase-groonga}/lib/groonga/plugins/tokenizers/mecab.so');" >> $sql_file
-    done
-
-    cat << EOF > $out/share/postgresql/extension/pgroonga_set_paths.sql
-    DO \$\$
-    BEGIN
-      SET pgroonga.log_path TO current_setting('data_directory') || '/groonga.log';
-    END \$\$;
-EOF
-    chmod +x $out/share/postgresql/extension/pgroonga_set_paths.sql
 
     makeWrapper ${postgresql}/bin/postgres $out/bin/pgroonga-postgres \
       --set LD_LIBRARY_PATH "${lib.makeLibraryPath buildInputs}:${supabase-groonga}/lib:$out/lib"

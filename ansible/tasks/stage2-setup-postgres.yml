@@ -13,7 +13,13 @@
 - name: Install pg_prove from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/2-stage-ami-nix#pg_prove"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg_prove"
+  when: stage2_nix
+
+- name: Install supabase-groonga from nix binary cache
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supabase-groonga"
   when: stage2_nix
 
 - name: Set ownership and permissions for /etc/ssl/private
@@ -220,3 +226,9 @@
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
   when: stage2_nix
+
+- name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
+  ansible.builtin.lineinfile:
+    path: /etc/environment.d/postgresql.env
+    line: 'GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins'
+  become: yes
