@@ -30,7 +30,6 @@ create extension old_snapshot;
 create extension pageinspect;
 create extension pg_backtrace;
 create extension pg_buffercache;
-create extension pg_backtrace; 
 
 /*
 TODO: Does not enable locally mode
