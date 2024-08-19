@@ -40,9 +40,6 @@ stdenv.mkDerivation rec {
     install -D pgroonga_database.control -t $out/share/postgresql/extension
     install -D data/pgroonga_database-*.sql -t $out/share/postgresql/extension
 
-    makeWrapper ${postgresql}/bin/postgres $out/bin/pgroonga-postgres \
-      --set LD_LIBRARY_PATH "${lib.makeLibraryPath buildInputs}:${supabase-groonga}/lib:$out/lib"
-
     echo "Debug: Groonga plugins directory contents:"
     ls -l ${supabase-groonga}/lib/groonga/plugins/tokenizers/
   '';
