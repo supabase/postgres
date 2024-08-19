@@ -42,6 +42,7 @@ sed -i -e "s|anon_key|${ANON_KEY}|g" \
   -e "s|service_key|${SERVICE_ROLE_KEY}|g" \
   -e "s|supabase_admin_key|${ADMIN_API_KEY}|g" \
   -e "s|c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5|$(echo -n "service_role:${SERVICE_ROLE_KEY}" | base64 --wrap 0)|g" \
+  -e "s|origin_protection_key|${ORIGIN_PROTECTION_KEY}|g" \
   "${ENVOY_LDS_CONF}"
 
 # Update Envoy ports

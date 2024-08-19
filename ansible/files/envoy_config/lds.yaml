@@ -37,6 +37,28 @@ resources:
                     rules:
                       action: DENY
                       policies:
+                        origin_protection_key_missing:
+                          permissions:
+                            - any: true
+                          principals:
+                            - not_id:
+                                or_ids:
+                                  ids:
+                                    - header:
+                                        name: x-sb-origin-protection-key
+                                        present_match: true
+                        origin_protection_key_not_valid:
+                          permissions:
+                            - any: true
+                          principals:
+                            - not_id:
+                                or_ids:
+                                  ids:
+                                    # when rolling over the key add a new entry here, deploy, then remove the old key and deploy again
+                                    - header:
+                                        name: x-sb-origin-protection-key
+                                        string_match:
+                                          exact: origin_protection_key
                         api_key_missing:
                           permissions:
                             - any: true
@@ -194,6 +216,7 @@ resources:
                               present_match: true
                         request_headers_to_remove:
                           - apikey
+                          - x-sb-origin-protection-key
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
@@ -207,6 +230,7 @@ resources:
                           prefix: /rest/v1/
                         request_headers_to_remove:
                           - apikey
+                          - x-sb-origin-protection-key
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
@@ -218,6 +242,7 @@ resources:
                               present_match: true
                         request_headers_to_remove:
                           - apikey
+                          - x-sb-origin-protection-key
                         route:
                           cluster: postgrest_admin
                           prefix_rewrite: /
@@ -230,11 +255,14 @@ resources:
                           prefix: /rest-admin/v1/
                         request_headers_to_remove:
                           - apikey
+                          - x-sb-origin-protection-key
                         route:
                           cluster: postgrest_admin
                           prefix_rewrite: /
                       - match:
                           path: /graphql/v1
+                        request_headers_to_remove:
+                          - x-sb-origin-protection-key
                         request_headers_to_add:
                           header:
                             key: Content-Profile
@@ -254,6 +282,8 @@ resources:
                         route:
                           cluster: admin_api
                           prefix_rewrite: /privileged/
+                        request_headers_to_remove:
+                          - x-sb-origin-protection-key
                         typed_per_filter_config:
                           envoy.filters.http.rbac:
                             '@type': >-
@@ -277,6 +307,8 @@ resources:
                         route:
                           cluster: admin_api
                           prefix_rewrite: /supabase-internal/metrics
+                        request_headers_to_remove:
+                          - x-sb-origin-protection-key
                         typed_per_filter_config:
                           envoy.filters.http.rbac:
                             '@type': >-
