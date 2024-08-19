@@ -30,7 +30,7 @@ create extension old_snapshot;
 create extension pageinspect;
 create extension pg_backtrace;
 create extension pg_buffercache;
-create extension pgmq;
+create extension pg_backtrace; 
 
 /*
 TODO: Does not enable locally mode
@@ -56,6 +56,7 @@ create extension pg_visibility;
 create extension pg_walinspect;
 create extension pgaudit;
 create extension pgcrypto;
+create extension pgmq;
 create extension pgtap;
 create extension pgjwt;
 create extension pgroonga;

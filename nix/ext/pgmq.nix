@@ -3,9 +3,7 @@
 stdenv.mkDerivation rec {
   pname = "pgmq";
   version = "1.4.4";
-
   buildInputs = [ postgresql ];
-
   src = fetchFromGitHub {
     owner  = "tembo-io";
     repo   = pname;
