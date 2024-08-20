@@ -1,5 +1,0 @@
- 2024-08-15 19:02:30.233 UTC [168132] LOG:  invalid value for parameter "lc_messages": "en_US.UTF-8"
- 2024-08-15 19:02:30.233 UTC [168132] LOG:  invalid value for parameter "lc_monetary": "en_US.UTF-8"
- 2024-08-15 19:02:30.233 UTC [168132] LOG:  invalid value for parameter "lc_numeric": "en_US.UTF-8"
- 2024-08-15 19:02:30.233 UTC [168132] LOG:  invalid value for parameter "lc_time": "en_US.UTF-8"
- 2024-08-15 19:02:30.234 UTC [168132] FATAL:  configuration file "/tmp/tmp.ARsCfJV3Wf/postgresql.conf" contains errors
