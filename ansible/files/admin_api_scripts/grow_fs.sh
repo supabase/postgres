@@ -4,6 +4,11 @@ set -euo pipefail
 
 VOLUME_TYPE=${1:-data}
 
+if pgrep resizefs; then
+    echo "resize2fs is already running"
+    exit 1
+fi
+
 if [ -b /dev/nvme1n1 ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
         resize2fs /dev/nvme1n1
