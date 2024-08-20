@@ -109,7 +109,7 @@ function format_and_mount_rootfs {
 		mount /dev/xvdf1 /mnt/boot/efi
 	fi
 	
-	mkfs.ext4 -O ^64bit /dev/xvdh
+	mkfs.ext4 -i 65536 /dev/xvdh
 	mkdir -p /mnt/data
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
