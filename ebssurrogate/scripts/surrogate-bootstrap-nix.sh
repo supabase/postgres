@@ -109,7 +109,7 @@ function format_and_mount_rootfs {
 		mount /dev/xvdf1 /mnt/boot/efi
 	fi
 	
-	mkfs.ext4 /dev/xvdh
+	mkfs.ext4 -O ^64bit /dev/xvdh
 	mkdir -p /mnt/data
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
@@ -223,11 +223,10 @@ function update_systemd_services {
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/vector.service
 	ln -s /etc/systemd/system/vector.timer /mnt/etc/systemd/system/multi-user.target.wants/vector.timer
 
-	# Disable apparmor during first boot
+	# Disable services during first boot.
 	rm -f /mnt/etc/systemd/system/sysinit.target.wants/apparmor.service
-
-	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
+	rm -f /mnt/etc/systemd/system/multi-user.target.wants/salt-minion.service
 
 	# Disable auditd
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/auditd.service
