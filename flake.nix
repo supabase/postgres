@@ -276,18 +276,61 @@
           # Start a version of the server.
           start-server =
             let
-              configFile = ./nix/tests/postgresql.conf.in;
+              pgconfigFile = builtins.path {
+                name = "postgresql.conf";
+                path = ./ansible/files/postgresql_config/postgresql.conf.j2;
+              };
+              supautilsConfigFile = builtins.path {
+                name = "supautils.conf";
+                path = ./ansible/files/postgresql_config/supautils.conf.j2;
+              };
+              loggingConfigFile = builtins.path {
+                name = "logging.conf";
+                path = ./ansible/files/postgresql_config/postgresql-csvlog.conf;
+              };
+              readReplicaConfigFile = builtins.path {
+                name = "readreplica.conf";
+                path = ./ansible/files/postgresql_config/custom_read_replica.conf.j2;
+              };
+              pgHbaConfigFile = builtins.path {
+                name = "pg_hba.conf";
+                path = ./ansible/files/postgresql_config/pg_hba.conf.j2;
+              };
+              pgIdentConfigFile = builtins.path {
+                name = "pg_ident.conf";
+                path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
+              };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+              localeArchive = if pkgs.stdenv.isDarwin
+                then "${pkgs.darwin.locale}/share/locale"
+                else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
-              mkdir -p $out/bin
+              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql
+              cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
+              cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
+              cp ${loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
+              cp ${readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
+              cp ${pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
+              cp ${pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
+              echo "Copy operation completed"
+              chmod 644 $out/etc/postgresql-custom/supautils.conf
+              chmod 644 $out/etc/postgresql/postgresql.conf
+              chmod 644 $out/etc/postgresql-custom/logging.conf
+              chmod 644 $out/etc/postgresql/pg_hba.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
-
+                --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+                --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
+                --subst-var-by 'LOGGING_CONF_FILE' "$out/etc/postgresql-custom/logging.conf" \
+                --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf" \
+                --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
+                --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
+                --subst-var-by 'LOCALES' '${localeArchive}'
+                
               chmod +x $out/bin/start-postgres-server
             '';
 
