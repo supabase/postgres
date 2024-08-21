@@ -27,7 +27,7 @@
         # The 'oriole_pkgs' variable holds all the upstream packages in nixpkgs, which
         # we can use to build our own images; it is the common name to refer to
         # a copy of nixpkgs which contains all its packages.
-        # it also serves as a base for importing the orioldb/postgres overlay to 
+        # it also serves as a base for importing the orioldb/postgres overlay to
         #build the orioledb postgres patched version of postgresql16
         oriole_pkgs = import nixpkgs {
           config = { allowUnfree = true; };
@@ -61,6 +61,7 @@
         };
 
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
+        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
@@ -101,6 +102,7 @@
           ./nix/ext/postgis.nix
           ./nix/ext/pgrouting.nix
           ./nix/ext/pgtap.nix
+          ./nix/ext/pg_backtrace.nix
           ./nix/ext/pg_cron.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
@@ -269,22 +271,66 @@
           #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
+          pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           # Start a version of the server.
           start-server =
             let
-              configFile = ./nix/tests/postgresql.conf.in;
+              pgconfigFile = builtins.path {
+                name = "postgresql.conf";
+                path = ./ansible/files/postgresql_config/postgresql.conf.j2;
+              };
+              supautilsConfigFile = builtins.path {
+                name = "supautils.conf";
+                path = ./ansible/files/postgresql_config/supautils.conf.j2;
+              };
+              loggingConfigFile = builtins.path {
+                name = "logging.conf";
+                path = ./ansible/files/postgresql_config/postgresql-csvlog.conf;
+              };
+              readReplicaConfigFile = builtins.path {
+                name = "readreplica.conf";
+                path = ./ansible/files/postgresql_config/custom_read_replica.conf.j2;
+              };
+              pgHbaConfigFile = builtins.path {
+                name = "pg_hba.conf";
+                path = ./ansible/files/postgresql_config/pg_hba.conf.j2;
+              };
+              pgIdentConfigFile = builtins.path {
+                name = "pg_ident.conf";
+                path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
+              };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+              localeArchive = if pkgs.stdenv.isDarwin
+                then "${pkgs.darwin.locale}/share/locale"
+                else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
-              mkdir -p $out/bin
+              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql
+              cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
+              cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
+              cp ${loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
+              cp ${readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
+              cp ${pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
+              cp ${pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
+              echo "Copy operation completed"
+              chmod 644 $out/etc/postgresql-custom/supautils.conf
+              chmod 644 $out/etc/postgresql/postgresql.conf
+              chmod 644 $out/etc/postgresql-custom/logging.conf
+              chmod 644 $out/etc/postgresql/pg_hba.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}'
-
+                --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
+                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+                --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
+                --subst-var-by 'LOGGING_CONF_FILE' "$out/etc/postgresql-custom/logging.conf" \
+                --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf" \
+                --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
+                --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
+                --subst-var-by 'LOCALES' '${localeArchive}'
+                
               chmod +x $out/bin/start-postgres-server
             '';
 
@@ -299,7 +345,7 @@
           '';
 
           # Start a version of the client and runs migrations script on server.
-          start-client-and-migrate =  
+          start-client-and-migrate =
             let
               migrationsDir = ./migrations/db;
               postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
@@ -343,7 +389,7 @@
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'\
+              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-replica
           '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
@@ -353,7 +399,7 @@
               --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
               --subst-var-by 'NIX_EDITOR' '${nix-editor.packages.${system}.nix-editor}/bin/nix-editor' \
               --subst-var-by 'NIXPREFETCHURL' '${pkgs.nixVersions.nix_2_20}/bin/nix-prefetch-url' \
-              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix' 
+              --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix'
             chmod +x $out/bin/sync-exts-versions
           '';
         };
@@ -367,7 +413,7 @@
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
-              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove procps ];
+              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps ];
             } ''
             TMPDIR=$(mktemp -d)
             if [ $? -ne 0 ]; then
@@ -389,7 +435,7 @@
             # Create a simple script to echo the key
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
-            chmod +x $TMPDIR/getkey.sh            
+            chmod +x $TMPDIR/getkey.sh
             initdb --locale=C
             substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
@@ -414,8 +460,24 @@
               fi
             done
             createdb -p 5432 -h localhost testing
-            psql -p 5432 -h localhost -d testing -Xaf ${./nix/tests/prime.sql}
+            if ! psql -p 5432 -h localhost -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+              echo "Error executing SQL file. PostgreSQL log content:"
+              cat $TMPDIR/logfile/postgresql.log
+              pg_ctl -D "$PGDATA" stop
+              exit 1
+            fi
             pg_prove -p 5432 -h localhost -d testing ${sqlTests}/*.sql
+
+            mkdir -p $out/regression_output
+            pg_regress \
+              --use-existing \
+              --dbname=testing \
+              --inputdir=${./nix/tests} \
+              --outputdir=$out/regression_output \
+              --host=localhost \
+              --port=5432 \
+              $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort )
+
             pg_ctl -D "$PGDATA" stop
             mv $TMPDIR/logfile/postgresql.log $out
             echo ${pgpkg}

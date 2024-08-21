@@ -10,6 +10,7 @@
     - motd-news
     - vector
     - lvm2-monitor
+    - salt-minion
   when: debpkg_mode 
 
 - name: ensure services are stopped and disabled for first boot nix build
@@ -23,6 +24,7 @@
     - fail2ban
     - motd-news
     - vector
+    - salt-minion
   when: stage2_nix
 
 - name: disable man-db

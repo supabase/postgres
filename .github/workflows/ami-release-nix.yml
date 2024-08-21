@@ -131,6 +131,11 @@ jobs:
           SLACK_FOOTER: ''
 
       - name: Cleanup resources on build cancellation
+        if: ${{ always() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
+
+      - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
           aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
