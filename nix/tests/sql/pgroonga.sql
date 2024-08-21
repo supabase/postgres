@@ -37,7 +37,7 @@ values
 create index pgroonga_index on v.roon using pgroonga (content);
 
 -- Create mecab tokenizer index since we had a bug with this one once
-create index pgroonga_index on v.roon using pgroonga (content) with (tokenizer='TokenMecab');
+create index pgroonga_index_mecab on v.roon using pgroonga (content) with (tokenizer='TokenMecab');
 
 -- Run some queries to test the index
 select * from v.roon where content &@~ 'Hello';
