@@ -1,0 +1,43 @@
+create schema v;
+create table v.roon(
+  id serial primary key,
+  content text
+);
+select
+  pgroonga_command('tokenizer_list');
+                                                                                                                                                                                                                                                                                                                     pgroonga_command                                                                                                                                                                                                                                                                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ [[0,1724272792.453287,7.319450378417969e-05],[{"name":"TokenDelimit"},{"name":"TokenUnigram"},{"name":"TokenBigram"},{"name":"TokenTrigram"},{"name":"TokenBigramSplitSymbol"},{"name":"TokenBigramSplitSymbolAlpha"},{"name":"TokenBigramSplitSymbolAlphaDigit"},{"name":"TokenBigramIgnoreBlank"},{"name":"TokenBigramIgnoreBlankSplitSymbol"},{"name":"TokenBigramIgnoreBlankSplitSymbolAlpha"},{"name":"TokenBigramIgnoreBlankSplitSymbolAlphaDigit"},{"name":"TokenDelimitNull"},{"name":"TokenRegexp"},{"name":"TokenNgram"},{"name":"TokenPattern"},{"name":"TokenTable"},{"name":"TokenDocumentVectorTFIDF"},{"name":"TokenDocumentVectorBM25"}]]
+(1 row)
+
+insert into v.roon (content)
+values
+  ('Hello World'),
+  ('PostgreSQL with PGroonga is a thing'),
+  ('This is a full-text search test'),
+  ('PGroonga supports various languages');
+-- Create default index
+create index pgroonga_index on v.roon using pgroonga (content);
+-- Create mecab tokenizer index since we had a bug with this one once
+create index pgroonga_index on v.roon using pgroonga (content) with (tokenizer='TokenMecab');
+ERROR:  pgroonga: [option][tokenizer][validate] invalid tokenizer: <TokenMecab>: [info][set][default-tokenizer][(anonymous)] unknown tokenizer: <TokenMecab>
+-- Run some queries to test the index
+select * from v.roon where content &@~ 'Hello';
+ id |   content   
+----+-------------
+  1 | Hello World
+(1 row)
+
+select * from v.roon where content &@~ 'powerful';
+ id | content 
+----+---------
+(0 rows)
+
+select * from v.roon where content &@~ 'supports';
+ id |               content               
+----+-------------------------------------
+  4 | PGroonga supports various languages
+(1 row)
+
+drop schema v cascade;
+NOTICE:  drop cascades to table v.roon
