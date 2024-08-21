@@ -171,6 +171,58 @@ EOF
     done
 }
 
+function patch_wrappers {
+    local IS_NIX_UPGRADE=$1
+
+    WRAPPERS_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'wrappers');")
+    if [ "$WRAPPERS_ENABLED" = "f" ]; then
+        echo "Wrappers extension not enabled. Skipping."
+        return
+    fi
+
+    # This is a workaround for older versions of wrappers which don't have the expected
+    #  naming scheme, containing the version in their library's file name
+    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
+    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
+    #  library directory, so we're making sure the new version has the expected (old version's)
+    #  file name.
+    # After the upgrade completes, the new version's library file is used.
+    # i.e. 
+    #  - old version: wrappers-0.1.16.so
+    #  - new version: wrappers-0.1.18.so
+    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
+    if [ "$IS_NIX_UPGRADE" = "true" ]; then
+        if [ -d "$PGLIBOLD" ]; then
+            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
+            OLD_LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+
+            find /nix/store/ -name "wrappers*so" -print0 | while read -r -d $'\0' WRAPPERS_LIB_PATH; do
+                if [ -f "$WRAPPERS_LIB_PATH" ]; then
+                    WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
+                    if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
+                        echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                    fi
+                fi
+            done
+        fi
+    else
+        if [ -d "$PGLIBOLD" ]; then
+            WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
+            if [ -f "$WRAPPERS_LIB_PATH" ]; then
+                OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
+                if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
+                    LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
+                    if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
+                        echo "Copying $WRAPPERS_LIB_PATH to $PGLIBNEW/${LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                    fi
+                fi
+            fi
+        fi
+    fi
+}
+
 function initiate_upgrade {
     mkdir -p "$MOUNT_POINT"
     SHARED_PRELOAD_LIBRARIES=$(cat "$POSTGRES_CONFIG_PATH" | grep shared_preload_libraries | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
@@ -324,30 +376,7 @@ function initiate_upgrade {
         export LD_LIBRARY_PATH="${PGLIBNEW}"
     fi
 
-    # This is a workaround for older versions of wrappers which don't have the expected
-    #  naming scheme, containing the version in their library's file name
-    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
-    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
-    #  library directory, so we're making sure the new version has the expected (old version's)
-    #  file name.
-    # After the upgrade completes, the new version's library file is used.
-    # i.e. 
-    #  - old version: wrappers-0.1.16.so
-    #  - new version: wrappers-0.1.18.so
-    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
-    if [ -d "$PGLIBOLD" ]; then
-        WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
-        if [ -f "$WRAPPERS_LIB_PATH" ]; then
-            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
-            if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
-                LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
-                if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
-                    echo "Copying $OLD_WRAPPER_LIB_PATH to $WRAPPERS_LIB_PATH"
-                    cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
-                fi
-            fi
-        fi
-    fi
+    patch_wrappers "$IS_NIX_UPGRADE"
 
     echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
