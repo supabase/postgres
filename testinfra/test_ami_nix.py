@@ -13,7 +13,7 @@ from time import sleep
 
 # if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run-" + os.environ.get("USER", "unknown-user") + '@' + socket.gethostname())
-
+AMI_NAME = os.environ.get('AMI_NAME')
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
@@ -167,7 +167,7 @@ def host():
     ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
     images = list(
         ec2.images.filter(
-            Filters=[{"Name": "name", "Values": ["supabase-postgres-ci-ami-test-nix"]}]
+            Filters=[{"Name": "name", "Values": [AMI_NAME]}],
         )
     )
     assert len(images) == 1
