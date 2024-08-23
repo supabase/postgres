@@ -48,7 +48,7 @@ This uses `stdenv.mkDerivation` which is a general nix builder for C and C++ pro
 
 Your build should produce all of the sql and control files needed for the install phase.
 
-1. Once you have created this file, you can add it to `nix/exts/<yourname>.nix` and edit `flake.nix` and add it to the `ourExtensions` list.
+1. Once you have created this file, you can add it to `nix/ext/<yourname>.nix` and edit `flake.nix` and add it to the `ourExtensions` list.
 2. `git add .` as nix uses git to track changes 
 3. In your package file, temporarily empty the `hash = "sha256<...>=";` to `hash = "";` and save  and `git add  https://github.com/supabase/postgres/blob/develop/nix/ext/supautils.nix`
 4. Run `nix build .#psql_15/exts/<yourname>`  to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15/exts/<yourname>`. 
