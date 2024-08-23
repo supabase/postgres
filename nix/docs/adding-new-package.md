@@ -151,7 +151,7 @@ A few things about `buildPgrxExtension_x`:
 
 
 1. You can add and run tests as described in https://github.com/supabase/postgres/blob/develop/nix/docs/adding-tests.md 
-2. You may need to add tests to our testdatabase.yml gh action workflow as well.
+2. You may need to add tests to our test.yml gh action workflow as well.
 3. You can add the package and name and version to `ansible/vars.yml` it is not necessary to add the sha256 hash here, as the package is already built and cached in our release process before these vars are ever run.
 4. to check that all your files will land in the overall build correctly, you can run `nix profile install .#psql_15/bin` on your machine, and check in `~/.nix-profile/bin, ~/.nix-profile/lib, ~/.nix-profile/share/postgresql/*` and you should see your lib, .control and sql files there. 
 5. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#star-client-and-migrate 15` and try to `CREATE EXTENSION <yourname>` and work with it there
