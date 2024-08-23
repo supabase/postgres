@@ -164,7 +164,7 @@ declare
       )
   );
   functions jsonb[] := (
-    select coalesce(array_agg(jsonb_build_object('oid', p.oid, 'owner', a.rolname, 'acl', p.proacl::text)), '{}')
+    select coalesce(array_agg(jsonb_build_object('oid', p.oid, 'owner', a.rolname, 'kind', p.prokind, 'acl', p.proacl::text)), '{}')
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     join pg_authid a on a.oid = p.proowner
@@ -428,7 +428,16 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('revoke %s on function %s(%s) from %I', rec.privilege_type, (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc), case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end));
+      execute(format('revoke %s on %s %s(%s) from %I'
+          , rec.privilege_type
+          , case
+              when obj->>'kind' = 'p' then 'procedure'
+              else 'function'
+            end
+          , (obj->>'oid')::regproc
+          , pg_get_function_identity_arguments((obj->>'oid')::regproc)
+          , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
+          ));
     end loop;
   end loop;
   foreach obj in array functions
@@ -438,7 +447,17 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on function %s(%s) to %I %s', rec.privilege_type, (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc), rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on %s %s(%s) to %I %s'
+          , rec.privilege_type
+          , case
+              when obj->>'kind' = 'p' then 'procedure'
+              else 'function'
+            end
+          , (obj->>'oid')::regproc
+          , pg_get_function_identity_arguments((obj->>'oid')::regproc)
+          , rec.grantee::regrole
+          , case when rec.is_grantable then 'with grant option' else '' end
+          ));
     end loop;
   end loop;
 
