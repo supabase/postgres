@@ -50,7 +50,7 @@ Your build should produce all of the sql and control files needed for the instal
 
 1. Once you have created this file, you can add it to `nix/ext/<yourname>.nix` and edit `flake.nix` and add it to the `ourExtensions` list.
 2. `git add .` as nix uses git to track changes 
-3. In your package file, temporarily empty the `hash = "sha256<...>=";` to `hash = "";` and save  and `git add  https://github.com/supabase/postgres/blob/develop/nix/ext/supautils.nix`
+3. In your package file, temporarily empty the `hash = "sha256<...>=";` to `hash = "";` and save and `git add .`
 4. Run `nix build .#psql_15/exts/<yourname>`  to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15/exts/<yourname>`. 
 5. Add any needed migrations into the `supabase/postgres` migrations directory.
 6. You can then run tests locally to verify that the update of the package succeeded. 
