@@ -333,31 +333,28 @@
             '';
 
           # Migrate between two data directories.
-          migrate-tool =
-            let
-              configFile = ./nix/tests/postgresql.conf.in;
-              getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-              primingScript = ./nix/tests/prime.sql;
-              migrationsDir = ./migrations;
-              pgupgradeTests = ./tests;
-              pgProve = pg_prove;
-            in
-            pkgs.runCommand "migrate-postgres" { } ''
-              mkdir -p $out/bin $out/migrations $out/tests
-              cp -r ${migrationsDir}/* $out/migrations
-              cp -r ${pgupgradeTests}/* $out/tests
-
-              substitute ${./nix/tools/migrate-tool.sh.in} $out/bin/migrate-postgres \
-                --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
-                --subst-var-by 'PRIMING_SCRIPT' '${primingScript}' \
-                --subst-var-by 'MIGRATIONS_DIR' "$out/migrations"  \
-                --subst-var-by 'PGUPGRADE_TESTS' "$out/tests" \
-                --subst-var-by 'PG_PROVE' "${pgProve}"           
-              chmod +x $out/bin/migrate-postgres
-            '';
-
+        migrate-tool =
+          let
+            configFile = ./nix/tests/postgresql.conf.in;
+            getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+            primingScript = ./nix/tests/prime.sql;
+            migrationsDir = ./migrations;
+            pgupgradeTests = ./tests;
+            pgProve = pg_prove;
+          in
+          pkgs.runCommand "migrate-postgres" { } ''
+            mkdir -p $out/bin $out/migrations $out/tests
+            cp -r ${migrationsDir}/* $out/migrations
+            cp -r ${pgupgradeTests}/* $out/tests
+            substitute ${./nix/tools/migrate-tool.sh.in} $out/bin/migrate-postgres \
+              --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
+              --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+              --subst-var-by 'PRIMING_SCRIPT' '${primingScript}' \
+              --subst-var-by 'MIGRATIONS_DIR' "$out/migrations"  \
+              --subst-var-by 'PGUPGRADE_TESTS' "$out/tests" \
+              --subst-var-by 'PG_PROVE' "${pgProve}"           
+            chmod +x $out/bin/migrate-postgres
+          '';
           start-replica = pkgs.runCommand "start-postgres-replica" { } ''
             mkdir -p $out/bin
             substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \

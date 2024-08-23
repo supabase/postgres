@@ -2,55 +2,35 @@
 
 [ ! -z "$DEBUG" ] && set -x
 
-# first argument is the old version; a path 15 or 16
-if [[ $1 == /nix/store* ]]; then
-    if [ ! -L "$1/receipt.json" ] || [ ! -e "$1/receipt.json" ]; then
-        echo "ERROR: $1 does not look like a valid Postgres install"
+# Function to build flake and return the output path
+build_flake() {
+    local flake_url="$1"
+    local temp_dir=$(mktemp -d)
+    if ! nix build "$flake_url" -o "$temp_dir/result"; then
+        echo "ERROR: Failed to build flake $flake_url"
         exit 1
     fi
-    OLDVER="$1"
-elif [ "$1" == "15" ]; then
-    PSQL15=@PSQL15_BINDIR@
-    OLDVER="$PSQL15"
-elif [ "$1" == "16" ]; then
-    PSQL16=@PSQL16_BINDIR@
-    OLDVER="$PSQL16"
-else
-    echo "Please provide a valid Postgres version (15 or 16), or a /nix/store path"
-    exit 1
-fi
+    echo "$temp_dir/result"
+}
 
-# second argument is the new version; 15 or 16
-if [[ $2 == /nix/store* ]]; then
-    if [ ! -L "$2/receipt.json" ] || [ ! -e "$2/receipt.json" ]; then
-        echo "ERROR: $1 does not look like a valid Postgres install"
-        exit 1
-    fi
-    NEWVER="$2"
-elif [ "$2" == "15" ]; then
-    PSQL15=@PSQL15_BINDIR@
-    NEWVER="$PSQL15"
-elif [ "$2" == "16" ]; then
-    PSQL16=@PSQL16_BINDIR@
-    NEWVER="$PSQL16"
-    echo "NEWVER IS $NEWVER"
-else
-    echo "Please provide a valid Postgres version (15 or 16), or a /nix/store path"
-    exit 1
-fi
+# First argument is the old version flake URL
+OLDVER=$(build_flake "$1")
 
-# thid argument is the upgrade method: either pg_dumpall or pg_ugprade
+# Second argument is the new version flake URL
+NEWVER=$(build_flake "$2")
+
+# Third argument is the upgrade method: either pg_dumpall or pg_upgrade
 if [ "$3" != "pg_dumpall" ] && [ "$3" != "pg_upgrade" ]; then
     echo "Please provide a valid upgrade method (pg_dumpall or pg_upgrade)"
     exit 1
 fi
 UPGRADE_METHOD="$3"
 
-echo "Old server build: PSQL $1"
-echo "New server build: PSQL $2"
+echo "Old server build: $OLDVER"
+echo "New server build: $NEWVER"
 echo "Upgrade method: $UPGRADE_METHOD"
 
-PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
+PORTNO="@PGSQL_DEFAULT_PORT@"
 DATDIR=$(mktemp -d)
 NEWDAT=$(mktemp -d)
 PGUSER=${PGUSER:-postgres}
@@ -59,7 +39,7 @@ PG_PROVE=@PG_PROVE@
 PGUPGRADE_TESTS=@PGUPGRADE_TESTS@
 mkdir -p "$DATDIR" "$NEWDAT"
 
-echo "using temporary directory $DATDIR for PSQL $1 data, which will not be removed"
+echo "using temporary directory $DATDIR for old data, which will not be removed"
 echo "you are free to re-use this data directory at will"
 echo
 
@@ -78,7 +58,7 @@ for x in "$DATDIR" "$NEWDAT"; do
     $PSQL_CONF_FILE > "$x/postgresql.conf"
 done
 
-echo "Starting first server (v${1}) to load data into the system"
+echo "Starting first server to load data into the system"
 $OLDVER/bin/pg_ctl start -D "$DATDIR"
 
 PRIMING_SCRIPT=@PRIMING_SCRIPT@
@@ -86,7 +66,6 @@ MIGRATIONS_DIR=@MIGRATIONS_DIR@
 
 echo "MIGRATIONS_DIR IS $MIGRATIONS_DIR"
 
-# $OLDVER/bin/psql -h localhost -d postgres -Xf "$PRIMING_SCRIPT"
 for sql in "$MIGRATIONS_DIR"/db/init-scripts/*.sql; do
     echo "$0: running $sql"
     $OLDVER/bin/psql -h localhost -d postgres -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -f "$sql"
@@ -100,9 +79,6 @@ for sql in "$MIGRATIONS_DIR"/db/migrations/*.sql; do
 done
 
 if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then
-#   echo "Ensuring proper permissions on $DATDIR"
-#   chmod 700 "$DATDIR"
-
   echo "Stopping old server"
   $OLDVER/bin/pg_ctl stop -D "$DATDIR"
 
@@ -130,23 +106,34 @@ if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then
   export PGBINOLD="$OLDVER/bin"
   export PGBINNEW="$NEWVER/bin"
 
+  # Create a temporary directory for pg_upgrade to work in
+  UPGRADE_WORKDIR=$(mktemp -d)
+  echo "Using temporary directory for pg_upgrade: $UPGRADE_WORKDIR"
+
+  # Change to the temporary directory before running pg_upgrade
+  pushd "$UPGRADE_WORKDIR"
+
   if ! $NEWVER/bin/pg_upgrade -U "$PGUSER" --check; then
       echo "ERROR: pg_upgrade check failed"
+      popd
       exit 1
   fi
 
   echo "pg_upgrade check passed, proceeding with migration"
   $NEWVER/bin/pg_upgrade -U "$PGUSER"
-  rm -f delete_old_cluster.sh # we don't need this
+
+  # Change back to the original directory
+  popd
   echo "Migration complete, running post-migration checks"
+  echo "Migration complete, running post-migration checks"
+  echo "NEWDAT IS $NEWDAT"
   $NEWVER/bin/pg_ctl start -D "$NEWDAT"
-  echo "TURN off jit"
-  POST_UPGRADE_EXTENSION_SCRIPT=$(mktemp)  
-  cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
+  echo "Turning off JIT"
+  cat << EOF > "$NEWDAT"/jit_off.sql
   ALTER SYSTEM SET jit = off;
   SELECT pg_reload_conf();
 EOF
-  "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$POST_UPGRADE_EXTENSION_SCRIPT"  
+  "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$NEWDAT"/jit_off.sql  
 
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
     "$PGUPGRADE_TESTS/pg_upgrade/tests/01-schema.sql"
@@ -157,7 +144,6 @@ EOF
   $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
   exit 0
 fi
-
 
 # if [ "$UPGRADE_METHOD" == "pg_dumpall" ]; then
 #     SQLDAT="$DATDIR/dump.sql"
