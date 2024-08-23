@@ -22,3 +22,5 @@ select * from v.f1();
 
 -- use plpgsql_check_function to check the function for errors
 select * from plpgsql_check_function('v.f1()');
+
+drop schema v cascade;

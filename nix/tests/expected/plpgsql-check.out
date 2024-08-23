@@ -29,3 +29,7 @@ select * from plpgsql_check_function('v.f1()');
  Context: SQL expression "r.c"
 (2 rows)
 
+drop schema v cascade;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to table v.t1
+drop cascades to function v.f1()
