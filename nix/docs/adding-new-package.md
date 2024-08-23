@@ -8,7 +8,7 @@
 
 ## C/C++ postgres extensions
 
-If you are creating a C/C++ extension, the pattern found in for instance https://github.com/supabase/postgres/blob/develop/nix/ext/pgvector.nix will work well.
+If you are creating a C/C++ extension, the pattern found in https://github.com/supabase/postgres/blob/develop/nix/ext/pgvector.nix will work well.
 
 ```
 { lib, stdenv, fetchFromGitHub, postgresql }:
