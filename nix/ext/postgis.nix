@@ -61,6 +61,14 @@ stdenv.mkDerivation rec {
     ln -s ${postgresql}/bin/postgres $out/bin/postgres
   '';
 
+  installPhase = ''
+    mkdir -p $out/{bin,lib,share/postgresql/extension}
+    cp bin/*      $out/bin
+    cp *.so      $out/lib
+    cp *.sql     $out/share/postgresql/extension
+    cp *.control $out/share/postgresql/extension
+  '';
+  
   # create aliases for all commands adding version information
   postInstall = ''
     # Teardown the illusory postgres used for building; see postConfigure.
