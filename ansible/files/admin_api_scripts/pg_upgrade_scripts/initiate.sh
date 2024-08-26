@@ -289,6 +289,16 @@ function initiate_upgrade {
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
         PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
+
+        # Determine if pgroonga is enabled, if so then install the groonga flake
+        PGROONGA_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'pgroonga');")
+        if [ "$PGROONGA_ENABLED" = "t" ]; then
+            sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install \"github:supabase/postgres/${NIX_FLAKE_VERSION}#supabase-groonga\""
+            mkdir -p /etc/environment.d
+            if [ ! -f /etc/environment.d/postgresql.env ] || ! grep -q "GRN_PLUGINS_DIR" /etc/environment.d/postgresql.env; then
+                echo "GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins" >> /etc/environment.d/postgresql.env
+            fi
+        fi
     fi
 
     PGBINNEW="$PG_UPGRADE_BIN_DIR/bin"
