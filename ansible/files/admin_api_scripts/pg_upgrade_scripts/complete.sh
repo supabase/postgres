@@ -64,7 +64,7 @@ EOF
         RECREATE_PG_CRON_QUERY=$(cat <<EOF
         begin;
         create temporary table cron_job as select * from cron.job;
-        create temporary table cron_job_run_details as select * from cron.job_run_details;
+        create temporary table cron_job_run_details as select * from cron.job_run_details order by start_time desc limit 1000000;
         drop extension pg_cron;
         create extension pg_cron schema pg_catalog;
         insert into cron.job select * from cron_job;
