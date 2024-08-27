@@ -1,0 +1,42 @@
+select
+  1
+from
+  vault.create_secret('my_s3kre3t');
+ ?column? 
+----------
+        1
+(1 row)
+
+select
+  1
+from
+  vault.create_secret(
+    'another_s3kre3t',
+    'unique_name',
+    'This is the description'
+  );
+ ?column? 
+----------
+        1
+(1 row)
+
+insert into vault.secrets (secret)
+values
+  ('s3kre3t_k3y');
+select
+  name,
+  description
+from
+  vault.decrypted_secrets 
+order by
+  created_at desc 
+limit
+  3;
+    name     |       description       
+-------------+-------------------------
+             | 
+ unique_name | This is the description
+             | 
+(3 rows)
+
+ 

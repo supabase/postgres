@@ -1,6 +1,20 @@
 - name: PostgREST - system user
   user: name=postgrest
 
+- name: PostgREST - add Postgres PPA gpg key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: PostgREST - add Postgres PPA
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    state: present
+
+- name: PostgREST - update apt cache
+  apt:
+    update_cache: yes
+
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
 - name: PostgREST - system dependencies
@@ -9,9 +23,20 @@
       - libpq5
       - libnuma-dev
 
+- name: PostgREST - remove Postgres PPA gpg key
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: absent
+
+- name: PostgREST - remove Postgres PPA
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    state: absent
+
 - name: postgis - ensure dependencies do not get autoremoved
   shell: |
     set -e
+    apt-mark manual libpq5*
     apt-mark manual libnuma*
     apt-mark auto libnuma*-dev
 

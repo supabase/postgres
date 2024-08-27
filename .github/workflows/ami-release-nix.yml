@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - release/*
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'
@@ -54,7 +55,7 @@ jobs:
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          packer build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -128,6 +129,11 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Building Postgres AMI failed'
           SLACK_FOOTER: ''
+
+      - name: Cleanup resources on build cancellation
+        if: ${{ always() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
