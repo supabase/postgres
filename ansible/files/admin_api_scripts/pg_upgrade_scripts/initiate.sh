@@ -406,9 +406,11 @@ function initiate_upgrade {
     # instance, since pg_upgrade connects to the db as supabase_admin using unix
     # sockets, which is gated behind scram-sha-256 per pg_hba.conf.j2. The new
     # instance is unaffected.
-    echo "local all supabase_admin trust
+    if ! grep -q "local all supabase_admin trust" /etc/postgresql/pg_hba.conf; then
+        echo "local all supabase_admin trust
 $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
-    run_sql -c "select pg_reload_conf();"
+        run_sql -c "select pg_reload_conf();"
+    fi
 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
