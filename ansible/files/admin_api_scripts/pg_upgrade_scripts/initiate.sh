@@ -373,7 +373,7 @@ function initiate_upgrade {
     echo "8.1. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
-    if [ "$OLD_BOOTSTRAP_USER" = "postgres" ] && [ "$PGVERSION" != "15" ]; then
+    if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
         echo "8.2. Swap postgres & supabase_admin roles as we're upgrading a project with postgres as bootstrap user"
         swap_postgres_and_supabase_admin
     fi
