@@ -58,10 +58,10 @@ function configure_services {
 }
 
 function enable_swap {
-  fallocate -l 1G /mnt/swapfile
-  chmod 600 /mnt/swapfile
-  mkswap /mnt/swapfile
-  swapon /mnt/swapfile
+  fallocate -l 1G /data/swapfile
+  chmod 600 /data/swapfile
+  mkswap /data/swapfile
+  swapon /data/swapfile
 }
 
 function push_lsn_checkpoint_file {
