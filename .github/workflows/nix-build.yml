@@ -66,7 +66,7 @@ jobs:
         if: matrix.runner == 'macos-latest'
         run: |
           # Replace this with your actual build script
-          cp ./workspace/docker/nix/build_nix.sh ./build_nix.sh
+          cp ./docker/nix/build_nix.sh ./build_nix.sh
           sed -i 's/cd workspace//g' ./build_nix.sh
           ./build_nix.sh
         env:
