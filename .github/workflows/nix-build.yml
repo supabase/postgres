@@ -67,6 +67,7 @@ jobs:
         run: |
           cp ./docker/nix/build_nix.sh ./build_nix.sh
           sed -i '' 's/cd workspace//g' ./build_nix.sh
+          sed -i '' '1s|^#!/bin/env bash|#!/usr/bin/env bash|' ./build_nix.sh
           chmod +x ./build_nix.sh
           ./build_nix.sh
         env:
