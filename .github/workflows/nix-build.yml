@@ -65,9 +65,8 @@ jobs:
       - name: Build psql bundle on macos
         if: matrix.runner == 'macos-latest'
         run: |
-          # Replace this with your actual build script
           cp ./docker/nix/build_nix.sh ./build_nix.sh
-          sed -i 's/cd workspace//g' ./build_nix.sh
+          sed -i '' 's/cd workspace//g' ./build_nix.sh
           ./build_nix.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
