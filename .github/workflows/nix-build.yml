@@ -70,7 +70,6 @@ jobs:
           --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
           cp ./docker/nix/build_nix.sh ./build_nix.sh
-          sed -i '' 's/cd workspace//g' ./build_nix.sh
           sed -i '' '1s|^#!/bin/env bash|#!/usr/bin/env bash|' ./build_nix.sh
           chmod +x ./build_nix.sh
           ./build_nix.sh
