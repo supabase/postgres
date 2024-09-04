@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[ ! -z "$DEBUG" ] && set -x
+[ ! -z "$DEBUG" ] && set -eoux pipefail 
 
 # Function to build flake and return the output path
 build_flake() {
@@ -125,22 +125,30 @@ if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then
   # Change back to the original directory
   popd
   echo "Migration complete, running post-migration checks"
-  echo "Migration complete, running post-migration checks"
   echo "NEWDAT IS $NEWDAT"
   $NEWVER/bin/pg_ctl start -D "$NEWDAT"
   echo "Turning off JIT"
   cat << EOF > "$NEWDAT"/jit_off.sql
-  ALTER SYSTEM SET jit = off;
-  SELECT pg_reload_conf();
+ALTER SYSTEM SET jit = off;
+SELECT pg_reload_conf();
 EOF
   "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -f "$NEWDAT"/jit_off.sql  
 
+  echo "Setting password encryption method to scram-sha-256"
+  "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -c "ALTER SYSTEM SET password_encryption = 'scram-sha-256';"
+  "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -c "SELECT pg_reload_conf();"
+
+  echo "Running post-migration data checks"
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
     "$PGUPGRADE_TESTS/pg_upgrade/tests/01-schema.sql"
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
     "$PGUPGRADE_TESTS/pg_upgrade/tests/02-data.sql"
   "$PG_PROVE"/bin/pg_prove --psql="$NEWVER"/bin/psql -h localhost -U supabase_admin -d postgres -p 5432 \
     "$PGUPGRADE_TESTS/pg_upgrade/tests/03-settings.sql"
+
+  # echo "Dumping database statistics for debugging"
+  # "$NEWVER"/bin/psql -h localhost -U supabase_admin -p 5432 -d postgres -c "SELECT schemaname, relname, n_live_tup FROM pg_stat_user_tables ORDER BY n_live_tup DESC;"
+
   $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
   exit 0
 fi
