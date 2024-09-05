@@ -8,7 +8,9 @@
    2. temporarily empty the `hash = "sha256-wSUEG0at00TPAoHv6+NMzuUE8mfW6fnHH0MNxvBdUiE=";` to `hash = "";` and save `supautils.nix` and `git add  .`
    3. run `nix build .#psql_15/exts/supautils` or the name of the extension to update, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run nix build .#psql_15/exts/supautils. 
    4. Add any needed migrations into the `supabase/postgres` migrations directory
-   5. You can then run tests locally to verify that the update of the package succeeded. 
-   6. Now it's ready for PR review.
+   5. update the version in `ansible/vars.yml` as usual
+   6. You can then run the `nix flake check -L` tests locally to verify that the update of the package succeeded. 
+   7. Now it's ready for PR review.
+   8. Once the PR is approved, if you want the change to go out in a release, update the common-nix.vars.yml file with the new version prior to merging.
   
 
