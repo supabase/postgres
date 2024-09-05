@@ -30,7 +30,8 @@ buildPgrxExtension_0_11_3 rec {
     darwin.apple_sdk.frameworks.SystemConfiguration 
   ];
   OPENSSL_NO_VENDOR = 1;
-  
+  #need to set this to 2 to avoid cpu starvation
+  CARGO_BUILD_JOBS = "2";
   CARGO="${cargo}/bin/cargo";
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
