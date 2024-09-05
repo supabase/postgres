@@ -145,21 +145,31 @@ EOF
   exit 0
 fi
 
-# if [ "$UPGRADE_METHOD" == "pg_dumpall" ]; then
-#     SQLDAT="$DATDIR/dump.sql"
-#     echo "Exporting data via pg_dumpall ($SQLDAT)"
-#     $NEWVER/bin/pg_dumpall -h localhost > "$SQLDAT"
+if [ "$UPGRADE_METHOD" == "pg_dumpall" ]; then
+    SQLDAT="$DATDIR/dump.sql"
+    echo "Exporting data via pg_dumpall ($SQLDAT)"
+    $OLDVER/bin/pg_dumpall -h localhost -U supabase_admin -p 5432 > "$SQLDAT"
 
-#     echo "Stopping old server (v${1}) to prepare for migration"
-#     $OLDVER/bin/pg_ctl stop -D "$DATDIR"
+    echo "Stopping old server (v${1}) to prepare for migration"
+    $OLDVER/bin/pg_ctl stop -D "$DATDIR"
 
-#     echo "Starting second server (v${2}) to load data into the system"
-#     $NEWVER/bin/pg_ctl start -D "$NEWDAT"
+    echo "Starting second server (v${2}) to load data into the system"
+    $NEWVER/bin/pg_ctl start -D "$NEWDAT"
 
-#     echo "Loading data into new server (v${2}) via 'cat | psql'"
-#     cat "$SQLDAT" | $NEWVER/bin/psql -h localhost -d postgres
+    echo "Creating supabase_admin role and granting necessary permissions"
+    $NEWVER/bin/psql -h localhost -U "$PGUSER" -d postgres -p 5432 <<EOF
+    CREATE ROLE supabase_admin WITH LOGIN SUPERUSER CREATEDB CREATEROLE REPLICATION;
+    ALTER ROLE supabase_admin WITH PASSWORD '$PGPASSWORD';
+    GRANT ALL PRIVILEGES ON DATABASE postgres TO supabase_admin;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO supabase_admin;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO supabase_admin;
+    GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO supabase_admin;
+EOF
 
-#     printf "\n\n\n\n"
-#     echo "Done, check logs. Stopping the server; new database is located at $NEWDAT"
-#     $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
-# fi
+    echo "Loading data into new server (v${2}) via 'cat | psql'"
+    cat "$SQLDAT" | $NEWVER/bin/psql -h localhost -U supabase_admin -d postgres -p 5432
+
+    printf "\n\n\n\n"
+    echo "Done, check logs. Stopping the server; new database is located at $NEWDAT"
+    $NEWVER/bin/pg_ctl stop -D "$NEWDAT"
+fi
