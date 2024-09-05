@@ -343,7 +343,7 @@ def test_postgrest_can_connect_to_db(host):
 # There would be an error if the `apikey` query parameter isn't removed,
 # since PostgREST treats query parameters as conditions.
 #
-# Worth testing since remove_apikey_query_parameter.lua uses regexp instead
+# Worth testing since remove_apikey_query_parameters uses regexp instead
 # of parsed query parameters.
 def test_postgrest_starting_apikey_query_parameter_is_removed(host):
     res = requests.get(
@@ -385,6 +385,55 @@ def test_postgrest_ending_apikey_query_parameter_is_removed(host):
             "id": "eq.absent",
             "name": "eq.absent",
             "apikey": service_role_key,
+        },
+    )
+    assert res.ok
+
+# There would be an error if the empty key query parameter isn't removed,
+# since PostgREST treats empty key query parameters as malformed input.
+#
+# Worth testing since remove_apikey_and_empty_key_query_parameters uses regexp instead
+# of parsed query parameters.
+def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "": "empty_key",
+            "id": "eq.absent",
+            "apikey": service_role_key,
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "apikey": service_role_key,
+            "": "empty_key",
+            "id": "eq.absent",
+        },
+    )
+    assert res.ok
+
+
+def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
+    res = requests.get(
+        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        headers={
+            "accept-profile": "storage",
+        },
+        params={
+            "id": "eq.absent",
+            "apikey": service_role_key,
+            "": "empty_key",
         },
     )
     assert res.ok
