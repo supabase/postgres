@@ -12,16 +12,16 @@
 
 buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
-  version = "0.4.1";
+  version = "0.4.2";
   # update the following array when the wrappers version is updated
   # required to ensure that extensions update scripts from previous versions are generated
-  previousVersions = ["0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
+  previousVersions = ["0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
   inherit postgresql;
   src = fetchFromGitHub {
     owner = "supabase";
     repo = "wrappers";
     rev = "v${version}";
-    hash = "sha256-AU9Y43qEMcIBVBThu+Aor1HCtfFIg+CdkzK9IxVdkzM=";
+    hash = "sha256-ut3IQED6ANXgabiHoEUdfSrwkuuYYSpRoeWdtBvSe64=";
   };
   nativeBuildInputs = [ pkg-config cargo ];
   buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
