@@ -87,8 +87,23 @@ resources:
                     '@type': >-
                       type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
                     source_codes:
-                      remove_apikey_query_parameter:
-                        filename: /etc/envoy/remove_apikey_query_parameter.lua
+                      remove_apikey_and_empty_key_query_parameters:
+                        inline_string: |-
+                          function envoy_on_request(request_handle)
+                            local path = request_handle:headers():get(":path")
+                            request_handle
+                              :headers()
+                              :replace(":path", path:gsub("&=[^&]*", ""):gsub("?=[^&]*$", ""):gsub("?=[^&]*&", "?"))
+                              :replace(":path", path:gsub("&apikey=[^&]*", ""):gsub("?apikey=[^&]*$", ""):gsub("?apikey=[^&]*&", "?"))
+                          end
+                      remove_empty_key_query_parameters:
+                        inline_string: |-
+                          function envoy_on_request(request_handle)
+                            local path = request_handle:headers():get(":path")
+                            request_handle
+                              :headers()
+                              :replace(":path", path:gsub("&=[^&]*", ""):gsub("?=[^&]*$", ""):gsub("?=[^&]*&", "?"))
+                          end
                 - name: envoy.filters.http.router
                   typed_config:
                     '@type': >-
@@ -181,12 +196,14 @@ resources:
                           retry_policy:
                             num_retries: 3
                             retry_on: 5xx
+                          timeout: 35s
                         typed_per_filter_config: *ref_0
                       - match:
                           prefix: /auth/v1/
                         route:
                           cluster: gotrue
                           prefix_rewrite: /
+                          timeout: 35s
                       - match:
                           prefix: /rest/v1/
                           query_parameters:
@@ -197,12 +214,12 @@ resources:
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
-                          timeout: 120s
+                          timeout: 125s
                         typed_per_filter_config:
                           envoy.filters.http.lua:
                             '@type': >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
-                            name: remove_apikey_query_parameter
+                            name: remove_apikey_and_empty_key_query_parameter
                       - match:
                           prefix: /rest/v1/
                         request_headers_to_remove:
@@ -210,7 +227,12 @@ resources:
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
-                          timeout: 120s
+                          timeout: 125s
+                        typed_per_filter_config:
+                          envoy.filters.http.lua:
+                            '@type': >-
+                              type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
+                            name: remove_empty_key_query_parameter
                       - match:
                           prefix: /rest-admin/v1/
                           query_parameters:
@@ -225,7 +247,7 @@ resources:
                           envoy.filters.http.lua:
                             '@type': >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
-                            name: remove_apikey_query_parameter
+                            name: remove_apikey_and_empty_key_query_parameters
                       - match:
                           prefix: /rest-admin/v1/
                         request_headers_to_remove:
@@ -242,7 +264,7 @@ resources:
                         route:
                           cluster: postgrest
                           prefix_rewrite: /rpc/graphql
-                          timeout: 120s
+                          timeout: 125s
                       - match:
                           prefix: /admin/v1/
                         route:
@@ -293,6 +315,13 @@ resources:
                                           direct_remote_ip:
                                             address_prefix: 10.0.0.0
                                             prefix_len: 8
+                    include_attempt_count_in_response: true
+                    retry_policy:
+                      num_retries: 5
+                      retry_back_off:
+                        base_interval: 0.1s
+                        max_interval: 1s
+                      retry_on: gateway-error
               stat_prefix: ingress_http
   - '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     name: https_listener
