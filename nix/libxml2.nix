@@ -18,7 +18,7 @@
 , gnome
 , testers
 , enableHttp ? false
-, python ? null  # Add this line to accept 'python' as an argument
+, python ? null  # accept 'python' as an argument
 }:
 
 let
