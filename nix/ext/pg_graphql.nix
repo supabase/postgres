@@ -19,6 +19,7 @@ buildPgrxExtension_0_11_3 rec {
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+    PGPORT = "5434";
   };
   cargoHash = "sha256-WkHufMw8OvinMRYd06ZJACnVvY9OLi069nCgq3LSmMY=";
 
