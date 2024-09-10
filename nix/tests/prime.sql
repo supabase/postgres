@@ -42,6 +42,7 @@ create extension pg_net;
 create extension pg_graphql;
 create extension pg_freespacemap;
 create extension pg_hashids;
+create extension pg_partman;
 create extension pg_prewarm;
 create extension pg_partman;
 create extension pg_jsonschema;
