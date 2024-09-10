@@ -46,7 +46,12 @@
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
-          config = { allowUnfree = true; };
+          config = { 
+            allowUnfree = true;
+            permittedInsecurePackages = [
+              "v8-9.7.106.18"
+            ]; 
+          };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
@@ -293,6 +298,7 @@
           sfcgal = sfcgal;
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+          postgresql_15 = postgresql_15;
           # Start a version of the server.
           start-server =
             let
@@ -512,6 +518,7 @@
           inherit (pkgs)
             # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
             cargo-pgrx_0_11_3;
+
 
         };
 
