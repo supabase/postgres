@@ -53,15 +53,30 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+
+            (final: prev: {
+              libxml2 = final.callPackage ./nix/libxml2.nix { };
+              postgresql = final.callPackage ./nix/postgresql/default.nix {
+                inherit (final) lib;
+                inherit (final) stdenv;
+                inherit (final) fetchurl;
+                inherit (final) makeWrapper;
+                inherit (final) callPackage;
+                inherit (final) libxml2;
+              };
+            })
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             # (import ./nix/overlays/postgis.nix)
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
         };
-
+        
+        postgresql_15 = pkgs.postgresql.postgresql_15;
+        postgresql_16 = pkgs.postgresql.postgresql_16;
+        postgresql = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
-        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
+        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
@@ -128,7 +143,12 @@
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
         #postgis_override = pkgs.postgis_override;
+                # Function to map PostgreSQL versions
+        getPostgresqlPackage = version:
+          pkgs.postgresql."postgresql_${version}";
 
+        # List of supported PostgreSQL versions
+        supportedVersions = [ "15" "16" ];
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -170,7 +190,7 @@
           in map (path: pkgs.callPackage path { inherit postgresql; }) orioledbExtension;
 
         makeOurPostgresPkgs = version:
-          let postgresql = pkgs."postgresql_${version}";
+          let postgresql = getPostgresqlPackage version;
           in map (path: pkgs.callPackage path { inherit postgresql; }) ourExtensions;
 
         # Create an attrset that contains all the extensions included in a server for the orioledb version of postgresql + extension.
@@ -202,7 +222,7 @@
         # basis for building extensions, etc.
         makePostgresBin = version:
           let
-            postgresql = pkgs."postgresql_${version}";
+            postgresql = getPostgresqlPackage version;
             upstreamExts = map
               (ext: {
                 name = postgresql.pkgs."${ext}".pname;

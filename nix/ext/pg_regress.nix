@@ -5,7 +5,7 @@
 
 stdenv.mkDerivation {
   pname = "pg_regress";
-  version = postgresql.version;
+  version = "0.0.1";
 
   phases = [ "installPhase" ];
 
