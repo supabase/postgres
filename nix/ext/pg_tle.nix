@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_tle";
-  version = "1.3.2";
+  version = "1.4.0";
 
   nativeBuildInputs = [ flex ];
   buildInputs = [ openssl postgresql libkrb5 ];
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
     owner = "aws";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-g2up0hJ9y0yz6aKTRwNyJatnApMYz9hIp4lxT0I9bNs=";
+    hash = "sha256-crxj5R9jblIv0h8lpqddAoYe2UqgUlnvbOajKTzVces=";
   };
 
   
