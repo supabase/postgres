@@ -170,13 +170,13 @@ function apply_auth_scheme_updates {
 
 function start_vacuum_analyze {
     echo "complete" > /tmp/pg-upgrade-status
-    if ! command -v nix &> /dev/null; then
-        su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
-    else
+
+    # shellcheck disable=SC1091
+    if [ -f "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh" ]; then
         # shellcheck disable=SC1091
-        source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-        vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
+        source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
     fi
+    vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
     echo "Upgrade job completed"
 }
 
