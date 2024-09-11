@@ -173,7 +173,9 @@ function start_vacuum_analyze {
     if ! command -v nix &> /dev/null; then
         su -c 'vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
     else
-        su -c '. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && vacuumdb --all --analyze-in-stages' -s "$SHELL" postgres
+        # shellcheck disable=SC1091
+        source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
     fi
     echo "Upgrade job completed"
 }
