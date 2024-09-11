@@ -62,7 +62,16 @@
 
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
-
+        pg_prove = pkgs.runCommand "pg_prove"
+          {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+          } ''
+          mkdir -p $out/bin
+          for x in pg_prove pg_tapgen; do
+            makeWrapper "${pkgs.perlPackages.TAPParserSourceHandlerpgTAP}/bin/$x" "$out/bin/$x" \
+              ${pkgs.lib.optionalString pkgs.stdenv.isLinux "--set LOCALE_ARCHIVE \"${pkgs.glibcLocales}/lib/locale/locale-archive\""}
+          done
+        '';
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
@@ -367,23 +376,27 @@
 
           # Migrate between two data directories.
           migrate-tool =
-            let
-              configFile = ./nix/tests/postgresql.conf.in;
-              getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-              primingScript = ./nix/tests/prime.sql;
-              migrationData = ./nix/tests/migrations/data.sql;
-            in
-            pkgs.runCommand "migrate-postgres" { } ''
-              mkdir -p $out/bin
-              substitute ${./nix/tools/migrate-tool.sh.in} $out/bin/migrate-postgres \
-                --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
-                --subst-var-by 'PRIMING_SCRIPT' '${primingScript}' \
-                --subst-var-by 'MIGRATION_DATA' '${migrationData}'
-
-              chmod +x $out/bin/migrate-postgres
-            '';
+          let
+            configFile = ./nix/tests/postgresql.conf.in;
+            getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+            primingScript = ./nix/tests/prime.sql;
+            migrationsDir = ./migrations;
+            pgupgradeTests = ./tests;
+            pgProve = pg_prove;
+          in
+          pkgs.runCommand "migrate-postgres" { } ''
+            mkdir -p $out/bin $out/migrations $out/tests
+            cp -r ${migrationsDir}/* $out/migrations
+            cp -r ${pgupgradeTests}/* $out/tests
+            substitute ${./nix/tools/migrate-tool.sh.in} $out/bin/migrate-postgres \
+              --subst-var-by 'PSQL_CONF_FILE' '${configFile}' \
+              --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
+              --subst-var-by 'PRIMING_SCRIPT' '${primingScript}' \
+              --subst-var-by 'MIGRATIONS_DIR' "$out/migrations"  \
+              --subst-var-by 'PGUPGRADE_TESTS' "$out/tests" \
+              --subst-var-by 'PG_PROVE' "${pgProve}"           
+            chmod +x $out/bin/migrate-postgres
+          '';
 
           start-replica = pkgs.runCommand "start-postgres-replica" { } ''
             mkdir -p $out/bin
