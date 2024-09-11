@@ -40,6 +40,7 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
           output-credentials: true
+          role-duration-seconds: 7200
       - name: write secret key
         # use python so we don't interpolate the secret into the workflow logs, in case of bugs
         run: |
