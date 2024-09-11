@@ -93,8 +93,7 @@ resources:
                             local path = request_handle:headers():get(":path")
                             request_handle
                               :headers()
-                              :replace(":path", path:gsub("&=[^&]*", ""):gsub("?=[^&]*$", ""):gsub("?=[^&]*&", "?"))
-                              :replace(":path", path:gsub("&apikey=[^&]*", ""):gsub("?apikey=[^&]*$", ""):gsub("?apikey=[^&]*&", "?"))
+                              :replace(":path", path:gsub("&=[^&]*", ""):gsub("?=[^&]*$", ""):gsub("?=[^&]*&", "?"):gsub("&apikey=[^&]*", ""):gsub("?apikey=[^&]*$", ""):gsub("?apikey=[^&]*&", "?"))
                           end
                       remove_empty_key_query_parameters:
                         inline_string: |-
@@ -103,7 +102,6 @@ resources:
                             request_handle
                               :headers()
                               :replace(":path", path:gsub("&=[^&]*", ""):gsub("?=[^&]*$", ""):gsub("?=[^&]*&", "?"))
-
                           end
                 - name: envoy.filters.http.compressor.brotli
                   typed_config:
@@ -290,7 +288,7 @@ resources:
                           envoy.filters.http.lua:
                             '@type': >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
-                            name: remove_apikey_and_empty_key_query_parameter
+                            name: remove_apikey_and_empty_key_query_parameters
                       - match:
                           prefix: /rest/v1/
                         request_headers_to_remove:
@@ -303,7 +301,7 @@ resources:
                           envoy.filters.http.lua:
                             '@type': >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
-                            name: remove_empty_key_query_parameter
+                            name: remove_empty_key_query_parameters
                       - match:
                           prefix: /rest-admin/v1/
                           query_parameters:
@@ -414,3 +412,4 @@ resources:
                     filename: /etc/envoy/fullChain.pem
                   private_key:
                     filename: /etc/envoy/privKey.pem
+
