@@ -71,9 +71,15 @@ select
 select
   pgmq.drop_queue('my_queue');
 
+select
+  pgmq.create_partitioned('my_partitioned_queue');
+
+
 -- Make sure SQLI enabling characters are blocked
 select pgmq.create('F--oo');
 select pgmq.create('F$oo');
 select pgmq.create($$F'oo$$);
+
+
 
 

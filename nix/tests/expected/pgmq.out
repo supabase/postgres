@@ -111,6 +111,23 @@ select
  t
 (1 row)
 
+select
+  pgmq.create_partitioned('my_partitioned_queue');
+ERROR:  10000 is not a valid partitioning type for pg_partman
+CONTEXT: PL/pgSQL function create_parent(text,text,text,text,text,integer,text,boolean,text,text[],text,boolean,text) line 119 at RAISE
+SQL statement "SELECT public.create_parent(
+    fq_qtable,
+    partition_col, 'native', partition_interval
+  )"
+PL/pgSQL function pgmq.create_partitioned(text,text,text) line 33 at PERFORM
+DETAIL: 
+HINT: 
+CONTEXT:  PL/pgSQL function create_parent(text,text,text,text,text,integer,text,boolean,text,text[],text,boolean,text) line 647 at RAISE
+SQL statement "SELECT public.create_parent(
+    fq_qtable,
+    partition_col, 'native', partition_interval
+  )"
+PL/pgSQL function pgmq.create_partitioned(text,text,text) line 33 at PERFORM
 -- Make sure SQLI enabling characters are blocked
 select pgmq.create('F--oo');
 ERROR:  queue name contains invalid characters: $, ;, --, or \'
