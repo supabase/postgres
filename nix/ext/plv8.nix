@@ -37,9 +37,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
-    (v8.overrideAttrs (oldAttrs: {
-      version = "9.7.106.18";  
-    }))
+    v8
     postgresql
   ] ++ lib.optionals stdenv.isDarwin [
     darwin.apple_sdk.frameworks.CoreFoundation
