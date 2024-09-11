@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcheck shell=bash
 
-export PGUSER=postgres
+export PGUSER=supabase_admin
 export PGDATA=$PWD/postgres_data
 export PGHOST=$PWD/postgres
 export PGPORT=5432

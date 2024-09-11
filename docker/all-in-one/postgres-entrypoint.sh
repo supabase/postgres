@@ -226,8 +226,8 @@ docker_setup_db() {
 docker_setup_env() {
 	file_env 'POSTGRES_PASSWORD'
 
-	file_env 'POSTGRES_USER' 'postgres'
-	file_env 'POSTGRES_DB' "$POSTGRES_USER"
+	file_env 'POSTGRES_USER' 'supabase_admin'
+	file_env 'POSTGRES_DB' 'postgres'
 	file_env 'POSTGRES_INITDB_ARGS'
 	: "${POSTGRES_HOST_AUTH_METHOD:=}"
 

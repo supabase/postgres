@@ -44,7 +44,7 @@ jobs:
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
-          tags: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+          tags: supabase/postgres:${{ steps.settings.outputs.postgres-version }},supabase_postgres
           cache-from: |
             type=gha,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
             type=gha,scope=${{ github.base_ref }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
@@ -107,10 +107,6 @@ jobs:
           PGUSER: supabase_admin
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-  schema:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
       - name: verify schema.sql is committed
         run: |
           docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit

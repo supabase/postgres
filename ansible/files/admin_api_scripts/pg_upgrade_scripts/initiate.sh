@@ -73,6 +73,8 @@ if [ -n "$IS_CI" ]; then
     echo "PGVERSION: $PGVERSION"
 fi
 
+OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
+
 cleanup() {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
@@ -367,9 +369,14 @@ function initiate_upgrade {
 
     echo "7. Disabling extensions and generating post-upgrade script"
     handle_extensions
-    
-    echo "8. Granting SUPERUSER to postgres user"
+
+    echo "8.1. Granting SUPERUSER to postgres user"
     run_sql -c "ALTER USER postgres WITH SUPERUSER;"
+
+    if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
+        echo "8.2. Swap postgres & supabase_admin roles as we're upgrading a project with postgres as bootstrap user"
+        swap_postgres_and_supabase_admin
+    fi
 
     if [ -z "$IS_NIX_UPGRADE" ]; then
         if [ -d "/usr/share/postgresql/${PGVERSION}" ]; then
@@ -390,9 +397,19 @@ function initiate_upgrade {
     rm -rf "${PGDATANEW:?}/"
 
     if [ "$IS_NIX_UPGRADE" = "true" ]; then
-        LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+        LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
     else
-        su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/" -s "$SHELL" postgres
+        su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+    fi
+
+    # This line avoids the need to supply the supabase_admin password on the old
+    # instance, since pg_upgrade connects to the db as supabase_admin using unix
+    # sockets, which is gated behind scram-sha-256 per pg_hba.conf.j2. The new
+    # instance is unaffected.
+    if ! grep -q "local all supabase_admin trust" /etc/postgresql/pg_hba.conf; then
+        echo "local all supabase_admin trust
+$(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
+        run_sql -c "select pg_reload_conf();"
     fi
 
     UPGRADE_COMMAND=$(cat <<EOF
@@ -401,6 +418,7 @@ function initiate_upgrade {
     --new-bindir=${PGBINNEW} \
     --old-datadir=${PGDATAOLD} \
     --new-datadir=${PGDATANEW} \
+    --username=supabase_admin \
     --jobs="${WORKERS}" -r \
     --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
