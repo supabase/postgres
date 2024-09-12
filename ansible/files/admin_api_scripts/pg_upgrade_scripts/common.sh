@@ -88,6 +88,7 @@ CI_start_postgres() {
 
 swap_postgres_and_supabase_admin() {
     run_sql <<'EOSQL'
+set statement_timeout = 0;
 begin;
 create role supabase_tmp superuser;
 set session authorization supabase_tmp;
