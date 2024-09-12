@@ -94,6 +94,14 @@ create role supabase_tmp superuser;
 set session authorization supabase_tmp;
 
 do $$
+begin
+  if exists (select from pg_extension where extname = 'timescaledb') then
+    execute(format('select %I.timescaledb_pre_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_pre_restore')));
+  end if;
+end
+$$;
+
+do $$
 declare
   postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
   supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
@@ -490,6 +498,14 @@ begin
       execute(format('grant %s on table %s to %I %s', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
+end
+$$;
+
+do $$
+begin
+  if exists (select from pg_extension where extname = 'timescaledb') then
+    execute(format('select %I.timescaledb_post_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_post_restore')));
+  end if;
 end
 $$;
 
