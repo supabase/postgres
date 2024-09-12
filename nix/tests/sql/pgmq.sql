@@ -72,7 +72,11 @@ select
   pgmq.drop_queue('my_queue');
 
 select
-  pgmq.create_partitioned('my_partitioned_queue');
+  pgmq.create_partitioned(
+    'my_partitioned_queue',
+    '5 seconds',
+    '10 seconds'
+);
 
 
 -- Make sure SQLI enabling characters are blocked

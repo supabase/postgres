@@ -112,8 +112,12 @@ select
 (1 row)
 
 select
-  pgmq.create_partitioned('my_partitioned_queue');
-ERROR:  10000 is not a valid partitioning type for pg_partman
+  pgmq.create_partitioned(
+    'my_partitioned_queue',
+    '5 seconds',
+    '10 seconds'
+);
+ERROR:  5 seconds is not a valid partitioning type for pg_partman
 CONTEXT: PL/pgSQL function create_parent(text,text,text,text,text,integer,text,boolean,text,text[],text,boolean,text) line 119 at RAISE
 SQL statement "SELECT public.create_parent(
     fq_qtable,
