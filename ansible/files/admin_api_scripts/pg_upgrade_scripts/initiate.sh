@@ -125,6 +125,9 @@ cleanup() {
     echo "Removing SUPERUSER grant from postgres"
     run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
+    echo "Resetting postgres database connection limit"
+    run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
+
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
         umount $MOUNT_POINT
