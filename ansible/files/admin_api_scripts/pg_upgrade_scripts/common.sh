@@ -254,7 +254,7 @@ begin
       select split_part(value, '=', 1) as key, substr(value, strpos(value, '=') + 1) as value
       from jsonb_array_elements_text(obj->'configs')
     loop
-      execute(format('alter role %I %s set %I to "%s"',
+      execute(format('alter role %I %s set %I to ''%s''',
                      obj->>'role',
                      case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end,
                      rec.key,
