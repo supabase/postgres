@@ -273,6 +273,30 @@
           sfcgal = sfcgal;
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+          postgresql_15 = pkgs.postgresql_15;
+
+          postgresql_15_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-15-src";
+            version = pkgs.postgresql_15.version;
+
+            src = pkgs.postgresql_15.src;
+
+            nativeBuildInputs = [ pkgs.bzip2 ];
+
+            phases = [ "unpackPhase" "installPhase" ];
+
+            installPhase = ''
+              mkdir -p $out
+              cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+              description = "PostgreSQL 15 source files";
+              homepage = "https://www.postgresql.org/";
+              license = licenses.postgresql;
+              platforms = platforms.all;
+            };
+          };
           # Start a version of the server.
           start-server =
             let
