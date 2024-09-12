@@ -273,6 +273,7 @@
           sfcgal = sfcgal;
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+          postgresql_15 = pkgs.postgresql_15;
           # Start a version of the server.
           start-server =
             let
