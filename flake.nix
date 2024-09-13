@@ -77,7 +77,8 @@
         postgresql = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
-
+        supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
+        mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
@@ -284,6 +285,7 @@
         # name in 'nix flake show' in order to make sure exactly what name you
         # want.
         basePackages = {
+          supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
           #psql_16 = makePostgres "16";
@@ -315,6 +317,8 @@
               platforms = platforms.all;
             };
           };
+          mecab_naist_jdic = mecab-naist-jdic;
+          supabase_groonga = supabase-groonga;
           # Start a version of the server.
           start-server =
             let
@@ -377,8 +381,10 @@
                 --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
                 --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
                 --subst-var-by 'LOCALES' '${localeArchive}' \
-                --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts"
-                
+                --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts" \
+                --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so' \
+                --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' 
+
               chmod +x $out/bin/start-postgres-server
             '';
 
@@ -448,10 +454,11 @@
           let
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+            supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
-              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps ];
+              nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps supabase-groonga ];
             } ''
             TMPDIR=$(mktemp -d)
             if [ $? -ne 0 ]; then
@@ -469,7 +476,7 @@
             mkdir -p $TMPDIR/logfile
             # Generate a random key and store it in an environment variable
             export PGSODIUM_KEY=$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n')
-
+            export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
             # Create a simple script to echo the key
             echo '#!/bin/sh' > $TMPDIR/getkey.sh
             echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
