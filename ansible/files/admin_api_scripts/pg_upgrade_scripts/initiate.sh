@@ -120,8 +120,8 @@ cleanup() {
     fi
 
     echo "Re-enabling extensions"
-    if [ -f "$POST_UPGRADE_EXTENSION_SCRIPT" ]; then
-        run_sql -f "$POST_UPGRADE_EXTENSION_SCRIPT"
+    if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
+        run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
     echo "Removing SUPERUSER grant from postgres"
@@ -142,15 +142,15 @@ cleanup() {
 }
 
 function handle_extensions {
-    rm -f "$POST_UPGRADE_EXTENSION_SCRIPT"
-    touch "$POST_UPGRADE_EXTENSION_SCRIPT"
+    rm -f $POST_UPGRADE_EXTENSION_SCRIPT
+    touch $POST_UPGRADE_EXTENSION_SCRIPT
 
     PASSWORD_ENCRYPTION_SETTING=$(run_sql -A -t -c "SHOW password_encryption;")
     if [ "$PASSWORD_ENCRYPTION_SETTING" = "md5" ]; then
-        echo "ALTER SYSTEM SET password_encryption = 'md5';" >> "$POST_UPGRADE_EXTENSION_SCRIPT"
+        echo "ALTER SYSTEM SET password_encryption = 'md5';" >> $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
-    cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
+    cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
 ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
@@ -162,7 +162,7 @@ EOF
         if [ "$EXTENSION_ENABLED" = "t" ]; then
             echo "Disabling extension ${EXTENSION}"
             run_sql -c "DROP EXTENSION IF EXISTS ${EXTENSION} CASCADE;"
-            cat << EOF >> "$POST_UPGRADE_EXTENSION_SCRIPT"
+            cat << EOF >> $POST_UPGRADE_EXTENSION_SCRIPT
 DO \$\$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = '${EXTENSION}') THEN
