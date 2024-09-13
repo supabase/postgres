@@ -60,8 +60,4 @@ pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
-cat "$DATDIR/postgresql.conf"
-#cat "$DATDIR/supautils.conf"
-#whoami
-ls -la $DATDIR
 postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k /tmp
