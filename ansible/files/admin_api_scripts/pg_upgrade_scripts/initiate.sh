@@ -49,6 +49,8 @@ PGBINOLD="/usr/lib/postgresql/bin"
 PGLIBOLD="/usr/lib/postgresql/lib"
 
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
+NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
+NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
     BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
@@ -286,9 +288,18 @@ function initiate_upgrade {
                 if ! command -v nix > /dev/null; then
                     echo "1.1. Nix is not installed; installing."
 
-                    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
-                    --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
-                    --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+                    if [ -f "$NIX_INSTALLER_PACKAGE_PATH" ]; then
+                        echo "1.1.1. Installing Nix using the provided installer"
+                        tar -xzf "$NIX_INSTALLER_PACKAGE_PATH" -C /tmp/persistent/
+                        chmod +x "$NIX_INSTALLER_PATH"
+                        "$NIX_INSTALLER_PATH" install --no-confirm
+                    else
+                        echo "1.1.1. Installing Nix using the official installer"
+
+                        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
+                        --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+                    fi
                 else 
                     echo "1.1. Nix is installed; moving on."
                 fi
