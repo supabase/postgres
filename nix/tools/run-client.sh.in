@@ -35,13 +35,13 @@ psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$POR
     create role postgres superuser login password '$PGPASSWORD';
     alter database postgres owner to postgres;
 EOSQL
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
 for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
     echo "$0: running $sql"
     psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f  "$sql" postgres
 done
 psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
+psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
 # run migrations as super user - postgres user demoted in post-setup
 for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
     echo "$0: running $sql"

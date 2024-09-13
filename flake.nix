@@ -300,19 +300,24 @@
                 name = "pg_ident.conf";
                 path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
               };
+              postgresqlExtensionCustomScriptsPath = builtins.path {
+                name = "extension-custom-scripts";
+                path = ./ansible/files/postgresql_extension_custom_scripts;
+              };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
               localeArchive = if pkgs.stdenv.isDarwin
                 then "${pkgs.darwin.locale}/share/locale"
                 else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
-              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql
+              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
               cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
               cp ${loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
               cp ${readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
               cp ${pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
               cp ${pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
+              cp -r ${postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
               echo "Copy operation completed"
               chmod 644 $out/etc/postgresql-custom/supautils.conf
               chmod 644 $out/etc/postgresql/postgresql.conf
@@ -329,7 +334,8 @@
                 --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf" \
                 --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
                 --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
-                --subst-var-by 'LOCALES' '${localeArchive}'
+                --subst-var-by 'LOCALES' '${localeArchive}' \
+                --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts"
                 
               chmod +x $out/bin/start-postgres-server
             '';
