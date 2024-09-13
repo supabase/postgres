@@ -342,19 +342,24 @@
                 name = "pg_ident.conf";
                 path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
               };
+              postgresqlExtensionCustomScriptsPath = builtins.path {
+                name = "extension-custom-scripts";
+                path = ./ansible/files/postgresql_extension_custom_scripts;
+              };
               getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
               localeArchive = if pkgs.stdenv.isDarwin
                 then "${pkgs.darwin.locale}/share/locale"
                 else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
-              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql
+              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
               cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
               cp ${loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
               cp ${readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
               cp ${pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
               cp ${pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
+              cp -r ${postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
               echo "Copy operation completed"
               chmod 644 $out/etc/postgresql-custom/supautils.conf
               chmod 644 $out/etc/postgresql/postgresql.conf
@@ -371,32 +376,23 @@
                 --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf" \
                 --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
                 --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
-                --subst-var-by 'LOCALES' '${localeArchive}'
+                --subst-var-by 'LOCALES' '${localeArchive}' \
+                --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts"
                 
               chmod +x $out/bin/start-postgres-server
             '';
 
-          # Start a version of the client.
-          start-client = pkgs.runCommand "start-postgres-client" { } ''
-            mkdir -p $out/bin
-            substitute ${./nix/tools/run-client.sh.in} $out/bin/start-postgres-client \
-              --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
-              --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
-            chmod +x $out/bin/start-postgres-client
-          '';
-
           # Start a version of the client and runs migrations script on server.
-          start-client-and-migrate =
+          start-client =
             let
               migrationsDir = ./migrations/db;
               postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
               pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
               statExtensionSql = ./ansible/files/stat_extension.sql;
             in
-            pkgs.runCommand "start-postgres-client-migrate" { } ''
+            pkgs.runCommand "start-postgres-client" { } ''
               mkdir -p $out/bin
-              substitute ${./nix/tools/run-client-migrate.sh.in} $out/bin/start-postgres-client-migrate \
+              substitute ${./nix/tools/run-client.sh.in} $out/bin/start-postgres-client \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
@@ -404,7 +400,7 @@
                 --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
                 --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
                 --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
-              chmod +x $out/bin/start-postgres-client-migrate
+              chmod +x $out/bin/start-postgres-client
             '';
 
           # Migrate between two data directories.
@@ -559,7 +555,6 @@
           {
             start-server = mkApp "start-server" "start-postgres-server";
             start-client = mkApp "start-client" "start-postgres-client";
-            start-client-and-migrate = mkApp "start-client-and-migrate" "start-postgres-client-migrate";
             start-replica = mkApp "start-replica" "start-postgres-replica";
             migration-test = mkApp "migrate-tool" "migrate-postgres";
             sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
