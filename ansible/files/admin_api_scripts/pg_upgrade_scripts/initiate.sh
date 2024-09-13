@@ -292,7 +292,9 @@ function initiate_upgrade {
                         echo "1.1.1. Installing Nix using the provided installer"
                         tar -xzf "$NIX_INSTALLER_PACKAGE_PATH" -C /tmp/persistent/
                         chmod +x "$NIX_INSTALLER_PATH"
-                        "$NIX_INSTALLER_PATH" install --no-confirm
+                        "$NIX_INSTALLER_PATH" install --no-confirm \
+                        --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
+                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
                     else
                         echo "1.1.1. Installing Nix using the official installer"
 
