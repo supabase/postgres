@@ -258,7 +258,12 @@ begin
                      obj->>'role',
                      case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end,
                      rec.key,
-                     rec.value
+                     -- https://github.com/postgres/postgres/blob/70d1c664f4376fd3499e3b0c6888cf39b65d722b/src/bin/pg_dump/dumputils.c#L861
+                     case
+                       when rec.key in ('local_preload_libraries', 'search_path', 'session_preload_libraries', 'shared_preload_libraries', 'temp_tablespaces', 'unix_socket_directories')
+                         then rec.value
+                       else quote_literal(rec.value)
+                     end
       ));
     end loop;
   end loop;
