@@ -46,22 +46,37 @@
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
-          config = { allowUnfree = true; };
+          config = { 
+            allowUnfree = true;
+            permittedInsecurePackages = [
+              "v8-9.7.106.18"
+            ];  
+          };
           inherit system;
           overlays = [
             # NOTE (aseipp): add any needed overlays here. in theory we could
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+            (final: prev: {
+              postgresql = final.callPackage ./nix/postgresql/default.nix {
+                inherit (final) lib;
+                inherit (final) stdenv;
+                inherit (final) fetchurl;
+                inherit (final) makeWrapper;
+                inherit (final) callPackage;
+              };
+            })
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             # (import ./nix/overlays/postgis.nix)
             #(import ./nix/overlays/gdal-small.nix)
 
           ];
         };
-
+        postgresql_15 = pkgs.postgresql.postgresql_15;
+        postgresql = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
-        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { };
+        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
 
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
@@ -128,7 +143,10 @@
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
         #postgis_override = pkgs.postgis_override;
-
+        getPostgresqlPackage = version:
+          pkgs.postgresql."postgresql_${version}";
+        #we will add supported versions to this list in the future
+        supportedVersions = [ "15" ];
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -170,7 +188,7 @@
           in map (path: pkgs.callPackage path { inherit postgresql; }) orioledbExtension;
 
         makeOurPostgresPkgs = version:
-          let postgresql = pkgs."postgresql_${version}";
+          let postgresql = getPostgresqlPackage version;
           in map (path: pkgs.callPackage path { inherit postgresql; }) ourExtensions;
 
         # Create an attrset that contains all the extensions included in a server for the orioledb version of postgresql + extension.
@@ -202,7 +220,7 @@
         # basis for building extensions, etc.
         makePostgresBin = version:
           let
-            postgresql = pkgs."postgresql_${version}";
+            postgresql = getPostgresqlPackage version;
             upstreamExts = map
               (ext: {
                 name = postgresql.pkgs."${ext}".pname;
@@ -273,6 +291,30 @@
           sfcgal = sfcgal;
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+          postgresql_15 = pkgs.postgresql_15;
+
+          postgresql_15_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-15-src";
+            version = pkgs.postgresql_15.version;
+
+            src = pkgs.postgresql_15.src;
+
+            nativeBuildInputs = [ pkgs.bzip2 ];
+
+            phases = [ "unpackPhase" "installPhase" ];
+
+            installPhase = ''
+              mkdir -p $out
+              cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+              description = "PostgreSQL 15 source files";
+              homepage = "https://www.postgresql.org/";
+              license = licenses.postgresql;
+              platforms = platforms.all;
+            };
+          };
           # Start a version of the server.
           start-server =
             let
