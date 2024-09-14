@@ -92,7 +92,7 @@ alter database postgres connection limit 0;
 select pg_terminate_backend(pid) from pg_stat_activity where backend_type = 'client backend' and pid != pg_backend_pid();
 EOSQL
     run_sql <<'EOSQL'
-set statement_timeout = '300s';
+set statement_timeout = '600s';
 begin;
 create role supabase_tmp superuser;
 set session authorization supabase_tmp;
