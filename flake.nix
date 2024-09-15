@@ -79,6 +79,7 @@
         pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
+        auth = pkgs.callPackage ./nix/auth.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
         # These are maintained upstream and can easily be used here just by
         # listing their name. Anytime the version of nixpkgs is upgraded, these
@@ -285,6 +286,7 @@
         # name in 'nix flake show' in order to make sure exactly what name you
         # want.
         basePackages = {
+          auth = auth;
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
@@ -294,6 +296,7 @@
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           postgresql_15 = pkgs.postgresql_15;
+
 
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
