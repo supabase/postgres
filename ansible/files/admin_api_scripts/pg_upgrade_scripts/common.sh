@@ -100,7 +100,7 @@ set session authorization supabase_tmp;
 do $$
 begin
   if exists (select from pg_extension where extname = 'timescaledb') then
-    execute(format('select %I.timescaledb_pre_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_pre_restore')));
+    execute(format('select %s.timescaledb_pre_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_pre_restore')));
   end if;
 end
 $$;
@@ -211,9 +211,9 @@ begin
   for rec in
     select * from pg_auth_members
   loop
-    execute(format('revoke %I from %I;', rec.roleid::regrole, rec.member::regrole));
+    execute(format('revoke %s from %s;', rec.roleid::regrole, rec.member::regrole));
     execute(format(
-      'grant %I to %I %s granted by %I;',
+      'grant %s to %s %s granted by %s;',
       case
         when rec.roleid = 'postgres'::regrole then 'supabase_admin'
         when rec.roleid = 'supabase_admin'::regrole then 'postgres'
@@ -335,13 +335,13 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
     loop
       if obj->>'role' in ('postgres', 'supabase_admin') or rec.grantee::regrole in ('postgres', 'supabase_admin') then
-        execute(format('alter default privileges for role %I %s revoke %s on %s from %I'
+        execute(format('alter default privileges for role %I %s revoke %s on %s from %s'
                      , case when obj->>'role' = 'postgres' then 'supabase_admin'
                             when obj->>'role' = 'supabase_admin' then 'postgres'
                             else obj->>'role'
                        end
                      , case when obj->>'schema' is null then ''
-                            else format('in schema %I', (obj->>'schema')::regnamespace)
+                            else format('in schema %s', (obj->>'schema')::regnamespace)
                        end
                      , rec.privilege_type
                      , case when obj->>'objtype' = 'r' then 'tables'
@@ -366,10 +366,10 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
     loop
       if obj->>'role' in ('postgres', 'supabase_admin') or rec.grantee::regrole in ('postgres', 'supabase_admin') then
-        execute(format('alter default privileges for role %I %s grant %s on %s to %I %s'
+        execute(format('alter default privileges for role %I %s grant %s on %s to %s %s'
                      , obj->>'role'
                      , case when obj->>'schema' is null then ''
-                            else format('in schema %I', (obj->>'schema')::regnamespace)
+                            else format('in schema %s', (obj->>'schema')::regnamespace)
                        end
                      , rec.privilege_type
                      , case when obj->>'objtype' = 'r' then 'tables'
@@ -406,7 +406,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on schema %s to %I %s', rec.privilege_type, (obj->>'oid')::regnamespace, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on schema %s to %s %s', rec.privilege_type, (obj->>'oid')::regnamespace, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
 
@@ -431,7 +431,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on type %s to %I %s', rec.privilege_type, (obj->>'oid')::regtype, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on type %s to %s %s', rec.privilege_type, (obj->>'oid')::regtype, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
 
@@ -465,7 +465,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on %s %s(%s) to %I %s'
+      execute(format('grant %s on %s %s(%s) to %s %s'
           , rec.privilege_type
           , case
               when obj->>'kind' = 'p' then 'procedure'
@@ -504,7 +504,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on table %s to %I %s', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on table %s to %s %s', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
 end
@@ -513,7 +513,7 @@ $$;
 do $$
 begin
   if exists (select from pg_extension where extname = 'timescaledb') then
-    execute(format('select %I.timescaledb_post_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_post_restore')));
+    execute(format('select %s.timescaledb_post_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_post_restore')));
   end if;
 end
 $$;
