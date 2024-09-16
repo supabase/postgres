@@ -19,7 +19,7 @@
 - name: Install supabase-groonga from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/sam/pgroonga-deps#supabase-groonga"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supabase-groonga"
   when: stage2_nix
 
 - name: Set ownership and permissions for /etc/ssl/private
