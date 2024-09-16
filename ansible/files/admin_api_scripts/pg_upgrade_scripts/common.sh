@@ -341,7 +341,7 @@ begin
                             else obj->>'role'
                        end
                      , case when obj->>'schema' is null then ''
-                            else format('in schema %s', (obj->>'schema')::regnamespace)
+                            else format('in schema %I', obj->>'schema')
                        end
                      , rec.privilege_type
                      , case when obj->>'objtype' = 'r' then 'tables'
@@ -369,7 +369,7 @@ begin
         execute(format('alter default privileges for role %I %s grant %s on %s to %s %s'
                      , obj->>'role'
                      , case when obj->>'schema' is null then ''
-                            else format('in schema %s', (obj->>'schema')::regnamespace)
+                            else format('in schema %I', obj->>'schema')
                        end
                      , rec.privilege_type
                      , case when obj->>'objtype' = 'r' then 'tables'
