@@ -1,20 +1,20 @@
 { lib
 , buildGoModule
 , fetchFromGitHub
-#, go_1_22
+, go_1_22
 }:
 
-# let
-#   go_1_22_3 = go_1_22.overrideAttrs (oldAttrs: rec {
-#     version = "1.22.3";
-#     src = fetchFromGitHub {
-#       owner = "golang";
-#       repo = "go";
-#       rev = "go${version}";
-#       hash = "sha256-idGXPf199JX6H5WPPalcoW2gS0QBT5YEsndBqEcUBgs=";
-#     };
-#   });
-# in
+let
+  go_1_22_3 = go_1_22.overrideAttrs (oldAttrs: rec {
+    version = "1.22.3";
+    src = fetchFromGitHub {
+      owner = "golang";
+      repo = "go";
+      rev = "go${version}";
+      hash = "sha256-idGXPf199JX6H5WPPalcoW2gS0QBT5YEsndBqEcUBgs=";
+    };
+  });
+in
 buildGoModule rec {
   pname = "auth";
   version = "2.160.0";
@@ -38,17 +38,16 @@ buildGoModule rec {
 
   # Force the use of Go 1.22.3
   #nativeBuildInputs = [ go_1_22_3 ];
-  #buildInputs = [ go_1_22_3 ];
+  buildInputs = [ go_1_22_3 ];
 
   # Override the go command used by buildGoModule
-  # preBuild = ''
-  #   export GOROOT=${go_1_22_3}/share/go
-  #   export PATH=${go_1_22_3}/bin:$PATH
-  #   go version  # This will print the Go version being used, for verification
-  # '';
+  preBuild = ''
+    export GOROOT=${go_1_22_3}/share/go
+    export PATH=${go_1_22_3}/bin:$PATH
+  '';
 
   # Ensure Go 1.22.3 is used for all Go commands
-  # GO = "${go_1_22_3}/bin/go";
+  GO = "${go_1_22_3}/bin/go";
 
   meta = with lib; {
     homepage = "https://github.com/supabase/auth";
@@ -59,3 +58,4 @@ buildGoModule rec {
     maintainers = with maintainers; [ samrose ];
   };
 }
+
