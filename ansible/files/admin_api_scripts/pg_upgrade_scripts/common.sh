@@ -196,7 +196,7 @@ declare
     where true
       and n.nspname != 'information_schema'
       and not starts_with(n.nspname, 'pg_')
-      and c.relkind not in ('c', 'i')
+      and c.relkind not in ('c', 'i', 'I')
   );
   rec record;
   obj jsonb;
