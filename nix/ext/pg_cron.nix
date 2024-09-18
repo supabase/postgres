@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg_cron";
   version = "1.6.4";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner  = "citusdata";
