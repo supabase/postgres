@@ -53,12 +53,48 @@ jobs:
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
 
+      - name: Get pre-resize AMI ID
+        id: get-ami
+        run: |
+          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize" --query 'Images[0].ImageId' --output text)
+          echo "AMI_ID=${AMI_ID}" >> $GITHUB_OUTPUT
+
+      - name: Launch temporary instance
+        id: launch-instance
+        run: |
+          INSTANCE_ID=$(aws ec2 run-instances --image-id ${{ steps.get-ami.outputs.AMI_ID }} --instance-type t4g.micro --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=AMI-Resize-Temp}]' --query 'Instances[0].InstanceId' --output text)
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_OUTPUT
+
+      - name: Wait for instance to be running
+        run: aws ec2 wait instance-running --instance-ids ${{ steps.launch-instance.outputs.INSTANCE_ID }}
+
+      - name: Resize filesystem
+        run: |
+          aws ec2 start-session --target ${{ steps.launch-instance.outputs.INSTANCE_ID }} --document-name AWS-StartInteractiveCommand --parameters '{"command":["sudo e2fsck -f /dev/sda1 && sudo resize2fs /dev/sda1 8G && sudo sync"]}'
+
+      - name: Create new AMI
+        id: create-ami
+        run: |
+          NEW_AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}"
+          NEW_AMI_ID=$(aws ec2 create-image --instance-id ${{ steps.launch-instance.outputs.INSTANCE_ID }} --name "${NEW_AMI_NAME}" --description "Resized AMI" --query 'ImageId' --output text)
+          echo "NEW_AMI_ID=${NEW_AMI_ID}" >> $GITHUB_OUTPUT
+          echo "NEW_AMI_NAME=${NEW_AMI_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Wait for AMI to be available
+        run: aws ec2 wait image-available --image-ids ${{ steps.create-ami.outputs.NEW_AMI_ID }}
+
+      - name: Modify AMI block device mapping
+        run: |
+          aws ec2 modify-image-attribute --image-id ${{ steps.create-ami.outputs.NEW_AMI_ID }} --block-device-mappings '[{"DeviceName": "/dev/sda1","Ebs":{"VolumeSize":8}}]'
+
+      - name: Terminate temporary instance
+        run: aws ec2 terminate-instances --instance-ids ${{ steps.launch-instance.outputs.INSTANCE_ID }}
+
       - name: Run tests
         timeout-minutes: 10
         env:
-          AMI_NAME: "supabase-postgres-${{ steps.random.outputs.random_string }}"
+          AMI_NAME: ${{ steps.create-ami.outputs.NEW_AMI_NAME }}
         run: |
-          # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
           pytest -vv -s testinfra/test_ami_nix.py 
       
@@ -77,7 +113,8 @@ jobs:
         run: |
           # Define AMI name patterns
           STAGE1_AMI_NAME="supabase-postgres-ci-ami-test-stage-1"
-          STAGE2_AMI_NAME="${{ steps.random.outputs.random_string }}"
+          PRE_RESIZE_AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize"
+          FINAL_AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}"
           
           # Function to deregister AMIs by name pattern
           deregister_ami_by_name() {
@@ -91,4 +128,5 @@ jobs:
           
           # Deregister AMIs
           deregister_ami_by_name "$STAGE1_AMI_NAME"
-          deregister_ami_by_name "$STAGE2_AMI_NAME"
+          deregister_ami_by_name "$PRE_RESIZE_AMI_NAME"
+          deregister_ami_by_name "$FINAL_AMI_NAME"
