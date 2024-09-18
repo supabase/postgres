@@ -203,6 +203,10 @@ declare
 begin
   set local search_path = '';
 
+  if exists (select from pg_event_trigger where evtname = 'pgsodium_trg_mask_update') then
+    alter event trigger pgsodium_trg_mask_update disable;
+  end if;
+
   alter role postgres rename to supabase_admin_;
   alter role supabase_admin rename to postgres;
   alter role supabase_admin_ rename to supabase_admin;
@@ -507,6 +511,10 @@ begin
       execute(format('grant %s on table %s to %s %s', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
+
+  if exists (select from pg_event_trigger where evtname = 'pgsodium_trg_mask_update') then
+    alter event trigger pgsodium_trg_mask_update enable;
+  end if;
 end
 $$;
 
