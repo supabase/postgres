@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg_backtrace";
   version = "1.1";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner  = "pashkinelfe";
