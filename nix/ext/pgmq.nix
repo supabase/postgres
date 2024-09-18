@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
     owner  = "tembo-io";
     repo   = pname;
     rev    = "v${version}";
-    hash = "";
+    hash = "sha256-z+8/BqIlHwlMnuIzMz6eylmYbSmhtsNt7TJf/CxbdVw=";
   };
 
   buildPhase = ''
