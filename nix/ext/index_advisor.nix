@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "index_advisor";
   version = "0.2.0";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "olirice";
