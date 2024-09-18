@@ -37,3 +37,10 @@
     - popularity-contest
     - ubuntu-advantage-tools
   when: debpkg_mode or stage2_nix
+
+- name: prefer ipv4 connection resolution
+  become: yes
+  replace:
+    path: /etc/gai.conf
+    regexp: "#precedence ::ffff:0:0/96  100"
+    replace: "precedence ::ffff:0:0/96  100"
