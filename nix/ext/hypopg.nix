@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "hypopg";
   version = "1.4.1";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "HypoPG";
