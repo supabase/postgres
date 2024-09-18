@@ -88,6 +88,7 @@ source "amazon-ebs" "ubuntu" {
   ami_block_device_mappings {
     device_name = "/dev/sda1"
     volume_type = "gp3"
+    volume_size = 8
     delete_on_termination = true
   }
   run_tags = {
