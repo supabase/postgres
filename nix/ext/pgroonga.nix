@@ -9,8 +9,8 @@ stdenv.mkDerivation rec {
     url = "https://packages.groonga.org/source/${pname}/${pname}-${version}.tar.gz";
     sha256 = "sha256-iF/zh4zDDpAw5fxW1WG8i2bfPt4VYsnYArwOoE/lwgM=";
   };
-  nativeBuildInputs = [ pkg-config makeWrapper ];
-  buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
+  nativeBuildInputs = [ pkg-config makeWrapper postgresql];
+  buildInputs = [ postgresql.lib msgpack-c supabase-groonga mecab ];
   propagatedBuildInputs = [ supabase-groonga ];
   configureFlags = [
     "--with-mecab=${mecab}"
