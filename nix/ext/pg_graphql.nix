@@ -12,8 +12,8 @@ buildPgrxExtension_0_11_3 rec {
     hash = "sha256-Q6XfcTKVOjo5pGy8QACc4QCHolKxEGU8e0TTC6Zg8go=";
   };
 
-  nativeBuildInputs = [ cargo ];
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ cargo postgresql ];
+  buildInputs = [ postgresql.lib ];
   
   CARGO="${cargo}/bin/cargo";
   #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
