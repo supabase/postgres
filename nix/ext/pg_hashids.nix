@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg_hashids";
   version = "cd0e1b31d52b394a0df64079406a14a4f7387cd6";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "iCyberon";
