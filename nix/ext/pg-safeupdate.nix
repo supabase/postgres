@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg-safeupdate";
   version = "1.4";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner  = "eradman";
