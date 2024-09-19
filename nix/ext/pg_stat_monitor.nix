@@ -19,7 +19,8 @@ stdenv.mkDerivation rec {
   pname = "pg_stat_monitor";
   version = "1.1.1";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "percona";
