@@ -88,8 +88,9 @@ def main():
         if 'instance_id' in locals():
             terminate_instance(instance_id)
 
-    print(f"NEW_AMI_ID={new_ami_id}")
-    print(f"NEW_AMI_NAME={new_ami_name}")
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+        print(f'NEW_AMI_ID={new_ami_id}', file=fh)
+        print(f'NEW_AMI_NAME={new_ami_name}', file=fh)
 
 if __name__ == "__main__":
     main()
