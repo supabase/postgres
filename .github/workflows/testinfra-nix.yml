@@ -53,11 +53,6 @@ jobs:
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
       - name: Run AMI resize script
         env:
           PRE_AMI_NAME: "supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize"
@@ -65,7 +60,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-southeast-1
         run: |
-          pip install boto3 boto3-stubs[essential] ec2instanceconnectcli
+          pip3 install boto3 boto3-stubs[essential] ec2instanceconnectcli
           python scripts/ami_resize_script.py
 
       - name: Run tests
