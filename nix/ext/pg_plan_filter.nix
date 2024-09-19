@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg_plan_filter";
   version = "5081a7b5cb890876e67d8e7486b6a64c38c9a492";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "pgexperts";
