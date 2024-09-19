@@ -4,8 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pgrouting";
   version = "3.4.1";
 
-  nativeBuildInputs = [ cmake perl ];
-  buildInputs = [ postgresql boost ];
+  nativeBuildInputs = [ cmake perl postgresql ];
+  buildInputs = [ postgresql.lib boost ];
 
   src = fetchFromGitHub {
     owner  = "pgRouting";
