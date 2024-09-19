@@ -4,8 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pg_tle";
   version = "1.4.0";
 
-  nativeBuildInputs = [ flex ];
-  buildInputs = [ openssl postgresql libkrb5 ];
+  nativeBuildInputs = [ flex openssl postgresql libkrb5 ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "aws";
