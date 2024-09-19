@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "supautils";
   version = "2.2.1";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "supabase";
