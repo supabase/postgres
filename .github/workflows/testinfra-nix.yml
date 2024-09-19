@@ -53,37 +53,20 @@ jobs:
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
 
-      - name: Launch temporary instance
-        id: launch-instance
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run AMI resize script
+        env:
+          PRE_AMI_NAME: "supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-1
         run: |
-          AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize"
-          INSTANCE_ID=$(aws ec2 run-instances --image-id $(aws ec2 describe-images --owners self --filters "Name=name,Values=${AMI_NAME}" --query 'Images[0].ImageId' --output text) --instance-type t4g.micro --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=AMI-Resize-Temp}]' --query 'Instances[0].InstanceId' --output text)
-          echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_OUTPUT
-
-      - name: Wait for instance to be running
-        run: aws ec2 wait instance-running --instance-ids ${{ steps.launch-instance.outputs.INSTANCE_ID }}
-
-      - name: Resize filesystem
-        run: |
-          aws ec2 start-session --target ${{ steps.launch-instance.outputs.INSTANCE_ID }} --document-name AWS-StartInteractiveCommand --parameters '{"command":["sudo e2fsck -f /dev/sda1 && sudo resize2fs /dev/sda1 8G && sudo sync"]}'
-
-      - name: Create new AMI
-        id: create-ami
-        run: |
-          NEW_AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}"
-          NEW_AMI_ID=$(aws ec2 create-image --instance-id ${{ steps.launch-instance.outputs.INSTANCE_ID }} --name "${NEW_AMI_NAME}" --description "Resized AMI" --query 'ImageId' --output text)
-          echo "NEW_AMI_ID=${NEW_AMI_ID}" >> $GITHUB_OUTPUT
-          echo "NEW_AMI_NAME=${NEW_AMI_NAME}" >> $GITHUB_OUTPUT
-
-      - name: Wait for AMI to be available
-        run: aws ec2 wait image-available --image-ids ${{ steps.create-ami.outputs.NEW_AMI_ID }}
-
-      - name: Modify AMI block device mapping
-        run: |
-          aws ec2 modify-image-attribute --image-id ${{ steps.create-ami.outputs.NEW_AMI_ID }} --block-device-mappings '[{"DeviceName": "/dev/sda1","Ebs":{"VolumeSize":8}}]'
-
-      - name: Terminate temporary instance
-        run: aws ec2 terminate-instances --instance-ids ${{ steps.launch-instance.outputs.INSTANCE_ID }}
+          pip install boto3 boto3-stubs[essential] ec2instanceconnectcli
+          python scripts/ami_resize_script.py
 
       - name: Run tests
         timeout-minutes: 10
