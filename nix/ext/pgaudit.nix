@@ -11,7 +11,8 @@ stdenv.mkDerivation rec {
     hash = "sha256-8pShPr4HJaJQPjW1iPJIpj3CutTx8Tgr+rOqoXtgCcw=";
   };
 
-  buildInputs = [ libkrb5 openssl postgresql ];
+  nativeBuildInputs = [ libkrb5 openssl postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   makeFlags = [ "USE_PGXS=1" ];
 
