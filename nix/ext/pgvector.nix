@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pgvector";
   version = "0.7.4";
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "pgvector";
