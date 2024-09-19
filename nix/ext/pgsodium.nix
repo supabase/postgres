@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pgsodium";
   version = "3.1.8";
 
-  buildInputs = [ libsodium postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ libsodium postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "michelp";
