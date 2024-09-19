@@ -12,8 +12,8 @@ buildPgrxExtension_0_11_3 rec {
     hash = "sha256-YdKpOEiDIz60xE7C+EzpYjBcH0HabnDbtZl23CYls6g=";
   };
 
-  nativeBuildInputs = [ cargo ];
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ cargo postgresql];
+  buildInputs = [ postgresql.lib ];
   # update the following array when the pg_jsonschema version is updated
   # required to ensure that extensions update scripts from previous versions are generated
 
