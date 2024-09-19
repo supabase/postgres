@@ -11,7 +11,8 @@ stdenv.mkDerivation rec {
     hash = "sha256-Gpc9uDKrs/dmVSFgdgHM453+TaEnhRh9t0gDbSn8FUI=";
   };
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   makeFlags = [ "USE_PGXS=1" ];
 
