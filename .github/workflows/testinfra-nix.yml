@@ -60,8 +60,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ap-southeast-1
         run: |
+          cd scripts
           pip3 install boto3 boto3-stubs[essential] ec2instanceconnectcli
-          python scripts/ami_resize_script.py
+          python3 aws_resize.py
 
       - name: Run tests
         timeout-minutes: 10
