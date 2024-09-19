@@ -17,7 +17,7 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "pg_stat_monitor";
-  version = "1.1.1";
+  version = "2.1.0";
 
   buildInputs = [ postgresql ];
 
@@ -25,15 +25,13 @@ stdenv.mkDerivation rec {
     owner = "percona";
     repo = pname;
     rev = "refs/tags/${version}";
-    hash = "sha256-S4N4Xnbkz57ue6f/eGjuRi64xT0NXjpMJiNNZnbbvbU=";
+    hash = "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s=";
   };
 
   makeFlags = [ "USE_PGXS=1" ];
 
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
-  
-    cp pg_stat_monitor--1.0.15.sql.in pg_stat_monitor--1.0.sql
   
     cp *.so      $out/lib
     cp *.sql     $out/share/postgresql/extension
