@@ -53,16 +53,11 @@ jobs:
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
 
-      - name: Get pre-resize AMI ID
-        id: get-ami
-        run: |
-          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=name,Values=supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize" --query 'Images[0].ImageId' --output text)
-          echo "AMI_ID=${AMI_ID}" >> $GITHUB_OUTPUT
-
       - name: Launch temporary instance
         id: launch-instance
         run: |
-          INSTANCE_ID=$(aws ec2 run-instances --image-id ${{ steps.get-ami.outputs.AMI_ID }} --instance-type t4g.micro --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=AMI-Resize-Temp}]' --query 'Instances[0].InstanceId' --output text)
+          AMI_NAME="supabase-postgres-${{ steps.random.outputs.random_string }}-pre-resize"
+          INSTANCE_ID=$(aws ec2 run-instances --image-id $(aws ec2 describe-images --owners self --filters "Name=name,Values=${AMI_NAME}" --query 'Images[0].ImageId' --output text) --instance-type t4g.micro --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=AMI-Resize-Temp}]' --query 'Instances[0].InstanceId' --output text)
           echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_OUTPUT
 
       - name: Wait for instance to be running
