@@ -4,7 +4,8 @@ stdenv.mkDerivation rec {
   pname = "pgsql-http";
   version = "1.5.0";
 
-  buildInputs = [ curl postgresql ];
+  nativeBuildInputs = [  postgresql ];
+  buildInputs = [ curl postgresql.lib ];
 
   src = fetchFromGitHub {
     owner = "pramsey";
