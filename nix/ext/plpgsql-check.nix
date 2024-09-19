@@ -11,7 +11,8 @@ stdenv.mkDerivation rec {
     hash = "sha256-vR3MvfmUP2QEAtXFpq0NCCKck3wZPD+H3QleHtyVQJs=";
   };
 
-  buildInputs = [ postgresql ];
+  nativeBuildInputs = [ postgresql ];
+  buildInputs = [ postgresql.lib ];
 
   installPhase = ''
     install -D -t $out/lib *${postgresql.dlSuffix}
