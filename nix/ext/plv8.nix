@@ -31,6 +31,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     perl
+    postgresql
   ] ++ lib.optionals stdenv.isDarwin [
     clang
     xcbuild
@@ -40,7 +41,7 @@ stdenv.mkDerivation (finalAttrs: {
     (v8.overrideAttrs (oldAttrs: {
       version = "9.7.106.18";  
     }))
-    postgresql
+    postgresql.lib
   ] ++ lib.optionals stdenv.isDarwin [
     darwin.apple_sdk.frameworks.CoreFoundation
     darwin.apple_sdk.frameworks.Kerberos
