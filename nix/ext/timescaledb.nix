@@ -4,8 +4,8 @@ stdenv.mkDerivation rec {
   pname = "timescaledb${lib.optionalString (!enableUnfree) "-apache"}";
   version = "2.9.1";
 
-  nativeBuildInputs = [ cmake ];
-  buildInputs = [ postgresql openssl libkrb5 ];
+  nativeBuildInputs = [ cmake postgresql ];
+  buildInputs = [ postgresql.lib openssl libkrb5 ];
 
   src = fetchFromGitHub {
     owner = "timescale";
