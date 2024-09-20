@@ -37,3 +37,12 @@
     - popularity-contest
     - ubuntu-advantage-tools
   when: debpkg_mode or stage2_nix
+
+- name: prefer IPv4 connection resolution
+  become: yes
+  file:
+    src: "files/gai.conf"
+    dest: "/etc/gai.conf"
+    owner: root
+    group: root
+    mode: 0644
