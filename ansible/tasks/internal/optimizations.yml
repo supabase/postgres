@@ -40,7 +40,7 @@
 
 - name: prefer IPv4 connection resolution
   become: yes
-  file:
+  copy:
     src: "files/gai.conf"
     dest: "/etc/gai.conf"
     owner: root
