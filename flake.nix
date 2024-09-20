@@ -280,6 +280,26 @@
           recurseForDerivations = true;
         };
 
+        makePostgresLibs = postgresPackage: majorVersion: pkgs.stdenv.mkDerivation {
+          pname = "psql-${majorVersion}-libs";  # Use the name of the input package
+          version = majorVersion; 
+          src = null;
+          dontUnpack = true;
+          dontConfigure = true;
+          dontBuild = true;
+          installPhase = ''
+            mkdir -p $out/lib
+            cp -r ${postgresPackage}/lib/* $out/lib/  # Copy the lib directory from the given PostgreSQL package
+          '';
+
+          meta = with pkgs.lib; {
+            description = "${postgresPackage} libraries";
+            homepage = "https://www.postgresql.org/";
+            license = licenses.postgresql;
+            platforms = platforms.all;
+          };
+        };
+
         # The base set of packages that we export from this Nix Flake, that can
         # be used with 'nix build'. Don't use the names listed below; check the
         # name in 'nix flake show' in order to make sure exactly what name you
@@ -294,7 +314,7 @@
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           postgresql_15 = pkgs.postgresql_15;
-
+          
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = pkgs.postgresql_15.version;
@@ -317,8 +337,8 @@
               platforms = platforms.all;
             };
           };
+
           mecab_naist_jdic = mecab-naist-jdic;
-          supabase_groonga = supabase-groonga;
           # Start a version of the server.
           start-server =
             let
@@ -538,7 +558,7 @@
           inherit (pkgs)
             # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
             cargo-pgrx_0_11_3;
-
+            psql_15_libs = makePostgresLibs basePackages.psql_15.bin "15";  
         };
 
         # The list of exported 'checks' that are run with every run of 'nix
