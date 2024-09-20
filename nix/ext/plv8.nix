@@ -1,130 +1,70 @@
 { stdenv
 , lib
 , fetchFromGitHub
-, v8
+, nodejs_20
 , perl
 , postgresql
-  # For test
+# For test
 , runCommand
 , coreutils
 , gnugrep
-, clang
-, patchelf
-, xcbuild
-, darwin
 }:
 
-stdenv.mkDerivation (finalAttrs: {
+let
+  libv8 = nodejs_20.libv8;
+in stdenv.mkDerivation (finalAttrs: {
   pname = "plv8";
-  version = "3.1.5";
+  version = "3.2.2";
 
   src = fetchFromGitHub {
     owner = "plv8";
     repo = "plv8";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-LodC2eQJSm5fLckrjm2RuejZhmOyQMJTv9b0iPCnzKQ=";
+    hash = "sha256-azO33v22EF+/sTNmwswxyDR0PhrvWfTENuLu6JgSGJ0=";
   };
 
   patches = [
+    # Allow building with system v8.
+    # https://github.com/plv8/plv8/pull/505 (rejected)
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
   nativeBuildInputs = [
     perl
-  ] ++ lib.optionals stdenv.isDarwin [
-    clang
-    xcbuild
   ];
 
   buildInputs = [
-    (v8.overrideAttrs (oldAttrs: {
-      version = "9.7.106.18";  
-    }))
+    libv8
     postgresql
-  ] ++ lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.CoreFoundation
-    darwin.apple_sdk.frameworks.Kerberos
   ];
 
   buildFlags = [ "all" ];
 
   makeFlags = [
+    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
-    "V8_OUTDIR=${v8}/lib"
-    "PG_CONFIG=${postgresql}/bin/pg_config"
-  ] ++ lib.optionals stdenv.isDarwin [
-    "CC=${clang}/bin/clang"
-    "CXX=${clang}/bin/clang++"
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-  ] ++ lib.optionals (!stdenv.isDarwin) [
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-  ];
-
-  NIX_LDFLAGS = (lib.optionals stdenv.isDarwin [
-    "-L${postgresql}/lib"
-    "-L${v8}/lib"
-    "-lv8_monolith"
-    "-lpq"
-    "-lpgcommon"
-    "-lpgport"
-    "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
-    "-framework" "CoreFoundation"
-    "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
-    "-framework" "Kerberos"
-    "-undefined" "dynamic_lookup"
-    "-flat_namespace"
-  ]) ++ (lib.optionals (!stdenv.isDarwin) [
-    "-L${postgresql}/lib"
-    "-L${v8}/lib"
-    "-lv8_monolith"
-    "-lpq"
-    "-lpgcommon"
-    "-lpgport"
-  ]);
-
-  NIX_CFLAGS_COMPILE = [
-    "-I${v8}/include"
-    "-I${postgresql}/include"
-    "-I${postgresql}/include/server"
-    "-I${postgresql}/include/internal"
+    "SHLIB_LINK=-lv8"
+    "V8_OUTDIR=${libv8}/lib"
   ];
 
   installFlags = [
+    # PGXS only supports installing to postgresql prefix so we need to redirect this
     "DESTDIR=${placeholder "out"}"
   ];
 
+  # No configure script.
   dontConfigure = true;
 
   postPatch = ''
     patchShebangs ./generate_upgrade.sh
-    substituteInPlace generate_upgrade.sh \
-      --replace " 2.3.10 " " 2.3.10 2.3.11 2.3.12 2.3.13 2.3.14 2.3.15 "
-    
-    ${lib.optionalString stdenv.isDarwin ''
-      # Replace g++ with clang++ in Makefile
-      sed -i 's/g++/clang++/g' Makefile
-    ''}
-  '';
-
-  preBuild = lib.optionalString stdenv.isDarwin ''
-    export CC=${clang}/bin/clang
-    export CXX=${clang}/bin/clang++
   '';
 
   postInstall = ''
+    # Move the redirected to proper directory.
+    # There appear to be no references to the install directories
+    # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
-
-    ${lib.optionalString stdenv.isDarwin ''
-      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
-    ''}
-
-    ${lib.optionalString (!stdenv.isDarwin) ''
-      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-    ''}
   '';
 
   passthru = {
@@ -133,9 +73,8 @@ stdenv.mkDerivation (finalAttrs: {
         postgresqlWithSelf = postgresql.withPackages (_: [
           finalAttrs.finalPackage
         ]);
-      in
-      {
-        smoke = runCommand "plv8-smoke-test" { } ''
+      in {
+        smoke = runCommand "plv8-smoke-test" {} ''
           export PATH=${lib.makeBinPath [
             postgresqlWithSelf
             coreutils
@@ -195,9 +134,8 @@ stdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
     homepage = "https://plv8.github.io/";
-    maintainers = with maintainers; [ samrose ];
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+    maintainers = with maintainers; [ ];
+    platforms = [ "x86_64-linux" "aarch64-linux" ];
     license = licenses.postgresql;
-    #broken = postgresql.jitSupport;
   };
 })
