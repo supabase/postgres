@@ -56,7 +56,7 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "${var.ami_name}-${var.postgres-version}"
+  ami_name      = "${var.ami_name}-${var.postgres-version}-pre-resize"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
   source_ami_filter {
