@@ -1,7 +1,7 @@
 import os
 import boto3
 import time
-from ec2instanceconnectcli.ec2instanceconnectcli import EC2InstanceConnectCLI
+from ec2instanceconnectcli import EC2InstanceConnectCLI
 
 # Initialize boto3 clients
 ec2_client = boto3.client('ec2')
