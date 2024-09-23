@@ -4,10 +4,16 @@
 , v8
 , perl
 , postgresql
-# For test
+# For passthru test on various systems, and local development on macos
+# not we are not currently using passthru tests but retaining for possible contrib
+# to nixpkgs 
 , runCommand
 , coreutils
 , gnugrep
+, clang
+, xcbuild
+, darwin
+, patchelf
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -29,11 +35,17 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     perl
+  ] ++ lib.optionals stdenv.isDarwin [
+    clang
+    xcbuild
   ];
 
   buildInputs = [
     v8
     postgresql
+  ] ++ lib.optionals stdenv.isDarwin [
+    darwin.apple_sdk.frameworks.CoreFoundation
+    darwin.apple_sdk.frameworks.Kerberos
   ];
 
   buildFlags = [ "all" ];
@@ -41,9 +53,30 @@ stdenv.mkDerivation (finalAttrs: {
   makeFlags = [
     # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
-    "SHLIB_LINK=-lv8"
     "V8_OUTDIR=${v8}/lib"
+     "PG_CONFIG=${postgresql}/bin/pg_config"
+  ] ++ lib.optionals stdenv.isDarwin [
+    "CC=${clang}/bin/clang"
+    "CXX=${clang}/bin/clang++"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+  ] ++ lib.optionals (!stdenv.isDarwin) [
+    "SHLIB_LINK=-lv8"
   ];
+
+  NIX_LDFLAGS = (lib.optionals stdenv.isDarwin [
+    "-L${postgresql}/lib"
+    "-L${v8}/lib"
+    "-lv8_monolith"
+    "-lpq"
+    "-lpgcommon"
+    "-lpgport"
+    "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
+    "-framework" "CoreFoundation"
+    "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
+    "-framework" "Kerberos"
+    "-undefined" "dynamic_lookup"
+    "-flat_namespace"
+  ]); 
 
   installFlags = [
     # PGXS only supports installing to postgresql prefix so we need to redirect this
@@ -57,6 +90,11 @@ stdenv.mkDerivation (finalAttrs: {
     patchShebangs ./generate_upgrade.sh
     substituteInPlace generate_upgrade.sh \
       --replace " 2.3.10 " " 2.3.10 2.3.11 2.3.12 2.3.13 2.3.14 2.3.15 "
+
+    ${lib.optionalString stdenv.isDarwin ''
+      # Replace g++ with clang++ in Makefile
+      sed -i 's/g++/clang++/g' Makefile
+    ''}
   '';
 
   postInstall = ''
@@ -65,6 +103,17 @@ stdenv.mkDerivation (finalAttrs: {
     # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
+
+    ${lib.optionalString stdenv.isDarwin ''
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+    ''}
+
+    ${lib.optionalString (!stdenv.isDarwin) ''
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+    ''}
   '';
 
   passthru = {
@@ -134,8 +183,8 @@ stdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
     homepage = "https://plv8.github.io/";
-    maintainers = with maintainers; [ ];
-    platforms = [ "x86_64-linux" "aarch64-linux" ];
+    maintainers = with maintainers; [ samrose ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     license = licenses.postgresql;
   };
 })
