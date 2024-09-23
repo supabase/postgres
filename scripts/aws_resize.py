@@ -7,11 +7,9 @@ from ec2instanceconnectcli import EC2InstanceConnectCLI
 ec2_client = boto3.client('ec2')
 ec2_resource = boto3.resource('ec2')
 
-# Get the AMI name from environment variable
-AMI_NAME = os.environ.get('PRE_AMI_NAME')
-
 def launch_temporary_instance():
     # Describe the AMI
+    AMI_NAME = os.environ.get('PRE_AMI_NAME')
     images = ec2_client.describe_images(Owners=['self'], Filters=[{'Name': 'name', 'Values': [AMI_NAME]}])
     if not images['Images']:
         raise Exception(f"No AMI found with name: {AMI_NAME}")
