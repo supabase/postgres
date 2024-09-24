@@ -1,3 +1,10 @@
+-- Confirm we're running the apache version
+show timescaledb.license;
+ timescaledb.license 
+---------------------
+ apache
+(1 row)
+
 -- Create schema v
 create schema v;
 -- Create a table in the v schema

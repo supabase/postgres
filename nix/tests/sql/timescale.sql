@@ -1,3 +1,6 @@
+-- Confirm we're running the apache version
+show timescaledb.license;
+
 -- Create schema v
 create schema v;
 
