@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchFromGitHub, cmake, postgresql, openssl, libkrb5, enableUnfree ? true }:
+{ lib, stdenv, fetchFromGitHub, cmake, postgresql, openssl, libkrb5 }:
 
 stdenv.mkDerivation rec {
   pname = "timescaledb-apache";
@@ -37,7 +37,7 @@ stdenv.mkDerivation rec {
     changelog = "https://github.com/timescale/timescaledb/blob/${version}/CHANGELOG.md";
     maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
-    license = with licenses; if enableUnfree then tsl else asl20;
+    license = licenses.asl20;
     broken = versionOlder postgresql.version "13";
   };
 }
