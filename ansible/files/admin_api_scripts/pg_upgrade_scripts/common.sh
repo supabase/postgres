@@ -107,6 +107,13 @@ $$;
 
 do $$
 declare
+  role_grants jsonb[] := (
+    select coalesce(array_agg(jsonb_build_object('role', r.rolname, 'member', m.rolname, 'grantor', g.rolname, 'admin_option', am.admin_option)), '{}')
+    from pg_auth_members am
+    join pg_authid r on r.oid = am.roleid
+    join pg_authid m on m.oid = am.member
+    join pg_authid g on g.oid = am.grantor
+  );
   postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
   supabase_admin_rolpassword text := (select rolpassword from pg_authid where rolname = 'supabase_admin');
   role_settings jsonb[] := (
@@ -216,27 +223,18 @@ begin
     select * from pg_auth_members
   loop
     execute(format('revoke %s from %s;', rec.roleid::regrole, rec.member::regrole));
+  end loop;
+  for obj in array role_grants
+  loop
     execute(format(
-      'grant %s to %s %s granted by %s;',
+      'grant %I to %I %s granted by %I;',
+      obj->>'role',
+      obj->>'member',
       case
-        when rec.roleid = 'postgres'::regrole then 'supabase_admin'
-        when rec.roleid = 'supabase_admin'::regrole then 'postgres'
-        else rec.roleid::regrole
-      end,
-      case
-        when rec.member = 'postgres'::regrole then 'supabase_admin'
-        when rec.member = 'supabase_admin'::regrole then 'postgres'
-        else rec.member::regrole
-      end,
-      case
-        when rec.admin_option then 'with admin option'
+        when obj->>'admin_option' = 'true' then 'with admin option'
         else ''
       end,
-      case
-        when rec.grantor = 'postgres'::regrole then 'supabase_admin'
-        when rec.grantor = 'supabase_admin'::regrole then 'postgres'
-        else rec.grantor::regrole
-      end
+      obj->>'grantor'
     ));
   end loop;
 
@@ -362,7 +360,6 @@ begin
       end if;
     end loop;
   end loop;
-
   foreach obj in array default_acls
   loop
     for rec in
