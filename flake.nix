@@ -73,10 +73,7 @@
 
           ];
         };
-        postgresql_15 = pkgs.postgresql.postgresql_15;
-        postgresql = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
-        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
@@ -147,7 +144,7 @@
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
         #we will add supported versions to this list in the future
-        supportedVersions = [ "15" ];
+        supportedVersions = [ "15" "16" ];
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -284,17 +281,47 @@
         # be used with 'nix build'. Don't use the names listed below; check the
         # name in 'nix flake show' in order to make sure exactly what name you
         # want.
-        basePackages = {
+        basePackages = let
+          # Function to get the PostgreSQL version from the attribute name
+          getVersion = name: 
+            let
+              match = builtins.match "psql_([0-9]+)" name;
+            in
+            if match == null then null else builtins.head match;
+
+          # Define the available PostgreSQL versions
+          postgresVersions = {
+            psql_15 = makePostgres "15";
+            psql_16 = makePostgres "16";
+            # Uncomment the line below to enable PostgreSQL 16
+            # psql_16 = makePostgres "16";
+            # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          };
+
+          # Find the active PostgreSQL version
+          activeVersion = getVersion (builtins.head (builtins.attrNames postgresVersions));
+
+          # Function to create the pg_regress package
+          makePgRegress = version:
+            let
+              postgresqlPackage = pkgs."postgresql_${version}";
+            in
+              pkgs.callPackage ./nix/ext/pg_regress.nix { 
+                postgresql = postgresqlPackage;
+              };
+
+        in 
+        postgresVersions //{
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
-          #psql_16 = makePostgres "16";
+          psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
-          pg_regress = pg_regress;
+          pg_regress = makePgRegress activeVersion;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           postgresql_15 = pkgs.postgresql_15;
-
+          postgresql_16 = pkgs.postgresql_16;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = pkgs.postgresql_15.version;
@@ -318,7 +345,6 @@
             };
           };
           mecab_naist_jdic = mecab-naist-jdic;
-          supabase_groonga = supabase-groonga;
           # Start a version of the server.
           start-server =
             let
@@ -356,6 +382,7 @@
                 else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
             pkgs.runCommand "start-postgres-server" { } ''
+              set -x
               mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
               cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
@@ -369,10 +396,13 @@
               chmod 644 $out/etc/postgresql/postgresql.conf
               chmod 644 $out/etc/postgresql-custom/logging.conf
               chmod 644 $out/etc/postgresql/pg_hba.conf
+              echo "PSQL15_BINDIR: ${basePackages.psql_15.bin}"
+              echo "PSQL16_BINDIR: ${basePackages.psql_16.bin}"
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
                 --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
@@ -402,6 +432,7 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
                 --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
                 --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
@@ -455,6 +486,7 @@
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
+            pg_regress = basePackages.pg_regress;
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {

@@ -2,27 +2,32 @@
 # shellcheck shell=bash
 [ ! -z "$DEBUG" ] && set -x
 # first argument should be '15' or '16' for the version
-if [ "$1" == "15" ]; then
+VERSION="$1"
+echo "@PSQL15_BINDIR@"
+echo "@PSQL16_BINDIR@"
+case "$VERSION" in
+  15)
     echo "Starting server for PSQL 15"
-    PSQL15=@PSQL15_BINDIR@
-    BINDIR="$PSQL15"
-elif [ "$1" == "16" ]; then
+    BINDIR="@PSQL15_BINDIR@"
+    ;;
+  16)
     echo "Starting server for PSQL 16"
-    PSQL16=@PSQL16_BINDIR@
-    BINDIR="$PSQL16"
-elif [ "$1" == "orioledb-16" ]; then
+    BINDIR="@PSQL16_BINDIR@"
+    ;;
+  orioledb-16)
     echo "Starting server for PSQL ORIOLEDB 16"
-    PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
-    BINDIR="$PSQLORIOLEDB16"
-else
+    BINDIR="@PSQLORIOLEDB16_BINDIR@"
+    ;;
+  *)
     echo "Please provide a valid Postgres version (15, 16 or orioledb-16)"
     exit 1
-fi
-export PATH=$BINDIR/bin:$PATH
+    ;;
+esac
+export PATH="$BINDIR"/bin:$PATH
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PGSODIUM_GETKEY_SCRIPT=@PGSODIUM_GETKEY@
-PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
+PORTNO="@PGSQL_DEFAULT_PORT@"
 SUPAUTILS_CONFIG_FILE=@SUPAUTILS_CONF_FILE@
 LOGGING_CONFIG_FILE=@LOGGING_CONF_FILE@
 READREPL_CONFIG_FILE=@READREPL_CONF_FILE@

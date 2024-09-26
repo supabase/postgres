@@ -105,14 +105,14 @@ stdenv.mkDerivation (finalAttrs: {
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
 
     ${lib.optionalString stdenv.isDarwin ''
-      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
     ''}
 
     ${lib.optionalString (!stdenv.isDarwin) ''
-      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
     ''}
   '';
 

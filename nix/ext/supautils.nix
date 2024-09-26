@@ -16,7 +16,7 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/lib
 
-    install -D supautils.so -t $out/lib
+    install -D *${postgresql.dlSuffix} -t $out/lib
   '';
 
   meta = with lib; {

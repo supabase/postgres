@@ -3,6 +3,7 @@ let
   #adapted from the postgresql nixpkgs package
   versions = {
     postgresql_15 = ./15.nix;
+    postgresql_16 = ./16.nix;
   };
 
   mkAttributes = jitSupport:

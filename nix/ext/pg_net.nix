@@ -16,9 +16,9 @@ stdenv.mkDerivation rec {
   env.NIX_CFLAGS_COMPILE = "-Wno-error";
 
   installPhase = ''
-    mkdir -p $out/{lib,share/postgresql/extension}
+     mkdir -p $out/{lib,share/postgresql/extension}
 
-    cp *.so      $out/lib
+    cp *${postgresql.dlSuffix} $out/lib
     cp sql/*.sql $out/share/postgresql/extension
     cp *.control $out/share/postgresql/extension
   '';
