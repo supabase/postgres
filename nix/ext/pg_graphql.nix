@@ -2,7 +2,7 @@
 
 buildPgrxExtension_0_11_3 rec {
   pname = "pg_graphql";
-  version = "1.5.7";
+  version = "1.5.8";
   inherit postgresql;
 
   src = fetchFromGitHub {
@@ -14,7 +14,7 @@ buildPgrxExtension_0_11_3 rec {
 
   nativeBuildInputs = [ cargo ];
   buildInputs = [ postgresql ];
-  
+
   CARGO="${cargo}/bin/cargo";
   #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
   env = lib.optionalAttrs stdenv.isDarwin {
