@@ -72,6 +72,9 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
+            VERSION=${{ inputs.postgresVersion }}
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
