@@ -58,10 +58,10 @@ function configure_services {
 }
 
 function enable_swap {
-  fallocate -l 1G /mnt/swapfile
-  chmod 600 /mnt/swapfile
-  mkswap /mnt/swapfile
-  swapon /mnt/swapfile
+  fallocate -l 512M /data/swapfile
+  chmod 600 /data/swapfile
+  mkswap /data/swapfile
+  swapon /data/swapfile
 }
 
 function push_lsn_checkpoint_file {
@@ -218,7 +218,7 @@ function fetch_and_execute_delegated_payload {
 
   if [ ! -f $DELEGATED_ARCHIVE_PATH ]; then
     echo "No delegated payload found, bailing"
-    return
+    return 1
   fi
 
   # only extract a valid archive
@@ -238,14 +238,17 @@ function fetch_and_execute_delegated_payload {
     fi
   else
     echo "Invalid TAR archive"
-    return
   fi
 
   # Run our delegated entry script here
   if [ -f "$DELEGATED_ENTRY_PATH" ]; then
     chmod +x $DELEGATED_ENTRY_PATH
     bash -c "$DELEGATED_ENTRY_PATH $START_TIME"
+  else
+    return 1
   fi
+
+  exit 0 
 }
 
 # Increase max number of open connections
@@ -356,11 +359,9 @@ fi
 touch "$CONFIGURED_FLAG_PATH"
 run_prelaunch_hooks
 
-if [ -n "${DELEGATED_INIT_LOCATION:-}" ]; then
-  fetch_and_execute_delegated_payload
-else
-  DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
-  echo "E: Execution time to starting supervisor: $DURATION milliseconds"
-  start_supervisor
-  push_lsn_checkpoint_file
-fi
+fetch_and_execute_delegated_payload
+
+DURATION=$(calculate_duration "$START_TIME" "$(date +%s%N)")
+echo "E: Execution time to starting supervisor: $DURATION milliseconds"
+start_supervisor
+push_lsn_checkpoint_file

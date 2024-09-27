@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/dockerhub-release.yml"
       - "common.vars*"
+  workflow_dispatch:
  
 jobs:
   settings:
