@@ -29,7 +29,9 @@ let
       # PL/Python
       , pythonSupport ? false
       , python3
-
+      , bison
+      , flex
+      , perl
       # detection of crypt fails when using llvm stdenv, so we add it manually
       # for <13 (where it got removed: https://github.com/postgres/postgres/commit/c45643d618e35ec2fe91438df15abd4f3c0d85ca)
       , libxcrypt
@@ -56,7 +58,7 @@ let
 
     hardeningEnable = lib.optionals (!stdenv'.cc.isClang) [ "pie" ];
 
-    outputs = [ "out" "lib" "doc" "man" ];
+    outputs = [ "out" "lib" ];
     setOutputFlags = false; # $out retains configureFlags :-/
 
     buildInputs = [
@@ -79,6 +81,9 @@ let
     nativeBuildInputs = [
       makeWrapper
       pkg-config
+      bison
+      flex
+      perl
     ]
       ++ lib.optionals jitSupport [ llvmPackages.llvm.dev nukeReferences patchelf ];
 
@@ -86,7 +91,8 @@ let
 
     separateDebugInfo = true;
 
-    buildFlags = [ "world" ];
+    buildFlags = [ "world-bin" ];
+    installTargets = [ "install-world-bin" ];
 
     # Makes cross-compiling work when xml2-config can't be executed on the host.
     # Fixed upstream in https://github.com/postgres/postgres/commit/0bc8cebdb889368abdf224aeac8bc197fe4c9ae6
@@ -101,6 +107,8 @@ let
       "--with-system-tzdata=${tzdata}/share/zoneinfo"
       "--enable-debug"
       (lib.optionalString systemdSupport' "--with-systemd")
+      "--without-docdir"
+      "--without-mandir"
       (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
     ] ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
@@ -127,11 +135,13 @@ let
       (if atLeast "13" then ./patches/socketdir-in-run-13+.patch else ./patches/socketdir-in-run.patch)
     ];
 
-    installTargets = [ "install-world" ];
-
     postPatch = ''
       # Hardcode the path to pgxs so pg_config returns the path in $out
       substituteInPlace "src/common/config_info.c" --subst-var out
+      # Remove all documentation-related targets from Makefile
+      sed -i '/^all:/s/ html-opt//' src/Makefile.global.in
+      sed -i '/^all:/s/ man//' src/Makefile.global.in
+      sed -i '/^install:/s/ install-docs//' src/Makefile.global.in
     '' + lib.optionalString jitSupport ''
         # Force lookup of jit stuff in $out instead of $lib
         substituteInPlace src/backend/jit/jit.c --replace pkglib_path \"$out/lib\"
@@ -255,7 +265,7 @@ let
       maintainers = with maintainers; [ thoughtpolice danbst globin ivan ma27 wolfgangwalther ];
       pkgConfigModules = [ "libecpg" "libecpg_compat" "libpgtypes" "libpq" ];
       platforms   = platforms.unix;
-
+      man = lib.mkForce null;
       # JIT support doesn't work with cross-compilation. It is attempted to build LLVM-bytecode
       # (`%.bc` is the corresponding `make(1)`-rule) for each sub-directory in `backend/` for
       # the JIT apparently, but with a $(CLANG) that can produce binaries for the build, not the
@@ -277,7 +287,6 @@ let
     paths = f pkgs ++ [
         postgresql
         postgresql.lib
-        postgresql.man   # in case user installs this into environment
     ];
     nativeBuildInputs = [ makeWrapper ];
 

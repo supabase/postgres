@@ -2,9 +2,9 @@
 #adapted from https://github.com/NixOS/nixpkgs/blob/master/pkgs/servers/sql/postgresql/ext/pgaudit.nix
 let
   source = {
-    "16" = {
-      version = "16.0";
-      hash = "sha256-8+tGOl1U5y9Zgu+9O5UDDE4bec4B0JC/BQ6GLhHzQzc=";
+    "17" = {
+      version = "17.0";
+      hash = "sha256-3ksq09wiudQPuBQI3dhEQi8IkXKLVIsPFgBnwLiicro=";
     };
     "15" = {
       version = "1.7.0";

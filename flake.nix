@@ -57,6 +57,36 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+
+            (final: prev: {
+              cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
+                inherit (final) lib;
+                inherit (final) darwin;
+                inherit (final) fetchCrate;
+                inherit (final) openssl;
+                inherit (final) pkg-config;
+                inherit (final) rustPlatform;
+                inherit (final) stdenv;
+              };
+
+              buildPgrxExtension = final.callPackage ./nix/cargo-pgrx/buildPgrxExtension.nix {
+                inherit (final) cargo-pgrx;
+                inherit (final) lib;
+                inherit (final) Security;
+                inherit (final) pkg-config;
+                inherit (final) rustPlatform;
+                inherit (final) stdenv;
+                inherit (final) writeShellScriptBin;
+              };
+
+              buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
+              };
+
+              buildPgrxExtension_0_12_4 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_4;
+              };
+            })
             (final: prev: {
               postgresql = final.callPackage ./nix/postgresql/default.nix {
                 inherit (final) lib;
@@ -66,10 +96,10 @@
                 inherit (final) callPackage;
               };
             })
-            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
           ];
         };
         postgresql_15 = pkgs.postgresql.postgresql_15;
+        postgresql_17 = pkgs.postgresql.postgresql_17;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
@@ -141,7 +171,7 @@
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
         #we will add supported versions to this list in the future
-        supportedVersions = [ "15" ];
+        supportedVersions = [ "15"  "17"];
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -289,6 +319,7 @@
           # Define the available PostgreSQL versions
           postgresVersions = {
             psql_15 = makePostgres "15";
+            psql_17 = makePostgres "17";
             # Uncomment the line below to enable PostgreSQL 16
             # psql_16 = makePostgres "16";
             # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
@@ -310,12 +341,13 @@
         postgresVersions //{
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
-          psql_15 = makePostgres "15";
+          psql_15 = postgresVersions.psql_15;
+          psql_17 = postgresVersions.psql_17;
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          postgresql_15 = pkgs.postgresql_15;
-
+          postgresql_15 = pkgs.postgresql.postgresql_15;
+          postgresql_17 = pkgs.postgresql.postgresql_17;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = pkgs.postgresql_15.version;
@@ -339,7 +371,6 @@
             };
           };
           mecab_naist_jdic = mecab-naist-jdic;
-          supabase_groonga = supabase-groonga;
           pg_regress = makePgRegress activeVersion;
           # Start a version of the server.
           start-server =
@@ -395,6 +426,7 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL17_BINDIR' '${basePackages.psql_17.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
                 --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
@@ -404,7 +436,6 @@
                 --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
                 --subst-var-by 'LOCALES' '${localeArchive}' \
                 --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts" \
-                --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so' \
                 --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' 
 
               chmod +x $out/bin/start-postgres-server
@@ -424,6 +455,7 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL17_BINDIR' '${basePackages.psql_17.bin}' \
                 --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
                 --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
                 --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
@@ -558,9 +590,13 @@
         packages = flake-utils.lib.flattenTree basePackages // {
           # Any extra packages we might want to include in our package
           # set can go here.
-          inherit (pkgs)
-            # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
-            cargo-pgrx_0_11_3;
+          # inherit (pkgs)
+          #   cargo-pgrx
+          #   cargo-pgrx_0_11_3
+          #   cargo-pgrx_0_12_4
+          #   buildPgrxExtension
+          #   buildPgrxExtension_0_11_3
+          #   buildPgrxExtension_0_12_4;
 
         };
 
