@@ -6,9 +6,10 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, ...}:
+  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, rust-overlay, ...}:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -42,6 +43,7 @@
 
           ];
         };
+        rust-bin = rust-overlay.packages.${system}.rust-bin;
         #This variable works the same as 'oriole_pkgs' but builds using the upstream
         #nixpkgs builds of postgresql 15 and 16 + the overlays listed below
         pkgs = import nixpkgs {
@@ -57,7 +59,7 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-
+            (import rust-overlay)
             (final: prev: {
               cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
                 inherit (final) lib;
@@ -65,8 +67,9 @@
                 inherit (final) fetchCrate;
                 inherit (final) openssl;
                 inherit (final) pkg-config;
-                inherit (final) rustPlatform;
+                inherit (final) makeRustPlatform;
                 inherit (final) stdenv;
+                inherit (final) rust-bin;
               };
 
               buildPgrxExtension = final.callPackage ./nix/cargo-pgrx/buildPgrxExtension.nix {
@@ -74,7 +77,7 @@
                 inherit (final) lib;
                 inherit (final) Security;
                 inherit (final) pkg-config;
-                inherit (final) rustPlatform;
+                inherit (final) makeRustPlatform;
                 inherit (final) stdenv;
                 inherit (final) writeShellScriptBin;
               };
@@ -83,8 +86,8 @@
                 cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
               };
 
-              buildPgrxExtension_0_12_4 = prev.buildPgrxExtension.override {
-                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_4;
+              buildPgrxExtension_0_12_5 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_5;
               };
             })
             (final: prev: {
@@ -130,10 +133,10 @@
         # go through the upstream release engineering process.
         ourExtensions = [
           ./nix/ext/rum.nix
-          ./nix/ext/timescaledb.nix
-          ./nix/ext/pgroonga.nix
+          #./nix/ext/timescaledb.nix
+          #./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
-          ./nix/ext/wal2json.nix
+          #./nix/ext/wal2json.nix
           ./nix/ext/pg_repack.nix
           ./nix/ext/pg-safeupdate.nix
           ./nix/ext/plpgsql-check.nix
@@ -156,9 +159,9 @@
           ./nix/ext/vault.nix
           ./nix/ext/hypopg.nix
           ./nix/ext/pg_tle.nix
-          ./nix/ext/wrappers/default.nix
-          ./nix/ext/supautils.nix
-          ./nix/ext/plv8.nix
+          #./nix/ext/wrappers/default.nix
+          #./nix/ext/supautils/supautils.nix
+          #./nix/ext/plv8.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
@@ -593,10 +596,10 @@
           # inherit (pkgs)
           #   cargo-pgrx
           #   cargo-pgrx_0_11_3
-          #   cargo-pgrx_0_12_4
+          #   cargo-pgrx_0_12_5
           #   buildPgrxExtension
           #   buildPgrxExtension_0_11_3
-          #   buildPgrxExtension_0_12_4;
+          #   buildPgrxExtension_0_12_5;
 
         };
 

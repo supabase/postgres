@@ -1,35 +1,49 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_11_3, cargo }:
+{ lib
+, stdenv
+, fetchFromGitHub
+, postgresql
+, buildPgrxExtension_0_12_5
+, cargo-pgrx
+, rust-bin
+}:
 
-buildPgrxExtension_0_11_3 rec {
+let
+  rustVersion = "1.80.0";
+  rust = rust-bin.stable.${rustVersion}.default;
+in
+
+buildPgrxExtension_0_12_5 rec {
+  inherit postgresql;
+
+  # Pass the paths to cargo and rustc
+  CARGO = "${rust}/bin/cargo";
+  RUSTC = "${rust}/bin/rustc";
   pname = "pg_jsonschema";
   version = "0.3.1";
-  inherit postgresql;
 
   src = fetchFromGitHub {
     owner = "supabase";
-    repo = pname;
-    rev = "v${version}";
-    hash = "sha256-YdKpOEiDIz60xE7C+EzpYjBcH0HabnDbtZl23CYls6g=";
+    repo = "pg_jsonschema";
+    rev = "fbee35d816858feb394ccc6e1368efab249de687";
+    hash = "sha256-Kitc94qWfOmDg6o73F+DXlB9UWt/KYLWiWx8i5Fxxoo=";
   };
 
-  nativeBuildInputs = [ cargo ];
+  nativeBuildInputs = [ rust ];
   buildInputs = [ postgresql ];
-  # update the following array when the pg_jsonschema version is updated
-  # required to ensure that extensions update scripts from previous versions are generated
 
   previousVersions = ["0.3.0" "0.2.0" "0.1.4" "0.1.4" "0.1.2" "0.1.1" "0.1.0"];
-  CARGO="${cargo}/bin/cargo";
-  #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
-  env = lib.optionalAttrs stdenv.isDarwin {
+
+  # Environment variables for Darwin
+  env = lib.optionals stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
     PGPORT = "5433";
   };
-  cargoHash = "sha256-VcS+efMDppofuFW2zNrhhsbC28By3lYekDFquHPta2g=";
 
-  # FIXME (aseipp): testsuite tries to write files into /nix/store; we'll have
-  # to fix this a bit later.
+  # Disable tests if they're trying to write to /nix/store
   doCheck = false;
+
+  cargoHash = "sha256-y+IZZlqeSdlXhEPCl6WT8YrVuz76MbJQDCTjhJ1+Fow=";
 
   preBuild = ''
     echo "Processing git tags..."
@@ -55,10 +69,9 @@ buildPgrxExtension_0_11_3 rec {
     rm git_tags.txt
   '';
 
-
   meta = with lib; {
     description = "JSON Schema Validation for PostgreSQL";
-    homepage = "https://github.com/supabase/${pname}";
+    homepage = "https://github.com/supabase/pg_jsonschema";
     maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;

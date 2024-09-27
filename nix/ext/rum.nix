@@ -5,10 +5,10 @@ stdenv.mkDerivation rec {
   version = "1.3.13";
 
   src = fetchFromGitHub {
-    owner = "postgrespro";
+    owner = "alexandervpotapov";
     repo = "rum";
-    rev = version;
-    hash = "sha256-yy2xeDnk3fENN+En0st4mv60nZlqPafIzwf68jwJ5fE=";
+    rev = "10316-master-3";
+    hash = "sha256-i51bYJQ76IBo+xr9PkoMHWjCRaOtjcrfeG6QiDFVWvw=";
   };
 
   buildInputs = [ postgresql ];
