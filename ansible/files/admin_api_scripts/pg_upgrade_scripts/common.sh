@@ -530,7 +530,14 @@ $$;
 alter database postgres connection limit -1;
 
 -- #incident-2024-09-12-project-upgrades-are-temporarily-disabled
-grant pg_read_all_data, pg_signal_backend to postgres;
+do $$
+begin
+  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
+    execute('grant pg_read_all_data to postgres');
+  end if;
+end
+$$;
+grant pg_signal_backend to postgres;
 
 set session authorization supabase_admin;
 drop role supabase_tmp;
