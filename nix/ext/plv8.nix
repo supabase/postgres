@@ -4,33 +4,41 @@
 , v8
 , perl
 , postgresql
-# For passthru test on various systems, and local development on macos
-# not we are not currently using passthru tests but retaining for possible contrib
-# to nixpkgs 
-, runCommand
-, coreutils
-, gnugrep
 , clang
 , xcbuild
 , darwin
 , patchelf
 }:
 
-stdenv.mkDerivation (finalAttrs: {
+let
+  source = {
+    "17" = {
+      version = "3.2.2";
+      hash = "sha256-azO33v22EF+/sTNmwswxyDR0PhrvWfTENuLu6JgSGJ0=";
+      patch = ./0001-build-Allow-using-V8-from-system-17.patch;
+    };
+    "15" = {
+      version = "3.1.10";
+      hash = "sha256-g1A/XPC0dX2360Gzvmo9/FSQnM6Wt2K4eR0pH0p9fz4=";
+      patch = ./0001-build-Allow-using-V8-from-system-15.patch;
+    };
+  }.${lib.versions.major postgresql.version} or (throw "Source for pgaudit is not available for ${postgresql.version}");
+in
+stdenv.mkDerivation rec {
   pname = "plv8";
-  version = "3.1.10";
+  version = source.version;
 
   src = fetchFromGitHub {
     owner = "plv8";
     repo = "plv8";
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-g1A/XPC0dX2360Gzvmo9/FSQnM6Wt2K4eR0pH0p9fz4=";
+    rev = source.version;
+    hash = source.hash;
   };
 
   patches = [
     # Allow building with system v8.
     # https://github.com/plv8/plv8/pull/505 (rejected)
-    ./0001-build-Allow-using-V8-from-system.patch
+    source.patch
   ];
 
   nativeBuildInputs = [
@@ -88,8 +96,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   postPatch = ''
     patchShebangs ./generate_upgrade.sh
-    substituteInPlace generate_upgrade.sh \
-      --replace " 2.3.10 " " 2.3.10 2.3.11 2.3.12 2.3.13 2.3.14 2.3.15 "
 
     ${lib.optionalString stdenv.isDarwin ''
       # Replace g++ with clang++ in Makefile
@@ -105,80 +111,17 @@ stdenv.mkDerivation (finalAttrs: {
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
 
     ${lib.optionalString stdenv.isDarwin ''
-      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${source.version}.so
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${source.version}.so
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${source.version}.so
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${source.version}.so
     ''}
 
     ${lib.optionalString (!stdenv.isDarwin) ''
-      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${source.version}.so
     ''}
   '';
 
-  passthru = {
-    tests =
-      let
-        postgresqlWithSelf = postgresql.withPackages (_: [
-          finalAttrs.finalPackage
-        ]);
-      in {
-        smoke = runCommand "plv8-smoke-test" {} ''
-          export PATH=${lib.makeBinPath [
-            postgresqlWithSelf
-            coreutils
-            gnugrep
-          ]}
-          db="$PWD/testdb"
-          initdb "$db"
-          postgres -k "$db" -D "$db" &
-          pid="$!"
-
-          for i in $(seq 1 100); do
-            if psql -h "$db" -d postgres -c "" 2>/dev/null; then
-              break
-            elif ! kill -0 "$pid"; then
-              exit 1
-            else
-              sleep 0.1
-            fi
-          done
-
-          psql -h "$db" -d postgres -c 'CREATE EXTENSION plv8; DO $$ plv8.elog(NOTICE, plv8.version); $$ LANGUAGE plv8;' 2> "$out"
-          grep -q "${finalAttrs.version}" "$out"
-          kill -0 "$pid"
-        '';
-
-        regression = stdenv.mkDerivation {
-          name = "plv8-regression";
-          inherit (finalAttrs) src patches nativeBuildInputs buildInputs dontConfigure;
-
-          buildPhase = ''
-            runHook preBuild
-
-            # The regression tests need to be run in the order specified in the Makefile.
-            echo -e "include Makefile\nprint_regress_files:\n\t@echo \$(REGRESS)" > Makefile.regress
-            REGRESS_TESTS=$(make -f Makefile.regress print_regress_files)
-
-            ${postgresql}/lib/pgxs/src/test/regress/pg_regress \
-              --bindir='${postgresqlWithSelf}/bin' \
-              --temp-instance=regress-instance \
-              --dbname=contrib_regression \
-              $REGRESS_TESTS
-
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-
-            touch "$out"
-
-            runHook postInstall
-          '';
-        };
-      };
-  };
 
   meta = with lib; {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
@@ -187,4 +130,4 @@ stdenv.mkDerivation (finalAttrs: {
     platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     license = licenses.postgresql;
   };
-})
+}

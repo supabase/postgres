@@ -8,7 +8,12 @@
 , cargo
 , darwin
 , jq
+, rust-bin
 }:
+let
+  rustVersion = "1.80.0";
+  rust = rust-bin.stable.${rustVersion}.default;
+in
 
 buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
@@ -23,7 +28,7 @@ buildPgrxExtension_0_11_3 rec {
     rev = "v${version}";
     hash = "sha256-ut3IQED6ANXgabiHoEUdfSrwkuuYYSpRoeWdtBvSe64=";
   };
-  nativeBuildInputs = [ pkg-config cargo ];
+  nativeBuildInputs = [ pkg-config rust ];
   buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
     darwin.apple_sdk.frameworks.Security 
@@ -32,7 +37,8 @@ buildPgrxExtension_0_11_3 rec {
   OPENSSL_NO_VENDOR = 1;
   #need to set this to 2 to avoid cpu starvation
   CARGO_BUILD_JOBS = "2";
-  CARGO="${cargo}/bin/cargo";
+  CARGO = "${rust}/bin/cargo";
+  RUSTC = "${rust}/bin/rustc";
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
     outputHashes = {

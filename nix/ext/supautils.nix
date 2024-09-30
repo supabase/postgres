@@ -9,15 +9,14 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
-    rev = "c10c4d5525828950aaf4356d77881afe55b2fd10";
-    hash = "sha256-P/vZBgZWI0HFqo2S88vCiOBGtVhy3S8NIIXOHgLEdKc=";
+    rev = "refs/tags/v${version}";
+    hash = "sha256-wSUEG0at00TPAoHv6+NMzuUE8mfW6fnHH0MNxvBdUiE=";
   };
-
-  #patches = [ ./pg17.patch ];
 
   installPhase = ''
     mkdir -p $out/lib
-    install -D *${postgresql.dlSuffix} -t $out/lib
+
+    install -D supautils.so -t $out/lib
   '';
 
   meta = with lib; {

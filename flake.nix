@@ -133,10 +133,10 @@
         # go through the upstream release engineering process.
         ourExtensions = [
           ./nix/ext/rum.nix
-          #./nix/ext/timescaledb.nix
-          #./nix/ext/pgroonga.nix
+          ./nix/ext/timescaledb.nix
+          ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
-          #./nix/ext/wal2json.nix
+          ./nix/ext/wal2json.nix
           ./nix/ext/pg_repack.nix
           ./nix/ext/pg-safeupdate.nix
           ./nix/ext/plpgsql-check.nix
@@ -160,8 +160,8 @@
           ./nix/ext/hypopg.nix
           ./nix/ext/pg_tle.nix
           #./nix/ext/wrappers/default.nix
-          #./nix/ext/supautils/supautils.nix
-          #./nix/ext/plv8.nix
+          #./nix/ext/supautils.nix
+          ./nix/ext/plv8.nix
         ];
 
         #Where we import and build the orioledb extension, we add on our custom extensions
@@ -339,7 +339,6 @@
               pkgs.callPackage ./nix/ext/pg_regress.nix { 
                 postgresql = postgresqlPackage;
               };
-
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
@@ -607,8 +606,6 @@
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          #psql_16 = makeCheckHarness basePackages.psql_16.bin;
-          #psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
