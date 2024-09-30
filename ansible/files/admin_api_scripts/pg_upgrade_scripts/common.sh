@@ -357,7 +357,7 @@ begin
                      , case when rec.grantee = 'postgres'::regrole then 'supabase_admin'
                             when rec.grantee = 'supabase_admin'::regrole then 'postgres'
                             when rec.grantee = 0 then 'public'
-                            else rec.grantee::regrole
+                            else rec.grantee::regrole::text
                        end
                      ));
       end if;
@@ -383,7 +383,7 @@ begin
                             when obj->>'objtype' = 'T' then 'types'
                             when obj->>'objtype' = 'n' then 'schemas'
                        end
-                     , case when rec.grantee = 0 then 'public' else rec.grantee::regrole end
+                     , case when rec.grantee = 0 then 'public' else rec.grantee::regrole::text end
                      , case when rec.is_grantable then 'with grant option' else '' end
                      ));
       end if;
