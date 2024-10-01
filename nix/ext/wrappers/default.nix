@@ -79,6 +79,22 @@ buildPgrxExtension_0_11_3 rec {
     else
       echo "Warning: $sql_file not found"
     fi
+
+    echo "Creating wrappers.so symlinks to support pg_upgrade..."
+    lib_file="$out/lib/wrappers-$current_version.so"
+
+    if [ -f "$lib_file" ]; then
+      while read -r previous_version; do
+        if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
+          new_file="$out/lib/wrappers-$previous_version.so"
+          echo "Creating $new_file"
+          ln -s "$lib_file" "$new_file"
+        fi
+      done < git_tags.txt
+    else
+      echo "Warning: $lib_file not found"
+    fi
+
     rm git_tags.txt
   '';
 
