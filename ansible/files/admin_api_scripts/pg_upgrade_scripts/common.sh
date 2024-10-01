@@ -356,7 +356,8 @@ begin
                        end
                      , case when rec.grantee = 'postgres'::regrole then 'supabase_admin'
                             when rec.grantee = 'supabase_admin'::regrole then 'postgres'
-                            else rec.grantee::regrole
+                            when rec.grantee = 0 then 'public'
+                            else rec.grantee::regrole::text
                        end
                      ));
       end if;
@@ -382,7 +383,7 @@ begin
                             when obj->>'objtype' = 'T' then 'types'
                             when obj->>'objtype' = 'n' then 'schemas'
                        end
-                     , rec.grantee::regrole
+                     , case when rec.grantee = 0 then 'public' else rec.grantee::regrole::text end
                      , case when rec.is_grantable then 'with grant option' else '' end
                      ));
       end if;
@@ -529,7 +530,14 @@ $$;
 alter database postgres connection limit -1;
 
 -- #incident-2024-09-12-project-upgrades-are-temporarily-disabled
-grant pg_read_all_data, pg_signal_backend to postgres;
+do $$
+begin
+  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
+    execute('grant pg_read_all_data to postgres');
+  end if;
+end
+$$;
+grant pg_signal_backend to postgres;
 
 set session authorization supabase_admin;
 drop role supabase_tmp;

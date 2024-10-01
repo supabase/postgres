@@ -5,7 +5,6 @@
 , postgresql
 , geos
 , proj
-, gdalMinimal
 , json_c
 , pkg-config
 , file
@@ -17,8 +16,8 @@
 }:
 
 let
-  gdal = gdalMinimal;
   sfcgal = callPackage ./sfcgal/sfcgal.nix { };
+  gdal = callPackage ./gdal.nix { inherit postgresql; };
 in
 stdenv.mkDerivation rec {
   pname = "postgis";
