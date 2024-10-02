@@ -211,7 +211,7 @@ function patch_wrappers {
                     WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
                     if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
                         echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" || true
                     fi
                 fi
             done
@@ -225,7 +225,7 @@ function patch_wrappers {
                     LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
                     if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
                         echo "Copying $WRAPPERS_LIB_PATH to $PGLIBNEW/${LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}" || true
                     fi
                 fi
             fi
