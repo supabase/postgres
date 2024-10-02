@@ -3,16 +3,81 @@
 
 [ ! -z "$DEBUG" ] && set -x
 
+# Default values
+PSQL_VERSION="15"
+MIGRATION_FILE=""
+PORTNO="@PGSQL_DEFAULT_PORT@"
+
+# Function to display help
+print_help() {
+    echo "Usage: nix run .#start-client -- [options]"
+    echo
+    echo "Options:"
+    echo "  -v, --version [15|16|orioledb-16]  Specify the PostgreSQL version to use (required)"
+    echo "  -f, --file FILE                    Provide a custom migration script"
+    echo "  -h, --help                         Show this help message"
+    echo
+    echo "Description:"
+    echo "  This script wraps 'psql' and allows you to specify the PostgreSQL version to use."
+    echo "  If no migration file is provided, it runs the default Supabase migrations."
+    echo
+    echo "Examples:"
+    echo "  nix run .#start-client"
+    echo "  nix run .#start-client -- --version 15"
+    echo "  nix run .#start-client -- --version 16 --file custom_migration.sql"
+    echo "  nix run .#start-client -- --version 16 --port 5433"
+}
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -v|--version)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PSQL_VERSION="$2"
+                shift 2
+            else
+                echo "Error: --version requires an argument (15, 16, or orioledb-16)"
+                exit 1
+            fi
+            ;;
+        -f|--file)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                MIGRATION_FILE="$2"
+                shift 2
+            else
+                echo "Error: --file requires a filename"
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            print_help
+            exit 1
+            ;;
+    esac
+done
+
+# Check if version is provided
+if [[ -z "$PSQL_VERSION" ]]; then
+    echo "Error: PostgreSQL version is required."
+    print_help
+    exit 1
+fi
+
 # Determine PostgreSQL version
-if [ "$1" == "15" ]; then
+if [ "$PSQL_VERSION" == "15" ]; then
     echo "Starting client for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
-elif [ "$1" == "16" ]; then
+elif [ "$PSQL_VERSION" == "16" ]; then
     echo "Starting client for PSQL 16"
     PSQL16=@PSQL16_BINDIR@
     BINDIR="$PSQL16"
-elif [ "$1" == "orioledb-16" ]; then
+elif [ "$PSQL_VERSION" == "orioledb-16" ]; then
     echo "Starting client for PSQL ORIOLEDB 16"
     PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
     BINDIR="$PSQLORIOLEDB16"
@@ -21,20 +86,10 @@ else
     exit 1
 fi
 
-shift 1
-
 #vars for migration.sh
 export PATH=$BINDIR/bin:$PATH
 export POSTGRES_DB=postgres
 export POSTGRES_HOST=localhost
-export POSTGRES_PORT=@PGSQL_DEFAULT_PORT@
-
-# Optional second argument: path to custom migration script
-if [ -n "$1" ]; then
-    MIGRATION_FILE="$1"
-else
-    MIGRATION_FILE=""
-fi
 
 PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
