@@ -120,20 +120,22 @@ cleanup() {
         CI_start_postgres
     fi
 
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     echo "Re-enabling extensions"
     if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
-        run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
+        retry 5 run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
     echo "Removing SUPERUSER grant from postgres"
-    run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
+    retry 5 run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
     echo "Resetting postgres database connection limit"
-    run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
+    retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
-        umount $MOUNT_POINT
+        retry 3 umount $MOUNT_POINT
     fi
     echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
