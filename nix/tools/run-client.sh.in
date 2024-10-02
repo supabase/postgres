@@ -18,7 +18,10 @@ print_help() {
     echo "  -h, --help                         Show this help message"
     echo
     echo "Description:"
-    echo "  This script wraps 'psql' and allows you to specify the PostgreSQL version to use."
+    echo "  Starts an interactive 'psql' session connecting to a Postgres database started with the"
+    echo "  'nix run .#start-server' command. If a migration file is not provided, the client"
+    echo "  initializes the database with the default migrations for a new Supabase project"
+    echo "  if a migrations file is provided, default migrations are skipped"
     echo "  If no migration file is provided, it runs the default Supabase migrations."
     echo
     echo "Examples:"
