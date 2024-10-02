@@ -11,6 +11,7 @@
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
+    "pg_stat_monitor"
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
