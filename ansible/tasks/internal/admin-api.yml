@@ -79,6 +79,11 @@
     src: files/adminapi.service.j2
     dest: /etc/systemd/system/adminapi.service
 
+- name: adminapi - create service file for commence backup process
+  template:
+     src: files/commence-backup.service.j2
+     dest: /etc/systemd/system/commence-backup.service
+
 - name: UFW - Allow connections to adminapi ports
   ufw:
     rule: allow
