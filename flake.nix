@@ -69,7 +69,6 @@
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
           ];
         };
-        postgresql_15 = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
@@ -305,7 +304,7 @@
               pkgs.callPackage ./nix/ext/pg_regress.nix { 
                 postgresql = postgresqlPackage;
               };
-
+          postgresql_15 = getPostgresqlPackage "15";
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
@@ -314,13 +313,13 @@
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          postgresql_15 = pkgs.postgresql_15;
-
+          inherit postgresql_15;
+          postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
-            version = pkgs.postgresql_15.version;
+            version = postgresql_15.version;
 
-            src = pkgs.postgresql_15.src;
+            src = postgresql_15.src;
 
             nativeBuildInputs = [ pkgs.bzip2 ];
 
