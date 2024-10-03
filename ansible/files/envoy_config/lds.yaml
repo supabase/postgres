@@ -255,7 +255,7 @@ resources:
                       - match:
                           safe_regex:
                             regex: >-
-                              /auth/v1/(verify|callback|authorize|sso/saml/(acs|metadata|slo))
+                              /auth/v1/(verify|callback|authorize|sso/saml/(acs|metadata|slo)|\.well-known/(openid-configuration|jwks\.json))
                         route:
                           cluster: gotrue
                           regex_rewrite:
