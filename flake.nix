@@ -103,6 +103,7 @@
           ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
           ./nix/ext/wal2json.nix
+          ./nix/ext/pgmq.nix
           ./nix/ext/pg_repack.nix
           ./nix/ext/pg-safeupdate.nix
           ./nix/ext/plpgsql-check.nix
@@ -119,6 +120,7 @@
           ./nix/ext/pg_hashids.nix
           ./nix/ext/pgsodium.nix
           ./nix/ext/pg_graphql.nix
+          ./nix/ext/pg_partman.nix
           ./nix/ext/pg_stat_monitor.nix
           ./nix/ext/pg_jsonschema.nix
           ./nix/ext/pgvector.nix
