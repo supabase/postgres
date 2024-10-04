@@ -80,6 +80,9 @@ buildPgrxExtension_0_11_3 rec {
       echo "Warning: $sql_file not found"
     fi
     rm git_tags.txt
+    mv $out/lib/wrappers-${version}.so $out/lib/wrappers.so
+    echo "Uncommenting module_pathname in wrappers.control..."
+    sed -i 's/^#module_pathname/module_pathname/' $out/share/postgresql/extension/wrappers.control
   '';
 
   meta = with lib; {
