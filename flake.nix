@@ -38,7 +38,6 @@
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
             (import ./nix/overlays/cargo-pgrx.nix)
-            (import ./nix/overlays/gdal-small.nix)
             (import ./nix/overlays/psql_16-oriole.nix)
 
           ];
@@ -68,15 +67,9 @@
               };
             })
             (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
-            # (import ./nix/overlays/postgis.nix)
-            #(import ./nix/overlays/gdal-small.nix)
-
           ];
         };
-        postgresql_15 = pkgs.postgresql.postgresql_15;
-        postgresql = pkgs.postgresql.postgresql_15;
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
-        pg_regress = pkgs.callPackage ./nix/ext/pg_regress.nix { inherit postgresql; };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
         mecab-naist-jdic = pkgs.callPackage ./nix/ext/mecab-naist-jdic/default.nix { };
         # Our list of PostgreSQL extensions which come from upstream Nixpkgs.
@@ -286,22 +279,49 @@
         # be used with 'nix build'. Don't use the names listed below; check the
         # name in 'nix flake show' in order to make sure exactly what name you
         # want.
-        basePackages = {
+        basePackages = let
+          # Function to get the PostgreSQL version from the attribute name
+          getVersion = name: 
+            let
+              match = builtins.match "psql_([0-9]+)" name;
+            in
+            if match == null then null else builtins.head match;
+
+          # Define the available PostgreSQL versions
+          postgresVersions = {
+            psql_15 = makePostgres "15";
+            # Uncomment the line below to enable PostgreSQL 16
+            # psql_16 = makePostgres "16";
+            # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          };
+
+          # Find the active PostgreSQL version
+          activeVersion = getVersion (builtins.head (builtins.attrNames postgresVersions));
+
+          # Function to create the pg_regress package
+          makePgRegress = version:
+            let
+              postgresqlPackage = pkgs."postgresql_${version}";
+            in
+              pkgs.callPackage ./nix/ext/pg_regress.nix { 
+                postgresql = postgresqlPackage;
+              };
+          postgresql_15 = getPostgresqlPackage "15";
+        in 
+        postgresVersions //{
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
-          #psql_16 = makePostgres "16";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
-          pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          postgresql_15 = pkgs.postgresql_15;
-
+          inherit postgresql_15;
+          postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
-            version = pkgs.postgresql_15.version;
+            version = postgresql_15.version;
 
-            src = pkgs.postgresql_15.src;
+            src = postgresql_15.src;
 
             nativeBuildInputs = [ pkgs.bzip2 ];
 
@@ -321,6 +341,7 @@
           };
           mecab_naist_jdic = mecab-naist-jdic;
           supabase_groonga = supabase-groonga;
+          pg_regress = makePgRegress activeVersion;
           # Start a version of the server.
           start-server =
             let
@@ -457,6 +478,7 @@
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
+            pg_regress = basePackages.pg_regress;
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {

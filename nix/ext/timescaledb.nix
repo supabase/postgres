@@ -1,7 +1,7 @@
-{ lib, stdenv, fetchFromGitHub, cmake, postgresql, openssl, libkrb5, enableUnfree ? true }:
+{ lib, stdenv, fetchFromGitHub, cmake, postgresql, openssl, libkrb5 }:
 
 stdenv.mkDerivation rec {
-  pname = "timescaledb${lib.optionalString (!enableUnfree) "-apache"}";
+  pname = "timescaledb-apache";
   version = "2.16.1";
 
   nativeBuildInputs = [ cmake ];
@@ -14,8 +14,7 @@ stdenv.mkDerivation rec {
     hash = "sha256-sLxWdBmih9mgiO51zLLxn9uwJVYc5JVHJjSWoADoJ+w=";
   };
 
-  cmakeFlags = [ "-DSEND_TELEMETRY_DEFAULT=OFF" "-DREGRESS_CHECKS=OFF" "-DTAP_CHECKS=OFF" ]
-    ++ lib.optionals (!enableUnfree) [ "-DAPACHE_ONLY=ON" ]
+  cmakeFlags = [ "-DSEND_TELEMETRY_DEFAULT=OFF" "-DREGRESS_CHECKS=OFF" "-DTAP_CHECKS=OFF" "-DAPACHE_ONLY=1" ]
     ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
 
   # Fix the install phase which tries to install into the pgsql extension dir,
@@ -38,7 +37,7 @@ stdenv.mkDerivation rec {
     changelog = "https://github.com/timescale/timescaledb/blob/${version}/CHANGELOG.md";
     maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
-    license = with licenses; if enableUnfree then tsl else asl20;
+    license = licenses.asl20;
     broken = versionOlder postgresql.version "13";
   };
 }

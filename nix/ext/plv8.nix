@@ -4,28 +4,32 @@
 , v8
 , perl
 , postgresql
-  # For test
+# For passthru test on various systems, and local development on macos
+# not we are not currently using passthru tests but retaining for possible contrib
+# to nixpkgs 
 , runCommand
 , coreutils
 , gnugrep
 , clang
-, patchelf
 , xcbuild
 , darwin
+, patchelf
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "plv8";
-  version = "3.1.5";
+  version = "3.1.10";
 
   src = fetchFromGitHub {
     owner = "plv8";
     repo = "plv8";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-LodC2eQJSm5fLckrjm2RuejZhmOyQMJTv9b0iPCnzKQ=";
+    hash = "sha256-g1A/XPC0dX2360Gzvmo9/FSQnM6Wt2K4eR0pH0p9fz4=";
   };
 
   patches = [
+    # Allow building with system v8.
+    # https://github.com/plv8/plv8/pull/505 (rejected)
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
@@ -37,9 +41,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
-    (v8.overrideAttrs (oldAttrs: {
-      version = "9.7.106.18";  
-    }))
+    v8
     postgresql
   ] ++ lib.optionals stdenv.isDarwin [
     darwin.apple_sdk.frameworks.CoreFoundation
@@ -49,15 +51,16 @@ stdenv.mkDerivation (finalAttrs: {
   buildFlags = [ "all" ];
 
   makeFlags = [
+    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
     "V8_OUTDIR=${v8}/lib"
-    "PG_CONFIG=${postgresql}/bin/pg_config"
+     "PG_CONFIG=${postgresql}/bin/pg_config"
   ] ++ lib.optionals stdenv.isDarwin [
     "CC=${clang}/bin/clang"
     "CXX=${clang}/bin/clang++"
     "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
   ] ++ lib.optionals (!stdenv.isDarwin) [
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+    "SHLIB_LINK=-lv8"
   ];
 
   NIX_LDFLAGS = (lib.optionals stdenv.isDarwin [
@@ -73,45 +76,31 @@ stdenv.mkDerivation (finalAttrs: {
     "-framework" "Kerberos"
     "-undefined" "dynamic_lookup"
     "-flat_namespace"
-  ]) ++ (lib.optionals (!stdenv.isDarwin) [
-    "-L${postgresql}/lib"
-    "-L${v8}/lib"
-    "-lv8_monolith"
-    "-lpq"
-    "-lpgcommon"
-    "-lpgport"
-  ]);
-
-  NIX_CFLAGS_COMPILE = [
-    "-I${v8}/include"
-    "-I${postgresql}/include"
-    "-I${postgresql}/include/server"
-    "-I${postgresql}/include/internal"
-  ];
+  ]); 
 
   installFlags = [
+    # PGXS only supports installing to postgresql prefix so we need to redirect this
     "DESTDIR=${placeholder "out"}"
   ];
 
+  # No configure script.
   dontConfigure = true;
 
   postPatch = ''
     patchShebangs ./generate_upgrade.sh
     substituteInPlace generate_upgrade.sh \
       --replace " 2.3.10 " " 2.3.10 2.3.11 2.3.12 2.3.13 2.3.14 2.3.15 "
-    
+
     ${lib.optionalString stdenv.isDarwin ''
       # Replace g++ with clang++ in Makefile
       sed -i 's/g++/clang++/g' Makefile
     ''}
   '';
 
-  preBuild = lib.optionalString stdenv.isDarwin ''
-    export CC=${clang}/bin/clang
-    export CXX=${clang}/bin/clang++
-  '';
-
   postInstall = ''
+    # Move the redirected to proper directory.
+    # There appear to be no references to the install directories
+    # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
 
@@ -133,9 +122,8 @@ stdenv.mkDerivation (finalAttrs: {
         postgresqlWithSelf = postgresql.withPackages (_: [
           finalAttrs.finalPackage
         ]);
-      in
-      {
-        smoke = runCommand "plv8-smoke-test" { } ''
+      in {
+        smoke = runCommand "plv8-smoke-test" {} ''
           export PATH=${lib.makeBinPath [
             postgresqlWithSelf
             coreutils
@@ -198,6 +186,5 @@ stdenv.mkDerivation (finalAttrs: {
     maintainers = with maintainers; [ samrose ];
     platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     license = licenses.postgresql;
-    #broken = postgresql.jitSupport;
   };
 })
