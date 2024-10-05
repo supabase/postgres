@@ -593,8 +593,8 @@
         # The list of exported 'checks' that are run with every run of 'nix
         # flake check'. This is run in the CI system, as well.
         checks = {
-          psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          #psql_16 = makeCheckHarness basePackages.psql_16.bin;
+          #psql_15 = makeCheckHarness basePackages.psql_15.bin;
+          psql_16 = makeCheckHarness basePackages.psql_16.bin;
           #psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
         };
 
