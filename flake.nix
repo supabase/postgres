@@ -290,8 +290,7 @@
           # Define the available PostgreSQL versions
           postgresVersions = {
             psql_15 = makePostgres "15";
-            # Uncomment the line below to enable PostgreSQL 16
-            # psql_16 = makePostgres "16";
+            psql_16 = makePostgres "16";
             # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           };
 
@@ -307,21 +306,45 @@
                 postgresql = postgresqlPackage;
               };
           postgresql_15 = getPostgresqlPackage "15";
+          postgresql_16 = getPostgresqlPackage "16";
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
-          psql_15 = makePostgres "15";
+          psql_15 = postgresVersions.psql_15;
+          psql_16 = postgresVersions.psql_16;
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          inherit postgresql_15;
+          inherit postgresql_15 postgresql_16;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
 
             src = postgresql_15.src;
+
+            nativeBuildInputs = [ pkgs.bzip2 ];
+
+            phases = [ "unpackPhase" "installPhase" ];
+
+            installPhase = ''
+              mkdir -p $out
+              cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+              description = "PostgreSQL 15 source files";
+              homepage = "https://www.postgresql.org/";
+              license = licenses.postgresql;
+              platforms = platforms.all;
+            };
+          };
+          postgresql_16_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-16-src";
+            version = postgresql_16.version;
+
+            src = postgresql_16.src;
 
             nativeBuildInputs = [ pkgs.bzip2 ];
 
@@ -397,6 +420,7 @@
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
+                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
                 --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
                 --subst-var-by 'LOGGING_CONF_FILE' "$out/etc/postgresql-custom/logging.conf" \
@@ -425,6 +449,7 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
                 --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
                 --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
@@ -569,7 +594,7 @@
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          #psql_16 = makeCheckHarness basePackages.psql_16.bin;
+          psql_16 = makeCheckHarness basePackages.psql_16.bin;
           #psql_orioledb_16 = makeCheckHarness basePackages.psql_orioledb_16.bin;
         };
 
