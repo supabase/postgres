@@ -71,8 +71,8 @@ where
   and not (e.extname = 'pg_buffercache' and p.proname = 'pg_buffercache_usage_counts')
   and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_block_info')
   -- removed in pg16
-  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_records_info_til_end_of_wal')
-  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_stats_til_end_of_wal')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_records_info_till_end_of_wal')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_stats_till_end_of_wal')
   -- changed in pg16 - output signature added a column
   and not (e.extname = 'pageinspect' and p.proname = 'brin_page_items')
 order by
