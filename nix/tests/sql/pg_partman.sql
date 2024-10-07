@@ -35,7 +35,10 @@ select
 from
   information_schema.tables
 where
-  table_schema = 'partman_test';
+  table_schema = 'partman_test'
+order by
+  table_name,
+  table_type;
 
 
 select public.create_parent(
