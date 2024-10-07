@@ -44,7 +44,7 @@ postBuild = lib.optionalString (stdenv.isDarwin && lib.versionAtLeast postgresql
 '';
 
   installPhase = ''
-    install -D lib/*{dylib,so} -t $out/lib
+    install -D lib/*${postgresql.dlSuffix} -t $out/lib
     install -D sql/pgrouting--*.sql -t $out/share/postgresql/extension
     install -D sql/common/pgrouting.control -t $out/share/postgresql/extension
   '';
