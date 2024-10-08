@@ -56,7 +56,7 @@ jobs:
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
