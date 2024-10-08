@@ -30,7 +30,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- eval '.postgres_major[]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
@@ -64,7 +64,7 @@ jobs:
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- eval '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
@@ -75,7 +75,7 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- eval '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq --  '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml)
           echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1
