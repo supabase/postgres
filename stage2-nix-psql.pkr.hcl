@@ -46,6 +46,11 @@ variable "git_sha" {
   default = env("GIT_SHA")
 }
 
+variable "postgres_major_version" {
+  type    = string
+  default = ""
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -133,7 +138,8 @@ build {
   
   provisioner "shell" {
     environment_vars = [
-      "GIT_SHA=${var.git_sha}"
+      "GIT_SHA=${var.git_sha}",
+      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
      script = "scripts/nix-provision.sh"
   }
