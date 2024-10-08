@@ -25,6 +25,7 @@ jobs:
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod a+x /usr/local/bin/yq
+          echo "PATH=/usr/local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -58,6 +59,7 @@ jobs:
         run: |
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod a+x /usr/local/bin/yq
+          echo "PATH=/usr/local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
