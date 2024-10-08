@@ -2,9 +2,17 @@ supabase_internal: true
 ebssurrogate_mode: true
 async_mode: true
 
-postgresql_major: "15"
-postgresql_release: "15.1"
-postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
+# postgresql_major: "15"
+# postgresql_release: "15.1"
+# postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
+postgres_major:
+  - "15"
+  - "16"
+
+# Full version strings for each major version
+postgres_release:
+  postgres15: "15.8.1.003"
+  postgres16: "16.2.0.001"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"

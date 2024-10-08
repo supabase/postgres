@@ -30,11 +30,32 @@ function execute_stage2_playbook {
 callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
     sed -i 's/- hosts: all/- hosts: localhost/' /tmp/ansible-playbook/ansible/playbook.yml
+
+    # Set psql_version and postgresql_version based on POSTGRES_MAJOR_VERSION
+    case "${POSTGRES_MAJOR_VERSION}" in
+        15)
+            psql_version="psql_15"
+            postgresql_version="postgresql15"
+            ;;
+        16)
+            psql_version="psql_16"
+            postgresql_version="postgresql16"
+            ;;
+        *)
+            echo "Error: Unsupported POSTGRES_MAJOR_VERSION: ${POSTGRES_MAJOR_VERSION}"
+            exit 1
+            ;;
+    esac
+
     # Run Ansible playbook
     export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
     ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
         --extra-vars '{"nixpkg_mode": false, "stage2_nix": true, "debpkg_mode": false}' \
         --extra-vars "git_commit_sha=${GIT_SHA}" \
+        --extra-vars "psql_version=${psql_version}" \
+        --extra-vars "postgresql_version=${postgresql_version}" \
+        --extra-vars "nix_secret_key=${NIX_SECRET_KEY}" \
+        --extra-vars "postgres_major_version=${POSTGRES_MAJOR_VERSION}" \
         $ARGS
 }
 
