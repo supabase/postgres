@@ -33,11 +33,11 @@ EOF
 
     # Set psql_version and postgresql_version based on POSTGRES_MAJOR_VERSION
     case "${POSTGRES_MAJOR_VERSION}" in
-        15)
+        "15")
             psql_version="psql_15"
             postgresql_version="postgresql15"
             ;;
-        16)
+        "16")
             psql_version="psql_16"
             postgresql_version="postgresql16"
             ;;
@@ -55,7 +55,7 @@ EOF
         --extra-vars "psql_version=${psql_version}" \
         --extra-vars "postgresql_version=${postgresql_version}" \
         --extra-vars "nix_secret_key=${NIX_SECRET_KEY}" \
-        --extra-vars "postgres_major_version=${POSTGRES_MAJOR_VERSION}" \
+        --extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
         $ARGS
 }
 
