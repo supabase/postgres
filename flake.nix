@@ -318,6 +318,7 @@
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           inherit postgresql_15 postgresql_16;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
+          postgresql_16_debug = if pkgs.stdenv.isLinux then postgresql_16.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
