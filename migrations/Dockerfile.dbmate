@@ -1,0 +1,10 @@
+FROM amacneil/dbmate:1.16.2
+
+# Install PostgreSQL 16 client
+RUN apt-get update && apt-get install -y wget gnupg2 lsb-release
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
+RUN apt-get update && apt-get install -y postgresql-client-%VERSION%
+
+# Set the PATH to use the new PostgreSQL 16 binaries
+ENV PATH="/usr/lib/postgresql/%VERSION%/bin:${PATH}"

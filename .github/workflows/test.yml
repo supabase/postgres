@@ -150,6 +150,10 @@ jobs:
           PGUSER: supabase_admin
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
+      - name: Update Dockerfile.dbmate version
+        run: |
+          sed -i 's/%VERSION%/${{ env.PGMAJOR }}/g' migrations/Dockerfile.dbmate
+
       - name: verify schema.sql is committed
         run: |
           docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
