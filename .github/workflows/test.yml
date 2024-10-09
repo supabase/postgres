@@ -100,7 +100,7 @@ jobs:
       - name: Install psql
         run: |
           sudo apt update
-          sudo apt install -y --no-install-recommends postgresql-client-{{ env.PGMAJOR }}
+          sudo apt install -y --no-install-recommends postgresql-client-${{ env.PGMAJOR }}
 
       - name: Install pg_prove
         run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
