@@ -75,7 +75,7 @@ jobs:
         with:
           load: true
           context: .
-          file: "Dockerfile-156"
+          file: "Dockerfile-{{ matrix.postgres_version }}"
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
