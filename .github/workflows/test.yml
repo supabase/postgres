@@ -8,9 +8,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL versions
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+
   build:
+    needs: prepare
     strategy:
       matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
           - runner: [self-hosted, X64]
             arch: amd64
@@ -23,14 +41,31 @@ jobs:
       POSTGRES_PASSWORD: password
     steps:
       - uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL version environment variable
+        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
+          echo "" >> common-nix.vars.pkr.hcl
+
       - id: settings
         # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
 
-      - id: args
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
+      - name: Generate args
+        id: args
+        run: |
+          ARGS=$(nix run nixpkgs#yq -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$ARGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v3
