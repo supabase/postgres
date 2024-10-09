@@ -79,7 +79,7 @@ jobs:
         with:
           load: true
           context: .
-          file: Dockerfile-${{ env.STRIPPED_VERSION }}
+          file: Dockerfile-${{ env.PGMAJOR }}
           target: production
           build-args: |
             ${{ steps.args.outputs.result }}
