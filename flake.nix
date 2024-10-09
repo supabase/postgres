@@ -459,6 +459,13 @@
               --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}'
             chmod +x $out/bin/start-postgres-replica
           '';
+          pg-restore =
+            pkgs.runCommand "run-pg-restore" { } ''
+              mkdir -p $out/bin
+              substitute ${./nix/tools/run-restore.sh.in} $out/bin/pg-restore \
+                --subst-var-by PSQL15_BINDIR '${basePackages.psql_15.bin}'
+              chmod +x $out/bin/pg-restore
+            '';
           sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
             mkdir -p $out/bin
             substitute ${./nix/tools/sync-exts-versions.sh.in} $out/bin/sync-exts-versions \
@@ -589,6 +596,7 @@
             start-replica = mkApp "start-replica" "start-postgres-replica";
             migration-test = mkApp "migrate-tool" "migrate-postgres";
             sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
+            pg-restore = mkApp "pg-restore" "pg-restore";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
