@@ -97,9 +97,13 @@ jobs:
           -p ${{ env.POSTGRES_PORT }}:5432 \
           --name supabase_postgres \
           -d supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+
       - name: Install psql
         run: |
-          sudo nix profile install .#psql_${{ env.PGMAJOR }}/bin
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt update
+          sudo apt install -y --no-install-recommends postgresql-client-${{ env.PGMAJOR }}
 
       - name: Install pg_prove
         run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
