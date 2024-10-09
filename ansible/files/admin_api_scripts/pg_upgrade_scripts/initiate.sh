@@ -11,6 +11,7 @@
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
+    "pg_stat_monitor"
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -119,20 +120,22 @@ cleanup() {
         CI_start_postgres
     fi
 
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     echo "Re-enabling extensions"
     if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
-        run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
+        retry 5 run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
     fi
 
     echo "Removing SUPERUSER grant from postgres"
-    run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
+    retry 5 run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
     echo "Resetting postgres database connection limit"
-    run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
+    retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
-        umount $MOUNT_POINT
+        retry 3 umount $MOUNT_POINT
     fi
     echo "$UPGRADE_STATUS" > /tmp/pg-upgrade-status
 
@@ -208,7 +211,7 @@ function patch_wrappers {
                     WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
                     if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
                         echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" || true
                     fi
                 fi
             done
@@ -222,7 +225,7 @@ function patch_wrappers {
                     LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
                     if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
                         echo "Copying $WRAPPERS_LIB_PATH to $PGLIBNEW/${LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}"
+                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}" || true
                     fi
                 fi
             fi

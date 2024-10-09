@@ -19,7 +19,7 @@ grant all privileges on all sequences in schema tiger, tiger_data to postgres wi
 alter default privileges in schema tiger, tiger_data grant all on tables to postgres with grant option;
 alter default privileges in schema tiger, tiger_data grant all on routines to postgres with grant option;
 alter default privileges in schema tiger, tiger_data grant all on sequences to postgres with grant option;
-
+SET search_path TO extensions, public, tiger, tiger_data;
 -- postgres role should have access
 set local role postgres;
 select tiger.pprint_addy(tiger.pagc_normalize_address('710 E Ben White Blvd, Austin, TX 78704'));

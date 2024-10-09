@@ -254,8 +254,10 @@ resources:
                               type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
                       - match:
                           safe_regex:
+                            google_re2:
+                              max_program_size: 150
                             regex: >-
-                              /auth/v1/(verify|callback|authorize|sso/saml/(acs|metadata|slo))
+                              /auth/v1/(verify|callback|authorize|sso/saml/(acs|metadata|slo)|\.well-known/(openid-configuration|jwks\.json))
                         route:
                           cluster: gotrue
                           regex_rewrite:

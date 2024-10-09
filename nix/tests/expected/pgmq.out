@@ -1,0 +1,143 @@
+-- Test the standard flow
+select
+  pgmq.create('Foo');
+ create 
+--------
+ 
+(1 row)
+
+select
+  *
+from
+  pgmq.send(
+    queue_name:='Foo',
+    msg:='{"foo": "bar1"}'
+  );
+ send 
+------
+    1
+(1 row)
+
+-- Test queue is not case sensitive
+select
+  msg_id,
+  read_ct,
+  message
+from
+  pgmq.send(
+    queue_name:='foo', -- note: lowercase useage
+    msg:='{"foo": "bar2"}',
+    delay:=5
+  );
+ERROR:  column "msg_id" does not exist
+LINE 2:   msg_id,
+          ^
+select
+  msg_id,
+  read_ct,
+  message
+from
+  pgmq.read(
+    queue_name:='Foo',
+    vt:=30,
+    qty:=2
+  );
+ msg_id | read_ct |     message     
+--------+---------+-----------------
+      1 |       1 | {"foo": "bar1"}
+(1 row)
+
+select
+  msg_id,
+  read_ct,
+  message
+from 
+  pgmq.pop('Foo');
+ msg_id | read_ct | message 
+--------+---------+---------
+(0 rows)
+
+-- Archive message with msg_id=2.
+select
+  pgmq.archive(
+    queue_name:='Foo',
+    msg_id:=2
+  );
+ archive 
+---------
+ f
+(1 row)
+
+select
+  pgmq.create('my_queue');
+ create 
+--------
+ 
+(1 row)
+
+select
+  pgmq.send_batch(
+  queue_name:='my_queue',
+  msgs:=array['{"foo": "bar3"}','{"foo": "bar4"}','{"foo": "bar5"}']::jsonb[]
+);
+ send_batch 
+------------
+          1
+          2
+          3
+(3 rows)
+
+select
+  pgmq.archive(
+    queue_name:='my_queue',
+    msg_ids:=array[3, 4, 5]
+  );
+ archive 
+---------
+       3
+(1 row)
+
+select
+  pgmq.delete('my_queue', 6);
+ delete 
+--------
+ f
+(1 row)
+
+select
+  pgmq.drop_queue('my_queue');
+ drop_queue 
+------------
+ t
+(1 row)
+
+select
+  pgmq.create_partitioned(
+    'my_partitioned_queue',
+    '5 seconds',
+    '10 seconds'
+);
+ create_partitioned 
+--------------------
+ 
+(1 row)
+
+-- Make sure SQLI enabling characters are blocked
+select pgmq.create('F--oo');
+ERROR:  queue name contains invalid characters: $, ;, --, or \'
+CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
+PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
+SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
+PL/pgSQL function pgmq."create"(text) line 3 at PERFORM
+select pgmq.create('F$oo');
+ERROR:  queue name contains invalid characters: $, ;, --, or \'
+CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
+PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
+SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
+PL/pgSQL function pgmq."create"(text) line 3 at PERFORM
+select pgmq.create($$F'oo$$);
+ERROR:  queue name contains invalid characters: $, ;, --, or \'
+CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
+PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
+SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
+PL/pgSQL function pgmq."create"(text) line 3 at PERFORM

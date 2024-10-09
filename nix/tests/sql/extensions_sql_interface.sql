@@ -97,5 +97,6 @@ where
   and pc.relkind in ('r', 'v', 'm', 'i')
 order by
   e.extname,
+  n.nspname,
   pc.relname,
   pa.attname;

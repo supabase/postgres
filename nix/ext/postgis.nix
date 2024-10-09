@@ -5,7 +5,6 @@
 , postgresql
 , geos
 , proj
-, gdalMinimal
 , json_c
 , pkg-config
 , file
@@ -17,18 +16,18 @@
 }:
 
 let
-  gdal = gdalMinimal;
   sfcgal = callPackage ./sfcgal/sfcgal.nix { };
+  gdal = callPackage ./gdal.nix { inherit postgresql; };
 in
 stdenv.mkDerivation rec {
   pname = "postgis";
-  version = "3.3.2";
+  version = "3.3.7";
 
   outputs = [ "out" "doc" ];
 
   src = fetchurl {
     url = "https://download.osgeo.org/postgis/source/postgis-${version}.tar.gz";
-    sha256 = "sha256-miohnaAFoXMKOdGVmhx87GGbHvsAm2W+gP/CW60pkGg=";
+    sha256 = "sha256-UHJKDd5JrcJT5Z4CTYsY/va+ToU0GUPG1eHhuXTkP84=";
   };
 
   buildInputs = [ libxml2 postgresql geos proj gdal json_c protobufc pcre2.dev sfcgal ]
