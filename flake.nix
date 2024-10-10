@@ -141,8 +141,6 @@
         #postgis_override = pkgs.postgis_override;
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
-        #we will add supported versions to this list in the future
-        supportedVersions = [ "15" ];
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
