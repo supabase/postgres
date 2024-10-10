@@ -166,7 +166,7 @@
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
         orioledbExtension = ourExtensions ++ [ ./nix/ext/orioledb.nix ];
-
+        withPgduckdb = ourExtensions ++ [ ./nix/ext/pg_duckdb.nix ];
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
         #postgis_override = pkgs.postgis_override;
@@ -213,8 +213,18 @@
           in map (path: pkgs.callPackage path { inherit postgresql; }) orioledbExtension;
 
         makeOurPostgresPkgs = version:
-          let postgresql = getPostgresqlPackage version;
-          in map (path: pkgs.callPackage path { inherit postgresql; }) ourExtensions;
+          let 
+            postgresql = getPostgresqlPackage version;
+            # Compare versions:
+            # builtins.compareVersions returns:
+            #  -1 if version < "16"
+            #   0 if version = "16"
+            #   1 if version > "16"
+            # So, >= 0 means version is at least "16"
+            extensions = if builtins.compareVersions version "16" >= 0
+                        then withPgduckdb
+                        else ourExtensions;
+          in map (path: pkgs.callPackage path { inherit postgresql; }) extensions;
 
         # Create an attrset that contains all the extensions included in a server for the orioledb version of postgresql + extension.
         makeOurOrioleDbPostgresPkgsSet = version: patchedPostgres:
