@@ -3,9 +3,8 @@ name: Release AMI Nix
 on:
   push:
     branches:
-      #- develop
-      #- release/*
-      - sam/15-16-ghactions
+      - develop
+      - release/*
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'

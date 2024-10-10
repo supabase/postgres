@@ -161,6 +161,6 @@ jobs:
           docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
           if ! git diff --exit-code --quiet migrations/schema.sql; then
             echo "Detected changes in schema.sql:"
-            git diff 
+            git diff migrations/schema.sql
             exit 1
           fi
