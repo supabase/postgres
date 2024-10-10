@@ -151,12 +151,10 @@ jobs:
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
       - name: Update Dockerfile.dbmate version
-        if: env.PGMAJOR == '15'
         run: |
           sed -i 's/%VERSION%/${{ env.PGMAJOR }}/g' migrations/Dockerfile.dbmate
 
       - name: verify schema.sql is committed
-        if: env.PGMAJOR == '15'
         run: |
           docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
           if ! git diff --exit-code --quiet migrations/schema.sql; then
