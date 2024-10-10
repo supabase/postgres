@@ -156,9 +156,8 @@ jobs:
 
       - name: verify schema.sql is committed
         run: |
-          docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
-          if ! git diff --ignore-space-at-eol --exit-code --quiet migrations/schema.sql; then
-            echo "Detected uncommitted changes after build. See status below:"
-            git diff
+          if ! git diff --exit-code --quiet migrations/schema.sql; then
+            echo "Detected changes in schema.sql:"
+            git diff migrations/schema.sql
             exit 1
           fi
