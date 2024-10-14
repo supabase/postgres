@@ -47,7 +47,6 @@ SERVER_ENCODING=$(run_sql -A -t -c "SHOW server_encoding;")
 
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
-PGLIBOLD="/usr/lib/postgresql/lib"
 
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
