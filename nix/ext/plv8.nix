@@ -104,6 +104,7 @@ stdenv.mkDerivation (finalAttrs: {
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
     mv "$out/lib/plv8-${finalAttrs.version}.so" "$out/lib/plv8.so"
+    ln -s "$out/lib/plv8.so" "$out/lib/plv8-${finalAttrs.version}.so"
     sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plv8.control"
     sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plcoffee.control"
     sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plls.control"

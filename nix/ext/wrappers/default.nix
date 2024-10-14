@@ -63,41 +63,52 @@ buildPgrxExtension_0_11_3 rec {
     echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
   '';
 
-  postInstall = ''
-    echo "Creating SQL files for previous versions..."
-    current_version="${version}"
-    sql_file="$out/share/postgresql/extension/wrappers--$current_version.sql"
-    
-    if [ -f "$sql_file" ]; then
-      while read -r previous_version; do
-        if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
-          new_file="$out/share/postgresql/extension/wrappers--$previous_version--$current_version.sql"
-          echo "Creating $new_file"
-          cp "$sql_file" "$new_file"
-        fi
-      done < git_tags.txt
-    else
-      echo "Warning: $sql_file not found"
-    fi
-    mv $out/lib/wrappers-${version}.so $out/lib/wrappers.so
+ postInstall = ''
+   echo "Modifying main SQL file to use unversioned library name..."
+   current_version="${version}"
+   main_sql_file="$out/share/postgresql/extension/wrappers--$current_version.sql"
+   if [ -f "$main_sql_file" ]; then
+     sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$main_sql_file"
+     echo "Modified $main_sql_file"
+   else
+     echo "Warning: $main_sql_file not found"
+   fi
+   echo "Creating and modifying SQL files for previous versions..."
+   
+   if [ -f "$main_sql_file" ]; then
+     while read -r previous_version; do
+       if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
+         new_file="$out/share/postgresql/extension/wrappers--$previous_version--$current_version.sql"
+         echo "Creating $new_file"
+         cp "$main_sql_file" "$new_file"
+         sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
+         echo "Modified $new_file"
+       fi
+     done < git_tags.txt
+   else
+     echo "Warning: $main_sql_file not found"
+   fi
+   mv $out/lib/wrappers-${version}.so $out/lib/wrappers.so
+ 
+  echo "Creating wrappers.so symlinks to support pg_upgrade..."
+  if [ -f "$out/lib/wrappers.so" ]; then
+    while read -r previous_version; do
+      if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
+        new_file="$out/lib/wrappers-$previous_version.so"
+        echo "Creating $new_file"
+        ln -s "$out/lib/wrappers.so" "$new_file"
+      fi
+    done < git_tags.txt
+  else
+    echo "Warning: $out/lib/wrappers.so not found"
+  fi
 
-    echo "Creating wrappers.so symlinks to support pg_upgrade..."
-    if [ -f "$out/lib/wrappers.so" ]; then
-      while read -r previous_version; do
-        if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
-          new_file="$out/lib/wrappers-$previous_version.so"
-          echo "Creating $new_file"
-          ln -s "$out/lib/wrappers.so" "$new_file"
-        fi
-      done < git_tags.txt
-    else
-      echo "Warning: $out/lib/wrappers.so not found"
-    fi
-    
-    rm git_tags.txt
-    echo "Uncommenting module_pathname in wrappers.control..."
-    sed -i 's/^#module_pathname/module_pathname/' $out/share/postgresql/extension/wrappers.control
-  '';
+   rm git_tags.txt
+   echo "Contents of updated wrappers.control:"
+   cat "$out/share/postgresql/extension/wrappers.control"
+   echo "List of generated SQL files:"
+   ls -l $out/share/postgresql/extension/wrappers--*.sql
+ '';
 
   meta = with lib; {
     description = "Various Foreign Data Wrappers (FDWs) for PostreSQL";
