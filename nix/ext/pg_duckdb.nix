@@ -35,7 +35,7 @@ let
     sha256 = "sha256-JoGGnlu2aioO6XbeUZDe23AHSBxciLSEKBWRedPuXjI=";
   };
 
-  # Build DuckDB
+
   ourDuckdb = stdenv.mkDerivation rec {
     pname = "duckdb";
     version = duckdbVersion;
@@ -46,6 +46,8 @@ let
     cmakeFlags = [
       "-DCMAKE_BUILD_TYPE=Release"
       "-DBUILD_SHARED_LIBS=ON"
+      "-DCMAKE_CXX_VISIBILITY_PRESET=default"
+      "-DBUILD_EXTENSIONS='parquet;icu;tpch;tpcds;fts;json;httpfs'"
     ];
 
     installPhase = ''
@@ -65,7 +67,6 @@ let
       patchelf --print-rpath "$out/lib/libsqlite3_api_wrapper.so"
     '';
   };
-
 in
 stdenv.mkDerivation rec {
   pname = "pg_duckdb";
@@ -128,7 +129,7 @@ stdenv.mkDerivation rec {
 
   NIX_CXXFLAGS_COMPILE = NIX_CFLAGS_COMPILE;
 
-  prePatch = ''
+prePatch = ''
     mkdir -p third_party/duckdb
     cp -r ${ourDuckdb}/include/* third_party/duckdb/
     cp -r ${ourDuckdb}/include/duckdb/* third_party/duckdb/
@@ -139,15 +140,24 @@ stdenv.mkDerivation rec {
     sed -i 's|FULL_DUCKDB_LIB = .*|FULL_DUCKDB_LIB = ${ourDuckdb}/lib/libduckdb.so|' Makefile
     sed -i 's|duckdb: third_party/duckdb/Makefile $(FULL_DUCKDB_LIB)|duckdb: $(FULL_DUCKDB_LIB)|' Makefile
     sed -i '/third_party\/duckdb\/Makefile:/,/git submodule update --init --recursive/d' Makefile
-    sed -i '/$(FULL_DUCKDB_LIB):/,/EXTENSION_CONFIGS=/ {
-      /$(FULL_DUCKDB_LIB):/!d
-      /$(FULL_DUCKDB_LIB):/c\
+    sed -i '
+    /^duckdb:/,/^[^ \t]/ {
+      /^duckdb:/b
+      /^[^ \t]/b
+      d
+    }
+    /^duckdb:/ {
+      c\
+    duckdb: $(FULL_DUCKDB_LIB)\
     $(FULL_DUCKDB_LIB):\
-    \t@echo "Using pre-built DuckDB from ${ourDuckdb}/lib/libduckdb.so"
-    }' Makefile
-
+      @echo "Using pre-built DuckDB from ${ourDuckdb}/lib/libduckdb.so"
+    }
+    ' Makefile
     sed -i 's|third_party/duckdb/Makefile||g' Makefile
     sed -i 's|^CPPFLAGS =.*|& -I${lz4.dev}/include|' Makefile
+
+    #ls -R 
+
   '';
 
   preConfigure = ''
@@ -166,7 +176,7 @@ stdenv.mkDerivation rec {
       PGXS=${postgresql}/lib/pgxs/src/makefiles/pgxs.mk \
       PG_LIB=${postgresql.lib}/lib \
       FULL_DUCKDB_LIB=${ourDuckdb}/lib/libduckdb.so \
-      SHLIB_LINK="-Wl,-rpath,${placeholder "out"}/lib" \
+      SHLIB_LINK="-Wl,-rpath,${ourDuckdb}/lib -L${ourDuckdb}/lib -lduckdb" \
       USE_OPENSSL=1 \
       USE_ICU=1 \
       USE_LIBXML=1 \
@@ -178,10 +188,10 @@ stdenv.mkDerivation rec {
     cp *.so $out/lib/
     cp *.control $out/share/postgresql/extension/
     cp sql/*.sql $out/share/postgresql/extension/
+
   '';
 
   postFixup = ''
-    patchelf --remove-rpath $out/lib/pg_duckdb.so
     patchelf --set-rpath "${lib.makeLibraryPath buildInputs}" $out/lib/pg_duckdb.so
   '';
 

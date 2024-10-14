@@ -1,3 +1,17 @@
+CREATE OR REPLACE FUNCTION create_pg_duckdb_if_compatible() RETURNS void AS $$
+DECLARE
+    pg_version INTEGER;
+BEGIN
+    SELECT current_setting('server_version_num')::integer INTO pg_version;
+    
+    IF pg_version >= 160000 THEN
+        EXECUTE 'CREATE EXTENSION IF NOT EXISTS pg_duckdb';
+    ELSE
+        RAISE NOTICE 'PostgreSQL version is below 16. pg_duckdb extension not created.';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 create role postgres;
 create extension address_standardizer;
 create extension address_standardizer_data_us;
@@ -89,3 +103,5 @@ create extension "uuid-ossp";
 create extension vector;
 create extension wrappers;
 create extension xml2;
+
+SELECT create_pg_duckdb_if_compatible();
