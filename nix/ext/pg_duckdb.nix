@@ -22,16 +22,17 @@
 , glib
 , ncurses
 , patchelf
+, icu
+, gcc
 }:
 
-
 let
-  duckdbVersion = "17d598fc4472c64969f47f86c30fce75c4d64ed4";
+  duckdbVersion = "v1.1.2";
   duckdbSource = fetchFromGitHub {
     owner = "duckdb";
     repo = "duckdb";
     rev = "${duckdbVersion}";
-    sha256 = "sha256-/j/DaUzsfACI5Izr4lblkYmIEmKsOXr760UTwC0l/qg=";
+    sha256 = "sha256-JoGGnlu2aioO6XbeUZDe23AHSBxciLSEKBWRedPuXjI=";
   };
 
   # Build DuckDB
@@ -62,9 +63,7 @@ let
       patchelf --remove-rpath $out/lib/libsqlite3_api_wrapper.so
       patchelf --set-rpath "${lib.makeLibraryPath buildInputs}" $out/lib/libsqlite3_api_wrapper.so
       patchelf --print-rpath "$out/lib/libsqlite3_api_wrapper.so"
-
     '';
-
   };
 
 in
@@ -74,17 +73,17 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "duckdb";
     repo = "pg_duckdb";
-    rev = "main";
-    sha256 = "sha256-QhU1Tme1P2ujturF8IpUM28DFhsgE83Xh7FpHiG7UVk=";
+    rev = "7eb10c7574f5bc9c570f008e295bc9e895c55144";
+    sha256 = "sha256-WlBwSbHtdrf+iSYlQ+V2aAJqwn8rBmVFf9ASbXxnJXc=";
   };
 
-  nativeBuildInputs = [ 
-    pkg-config 
-    autoPatchelfHook 
-    git 
-    flex 
+  nativeBuildInputs = [
+    pkg-config
+    autoPatchelfHook
+    git
+    flex
     bison
-    gcc-unwrapped
+    gcc
   ];
 
   buildInputs = [
@@ -103,6 +102,8 @@ stdenv.mkDerivation rec {
     glib
     ncurses
     patchelf
+    gcc.cc.lib
+    icu
   ];
 
   NIX_CFLAGS_COMPILE = toString ([
@@ -113,10 +114,19 @@ stdenv.mkDerivation rec {
     "-I${glibc.dev}/include"
     "-I${stdenv.cc.cc}/include"
     "-I${stdenv.cc.libc.dev}/include"
+    "-I${lz4.dev}/include"
+    "-I${icu.dev}/include"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}/${stdenv.hostPlatform.config}"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}/backward"
     "-isystem ${stdenv.cc.libc.dev}/include"
     "-Wno-error"
     "-Wno-error=deprecated-declarations"
+    "-DUSE_ASSERT_CHECKING"
+    "-DUSE_DEBUG"
   ]);
+
+  NIX_CXXFLAGS_COMPILE = NIX_CFLAGS_COMPILE;
 
   prePatch = ''
     mkdir -p third_party/duckdb
@@ -132,15 +142,23 @@ stdenv.mkDerivation rec {
     sed -i '/$(FULL_DUCKDB_LIB):/,/EXTENSION_CONFIGS=/ {
       /$(FULL_DUCKDB_LIB):/!d
       /$(FULL_DUCKDB_LIB):/c\
-$(FULL_DUCKDB_LIB):\
-\t@echo "Using pre-built DuckDB from ${ourDuckdb}/lib/libduckdb.so"
+    $(FULL_DUCKDB_LIB):\
+    \t@echo "Using pre-built DuckDB from ${ourDuckdb}/lib/libduckdb.so"
     }' Makefile
 
     sed -i 's|third_party/duckdb/Makefile||g' Makefile
+    sed -i 's|^CPPFLAGS =.*|& -I${lz4.dev}/include|' Makefile
+  '';
+
+  preConfigure = ''
+    export CPATH="${lib.makeSearchPathOutput "dev" "include" buildInputs}:$CPATH"
+    export LIBRARY_PATH="${lib.makeLibraryPath buildInputs}:$LIBRARY_PATH"
+    export LD_LIBRARY_PATH="${lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH"
+    export C_INCLUDE_PATH="${glibc.dev}/include:${stdenv.cc.cc}/include:$C_INCLUDE_PATH"
+    export CPLUS_INCLUDE_PATH="${glibc.dev}/include:${stdenv.cc.cc}/include:$CPLUS_INCLUDE_PATH"
   '';
 
   buildPhase = ''
-    runHook preBuild
     make USE_PGXS=1 \
       PG_CONFIG=${postgresql}/bin/pg_config \
       INCLUDEDIR=${postgresql}/include \
@@ -148,37 +166,23 @@ $(FULL_DUCKDB_LIB):\
       PGXS=${postgresql}/lib/pgxs/src/makefiles/pgxs.mk \
       PG_LIB=${postgresql.lib}/lib \
       FULL_DUCKDB_LIB=${ourDuckdb}/lib/libduckdb.so \
-      SHLIB_LINK="-Wl,-rpath,''\" \
-      CPPFLAGS="-I${ourDuckdb}/include -I${ourDuckdb}/include/duckdb"
-    runHook postBuild
+      SHLIB_LINK="-Wl,-rpath,${placeholder "out"}/lib" \
+      USE_OPENSSL=1 \
+      USE_ICU=1 \
+      USE_LIBXML=1 \
+      USE_LZ4=1
   '';
 
   installPhase = ''
-    runHook preInstall
     mkdir -p $out/lib $out/share/postgresql/extension
     cp *.so $out/lib/
     cp *.control $out/share/postgresql/extension/
     cp sql/*.sql $out/share/postgresql/extension/
-    runHook postInstall
   '';
 
   postFixup = ''
-    echo "Before patchelf:"
-    patchelf --print-rpath $out/lib/pg_duckdb.so
-
     patchelf --remove-rpath $out/lib/pg_duckdb.so
     patchelf --set-rpath "${lib.makeLibraryPath buildInputs}" $out/lib/pg_duckdb.so
-
-    echo "After patchelf:"
-    patchelf --print-rpath $out/lib/pg_duckdb.so
-
-    rpath=$(patchelf --print-rpath $out/lib/pg_duckdb.so)
-    echo "RPATH for pg_duckdb.so: $rpath"
-
-    if [[ "$rpath" == *"/build/"* ]]; then
-      echo "Error: RPATH still contains /build/ path"
-      exit 1
-    fi
   '';
 
   meta = with lib; {
@@ -186,6 +190,6 @@ $(FULL_DUCKDB_LIB):\
     homepage = "https://github.com/duckdb/pg_duckdb";
     license = licenses.mit;
     platforms = platforms.linux;
-    maintainers = with maintainers; [ ];
+    maintainers = with maintainers; [ samrose ];
   };
 }
