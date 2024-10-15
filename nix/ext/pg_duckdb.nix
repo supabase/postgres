@@ -26,7 +26,7 @@
 , gcc
 , darwin
 }:
-
+#first we need to build duckdb from source so this we create a derivation for duckdb
 let
   duckdbVersion = "v1.1.2";
   duckdbSource = fetchFromGitHub {
@@ -43,14 +43,16 @@ let
     src = duckdbSource;
     nativeBuildInputs = [ cmake ninja ];
     buildInputs = [ openssl ];
-
+    #in the cmake flags we specify the extensions we want to build with duckdb
+    # in the -DBUILD_EXTENSIONS= flag
     cmakeFlags = [
       "-DCMAKE_BUILD_TYPE=Release"
       "-DBUILD_SHARED_LIBS=ON"
       "-DCMAKE_CXX_VISIBILITY_PRESET=default"
       "-DBUILD_EXTENSIONS='parquet;icu;tpch;tpcds;fts;json;httpfs'"
     ];
-
+    #pg 16 requires the correct suffix for the shared library 
+    # so we use the postgresql.dlSuffix to get the correct suffix per system (.so for linux and .dylib for darwin)
     installPhase = ''
       runHook preInstall
       
@@ -60,7 +62,7 @@ let
       
       runHook postInstall
     '';
-
+    #we need to set the correct rpath for the shared library so that it can find the dependencies/other packages can find it
     postInstall = lib.optionalString stdenv.isLinux ''
       patchelf --print-rpath "$out/lib/libsqlite3_api_wrapper${postgresql.dlSuffix}"
       patchelf --remove-rpath $out/lib/libsqlite3_api_wrapper${postgresql.dlSuffix}
@@ -72,6 +74,7 @@ let
     '';
   };
 in
+#this is our main derivation for pg_duckdb
 stdenv.mkDerivation rec {
   pname = "pg_duckdb";
   version = "0.0.1";
@@ -81,7 +84,8 @@ stdenv.mkDerivation rec {
     rev = "7eb10c7574f5bc9c570f008e295bc9e895c55144";
     sha256 = "sha256-WlBwSbHtdrf+iSYlQ+V2aAJqwn8rBmVFf9ASbXxnJXc=";
   };
-
+  #some deps are needed by all systems, some are only needed by linux or darwin
+  #so we use lib.optionals to add them conditionally based on the system we are building on
   nativeBuildInputs = [
     pkg-config
     git
@@ -89,7 +93,8 @@ stdenv.mkDerivation rec {
     bison
     gcc
   ] ++ lib.optionals stdenv.isLinux [ autoPatchelfHook ];
-
+  #for the non-nix-initiated, buildInputs are the dependencies needed to build and run the package
+  # nativeBuildInputs are the dependencies needed to build the package and are not included in the final package
   buildInputs = [
     postgresql
     lz4
@@ -113,7 +118,16 @@ stdenv.mkDerivation rec {
     darwin.libobjc
     darwin.apple_sdk.frameworks.Foundation
   ];
-
+  #as discussed here 
+  # https://discourse.nixos.org/t/env-nix-cflags-compile-vs-cxxflags/39192/2?u=samrose
+  # NIX_C(XX)FLAGS are guaranteed to be passed to compiler because nix’s stdenv’s wrap the compiler binaries and mangles the flags. 
+  #CFLAGS and CXXFLAGS are convention used by most build systems and C/C++ projects, 
+  # but there are times when they do not work (usually when project uses bad build system).
+  # Preferred way to pass these flags:
+  # 1.Use the projects build system way
+  # 2. C(XX)FLAGS   
+  # 3. NIX_C(XX)FLAGS as last resort
+  # in this case we use NIX_CFLAGS_COMPILE because we needed to intervene into the flags used by the project
   NIX_CFLAGS_COMPILE = toString ([
     "-I${postgresql}/include"
     "-I${postgresql}/include/server"
@@ -141,7 +155,21 @@ stdenv.mkDerivation rec {
   ]);
 
   NIX_CXXFLAGS_COMPILE = NIX_CFLAGS_COMPILE;
-
+  #Here, we're doing some operations before building the package
+  # that override the default behavior of the Makefile
+  # We're copying the duckdb headers to the third_party/duckdb directory
+  # and the pg_duckdb headers to the include/pgduckdb directory.
+  # 
+  # We're also setting the correct paths for the duckdb library
+  # and adding the lz4 include path to the CPPFLAGS.
+  #
+  # We're also removing the third_party/duckdb/Makefile target from the Makefile 
+  # because we're using a pre-built duckdb library in the ourDuckdb package above.
+  #
+  # We remove the git submodule update command from the Makefile bacause nix cannot
+  # fetch submodules during the build phase, and because we already have the duckdb pacakge built
+  # We set the var FULL_DUCKDB_LIB to the path of the ourDuckdb library
+  # WE append the lz4 include path to the CPPFLAGS 
   prePatch = ''
     mkdir -p third_party/duckdb
     cp -r ${ourDuckdb}/include/* third_party/duckdb/
@@ -169,7 +197,7 @@ stdenv.mkDerivation rec {
     sed -i 's|third_party/duckdb/Makefile||g' Makefile
     sed -i 's|^CPPFLAGS =.*|& -I${lz4.dev}/include|' Makefile
   '';
-
+  #we set the paths for the include and library paths for the build
   preConfigure = ''
     export CPATH="${lib.makeSearchPathOutput "dev" "include" buildInputs}:$CPATH"
     export LIBRARY_PATH="${lib.makeLibraryPath buildInputs}:$LIBRARY_PATH"
@@ -180,7 +208,9 @@ stdenv.mkDerivation rec {
   '' + lib.optionalString stdenv.isDarwin ''
     export CPLUS_INCLUDE_PATH="${darwin.apple_sdk.frameworks.Security}/Headers:${darwin.libobjc}/include:${darwin.apple_sdk.frameworks.Foundation}/Headers:$CPLUS_INCLUDE_PATH"
   '';
-
+# in the buildPhase we set the flags for the build
+# we set the flags for the build based on the system we are building on
+# some of the flags are universal, and some are specific to darwin
 buildPhase = let
   darwinFlags = lib.optionalString stdenv.isDarwin ''
     SHLIB_LINK+=" -framework Security -framework Foundation \
@@ -215,12 +245,12 @@ in ''
     cp *.control $out/share/postgresql/extension/
     cp sql/*.sql $out/share/postgresql/extension/
   '';
-
+  #we set the rpath for the shared library so that it can find the dependencies
+  # we're using patchelf for linux and install_name_tool for darwin
   postFixup = lib.optionalString stdenv.isLinux ''
     patchelf --set-rpath "${lib.makeLibraryPath buildInputs}" $out/lib/pg_duckdb${postgresql.dlSuffix}
   '' + lib.optionalString stdenv.isDarwin ''
     install_name_tool -change ${ourDuckdb}/lib/libduckdb${postgresql.dlSuffix} @rpath/libduckdb${postgresql.dlSuffix} $out/lib/pg_duckdb${postgresql.dlSuffix}
-    #install_name_tool -add_rpath ${ourDuckdb}/lib $out/lib/pg_duckdb${postgresql.dlSuffix}
     install_name_tool -add_rpath ${postgresql.lib}/lib $out/lib/pg_duckdb${postgresql.dlSuffix}
   '';
 
