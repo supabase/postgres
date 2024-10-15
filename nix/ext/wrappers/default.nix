@@ -90,9 +90,22 @@ postInstall = ''
     echo "Warning: $main_sql_file not found"
   fi
 
-  rm git_tags.txt
   mv $out/lib/wrappers-${version}.so $out/lib/wrappers.so
-  
+
+  echo "Creating wrappers.so symlinks to support pg_upgrade..."
+  if [ -f "$out/lib/wrappers.so" ]; then
+    while read -r previous_version; do
+      if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
+        new_file="$out/lib/wrappers-$previous_version.so"
+        echo "Creating $new_file"
+        ln -s "$out/lib/wrappers.so" "$new_file"
+      fi
+    done < git_tags.txt
+  else
+    echo "Warning: $out/lib/wrappers.so not found"
+  fi
+  rm git_tags.txt
+
   echo "Contents of updated wrappers.control:"
   cat "$out/share/postgresql/extension/wrappers.control"
 
