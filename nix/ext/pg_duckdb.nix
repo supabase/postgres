@@ -122,7 +122,7 @@ stdenv.mkDerivation rec {
   # https://discourse.nixos.org/t/env-nix-cflags-compile-vs-cxxflags/39192/2?u=samrose
   # NIX_C(XX)FLAGS are guaranteed to be passed to compiler because nix’s stdenv’s wrap the compiler binaries and mangles the flags. 
   #CFLAGS and CXXFLAGS are convention used by most build systems and C/C++ projects, 
-  # but there are times when they do not work (usually when project uses bad build system).
+  # but there are times when they do not work [...].
   # Preferred way to pass these flags:
   # 1.Use the projects build system way
   # 2. C(XX)FLAGS   
