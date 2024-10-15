@@ -137,4 +137,4 @@ fi
 # psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
 
 # Start interactive psql session
-exec psql -U postgres -p "$PORTNO" -h localhost postgres
+exec psql -U supabase_admin -p "$PORTNO" -h localhost postgres
