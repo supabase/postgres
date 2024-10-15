@@ -107,6 +107,7 @@
         ourExtensions = [
           ./nix/ext/rum.nix
           ./nix/ext/timescaledb.nix
+          ./nix/ext/timescaledb-2.9.1.nix
           ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
           ./nix/ext/wal2json.nix
