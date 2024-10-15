@@ -36,7 +36,7 @@ stdenv.mkDerivation rec {
   # we have no need for the timescaledb.so or control file
   postInstall = ''
     rm $out/lib/timescaledb.so
-    mv $out/share/postgresql/extension/timescaledb.control $out/share/postgresql/extension/timescaledb-2.9.1.control
+    rm $out/share/postgresql/extension/timescaledb.control
   '';
 
   meta = with lib; {
