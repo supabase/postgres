@@ -37,7 +37,7 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-            (import ./nix/overlays/cargo-pgrx.nix)
+            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             (import ./nix/overlays/psql_16-oriole.nix)
 
           ];
@@ -289,7 +289,7 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+            psql_orioledb_16 = makeOrioleDbPostgres "16_29" postgresql_orioledb_16;
           };
 
           # Find the active PostgreSQL version
@@ -311,7 +311,7 @@
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_16 = postgresVersions.psql_16;
-          #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          psql_orioledb_16 = postgresVersions.psql_orioledb_16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           inherit postgresql_15 postgresql_16;
