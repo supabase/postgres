@@ -104,6 +104,10 @@ stdenv.mkDerivation rec {
     icu
   ] ++ lib.optionals stdenv.isLinux [
     patchelf
+    glib
+    glibc
+    libcxx
+    gcc.cc.lib
   ] ++ lib.optionals stdenv.isDarwin [
     darwin.apple_sdk.frameworks.Security
     darwin.libobjc
@@ -124,6 +128,11 @@ stdenv.mkDerivation rec {
   ] ++ lib.optionals stdenv.isLinux [
     "-I${stdenv.cc.cc}/include"
     "-I${stdenv.cc.libc.dev}/include"
+    "-I${glibc.dev}/include"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}/${stdenv.hostPlatform.config}"
+    "-isystem ${stdenv.cc.cc}/include/c++/${stdenv.cc.version}/backward"
+    "-isystem ${stdenv.cc.libc.dev}/include"
   ] ++ lib.optionals stdenv.isDarwin [
     "-L${postgresql}/lib"
     "-I${darwin.apple_sdk.frameworks.Security}/Headers"
