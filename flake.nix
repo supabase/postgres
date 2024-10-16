@@ -633,41 +633,52 @@
         # ambient $PATH environment when you run 'nix develop'. This is useful
         # for development and puts many convenient devtools instantly within
         # reach.
-        devShells = {
-          default = pkgs.mkShell {
-            packages = with pkgs; [
-              coreutils
-              just
-              nix-update
-              #pg_prove
-              shellcheck
-              ansible
-              ansible-lint
-              (packer.overrideAttrs (oldAttrs: {
-                version = "1.7.8";
-              }))
 
-              basePackages.start-server
-              basePackages.start-client
-              basePackages.start-replica
-              basePackages.migrate-tool
-              basePackages.sync-exts-versions
-            ];
-            shellHook = ''
-              export HISTFILE=.history
-            '';
-          };
-          cargo-pgrx_0_11_3 = pkgs.mkShell {
-            packages = with basePackages; [
-              cargo-pgrx_0_11_3
-            ];
-          };
-          cargo-pgrx_0_12_6 = pkgs.mkShell {
-            packages = with basePackages; [
-              cargo-pgrx_0_12_6
-            ];
-          };
+      devShells = let
+        mkCargoPgrxDevShell = { pgrxVersion, rustVersion }: pkgs.mkShell {
+          packages = with pkgs; [
+            basePackages."cargo-pgrx_${pgrxVersion}"
+            (rust-bin.stable.${rustVersion}.default.override {
+              extensions = [ "rust-src" ];
+            })
+          ];
+          shellHook = ''
+            export HISTFILE=.history
+          '';
         };
-      }
-    );
+      in {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            coreutils
+            just
+            nix-update
+            #pg_prove
+            shellcheck
+            ansible
+            ansible-lint
+            (packer.overrideAttrs (oldAttrs: {
+              version = "1.7.8";
+            }))
+
+            basePackages.start-server
+            basePackages.start-client
+            basePackages.start-replica
+            basePackages.migrate-tool
+            basePackages.sync-exts-versions
+          ];
+          shellHook = ''
+            export HISTFILE=.history
+          '';
+        };
+        cargo-pgrx_0_11_3 = mkCargoPgrxDevShell {
+          pgrxVersion = "0_11_3";
+          rustVersion = "1.80.0";
+        };
+        cargo-pgrx_0_12_6 = mkCargoPgrxDevShell {
+          pgrxVersion = "0_12_6";
+          rustVersion = "1.80.0";
+        };
+      };     
+  }
+  );
 }
