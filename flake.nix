@@ -6,9 +6,10 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, ...}:
+  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, rust-overlay, ...}:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -53,10 +54,41 @@
           };
           inherit system;
           overlays = [
-            # NOTE (aseipp): add any needed overlays here. in theory we could
+            # NOTE add any needed overlays here. in theory we could
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+            (import rust-overlay)
+            (final: prev: {
+              cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
+                inherit (final) lib;
+                inherit (final) darwin;
+                inherit (final) fetchCrate;
+                inherit (final) openssl;
+                inherit (final) pkg-config;
+                inherit (final) makeRustPlatform;
+                inherit (final) stdenv;
+                inherit (final) rust-bin;
+              };
+
+              buildPgrxExtension = final.callPackage ./nix/cargo-pgrx/buildPgrxExtension.nix {
+                inherit (final) cargo-pgrx;
+                inherit (final) lib;
+                inherit (final) Security;
+                inherit (final) pkg-config;
+                inherit (final) makeRustPlatform;
+                inherit (final) stdenv;
+                inherit (final) writeShellScriptBin;
+              };
+
+              buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
+              };
+
+              buildPgrxExtension_0_12_5 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_5;
+              };
+            })
             (final: prev: {
               postgresql = final.callPackage ./nix/postgresql/default.nix {
                 inherit (final) lib;
@@ -66,7 +98,6 @@
                 inherit (final) callPackage;
               };
             })
-            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
           ];
         };
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
@@ -310,6 +341,8 @@
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
+          cargo-pgrx_0_11_3 = pkgs.cargo-pgrx.cargo-pgrx_0_11_3;
+          cargo-pgrx_0_12_5 = pkgs.cargo-pgrx.cargo-pgrx_0_12_5;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
@@ -566,10 +599,7 @@
         packages = flake-utils.lib.flattenTree basePackages // {
           # Any extra packages we might want to include in our package
           # set can go here.
-          inherit (pkgs)
-            # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
-            cargo-pgrx_0_11_3;
-
+          inherit (pkgs);
         };
 
         # The list of exported 'checks' that are run with every run of 'nix
@@ -603,28 +633,40 @@
         # ambient $PATH environment when you run 'nix develop'. This is useful
         # for development and puts many convenient devtools instantly within
         # reach.
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            coreutils
-            just
-            nix-update
-            #pg_prove
-            shellcheck
-            ansible
-            ansible-lint
-            (packer.overrideAttrs (oldAttrs: {
-              version = "1.7.8";
-            }))
+        devShells = {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              coreutils
+              just
+              nix-update
+              #pg_prove
+              shellcheck
+              ansible
+              ansible-lint
+              (packer.overrideAttrs (oldAttrs: {
+                version = "1.7.8";
+              }))
 
-            basePackages.start-server
-            basePackages.start-client
-            basePackages.start-replica
-            basePackages.migrate-tool
-            basePackages.sync-exts-versions
-          ];
-          shellHook = ''
-            export HISTFILE=.history
-          '';
+              basePackages.start-server
+              basePackages.start-client
+              basePackages.start-replica
+              basePackages.migrate-tool
+              basePackages.sync-exts-versions
+            ];
+            shellHook = ''
+              export HISTFILE=.history
+            '';
+          };
+          cargo-pgrx_0_11_3 = pkgs.mkShell {
+            packages = with basePackages; [
+              cargo-pgrx_0_11_3
+            ];
+          };
+          cargo-pgrx_0_12_5 = pkgs.mkShell {
+            packages = with basePackages; [
+              cargo-pgrx_0_12_5
+            ];
+          };
         };
       }
     );

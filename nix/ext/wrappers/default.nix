@@ -8,8 +8,12 @@
 , cargo
 , darwin
 , jq
+, rust-bin
 }:
-
+let
+  rustVersion = "1.80.0";
+  rust = rust-bin.stable.${rustVersion}.default;
+in
 buildPgrxExtension_0_11_3 rec {
   pname = "supabase-wrappers";
   version = "0.4.2";
