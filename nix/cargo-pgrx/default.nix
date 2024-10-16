@@ -61,10 +61,10 @@ in
     hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";
     cargoHash = "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw=";
   };
-  cargo-pgrx_0_12_5 = generic {
-    version = "0.12.5";
-    hash = "sha256-U2kF+qjQwMTaocv5f4p5y3qmPUsTzdvAp8mz9cn/COw=";
-    cargoHash = "sha256-nEgIOBGNG3TupA55/TgoXDPeJzjBjOGGfK+WjrH06VY=";
+  cargo-pgrx_0_12_6 = generic {
+    version = "0.12.6";
+    hash = "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=";
+    cargoHash = "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w=";
   };
   inherit rustPlatform;
 }

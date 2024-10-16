@@ -85,8 +85,8 @@
                 cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
               };
 
-              buildPgrxExtension_0_12_5 = prev.buildPgrxExtension.override {
-                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_5;
+              buildPgrxExtension_0_12_6 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_6;
               };
             })
             (final: prev: {
@@ -342,7 +342,7 @@
         postgresVersions //{
           supabase-groonga = supabase-groonga;
           cargo-pgrx_0_11_3 = pkgs.cargo-pgrx.cargo-pgrx_0_11_3;
-          cargo-pgrx_0_12_5 = pkgs.cargo-pgrx.cargo-pgrx_0_12_5;
+          cargo-pgrx_0_12_6 = pkgs.cargo-pgrx.cargo-pgrx_0_12_6;
           # PostgreSQL versions.
           psql_15 = makePostgres "15";
           #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
@@ -662,9 +662,9 @@
               cargo-pgrx_0_11_3
             ];
           };
-          cargo-pgrx_0_12_5 = pkgs.mkShell {
+          cargo-pgrx_0_12_6 = pkgs.mkShell {
             packages = with basePackages; [
-              cargo-pgrx_0_12_5
+              cargo-pgrx_0_12_6
             ];
           };
         };
