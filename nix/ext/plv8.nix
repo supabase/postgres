@@ -103,16 +103,20 @@ stdenv.mkDerivation (finalAttrs: {
     # so changing them does not cause issues.
     mv "$out/nix/store"/*/* "$out"
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
-
+    mv "$out/lib/plv8-${finalAttrs.version}.so" "$out/lib/plv8.so"
+    ln -s "$out/lib/plv8.so" "$out/lib/plv8-${finalAttrs.version}.so"
+    sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plv8.control"
+    sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plcoffee.control"
+    sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plls.control"
     ${lib.optionalString stdenv.isDarwin ''
-      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8.so
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8.so
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8.so
     ''}
 
     ${lib.optionalString (!stdenv.isDarwin) ''
-      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
     ''}
   '';
 
