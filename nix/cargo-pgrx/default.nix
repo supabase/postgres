@@ -8,7 +8,7 @@
 , rust-bin
 }:
 let
-  rustVersion = "1.80.0";
+  rustVersion = "1.76.0";
   rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
