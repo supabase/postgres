@@ -147,6 +147,14 @@ cleanup() {
 }
 
 function handle_extensions {
+    if [ -z "$IS_CI" ]; then
+        retry 5 systemctl restart postgresql
+    else
+        CI_start_postgres
+    fi
+
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     rm -f $POST_UPGRADE_EXTENSION_SCRIPT
     touch $POST_UPGRADE_EXTENSION_SCRIPT
 

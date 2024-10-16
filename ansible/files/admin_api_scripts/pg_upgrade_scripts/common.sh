@@ -91,6 +91,15 @@ swap_postgres_and_supabase_admin() {
 alter database postgres connection limit 0;
 select pg_terminate_backend(pid) from pg_stat_activity where backend_type = 'client backend' and pid != pg_backend_pid();
 EOSQL
+
+    if [ -z "$IS_CI" ]; then
+        retry 5 systemctl restart postgresql
+    else
+        CI_start_postgres ""
+    fi
+
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     run_sql <<'EOSQL'
 set statement_timeout = '600s';
 begin;
