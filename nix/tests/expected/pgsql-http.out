@@ -1,0 +1,14 @@
+select
+  urlencode('my special string''s & things?');
+              urlencode              
+-------------------------------------
+ my+special+string%27s+%26+things%3F
+(1 row)
+
+select
+  content
+from
+  http_get (
+    'https://postman-echo.com/get?foo1=bar1&foo2=bar2'
+  );
+ERROR:  OpenSSL/3.0.13: error:16000069:STORE routines::unregistered scheme
