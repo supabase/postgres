@@ -291,7 +291,7 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            psql_orioledb_16 = makeOrioleDbPostgres "16_29" postgresql_orioledb_16;
+            psql_orioledb_16 = makeOrioleDbPostgres "16_31" postgresql_orioledb_16;
           };
 
           # Find the active PostgreSQL version
