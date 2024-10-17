@@ -3,8 +3,9 @@ name: Release AMI Nix
 on:
   push:
     branches:
-      - develop
-      - release/*
+      #- develop
+      #- release/*
+      - sam/oriole16
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'
