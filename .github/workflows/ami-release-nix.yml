@@ -8,12 +8,31 @@ on:
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'
+      - 'ansible/vars.yml'
   workflow_dispatch:
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL versions
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+
   build:
+    needs: prepare
     strategy:
       matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
           - runner: arm-runner
             arch: arm64
@@ -31,42 +50,55 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - uses: DeterminateSystems/nix-installer-action@main
+
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        # Update `ci.yaml` too if changing constraints.
         run: |
-          SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common-nix.vars.pkr.hcl)
+          SUFFIX=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
           fi
 
-      # extensions are build in nix prior to this step
-      # so we can just use the binaries from the nix store
-      # for postgres, extensions and wrappers
+      - name: Set PostgreSQL version environment variable
+        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
+          echo "" >> common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1
+        env:
+          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments="  amazon-arm64-nix.pkr.hcl
+          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
+        env:
+          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
+          packer build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create nix flake revision tarball
         run: |
           GIT_SHA=${{github.sha}}
-          MAJOR_VERSION=$(echo "${{ steps.process_release_version.outputs.version }}" | cut -d. -f1)
+          MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
 
           mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
           echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
@@ -84,16 +116,12 @@ jobs:
           ansible-playbook -i localhost \
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+            -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
             manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 staging
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-
-      #Our self hosted github runner already has permissions to publish images 
-      #but they're limited to only that; 
-      #so if we want s3 access we'll need to config credentials with the below steps 
-      # (which overwrites existing perms) after the ami build
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v4
@@ -107,6 +135,7 @@ jobs:
           ansible-playbook -i localhost \
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
+            -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
             manifest-playbook.yml
     
       - name: Upload nix flake revision to s3 prod
@@ -130,12 +159,12 @@ jobs:
           SLACK_MESSAGE: 'Building Postgres AMI failed'
           SLACK_FOOTER: ''
 
-      - name: Cleanup resources on build cancellation
+      - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -n 1 -I {} aws ec2 terminate-instances --instance-ids {}
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids

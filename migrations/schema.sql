@@ -737,7 +737,7 @@ COMMENT ON TABLE auth.users IS 'Auth: Stores user login data within a secure sch
 --
 
 CREATE TABLE public.schema_migrations (
-    version character varying(255) NOT NULL
+    version character varying(128) NOT NULL
 );
 
 

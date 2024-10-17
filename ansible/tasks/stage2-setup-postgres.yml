@@ -6,7 +6,7 @@
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#psql_15/bin"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
 #TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
   when: stage2_nix
 
@@ -20,6 +20,18 @@
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supabase-groonga"
+  when: stage2_nix
+
+- name: Install debug symbols for postgres version
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_debug"
+  when: stage2_nix
+
+- name: Install source files for postgresql version
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_src"
   when: stage2_nix
 
 - name: Set ownership and permissions for /etc/ssl/private

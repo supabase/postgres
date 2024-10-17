@@ -11,8 +11,28 @@ permissions:
   id-token: write
     
 jobs:
-  publish-staging:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL versions
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+
+  publish-staging:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
 
     steps:
       - name: Checkout Repo
@@ -21,7 +41,8 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION=${{ inputs.postgresVersion }}
           fi
@@ -58,6 +79,10 @@ jobs:
   publish-prod:
     runs-on: ubuntu-latest
     if: github.ref_name == 'develop' || contains( github.ref, 'release' )
+    needs: prepare
+    strategy:
+      matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
 
     steps:
       - name: Checkout Repo
@@ -66,10 +91,8 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(grep 'postgres-version' common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION=${{ inputs.postgresVersion }}
-          fi
+          VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 

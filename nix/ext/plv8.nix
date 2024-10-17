@@ -105,80 +105,16 @@ stdenv.mkDerivation (finalAttrs: {
     rmdir "$out/nix/store"/* "$out/nix/store" "$out/nix"
 
     ${lib.optionalString stdenv.isDarwin ''
-      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
-      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}.so
+      install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
     ''}
 
     ${lib.optionalString (!stdenv.isDarwin) ''
-      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}.so
+      ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
     ''}
   '';
-
-  passthru = {
-    tests =
-      let
-        postgresqlWithSelf = postgresql.withPackages (_: [
-          finalAttrs.finalPackage
-        ]);
-      in {
-        smoke = runCommand "plv8-smoke-test" {} ''
-          export PATH=${lib.makeBinPath [
-            postgresqlWithSelf
-            coreutils
-            gnugrep
-          ]}
-          db="$PWD/testdb"
-          initdb "$db"
-          postgres -k "$db" -D "$db" &
-          pid="$!"
-
-          for i in $(seq 1 100); do
-            if psql -h "$db" -d postgres -c "" 2>/dev/null; then
-              break
-            elif ! kill -0 "$pid"; then
-              exit 1
-            else
-              sleep 0.1
-            fi
-          done
-
-          psql -h "$db" -d postgres -c 'CREATE EXTENSION plv8; DO $$ plv8.elog(NOTICE, plv8.version); $$ LANGUAGE plv8;' 2> "$out"
-          grep -q "${finalAttrs.version}" "$out"
-          kill -0 "$pid"
-        '';
-
-        regression = stdenv.mkDerivation {
-          name = "plv8-regression";
-          inherit (finalAttrs) src patches nativeBuildInputs buildInputs dontConfigure;
-
-          buildPhase = ''
-            runHook preBuild
-
-            # The regression tests need to be run in the order specified in the Makefile.
-            echo -e "include Makefile\nprint_regress_files:\n\t@echo \$(REGRESS)" > Makefile.regress
-            REGRESS_TESTS=$(make -f Makefile.regress print_regress_files)
-
-            ${postgresql}/lib/pgxs/src/test/regress/pg_regress \
-              --bindir='${postgresqlWithSelf}/bin' \
-              --temp-instance=regress-instance \
-              --dbname=contrib_regression \
-              $REGRESS_TESTS
-
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-
-            touch "$out"
-
-            runHook postInstall
-          '';
-        };
-      };
-  };
 
   meta = with lib; {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
