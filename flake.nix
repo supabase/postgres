@@ -307,6 +307,7 @@
               };
           postgresql_15 = getPostgresqlPackage "15";
           postgresql_16 = getPostgresqlPackage "16";
+          postgresql_oriole-16 = postgresql_orioledb_16;
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
@@ -316,9 +317,10 @@
           psql_oriole-16 = postgresVersions.psql_oriole-16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          inherit postgresql_15 postgresql_16;
+          inherit postgresql_15 postgresql_16 postgresql_oriole-16;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_16_debug = if pkgs.stdenv.isLinux then postgresql_16.debug else null;
+          postgresql_oriole-16_debug = if pkgs.stdenv.isLinux then postgresql_orioledb_16.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
@@ -344,6 +346,28 @@
           postgresql_16_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-16-src";
             version = postgresql_16.version;
+
+            src = postgresql_16.src;
+
+            nativeBuildInputs = [ pkgs.bzip2 ];
+
+            phases = [ "unpackPhase" "installPhase" ];
+
+            installPhase = ''
+              mkdir -p $out
+              cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+              description = "PostgreSQL 15 source files";
+              homepage = "https://www.postgresql.org/";
+              license = licenses.postgresql;
+              platforms = platforms.all;
+            };
+          };
+          postgresql_oriole-16_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-16-src";
+            version = postgresql_oriole-16.version;
 
             src = postgresql_16.src;
 
