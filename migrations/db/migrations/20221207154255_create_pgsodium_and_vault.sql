@@ -9,6 +9,7 @@ BEGIN
     select count(*) = 1 
     from pg_available_extensions 
     where name = 'pgsodium'
+    and default_version in ('3.1.6', '3.1.7', '3.1.8', '3.1.9')
   );
   
   vault_exists = (
