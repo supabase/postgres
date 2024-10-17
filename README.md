@@ -111,10 +111,23 @@ We are building the features of Firebase using enterprise-grade, open source pro
 [![New Sponsor](https://user-images.githubusercontent.com/10214025/90518111-e74bbb00-e198-11ea-8f88-c9e3c1aa4b5b.png)](https://github.com/sponsors/supabase)
 
 
-## Experimental Nix Packaging of resources
+## Nix Packaging of resources
 
-There is a `/nix` folder in this repo, plus a `flake.nix` and `flake.lock` that facilitate using the Nix package management system to package supabase/postgres, and all of our extensions and wrappers. A user will need nix installed on their machine. As of 4/1/2024 the package set only builds on target machines (`x86_64-linux` and `aarch64-linux`), however work is under way to also support building and using directly on `aarch64-darwin` (macOs). As of 4/1/2024, versions of packages and extensions are synced from `/ansible/vars.yml` via a utility that can be run by executing `nix run .#sync-exts-versions` (you must have nix installed and be on the supported `x86_64-linux` and `aarch64-linux` for this command to work). The short term goal is to sync these versions as they are updated by our infrastructure and postgres teams, then to see the nix packaged versions build successfully in parallel over time, along with tests of the nix packaged versions passing. 
+There is a `/nix` folder in this repo, plus a `flake.nix` and `flake.lock` that facilitate using the Nix package management system to package supabase/postgres, and all of our extensions and wrappers. A user will need nix installed on their machine. 
 
-The supabase/postgres repo will continue to source it's dependencies from ansible for the short term, while we stabilize this nix build. 
+The package set builds on target machines (`x86_64-linux` and `aarch64-linux`) with an accompanying nix cache, however work is under way to also support building and using directly on `aarch64-darwin` (macOs). Currently, `aarch64-daarwin` will build and run, but the cache is not yet automatically updated on each PR submission to this repo.
 
-Forthcoming PR's will include: integrating the nix work into our ansible/packer builds, building natively on aarch64-darwin (macOs), more testing
+### Nix Binary Cache Configuration
+
+To update our nix.conf to support the binary caches used by supabase:
+
+1. open `/etc/nix/nix.conf` 
+2. Add the following lines
+
+  ```
+  substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+  trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+  ```                                                                                         
+3. save changes to the `/etc/nix/nix.conf` file
+4. On **linux**, run `sudo systemctl restart nix-daemon.service` on **macOS** run: `sudo launchctl stop org.nixos.nix-daemon` and `sudo launchctl start org.nixos.nix-daemon`
+5. verify by running nix config show | grep 'substituters\|trusted-public-keys' 
