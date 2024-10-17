@@ -6,17 +6,17 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "0dafcb1bc799e9af393094c122c1c3c630797222";
-    sha256 = "sha256-dsfDqUXkMeAkUI5l9+J09tsRZOGJVsqcKEVo5YAzMjU=";
+    rev = "bd8e32d0ebaafd0ea3ec3074233b65167f3b6fb7";
+    sha256 = "sha256-bzH1SgPZ6q90HpqRsECY2XQPghEcd2Hg4X55G43unNo=";
   };
-  version = "patches16_30";
+  version = "patches16_31";
   buildInputs = [ curl libkrb5 postgresql python3 openssl ];
-  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=30";
+  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=31";
   installPhase = ''
     runHook preInstall
     mkdir -p $out/{lib,share/postgresql/extension}
 
-    cp *.so      $out/lib
+    cp *${postgresql.dlSuffix}      $out/lib
     cp *.sql     $out/share/postgresql/extension
     cp *.control $out/share/postgresql/extension
         
