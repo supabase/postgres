@@ -4,7 +4,7 @@ Description=Gotrue
 [Service]
 Type=simple
 WorkingDirectory=/opt/gotrue
-ExecStart=/opt/gotrue/gotrue
+ExecStart=/opt/gotrue/gotrue --config-dir /etc/auth.d
 User=gotrue
 Restart=always
 RestartSec=3
