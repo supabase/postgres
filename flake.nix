@@ -291,7 +291,7 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            psql_orioledb_16 = makeOrioleDbPostgres "16_31" postgresql_orioledb_16;
+            psql_oriole-16 = makeOrioleDbPostgres "16_31" postgresql_orioledb_16;
           };
 
           # Find the active PostgreSQL version
@@ -313,7 +313,7 @@
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_16 = postgresVersions.psql_16;
-          psql_orioledb_16 = postgresVersions.psql_orioledb_16;
+          psql_oriole-16 = postgresVersions.psql_oriole-16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           inherit postgresql_15 postgresql_16;
