@@ -239,7 +239,7 @@
   become_user: postgres
   shell: |
     source /var/lib/postgresql/.bashrc
-    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
+    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start -o "-c shared_preload_libraries='pg_net'"
   environment:
     LANG: en_US.UTF-8
     LANGUAGE: en_US.UTF-8
