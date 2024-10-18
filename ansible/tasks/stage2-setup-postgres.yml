@@ -256,6 +256,15 @@
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
   when: stage2_nix
 
+#TODO PR may need to remove this.
+- name: Create symbolic link for pgsodium_getkey script
+  file:
+    src: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+    dest: "/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey"
+    state: link
+  become: yes
+  when: stage2_nix
+
 - name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
   ansible.builtin.lineinfile:
     path: /etc/environment.d/postgresql.env
