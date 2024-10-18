@@ -12,12 +12,12 @@
 
     - name: Remove 'timescaledb,' from postgresql.conf if oriole-16 build
       ansible.builtin.command:
-        cmd: sed -i 's/timescaledb,//g' /etc/postgresql/postgresql.conf
+        cmd: sed -i 's/ timescaledb,//g' /etc/postgresql/postgresql.conf
       when: is_psql_oriole_16 and stage2_nix
       become: yes
     - name: Remove 'timescaledb,' from supautils.conf
       ansible.builtin.command:
-        cmd: sed -i 's/timescaledb,//g' /etc/postgresql-custom/supautils.conf
+        cmd: sed -i 's/ timescaledb,//g' /etc/postgresql-custom/supautils.conf
       when: is_psql_oriole_16 and stage2_nix
       become: yes
 
