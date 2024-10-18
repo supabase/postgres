@@ -4,7 +4,7 @@
 #     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
-- name: Check psql_version and modify supautils.conf if necessary
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
     - name: Check if psql_version is psql_oriole-16
       set_fact:
@@ -25,6 +25,7 @@
           /etc/postgresql-custom/supautils.conf
       when: is_psql_oriole_16 and stage2_nix
       become: yes
+
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
@@ -219,13 +220,19 @@
     recurse: yes
   when: stage2_nix
 
-- name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
-  shell: >
-    sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
-    sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-    && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
-  become: yes
-  when: stage2_nix
+- name: Check psql_version and run postgis linking if not oriole-16
+  block:
+    - name: Check if psql_version is psql_oriole-16
+      set_fact:
+        is_psql_oriole_16: "{{ psql_version == 'psql_oriole-16' }}"
+
+    - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
+      shell: >
+        sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
+        sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+        && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
+      become: yes
+      when: stage2_nix and not is_psql_oriole_16
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
