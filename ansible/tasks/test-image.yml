@@ -72,10 +72,10 @@
     - name: Remove specified extensions from SQL file
       ansible.builtin.command:
         cmd: >
-          sed -i '/\(timescaledb\|postgis\|pgrouting\|plv8\|pgvector\)/d' 
-          /tmp/migrations/tests/test.sql
-      when: is_psql_oriole_16 and stage2_nix
+          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pgvector\).*\.sql/d' /tmp/migrations/tests/test.sql
+      when: is_psql_oriole_16
       become: yes
+
 
 
 - name: Run migrations tests
