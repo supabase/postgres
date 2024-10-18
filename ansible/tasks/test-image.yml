@@ -63,6 +63,21 @@
   failed_when: retval.rc != 0
   when: debpkg_mode or stage2_nix
 
+- name: Check psql_version and modify migrations if orioe-16
+  block:
+    - name: Check if psql_version is psql_oriole-16
+      set_fact:
+        is_psql_oriole_16: "{{ psql_version == 'psql_oriole-16' }}"
+
+    - name: Remove specified extensions from SQL file
+      ansible.builtin.command:
+        cmd: >
+          sed -i '/\(timescaledb\|postgis\|pgrouting\|plv8\|pgvector\)/d' 
+          /tmp/migrations/tests/test.sql
+      when: is_psql_oriole_16 and stage2_nix
+      become: yes
+
+
 - name: Run migrations tests
   shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
   register: retval
