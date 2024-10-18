@@ -10,20 +10,14 @@
       set_fact:
         is_psql_oriole_16: "{{ psql_version == 'psql_oriole-16' }}"
 
-    - name: Remove 'timescaledb,' from supautils.conf if oriole-16 build
-      ansible.builtin.lineinfile:
-        path: /etc/postgresql/postgresql.conf if oriole-16 build
-        regexp: 'timescaledb,'
-        line: ''
-        state: absent
+    - name: Remove 'timescaledb,' from postgresql.conf if oriole-16 build
+      ansible.builtin.command:
+        cmd: sed -i 's/timescaledb,//g' /etc/postgresql/postgresql.conf
       when: is_psql_oriole_16 and stage2_nix
       become: yes
-    - name: Remove 'timescaledb,' from postgresql.conf
-      ansible.builtin.lineinfile:
-        path: /etc/postgresql-custom/supautils.conf
-        regexp: 'timescaledb,'
-        line: ''
-        state: absent
+    - name: Remove 'timescaledb,' from supautils.conf
+      ansible.builtin.command:
+        cmd: sed -i 's/timescaledb,//g' /etc/postgresql-custom/supautils.conf
       when: is_psql_oriole_16 and stage2_nix
       become: yes
 
@@ -31,7 +25,6 @@
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
-#TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
   when: stage2_nix
 
 - name: Install pg_prove from nix binary cache
