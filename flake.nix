@@ -135,7 +135,15 @@
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
         #we're not using timescaledb in the orioledb version of supabase extensions
-        orioleFilteredExtensions = builtins.filter (x: x != ./nix/ext/timescaledb.nix) ourExtensions;
+        orioleFilteredExtensions = builtins.filter (
+          x: 
+            x != ./nix/ext/timescaledb.nix && 
+            x != ./nix/ext/pgvector.nix &&
+            x != ./nix/ext/plv8.nix && 
+            x != ./nix/ext/postgis.nix && 
+            x != ./nix/ext/pgrouting.nix 
+        ) ourExtensions;
+
         orioledbExtension = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
