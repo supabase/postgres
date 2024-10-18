@@ -37,7 +37,7 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-            (import ./nix/overlays/cargo-pgrx.nix)
+            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
             (import ./nix/overlays/psql_16-oriole.nix)
 
           ];
@@ -134,7 +134,17 @@
 
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
-        orioledbExtension = ourExtensions ++ [ ./nix/ext/orioledb.nix ];
+        #we're not using timescaledb in the orioledb version of supabase extensions
+        orioleFilteredExtensions = builtins.filter (
+          x: 
+            x != ./nix/ext/timescaledb.nix && 
+            x != ./nix/ext/pgvector.nix &&
+            x != ./nix/ext/plv8.nix && 
+            x != ./nix/ext/postgis.nix && 
+            x != ./nix/ext/pgrouting.nix 
+        ) ourExtensions;
+
+        orioledbExtension = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
         postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
@@ -289,7 +299,7 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            # psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+            psql_oriole-16 = makeOrioleDbPostgres "16_31" postgresql_orioledb_16;
           };
 
           # Find the active PostgreSQL version
@@ -305,18 +315,20 @@
               };
           postgresql_15 = getPostgresqlPackage "15";
           postgresql_16 = getPostgresqlPackage "16";
+          postgresql_oriole-16 = postgresql_orioledb_16;
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_16 = postgresVersions.psql_16;
-          #psql_orioledb_16 = makeOrioleDbPostgres "16_23" postgresql_orioledb_16;
+          psql_oriole-16 = postgresVersions.psql_oriole-16;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          inherit postgresql_15 postgresql_16;
+          inherit postgresql_15 postgresql_16 postgresql_oriole-16;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_16_debug = if pkgs.stdenv.isLinux then postgresql_16.debug else null;
+          postgresql_oriole-16_debug = if pkgs.stdenv.isLinux then postgresql_orioledb_16.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
@@ -342,6 +354,28 @@
           postgresql_16_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-16-src";
             version = postgresql_16.version;
+
+            src = postgresql_16.src;
+
+            nativeBuildInputs = [ pkgs.bzip2 ];
+
+            phases = [ "unpackPhase" "installPhase" ];
+
+            installPhase = ''
+              mkdir -p $out
+              cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+              description = "PostgreSQL 15 source files";
+              homepage = "https://www.postgresql.org/";
+              license = licenses.postgresql;
+              platforms = platforms.all;
+            };
+          };
+          postgresql_oriole-16_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-16-src";
+            version = postgresql_oriole-16.version;
 
             src = postgresql_16.src;
 

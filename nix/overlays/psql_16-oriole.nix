@@ -1,10 +1,10 @@
 final: prev: {
   postgresql_16 = prev.postgresql_16.overrideAttrs (old: {
     pname = "postgresql_16";
-    version = "16_23";
+    version = "16_31";
     src = prev.fetchurl {
-      url = "https://github.com/orioledb/postgres/archive/refs/tags/patches16_23.tar.gz";
-      sha256 = "sha256-xWmcqn3DYyBG0FsBNqPWTFzUidSJZgoPWI6Rt0N9oJ4=";
+      url = "https://github.com/orioledb/postgres/archive/refs/tags/patches16_31.tar.gz";
+      sha256 = "sha256-29uHUACwZKh8e4zJ9tWzEhLNjEuh6P31KbpxnMEhtuI=";
     };
     buildInputs = old.buildInputs ++ [
       prev.bison
