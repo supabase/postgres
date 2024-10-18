@@ -76,6 +76,25 @@
       when: is_psql_oriole_16
       become: yes
 
+    - name: Remove specified extension files from extensions directory
+      ansible.builtin.find:
+        paths: /tmp/migrations/tests/extensions
+        patterns: 
+          - '*timescaledb*.sql'
+          - '*postgis*.sql'
+          - '*pgrouting*.sql'
+          - '*plv8*.sql'
+          - '*pgvector*.sql'
+      register: files_to_remove
+      when: is_psql_oriole_16
+
+    - name: Delete matched extension files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ files_to_remove.files }}"
+      when: is_psql_oriole_16
+      become: yes
 
 
 - name: Run migrations tests
