@@ -106,6 +106,9 @@ begin;
 create role supabase_tmp superuser;
 set session authorization supabase_tmp;
 
+-- to handle snowflakes that happened in the past
+revoke supabase_admin from authenticator;
+
 do $$
 begin
   if exists (select from pg_extension where extname = 'timescaledb') then
