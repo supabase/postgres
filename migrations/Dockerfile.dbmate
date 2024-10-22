@@ -20,8 +20,4 @@ ENV PATH="/usr/lib/postgresql/%VERSION%/bin:${PATH}"
 
 RUN dbmate --version
 
-<<<<<<< HEAD
 ENTRYPOINT ["dbmate"]
-=======
-ENTRYPOINT ["dbmate"]
->>>>>>> f10881b (pg 15 and 16 packer/ansible/ghactions (#1268))
