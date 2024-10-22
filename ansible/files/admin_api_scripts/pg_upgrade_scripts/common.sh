@@ -88,7 +88,17 @@ CI_start_postgres() {
 
 swap_postgres_and_supabase_admin() {
     run_sql <<'EOSQL'
-alter database postgres connection limit 0;
+do $$
+declare
+  rec record;
+begin
+  for rec in
+    select * from pg_database
+  loop
+    execute(format('alter database %I connection limit 0', datname));
+  end loop;
+end
+$$;
 select pg_terminate_backend(pid) from pg_stat_activity where backend_type = 'client backend' and pid != pg_backend_pid();
 EOSQL
 
@@ -204,7 +214,11 @@ end
 $$;
 
 -- Swap postgres & supabase_admin on in-database objects (schemas, tables, functions, etc.).
+-- We execute the script directly on the `postgres` database, and we use dblink for user-defined dbs.
 do $$
+declare
+  swap_postgres_supabase_admin_on_in_database_objects_script text := $script$
+do $script_do$
 declare
   event_triggers jsonb[] := (select coalesce(array_agg(jsonb_build_object('name', evtname)), '{}') from pg_event_trigger where evtowner = 'supabase_admin'::regrole);
   user_mappings jsonb[] := (
@@ -561,9 +575,48 @@ begin
     alter event trigger pgsodium_trg_mask_update enable;
   end if;
 end
+$script_do$;
+$script$;
+  dblink_schema text := (select extnamespace::regnamespace from pg_extension where extname = 'dblink');
+  rec record;
+begin
+  -- Run script on database `postgres`
+  execute swap_postgres_supabase_admin_on_in_database_objects_script;
+
+  create schema _supabase_dblink;
+  if dblink_schema is null then
+    create extension dblink schema _supabase_dblink;
+  else
+    alter extension dblink set schema _supabase_dblink;
+  end if;
+
+  -- Run script on the rest of the dbs except template0.
+  -- Note that transaction across databases is not possible, so if a failure
+  -- occurs the script may not get rolled back on the other dbs.
+  for rec in
+    select * from pg_database where datname not in ('postgres', 'template0')
+  loop
+    perform _supabase_dblink.dblink_exec('dbname=' || quote_ident(rec.datname), swap_postgres_supabase_admin_on_in_database_objects_script)
+  end loop;
+
+  if dblink_schema is not null then
+    execute(format('alter extension dblink set schema %s', dblink_schema));
+  end if;
+  drop schema _supabase_dblink cascade;
+end
 $$;
 
-alter database postgres connection limit -1;
+do $$
+declare
+  rec record;
+begin
+  for rec in
+    select * from pg_database
+  loop
+    execute(format('alter database %I connection limit -1', datname));
+  end loop;
+end
+$$;
 
 set session authorization supabase_admin;
 drop role supabase_tmp;
