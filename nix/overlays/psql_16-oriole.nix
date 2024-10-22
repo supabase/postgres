@@ -1,6 +1,6 @@
 final: prev: {
-  postgresql_16 = prev.postgresql_16.overrideAttrs (old: {
-    pname = "postgresql_16";
+  pg_orioledb = prev.postgresql_16.overrideAttrs (old: {
+    pname = "postgresql_orioledb";
     version = "16_31";
     src = prev.fetchurl {
       url = "https://github.com/orioledb/postgres/archive/refs/tags/patches16_31.tar.gz";
@@ -17,5 +17,5 @@ final: prev: {
       prev.perl
     ];
   });
-  postgresql_orioledb_16 = final.postgresql_16;
+  postgresql_orioledb = final.pg_orioledb;
 }

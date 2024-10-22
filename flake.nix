@@ -116,7 +116,7 @@
           ./nix/ext/pg_cron.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
-          ./nix/ext/pg_net.nix
+          #./nix/ext/pg_net.nix
           ./nix/ext/pg_hashids.nix
           ./nix/ext/pgsodium.nix
           ./nix/ext/pg_graphql.nix
@@ -141,13 +141,14 @@
             x != ./nix/ext/pgvector.nix &&
             x != ./nix/ext/plv8.nix && 
             x != ./nix/ext/postgis.nix && 
-            x != ./nix/ext/pgrouting.nix 
+            x != ./nix/ext/pgrouting.nix &&
+            x != ./nix/ext/pg_net.nix 
         ) ourExtensions;
 
         orioledbExtension = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
 
         #this var is a convenience setting to import the orioledb patched version of postgresql
-        postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb_16;
+        postgresql_orioledb_16 = oriole_pkgs.postgresql_orioledb;
         #postgis_override = pkgs.postgis_override;
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
@@ -242,26 +243,81 @@
             paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
           };
 
-        makeOrioleDbPostgresBin = version: patchedPostgres:
-          let
-            postgresql = patchedPostgres;
-            upstreamExts = map
-              (ext: {
-                name = postgresql.pkgs."${ext}".pname;
-                version = postgresql.pkgs."${ext}".version;
-              })
-              orioledbPsqlExtensions;
-            ourExts = map (ext: { name = ext.pname; version = ext.version; }) (makeOurOrioleDbPostgresPkgs version postgresql);
+        # makeOrioleDbPostgresBin = version: patchedPostgres:
+        #   let
+        #     postgresql = patchedPostgres;
+        #     upstreamExts = map
+        #       (ext: {
+        #         name = postgresql.pkgs."${ext}".pname;
+        #         version = postgresql.pkgs."${ext}".version;
+        #       })
+        #       orioledbPsqlExtensions;
+        #     ourExts = map (ext: { name = ext.pname; version = ext.version; }) (makeOurOrioleDbPostgresPkgs version postgresql);
 
-            pgbin = postgresql.withPackages (ps:
-              (map (ext: ps."${ext}") orioledbPsqlExtensions) ++ (makeOurOrioleDbPostgresPkgs version postgresql)
-            );
-          in
-          pkgs.symlinkJoin {
-            inherit (pgbin) name version;
-            paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
-          };
-
+        #     pgbin = postgresql.withPackages (ps:
+        #       (map (ext: ps."${ext}") orioledbPsqlExtensions) ++ (makeOurOrioleDbPostgresPkgs version postgresql)
+        #     );
+        #   in
+        #   pkgs.symlinkJoin {
+        #     inherit (pgbin) name version;
+        #     paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
+        #   };
+makeOrioleDbPostgresBin = version: patchedPostgres:
+  let
+    postgresql = patchedPostgres;
+    upstreamExts = map
+      (ext: {
+        name = patchedPostgres.pkgs."${ext}".pname;
+        version = patchedPostgres.pkgs."${ext}".version;
+      })
+      orioledbPsqlExtensions;
+    ourExts = map (ext: { name = ext.pname; version = ext.version; }) (makeOurOrioleDbPostgresPkgs version patchedPostgres);
+    
+    # Create the scope and new self/super for package resolution
+    scope = {
+      inherit (patchedPostgres) jitSupport;
+      inherit (oriole_pkgs.llvmPackages) llvm;
+      postgresql = patchedPostgres;
+      inherit (postgresql) stdenv';
+    };
+    newSelf = self // scope;
+    newSuper = { callPackage = oriole_pkgs.newScope (scope // postgresql.pkgs); };
+    
+    # Get the packages using the passthru pattern
+    selectedPackages = 
+      (map (ext: postgresql.pkgs."${ext}") orioledbPsqlExtensions) ++ 
+      (makeOurOrioleDbPostgresPkgs version postgresql);
+    
+    # Build the environment with the selected packages
+    pgbin = oriole_pkgs.buildEnv {
+      name = "postgresql-and-plugins-${postgresql.version}";
+      paths = [ postgresql ] ++ selectedPackages;
+      buildInputs = [ oriole_pkgs.makeWrapper ];
+      passthru = postgresql.passthru // {
+        inherit postgresql;
+        args = selectedPackages;
+      };
+      
+      postBuild = ''
+        mkdir -p $out/bin
+        for bin in ${postgresql}/bin/*; do
+          ln -sf $bin $out/bin/
+        done
+        
+        rm -f $out/bin/postgres
+        makeWrapper ${postgresql}/bin/postgres $out/bin/postgres \
+          --set POSTGRES_MAJOR_VERSION "${postgresql.psqlSchema}" \
+          --prefix PATH : $out/bin \
+          --prefix LD_LIBRARY_PATH : $out/lib
+      '';
+    }// {
+      version = postgresql.version;
+    };
+  in
+  pkgs.symlinkJoin {
+    inherit (pgbin) name version;
+    paths = [ pgbin (makeReceipt pgbin upstreamExts ourExts) ];
+  };
 
         # Create an attribute set, containing all the relevant packages for a
         # PostgreSQL install, wrapped up with a bow on top. There are three
@@ -299,7 +355,7 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            psql_oriole-16 = makeOrioleDbPostgres "16_31" postgresql_orioledb_16;
+            psql_oriole-16 = makeOrioleDbPostgres "16" postgresql_orioledb_16;
           };
 
           # Find the active PostgreSQL version
