@@ -6,9 +6,10 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, ...}:
+  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, rust-overlay, ...}:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -53,10 +54,41 @@
           };
           inherit system;
           overlays = [
-            # NOTE (aseipp): add any needed overlays here. in theory we could
+            # NOTE add any needed overlays here. in theory we could
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+            (import rust-overlay)
+            (final: prev: {
+              cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
+                inherit (final) lib;
+                inherit (final) darwin;
+                inherit (final) fetchCrate;
+                inherit (final) openssl;
+                inherit (final) pkg-config;
+                inherit (final) makeRustPlatform;
+                inherit (final) stdenv;
+                inherit (final) rust-bin;
+              };
+
+              buildPgrxExtension = final.callPackage ./nix/cargo-pgrx/buildPgrxExtension.nix {
+                inherit (final) cargo-pgrx;
+                inherit (final) lib;
+                inherit (final) Security;
+                inherit (final) pkg-config;
+                inherit (final) makeRustPlatform;
+                inherit (final) stdenv;
+                inherit (final) writeShellScriptBin;
+              };
+
+              buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
+              };
+
+              buildPgrxExtension_0_12_6 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_6;
+              };
+            })
             (final: prev: {
               postgresql = final.callPackage ./nix/postgresql/default.nix {
                 inherit (final) lib;
@@ -66,7 +98,6 @@
                 inherit (final) callPackage;
               };
             })
-            (import ./nix/overlays/cargo-pgrx-0-11-3.nix)
           ];
         };
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
@@ -308,6 +339,8 @@
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
+          cargo-pgrx_0_11_3 = pkgs.cargo-pgrx.cargo-pgrx_0_11_3;
+          cargo-pgrx_0_12_6 = pkgs.cargo-pgrx.cargo-pgrx_0_12_6;
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_16 = postgresVersions.psql_16;
@@ -590,10 +623,7 @@
         packages = flake-utils.lib.flattenTree basePackages // {
           # Any extra packages we might want to include in our package
           # set can go here.
-          inherit (pkgs)
-            # NOTE: comes from our cargo-pgrx-0-11-3.nix overlay
-            cargo-pgrx_0_11_3;
-
+          inherit (pkgs);
         };
 
         # The list of exported 'checks' that are run with every run of 'nix
@@ -627,7 +657,21 @@
         # ambient $PATH environment when you run 'nix develop'. This is useful
         # for development and puts many convenient devtools instantly within
         # reach.
-        devShells.default = pkgs.mkShell {
+
+      devShells = let
+        mkCargoPgrxDevShell = { pgrxVersion, rustVersion }: pkgs.mkShell {
+          packages = with pkgs; [
+            basePackages."cargo-pgrx_${pgrxVersion}"
+            (rust-bin.stable.${rustVersion}.default.override {
+              extensions = [ "rust-src" ];
+            })
+          ];
+          shellHook = ''
+            export HISTFILE=.history
+          '';
+        };
+      in {
+        default = pkgs.mkShell {
           packages = with pkgs; [
             coreutils
             just
@@ -650,6 +694,15 @@
             export HISTFILE=.history
           '';
         };
-      }
-    );
+        cargo-pgrx_0_11_3 = mkCargoPgrxDevShell {
+          pgrxVersion = "0_11_3";
+          rustVersion = "1.80.0";
+        };
+        cargo-pgrx_0_12_6 = mkCargoPgrxDevShell {
+          pgrxVersion = "0_12_6";
+          rustVersion = "1.80.0";
+        };
+      };     
+  }
+  );
 }
