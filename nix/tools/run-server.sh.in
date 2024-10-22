@@ -64,11 +64,8 @@ session_preload_libraries = 'supautils'" \
 
 remove_config_items() {
     if [ "$1" == "orioledb-16" ]; then
-        # Remove items from supautils.conf
-        sed -i '/supautils.privileged_extensions/d' "$DATDIR/supautils.conf"
-        
         # Remove items from postgresql.conf
-        sed -i 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
     fi
 }

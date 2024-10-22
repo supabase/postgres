@@ -116,7 +116,7 @@
           ./nix/ext/pg_cron.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
-          #./nix/ext/pg_net.nix
+          ./nix/ext/pg_net.nix
           ./nix/ext/pg_hashids.nix
           ./nix/ext/pgsodium.nix
           ./nix/ext/pg_graphql.nix
@@ -273,7 +273,6 @@ makeOrioleDbPostgresBin = version: patchedPostgres:
       orioledbPsqlExtensions;
     ourExts = map (ext: { name = ext.pname; version = ext.version; }) (makeOurOrioleDbPostgresPkgs version patchedPostgres);
     
-    # Create the scope and new self/super for package resolution
     scope = {
       inherit (patchedPostgres) jitSupport;
       inherit (oriole_pkgs.llvmPackages) llvm;
@@ -283,12 +282,10 @@ makeOrioleDbPostgresBin = version: patchedPostgres:
     newSelf = self // scope;
     newSuper = { callPackage = oriole_pkgs.newScope (scope // postgresql.pkgs); };
     
-    # Get the packages using the passthru pattern
     selectedPackages = 
       (map (ext: postgresql.pkgs."${ext}") orioledbPsqlExtensions) ++ 
       (makeOurOrioleDbPostgresPkgs version postgresql);
     
-    # Build the environment with the selected packages
     pgbin = oriole_pkgs.buildEnv {
       name = "postgresql-and-plugins-${postgresql.version}";
       paths = [ postgresql ] ++ selectedPackages;
@@ -299,18 +296,56 @@ makeOrioleDbPostgresBin = version: patchedPostgres:
       };
       
       postBuild = ''
+        # Ensure all necessary directories exist
         mkdir -p $out/bin
+        mkdir -p $out/lib/postgresql
+        mkdir -p $out/share/postgresql/extension
+
+        # Create proper links for all binaries with environment
         for bin in ${postgresql}/bin/*; do
-          ln -sf $bin $out/bin/
+          binary_name=$(basename $bin)
+          rm -f "$out/bin/$binary_name"
+          makeWrapper $bin $out/bin/$binary_name \
+            --set POSTGRES_MAJOR_VERSION "${postgresql.psqlSchema}" \
+            --prefix PATH : $out/bin \
+            --prefix LD_LIBRARY_PATH : "$out/lib:$out/lib/postgresql" \
+            --prefix PKG_CONFIG_PATH : "$out/lib/pkgconfig" \
+            --set PGDATA "/var/lib/postgresql/${postgresql.psqlSchema}" \
+            --set PGHOST "/run/postgresql"
         done
-        
-        rm -f $out/bin/postgres
-        makeWrapper ${postgresql}/bin/postgres $out/bin/postgres \
-          --set POSTGRES_MAJOR_VERSION "${postgresql.psqlSchema}" \
-          --prefix PATH : $out/bin \
-          --prefix LD_LIBRARY_PATH : $out/lib
+
+        # Ensure extension files are properly linked
+        for pkg in ${postgresql} ${toString selectedPackages}; do
+          # Link shared objects
+          if [ -d "$pkg/lib" ]; then
+            find "$pkg/lib" -type f -name '*.so' -exec ln -sf {} "$out/lib/postgresql/" \;
+          fi
+          
+          # Link extension control and SQL files
+          if [ -d "$pkg/share/postgresql/extension" ]; then
+            find "$pkg/share/postgresql/extension" -type f \( -name '*.control' -o -name '*.sql' \) \
+              -exec ln -sf {} "$out/share/postgresql/extension/" \;
+          fi
+        done
+
+        # Create pg_config if it doesn't exist
+        if [ ! -e "$out/bin/pg_config" ]; then
+          makeWrapper ${postgresql}/bin/pg_config $out/bin/pg_config \
+            --set prefix "$out" \
+            --set includedir "$out/include" \
+            --set pkgincludedir "$out/include/postgresql" \
+            --set includedir-server "$out/include/postgresql/server" \
+            --set libdir "$out/lib" \
+            --set pkglibdir "$out/lib/postgresql" \
+            --set localedir "$out/share/locale" \
+            --set mandir "$out/share/man" \
+            --set sharedir "$out/share/postgresql" \
+            --set sysconfdir "/etc/postgresql" \
+            --set pgxs "$out/lib/postgresql/pgxs/src/makefiles/pgxs.mk" \
+            --set configure "--enable-nls --with-openssl --with-libxml --with-libxslt"
+        fi
       '';
-    }// {
+    } // {
       version = postgresql.version;
     };
   in
