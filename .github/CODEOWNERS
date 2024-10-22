@@ -1,4 +1,3 @@
-* @supabase/backend
-migrations/ @supabase/cli @supabase/backend
-docker/orioledb @supabase/postgres @supabase/backend
-common.vars.pkr.hcl @supabase/postgres @supabase/backend
+* @supabase/postgres
+.github @supabase/backend @supabase/postgres
+migrations/ @supabase/cli @supabase/backend @supabase/postgres
