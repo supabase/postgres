@@ -149,12 +149,4 @@ fi
 # psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
 
 # Start interactive psql session
-<<<<<<< HEAD
-<<<<<<< HEAD
 exec psql -U "$PSQL_USER" -p "$PORTNO" -h localhost postgres
-=======
-exec psql -U supabase_admin -p "$PORTNO" -h localhost postgres
->>>>>>> 882ce94 (ichore: start-client as supbase_admin)
-=======
-exec psql -U postgres -p "$PORTNO" -h localhost postgres
->>>>>>> 0b08343 (Revert "chore: start-client as supbase_admin")
