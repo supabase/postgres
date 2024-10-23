@@ -27,7 +27,7 @@ buildPgrxExtension_0_12_6 rec {
     rev = "v${version}";
     hash = "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=";
   };
-  #cargoSha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+ 
   nativeBuildInputs = [ pkg-config cargo ];
   buildInputs = [ openssl postgresql ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
@@ -35,7 +35,7 @@ buildPgrxExtension_0_12_6 rec {
     darwin.apple_sdk.frameworks.SystemConfiguration 
   ];
 
-  NIX_LDFLAGS = "-L${postgresql.lib}/lib -lpq";
+  NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
 
   # Set necessary environment variables for pgrx
   env = lib.optionalAttrs stdenv.isDarwin {
@@ -75,7 +75,6 @@ buildPgrxExtension_0_12_6 rec {
   preBuild = ''
     echo "Processing git tags..."
     echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
-    export RUSTC_BOOTSTRAP=1
   '';
 
   postInstall = ''
