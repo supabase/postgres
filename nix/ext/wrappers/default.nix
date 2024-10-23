@@ -11,7 +11,7 @@
 , rust-bin
 }:
 let
-  rustVersion = "1.76.0";
+  rustVersion = "1.80.0";
   cargo = rust-bin.stable.${rustVersion}.default;
 in
 buildPgrxExtension_0_12_6 rec {
@@ -27,23 +27,33 @@ buildPgrxExtension_0_12_6 rec {
     rev = "v${version}";
     hash = "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=";
   };
+ 
   nativeBuildInputs = [ pkg-config cargo ];
-  buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
+  buildInputs = [ openssl postgresql ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
     darwin.apple_sdk.frameworks.Security 
     darwin.apple_sdk.frameworks.SystemConfiguration 
   ];
+
+  NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
+
+  # Set necessary environment variables for pgrx
+  env = lib.optionalAttrs stdenv.isDarwin {
+    POSTGRES_LIB = "${postgresql}/lib";
+    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+    PGPORT = "5435";
+  };
+
   OPENSSL_NO_VENDOR = 1;
   #need to set this to 2 to avoid cpu starvation
   CARGO_BUILD_JOBS = "2";
   CARGO="${cargo}/bin/cargo";
+  
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
-    outputHashes = {
-      "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
-    };
+    allowBuiltinFetchGit = true;
   };
-  postPatch = "cp ${cargoLock.lockFile} Cargo.lock";
+  
   buildAndTestSubdir = "wrappers";
   buildFeatures = [
     "helloworld_fdw"
