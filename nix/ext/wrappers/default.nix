@@ -4,7 +4,7 @@
 , openssl
 , pkg-config
 , postgresql
-, buildPgrxExtension_0_11_3
+, buildPgrxExtension_0_12_6
 , cargo
 , darwin
 , jq
@@ -14,18 +14,18 @@ let
   rustVersion = "1.76.0";
   cargo = rust-bin.stable.${rustVersion}.default;
 in
-buildPgrxExtension_0_11_3 rec {
+buildPgrxExtension_0_12_6 rec {
   pname = "supabase-wrappers";
-  version = "0.4.2";
+  version = "0.4.3";
   # update the following array when the wrappers version is updated
   # required to ensure that extensions update scripts from previous versions are generated
-  previousVersions = ["0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
+  previousVersions = ["0.4.2" "0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
   inherit postgresql;
   src = fetchFromGitHub {
     owner = "supabase";
     repo = "wrappers";
     rev = "v${version}";
-    hash = "sha256-ut3IQED6ANXgabiHoEUdfSrwkuuYYSpRoeWdtBvSe64=";
+    hash = "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=";
   };
   nativeBuildInputs = [ pkg-config cargo ];
   buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
