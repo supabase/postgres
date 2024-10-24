@@ -30,6 +30,13 @@
     owner: gotrue
     mode: 0775
 
+- name: gotrue - create /etc/auth.d
+  file:
+    path: /etc/auth.d
+    state: directory
+    owner: gotrue
+    mode: 0755
+
 - name: gotrue - unpack archive in /opt/gotrue
   unarchive:
     remote_src: yes
