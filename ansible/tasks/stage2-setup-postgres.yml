@@ -15,7 +15,7 @@
         cmd: >
           sed -i 's/ timescaledb,//g' 
           /etc/postgresql/postgresql.conf
-      when: is_psql_orioledb_16 and stage2_nix
+      when: is_psql_oriole_16 and stage2_nix
       become: yes
 
     - name: Remove specified extensions from supautils.conf if oriole-16 build
