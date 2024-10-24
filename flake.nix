@@ -104,7 +104,8 @@
         # use, but even if they did, keeping our own copies means that we can
         # rollout new versions of these critical things easier without having to
         # go through the upstream release engineering process.
-        ourExtensions = [
+      ourExtensions = let
+        baseExtensions = [
           ./nix/ext/rum.nix
           ./nix/ext/timescaledb.nix
           ./nix/ext/pgroonga.nix
@@ -123,7 +124,6 @@
           ./nix/ext/pg_cron.nix
           ./nix/ext/pgsql-http.nix
           ./nix/ext/pg_plan_filter.nix
-          ./nix/ext/pg_net.nix
           ./nix/ext/pg_hashids.nix
           ./nix/ext/pgsodium.nix
           ./nix/ext/pg_graphql.nix
@@ -138,7 +138,13 @@
           ./nix/ext/supautils.nix
           ./nix/ext/plv8.nix
         ];
+        
+        # Add pg_net only if NOT on macOS aarch64
+        pgNetExtension = if (system == "aarch64-darwin") 
+          then []
+          else [ ./nix/ext/pg_net.nix ];
 
+        in baseExtensions ++ pgNetExtension;
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
         #we're not using timescaledb in the orioledb version of supabase extensions
@@ -438,7 +444,8 @@
                 --subst-var-by 'LOCALES' '${localeArchive}' \
                 --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts" \
                 --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so' \
-                --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' 
+                --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' \
+                --subst-var-by 'CURRENT_SYSTEM' '${system}'
 
               chmod +x $out/bin/start-postgres-server
             '';
