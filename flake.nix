@@ -160,9 +160,7 @@
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
 
         getPostgresqlPackage = version:
-          if version == "orioledb_16" 
-          then pkgs.postgresql."postgresql_orioledb-16"
-          else pkgs.postgresql."postgresql_${version}";
+          pkgs.postgresql."postgresql_${version}";
         # Create a 'receipt' file for a given postgresql package. This is a way
         # of adding a bit of metadata to the package, which can be used by other
         # tools to inspect what the contents of the install are: the PSQL
@@ -202,7 +200,7 @@
         makeOurPostgresPkgs = version:
           let 
             postgresql = getPostgresqlPackage version;
-            extensionsToUse = if version == "orioledb-16" 
+            extensionsToUse = if (builtins.elem version ["orioledb-16" "orioledb-17"])
               then orioledbExtensions
               else ourExtensions;
           in map (path: pkgs.callPackage path { inherit postgresql; }) extensionsToUse;
@@ -277,7 +275,8 @@
           postgresVersions = {
             psql_15 = makePostgres "15";
             psql_16 = makePostgres "16";
-            psql_orioledb-16 = makePostgres "orioledb-16" ;
+            #psql_orioledb-16 = makePostgres "orioledb-16" ;
+            psql_orioledb-17 = makePostgres "orioledb-17" ;
           };
 
           # Find the active PostgreSQL version
@@ -293,7 +292,8 @@
               };
           postgresql_15 = getPostgresqlPackage "15";
           postgresql_16 = getPostgresqlPackage "16";
-          postgresql_orioledb-16 = getPostgresqlPackage "orioledb-16";
+          #postgresql_orioledb-16 = getPostgresqlPackage "orioledb-16";
+          postgresql_orioledb-17 = getPostgresqlPackage "orioledb-17";
         in 
         postgresVersions //{
           supabase-groonga = supabase-groonga;
@@ -302,13 +302,14 @@
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_16 = postgresVersions.psql_16;
-          psql_orioledb-16 = postgresVersions.psql_orioledb-16;
+          #psql_orioledb-16 = postgresVersions.psql_orioledb-16;
+          psql_orioledb-17 = postgresVersions.psql_orioledb-17;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          inherit postgresql_15 postgresql_16 postgresql_orioledb-16;
+          inherit postgresql_15 postgresql_16 postgresql_orioledb-17;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_16_debug = if pkgs.stdenv.isLinux then postgresql_16.debug else null;
-          postgresql_orioledb-16_debug = if pkgs.stdenv.isLinux then postgresql_orioledb-16.debug else null;
+          postgresql_orioledb-17_debug = if pkgs.stdenv.isLinux then postgresql_orioledb-17.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
@@ -353,11 +354,11 @@
               platforms = platforms.all;
             };
           };
-          postgresql_orioledb-16_src = pkgs.stdenv.mkDerivation {
-            pname = "postgresql-16-src";
-            version = postgresql_orioledb-16.version;
+          postgresql_orioledb-17_src = pkgs.stdenv.mkDerivation {
+            pname = "postgresql-17-src";
+            version = postgresql_orioledb-17.version;
 
-            src = postgresql_16.src;
+            src = postgresql_orioledb-17.src;
 
             nativeBuildInputs = [ pkgs.bzip2 ];
 
@@ -434,7 +435,7 @@
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
                 --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
-                --subst-var-by 'PSQLORIOLEDB16_BINDIR' '${basePackages.psql_orioledb-16.bin}' \
+                --subst-var-by 'PSQLORIOLEDB17_BINDIR' '${basePackages.psql_orioledb-17.bin}' \
                 --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
                 --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
                 --subst-var-by 'LOGGING_CONF_FILE' "$out/etc/postgresql-custom/logging.conf" \

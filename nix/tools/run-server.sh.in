@@ -10,10 +10,10 @@ elif [ "$1" == "16" ]; then
     echo "Starting server for PSQL 16"
     PSQL16=@PSQL16_BINDIR@
     BINDIR="$PSQL16"
-elif [ "$1" == "orioledb-16" ]; then
-    echo "Starting server for PSQL ORIOLEDB 16"
-    PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
-    BINDIR="$PSQLORIOLEDB16"
+elif [ "$1" == "orioledb-17" ]; then
+    echo "Starting server for PSQL ORIOLEDB 17"
+    PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
+    BINDIR="$PSQLORIOLEDB17"
 else
     echo "Please provide a valid Postgres version (15, 16 or orioledb-16)"
     exit 1
@@ -65,7 +65,7 @@ session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
 remove_config_items() {
-    if [ "$1" == "orioledb-16" ]; then
+    if [ "$1" == "orioledb-17" ]; then
         # Remove items from postgresql.conf
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"

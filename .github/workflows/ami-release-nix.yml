@@ -5,7 +5,7 @@ on:
     branches:
       #- develop
       #- release/*
-      - sam/oriole16
+      - sam/oriole17
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'

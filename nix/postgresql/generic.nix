@@ -51,7 +51,7 @@ let
     inherit version;
     pname = pname + lib.optionalString jitSupport "-jit";
 
-    src = if (builtins.match "16_.*" version != null) then
+    src = if (builtins.match "17_*" version != null) then
       fetchurl {
         url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
         inherit hash;

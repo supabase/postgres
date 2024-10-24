@@ -67,13 +67,13 @@
   block:
     - name: Check if psql_version is psql_orioledb-16
       set_fact:
-        is_psql_oriole_16: "{{ psql_version == 'psql_orioledb-16' }}"
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
 
     - name: Remove specified extensions from SQL file
       ansible.builtin.command:
         cmd: >
           sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pgvector\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
-      when: is_psql_oriole_16
+      when: is_psql_oriole
       become: yes
 
     - name: Remove specified extension files from extensions directory
@@ -86,14 +86,14 @@
           - '*plv8*.sql'
           - '*pgvector*.sql'
       register: files_to_remove
-      when: is_psql_oriole_16
+      when: is_psql_oriole
 
     - name: Delete matched extension files
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
       loop: "{{ files_to_remove.files }}"
-      when: is_psql_oriole_16
+      when: is_psql_oriole
       become: yes
 
 
