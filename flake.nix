@@ -33,7 +33,7 @@
           };
           inherit system;
           overlays = [
-            # NOTE (aseipp): add any needed overlays here. in theory we could
+            # NOTE: add any needed overlays here. in theory we could
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
@@ -161,10 +161,6 @@
             receipt-version = "1";
           };
         };
-
-        # makeOurOrioleDbPostgresPkgs = version: patchedPostgres:
-        #   let postgresql = patchedPostgres;
-        #   in map (path: pkgs.callPackage path { inherit postgresql; }) orioledbExtension;
 
         makeOurPostgresPkgs = version:
           let 
