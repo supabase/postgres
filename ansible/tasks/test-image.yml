@@ -65,9 +65,9 @@
 
 - name: Check psql_version and modify migrations if orioe-16
   block:
-    - name: Check if psql_version is psql_oriole-16
+    - name: Check if psql_version is psql_orioledb-16
       set_fact:
-        is_psql_oriole_16: "{{ psql_version == 'psql_oriole-16' }}"
+        is_psql_oriole_16: "{{ psql_version == 'psql_orioledb-16' }}"
 
     - name: Remove specified extensions from SQL file
       ansible.builtin.command:
