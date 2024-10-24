@@ -12,6 +12,7 @@ SELECT extensions_are(
     'pg_graphql',
     'pgcrypto',
     'pgjwt',
+    'pg_net',
     'uuid-ossp',
     'supabase_vault'
      ]
