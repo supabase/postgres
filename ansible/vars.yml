@@ -12,7 +12,7 @@ postgres_major:
 postgres_release:
   #postgres15: "15.8.1.003-staging-5"
   #postgres16: "16.3.1.000-staging-5"
-  postgresorioledb-16: "orioledb-16.3.1.000-staging-11"
+  postgresorioledb-16: "orioledb-16.3.1.000-staging-12"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
