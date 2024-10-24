@@ -49,7 +49,6 @@ buildPgrxExtension_0_12_6 rec {
   CARGO_BUILD_JOBS = "2";
   CARGO="${cargo}/bin/cargo";
   
-  #CARGO_NET_GIT_FETCH_WITH_CLI = "true";
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
     allowBuiltinFetchGit = true;
