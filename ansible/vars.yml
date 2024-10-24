@@ -5,14 +5,14 @@ async_mode: true
 postgres_major:
   #- "15"
   #- "16"
-  - "oriole-16"
+  - "orioledb-16"
 
 # Full version strings for each major version
 # TOD PR uncomment these lines
 postgres_release:
   #postgres15: "15.8.1.003-staging-5"
   #postgres16: "16.3.1.000-staging-5"
-  postgresoriole-16: "oriole-16.3.1.000-staging-9"
+  postgresoriole-16: "orioledb-16.3.1.000-staging-9"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
