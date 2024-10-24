@@ -7,6 +7,8 @@ let
       , glibc, zlib, readline, openssl, icu, lz4, zstd, systemd, libossp_uuid
       , pkg-config, libxml2, tzdata, libkrb5, substituteAll, darwin
       , linux-pam
+      #orioledb specific
+      , perl, bison, flex, docbook_xsl, docbook_xml_dtd_45, docbook_xsl_ns, libxslt
 
       # This is important to obtain a version of `libpq` that does not depend on systemd.
       , systemdSupport ? lib.meta.availableOn stdenv.hostPlatform systemd && !stdenv.hostPlatform.isStatic
@@ -49,10 +51,16 @@ let
     inherit version;
     pname = pname + lib.optionalString jitSupport "-jit";
 
-    src = fetchurl {
-      url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
-      inherit hash;
-    };
+    src = if (builtins.match "16_.*" version != null) then
+      fetchurl {
+        url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
+        inherit hash;
+      }
+    else
+      fetchurl {
+        url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
+        inherit hash;
+      };
 
     hardeningEnable = lib.optionals (!stdenv'.cc.isClang) [ "pie" ];
 
@@ -74,7 +82,10 @@ let
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv'.isLinux [ linux-pam ]
-      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ];
+      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
+      ++ lib.optionals (builtins.match "16_.*" version != null) [ 
+        perl bison flex docbook_xsl docbook_xml_dtd_45 docbook_xsl_ns libxslt
+      ];
 
     nativeBuildInputs = [
       makeWrapper

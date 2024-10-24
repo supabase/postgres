@@ -4,11 +4,22 @@
       - libtap-parser-sourcehandler-pgtap-perl
   when: debpkg_mode
 
+# - name: Temporarily disable PG Sodium references in config
+#   become: yes
+#   become_user: postgres
+#   shell:
+#     cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+#   when: debpkg_mode or stage2_nix
+
 - name: Temporarily disable PG Sodium references in config
   become: yes
   become_user: postgres
   shell:
-    cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+    cmd: >
+      sed -i.bak
+      -e 's/\(shared_preload_libraries = '\''.*\)pgsodium,\(.*'\''\)/\1\2/'
+      -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/'
+      /etc/postgresql/postgresql.conf
   when: debpkg_mode or stage2_nix
 
 - name: Start Postgres Database to load all extensions.
@@ -51,6 +62,40 @@
   register: retval
   failed_when: retval.rc != 0
   when: debpkg_mode or stage2_nix
+
+- name: Check psql_version and modify migrations if orioe-16
+  block:
+    - name: Check if psql_version is psql_orioledb-16
+      set_fact:
+        is_psql_oriole_16: "{{ psql_version == 'psql_orioledb-16' }}"
+
+    - name: Remove specified extensions from SQL file
+      ansible.builtin.command:
+        cmd: >
+          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pgvector\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
+      when: is_psql_oriole_16
+      become: yes
+
+    - name: Remove specified extension files from extensions directory
+      ansible.builtin.find:
+        paths: /tmp/migrations/tests/extensions
+        patterns: 
+          - '*timescaledb*.sql'
+          - '*postgis*.sql'
+          - '*pgrouting*.sql'
+          - '*plv8*.sql'
+          - '*pgvector*.sql'
+      register: files_to_remove
+      when: is_psql_oriole_16
+
+    - name: Delete matched extension files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ files_to_remove.files }}"
+      when: is_psql_oriole_16
+      become: yes
+
 
 - name: Run migrations tests
   shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql

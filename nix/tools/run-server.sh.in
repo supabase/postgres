@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 [ ! -z "$DEBUG" ] && set -x
-# first argument should be '15' or '16' for the version
+
 if [ "$1" == "15" ]; then
     echo "Starting server for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
@@ -63,6 +63,15 @@ pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
+
+remove_config_items() {
+    if [ "$1" == "orioledb-16" ]; then
+        # Remove items from postgresql.conf
+        sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
+    fi
+}
+remove_config_items "$1"
 if [ "$CURRENT_SYSTEM" = "aarch64-darwin" ]; then
     echo "NOTE: using aarch64-darwin system"
     sed -i '' 's/ pg_net,//g' "$DATDIR/postgresql.conf"

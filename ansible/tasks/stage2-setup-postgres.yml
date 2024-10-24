@@ -3,11 +3,33 @@
 #   shell: |
 #     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+  block:
+    - name: Check if psql_version is psql_orioledb-16
+      set_fact:
+        is_psql_oriole_16: "{{ psql_version == 'psql_orioledb-16' }}"
+
+    - name: Remove specified extensions from postgresql.conf if oriole-16 build
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/ timescaledb,//g' 
+          /etc/postgresql/postgresql.conf
+      when: is_psql_oriole_16 and stage2_nix
+      become: yes
+
+    - name: Remove specified extensions from supautils.conf if oriole-16 build
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' 
+          /etc/postgresql-custom/supautils.conf
+      when: is_psql_oriole_16 and stage2_nix
+      become: yes
+
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
-#TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
   when: stage2_nix
 
 - name: Install pg_prove from nix binary cache
@@ -198,13 +220,19 @@
     recurse: yes
   when: stage2_nix
 
-- name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
-  shell: >
-    sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
-    sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-    && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
-  become: yes
-  when: stage2_nix
+- name: Check psql_version and run postgis linking if not oriole-16
+  block:
+    - name: Check if psql_version is psql_orioledb-16
+      set_fact:
+        is_psql_oriole_16: "{{ psql_version == 'psql_orioledb-16' }}"
+
+    - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
+      shell: >
+        sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
+        sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
+        && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
+      become: yes
+      when: stage2_nix and not is_psql_oriole_16
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   file:
@@ -237,6 +265,15 @@
     state: present
     # script is expected to be placed by finalization tasks for different target platforms
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
+  when: stage2_nix
+
+#TODO PR may need to remove this.
+- name: Create symbolic link for pgsodium_getkey script
+  file:
+    src: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+    dest: "/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey"
+    state: link
+  become: yes
   when: stage2_nix
 
 - name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
