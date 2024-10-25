@@ -109,14 +109,17 @@ set session authorization supabase_tmp;
 -- to handle snowflakes that happened in the past
 revoke supabase_admin from authenticator;
 
+-- #incident-2024-09-12-project-upgrades-are-temporarily-disabled
 do $$
 begin
-  if exists (select from pg_extension where extname = 'timescaledb') then
-    execute(format('select %s.timescaledb_pre_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_pre_restore')));
+  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
+    execute('grant pg_read_all_data to postgres');
   end if;
 end
 $$;
+grant pg_signal_backend to postgres;
 
+-- Swap postgres & supabase_admin on global objects (roles, role settings, etc.).
 do $$
 declare
   postgres_rolpassword text := (select rolpassword from pg_authid where rolname = 'postgres');
@@ -128,7 +131,82 @@ declare
     join pg_authid a on a.oid = s.setrole
     where a.rolname in ('postgres', 'supabase_admin')
   );
-  event_triggers jsonb[] := (select coalesce(array_agg(jsonb_build_object('name', evtname)), '{}') from pg_event_trigger where evtowner = 'postgres'::regrole);
+  rec record;
+  obj jsonb;
+begin
+  set local search_path = '';
+
+  alter role postgres rename to supabase_admin_;
+  alter role supabase_admin rename to postgres;
+  alter role supabase_admin_ rename to supabase_admin;
+
+  -- role grants
+  for rec in
+    select * from pg_auth_members
+  loop
+    execute(format('revoke %s from %s;', rec.roleid::regrole, rec.member::regrole));
+    execute(format(
+      'grant %s to %s %s granted by %s;',
+      case
+        when rec.roleid = 'postgres'::regrole then 'supabase_admin'
+        when rec.roleid = 'supabase_admin'::regrole then 'postgres'
+        else rec.roleid::regrole
+      end,
+      case
+        when rec.member = 'postgres'::regrole then 'supabase_admin'
+        when rec.member = 'supabase_admin'::regrole then 'postgres'
+        else rec.member::regrole
+      end,
+      case
+        when rec.admin_option then 'with admin option'
+        else ''
+      end,
+      case
+        when rec.grantor = 'postgres'::regrole then 'supabase_admin'
+        when rec.grantor = 'supabase_admin'::regrole then 'postgres'
+        else rec.grantor::regrole
+      end
+    ));
+  end loop;
+
+  -- role passwords
+  execute(format('alter role postgres password %L;', postgres_rolpassword));
+  execute(format('alter role supabase_admin password %L;', supabase_admin_rolpassword));
+
+  -- role settings
+  foreach obj in array role_settings
+  loop
+    execute(format('alter role %I %s reset all',
+                   case when obj->>'role' = 'postgres' then 'supabase_admin' else 'postgres' end,
+                   case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end
+    ));
+  end loop;
+  foreach obj in array role_settings
+  loop
+    for rec in
+      select split_part(value, '=', 1) as key, substr(value, strpos(value, '=') + 1) as value
+      from jsonb_array_elements_text(obj->'configs')
+    loop
+      execute(format('alter role %I %s set %I to %s',
+                     obj->>'role',
+                     case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end,
+                     rec.key,
+                     -- https://github.com/postgres/postgres/blob/70d1c664f4376fd3499e3b0c6888cf39b65d722b/src/bin/pg_dump/dumputils.c#L861
+                     case
+                       when rec.key in ('local_preload_libraries', 'search_path', 'session_preload_libraries', 'shared_preload_libraries', 'temp_tablespaces', 'unix_socket_directories')
+                         then rec.value
+                       else quote_literal(rec.value)
+                     end
+      ));
+    end loop;
+  end loop;
+end
+$$;
+
+-- Swap postgres & supabase_admin on in-database objects (schemas, tables, functions, etc.).
+do $$
+declare
+  event_triggers jsonb[] := (select coalesce(array_agg(jsonb_build_object('name', evtname)), '{}') from pg_event_trigger where evtowner = 'supabase_admin'::regrole);
   user_mappings jsonb[] := (
     select coalesce(array_agg(jsonb_build_object('oid', um.oid, 'role', a.rolname, 'server', s.srvname, 'options', um.umoptions)), '{}')
     from pg_user_mapping um
@@ -219,70 +297,9 @@ begin
     alter event trigger pgsodium_trg_mask_update disable;
   end if;
 
-  alter role postgres rename to supabase_admin_;
-  alter role supabase_admin rename to postgres;
-  alter role supabase_admin_ rename to supabase_admin;
-
-  -- role grants
-  for rec in
-    select * from pg_auth_members
-  loop
-    execute(format('revoke %s from %s;', rec.roleid::regrole, rec.member::regrole));
-    execute(format(
-      'grant %s to %s %s granted by %s;',
-      case
-        when rec.roleid = 'postgres'::regrole then 'supabase_admin'
-        when rec.roleid = 'supabase_admin'::regrole then 'postgres'
-        else rec.roleid::regrole
-      end,
-      case
-        when rec.member = 'postgres'::regrole then 'supabase_admin'
-        when rec.member = 'supabase_admin'::regrole then 'postgres'
-        else rec.member::regrole
-      end,
-      case
-        when rec.admin_option then 'with admin option'
-        else ''
-      end,
-      case
-        when rec.grantor = 'postgres'::regrole then 'supabase_admin'
-        when rec.grantor = 'supabase_admin'::regrole then 'postgres'
-        else rec.grantor::regrole
-      end
-    ));
-  end loop;
-
-  -- role passwords
-  execute(format('alter role postgres password %L;', postgres_rolpassword));
-  execute(format('alter role supabase_admin password %L;', supabase_admin_rolpassword));
-
-  -- role settings
-  foreach obj in array role_settings
-  loop
-    execute(format('alter role %I %s reset all',
-                   case when obj->>'role' = 'postgres' then 'supabase_admin' else 'postgres' end,
-                   case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end
-    ));
-  end loop;
-  foreach obj in array role_settings
-  loop
-    for rec in
-      select split_part(value, '=', 1) as key, substr(value, strpos(value, '=') + 1) as value
-      from jsonb_array_elements_text(obj->'configs')
-    loop
-      execute(format('alter role %I %s set %I to %s',
-                     obj->>'role',
-                     case when obj->>'database' is null then '' else format('in database %I', obj->>'database') end,
-                     rec.key,
-                     -- https://github.com/postgres/postgres/blob/70d1c664f4376fd3499e3b0c6888cf39b65d722b/src/bin/pg_dump/dumputils.c#L861
-                     case
-                       when rec.key in ('local_preload_libraries', 'search_path', 'session_preload_libraries', 'shared_preload_libraries', 'temp_tablespaces', 'unix_socket_directories')
-                         then rec.value
-                       else quote_literal(rec.value)
-                     end
-      ));
-    end loop;
-  end loop;
+  if exists (select from pg_extension where extname = 'timescaledb') then
+    execute(format('select %s.timescaledb_pre_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_pre_restore')));
+  end if;
 
   reassign owned by postgres to supabase_admin;
 
@@ -352,6 +369,30 @@ begin
     loop
       if obj->>'role' in ('postgres', 'supabase_admin') or rec.grantee::regrole in ('postgres', 'supabase_admin') then
         execute(format('alter default privileges for role %I %s revoke %s on %s from %s'
+                     , obj->>'role'
+                     , case when obj->>'schema' is null then ''
+                            else format('in schema %I', obj->>'schema')
+                       end
+                     , rec.privilege_type
+                     , case when obj->>'objtype' = 'r' then 'tables'
+                            when obj->>'objtype' = 'S' then 'sequences'
+                            when obj->>'objtype' = 'f' then 'functions'
+                            when obj->>'objtype' = 'T' then 'types'
+                            when obj->>'objtype' = 'n' then 'schemas'
+                       end
+                     , case when rec.grantee = 0 then 'public' else rec.grantee::regrole::text end
+                     ));
+      end if;
+    end loop;
+  end loop;
+  foreach obj in array default_acls
+  loop
+    for rec in
+      select grantor, grantee, privilege_type, is_grantable
+      from aclexplode((obj->>'acl')::aclitem[])
+    loop
+      if obj->>'role' in ('postgres', 'supabase_admin') or rec.grantee::regrole in ('postgres', 'supabase_admin') then
+        execute(format('alter default privileges for role %I %s grant %s on %s to %s %s'
                      , case when obj->>'role' = 'postgres' then 'supabase_admin'
                             when obj->>'role' = 'supabase_admin' then 'postgres'
                             else obj->>'role'
@@ -371,31 +412,6 @@ begin
                             when rec.grantee = 0 then 'public'
                             else rec.grantee::regrole::text
                        end
-                     ));
-      end if;
-    end loop;
-  end loop;
-
-  foreach obj in array default_acls
-  loop
-    for rec in
-      select grantor, grantee, privilege_type, is_grantable
-      from aclexplode((obj->>'acl')::aclitem[])
-    loop
-      if obj->>'role' in ('postgres', 'supabase_admin') or rec.grantee::regrole in ('postgres', 'supabase_admin') then
-        execute(format('alter default privileges for role %I %s grant %s on %s to %s %s'
-                     , obj->>'role'
-                     , case when obj->>'schema' is null then ''
-                            else format('in schema %I', obj->>'schema')
-                       end
-                     , rec.privilege_type
-                     , case when obj->>'objtype' = 'r' then 'tables'
-                            when obj->>'objtype' = 'S' then 'sequences'
-                            when obj->>'objtype' = 'f' then 'functions'
-                            when obj->>'objtype' = 'T' then 'types'
-                            when obj->>'objtype' = 'n' then 'schemas'
-                       end
-                     , case when rec.grantee = 0 then 'public' else rec.grantee::regrole::text end
                      , case when rec.is_grantable then 'with grant option' else '' end
                      ));
       end if;
@@ -405,7 +421,7 @@ begin
   -- schemas
   foreach obj in array schemas
   loop
-    if obj->>'owner' = 'postgres' then
+    if obj->>'owner' = 'supabase_admin' then
       execute(format('alter schema %s owner to postgres;', (obj->>'oid')::regnamespace));
     end if;
     for rec in
@@ -413,7 +429,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('revoke %s on schema %s from %I', rec.privilege_type, (obj->>'oid')::regnamespace, case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end));
+      execute(format('revoke %s on schema %s from %I', rec.privilege_type, (obj->>'oid')::regnamespace, rec.grantee::regrole));
     end loop;
   end loop;
   foreach obj in array schemas
@@ -423,14 +439,18 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on schema %s to %s %s', rec.privilege_type, (obj->>'oid')::regnamespace, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on schema %s to %s %s'
+                   , rec.privilege_type
+                   , (obj->>'oid')::regnamespace
+                   , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
+                   , case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
 
   -- types
   foreach obj in array types
   loop
-    if obj->>'owner' = 'postgres' then
+    if obj->>'owner' = 'supabase_admin' then
       execute(format('alter type %s owner to postgres;', (obj->>'oid')::regtype));
     end if;
     for rec in
@@ -438,7 +458,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('revoke %s on type %s from %I', rec.privilege_type, (obj->>'oid')::regtype, case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end));
+      execute(format('revoke %s on type %s from %I', rec.privilege_type, (obj->>'oid')::regtype, rec.grantee::regrole));
     end loop;
   end loop;
   foreach obj in array types
@@ -448,14 +468,18 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on type %s to %s %s', rec.privilege_type, (obj->>'oid')::regtype, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on type %s to %s %s'
+                   , rec.privilege_type
+                   , (obj->>'oid')::regtype
+                   , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
+                   , case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
 
   -- functions
   foreach obj in array functions
   loop
-    if obj->>'owner' = 'postgres' then
+    if obj->>'owner' = 'supabase_admin' then
       execute(format('alter routine %s(%s) owner to postgres;', (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc)));
     end if;
     for rec in
@@ -471,7 +495,7 @@ begin
             end
           , (obj->>'oid')::regproc
           , pg_get_function_identity_arguments((obj->>'oid')::regproc)
-          , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
+          , rec.grantee::regrole
           ));
     end loop;
   end loop;
@@ -490,7 +514,7 @@ begin
             end
           , (obj->>'oid')::regproc
           , pg_get_function_identity_arguments((obj->>'oid')::regproc)
-          , rec.grantee::regrole
+          , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
           , case when rec.is_grantable then 'with grant option' else '' end
           ));
     end loop;
@@ -501,7 +525,7 @@ begin
   loop
     -- obj->>'oid' (text) needs to be casted to oid first for some reason
 
-    if obj->>'owner' = 'postgres' then
+    if obj->>'owner' = 'supabase_admin' then
       execute(format('alter table %s owner to postgres;', (obj->>'oid')::oid::regclass));
     end if;
     for rec in
@@ -509,7 +533,7 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('revoke %s on table %s from %I', rec.privilege_type, (obj->>'oid')::oid::regclass, case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end));
+      execute(format('revoke %s on table %s from %I', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole));
     end loop;
   end loop;
   foreach obj in array relations
@@ -521,9 +545,17 @@ begin
       from aclexplode((obj->>'acl')::aclitem[])
       where grantee::regrole in ('postgres', 'supabase_admin')
     loop
-      execute(format('grant %s on table %s to %s %s', rec.privilege_type, (obj->>'oid')::oid::regclass, rec.grantee::regrole, case when rec.is_grantable then 'with grant option' else '' end));
+      execute(format('grant %s on table %s to %s %s'
+                   , rec.privilege_type
+                   , (obj->>'oid')::oid::regclass
+                   , case when rec.grantee = 'postgres'::regrole then 'supabase_admin' else 'postgres' end
+                   , case when rec.is_grantable then 'with grant option' else '' end));
     end loop;
   end loop;
+
+  if exists (select from pg_extension where extname = 'timescaledb') then
+    execute(format('select %s.timescaledb_post_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_post_restore')));
+  end if;
 
   if exists (select from pg_event_trigger where evtname = 'pgsodium_trg_mask_update') then
     alter event trigger pgsodium_trg_mask_update enable;
@@ -531,25 +563,7 @@ begin
 end
 $$;
 
-do $$
-begin
-  if exists (select from pg_extension where extname = 'timescaledb') then
-    execute(format('select %s.timescaledb_post_restore()', (select pronamespace::regnamespace from pg_proc where proname = 'timescaledb_post_restore')));
-  end if;
-end
-$$;
-
 alter database postgres connection limit -1;
-
--- #incident-2024-09-12-project-upgrades-are-temporarily-disabled
-do $$
-begin
-  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
-    execute('grant pg_read_all_data to postgres');
-  end if;
-end
-$$;
-grant pg_signal_backend to postgres;
 
 set session authorization supabase_admin;
 drop role supabase_tmp;
