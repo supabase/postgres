@@ -426,6 +426,7 @@ EOF
     cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
     # removing supautils config as to allow the latest one provided by the latest image to be used
     rm -f "$MOUNT_POINT/conf/supautils.conf" || true
+    rm -f "$MOUNT_POINT/conf/extension-custom-scripts" || true
 
     # removing wal-g config as to allow it to be explicitly enabled on the new instance
     rm -f "$MOUNT_POINT/conf/wal-g.conf"
