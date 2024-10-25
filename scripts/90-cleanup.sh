@@ -37,7 +37,7 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libcgal-dev \
 	libgcc-9-dev \
 	libgcc-8-dev \
-  ansible
+ 	ansible
 
   add-apt-repository --yes --remove ppa:ansible/ansible
 
