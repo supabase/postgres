@@ -38,8 +38,12 @@ EOF
         $ARGS
 }
 
+function cleanup_packages {
+    apt-get -y remove --purge ansible
+    add-apt-repository --yes --remove ppa:ansible/ansible
+}
 
 install_packages
 install_nix
 execute_stage2_playbook
-
+cleanup_packages
