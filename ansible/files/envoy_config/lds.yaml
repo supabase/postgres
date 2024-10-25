@@ -258,6 +258,9 @@ resources:
                               max_program_size: 150
                             regex: >-
                               /auth/v1/(verify|callback|authorize|sso/saml/(acs|metadata|slo)|\.well-known/(openid-configuration|jwks\.json))
+                        request_headers_to_remove:
+                          - apikey
+                          - sb-opk
                         route:
                           cluster: gotrue
                           regex_rewrite:
@@ -271,6 +274,9 @@ resources:
                         typed_per_filter_config: *ref_0
                       - match:
                           prefix: /auth/v1/
+                        request_headers_to_remove:
+                          - apikey
+                          - sb-opk
                         route:
                           cluster: gotrue
                           prefix_rewrite: /
@@ -282,6 +288,7 @@ resources:
                               present_match: true
                         request_headers_to_remove:
                           - apikey
+                          - sb-opk
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
@@ -295,6 +302,7 @@ resources:
                           prefix: /rest/v1/
                         request_headers_to_remove:
                           - apikey
+                          - sb-opk
                         route:
                           cluster: postgrest
                           prefix_rewrite: /
@@ -311,6 +319,7 @@ resources:
                               present_match: true
                         request_headers_to_remove:
                           - apikey
+                          - sb-opk
                         route:
                           cluster: postgrest_admin
                           prefix_rewrite: /
@@ -323,6 +332,7 @@ resources:
                           prefix: /rest-admin/v1/
                         request_headers_to_remove:
                           - apikey
+                          - sb-opk
                         route:
                           cluster: postgrest_admin
                           prefix_rewrite: /
@@ -332,18 +342,25 @@ resources:
                           header:
                             key: Content-Profile
                             value: graphql_public
+                        request_headers_to_remove:
+                          - apikey
+                          - sb-opk
                         route:
                           cluster: postgrest
                           prefix_rewrite: /rpc/graphql
                           timeout: 125s
                       - match:
                           prefix: /admin/v1/
+                        request_headers_to_remove:
+                          - sb-opk
                         route:
                           cluster: admin_api
                           prefix_rewrite: /
                           timeout: 600s
                       - match:
                           prefix: /customer/v1/privileged/
+                        request_headers_to_remove:
+                          - sb-opk
                         route:
                           cluster: admin_api
                           prefix_rewrite: /privileged/
@@ -367,6 +384,8 @@ resources:
                                           treat_missing_header_as_empty: true
                       - match:
                           prefix: /metrics/aggregated
+                        request_headers_to_remove:
+                          - sb-opk
                         route:
                           cluster: admin_api
                           prefix_rewrite: /supabase-internal/metrics
