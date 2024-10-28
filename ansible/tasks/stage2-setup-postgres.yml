@@ -43,12 +43,13 @@
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_src"
   when: stage2_nix
 
-- name: Install Git for Nix package management
+- name: Remove Git after Nix package installations
   become: yes
   apt:
     name: git
-    state: present
-    update_cache: yes
+    state: absent
+    autoremove: yes  
+    purge: yes       
   when: stage2_nix
   
 - name: Set ownership and permissions for /etc/ssl/private
