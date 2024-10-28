@@ -9,6 +9,7 @@
 , darwin
 , jq
 , rust-bin
+, git
 }:
 let
   rustVersion = "1.80.0";
