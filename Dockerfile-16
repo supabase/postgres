@@ -48,6 +48,7 @@ RUN apt update -y && apt install -y \
     software-properties-common \
     wget \
     sudo \
+    git \
     && apt clean
 
 
