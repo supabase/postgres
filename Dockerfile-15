@@ -103,11 +103,11 @@ RUN chown -R postgres:postgres /usr/lib/postgresql
 RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
 
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata
-
-RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
+    apt-get install -y --no-install-recommends tzdata && \
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
