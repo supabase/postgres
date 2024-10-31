@@ -78,6 +78,9 @@ EOF
 
         run_sql -c "$RECREATE_PG_CRON_QUERY"
     fi
+
+    # #incident-2024-09-12-project-upgrades-are-temporarily-disabled
+    run_sql -c "grant pg_read_all_data, pg_signal_backend to postgres"
 }
 
 function complete_pg_upgrade {

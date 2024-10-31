@@ -110,6 +110,11 @@ function format_and_mount_rootfs {
 	fi
 	
 	mkfs.ext4 /dev/xvdh
+
+	# Explicitly reserving 100MiB worth of blocks for the data volume
+	RESERVED_DATA_VOLUME_BLOCK_COUNT=$((100 * 1024 * 1024 / 4096))
+	tune2fs -r $RESERVED_DATA_VOLUME_BLOCK_COUNT /dev/xvdh
+
 	mkdir -p /mnt/data
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
