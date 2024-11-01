@@ -12,9 +12,7 @@ from
 
 -- Test queue is not case sensitive
 select
-  msg_id,
-  read_ct,
-  message
+  *
 from
   pgmq.send(
     queue_name:='foo', -- note: lowercase useage

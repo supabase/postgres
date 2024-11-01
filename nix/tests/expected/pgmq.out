@@ -20,18 +20,18 @@ from
 
 -- Test queue is not case sensitive
 select
-  msg_id,
-  read_ct,
-  message
+  *
 from
   pgmq.send(
     queue_name:='foo', -- note: lowercase useage
     msg:='{"foo": "bar2"}',
     delay:=5
   );
-ERROR:  column "msg_id" does not exist
-LINE 2:   msg_id,
-          ^
+ send 
+------
+    2
+(1 row)
+
 select
   msg_id,
   read_ct,
@@ -65,7 +65,7 @@ select
   );
  archive 
 ---------
- f
+ t
 (1 row)
 
 select
