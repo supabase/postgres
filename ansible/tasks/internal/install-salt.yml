@@ -1,29 +1,47 @@
 - name: Add apt repository for Saltstack (arm)
   block:
+    - name: Ensure /etc/apt/keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
     - name: salt gpg key
-      ansible.builtin.apt_key:
-        url: https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
-        keyring: /etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg
+      ansible.builtin.get_url:
+        url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+        dest: /etc/apt/keyrings/salt-archive-keyring-2023.pgp
+        mode: '0644'
 
     - name: salt apt repo
       ansible.builtin.apt_repository:
-         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/{{ salt_minion_version }} focal main
+         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=arm64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
+         filename: 'salt.list'
          state: present
   when: platform == "arm64"
 
 - name: Add apt repository for Saltstack (amd)
   block:
+    - name: Ensure /etc/apt/keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
     - name: salt gpg key
-      ansible.builtin.apt_key:
-        url: https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
-        keyring: /etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg
+      ansible.builtin.get_url:
+        url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+        dest: /etc/apt/keyrings/salt-archive-keyring-2023.pgp
+        mode: '0644'
 
     - name: salt apt repo
       ansible.builtin.apt_repository:
-         repo: deb [signed-by=/etc/apt/trusted.gpg.d/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/{{ salt_minon_version }} focal main
+         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=amd64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
+         filename: 'salt.list'
          state: present
   when: platform == "amd64"
 
 - name: Salt minion install
   apt:
     name: salt-minion
+    state: present
+    update_cache: yes
