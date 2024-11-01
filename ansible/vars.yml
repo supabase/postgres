@@ -7,12 +7,12 @@ async_mode: true
 # postgresql_release_checksum: sha256:ea2cf059a85882654b989acd07edc121833164a30340faee0d3615cf7058e66c
 postgres_major:
   - "15"
-  # - "16"
+  - "16"
 
 # Full version strings for each major version
 postgres_release:
-  postgres15: "15.8.1.004-pgmq-perms-7"
-  # postgres16: "16.3.1.010-pgmq-perms"
+  postgres15: "15.8.1.005"
+  postgres16: "16.3.1.011"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
