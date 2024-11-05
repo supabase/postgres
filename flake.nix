@@ -17,6 +17,7 @@
         system.x86_64-linux
         system.aarch64-linux
         system.aarch64-darwin
+        system.x86_64-darwin
       ];
     in
     flake-utils.lib.eachSystem ourSystems (system:
