@@ -120,7 +120,7 @@ stdenv.mkDerivation (finalAttrs: {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
     homepage = "https://plv8.github.io/";
     maintainers = with maintainers; [ samrose ];
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
     license = licenses.postgresql;
   };
 })
