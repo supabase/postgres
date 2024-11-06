@@ -39,7 +39,7 @@ MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
-POST_UPGRADE_PGBOUNCER_CLEANUP_SCRIPT="/tmp/pg_upgrade/pg_upgrade_pgbouncer_cleanup.sql"
+POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
 SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
@@ -134,19 +134,19 @@ cleanup() {
     retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
 
     echo "Making sure postgres still has access to pg_shadow"
-    cat << EOF >> $POST_UPGRADE_PGBOUNCER_CLEANUP_SCRIPT
+    cat << EOF >> $POST_UPGRADE_POSTGRES_PERMS_SCRIPT
 DO \$\$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'pg_shadow' AND viewowner = 'supabase_admin') THEN
-        ALTER function pgbouncer.get_auth owner to supabase_admin;
-        GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(p_usename TEXT) TO postgres;
-    END IF;
-END;
+begin
+  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
+    execute('grant pg_read_all_data to postgres');
+  end if;
+end
 \$\$;
+grant pg_signal_backend to postgres;
 EOF
 
-    if [ -f $POST_UPGRADE_PGBOUNCER_CLEANUP_SCRIPT ]; then
-        retry 5 run_sql -f $POST_UPGRADE_PGBOUNCER_CLEANUP_SCRIPT
+    if [ -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT ]; then
+        retry 5 run_sql -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT
     fi
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
