@@ -11,8 +11,8 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgres15: "15.8.1.007"
-  postgres16: "16.3.1.013"
+  postgres15: "15.8.1.008"
+  postgres16: "16.3.1.014"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -146,8 +146,7 @@ wrappers_release: "0.4.3"
 hypopg_release: "1.4.1"
 hypopg_release_checksum: sha256:9afe6357fd389d8d33fad81703038ce520b09275ec00153c6c89282bcdedd6bc
 
-pg_repack_release: "1.5.2"
-pg_repack_commit: "85b64c6d4f599b2988343c4e7121acab505c9006"
+pg_repack_release: "1.5.0"
 pg_repack_release_checksum: sha256:9a14d6a95bfa29f856aa10538238622c1f351d38eb350b196c06720a878ccc52
 
 pgvector_release: "0.7.4"

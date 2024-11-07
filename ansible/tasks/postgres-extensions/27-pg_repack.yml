@@ -13,7 +13,7 @@
    git:
      repo: https://github.com/reorg/pg_repack.git
      dest: /tmp/pg_repack
-     version: "{{ pg_repack_commit }}"
+     version: "ver_{{ pg_repack_release }}"
    become: yes
 
  - name: pg_repack - build
