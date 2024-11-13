@@ -103,8 +103,8 @@ buildPgrxExtension_0_12_6 rec {
    else
      echo "Warning: $main_sql_file not found"
    fi
-   mv $out/lib/wrappers-${version}.so $out/lib/wrappers.so
-   ln -s $out/lib/wrappers.so $out/lib/wrappers-${version}.so
+   mv $out/lib/wrappers-${version}${postgresql.dlSuffix} $out/lib/wrappers${postgresql.dlSuffix}
+   ln -s $out/lib/wrappers${postgresql.dlSuffix} $out/lib/wrappers-${version}${postgresql.dlSuffix}
  
   echo "Creating wrappers.so symlinks to support pg_upgrade..."
   if [ -f "$out/lib/wrappers.so" ]; then
