@@ -4,42 +4,57 @@
 , openssl
 , pkg-config
 , postgresql
-, buildPgrxExtension_0_11_3
+, buildPgrxExtension_0_12_6
 , cargo
 , darwin
 , jq
+, rust-bin
+, git
 }:
-
-buildPgrxExtension_0_11_3 rec {
+let
+  rustVersion = "1.80.0";
+  cargo = rust-bin.stable.${rustVersion}.default;
+in
+buildPgrxExtension_0_12_6 rec {
   pname = "supabase-wrappers";
-  version = "0.4.2";
+  version = "0.4.3";
   # update the following array when the wrappers version is updated
   # required to ensure that extensions update scripts from previous versions are generated
-  previousVersions = ["0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
+  previousVersions = ["0.4.2" "0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
   inherit postgresql;
   src = fetchFromGitHub {
     owner = "supabase";
     repo = "wrappers";
     rev = "v${version}";
-    hash = "sha256-ut3IQED6ANXgabiHoEUdfSrwkuuYYSpRoeWdtBvSe64=";
+    hash = "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=";
   };
+ 
   nativeBuildInputs = [ pkg-config cargo ];
-  buildInputs = [ openssl ] ++ lib.optionals (stdenv.isDarwin) [ 
+  buildInputs = [ openssl postgresql git ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
     darwin.apple_sdk.frameworks.Security 
     darwin.apple_sdk.frameworks.SystemConfiguration 
   ];
+
+  NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
+
+  # Set necessary environment variables for pgrx
+  env = lib.optionalAttrs stdenv.isDarwin {
+    POSTGRES_LIB = "${postgresql}/lib";
+    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+    PGPORT = "5435";
+  };
+
   OPENSSL_NO_VENDOR = 1;
   #need to set this to 2 to avoid cpu starvation
   CARGO_BUILD_JOBS = "2";
   CARGO="${cargo}/bin/cargo";
+  
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
-    outputHashes = {
-      "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
-    };
+    allowBuiltinFetchGit = true;
   };
-  postPatch = "cp ${cargoLock.lockFile} Cargo.lock";
+  
   buildAndTestSubdir = "wrappers";
   buildFeatures = [
     "helloworld_fdw"

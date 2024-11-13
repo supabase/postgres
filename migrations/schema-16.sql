@@ -787,22 +787,22 @@ CREATE TABLE storage.objects (
 --
 
 CREATE VIEW vault.decrypted_secrets AS
- SELECT secrets.id,
-    secrets.name,
-    secrets.description,
-    secrets.secret,
+ SELECT id,
+    name,
+    description,
+    secret,
         CASE
-            WHEN (secrets.secret IS NULL) THEN NULL::text
+            WHEN (secret IS NULL) THEN NULL::text
             ELSE
             CASE
-                WHEN (secrets.key_id IS NULL) THEN NULL::text
-                ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secrets.secret, 'base64'::text), convert_to(((((secrets.id)::text || secrets.description) || (secrets.created_at)::text) || (secrets.updated_at)::text), 'utf8'::name), secrets.key_id, secrets.nonce), 'utf8'::name)
+                WHEN (key_id IS NULL) THEN NULL::text
+                ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secret, 'base64'::text), convert_to(((((id)::text || description) || (created_at)::text) || (updated_at)::text), 'utf8'::name), key_id, nonce), 'utf8'::name)
             END
         END AS decrypted_secret,
-    secrets.key_id,
-    secrets.nonce,
-    secrets.created_at,
-    secrets.updated_at
+    key_id,
+    nonce,
+    created_at,
+    updated_at
    FROM vault.secrets;
 
 

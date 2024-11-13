@@ -24,8 +24,10 @@ jobs:
             arch: arm64
           - runner: macos-latest
             arch: arm64
+          - runner: macos-13
+            arch: amd64
     runs-on: ${{ matrix.runner }}
-
+    timeout-minutes: 180
     steps:
 
       - name: Check out code
@@ -40,6 +42,7 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
           output-credentials: true
+          role-duration-seconds: 7200
       - name: write secret key
         # use python so we don't interpolate the secret into the workflow logs, in case of bugs
         run: |
@@ -47,23 +50,23 @@ jobs:
         env:
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Log in to Docker Hub
-        if: matrix.runner != 'macos-latest'
+        if: matrix.runner != 'macos-latest' && matrix.runner != 'macos-13'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build psql bundle with nix
-        if: matrix.runner != 'macos-latest'
+        if: matrix.runner != 'macos-latest' && matrix.runner != 'macos-13'
         run: docker build -t base_nix -f docker/nix/Dockerfile .
       - name: Run build psql bundle
-        if: matrix.runner != 'macos-latest'
+        if: matrix.runner != 'macos-latest' && matrix.runner != 'macos-13'
         run:  |
           docker run -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
                     -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
                     -e AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }} \
                     base_nix bash -c "./workspace/docker/nix/build_nix.sh"
       - name: Build psql bundle on macos
-        if: matrix.runner == 'macos-latest'
+        if: matrix.runner == 'macos-latest' || matrix.runner == 'macos-13'
         run: |
           curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
           --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \

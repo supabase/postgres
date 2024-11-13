@@ -51,7 +51,7 @@ Aside from having [ufw](https://help.ubuntu.com/community/UFW),[fail2ban](https:
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.16.1](http://www.pgbouncer.org/changelog.html#pgbouncer-116x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v10.1.1](https://github.com/PostgREST/postgrest/releases/tag/v10.1.1) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/stable/) | [v12.2.3](https://github.com/PostgREST/postgrest/releases/tag/v12.2.3) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. |
 
 ## Install

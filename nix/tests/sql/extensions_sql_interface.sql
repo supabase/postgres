@@ -63,6 +63,18 @@ from
     on e.oid = d.refobjid
 where
   d.deptype = 'e'
+  -- Filter out changes between pg15 and pg16 from extensions that ship with postgres
+  -- new in pg16
+  and not (e.extname = 'fuzzystrmatch' and p.proname = 'daitch_mokotoff')
+  and not (e.extname = 'pageinspect' and p.proname = 'bt_multi_page_stats')
+  and not (e.extname = 'pg_buffercache' and p.proname = 'pg_buffercache_summary')
+  and not (e.extname = 'pg_buffercache' and p.proname = 'pg_buffercache_usage_counts')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_block_info')
+  -- removed in pg16
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_records_info_till_end_of_wal')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_stats_till_end_of_wal')
+  -- changed in pg16 - output signature added a column
+  and not (e.extname = 'pageinspect' and p.proname = 'brin_page_items')
 order by
   e.extname,
   n.nspname,
@@ -97,5 +109,6 @@ where
   and pc.relkind in ('r', 'v', 'm', 'i')
 order by
   e.extname,
+  n.nspname,
   pc.relname,
   pa.attname;

@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgvector";
-  version = "0.7.4";
+  version = "0.8.0";
 
   buildInputs = [ postgresql ];
 
@@ -10,13 +10,13 @@ stdenv.mkDerivation rec {
     owner = "pgvector";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-qwPaguQUdDHV8q6GDneLq5MuhVroPizpbqt7f08gKJI=";
+    hash = "sha256-JsZV+I4eRMypXTjGmjCtMBXDVpqTIPHQa28ogXncE/Q=";
   };
 
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
 
-    cp *.so      $out/lib
+    cp *${postgresql.dlSuffix}      $out/lib
     cp sql/*.sql $out/share/postgresql/extension
     cp *.control $out/share/postgresql/extension
   '';

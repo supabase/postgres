@@ -101,7 +101,7 @@ function setup_postgres {
   mv /etc/postgresql.schema.sql /docker-entrypoint-initdb.d/migrations/99-schema.sql
 
   tar -xzvf "$INIT_PAYLOAD_PATH" -C / ./etc/postgresql-custom/pgsodium_root.key
-  echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >>$PG_CONF
+  sed -i "/# Automatically generated optimizations/i # Supabase Platform Defaults\ninclude = '/etc/postgresql-custom/platform-defaults.conf'\n" $PG_CONF
 
   # TODO (darora): walg enablement is temporarily performed here until changes from https://github.com/supabase/postgres/pull/639 get picked up
   # other things will still be needed in the future (auth_delay config)

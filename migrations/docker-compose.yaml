@@ -33,7 +33,9 @@ services:
     command: pg_prove /tests/test.sql
 
   dbmate:
-    image: amacneil/dbmate:1.16.2
+    build:
+      context: .
+      dockerfile: Dockerfile.dbmate
     depends_on:
       db:
         condition: service_healthy

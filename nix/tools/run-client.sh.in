@@ -3,16 +3,96 @@
 
 [ ! -z "$DEBUG" ] && set -x
 
-# first argument should be '15' or '16' for the version
-if [ "$1" == "15" ]; then
+# Default values
+PSQL_VERSION="15"
+MIGRATION_FILE=""
+PORTNO="@PGSQL_DEFAULT_PORT@"
+PSQL_USER="postgres"
+
+# Function to display help
+print_help() {
+    echo "Usage: nix run .#start-client -- [options]"
+    echo
+    echo "Options:"
+    echo "  -v, --version [15|16|orioledb-16]  Specify the PostgreSQL version to use (required)"
+    echo "  -f, --file FILE                    Provide a custom migration script"
+    echo "  -u, --user USER                    Specify the user/role to use (default: postgres)"
+    echo "  -h, --help                         Show this help message"
+    echo
+    echo "Description:"
+    echo "  Starts an interactive 'psql' session connecting to a Postgres database started with the"
+    echo "  'nix run .#start-server' command. If a migration file is not provided, the client"
+    echo "  initializes the database with the default migrations for a new Supabase project."
+    echo "  If a migrations file is provided, default migrations are skipped"
+    echo "  If no migration file is provided, it runs the default Supabase migrations."
+    echo
+    echo "Examples:"
+    echo "  nix run .#start-client"
+    echo "  nix run .#start-client -- --version 15"
+    echo "  nix run .#start-client -- --version 16 --file custom_migration.sql"
+    echo "  nix run .#start-client -- --version 16 --port 5433"
+    echo "  nix run .#start-client -- --version 16 --user supabase_admin"
+}
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -v|--version)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PSQL_VERSION="$2"
+                shift 2
+            else
+                echo "Error: --version requires an argument (15, 16, or orioledb-16)"
+                exit 1
+            fi
+            ;;
+        -f|--file)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                MIGRATION_FILE="$2"
+                shift 2
+            else
+                echo "Error: --file requires a filename"
+                exit 1
+            fi
+            ;;
+        -u|--user)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PSQL_USER="$2"
+                shift 2
+            else
+                echo "Error: --user requires an argument"
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            print_help
+            exit 1
+            ;;
+    esac
+done
+
+# Check if version is provided
+if [[ -z "$PSQL_VERSION" ]]; then
+    echo "Error: PostgreSQL version is required."
+    print_help
+    exit 1
+fi
+
+# Determine PostgreSQL version
+if [ "$PSQL_VERSION" == "15" ]; then
     echo "Starting client for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
-elif [ "$1" == "16" ]; then
+elif [ "$PSQL_VERSION" == "16" ]; then
     echo "Starting client for PSQL 16"
     PSQL16=@PSQL16_BINDIR@
     BINDIR="$PSQL16"
-elif [ "$1" == "orioledb-16" ]; then
+elif [ "$PSQL_VERSION" == "orioledb-16" ]; then
     echo "Starting client for PSQL ORIOLEDB 16"
     PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
     BINDIR="$PSQLORIOLEDB16"
@@ -20,11 +100,12 @@ else
     echo "Please provide a valid Postgres version (15, 16, or orioledb-16)"
     exit 1
 fi
+
 #vars for migration.sh
 export PATH=$BINDIR/bin:$PATH
 export POSTGRES_DB=postgres
 export POSTGRES_HOST=localhost
-export POSTGRES_PORT=@PGSQL_DEFAULT_PORT@
+
 PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 MIGRATIONS_DIR=@MIGRATIONS_DIR@
@@ -35,20 +116,37 @@ psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$POR
     create role postgres superuser login password '$PGPASSWORD';
     alter database postgres owner to postgres;
 EOSQL
-for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
-    echo "$0: running $sql"
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f  "$sql" postgres
-done
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
-# run migrations as super user - postgres user demoted in post-setup
-for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
-    echo "$0: running $sql"
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$sql" postgres
-done
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres
-# TODO Do we need to reset stats when running migrations locally?
-#psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
 
-exec psql -U postgres -p "$PORTNO" -h localhost postgres
+# Use custom migration script if provided
+if [ -n "$MIGRATION_FILE" ]; then
+    echo "$0: running user-provided migration file $MIGRATION_FILE"
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$MIGRATION_FILE" postgres
+else
+    # Run default init scripts
+    for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
+        echo "$0: running $sql"
+        psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f "$sql" postgres
+    done
+
+    # Alter user password
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
+
+    # Run additional schema files
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
+
+    # Run migrations as superuser
+    for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
+        echo "$0: running $sql"
+        psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$sql" postgres
+    done
+
+    # Run PostgreSQL schema
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres
+fi
+
+# Optional: Reset stats if needed
+# psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
+
+# Start interactive psql session
+exec psql -U "$PSQL_USER" -p "$PORTNO" -h localhost postgres

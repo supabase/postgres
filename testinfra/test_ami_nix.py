@@ -65,6 +65,10 @@ upstream_metrics_sources:
         name: gotrue
         url: 'http://localhost:9122/metrics'
         labels_to_attach: [{name: supabase_project_ref, value: aaaaaaaaaaaaaaaaaaaa}, {name: service_type, value: gotrue}]
+    -
+        name: postgrest
+        url: 'http://localhost:3001/metrics'
+        labels_to_attach: [{name: supabase_project_ref, value: aaaaaaaaaaaaaaaaaaaa}, {name: service_type, value: postgrest}]
 monitoring:
     disk_usage:
         enabled: true

@@ -3,10 +3,19 @@
 #   shell: |
 #     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
+
+- name: Install Git for Nix package management
+  become: yes
+  apt:
+    name: git
+    state: present
+    update_cache: yes
+  when: stage2_nix
+
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#psql_15/bin"
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
 #TODO (samrose) switch pg_prove sourcing to develop branch once PR is merged
   when: stage2_nix
 
@@ -22,6 +31,27 @@
     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supabase-groonga"
   when: stage2_nix
 
+- name: Install debug symbols for postgres version
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_debug"
+  when: stage2_nix
+
+- name: Install source files for postgresql version
+  become: yes
+  shell: |
+    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_src"
+  when: stage2_nix
+
+- name: Remove Git after Nix package installations
+  become: yes
+  apt:
+    name: git
+    state: absent
+    autoremove: yes  
+    purge: yes       
+  when: stage2_nix
+  
 - name: Set ownership and permissions for /etc/ssl/private
   become: yes
   file:

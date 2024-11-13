@@ -11,15 +11,15 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "pg_repack";
-  version = "1.5.0";
+  version = "1.5.2";
 
   buildInputs = postgresql.buildInputs ++ [ postgresql ];
 
   src = fetchFromGitHub {
     owner = "reorg";
     repo = "pg_repack";
-    rev = "ver_${finalAttrs.version}";
-    hash = "sha256-do80phyMxwcRIkYyUt9z02z7byNQhK+pbSaCUmzG+4c=";
+    rev = "85b64c6d4f599b2988343c4e7121acab505c9006";
+    hash = "sha256-lAuLI+vupusvn3uTzQ9OaLqkEfUVMCAwU9R70tTbb8Y=";
   };
 
   installPhase = ''
