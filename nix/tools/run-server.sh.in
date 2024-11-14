@@ -49,9 +49,6 @@ cp "$READREPL_CONFIG_FILE" "$DATDIR/read-replica.conf"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS" "$DATDIR"
 sed "s|supautils.privileged_extensions_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.privileged_extensions_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
 sed -e "1i\\
-dynamic_shared_memory_type = mmap\\
-shared_buffers = '64MB'\\
-max_connections = 20\\
 include = '$DATDIR/supautils.conf'" \
 -e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
