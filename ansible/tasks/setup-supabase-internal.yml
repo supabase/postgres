@@ -114,3 +114,6 @@
   import_tasks: internal/install-salt.yml
   tags:
     - aws-only
+
+- name: Envoy - use lds.supabase.yml for /etc/envoy/lds.yaml
+  command: mv /etc/envoy/lds.supabase.yml /etc/envoy/lds.yaml
