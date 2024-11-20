@@ -115,5 +115,5 @@
   tags:
     - aws-only
 
-- name: Envoy - use lds.supabase.yml for /etc/envoy/lds.yaml
-  command: mv /etc/envoy/lds.supabase.yml /etc/envoy/lds.yaml
+- name: Envoy - use lds.supabase.yaml for /etc/envoy/lds.yaml
+  command: mv /etc/envoy/lds.supabase.yaml /etc/envoy/lds.yaml
