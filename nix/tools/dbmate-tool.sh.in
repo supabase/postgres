@@ -13,6 +13,8 @@ FLAKE_URL="github:supabase/postgres"
 MIGRATIONS_DIR="@MIGRATIONS_DIR@"
 CURRENT_SYSTEM="@CURRENT_SYSTEM@"
 ANSIBLE_VARS="@ANSIBLE_VARS@"
+PGBOUNCER_AUTH_SCHEMA_SQL=@PGBOUNCER_AUTH_SCHEMA_SQL@
+STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
@@ -203,6 +205,9 @@ EOSQL
         echo "Failed to configure PostgreSQL roles and permissions"
         exit 1
     fi
+    "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
+    "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
+
     #set db url to run dbmate
     export DATABASE_URL="postgres://$PGSQL_USER:$PGPASSWORD@localhost:$PORTNO/postgres?sslmode=disable"
     #export path so dbmate can find correct psql and pg_dump

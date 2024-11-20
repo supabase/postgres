@@ -537,6 +537,8 @@
           let
             migrationsDir = ./migrations/db;
             ansibleVars = ./ansible/vars.yml;
+            pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+            statExtensionSql = ./ansible/files/stat_extension.sql;
           in
           pkgs.runCommand "dbmate-tool" {
             buildInputs = with pkgs; [
@@ -557,7 +559,9 @@
               --subst-var-by 'MIGRATIONS_DIR' $out \
               --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
               --subst-var-by 'ANSIBLE_VARS' ${ansibleVars} \
-              --subst-var-by 'CURRENT_SYSTEM' '${system}'
+              --subst-var-by 'CURRENT_SYSTEM' '${system}' \
+              --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
+              --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
             chmod +x $out/bin/dbmate-tool
             wrapProgram $out/bin/dbmate-tool \
               --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.overmind pkgs.dbmate pkgs.nix pkgs.jq pkgs.yq ]}
