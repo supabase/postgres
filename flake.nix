@@ -539,6 +539,11 @@
               --subst-var-by 'NIX' '${pkgs.nixVersions.nix_2_20}/bin/nix'
             chmod +x $out/bin/sync-exts-versions
           '';
+          local-infra-bootstrap = pkgs.runCommand "local-infra-bootstrap" { } ''
+            mkdir -p $out/bin
+            substitute ${./nix/tools/local-infra-bootstrap.sh.in} $out/bin/local-infra-bootstrap
+            chmod +x $out/bin/local-infra-bootstrap
+          ''; 
         };
 
         # Create a testing harness for a PostgreSQL package. This is used for
@@ -657,6 +662,7 @@
             migration-test = mkApp "migrate-tool" "migrate-postgres";
             sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
             pg-restore = mkApp "pg-restore" "pg-restore";
+            local-infra-bootstrap = mkApp "local-infra-bootstrap" "local-infra-bootstrap";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
