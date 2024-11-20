@@ -11,8 +11,8 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgres15: "15.8.1.011"
-  postgres16: "16.3.1.017"
+  postgres15: "15.8.1.012"
+  postgres16: "16.3.1.018"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
