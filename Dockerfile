@@ -36,7 +36,7 @@ ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.3.2
 ARG index_advisor_release=0.2.0
-ARG supautils_release=2.2.1
+ARG supautils_release=2.5.0
 ARG wal_g_release=2.0.1
 
 ####################
