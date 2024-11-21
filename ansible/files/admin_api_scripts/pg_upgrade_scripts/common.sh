@@ -457,7 +457,7 @@ begin
   loop
     if obj->>'owner' = 'postgres' then
       execute(format('alter %s %s(%s) owner to postgres;'
-                     , case when obj->>'kind' = 'p' then 'procedure' else 'function'
+                     , case when obj->>'kind' = 'p' then 'procedure' else 'function' end
                      , (obj->>'oid')::regproc
                      , pg_get_function_identity_arguments((obj->>'oid')::regproc)));
     end if;
