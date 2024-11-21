@@ -456,7 +456,10 @@ begin
   foreach obj in array functions
   loop
     if obj->>'owner' = 'postgres' then
-      execute(format('alter routine %s(%s) owner to postgres;', (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc)));
+      execute(format('alter %s %s(%s) owner to postgres;'
+                     , case when obj->>'kind' = 'p' then 'procedure' else 'function'
+                     , (obj->>'oid')::regproc
+                     , pg_get_function_identity_arguments((obj->>'oid')::regproc)));
     end if;
     for rec in
       select grantor, grantee, privilege_type, is_grantable
