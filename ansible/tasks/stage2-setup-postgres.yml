@@ -50,19 +50,6 @@
       when: is_psql_oriole and stage2_nix
       become: yes
 
-    # TODO PR may need to remove this.
-    # - name: Add ICU locale settings
-    #   ansible.builtin.lineinfile:
-    #     path: /etc/postgresql/postgresql.conf
-    #     line: "{{ item }}"
-    #     state: present
-    #   with_items:
-    #     - "lc_collate = 'en-US-x-icu'"
-    #     - "lc_ctype = 'en-US-x-icu'"
-    #     - "icu_locale = 'en-US'"
-    #   when: is_psql_oriole and stage2_nix
-    #   become: yes
-
 - name: Install Git for Nix package management
   become: yes
   apt:
@@ -321,7 +308,6 @@
     line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
   when: stage2_nix
 
-#TODO PR may need to remove this.
 - name: Create symbolic link for pgsodium_getkey script
   file:
     src: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"

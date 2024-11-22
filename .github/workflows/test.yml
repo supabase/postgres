@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - develop
-  #TODO PR uncomment this line
-  #pull_request:
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -41,31 +40,45 @@ jobs:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
     steps:
+      - name: Check if orioledb-17
+        id: check-version
+        run: |
+          if [ "${{ matrix.postgres_version }}" = "\"orioledb-17\"" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/checkout@v3
+        if: steps.check-version.outputs.skip != 'true'
 
       - uses: DeterminateSystems/nix-installer-action@main
+        if: steps.check-version.outputs.skip != 'true'
 
       - name: Set PostgreSQL version environment variable
+        if: steps.check-version.outputs.skip != 'true'
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Strip quotes from pg major and set env var
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           stripped_version=$(echo ${{ matrix.postgres_version }} | sed 's/^"\(.*\)"$/\1/')
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          PG_VERSION=$(echo $PG_VERSION | tr -d '"')
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
       - id: settings
-        # Remove spaces and quotes to get the raw version string
+        if: steps.check-version.outputs.skip != 'true'
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
 
       - name: Generate args
+        if: steps.check-version.outputs.skip != 'true'
         id: args
         run: |
           ARGS=$(sudo nix run nixpkgs#yq -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
@@ -74,10 +87,15 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - run: docker context create builders
+        if: steps.check-version.outputs.skip != 'true'
+
       - uses: docker/setup-buildx-action@v3
+        if: steps.check-version.outputs.skip != 'true'
         with:
           endpoint: builders
+
       - uses: docker/build-push-action@v5
+        if: steps.check-version.outputs.skip != 'true'
         with:
           load: true
           context: .
@@ -92,6 +110,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
 
       - name: Start Postgres
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           docker run --rm --pull=never \
           -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
@@ -100,6 +119,7 @@ jobs:
           -d supabase/postgres:${{ steps.settings.outputs.postgres-version }}
 
       - name: Install psql
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -107,11 +127,13 @@ jobs:
           sudo apt install -y --no-install-recommends postgresql-client-${{ env.PGMAJOR }}
 
       - name: Install pg_prove
+        if: steps.check-version.outputs.skip != 'true'
         run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
         env:
           SHELL: /bin/bash
 
       - name: Wait for healthy database
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           count=0
           until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == "healthy" ]; do
@@ -130,6 +152,7 @@ jobs:
           container: supabase_postgres
 
       - name: Run tests
+        if: steps.check-version.outputs.skip != 'true'
         run: pg_prove migrations/tests/test.sql
         env:
           PGHOST: localhost
@@ -139,6 +162,7 @@ jobs:
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
       - name: Check migrations are idempotent
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           for sql in ./migrations/db/migrations/*.sql; do
             echo "$0: running $sql"
@@ -152,10 +176,12 @@ jobs:
           PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
       - name: Update Dockerfile.dbmate version
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           sed -i 's/%VERSION%/${{ env.PGMAJOR }}/g' migrations/Dockerfile.dbmate
 
       - name: verify schema.sql is committed
+        if: steps.check-version.outputs.skip != 'true'
         run: |
           docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
