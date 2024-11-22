@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+[ ! -z "$DEBUG" ] && set -x
+
+# Default values
+PSQL_VERSION="ALL"
+PORTNO="@PGSQL_DEFAULT_PORT@"
+PGSQL_SUPERUSER="@PGSQL_SUPERUSER@"
+PGPASSWORD="${PGPASSWORD:-postgres}"
+PGSQL_USER="postgres"
+FLAKE_URL="github:supabase/postgres"
+MIGRATIONS_DIR="@MIGRATIONS_DIR@"
+CURRENT_SYSTEM="@CURRENT_SYSTEM@"
+ANSIBLE_VARS="@ANSIBLE_VARS@"
+PGBOUNCER_AUTH_SCHEMA_SQL=@PGBOUNCER_AUTH_SCHEMA_SQL@
+STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
+# Cleanup function
+cleanup() {
+    echo "Cleaning up..."
+    
+    # Kill overmind processes first
+    if [ -S "./.overmind.sock" ]; then
+        overmind kill || true
+        sleep 2
+    fi
+
+    # Kill any remaining postgres processes
+    echo "Killing any remaining postgres processes..."
+    pkill -9 postgres || true
+    pkill -9 -f "tmux.*overmind.*postgresql" || true
+    
+    # Extra cleanup for tmux sessions
+    tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
+    
+    # Remove socket and Procfile
+    rm -f .overmind.sock Procfile
+    
+    # Verify cleanup
+    remaining=$(ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep || true)
+    if [ ! -z "$remaining" ]; then
+        echo "Warning: Some processes might still be running:"
+        echo "$remaining"
+    fi
+}
+
+# Set up trap for cleanup on script exit
+
+# Function to display help
+print_help() {
+    echo "Usage: nix run .#dbmate-tool -- [options]"
+    echo
+    echo "Options:"
+    echo "  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
+    echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
+    echo "  -h, --help                         Show this help message"
+    echo
+    echo "Description:"
+    echo "  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions."
+    echo "  NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file."
+    echo
+    echo "Examples:"
+    echo "  nix run .#dbmate-tool"
+    echo "  nix run .#dbmate-tool -- --version 15"
+    echo "  nix run .#dbmate-tool -- --version 16 --port 5433"
+}
+
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -v|--version)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PSQL_VERSION="$2"
+                shift 2
+            else
+                echo "Error: --version requires an argument (15, 16, or orioledb-17)"
+                exit 1
+            fi
+            ;;
+        -u|--user)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PGSQL_USER="$2"
+                shift 2
+            else
+                echo "Error: --user requires an argument"
+                exit 1
+            fi
+            ;;
+        -f|--flake-url)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                FLAKE_URL="$2"
+                shift 2
+            else
+                echo "Error: --flake-url requires an argument"
+                exit 1
+            fi
+            ;;
+        -p|--port)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PORTNO="$2"
+                shift 2
+            else
+                echo "Error: --port requires an argument"
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            print_help
+            exit 1
+            ;;
+    esac
+done
+
+# Function to wait for PostgreSQL to be ready
+wait_for_postgres() {
+    local max_attempts=30  # Increased significantly
+    local attempt=1
+    
+    # Give overmind a moment to actually start the process
+    sleep 2
+    
+    while [ $attempt -le $max_attempts ]; do
+        "${PSQLBIN}/pg_isready" -h localhost -p "$PORTNO" -U "$PGSQL_SUPERUSER" -d postgres
+        local status=$?
+        
+        if [ $status -eq 0 ]; then
+            echo "PostgreSQL is ready!"
+            return 0
+        fi
+        echo "Waiting for PostgreSQL to start (attempt $attempt/$max_attempts)..."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    echo "PostgreSQL failed to start after $max_attempts attempts"
+    overmind echo postgres
+    return 1
+}
+
+trim_schema() {
+    case "$CURRENT_SYSTEM" in
+    "x86_64-darwin"|"aarch64-darwin")
+        sed -i '' '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
+        echo "Matched: $CURRENT_SYSTEM"
+        ;;
+    *)
+        sed -i '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
+        ;;
+    esac
+}
+overmind_start() {
+        cat > Procfile << EOF
+postgres_${PSQL_VERSION}: exec nix run "$FLAKE_URL#start-server" "$PSQL_VERSION"
+EOF
+    overmind start -D
+    echo "Waiting for overmind socket..."
+    max_wait=5
+    count=0
+    while [ $count -lt $max_wait ]; do
+        if [ -S "./.overmind.sock" ]; then
+            # Found the socket, give it a moment to be ready
+            sleep 2
+            echo "Socket file found and ready"
+            break
+        fi
+        echo "Waiting for socket file (attempt $count/$max_wait)"
+        sleep 1
+        count=$((count + 1))
+    done
+}
+migrate_version() {
+    echo "PSQL_VERSION: $PSQL_VERSION"
+    overmind kill || true
+    rm -f .overmind.sock Procfile  || true
+    PSQLBIN=$(nix build --no-link "$FLAKE_URL#psql_$PSQL_VERSION/bin" --json | jq -r '.[].outputs.out + "/bin"')
+    echo "Using PostgreSQL version $PSQL_VERSION from $PSQLBIN"
+    
+    # Start overmind
+    overmind_start
+    echo "Waiting for overmind socket..."
+
+
+    echo "Waiting for PostgreSQL to be ready..."
+
+    #Wait for PostgreSQL to be ready to accept connections
+    if ! wait_for_postgres; then
+        echo "Failed to connect to PostgreSQL server"
+        exit 1
+    fi
+
+    echo "PostgreSQL server is ready"
+
+    # Configure PostgreSQL roles and permissions
+    if ! "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres <<-EOSQL
+create role postgres superuser login password '$PGPASSWORD';
+alter database postgres owner to postgres;
+EOSQL
+    then
+        echo "Failed to configure PostgreSQL roles and permissions"
+        exit 1
+    fi
+    "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
+    "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
+
+    #set db url to run dbmate
+    export DATABASE_URL="postgres://$PGSQL_USER:$PGPASSWORD@localhost:$PORTNO/postgres?sslmode=disable"
+    #export path so dbmate can find correct psql and pg_dump
+    export PATH="$PSQLBIN:$PATH"
+    # run init scripts
+    if ! dbmate --migrations-dir "$MIGRATIONS_DIR/init-scripts" up; then
+        echo "Error: Initial migration failed"
+        exit 1
+    fi
+
+    # Password update command
+    if ! "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
+        echo "Error: Failed to update supabase_admin password"
+        exit 1
+    fi
+
+    # Set up database URL
+    export DATABASE_URL="postgres://$PGSQL_SUPERUSER:$PGPASSWORD@localhost:$PORTNO/postgres?sslmode=disable"
+    # Run migrations
+    if ! dbmate --migrations-dir "$MIGRATIONS_DIR/migrations" up; then
+        echo "Error: Final migration failed"
+        exit 1
+    fi
+
+    echo "Running dbmate dump with $PSQLBIN"
+    dbmate dump
+
+    echo "CURRENT_SYSTEM: $CURRENT_SYSTEM"
+    if [ -f "./db/schema.sql" ]; then
+        trim_schema
+        cp "./db/schema.sql" "./migrations/schema-$PSQL_VERSION.sql"
+        echo "Schema file moved to ./migrations/schema-$PSQL_VERSION.sql"
+        echo "PSQLBIN is $PSQLBIN"
+    else
+        echo "Warning: schema.sql file not found in ./db directory"
+        exit 1
+    fi
+
+    # If we get here, all commands succeeded
+    echo "PostgreSQL migration completed successfully"
+    echo "Check migrations are idempotent"
+    for sql in ./migrations/db/migrations/*.sql; do
+        echo "$0: running $sql"
+        "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres -f "$sql" || {
+            echo "Failed to execute $sql"
+            exit 1
+        }
+    done
+}
+
+if [ "$PSQL_VERSION" == "all" ]; then
+    VERSIONS=$(yq '.postgres_major[]' "$ANSIBLE_VARS" | tr -d '"')
+    echo "$VERSIONS" | while read -r version; do
+        PSQL_VERSION="$version"
+        echo "Migrating to PostgreSQL version $PSQL_VERSION"
+        migrate_version
+        cleanup
+    done
+else
+    echo "Migrating to PostgreSQL version $PSQL_VERSION"
+    migrate_version
+    cleanup
+fi
