@@ -213,7 +213,7 @@
     - name: Initialize the database stage2_nix (non-orioledb)
       become: yes
       become_user: postgres
-      shell: source /var/lib/postgresql/.bashrc && initdb -D /var/lib/postgresql/data -o "--allow-group-access" -o "--username=supabase_admin"
+      shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
       args:
         executable: /bin/bash
       environment:
