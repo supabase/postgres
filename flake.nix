@@ -111,6 +111,7 @@
           ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
           ./nix/ext/wal2json.nix
+          ./nix/ext/pgmq.nix
           ./nix/ext/pg_repack.nix
           ./nix/ext/pg-safeupdate.nix
           ./nix/ext/plpgsql-check.nix

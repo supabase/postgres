@@ -42,6 +42,7 @@ create extension pg_graphql;
 create extension pg_freespacemap;
 create extension pg_hashids;
 create extension pg_prewarm;
+create extension pgmq;
 create extension pg_jsonschema;
 create extension pg_repack;
 create extension pg_stat_monitor;
