@@ -49,8 +49,8 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION=${{ inputs.postgresVersion }}
           fi
@@ -81,7 +81,6 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
           SLACK_FOOTER: ''
-
   publish-prod:
     needs: prepare
     runs-on: ubuntu-latest
@@ -95,11 +94,13 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+  
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION=${{ inputs.postgresVersion }}

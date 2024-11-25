@@ -29,8 +29,8 @@ buildPgrxExtension_0_12_6 rec {
     hash = "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=";
   };
  
-  nativeBuildInputs = [ pkg-config cargo ];
-  buildInputs = [ openssl postgresql git ] ++ lib.optionals (stdenv.isDarwin) [ 
+  nativeBuildInputs = [ pkg-config cargo git ];
+  buildInputs = [ openssl postgresql ] ++ lib.optionals (stdenv.isDarwin) [ 
     darwin.apple_sdk.frameworks.CoreFoundation 
     darwin.apple_sdk.frameworks.Security 
     darwin.apple_sdk.frameworks.SystemConfiguration 
@@ -53,7 +53,10 @@ buildPgrxExtension_0_12_6 rec {
   #CARGO_NET_GIT_FETCH_WITH_CLI = "true";
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
-    allowBuiltinFetchGit = true;
+    allowBuiltinFetchGit = false;
+    outputHashes = {
+      "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0=";
+    };
   };
 
  preConfigure = ''
