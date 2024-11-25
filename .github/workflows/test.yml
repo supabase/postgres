@@ -30,7 +30,6 @@ jobs:
 
   build:
     needs: prepare
-    if: ${{ !contains(needs.prepare.outputs.postgres_versions, 'orioledb-17') }}
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
@@ -40,6 +39,7 @@ jobs:
           - runner: ubuntu-22.04
             arch: arm64
     runs-on: ${{ matrix.runner }}
+    if: ${{ matrix.postgres_version != 'orioledb-17' }}
     timeout-minutes: 180
     env:
       POSTGRES_PORT: 5478
@@ -53,7 +53,6 @@ jobs:
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
@@ -64,13 +63,14 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-
           PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
       - id: settings
+        # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
 
       - name: Generate args
@@ -84,7 +84,7 @@ jobs:
       - name: verify schema.sql is committed
         run: |
           GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#dbmate-tool -- --version ${{ env.PGMAJOR }}
+          nix run github:supabase/postgres/develop#dbmate-tool -- --version ${{ env.PGMAJOR }}
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
             echo "Detected changes in schema.sql:"
             git diff migrations/schema-${{ env.PGMAJOR }}.sql

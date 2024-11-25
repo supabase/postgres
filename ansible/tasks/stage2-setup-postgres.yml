@@ -4,6 +4,52 @@
 #     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+  block:
+    - name: Check if psql_version is psql_orioledb-16
+      set_fact:
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
+
+    - name: Remove specified extensions from postgresql.conf if oriole-16 build
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/ timescaledb,//g' 
+          /etc/postgresql/postgresql.conf
+      when: is_psql_oriole and stage2_nix
+      become: yes
+
+    - name: Remove specified extensions from supautils.conf if oriole-16 build
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' 
+          /etc/postgresql-custom/supautils.conf
+      when: is_psql_oriole and stage2_nix
+      become: yes
+
+    - name: Remove db_user_namespace from postgresql.conf if oriole-xx build
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' 
+          /etc/postgresql/postgresql.conf
+      when: is_psql_oriole and stage2_nix
+      become: yes
+
+    - name: Append orioledb to shared_preload_libraries append within closing quote
+      ansible.builtin.command:
+        cmd: >
+          sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/'
+          /etc/postgresql/postgresql.conf
+      when: is_psql_oriole and stage2_nix
+      become: yes
+
+    - name: Add default_table_access_method setting
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/postgresql.conf
+        line: "default_table_access_method = 'orioledb'"
+        state: present
+      when: is_psql_oriole and stage2_nix
+      become: yes
+
 - name: Install Postgres from nix binary cache
   become: yes
   shell: |
@@ -198,7 +244,7 @@
     recurse: yes
   when: stage2_nix
 
-- name: Check psql_version and run postgis linking if not oriole-16
+- name: Check psql_version and run postgis linking if not oriole-xx
   block:
     - name: Check if psql_version is psql_orioledb-17
       set_fact:
