@@ -1,12 +1,10 @@
 name: Test Database
-
 on:
   push:
     branches:
       - develop
   pull_request:
   workflow_dispatch:
-
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -21,13 +19,11 @@ jobs:
           extra-conf: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[] | select(. != "orioledb-17")' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
-
   build:
     needs: prepare
     strategy:
@@ -39,40 +35,31 @@ jobs:
           - runner: ubuntu-22.04
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    if: matrix.postgres_version != 'orioledb-17'
     timeout-minutes: 180
     env:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
     steps:
       - uses: actions/checkout@v4
-
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-
       - name: Strip quotes from pg major and set env var
         run: |
           stripped_version=$(echo ${{ matrix.postgres_version }} | sed 's/^"\(.*\)"$/\1/')
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
-
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
-
       - id: settings
-        # Remove spaces and quotes to get the raw version string
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
-
       - name: Generate args
         id: args
         run: |
@@ -80,7 +67,6 @@ jobs:
           echo "result<<EOF" >> $GITHUB_OUTPUT
           echo "$ARGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
       - name: verify schema.sql is committed
         run: |
           GIT_SHA=${{github.sha}}
