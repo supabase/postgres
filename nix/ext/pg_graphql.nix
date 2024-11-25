@@ -1,18 +1,18 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_11_3, cargo, rust-bin }:
+{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_12_6, cargo, rust-bin }:
 let
-  rustVersion = "1.76.0";
+  rustVersion = "1.80.0";
   cargo = rust-bin.stable.${rustVersion}.default;
 in
-buildPgrxExtension_0_11_3 rec {
+buildPgrxExtension_0_12_6 rec {
   pname = "pg_graphql";
-  version = "1.5.7";
+  version = "1.5.9";
   inherit postgresql;
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-Q6XfcTKVOjo5pGy8QACc4QCHolKxEGU8e0TTC6Zg8go=";
+    hash = "sha256-YpLN43FtLhp2cb7cyM+4gEx8GTwsRiKTfxaMq0b8hk0=";
   };
 
   nativeBuildInputs = [ cargo ];
@@ -25,7 +25,7 @@ buildPgrxExtension_0_11_3 rec {
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
     PGPORT = "5434";
   };
-  cargoHash = "sha256-WkHufMw8OvinMRYd06ZJACnVvY9OLi069nCgq3LSmMY=";
+  cargoHash = "sha256-d2RSHtJgbYlOvArjOTaeYoca01UyWPUEO5vhktxxB6U=";
 
   # FIXME (aseipp): disable the tests since they try to install .control
   # files into the wrong spot, aside from that the one main test seems

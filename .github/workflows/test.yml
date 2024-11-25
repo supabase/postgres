@@ -17,6 +17,10 @@ jobs:
         uses: actions/checkout@v4
       
       - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -30,9 +34,9 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: [self-hosted, X64]
+          - runner: ubuntu-22.04
             arch: amd64
-          - runner: arm-runner
+          - runner: ubuntu-22.04
             arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
@@ -40,9 +44,14 @@ jobs:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
 
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
@@ -54,7 +63,7 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
@@ -67,96 +76,16 @@ jobs:
       - name: Generate args
         id: args
         run: |
-          ARGS=$(sudo nix run nixpkgs#yq -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
+          ARGS=$(nix run nixpkgs#yq -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
           echo "result<<EOF" >> $GITHUB_OUTPUT
           echo "$ARGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - run: docker context create builders
-      - uses: docker/setup-buildx-action@v3
-        with:
-          endpoint: builders
-      - uses: docker/build-push-action@v5
-        with:
-          load: true
-          context: .
-          file: Dockerfile-${{ env.PGMAJOR }}
-          target: production
-          build-args: |
-            ${{ steps.args.outputs.result }}
-          tags: supabase/postgres:${{ steps.settings.outputs.postgres-version }},supabase_postgres
-          cache-from: |
-            type=gha,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
-            type=gha,scope=${{ github.base_ref }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-${{ steps.settings.outputs.postgres-version }}-${{ matrix.arch }}
-
-      - name: Start Postgres
-        run: |
-          docker run --rm --pull=never \
-          -e POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} \
-          -p ${{ env.POSTGRES_PORT }}:5432 \
-          --name supabase_postgres \
-          -d supabase/postgres:${{ steps.settings.outputs.postgres-version }}
-
-      - name: Install psql
-        run: |
-          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          sudo apt update
-          sudo apt install -y --no-install-recommends postgresql-client-${{ env.PGMAJOR }}
-
-      - name: Install pg_prove
-        run: sudo cpan -T TAP::Parser::SourceHandler::pgTAP
-        env:
-          SHELL: /bin/bash
-
-      - name: Wait for healthy database
-        run: |
-          count=0
-          until [ "$(docker inspect -f '{{.State.Health.Status}}' "$container")" == "healthy" ]; do
-              exit=$?
-              count=$((count + 1))
-              if [ $count -ge "$retries" ]; then
-                  echo "Retry $count/$retries exited $exit, no more retries left."
-                  docker stop -t 2 "$container"
-                  return $exit
-              fi
-              sleep 1;
-          done;
-          echo "$container container is healthy"
-        env:
-          retries: 20
-          container: supabase_postgres
-
-      - name: Run tests
-        run: pg_prove migrations/tests/test.sql
-        env:
-          PGHOST: localhost
-          PGPORT: ${{ env.POSTGRES_PORT }}
-          PGDATABASE: postgres
-          PGUSER: supabase_admin
-          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-      - name: Check migrations are idempotent
-        run: |
-          for sql in ./migrations/db/migrations/*.sql; do
-            echo "$0: running $sql"
-            psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -f "$sql"
-          done
-        env:
-          PGHOST: localhost
-          PGPORT: ${{ env.POSTGRES_PORT }}
-          PGDATABASE: postgres
-          PGUSER: supabase_admin
-          PGPASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-      - name: Update Dockerfile.dbmate version
-        run: |
-          sed -i 's/%VERSION%/${{ env.PGMAJOR }}/g' migrations/Dockerfile.dbmate
-
+      #TODO PR Convert to develop branch flakeurl
       - name: verify schema.sql is committed
         run: |
-          docker compose -f migrations/docker-compose.yaml up db dbmate --abort-on-container-exit
+          GIT_SHA=${{github.sha}}
+          nix run github:supabase/postgres/${GIT_SHA}#dbmate-tool -- --version ${{ env.PGMAJOR }}
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
             echo "Detected changes in schema.sql:"
             git diff migrations/schema-${{ env.PGMAJOR }}.sql

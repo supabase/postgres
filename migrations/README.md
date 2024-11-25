@@ -1,3 +1,36 @@
+# Usage
+
+from the root of the `supabase/postgres` project, you can run the following commands:
+
+
+```shell
+Usage: nix run .#dbmate-tool -- [options]
+
+Options:
+  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)
+  -p, --port PORT                    Specify the port number to use (default: 5435)
+  -h, --help                         Show this help message
+
+Description:
+  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions.
+  NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file.
+
+Examples:
+  nix run .#dbmate-tool
+  nix run .#dbmate-tool -- --version 15
+  nix run .#dbmate-tool -- --version 16 --port 5433
+
+```
+
+This can also be run from a github "flake url" for example:
+
+```shell
+nix run github:supabase/postgres#dbmate-tool -- --version 15
+
+or
+
+nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
+```
 # supabase/migrations
 
 `supabase/migrations` is a consolidation of SQL migrations from:
@@ -8,6 +41,8 @@
 - supabase/infrastructure (internal)
 
 aiming to provide a single source of truth for migrations on the platform that can be depended upon by those components. For more information on goals see [the RFC](https://www.notion.so/supabase/Centralize-SQL-Migrations-cd3847ae027d4f2bba9defb2cc82f69a)
+
+
 
 ## How it was Created
 
@@ -20,9 +55,11 @@ For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that
 
 1. Run all `db/init-scripts` with `postgres` superuser role.
 2. Run all `db/migrations` with `supabase_admin` superuser role.
-3. Finalize role passwords with `/etc/postgres.schema.sql` if present.
+3. Finalize role passwords with `/etc/postgresql.schema.sql` if present.
 
 Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/develop/ansible/playbook-docker.yml#L9) image contains several migration scripts to configure default extensions. These are run first by docker entrypoint and included in ami by ansible.
+
+
 
 ## Guidelines
 

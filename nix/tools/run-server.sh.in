@@ -38,7 +38,6 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
-mkdir -p "$DATDIR"
 echo "NOTE: using port $PORTNO for server"
 echo "NOTE: using temporary directory $DATDIR for data, which will not be removed"
 echo "NOTE: you are free to re-use this data directory at will"
