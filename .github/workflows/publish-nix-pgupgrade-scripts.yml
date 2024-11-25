@@ -81,11 +81,10 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Publishing pg_upgrade scripts failed'
           SLACK_FOOTER: ''
-  #TODO Remove this comment 
   publish-prod:
     needs: prepare
     runs-on: ubuntu-latest
-    if: github.ref_name == 'sam/publish-gh-actions' || contains( github.ref, 'release' )
+    if: github.ref_name == 'develop' || contains( github.ref, 'release' )
 
     strategy:
       matrix:
