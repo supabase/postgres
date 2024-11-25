@@ -5,7 +5,6 @@ on:
     branches:
       - develop
       - release/*
-      - sam/publish-gh-actions
     paths:
       - '.github/workflows/ami-release-nix.yml'
       - 'common-nix.vars.pkr.hcl'

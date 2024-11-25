@@ -5,7 +5,6 @@ on:
     branches:
       - develop
       - release/*
-      - sam/publish-gh-actions
     paths:
       - '.github/workflows/publish-nix-pgupgrade-scripts.yml'
   workflow_dispatch:
