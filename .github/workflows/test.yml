@@ -39,7 +39,7 @@ jobs:
           - runner: ubuntu-22.04
             arch: arm64
     runs-on: ${{ matrix.runner }}
-    if: ${{ matrix.postgres_version != 'orioledb-17' }}
+    if: matrix.postgres_version != 'orioledb-17'
     timeout-minutes: 180
     env:
       POSTGRES_PORT: 5478
