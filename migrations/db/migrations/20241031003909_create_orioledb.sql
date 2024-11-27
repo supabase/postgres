@@ -9,4 +9,3 @@ begin
 end $$;
 
 -- migrate:down
-drop extension if exists orioledb;
