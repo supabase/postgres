@@ -49,6 +49,13 @@
         state: present
       when: is_psql_oriole and stage2_nix
       become: yes
+    
+    - name: Add ORIOLEDB_ENABLED environment variable
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: 'ORIOLEDB_ENABLED=true'
+      when: is_psql_oriole and stage2_nix
+      become: yes
 
 - name: Install Postgres from nix binary cache
   become: yes
