@@ -10,38 +10,56 @@ Given the size of the image, the first VM using it on a node might take a while 
 
 ## Creating a bare-metal instance
 
-We launch an Ubuntu 22 bare-metal instance; we're using the `c6g.metal` instance type in this case, but any ARM instance type is sufficient for our purposes.
+We launch an Ubuntu 22 bare-metal instance; we're using the `c6g.metal` instance type in this case, but any ARM instance type is sufficient for our purposes. In the example below the region used is: `ap-south-1`.
 
-    aws ec2 create-security-group --group-name "launch-wizard-1" --description "launch-wizard-1 created 2024-11-26T00:32:56.039Z" --vpc-id "vpc-0fbfcc428751ce76b"
-    aws ec2 authorize-security-group-ingress --group-id "sg-preview-1" --ip-permissions '{"IpProtocol":"tcp","FromPort":22,"ToPort":22,"IpRanges":[{"CidrIp":"0.0.0.0/0"}]}'
-    aws ec2 run-instances --image-id "ami-0a87daabd88e93b1f" --instance-type "c6g.metal" --key-name "darora-aps1" --block-device-mappings '{"DeviceName":"/dev/sda1","Ebs":{"Encrypted":false,"DeleteOnTermination":true,"Iops":3000,"SnapshotId":"snap-0fe84a34403e3da8b","VolumeSize":200,"VolumeType":"gp3","Throughput":125}}' --network-interfaces '{"AssociatePublicIpAddress":true,"DeviceIndex":0,"Groups":["sg-preview-1"]}' --tag-specifications '{"ResourceType":"instance","Tags":[{"Key":"Name","Value":"darora-pg-image"}]}' --metadata-options '{"HttpEndpoint":"enabled","HttpPutResponseHopLimit":2,"HttpTokens":"required"}' --private-dns-name-options '{"HostnameType":"ip-name","EnableResourceNameDnsARecord":true,"EnableResourceNameDnsAAAARecord":false}' --count "1"
+```bash
 
+aws ec2 create-security-group --group-name "launch-wizard-1" --description "launch-wizard-1 created 2024-11-26T00:32:56.039Z" --vpc-id "insert-vpc-id"
+
+aws ec2 authorize-security-group-ingress --group-id "insert-sg-group" --ip-permissions '{"IpProtocol":"tcp","FromPort":22,"ToPort":22,"IpRanges":[{"CidrIp":"0.0.0.0/0"}]}'
+
+aws ec2 run-instances \
+--image-id "ami-0a87daabd88e93b1f" \
+--instance-type "c6g.metal" \
+--key-name "insert-key-pair" \
+--block-device-mappings '{"DeviceName":"/dev/sda1","Ebs":{"Encrypted":false,"DeleteOnTermination":true,"Iops":3000,"SnapshotId":"snap-0fe84a34403e3da8b","VolumeSize":200,"VolumeType":"gp3","Throughput":125}}' \
+--network-interfaces '{"AssociatePublicIpAddress":true,"DeviceIndex":0,"Groups":["insert-sg-group"]}' \
+--tag-specifications '{"ResourceType":"instance","Tags":[{"Key":"Name","Value":"qemu-pg-image"}]}' \
+--metadata-options '{"HttpEndpoint":"enabled","HttpPutResponseHopLimit":2,"HttpTokens":"required"}' \
+--private-dns-name-options '{"HostnameType":"ip-name","EnableResourceNameDnsARecord":true,"EnableResourceNameDnsAAAARecord":false}' \
+--count "1"
+
+```
 ## Install deps
 
 On the instance, install the dependencies we require for producing QEMU artifacts:
 
-    sudo apt-get update
-    sudo apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli
-      sudo usermod -aG kvm ubuntu
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-    sudo apt-add-repository "deb [arch=arm64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-    sudo apt-get update && sudo apt-get install packer=1.11.2-1
-    sudo apt-get install -y docker.io
-
+```bash
+sudo apt-get update
+sudo apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli
+  sudo usermod -aG kvm ubuntu
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=arm64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install packer=1.11.2-1
+sudo apt-get install -y docker.io
+```
 
 Some dev deps that might be useful:
 
-    sudo apt-get install -y emacs ripgrep vim-tiny byobu
-
+```bash
+sudo apt-get install -y emacs ripgrep vim-tiny byobu
+```
 
 ## Clone repo and build
 
 Logout/login first to pick up new group memberships!
 
-    git clone https://github.com/supabase/postgres.git
-    cd postgres
-    git checkout da/qemu-rebasing # choose appropriate branch here
-    make init container-disk-image
+``` bash
+git clone https://github.com/supabase/postgres.git
+cd postgres
+git checkout da/qemu-rebasing # choose appropriate branch here
+make init container-disk-image
+```
 
 ### Build process
 
@@ -67,8 +85,7 @@ b. packer build (`qemu-arm64-nix.pkr.hcl`)
 
 ## Publish image for later use
 
-Publish the built image to a registry of your choosing, and use the published image with KubeVirt.
-
+Following `make init container-disk-image`, the generated image should be found in: `/path/to/postgres/output-cloudimg`. For portability the image is also bundled up as a docker image with the name: `supabase-postgres-test` . Publish the built docker image to a registry of your choosing, and use the published image with KubeVirt.
 
 # Iterating on the QEMU artifact
 
