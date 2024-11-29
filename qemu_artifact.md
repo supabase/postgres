@@ -13,11 +13,13 @@ Given the size of the image, the first VM using it on a node might take a while 
 We launch an Ubuntu 22 bare-metal instance; we're using the `c6g.metal` instance type in this case, but any ARM instance type is sufficient for our purposes. In the example below the region used is: `ap-south-1`.
 
 ```bash
-
+# create a security group for your instance
 aws ec2 create-security-group --group-name "launch-wizard-1" --description "launch-wizard-1 created 2024-11-26T00:32:56.039Z" --vpc-id "insert-vpc-id"
 
+# using the generated security group ID (insert-sg-group), ensure that it allows for SSH access
 aws ec2 authorize-security-group-ingress --group-id "insert-sg-group" --ip-permissions '{"IpProtocol":"tcp","FromPort":22,"ToPort":22,"IpRanges":[{"CidrIp":"0.0.0.0/0"}]}'
 
+# spin up your instance with the generated security group ID (insert-sg-group)
 aws ec2 run-instances \
 --image-id "ami-0a87daabd88e93b1f" \
 --instance-type "c6g.metal" \
@@ -32,22 +34,22 @@ aws ec2 run-instances \
 ```
 ## Install deps
 
-On the instance, install the dependencies we require for producing QEMU artifacts:
+On the instance, install the dependencies we require for producing QEMU artifacts. Assuming you are the root user:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli
-  sudo usermod -aG kvm ubuntu
-curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-sudo apt-add-repository "deb [arch=arm64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-sudo apt-get update && sudo apt-get install packer=1.11.2-1
-sudo apt-get install -y docker.io
+apt-get update
+apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli
+usermod -aG kvm ubuntu
+curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+apt-add-repository "deb [arch=arm64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+apt-get update && apt-get install packer=1.11.2-1
+apt-get install -y docker.io
 ```
 
 Some dev deps that might be useful:
 
 ```bash
-sudo apt-get install -y emacs ripgrep vim-tiny byobu
+apt-get install -y emacs ripgrep vim-tiny byobu
 ```
 
 ## Clone repo and build
@@ -91,8 +93,9 @@ Following `make init container-disk-image`, the generated image should be found 
 
 For a tighter iteration loop on the Postgres artifact, the recommended workflow is to do so on an Ubuntu bare-metal node that's part of the EKS cluster that you're deploying to.
 
-- Use the `host-disk` make target to build the raw image file on disk. (`/path/to/postgres/disk/focal-raw.img`)
-- Update the VM spec to use `hostDisk` instead of `containerDisk`. Note that only one VM can use an image at a time, so you can't create multiple VMs backed by the same host disk.
+- Instead of running `make init container-disk-image`, use `make init host-disk` instead to build the raw image file on disk. (`/path/to/postgres/disk/focal-raw.img`)
+- Update the VM spec to use `hostDisk` instead of `containerDisk`
+    - Note that only one VM can use an image at a time, so you can't create multiple VMs backed by the same host disk.
 - Enable the `HostDisk` feature flag for KubeVirt
 - Deploy the VM to the node
 
@@ -102,11 +105,13 @@ Additionally, to iterate on the container image part of things, you can build th
 
 Installing `docker.io` on an EKS node might interfere with the k8s setup of the node. You can instead install `nerdctl` and `buildkit`:
 
-    curl -L -O https://github.com/containerd/nerdctl/releases/download/v2.0.0/nerdctl-2.0.0-linux-arm64.tar.gz
-    tar -xzf nerdctl-2.0.0-linux-arm64.tar.gz
-    sudo mv ./nerdctl /usr/local/bin/
-    curl -O -L https://github.com/moby/buildkit/releases/download/v0.17.1/buildkit-v0.17.1.linux-arm64.tar.gz
-    tar -xzf buildkit-v0.17.1.linux-arm64.tar.gz
-    sudo mv bin/* /usr/local/bin/
+```bash
+curl -L -O https://github.com/containerd/nerdctl/releases/download/v2.0.0/nerdctl-2.0.0-linux-arm64.tar.gz
+tar -xzf nerdctl-2.0.0-linux-arm64.tar.gz
+mv ./nerdctl /usr/local/bin/
+curl -O -L https://github.com/moby/buildkit/releases/download/v0.17.1/buildkit-v0.17.1.linux-arm64.tar.gz
+tar -xzf buildkit-v0.17.1.linux-arm64.tar.gz
+mv bin/* /usr/local/bin/
+```
 
-You'll need to run buildkit: `sudo buildkitd`
+You'll need to run buildkit: `buildkitd`
