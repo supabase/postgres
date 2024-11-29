@@ -23,7 +23,7 @@ aws ec2 authorize-security-group-ingress --group-id "insert-sg-group" --ip-permi
 aws ec2 run-instances \
 --image-id "ami-0a87daabd88e93b1f" \
 --instance-type "c6g.metal" \
---key-name "insert-key-pair" \
+--key-name "INSERT_KEY_PAIR_NAME" \ # create a key pair, or use other mechanism of getting on to the box
 --block-device-mappings '{"DeviceName":"/dev/sda1","Ebs":{"Encrypted":false,"DeleteOnTermination":true,"Iops":3000,"SnapshotId":"snap-0fe84a34403e3da8b","VolumeSize":200,"VolumeType":"gp3","Throughput":125}}' \
 --network-interfaces '{"AssociatePublicIpAddress":true,"DeviceIndex":0,"Groups":["insert-sg-group"]}' \
 --tag-specifications '{"ResourceType":"instance","Tags":[{"Key":"Name","Value":"qemu-pg-image"}]}' \
