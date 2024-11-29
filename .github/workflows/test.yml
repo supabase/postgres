@@ -13,7 +13,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      
+
+      - name: Clear Nix cache
+        run: |
+          sudo rm -rf /home/runner/.cache/nix
+
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
@@ -41,6 +45,9 @@ jobs:
       POSTGRES_PASSWORD: password
     steps:
       - uses: actions/checkout@v4
+      - name: Clear Nix cache
+        run: |
+          sudo rm -rf /home/runner/.cache/nix
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
