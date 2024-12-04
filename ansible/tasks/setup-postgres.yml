@@ -204,23 +204,49 @@
     ansible_command_timeout: 60
   when: debpkg_mode
 
-- name: Initialize the database stage2_nix
-  become: yes
-  become_user: postgres
-  shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
-  args:
-    executable: /bin/bash
-  environment:
-    LANG: en_US.UTF-8
-    LANGUAGE: en_US.UTF-8
-    LC_ALL: en_US.UTF-8
-    LC_CTYPE: en_US.UTF-8
-    LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  vars:
-    ansible_command_timeout: 60
-    # Circumvents the following error:
-    # "Timeout (12s) waiting for privilege escalation prompt"
-  when: stage2_nix 
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+  block:
+    - name: Check if psql_version is psql_orioledb
+      set_fact:
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
+
+    - name: Initialize the database stage2_nix (non-orioledb)
+      become: yes
+      become_user: postgres
+      shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
+      args:
+        executable: /bin/bash
+      environment:
+        LANG: en_US.UTF-8
+        LANGUAGE: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        LC_CTYPE: en_US.UTF-8
+        LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+      vars:
+        ansible_command_timeout: 60
+      when: stage2_nix and not is_psql_oriole
+
+    - name: Initialize the database stage2_nix (orioledb)
+      become: yes
+      become_user: postgres
+      shell: >
+        source /var/lib/postgresql/.bashrc && initdb -D /var/lib/postgresql/data 
+        --allow-group-access 
+        --username=supabase_admin 
+        --locale-provider=icu 
+        --encoding=UTF-8 
+        --icu-locale=en_US.UTF-8 
+      args:
+        executable: /bin/bash
+      environment:
+        LANG: en_US.UTF-8
+        LANGUAGE: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        LC_CTYPE: en_US.UTF-8
+        LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+      vars:
+        ansible_command_timeout: 60
+      when: stage2_nix and is_psql_oriole
 
 - name: copy PG systemd unit
   template:

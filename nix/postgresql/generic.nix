@@ -7,6 +7,8 @@ let
       , glibc, zlib, readline, openssl, icu, lz4, zstd, systemd, libossp_uuid
       , pkg-config, libxml2, tzdata, libkrb5, substituteAll, darwin
       , linux-pam
+      #orioledb specific
+      , perl, bison, flex, docbook_xsl, docbook_xml_dtd_45, docbook_xsl_ns, libxslt
 
       # This is important to obtain a version of `libpq` that does not depend on systemd.
       , systemdSupport ? lib.meta.availableOn stdenv.hostPlatform systemd && !stdenv.hostPlatform.isStatic
@@ -49,14 +51,20 @@ let
     inherit version;
     pname = pname + lib.optionalString jitSupport "-jit";
 
-    src = fetchurl {
-      url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
-      inherit hash;
-    };
+    src = if (builtins.match "[0-9][0-9]_.*" version != null) then
+      fetchurl {
+        url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
+        inherit hash;
+      }
+    else
+      fetchurl {
+        url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
+        inherit hash;
+      };
 
     hardeningEnable = lib.optionals (!stdenv'.cc.isClang) [ "pie" ];
 
-    outputs = [ "out" "lib" "doc" "man" ];
+    outputs = [ "out" "lib" ];
     setOutputFlags = false; # $out retains configureFlags :-/
 
     buildInputs = [
@@ -74,7 +82,10 @@ let
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv'.isLinux [ linux-pam ]
-      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ];
+      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
+      ++ lib.optionals (builtins.match "[0-9][0-9]_.*" version != null) [ 
+        perl bison flex docbook_xsl docbook_xml_dtd_45 docbook_xsl_ns libxslt
+      ];
 
     nativeBuildInputs = [
       makeWrapper
@@ -86,7 +97,7 @@ let
 
     separateDebugInfo = true;
 
-    buildFlags = [ "world" ];
+    buildFlags = [ "world-bin" ];
 
     # Makes cross-compiling work when xml2-config can't be executed on the host.
     # Fixed upstream in https://github.com/postgres/postgres/commit/0bc8cebdb889368abdf224aeac8bc197fe4c9ae6
@@ -127,7 +138,7 @@ let
       (if atLeast "13" then ./patches/socketdir-in-run-13+.patch else ./patches/socketdir-in-run.patch)
     ];
 
-    installTargets = [ "install-world" ];
+    installTargets = [ "install-world-bin" ];
 
     postPatch = ''
       # Hardcode the path to pgxs so pg_config returns the path in $out
@@ -277,7 +288,7 @@ let
     paths = f pkgs ++ [
         postgresql
         postgresql.lib
-        postgresql.man   # in case user installs this into environment
+        #TODO RM postgresql.man   # in case user installs this into environment
     ];
     nativeBuildInputs = [ makeWrapper ];
 

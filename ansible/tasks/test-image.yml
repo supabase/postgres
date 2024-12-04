@@ -4,11 +4,22 @@
       - libtap-parser-sourcehandler-pgtap-perl
   when: debpkg_mode
 
+# - name: Temporarily disable PG Sodium references in config
+#   become: yes
+#   become_user: postgres
+#   shell:
+#     cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+#   when: debpkg_mode or stage2_nix
+
 - name: Temporarily disable PG Sodium references in config
   become: yes
   become_user: postgres
   shell:
-    cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
+    cmd: >
+      sed -i.bak
+      -e 's/\(shared_preload_libraries = '\''.*\)pgsodium,\(.*'\''\)/\1\2/'
+      -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/'
+      /etc/postgresql/postgresql.conf
   when: debpkg_mode or stage2_nix
 
 - name: Start Postgres Database to load all extensions.
@@ -45,6 +56,64 @@
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   when: stage2_nix
+
+
+- name: Check psql_version and modify migrations if oriole-xx
+  block:
+    - name: Check if psql_version is psql_orioledb-xx
+      set_fact:
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
+
+    - name: Remove specified extensions from SQL file
+      ansible.builtin.command:
+        cmd: >
+          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pg_jsonschema\|pg_graphql\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
+      when: is_psql_oriole
+      become: yes
+
+    - name: Remove specified extension files from extensions directory
+      ansible.builtin.find:
+        paths: /tmp/migrations/tests/extensions
+        patterns: 
+          - '*timescaledb*.sql'
+          - '*postgis*.sql'
+          - '*pgrouting*.sql'
+          - '*plv8*.sql'
+          - '*pg_jsonschema*.sql'
+          - '*pg_graphql*.sql'
+      register: files_to_remove
+      when: is_psql_oriole
+
+    - name: Delete matched extension files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ files_to_remove.files }}"
+      when: is_psql_oriole
+      become: yes
+  
+    - name: Remove specified extensions from SQL file
+      ansible.builtin.command:
+        cmd: >
+          sed -i "/'pg_graphql',/d" /tmp/unit-tests/unit-test-01.sql
+      when: is_psql_oriole
+      become: yes
+
+    - name: Remove graphql schema test
+      lineinfile:
+        path: /tmp/migrations/tests/database/exists.sql
+        regexp: "^SELECT has_schema\\('graphql'\\);$"
+        state: absent
+      become: yes
+      when: is_psql_oriole
+
+    - name: Remove graphql schema test
+      lineinfile:
+        path: /tmp/migrations/tests/database/exists.sql
+        regexp: "^SELECT has_schema\\('graphql_public'\\);$"
+        state: absent
+      become: yes
+      when: is_psql_oriole
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql

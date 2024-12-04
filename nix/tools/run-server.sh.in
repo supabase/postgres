@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 [ ! -z "$DEBUG" ] && set -x
-# first argument should be '15' or '16' for the version
+
 if [ "$1" == "15" ]; then
     echo "Starting server for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
@@ -10,10 +10,10 @@ elif [ "$1" == "16" ]; then
     echo "Starting server for PSQL 16"
     PSQL16=@PSQL16_BINDIR@
     BINDIR="$PSQL16"
-elif [ "$1" == "orioledb-16" ]; then
-    echo "Starting server for PSQL ORIOLEDB 16"
-    PSQLORIOLEDB16=@PSQLORIOLEDB16_BINDIR@
-    BINDIR="$PSQLORIOLEDB16"
+elif [ "$1" == "orioledb-17" ]; then
+    echo "Starting server for PSQL ORIOLEDB 17"
+    PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
+    BINDIR="$PSQLORIOLEDB17"
 else
     echo "Please provide a valid Postgres version (15, 16 or orioledb-16)"
     exit 1
@@ -32,13 +32,13 @@ EXTENSION_CUSTOM_SCRIPTS=@EXTENSION_CUSTOM_SCRIPTS_DIR@
 GROONGA=@GROONGA_DIR@
 DATDIR=$(mktemp -d)
 LOCALE_ARCHIVE=@LOCALES@
+CURRENT_SYSTEM=@CURRENT_SYSTEM@
 export LOCALE_ARCHIVE
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
-mkdir -p "$DATDIR"
 echo "NOTE: using port $PORTNO for server"
 echo "NOTE: using temporary directory $DATDIR for data, which will not be removed"
 echo "NOTE: you are free to re-use this data directory at will"
@@ -61,5 +61,29 @@ pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
+
+orioledb_config_items() {
+    if [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
+        # Remove items from postgresql.conf
+        sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
+        #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
+        sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
+        sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATADIR/postgresql.conf"
+        echo "default_table_access_method = 'orioledb'" >> "$DATADIR/postgresql.conf"
+
+    fi
+    if [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+        # Remove items from postgresql.conf
+        sed -i '' 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
+        #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
+        sed -i '' 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        sed -i '' 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
+        sed -i '' 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATADIR/postgresql.conf"
+        echo "default_table_access_method = 'orioledb'" >> "$DATADIR/postgresql.conf"
+
+    fi
+}
+orioledb_config_items "$1"
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k /tmp
