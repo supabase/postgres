@@ -96,19 +96,7 @@ buildPgrxExtension_0_12_6 rec {
   
   buildAndTestSubdir = "wrappers";
   buildFeatures = [
-    "helloworld_fdw"
-    "bigquery_fdw"
-    "clickhouse_fdw"
-    "stripe_fdw"
-    "firebase_fdw"
-    "s3_fdw"
-    "airtable_fdw"
-    "logflare_fdw"
-    "auth0_fdw"
-    "mssql_fdw"
-    "redis_fdw"
-    "cognito_fdw"
-    "wasm_fdw"
+    "all_fdws"
   ];
   doCheck = false;
 
