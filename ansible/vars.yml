@@ -4,14 +4,14 @@ async_mode: true
 
 postgres_major:
   - "15"
-  #- "16"
-  #- "orioledb-17"
+  - "16"
+  - "orioledb-17"
 
 # Full version strings for each major version
 postgres_release:
-  #postgresorioledb-17: "17.0.1.007-orioledb"
-  postgres15: "15.8.1.017-repack-perms-2"
-  #postgres16: "16.3.1.023"
+  postgresorioledb-17: "17.0.1.008-orioledb"
+  postgres15: "15.8.1.018"
+  postgres16: "16.3.1.024"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
