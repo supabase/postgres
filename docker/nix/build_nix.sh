@@ -25,3 +25,17 @@ nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_16
 if [ "$SYSTEM" != "x86_64-darwin" ]; then
     nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_orioledb_17
 fi
+if [ "$SYSTEM" = "aarch64-linux" ]; then
+    nix build .#postgresql_15_debug -o ./postgresql_15_debug
+    nix build .#postgresql_15_src -o ./postgresql_15_src
+    nix build .#postgresql_16_debug -o ./postgresql_16_debug
+    nix build .#postgresql_16_src -o ./postgresql_16_src
+    nix build .#postgresql_orioledb-17_debug -o ./postgresql_orioledb-17_debug
+    nix build .#postgresql_orioledb-17_src -o ./postgresql_orioledb-17_src
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_15_debug-debug
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_15_src
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_16_debug-debug
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_16_src
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_orioledb-17_debug-debug
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_orioledb-17_src
+fi
