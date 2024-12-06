@@ -296,7 +296,7 @@
           pg_regress = pg_regress;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           postgresql_15 = pkgs.postgresql_15;
-
+          postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = pkgs.postgresql_15.version;
