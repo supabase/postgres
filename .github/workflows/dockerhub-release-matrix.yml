@@ -61,7 +61,8 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
     runs-on: ubuntu-latest
     outputs:
-      image_tag: supabase/postgres:${{ steps.settings.outputs.postgres-version }}
+      versions: ${{ steps.output-versions.outputs.versions }}
+      image_tags: ${{ steps.output-versions.outputs.image_tags }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
@@ -76,7 +77,6 @@ jobs:
           PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.version }}"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
       - id: settings
@@ -87,19 +87,25 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
+      - id: output-versions
+        run: |
+          # Create JSON arrays for versions and image tags
+          echo "versions=$(echo '${{ toJSON(matrix.version) }}')" >> $GITHUB_OUTPUT
+          echo "image_tags=$(echo 'supabase/postgres:${{ steps.settings.outputs.postgres-version }}')" >> $GITHUB_OUTPUT
+
   build_release_image:
     needs: [build]
     strategy:
       matrix:
+        version: ${{ fromJson(needs.build.outputs.versions) }}
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
         include:
-          - runner: [self-hosted, X64]
-            arch: amd64
-          - runner: arm-runner
-            arch: arm64
+          - arch: amd64
+            runner: [self-hosted, X64]
+          - arch: arm64
+            runner: arm-runner
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
-    outputs:
-      image_digest: ${{ steps.build.outputs.digest }}
     steps:
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v3
@@ -116,11 +122,11 @@ jobs:
           build-args: |
             ${{ needs.build.outputs.build_args }}
           target: production
-          tags: ${{ needs.build.outputs.image_tag }}_${{ matrix.arch }}
+          tags: ${{ matrix.image_tag }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          file: ${{ matrix.dockerfile }}
+          file: Dockerfile-${{ matrix.version }}
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
@@ -133,6 +139,9 @@ jobs:
 
   merge_manifest:
     needs: [build, build_release_image]
+    strategy:
+      matrix:
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
@@ -142,9 +151,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ needs.build.outputs.image_tag }} \
-          ${{ needs.build.outputs.image_tag }}_amd64 \
-          ${{ needs.build.outputs.image_tag }}_arm64
+          docker buildx imagetools create -t ${{ matrix.image_tag }} \
+          ${{ matrix.image_tag }}_amd64 \
+          ${{ matrix.image_tag }}_arm64
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
