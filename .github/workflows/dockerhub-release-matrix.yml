@@ -6,8 +6,7 @@ on:
       - develop
       - release/*
     paths:
-      - ".github/workflows/dockerhub-release.yml"
-      - "common-nix.vars*"
+      - ".github/workflows/dockerhub-release-matrix.yml"
       - "ansible/vars.yml"
       - "Dockerfile-*"
   workflow_dispatch:

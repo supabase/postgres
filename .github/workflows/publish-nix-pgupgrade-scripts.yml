@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - release/*
+      - sam/docker-oriole17
     paths:
       - '.github/workflows/publish-nix-pgupgrade-scripts.yml'
   workflow_dispatch:
