@@ -61,7 +61,8 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.create-matrix.outputs.matrix }}
+      versions: ${{ steps.output-versions.outputs.versions }}
+      image_tags: ${{ steps.output-versions.outputs.image_tags }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
@@ -86,65 +87,34 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
-      - id: create-matrix
+      - id: output-versions
+        if: always()
         run: |
-          # Create a matrix entry for this version
-          matrix_entry="{\"version\":\"${{ matrix.version }}\",\"image_tag\":\"supabase/postgres:${{ steps.settings.outputs.postgres-version }}\"}"
-          echo "matrix={\"include\":[$matrix_entry]}" >> $GITHUB_OUTPUT
-
-  collect_versions:
-    needs: build
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.create-final-matrix.outputs.matrix }}
-    steps:
-      - id: create-final-matrix
-        run: |
-          # Combine all matrix configurations from build job
-          MATRIX="{\"include\":["
-          FIRST=true
+          # Create output files if they don't exist
+          mkdir -p /tmp/versions
+          touch /tmp/versions/all_versions.txt
+          touch /tmp/versions/all_tags.txt
           
-          for matrix_config in ${{ toJSON(needs.build.outputs.matrix) }}; do
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              MATRIX+=","
-            fi
-            # Extract the include array content from each matrix config
-            include_content=$(echo "$matrix_config" | jq -r '.include[]')
-            MATRIX+="$include_content"
-          done
+          # Append current version and tag
+          echo "${{ matrix.version }}" >> /tmp/versions/all_versions.txt
+          echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" >> /tmp/versions/all_tags.txt
           
-          # Add architecture combinations for each version
-          FINAL_MATRIX="{\"include\":["
-          FIRST=true
+          # Convert to JSON arrays with unique values
+          VERSIONS=$(sort -u /tmp/versions/all_versions.txt | jq -R . | jq -s .)
+          TAGS=$(sort -u /tmp/versions/all_tags.txt | jq -R . | jq -s .)
           
-          echo "$MATRIX]}" | jq -c '.include[]' | while read -r entry; do
-            version=$(echo "$entry" | jq -r '.version')
-            image_tag=$(echo "$entry" | jq -r '.image_tag')
-            
-            # Add amd64 entry
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              FINAL_MATRIX+=","
-            fi
-            FINAL_MATRIX+="{\"version\":\"$version\",\"image_tag\":\"$image_tag\",\"arch\":\"amd64\",\"runner\":[\"self-hosted\",\"X64\"]}"
-            
-            # Add arm64 entry
-            FINAL_MATRIX+=",{\"version\":\"$version\",\"image_tag\":\"$image_tag\",\"arch\":\"arm64\",\"runner\":\"arm-runner\"}"
-          done
-          
-          FINAL_MATRIX+="]}"
-          
-          # Output the final matrix
-          echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
+          # Set outputs
+          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "image_tags=$TAGS" >> $GITHUB_OUTPUT
 
   build_release_image:
-    needs: collect_versions
+    needs: build
     strategy:
-      matrix: ${{ fromJson(needs.collect_versions.outputs.matrix) }}
-    runs-on: ${{ matrix.runner }}
+      matrix:
+        version: ${{ fromJson(needs.build.outputs.versions) }}
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && fromJson('["self-hosted", "X64"]') || 'arm-runner' }}
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v3
@@ -182,7 +152,7 @@ jobs:
     needs: [build, build_release_image]
     strategy:
       matrix:
-        image_tag: ${{ fromJson(needs.collect_versions.outputs.matrix) }}
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
