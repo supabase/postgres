@@ -98,13 +98,34 @@ jobs:
         id: collect-versions
         if: ${{ always() }}
         run: |
-          # Combine all versions into arrays
-          VERSIONS=$(cat /tmp/versions/versions.txt | sort -u | jq -R . | jq -s .)
-          IMAGE_TAGS=$(cat /tmp/versions/image_tags.txt | sort -u | jq -R . | jq -s .)
+          # Create JSON arrays
+          versions_array="["
+          first=true
+          while IFS= read -r version; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              versions_array+=","
+            fi
+            versions_array+="\"$version\""
+          done < <(sort -u /tmp/versions/versions.txt)
+          versions_array+="]"
           
-          # Output as JSON arrays
-          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
-          echo "image_tags=$IMAGE_TAGS" >> $GITHUB_OUTPUT
+          image_tags_array="["
+          first=true
+          while IFS= read -r tag; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              image_tags_array+=","
+            fi
+            image_tags_array+="\"$tag\""
+          done < <(sort -u /tmp/versions/image_tags.txt)
+          image_tags_array+="]"
+          
+          # Output as properly escaped JSON arrays
+          echo "versions=$versions_array" >> $GITHUB_OUTPUT
+          echo "image_tags=$image_tags_array" >> $GITHUB_OUTPUT
 
   build_release_image:
     needs: build
