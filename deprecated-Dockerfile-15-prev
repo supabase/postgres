@@ -41,14 +41,26 @@ ARG wal_g_release=2.0.1
 
 FROM ubuntu:focal as base
 
-RUN apt update -y && apt install -y \
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    DEBCONF_NONINTERACTIVE_SEEN=true \
+    TZ=Etc/UTC
+
+# Pre-configure tzdata before any installations
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends tzdata && \
+    apt-get install -y \
     curl \
     gnupg \
     lsb-release \
     software-properties-common \
     wget \
     sudo \
-    && apt clean
+    git \
+    && apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 
 RUN adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
@@ -101,12 +113,6 @@ RUN chown -R postgres:postgres /usr/lib/postgresql
 
 RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
 
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata
-
-RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
