@@ -6,9 +6,10 @@ on:
       - develop
       - release/*
       - sam/docker-oriole17
-    # paths:
+    paths:
     #   - ".github/workflows/dockerhub-release-matrix.yml"
     #   - "anisble/vars.yml"
+      - '**'
   workflow_dispatch:
  
 jobs:
