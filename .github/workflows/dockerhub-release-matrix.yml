@@ -1,16 +1,17 @@
-name: Release all major versions on Dockerhub
+name: Release PostgreSQL Images on Dockerhub
 
 on:
   push:
     branches:
       - develop
       - release/*
-      - sam/docker-oriole17
     paths:
-      - ".github/workflows/dockerhub-release-matrix.yml"
-      - "anisble/vars.yml"
+      - ".github/workflows/dockerhub-release.yml"
+      - "common-nix.vars*"
+      - "ansible/vars.yml"
+      - "Dockerfile-*"
   workflow_dispatch:
- 
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -70,8 +71,30 @@ jobs:
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+      
+      - name: Set PostgreSQL version environment variable
+        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
+
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          # For orioledb versions, we need to handle the version lookup differently
+          if [[ "${{ matrix.version }}" == "orioledb-"* ]]; then
+            MAJOR_VERSION="${{ matrix.version #orioledb-}}"
+            PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$MAJOR_VERSION'_orioledb"]' ansible/vars.yml)
+          else
+            PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.version }}"]' ansible/vars.yml)
+          fi
+          
+          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
+          echo "" >> common-nix.vars.pkr.hcl
+
       - id: settings
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
+      
       - id: args
         uses: mikefarah/yq@master
         with:
