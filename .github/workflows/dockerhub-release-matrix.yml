@@ -61,9 +61,7 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
     runs-on: ubuntu-latest
     outputs:
-      versions: ${{ steps.output-versions.outputs.versions }}
-      image_tags: ${{ steps.output-versions.outputs.image_tags }}
-      build_args: ${{ steps.args.outputs.result }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
       
@@ -87,23 +85,33 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
-      - id: output-versions
+      - id: set-matrix
         run: |
-          # Create JSON arrays for versions and image tags
-          echo "versions=$(echo '${{ toJSON(matrix.version) }}')" >> $GITHUB_OUTPUT
-          echo "image_tags=$(echo 'supabase/postgres:${{ steps.settings.outputs.postgres-version }}')" >> $GITHUB_OUTPUT
+          # Create a JSON object for the matrix
+          MATRIX="{\"include\":["
+          
+          # For each architecture
+          for arch in "amd64" "arm64"; do
+            runner="[\"self-hosted\", \"X64\"]"
+            [ "$arch" = "arm64" ] && runner="arm-runner"
+            
+            # Add the version details
+            if [ "$arch" = "amd64" ]; then
+              MATRIX+="{\"version\":\"${{ matrix.version }}\",\"image_tag\":\"supabase/postgres:${{ steps.settings.outputs.postgres-version }}\",\"arch\":\"$arch\",\"runner\":$runner}"
+            else
+              MATRIX+=",{\"version\":\"${{ matrix.version }}\",\"image_tag\":\"supabase/postgres:${{ steps.settings.outputs.postgres-version }}\",\"arch\":\"$arch\",\"runner\":$runner}"
+            fi
+          done
+          
+          MATRIX+="]}"
+          
+          # Output the matrix
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
   build_release_image:
-    needs: [build]
+    needs: build
     strategy:
-      matrix:
-        version: ${{ fromJson(needs.build.outputs.versions) }}
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
-        include:
-          - arch: amd64
-            runner: [self-hosted, X64]
-          - arch: arm64
-            runner: arm-runner
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     steps:
@@ -138,10 +146,9 @@ jobs:
           SLACK_FOOTER: ""
 
   merge_manifest:
-    needs: [build, build_release_image]
+    needs: [build]
     strategy:
-      matrix:
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
