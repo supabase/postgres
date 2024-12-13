@@ -99,14 +99,36 @@ jobs:
           echo "${{ matrix.version }}" >> /tmp/versions/all_versions.txt
           echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" >> /tmp/versions/all_tags.txt
           
-          # Convert to JSON arrays with unique values
-          VERSIONS=$(sort -u /tmp/versions/all_versions.txt | jq -R . | jq -s .)
-          TAGS=$(sort -u /tmp/versions/all_tags.txt | jq -R . | jq -s .)
+          # Create JSON arrays with manual string construction
+          versions_array="["
+          first=true
+          while IFS= read -r version; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              versions_array+=","
+            fi
+            versions_array+="\"$version\""
+          done < <(sort -u /tmp/versions/all_versions.txt)
+          versions_array+="]"
           
-          # Set outputs
-          echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
-          echo "image_tags=$TAGS" >> $GITHUB_OUTPUT
-
+          tags_array="["
+          first=true
+          while IFS= read -r tag; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              tags_array+=","
+            fi
+            tags_array+="\"$tag\""
+          done < <(sort -u /tmp/versions/all_tags.txt)
+          tags_array+="]"
+          
+          # Set outputs with proper delimiter
+          {
+            echo "versions=${versions_array}"
+            echo "image_tags=${tags_array}"
+          } >> $GITHUB_OUTPUT
   build_release_image:
     needs: build
     strategy:
