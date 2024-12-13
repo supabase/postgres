@@ -9,9 +9,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.0.1.008-orioledb"
-  postgres15: "15.8.1.018"
-  postgres16: "16.3.1.024"
+  postgresorioledb-17: "17.0.1.009-orioledb"
+  postgres15: "15.8.1.019"
+  postgres16: "16.3.1.025"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -92,10 +92,10 @@ timescaledb_release_checksum: sha256:883638f2e79d25ec88ee58f603f3c81c999b6364cb4
 wal2json_release: "2_5"
 wal2json_release_checksum: sha256:b516653575541cf221b99cf3f8be9b6821f6dbcfc125675c85f35090f824f00e
 
-supautils_release: "2.5.0"
-supautils_release_arm64_deb_checksum: sha256:406e4a816f719bd6c4b2143e9bb38078fbe60d7e85018ec0aed5d76924e28000
-supautils_release_amd64_deb_checksum: sha256:71f182b478d8aaf167609dd382875cdce3fbe992e888988b3d51cdad39e08202
-supautils_release_tar_checksum: sha256:07c41244e4374248da9c2df2822152f3ae8f1e74c8a92d361300480193219b63
+supautils_release: "2.6.0"
+supautils_release_arm64_deb_checksum: sha256:b83f0777e506e310e33af4dafa8ae130b1b0e2871d6099234b332bfb33a5466f
+supautils_release_amd64_deb_checksum: sha256:709d6cf4939031998b9392d435ad113564fb42c4c77e81e5035106840f8a74e0
+supautils_release_tar_checksum: sha256:b1cf964d1c56f45120d4724bfaf258cc7c0caccb30d8bde20bcda088a5990718
 
 pljava_release: master
 pljava_release_checksum: sha256:e99b1c52f7b57f64c8986fe6ea4a6cc09d78e779c1643db060d0ac66c93be8b6
