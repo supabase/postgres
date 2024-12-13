@@ -7,8 +7,6 @@ on:
       - release/*
       - sam/docker-oriole17
     paths:
-    #   - ".github/workflows/dockerhub-release-matrix.yml"
-    #   - "anisble/vars.yml"
       - '**'
   workflow_dispatch:
  
@@ -29,7 +27,7 @@ jobs:
           # Get all postgres versions from vars.yml
           VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[]' ansible/vars.yml)
           
-          # Check which versions have corresponding Dockerfiles and create matrix config
+          # Create matrix config
           MATRIX_CONFIG="{"
           MATRIX_CONFIG+="\"include\":["
           FIRST=true
@@ -38,12 +36,8 @@ jobs:
             # Remove quotes from version
             version=$(echo "$version" | tr -d '"')
             
-            # Determine dockerfile name based on version
-            if [[ "$version" == "orioledb-"* ]]; then
-              dockerfile="Dockerfile-${version#orioledb-}-orioledb"
-            else
-              dockerfile="Dockerfile-${version}"
-            fi
+            # Simply look for Dockerfile-{version}
+            dockerfile="Dockerfile-${version}"
             
             # Check if Dockerfile exists
             if [ -f "$dockerfile" ]; then
