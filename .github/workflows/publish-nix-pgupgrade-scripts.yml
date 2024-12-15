@@ -101,7 +101,7 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION=${{ inputs.postgresVersion }}
           fi
