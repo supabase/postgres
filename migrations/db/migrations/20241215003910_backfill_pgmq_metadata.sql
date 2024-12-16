@@ -34,9 +34,9 @@ begin
         	join pg_catalog.pg_namespace n
 				on c.relnamespace = n.oid
         where
-			n.nspname = 'pgmq'
-			and c.relname like 'q_%'
-	 		and c.relkind in ('r', 'p', 'u')
+            n.nspname = 'pgmq'
+            and c.relname like 'q_%'
+            and c.relkind in ('r', 'p', 'u')
         on conflict (queue_name) do nothing;
     end if;
 end $$;
