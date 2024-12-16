@@ -207,12 +207,12 @@ jobs:
           SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
           SLACK_FOOTER: ""
 
-  publish:
+publish:
     needs: [build, merge_manifest]
     strategy:
       matrix:
-        version: ${{ fromJson(needs.build.outputs.versions) }}
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}  
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ matrix.version }}
+      version: ${{ matrix.image_tag }}  
     secrets: inherit
