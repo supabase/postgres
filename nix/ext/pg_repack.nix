@@ -18,8 +18,8 @@ stdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "reorg";
     repo = "pg_repack";
-    rev = "85b64c6d4f599b2988343c4e7121acab505c9006";
-    hash = "sha256-lAuLI+vupusvn3uTzQ9OaLqkEfUVMCAwU9R70tTbb8Y=";
+    rev = "ver_${finalAttrs.version}";
+    hash = "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA=";
   };
 
   installPhase = ''
