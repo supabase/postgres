@@ -61,8 +61,8 @@ jobs:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
     runs-on: ubuntu-latest
     outputs:
-      versions: ${{ steps.output-versions.outputs.versions }}
-      image_tags: ${{ steps.output-versions.outputs.image_tags }}
+      versions: ${{ steps.combine-outputs.outputs.versions }}
+      image_tags: ${{ steps.combine-outputs.outputs.image_tags }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
@@ -87,48 +87,58 @@ jobs:
         with:
           cmd: yq 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
 
-      - id: output-versions
-        if: always()
+      # Create workflow artifact with this matrix run's version info
+      - name: Save version info
         run: |
-          # Create output files if they don't exist
-          mkdir -p /tmp/versions
-          touch /tmp/versions/all_versions.txt
-          touch /tmp/versions/all_tags.txt
-          
-          # Append current version and tag
-          echo "${{ matrix.version }}" >> /tmp/versions/all_versions.txt
-          echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" >> /tmp/versions/all_tags.txt
-          
-          # Create JSON arrays with manual string construction
+          mkdir -p ./versions
+          echo "${{ matrix.version }}" > ./versions/version.txt
+          echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" > ./versions/tag.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: version-info-${{ matrix.version }}
+          path: ./versions/
+
+      # Only run in first matrix job to combine all outputs
+      - if: matrix.version == fromJson(needs.prepare.outputs.matrix_config).include[0].version
+        id: combine-outputs
+        run: |
+          # Wait for other matrix jobs to complete by sleeping briefly
+          sleep 15
+
+          # Create arrays to hold all versions and tags
           versions_array="["
+          tags_array="["
           first=true
-          while IFS= read -r version; do
+
+          # For each version in the matrix config
+          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -c '.include[]'); do
+            version=$(echo $row | jq -r '.version')
+            
             if [ "$first" = true ]; then
               first=false
             else
               versions_array+=","
-            fi
-            versions_array+="\"$version\""
-          done < <(sort -u /tmp/versions/all_versions.txt)
-          versions_array+="]"
-          
-          tags_array="["
-          first=true
-          while IFS= read -r tag; do
-            if [ "$first" = true ]; then
-              first=false
-            else
               tags_array+=","
             fi
+            
+            # Download and read artifacts
+            mkdir -p ./download
+            echo "Processing version $version"
+            
+            tag=$(cat ../version-info-${version}/tag.txt)
+            
+            versions_array+="\"$version\""
             tags_array+="\"$tag\""
-          done < <(sort -u /tmp/versions/all_tags.txt)
+          done
+
+          versions_array+="]"
           tags_array+="]"
-          
-          # Set outputs with proper delimiter
-          {
-            echo "versions=${versions_array}"
-            echo "image_tags=${tags_array}"
-          } >> $GITHUB_OUTPUT
+
+          # Set outputs
+          echo "versions=$versions_array" >> $GITHUB_OUTPUT
+          echo "image_tags=$tags_array" >> $GITHUB_OUTPUT
+
   build_release_image:
     needs: build
     strategy:
@@ -197,7 +207,7 @@ jobs:
           SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
           SLACK_FOOTER: ""
 
-  publish:
+publish:
     needs: [build, merge_manifest]
     strategy:
       matrix:
