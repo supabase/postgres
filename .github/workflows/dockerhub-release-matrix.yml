@@ -207,12 +207,23 @@ jobs:
           SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
           SLACK_FOOTER: ""
 
-  publish:
+  get_publish_version:
     needs: [build, merge_manifest]
     strategy:
       matrix:
         image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - id: get_version
+        run: |
+          VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
+          echo "publish_version=$VERSION" >> $GITHUB_OUTPUT
+
+  publish:
+    needs: get_puglixh_version
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ replace(matrix.image_tag, 'supabase/postgres:', '') }}
+      version: ${{ needs.get_version.outputs.publish_version }}
     secrets: inherit
