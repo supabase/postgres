@@ -207,7 +207,7 @@ jobs:
           SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
           SLACK_FOOTER: ""
 
-publish:
+  publish:
     needs: [build, merge_manifest]
     strategy:
       matrix:
