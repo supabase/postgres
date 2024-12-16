@@ -199,7 +199,10 @@ jobs:
 
   publish:
     needs: [build, merge_manifest]
+    strategy:
+      matrix:
+        version: ${{ fromJson(needs.build.outputs.versions) }}
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ needs.build.outputs.docker_version }}
+      version: ${{ matrix.version }}
     secrets: inherit
