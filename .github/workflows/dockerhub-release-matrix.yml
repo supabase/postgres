@@ -222,7 +222,7 @@ jobs:
           echo "publish_version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
-    needs: get_puglixh_version
+    needs: get_publish_version
     uses: ./.github/workflows/mirror.yml
     with:
       version: ${{ needs.get_version.outputs.publish_version }}
