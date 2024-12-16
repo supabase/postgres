@@ -211,8 +211,8 @@ jobs:
     needs: [build, merge_manifest]
     strategy:
       matrix:
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}  
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ matrix.image_tag }}  
+      version: ${{ replace(matrix.image_tag, 'supabase/postgres:', '') }}
     secrets: inherit
