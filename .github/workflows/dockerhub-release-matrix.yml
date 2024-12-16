@@ -126,7 +126,7 @@ jobs:
             mkdir -p ./download
             echo "Processing version $version"
             
-            tag=$(cat ../version-info-${version}/tag.txt)
+            tag=$(cat ./versions/tag.txt)
             
             versions_array+="\"$version\""
             tags_array+="\"$tag\""
