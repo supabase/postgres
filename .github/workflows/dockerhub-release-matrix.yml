@@ -99,7 +99,7 @@ jobs:
           name: version-info-${{ matrix.version }}
           path: ./versions/
 
-      - if: matrix.version == fromJson(needs.prepare.outputs.matrix_config).include[0].version
+      - if: contains(needs.prepare.outputs.matrix_config, format('"{0}"', matrix.version))
         id: combine-outputs
         run: |
           # Wait for other matrix jobs to complete by sleeping briefly
