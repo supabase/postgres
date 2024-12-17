@@ -214,16 +214,18 @@ jobs:
         image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.publish_version }}
+      version: ${{ steps.get_version.outputs.version }}  
     steps:
       - id: get_version
         run: |
           VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
-          echo "publish_version=$VERSION" >> $GITHUB_OUTPUT
+          # Changed to match the output name expected by the publish job
+          echo "Extracted version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
     needs: get_publish_version
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ needs.get_version.outputs.publish_version }}
+      version: ${{ needs.get_publish_version.outputs.version }}
     secrets: inherit
