@@ -112,7 +112,7 @@ jobs:
           first=true
 
           # For each version in the matrix config
-          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -c '.include[]'); do
+          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -rc '.include[]'); do
             version=$(echo $row | jq -r '.version')
             
             if [ "$first" = true ]; then
@@ -129,7 +129,7 @@ jobs:
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$version'"]' ansible/vars.yml)
             fi
             PG_VERSION=$(echo $PG_VERSION | tr -d '"')
-            
+
             versions_array+="\"$version\""
             tags_array+="\"supabase/postgres:$PG_VERSION\""
           done
@@ -137,7 +137,6 @@ jobs:
           versions_array+="]"
           tags_array+="]"
 
-          # Set outputs
           echo "versions=$versions_array" >> $GITHUB_OUTPUT
           echo "image_tags=$tags_array" >> $GITHUB_OUTPUT
 
