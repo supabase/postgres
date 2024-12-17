@@ -99,20 +99,18 @@ jobs:
           name: version-info-${{ matrix.version }}
           path: ./versions/
 
-      # Only run in first matrix job to combine all outputs
       - if: matrix.version == fromJson(needs.prepare.outputs.matrix_config).include[0].version
         id: combine-outputs
         run: |
           # Wait for other matrix jobs to complete by sleeping briefly
           sleep 15
 
-          # Create arrays to hold all versions and tags
           versions_array="["
           tags_array="["
           first=true
 
           # For each version in the matrix config
-          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -rc '.include[]'); do
+          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -cr '.include[]'); do
             version=$(echo $row | jq -r '.version')
             
             if [ "$first" = true ]; then
@@ -122,18 +120,18 @@ jobs:
               tags_array+=","
             fi
 
-            # Get version from vars.yml using same logic as common-nix.vars.pkr.hcl
+            # Get version differently based on version type
             if [[ "$version" == "orioledb-17" ]]; then
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
             else
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$version'"]' ansible/vars.yml)
             fi
             PG_VERSION=$(echo $PG_VERSION | tr -d '"')
-
-            versions_array+="\"$version\""
-            tags_array+="\"supabase/postgres:$PG_VERSION\""
+            
+            versions_array+="\"${version}\""
+            tags_array+="\"supabase/postgres:${PG_VERSION}\""
           done
-
+          
           versions_array+="]"
           tags_array+="]"
 
