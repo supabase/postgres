@@ -114,10 +114,12 @@ jobs:
           tags_array="["
           first=true
 
-          # For each version in the matrix config
-          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -cr '.include[]'); do
-            version=$(echo $row | jq -r '.version')
-            
+          # Extract versions directly from matrix config using grep/sed
+          matrix_json='${{ needs.prepare.outputs.matrix_config }}'
+          versions=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/"version":"\(.*\)"/\1/')
+
+          # For each version
+          while read -r version; do
             if [ "$first" = true ]; then
               first=false
             else
@@ -135,7 +137,7 @@ jobs:
             
             versions_array+="\"${version}\""
             tags_array+="\"supabase/postgres:${PG_VERSION}\""
-          done
+          done <<< "$versions"
           
           versions_array+="]"
           tags_array+="]"
