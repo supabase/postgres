@@ -212,14 +212,26 @@ jobs:
     needs: [build, merge_manifest]
     strategy:
       matrix:
-        version: ${{ fromJson(needs.build.outputs.versions) }}
+        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}  
+      version: ${{ steps.get_version.outputs.version }}
     steps:
+      - uses: actions/checkout@v3
+      
+      - uses: DeterminateSystems/nix-installer-action@main
+      
       - id: get_version
         run: |
-          echo "version=${{ matrix.version }}" >> $GITHUB_OUTPUT
+          # Get the full version from vars.yml for orioledb
+          if [[ "${{ matrix.image_tag }}" == *"orioledb"* ]]; then
+            VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
+            VERSION=$(echo $VERSION | tr -d '"')  # Remove quotes
+          else
+            # For regular postgres, get version from the image tag
+            VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
     needs: get_publish_version
