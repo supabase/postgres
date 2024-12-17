@@ -214,7 +214,7 @@ jobs:
         image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ steps.get_version.outputs.publish_version }}
     steps:
       - id: get_version
         run: |
