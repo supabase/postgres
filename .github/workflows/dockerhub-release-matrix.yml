@@ -109,12 +109,17 @@ jobs:
           tags_array="["
           first=true
 
-          # Extract versions directly from matrix config using grep/sed
+          # Extract versions using grep and sed
           matrix_json='${{ needs.prepare.outputs.matrix_config }}'
-          versions=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/"version":"\(.*\)"/\1/')
+          versions=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/.*:"//;s/"//')
 
           # For each version
           while read -r version; do
+            # Skip empty versions
+            if [ -z "$version" ]; then
+              continue
+            fi
+
             if [ "$first" = true ]; then
               first=false
             else
@@ -128,14 +133,24 @@ jobs:
             else
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$version'"]' ansible/vars.yml)
             fi
-            PG_VERSION=$(echo $PG_VERSION | tr -d '"')
             
-            versions_array+="\"${version}\""
-            tags_array+="\"supabase/postgres:${PG_VERSION}\""
+            # Ensure PG_VERSION is not empty and remove quotes
+            if [ -n "$PG_VERSION" ]; then
+              PG_VERSION=$(echo $PG_VERSION | tr -d '"')
+              
+              versions_array+="\"${version}\""
+              tags_array+="\"supabase/postgres:${PG_VERSION}\""
+            fi
           done <<< "$versions"
           
           versions_array+="]"
           tags_array+="]"
+
+          # Validate arrays are not empty
+          if [ "$versions_array" = "[]" ] || [ "$tags_array" = "[]" ]; then
+            echo "Error: No valid versions found"
+            exit 1
+          fi
 
           echo "versions=$versions_array" >> $GITHUB_OUTPUT
           echo "image_tags=$tags_array" >> $GITHUB_OUTPUT
