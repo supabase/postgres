@@ -185,6 +185,7 @@ jobs:
     strategy:
       matrix:
         image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        version: ${{ fromJson(needs.build.outputs.versions) }}
     runs-on: ubuntu-latest
     steps:
       - uses: docker/setup-buildx-action@v3
@@ -211,17 +212,14 @@ jobs:
     needs: [build, merge_manifest]
     strategy:
       matrix:
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        version: ${{ fromJson(needs.build.outputs.versions) }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.version }}  
     steps:
       - id: get_version
         run: |
-          VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
-          # Changed to match the output name expected by the publish job
-          echo "Extracted version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=${{ matrix.version }}" >> $GITHUB_OUTPUT
 
   publish:
     needs: get_publish_version
