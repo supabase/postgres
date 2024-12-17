@@ -74,7 +74,12 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.version }}"]' ansible/vars.yml)
+          # If version contains orioledb-, handle it differently
+          if [[ "${{ matrix.version }}" == *"orioledb-"* ]]; then
+            PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
+          else
+            PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.version }}"]' ansible/vars.yml)
+          fi
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo "" >> common-nix.vars.pkr.hcl
@@ -121,7 +126,7 @@ jobs:
             fi
 
             # Get version differently based on version type
-            if [[ "$version" == "orioledb-17" ]]; then
+            if [[ "$version" == *"orioledb-"* ]]; then
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
             else
               PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$version'"]' ansible/vars.yml)
