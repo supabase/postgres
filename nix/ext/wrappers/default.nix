@@ -96,6 +96,7 @@ buildPgrxExtension_0_12_6 rec {
   
   buildAndTestSubdir = "wrappers";
   buildFeatures = [
+    "helloworld_fdw"
     "all_fdws"
   ];
   doCheck = false;
