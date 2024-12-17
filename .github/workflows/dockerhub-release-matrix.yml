@@ -99,18 +99,27 @@ jobs:
           name: version-info-${{ matrix.version }}
           path: ./versions/
 
-      - if: contains(needs.prepare.outputs.matrix_config, format('"{0}"', matrix.version))
-        id: combine-outputs
+      - id: combine-outputs
         run: |
           # Wait for other matrix jobs to complete by sleeping briefly
           sleep 15
+
+          # First verify if this is the controlling job
+          matrix_json='${{ needs.prepare.outputs.matrix_config }}'
+          first_version=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/.*:"//;s/"//' | head -1)
+          current_version="${{ matrix.version }}"
+          
+          # Only proceed if this is the controlling job (matches first version)
+          if [ "$current_version" != "$first_version" ]; then
+            echo "This is not the controlling job. Skipping."
+            exit 0
+          fi
 
           versions_array="["
           tags_array="["
           first=true
 
           # Extract versions using grep and sed
-          matrix_json='${{ needs.prepare.outputs.matrix_config }}'
           versions=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/.*:"//;s/"//')
 
           # For each version
