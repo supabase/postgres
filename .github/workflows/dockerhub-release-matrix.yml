@@ -61,15 +61,7 @@ jobs:
             
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
-
-      - name: Generate common-nix.vars.pkr.hcl
-        run: |
-          nu -c 'let pg_version = (open ansible/vars.yml | get postgres_release | get $"postgres${{ matrix.version }}" | str trim)
-          $"postgres-version = \"($pg_version)\"" | save common-nix.vars.pkr.hcl
-          "" | save --append common-nix.vars.pkr.hcl'
-      - id: settings
-        run: |
-          nu -c 'open common-nix.vars.pkr.hcl | str replace -a "[\\s\"]+" "" | save --append $env.GITHUB_OUTPUT'      
+      
       - id: args
         run: |
           nu -c '
@@ -79,12 +71,12 @@ jobs:
             | each { |it| $"($it.name)=($it.item)" } 
             | str join "\n" 
             | save --append $env.GITHUB_OUTPUT
-          '   
+          '    
   build_release_image:
     needs: [prepare, build]
     strategy:
       matrix:
-        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
+        postgres: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm64' }}
     timeout-minutes: 180
@@ -104,7 +96,7 @@ jobs:
       - name: Get image tag
         run: |
           nu -c '
-            let version = "${{ matrix.version }}"
+            let version = "${{ matrix.postgres.version }}"
             let release_key = if ($version | str contains "orioledb") {
               $"postgres($version | str replace "-" "")"
             } else {
@@ -124,17 +116,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          file: ${{ matrix.dockerfile }}
-      - name: Slack Notification
-        if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: "gha-failures-notifier"
-          SLACK_COLOR: "danger"
-          SLACK_MESSAGE: "Building Postgres ${{ matrix.arch }} image failed for version ${{ matrix.version }}"
-          SLACK_FOOTER: ""
-
+          file: ${{ matrix.postgres.dockerfile }}
   merge_manifest:
     needs: [prepare, build, build_release_image]
     strategy:
