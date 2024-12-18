@@ -18,15 +18,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      
-      - name: Install Nushell
-        run: |
-          sudo snap install nushell --classic
-
       - name: Generate build matrix
+        uses: DeterminateSystems/nix-installer-action@main
         id: set-matrix
         run: |
-          nu -c 'let versions = (open ansible/vars.yml | get postgres_major)
+          nix run nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
           let matrix = ($versions | each { |ver|
             let version = ($ver | str trim)
             let dockerfile = $"Dockerfile-($version)"
@@ -54,17 +50,13 @@ jobs:
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Install Nushell
-        run: |
-          sudo snap install nushell --classic
-            
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
       
       - id: args
         run: |
-          nu -c '
+          nix run nixpkgs#nushell -- -c '
             open ansible/vars.yml 
             | items { |key value| {name: $key, item: $value} } 
             | where { |it| ($it.item | describe) == "string" } 
@@ -82,9 +74,7 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v3
-      - name: Install Nushell
-        run: |
-          sudo snap install nushell --classic
+      - uses: DeterminateSystems/nix-installer-action@main
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v3
         with:
@@ -96,7 +86,7 @@ jobs:
       - name: Get image tag
         id: image
         run: |
-          nu -c '
+          nix run nixpkgs#nushell -- -c '
             let version = "${{ matrix.postgres.version }}"
             let release_key = if ($version | str contains "orioledb") {
               $"postgresorioledb-17"
@@ -126,9 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install Nushell
-        run: |
-          sudo snap install nushell --classic
+      - uses: DeterminateSystems/nix-installer-action@main
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
         with:
@@ -136,7 +124,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Get image tag
         run: |
-          nu -c '
+          nix run nixpkgs#nushell -- -c '
             let version = "${{ matrix.version }}"
             let release_key = if ($version | str contains "orioledb") {
               $"postgres($version | str replace "-" "")"
@@ -162,13 +150,11 @@ jobs:
       matrix: ${{ steps.get_versions.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install Nushell
-        run: |
-          sudo snap install nushell --classic
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Get version
         id: get_versions
         run: |
-          nu -c '
+          nix run nixpkgs#nushell -- -c '
             let version = "${{ matrix.version }}"
             let release_key = if ($version | str contains "orioledb") {
               $"postgres($version | str replace "-" "")"
