@@ -87,29 +87,28 @@ jobs:
         id: image
         run: |
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            sudo nix run nixpkgs#nushell -- -c '
+            pg_version=$(sudo nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let release_key = if ($version | str contains "orioledb") {
                 $"postgresorioledb-17"
               } else {
                 $"postgres($version)"
               }
-              let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-              $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
-            '
+              open ansible/vars.yml | get postgres_release | get $release_key | str trim
+            ')
+            echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           else
-            nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let release_key = if ($version | str contains "orioledb") {
                 $"postgresorioledb-17"
               } else {
                 $"postgres($version)"
               }
-              let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-              $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
-            '
+              open ansible/vars.yml | get postgres_release | get $release_key | str trim
+            ')
+            echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           fi
-
       - id: build
         uses: docker/build-push-action@v5
         with:
