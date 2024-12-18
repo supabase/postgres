@@ -19,124 +19,69 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Install Nushell
+        run: |
+          sudo apt update
+          sudo apt install -y nushell
 
       - name: Generate build matrix
         id: set-matrix
         run: |
-          # Get all postgres versions from vars.yml
-          VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[]' ansible/vars.yml)
-          
-          # Create matrix config
-          MATRIX_CONFIG="{"
-          MATRIX_CONFIG+="\"include\":["
-          FIRST=true
-          
-          while IFS= read -r version; do
-            # Remove quotes from version
-            version=$(echo "$version" | tr -d '"')
-            
-            # Simply look for Dockerfile-{version}
-            dockerfile="Dockerfile-${version}"
-            
-            # Check if Dockerfile exists
-            if [ -f "$dockerfile" ]; then
-              if [ "$FIRST" = true ]; then
-                FIRST=false
-              else
-                MATRIX_CONFIG+=","
-              fi
-              MATRIX_CONFIG+="{\"version\":\"$version\",\"dockerfile\":\"$dockerfile\"}"
-            fi
-          done <<< "$VERSIONS"
-          
-          MATRIX_CONFIG+="]}"
-          
-          # Output the matrix configuration
-          echo "matrix_config=$MATRIX_CONFIG" >> $GITHUB_OUTPUT
+          nu -c 'let versions = (open ansible/vars.yml | get postgres_major)
+          let matrix = ($versions | each { |ver|
+            let version = ($ver | str trim)
+            let dockerfile = $"Dockerfile-($version)"
+            if ($dockerfile | path exists) {
+              {
+                version: $version,
+                dockerfile: $dockerfile
+              }
+            } else {
+              null
+            }
+          } | compact)
+
+          let matrix_config = {
+            include: $matrix
+          }
+
+          "matrix_config=" + ($matrix_config | to json) | save --append $env.GITHUB_OUTPUT'
   build:
     needs: prepare
     strategy:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
     runs-on: ubuntu-latest
     outputs:
-      versions: ${{ steps.combine-outputs.outputs.versions }}
-      image_tags: ${{ steps.combine-outputs.outputs.image_tags }}
       build_args: ${{ steps.args.outputs.result }}
     steps:
       - uses: actions/checkout@v3
-      
-      - uses: DeterminateSystems/nix-installer-action@main
-      
+            
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ matrix.version }}"]' ansible/vars.yml)
-          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          echo "" >> common-nix.vars.pkr.hcl
+          nu -c 'let pg_version = (open ansible/vars.yml | get postgres_release | get $"postgres${{ matrix.version }}" | str trim)
+          $"postgres-version = \"($pg_version)\"" | save common-nix.vars.pkr.hcl
+          "" | save --append common-nix.vars.pkr.hcl'
       - id: settings
-        run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
-      
+        run: |
+          nu -c 'open common-nix.vars.pkr.hcl | str replace -a "[\\s\"]+" "" | save --append $env.GITHUB_OUTPUT'      
       - id: args
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
-
-      # Create workflow artifact with this matrix run's version info
-      - name: Save version info
         run: |
-          mkdir -p ./versions
-          echo "${{ matrix.version }}" > ./versions/version.txt
-          echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" > ./versions/tag.txt
-      - uses: actions/upload-artifact@v3
-        with:
-          name: version-info-${{ matrix.version }}
-          path: ./versions/
-
-      # Only run in first matrix job to combine all outputs
-      - if: matrix.version == fromJson(needs.prepare.outputs.matrix_config).include[0].version
-        id: combine-outputs
-        run: |
-          # Wait for other matrix jobs to complete by sleeping briefly
-          sleep 15
-          # Create arrays to hold all versions and tags
-          versions_array="["
-          tags_array="["
-          first=true
-          # For each version in the matrix config
-          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -c '.include[]'); do
-            version=$(echo $row | jq -r '.version')
-            
-            if [ "$first" = true ]; then
-              first=false
-            else
-              versions_array+=","
-              tags_array+=","
-            fi
-            
-            # Download and read artifacts
-            mkdir -p ./download
-            echo "Processing version $version"
-            
-            tag=$(cat ./versions/tag.txt)
-            
-            versions_array+="\"$version\""
-            tags_array+="\"$tag\""
-          done
-          versions_array+="]"
-          tags_array+="]"
-          # Set outputs
-          echo "versions=$versions_array" >> $GITHUB_OUTPUT
-          echo "image_tags=$tags_array" >> $GITHUB_OUTPUT
+          nu -c '
+            open ansible/vars.yml 
+            | items { |key value| {name: $key, item: $value} } 
+            | where { |it| ($it.item | describe) == "string" } 
+            | each { |it| $"($it.name)=($it.item)" } 
+            | str join "\n" 
+            | save --append $env.GITHUB_OUTPUT
+          '   
   build_release_image:
-    needs: build
+    needs: [prepare, build]
     strategy:
       matrix:
-        version: ${{ fromJson(needs.build.outputs.versions) }}
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'amd64' && fromJson('["self-hosted", "X64"]') || 'arm-runner' }}
     timeout-minutes: 180
@@ -150,6 +95,18 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get image tag
+        run: |
+          nu -c '
+            let version = "${{ matrix.version }}"
+            let release_key = if ($version | str contains "orioledb") {
+              $"postgres($version | str replace "-" "")"
+            } else {
+              $"postgres($version)"
+            }
+            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            $"supabase/postgres:($pg_version)" | save --append $env.GITHUB_ENV
+          '      
       - id: build
         uses: docker/build-push-action@v5
         with:
@@ -157,11 +114,11 @@ jobs:
           build-args: |
             ${{ needs.build.outputs.build_args }}
           target: production
-          tags: ${{ matrix.image_tag }}_${{ matrix.arch }}
+          tags: ${{ env.pg_version }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          file: Dockerfile-${{ matrix.version }}
+          file: ${{ matrix.dockerfile }}
       - name: Slack Notification
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
@@ -173,50 +130,69 @@ jobs:
           SLACK_FOOTER: ""
 
   merge_manifest:
-    needs: [build, build_release_image]
+    needs: [prepare, build, build_release_image]
     strategy:
       matrix:
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get image tag
+        run: |
+          nu -c '
+            let version = "${{ matrix.version }}"
+            let release_key = if ($version | str contains "orioledb") {
+              $"postgres($version | str replace "-" "")"
+            } else {
+              $"postgres($version)"
+            }
+            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            $"supabase/postgres:($pg_version)" | save --append $env.GITHUB_ENV
+          '
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ matrix.image_tag }} \
-          ${{ matrix.image_tag }}_amd64 \
-          ${{ matrix.image_tag }}_arm64
-      - name: Slack Notification
-        if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: "gha-failures-notifier"
-          SLACK_COLOR: "danger"
-          SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
-          SLACK_FOOTER: ""
-
+          docker buildx imagetools create -t ${{ env.pg_version }} \
+          ${{ env.pg_version }}_amd64 \
+          ${{ env.pg_version }}_arm64
   get_publish_version:
-    needs: [build, merge_manifest]
+    needs: [prepare, merge_manifest]
     strategy:
       matrix:
-        image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
+        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}  
+      matrix: ${{ steps.get_versions.outputs.matrix }}
     steps:
-      - id: get_version
+      - uses: actions/checkout@v3
+      - name: Get versions
+        id: get_versions
         run: |
-          VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
-          # Changed to match the output name expected by the publish job
-          echo "Extracted version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          nu -c '
+            let versions = ${{ fromJson(needs.prepare.outputs.matrix_config).include | select(.version) | to array }}
+            let versions_array = ($versions | each { |ver|
+              let version = $ver.version
+              let release_key = if ($version | str contains "orioledb") {
+                $"postgres($version | str replace "-" "")"
+              } else {
+                $"postgres($version)"
+              }
+              let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              {version: $pg_version}
+            })
+            let matrix = {include: $versions_array}
+            $"matrix=($matrix | to json)" | save --append $env.GITHUB_OUTPUT
+          '
+
   publish:
     needs: get_publish_version
+    strategy:
+      matrix: ${{ fromJson(needs.get_publish_version.outputs.matrix) }}
     uses: ./.github/workflows/mirror.yml
     with:
-      version: ${{ needs.get_publish_version.outputs.version }}
+      version: ${{ matrix.version }}
     secrets: inherit
