@@ -109,18 +109,19 @@ jobs:
               $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
             '
           fi
-            - id: build
-              uses: docker/build-push-action@v5
-              with:
-                push: true
-                build-args: |
-                  ${{ needs.build.outputs.build_args }}
-                target: production
-                tags: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
-                platforms: linux/${{ matrix.arch }}
-                cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-                cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-                file: ${{ matrix.postgres.dockerfile }}  
+
+      - id: build
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          build-args: |
+            ${{ needs.build.outputs.build_args }}
+          target: production
+          tags: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
+          file: ${{ matrix.postgres.dockerfile }}
   merge_manifest:
     needs: [prepare, build, build_release_image]
     strategy:
