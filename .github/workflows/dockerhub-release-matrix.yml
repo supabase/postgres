@@ -96,9 +96,9 @@ jobs:
       - name: Get image tag
         run: |
           nu -c '
-            let version = "${{ matrix.version }}"
+            let version = "${{ matrix.postgres.version }}"
             let release_key = if ($version | str contains "orioledb") {
-              $"postgresorioledb-17"  # Use exact key name from vars.yml
+              $"postgresorioledb-17"
             } else {
               $"postgres($version)"
             }
