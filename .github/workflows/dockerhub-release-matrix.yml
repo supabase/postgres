@@ -86,7 +86,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && fromJson('["self-hosted", "X64"]') || 'arm-runner' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm64' }}
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v3
