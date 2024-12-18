@@ -94,6 +94,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Get image tag
+        id: image
         run: |
           nu -c '
             let version = "${{ matrix.postgres.version }}"
@@ -103,7 +104,7 @@ jobs:
               $"postgres($version)"
             }
             let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-            $"supabase/postgres:($pg_version)" | save --append $env.GITHUB_ENV
+            $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
           '
       - id: build
         uses: docker/build-push-action@v5
@@ -112,11 +113,11 @@ jobs:
           build-args: |
             ${{ needs.build.outputs.build_args }}
           target: production
-          tags: ${{ env.pg_version }}_${{ matrix.arch }}
+          tags: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
-          file: ${{ matrix.postgres.dockerfile }}
+          file: ${{ matrix.postgres.dockerfile }}  
   merge_manifest:
     needs: [prepare, build, build_release_image]
     strategy:
