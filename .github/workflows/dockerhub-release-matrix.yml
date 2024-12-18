@@ -44,7 +44,7 @@ jobs:
             include: $matrix
           }
 
-          "matrix_config=" + ($matrix_config | to json) | save --append $env.GITHUB_OUTPUT'
+          $"matrix_config=($matrix_config | to json -r)" | save --append $env.GITHUB_OUTPUT'
   build:
     needs: prepare
     strategy:
