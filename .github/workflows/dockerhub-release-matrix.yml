@@ -54,7 +54,6 @@ jobs:
           
           # Output the matrix configuration
           echo "matrix_config=$MATRIX_CONFIG" >> $GITHUB_OUTPUT
-
   build:
     needs: prepare
     strategy:
@@ -78,7 +77,6 @@ jobs:
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo "" >> common-nix.vars.pkr.hcl
-
       - id: settings
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
       
@@ -93,77 +91,46 @@ jobs:
           mkdir -p ./versions
           echo "${{ matrix.version }}" > ./versions/version.txt
           echo "supabase/postgres:${{ steps.settings.outputs.postgres-version }}" > ./versions/tag.txt
-
       - uses: actions/upload-artifact@v3
         with:
           name: version-info-${{ matrix.version }}
           path: ./versions/
 
-      - id: combine-outputs
+      # Only run in first matrix job to combine all outputs
+      - if: matrix.version == fromJson(needs.prepare.outputs.matrix_config).include[0].version
+        id: combine-outputs
         run: |
           # Wait for other matrix jobs to complete by sleeping briefly
           sleep 15
-
-          # First verify if this is the controlling job
-          matrix_json='${{ needs.prepare.outputs.matrix_config }}'
-          first_version=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/.*:"//;s/"//' | head -1)
-          current_version="${{ matrix.version }}"
-          
-          # Only proceed if this is the controlling job (matches first version)
-          if [ "$current_version" != "$first_version" ]; then
-            echo "This is not the controlling job. Skipping."
-            exit 0
-          fi
-
+          # Create arrays to hold all versions and tags
           versions_array="["
           tags_array="["
           first=true
-
-          # Extract versions using grep and sed
-          versions=$(echo "$matrix_json" | grep -o '"version":"[^"]*"' | sed 's/.*:"//;s/"//')
-
-          # For each version
-          while read -r version; do
-            # Skip empty versions
-            if [ -z "$version" ]; then
-              continue
-            fi
-
+          # For each version in the matrix config
+          for row in $(echo '${{ needs.prepare.outputs.matrix_config }}' | jq -c '.include[]'); do
+            version=$(echo $row | jq -r '.version')
+            
             if [ "$first" = true ]; then
               first=false
             else
               versions_array+=","
               tags_array+=","
             fi
-
-            # Get version differently based on version type
-            if [[ "$version" == *"orioledb-"* ]]; then
-              PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
-            else
-              PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'$version'"]' ansible/vars.yml)
-            fi
             
-            # Ensure PG_VERSION is not empty and remove quotes
-            if [ -n "$PG_VERSION" ]; then
-              PG_VERSION=$(echo $PG_VERSION | tr -d '"')
-              
-              versions_array+="\"${version}\""
-              tags_array+="\"supabase/postgres:${PG_VERSION}\""
-            fi
-          done <<< "$versions"
-          
+            # Download and read artifacts
+            mkdir -p ./download
+            echo "Processing version $version"
+            
+            tag=$(cat ./versions/tag.txt)
+            
+            versions_array+="\"$version\""
+            tags_array+="\"$tag\""
+          done
           versions_array+="]"
           tags_array+="]"
-
-          # Validate arrays are not empty
-          if [ "$versions_array" = "[]" ] || [ "$tags_array" = "[]" ]; then
-            echo "Error: No valid versions found"
-            exit 1
-          fi
-
+          # Set outputs
           echo "versions=$versions_array" >> $GITHUB_OUTPUT
           echo "image_tags=$tags_array" >> $GITHUB_OUTPUT
-
   build_release_image:
     needs: build
     strategy:
@@ -229,7 +196,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           SLACK_USERNAME: "gha-failures-notifier"
           SLACK_COLOR: "danger"
-          SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.image_tag }}"
+          SLACK_MESSAGE: "Building Postgres image failed for version ${{ matrix.version }}"
           SLACK_FOOTER: ""
 
   get_publish_version:
@@ -239,24 +206,14 @@ jobs:
         image_tag: ${{ fromJson(needs.build.outputs.image_tags) }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ steps.get_version.outputs.version }}  
     steps:
-      - uses: actions/checkout@v3
-      
-      - uses: DeterminateSystems/nix-installer-action@main
-      
       - id: get_version
         run: |
-          # Get the full version from vars.yml for orioledb
-          if [[ "${{ matrix.image_tag }}" == *"orioledb"* ]]; then
-            VERSION=$(nix run nixpkgs#yq -- '.postgres_release.postgresorioledb-17' ansible/vars.yml)
-            VERSION=$(echo $VERSION | tr -d '"')  # Remove quotes
-          else
-            # For regular postgres, get version from the image tag
-            VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
-          fi
+          VERSION=$(echo "${{ matrix.image_tag }}" | sed 's|supabase/postgres:||')
+          # Changed to match the output name expected by the publish job
+          echo "Extracted version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
   publish:
     needs: get_publish_version
     uses: ./.github/workflows/mirror.yml
