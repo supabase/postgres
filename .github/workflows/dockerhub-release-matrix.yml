@@ -96,15 +96,15 @@ jobs:
       - name: Get image tag
         run: |
           nu -c '
-            let version = "${{ matrix.postgres.version }}"
+            let version = "${{ matrix.version }}"
             let release_key = if ($version | str contains "orioledb") {
-              $"postgres($version | str replace "-" "")"
+              $"postgresorioledb-17"  # Use exact key name from vars.yml
             } else {
               $"postgres($version)"
             }
             let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
             $"supabase/postgres:($pg_version)" | save --append $env.GITHUB_ENV
-          '      
+          '
       - id: build
         uses: docker/build-push-action@v5
         with:
