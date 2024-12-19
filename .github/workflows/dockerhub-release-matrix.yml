@@ -166,7 +166,7 @@ jobs:
         id: get_versions
         run: |
           nix run nixpkgs#nushell -- -c '
-            let original_matrix = ($env.GITHUB_WORKFLOW_REF | split row "@" | get 0 | from json)
+            let original_matrix = (${{ needs.prepare.outputs.matrix_config }} | from json)
             let versions = $original_matrix.include
             let processed_versions = ($versions | each { |item| 
               let version = $item.version
