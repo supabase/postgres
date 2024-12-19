@@ -166,7 +166,7 @@ jobs:
         id: get_versions
         run: |
           nix run nixpkgs#nushell -- -c '
-            let original_matrix = (${{ needs.prepare.outputs.matrix_config }} | from json)
+            let original_matrix = ${{ needs.prepare.outputs.matrix_config }}
             let versions = $original_matrix.include
             let processed_versions = ($versions | each { |item| 
               let version = $item.version
@@ -182,8 +182,7 @@ jobs:
             } | flatten)
 
             let matrix = {include: $processed_versions}
-            let matrix_json = ($matrix | to json -r)
-            $"matrix=($matrix_json)" | save --append $env.GITHUB_OUTPUT
+            $"matrix=(${matrix | to json -r})" | save --append $env.GITHUB_OUTPUT
           '
 
   publish:
