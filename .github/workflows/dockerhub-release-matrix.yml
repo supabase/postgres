@@ -182,7 +182,8 @@ jobs:
             } | flatten)
 
             let matrix = {include: $processed_versions}
-            $"matrix=(${matrix | to json -r})" | save --append $env.GITHUB_OUTPUT
+            let matrix_json = ($matrix | to json -r)
+            $"matrix=($matrix_json)" | save --append $env.GITHUB_OUTPUT
           '
 
   publish:
