@@ -184,7 +184,7 @@ jobs:
             open ansible/vars.yml | get postgres_release | get $release_key | str trim
           ")
           
-          echo "matrix=$(jq -n --arg version "$pg_version" '{include: [{version: $version}]}' | base64 -w0)" >> $GITHUB_OUTPUT
+          echo "matrix=$(jq -n --arg version "$pg_version" '{include: [{version: $version}]}')" >> $GITHUB_OUTPUT
 
   publish:
     needs: get_publish_version
