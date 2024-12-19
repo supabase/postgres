@@ -169,11 +169,11 @@ jobs:
         id: get_versions
         run: |
           nix run nixpkgs#nushell -- -c '
-            let version = "${{ matrix.version }}"
-            let release_key = if ($version | str contains "orioledb") {
+            let versions = "${{ matrix.version }}"
+            let release_key = if ($versions | str contains "orioledb") {
               $"postgresorioledb-17"
             } else {
-              $"postgres($version)"
+              $"postgres($versions)"
             }
             let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
             
@@ -181,10 +181,12 @@ jobs:
             let matrix_json = ($matrix | to json -r)
             $"matrix=($matrix_json)" | save --append $env.GITHUB_OUTPUT
           '
+    
   publish:
     needs: get_publish_version
     strategy:
-      matrix: ${{ fromJson(needs.get_publish_version.outputs.matrix) }}
+      matrix: 
+        include: ${{ fromJson(needs.get_publish_version.outputs.matrix).include }}
     uses: ./.github/workflows/mirror.yml
     with:
       version: ${{ matrix.version }}
