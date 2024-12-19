@@ -176,8 +176,9 @@ jobs:
               $"postgres($version)"
             }
             let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-            let matrix = {include: [{version: $pg_version}]}
-            $"matrix=($matrix | to json)" | save --append $env.GITHUB_OUTPUT
+            
+            # Ensure clean JSON formatting
+            $"matrix={json: {include: [{version: $pg_version}]}, format: compact}" | save --append $env.GITHUB_OUTPUT
           '
 
   publish:
