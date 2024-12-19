@@ -168,23 +168,19 @@ jobs:
       - name: Get version
         id: get_versions
         run: |
-          version="${{ matrix.version }}"
-          release_key=$(nix run nixpkgs#nushell -- -c '
-            let version = "'$version'"
+          nix run nixpkgs#nushell -- -c '
+            let version = "${{ matrix.version }}"
             let release_key = if ($version | str contains "orioledb") {
               $"postgresorioledb-17"
             } else {
               $"postgres($version)"
             }
-            $release_key
-          ')
-          
-          pg_version=$(nix run nixpkgs#nushell -- -c "
-            let release_key = \"$release_key\"
-            open ansible/vars.yml | get postgres_release | get $release_key | str trim
-          ")
-          
-          echo "matrix=$(jq -n --arg version "$pg_version" '{include: [{version: $version}]}')" >> $GITHUB_OUTPUT
+            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            
+            # Use to-json with compact formatting
+            let matrix = {include: [{version: $pg_version}]}
+            $"matrix=(${matrix | to json -r})" | save --append $env.GITHUB_OUTPUT
+          '
 
   publish:
     needs: get_publish_version
