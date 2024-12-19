@@ -6,10 +6,17 @@ on:
       version:
         required: true
         type: string
+      arch:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
         description: "Image tag"
+        required: true
+        type: string
+      arch:
+        description: "Architecture"
         required: true
         type: string
 
@@ -36,7 +43,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: akhilerm/tag-push-action@v2.1.0
         with:
-          src: docker.io/supabase/postgres:${{ inputs.version }}
+          src: docker.io/supabase/postgres:${{ inputs.version }}_${{ inputs.arch }}
           dst: |
-            public.ecr.aws/supabase/postgres:${{ inputs.version }}
-            ghcr.io/supabase/postgres:${{ inputs.version }}
+            public.ecr.aws/supabase/postgres:${{ inputs.version }}_${{ inputs.arch }}
+            ghcr.io/supabase/postgres:${{ inputs.version }}_${{ inputs.arch }}

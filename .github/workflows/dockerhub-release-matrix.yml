@@ -156,9 +156,6 @@ jobs:
           supabase/postgres:${{ steps.get_version.outputs.pg_version }}_arm64
   get_publish_version:
     needs: [prepare, merge_manifest]
-    strategy:
-      matrix:
-        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.get_versions.outputs.matrix }}
@@ -169,25 +166,32 @@ jobs:
         id: get_versions
         run: |
           nix run nixpkgs#nushell -- -c '
-            let versions = "${{ matrix.version }}"
-            let release_key = if ($versions | str contains "orioledb") {
-              $"postgresorioledb-17"
-            } else {
-              $"postgres($versions)"
-            }
-            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-            
-            let matrix = {include: [{version: $pg_version}]}
+            let original_matrix = ($env.GITHUB_WORKFLOW_REF | split row "@" | get 0 | from json)
+            let versions = $original_matrix.include
+            let processed_versions = ($versions | each { |item| 
+              let version = $item.version
+              let release_key = if ($version | str contains "orioledb") {
+                $"postgresorioledb-17"
+              } else {
+                $"postgres($version)"
+              }
+              let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              
+              # Include both AMD64 and ARM64 architectures
+              [{version: $pg_version, arch: "amd64"}, {version: $pg_version, arch: "arm64"}]
+            } | flatten)
+
+            let matrix = {include: $processed_versions}
             let matrix_json = ($matrix | to json -r)
             $"matrix=($matrix_json)" | save --append $env.GITHUB_OUTPUT
           '
-    
+
   publish:
     needs: get_publish_version
     strategy:
-      matrix: 
-        include: ${{ fromJson(needs.get_publish_version.outputs.matrix).include }}
+      matrix: ${{ fromJson(needs.get_publish_version.outputs.matrix) }}
     uses: ./.github/workflows/mirror.yml
     with:
       version: ${{ matrix.version }}
+      arch: ${{ matrix.arch }}
     secrets: inherit
