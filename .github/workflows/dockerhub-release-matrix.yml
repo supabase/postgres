@@ -136,23 +136,24 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Get image tag
+        id: get_version
         run: |
           nix run nixpkgs#nushell -- -c '
-            let version = "${{ matrix.version }}"
+            let version = "15"
             let release_key = if ($version | str contains "orioledb") {
               $"postgres($version | str replace "-" "")"
             } else {
               $"postgres($version)"
             }
             let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-            $"supabase/postgres:($pg_version)" | save --append $env.GITHUB_ENV
-          '
+            
+            $"pg_version=($pg_version)" | save --append $env.GITHUB_OUTPUT
+          ' 
       - name: Merge multi-arch manifests
         run: |
-          docker buildx imagetools create -t ${{ env.pg_version }} \
-          ${{ env.pg_version }}_amd64 \
-          ${{ env.pg_version }}_arm64
-
+          docker buildx imagetools create -t supabase/postgres:${{ steps.get_version.outputs.pg_version }} \
+          supabase/postgres:${{ steps.get_version.outputs.pg_version }}_amd64 \
+          supabase/postgres:${{ steps.get_version.outputs.pg_version }}_arm64
   get_publish_version:
     needs: [prepare, merge_manifest]
     strategy:
