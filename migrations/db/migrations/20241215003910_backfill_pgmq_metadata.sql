@@ -41,4 +41,39 @@ begin
     end if;
 end $$;
 
+-- For logical backups we detach the queue and archive tables from the pgmq extension
+-- prior to pausing. Once detached, pgmq.drop_queue breaks. This re-attaches them 
+-- when a project is unpaused and allows pgmq.drop_queue to work normally.
+do $$
+declare
+    ext_exists boolean;
+    tbl record;
+begin
+    -- check if pgmq extension is installed
+    select exists(select 1 from pg_extension where extname = 'pgmq') into ext_exists;
+
+    if ext_exists then
+        for tbl in
+            select c.relname as table_name
+            from pg_class c
+            join pg_namespace n on c.relnamespace = n.oid
+            where n.nspname = 'pgmq'
+              and c.relkind in ('r', 'u')  -- include ordinary and unlogged tables
+              and (c.relname like 'q\_%' or c.relname like 'a\_%')
+              and c.oid not in (
+                  select d.objid
+                  from pg_depend d
+                  join pg_extension e on d.refobjid = e.oid
+                  where e.extname = 'pgmq'
+                    and d.classid = 'pg_class'::regclass
+                    and d.deptype = 'e'
+              )
+        loop
+            execute format('alter extension pgmq add table pgmq.%I', tbl.table_name);
+        end loop;
+    end if;
+end;
+$$;
+
+
 -- migrate:down
