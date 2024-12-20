@@ -148,7 +148,6 @@ jobs:
                   $"postgres($version)"
                 }
                 let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-                
                 $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
               ' 
           - name: Output version
@@ -161,28 +160,36 @@ jobs:
               echo "results[${{ strategy.job-index }}]=${{ steps.output_version.outputs.result }}" >> $GITHUB_OUTPUT
           - name: Merge multi-arch manifests
             run: |
-              docker buildx imagetools create -t supabase/postgres:${{ steps.get_version.outputs.pg_version }} \
-              supabase/postgres:${{ steps.get_version.outputs.pg_version }}_amd64 \
-              supabase/postgres:${{ steps.get_version.outputs.pg_version }}_arm64
-
+              docker buildx imagetools create -t ${{ steps.get_version.outputs.pg_version }} \
+              ${{ steps.get_version.outputs.pg_version }}_amd64 \
+              ${{ steps.get_version.outputs.pg_version }}_arm64
   combine_versions:
       needs: merge_manifest
       runs-on: ubuntu-latest
       outputs:
         matrix: ${{ steps.set-matrix.outputs.matrix }}
       steps:
+        - uses: actions/checkout@v3 
         - uses: DeterminateSystems/nix-installer-action@main
         - name: Combine versions into matrix
           id: set-matrix
           run: |
             nix run nixpkgs#nushell -- -c '
-              let versions = (${{ needs.merge_manifest.outputs.matrix_results }} | from json)
+              let raw_versions = "${{ needs.merge_manifest.outputs.matrix_results }}"
+              let versions = ($raw_versions 
+                | lines                                # Split into lines
+                | each { |line|                        # Process each line
+                    $line 
+                    | str replace "results\\[\\d+\\]=" ""  # Remove the results[N]= prefix
+                    | str trim                         # Clean up any whitespace
+                  }
+                | where { |it| $it != "" }            # Filter out any empty lines
+              )
               let matrix = {
                 include: ($versions | each { |ver| { version: $ver } })
               }
               $"matrix=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
             '
-
   publish:
       needs: combine_versions
       strategy:
