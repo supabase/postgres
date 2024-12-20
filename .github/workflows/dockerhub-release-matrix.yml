@@ -173,6 +173,9 @@ jobs:
       steps:
         - uses: actions/checkout@v3 
         - uses: DeterminateSystems/nix-installer-action@main
+        - name: Debug Merge Manifest Output
+          run: |
+            echo "Raw matrix_results: '${{ needs.merge_manifest.outputs.matrix_results }}'"
         - name: Combine versions into matrix
           id: set-matrix
           run: |
