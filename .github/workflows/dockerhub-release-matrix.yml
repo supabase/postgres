@@ -164,15 +164,10 @@ jobs:
               let matrix = {include: [{version: $tag}]}
               $"tags=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
             '  
-  get_publish_version:
-      needs: merge_manifest
-      runs-on: ubuntu-latest
-      outputs:
-        matrix: ${{ needs.merge_manifest.outputs.tags }}
   publish:
-      needs: [merge_manifest, get_publish_version]  # Add merge_manifest
+      needs: merge_manifest
       strategy:
-        matrix: ${{ fromJson(needs.get_publish_version.outputs.matrix) }}
+        matrix: ${{ fromJson(needs.merge_manifest.outputs.tags) }}
       uses: ./.github/workflows/mirror.yml
       with:
         version: ${{ matrix.version }}
