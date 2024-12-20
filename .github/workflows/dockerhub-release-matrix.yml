@@ -166,7 +166,7 @@ jobs:
             id: combine_tags
             run: |
               nix run nixpkgs#nushell -- -c '
-                let versions = (${{ toJSON(steps.*.outputs.version) }} | from json)
+                let versions = (${{ toJSON(steps.*.outputs.version) }})
                 let matrix = {
                   include: ($versions | each { |v| {version: $v} })
                 }
