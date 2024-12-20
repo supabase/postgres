@@ -173,22 +173,32 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: DeterminateSystems/nix-installer-action@main
+
       - name: Get Versions from Matrix Config
         id: get_versions
         run: |
-          # Extract the versions from prepare.outputs.matrix_config
-          echo "Versions: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}" # Print the versions for debugging
-          echo "versions=$(echo '${{ fromJson(needs.prepare.outputs.matrix_config).include }}' | jq -r 'map(.version) | join(\",\")')" >> $GITHUB_ENV
+          nix run nixpkgs#nushell -- -c '
+            # Extract the versions from prepare.outputs.matrix_config
+            let versions = ${{ fromJson(needs.prepare.outputs.matrix_config).include }} | get version
+            echo "Versions: $versions"
+
+            # Set the versions to an environment variable in GitHub Actions' environment
+            let versions_str = ($versions | join ",")
+            $"versions=$versions_str" | save --append $env.GITHUB_ENV
+          '
 
       - name: Download Results Artifacts
         run: |
-          # Split the versions into a list and download each corresponding artifact
-          for version in $(echo ${{ env.versions }} | tr "," "\n"); do
-            artifact_name="merge_results-${version}"
-            echo "Downloading artifact: $artifact_name"
-            actions/download-artifact@v3
-            with:
-              name: $artifact_name
+          nix run nixpkgs#nushell -- -c '
+            let versions = env.versions | str split ","
+            foreach $version in $versions {
+              let artifact_name = "merge_results-$version"
+              echo "Downloading artifact: $artifact_name"
+              actions/download-artifact@v3
+              with:
+                name: $artifact_name
+            }
+          '
       - name: Combine Results
         id: combine
         run: |
