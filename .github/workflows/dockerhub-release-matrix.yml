@@ -128,42 +128,51 @@ jobs:
           include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
       runs-on: ubuntu-latest
       outputs:
-        tags: ${{ steps.collect_tags.outputs.tags }}
+        tags: ${{ steps.combine_tags.outputs.tags }}  # Changed to reference final combined step
       steps:
-        - uses: actions/checkout@v3
-        - uses: DeterminateSystems/nix-installer-action@main
-        - uses: docker/setup-buildx-action@v3
-        - uses: docker/login-action@v2
-          with:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-        - name: Get image tag
-          id: get_version
-          run: |
-            nix run nixpkgs#nushell -- -c '
-              let version = "${{ matrix.version }}"
-              let release_key = if ($version | str contains "orioledb") {
-                $"postgresorioledb-17"
-              } else {
-                $"postgres($version)"
-              }
-              let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-              
-              $"pg_version=($pg_version)" | save --append $env.GITHUB_OUTPUT
-            ' 
-        - name: Merge multi-arch manifests
-          run: |
-            docker buildx imagetools create -t supabase/postgres:${{ steps.get_version.outputs.pg_version }} \
-            supabase/postgres:${{ steps.get_version.outputs.pg_version }}_amd64 \
-            supabase/postgres:${{ steps.get_version.outputs.pg_version }}_arm64
-        - name: Collect tags
-          id: collect_tags
-          run: |
-            nix run nixpkgs#nushell -- -c '
-              let tag = "${{ steps.get_version.outputs.pg_version }}"
-              let matrix = {include: [{version: $tag}]}
-              $"tags=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
-            '  
+          - uses: actions/checkout@v3
+          - uses: DeterminateSystems/nix-installer-action@main
+          - uses: docker/setup-buildx-action@v3
+          - uses: docker/login-action@v2
+            with:
+              username: ${{ secrets.DOCKER_USERNAME }}
+              password: ${{ secrets.DOCKER_PASSWORD }}
+          - name: Get image tag
+            id: get_version
+            run: |
+              nix run nixpkgs#nushell -- -c '
+                let version = "${{ matrix.version }}"
+                let release_key = if ($version | str contains "orioledb") {
+                  $"postgresorioledb-17"
+                } else {
+                  $"postgres($version)"
+                }
+                let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+                
+                $"pg_version=($pg_version)" | save --append $env.GITHUB_OUTPUT
+              ' 
+          - name: Merge multi-arch manifests
+            run: |
+              docker buildx imagetools create -t supabase/postgres:${{ steps.get_version.outputs.pg_version }} \
+              supabase/postgres:${{ steps.get_version.outputs.pg_version }}_amd64 \
+              supabase/postgres:${{ steps.get_version.outputs.pg_version }}_arm64
+          - name: Create step output
+            id: step_output
+            run: |
+              echo "version=${{ steps.get_version.outputs.pg_version }}" >> $GITHUB_OUTPUT
+      outputs:
+        matrix-rows: ${{ toJSON(steps.*.outputs.version) }}
+          - name: Combine tags
+            if: always()
+            id: combine_tags
+            run: |
+              nix run nixpkgs#nushell -- -c '
+                let versions = (${{ toJSON(steps.*.outputs.version) }} | from json)
+                let matrix = {
+                  include: ($versions | each { |v| {version: $v} })
+                }
+                $"tags=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
+              '  
   publish:
       needs: merge_manifest
       strategy:
