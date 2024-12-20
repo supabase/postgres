@@ -122,83 +122,87 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           file: ${{ matrix.postgres.dockerfile }}
   merge_manifest:
-      needs: [prepare, build, build_release_image]
-      strategy:
-        matrix:
-          include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
-      runs-on: ubuntu-latest
-      outputs:
-        matrix_results: ${{ toJSON(steps.collect_versions.outputs.results) }}
-      steps:
-          - uses: actions/checkout@v3
-          - uses: DeterminateSystems/nix-installer-action@main
-          - uses: docker/setup-buildx-action@v3
-          - uses: docker/login-action@v2
-            with:
-              username: ${{ secrets.DOCKER_USERNAME }}
-              password: ${{ secrets.DOCKER_PASSWORD }}
-          - name: Get image tag
-            id: get_version
-            run: |
-              nix run nixpkgs#nushell -- -c '
-                let version = "${{ matrix.version }}"
-                let release_key = if ($version | str contains "orioledb") {
-                  $"postgresorioledb-17"
-                } else {
-                  $"postgres($version)"
-                }
-                let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
-                $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
-              ' 
-          - name: Output version
-            id: output_version
-            run: |
-              echo "result=${{ steps.get_version.outputs.pg_version }}" >> $GITHUB_OUTPUT
-          - name: Collect versions
-            id: collect_versions
-            run: |
-              versions=()
-              versions+=("${{ steps.output_version.outputs.result }}")
-              echo "matrix_results=[\"${versions[*]}\"]" >> $GITHUB_OUTPUT
-          - name: Merge multi-arch manifests
-            run: |
-              docker buildx imagetools create -t ${{ steps.get_version.outputs.pg_version }} \
-              ${{ steps.get_version.outputs.pg_version }}_amd64 \
-              ${{ steps.get_version.outputs.pg_version }}_arm64
-  combine_versions:
-      needs: merge_manifest
-      runs-on: ubuntu-latest
-      outputs:
-        matrix: ${{ steps.set-matrix.outputs.matrix }}
-      steps:
-        - uses: actions/checkout@v3 
-        - uses: DeterminateSystems/nix-installer-action@main
-        - name: Debug Merge Manifest Output
-          run: |
-            echo "Raw matrix_results: '${{ needs.merge_manifest.outputs.matrix_results }}'"
-        - name: Combine versions into matrix
-          id: set-matrix
-          run: |
-            nix run nixpkgs#nushell -- -c '
-              let raw_versions = "${{ needs.merge_manifest.outputs.matrix_results }}"
-              let versions = ($raw_versions 
-                | lines                                # Split into lines
-                | each { |line|                        # Process each line
-                    $line 
-                    | str replace "results\\[\\d+\\]=" ""  # Remove the results[N]= prefix
-                    | str trim                         # Clean up any whitespace
-                  }
-                | where { |it| $it != "" }            # Filter out any empty lines
-              )
-              let matrix = {
-                include: ($versions | each { |ver| { version: $ver } })
-              }
-              $"matrix=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
-            '
+    needs: [prepare, build, build_release_image]
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get image tag
+        id: get_version
+        run: |
+          nix run nixpkgs#nushell -- -c '
+            let version = "${{ matrix.version }}"
+            let release_key = if ($version | str contains "orioledb") {
+              $"postgresorioledb-17"
+            } else {
+              $"postgres($version)"
+            }
+            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
+          '
+      - name: Output version
+        id: output_version
+        run: |
+          echo "result=${{ steps.get_version.outputs.pg_version }}" >> $GITHUB_OUTPUT
+      - name: Collect versions
+        id: collect_versions
+        run: |
+          versions=()
+          versions+=("${{ steps.output_version.outputs.result }}")
+          echo "matrix_results=[\"${versions[*]}\"]" >> $GITHUB_OUTPUT
+      - name: Debug matrix_results Output
+        run: |
+          echo "Debug matrix_results: '${{ steps.collect_versions.outputs.matrix_results }}'"
+      - name: Append Results to Artifact
+        run: |
+          echo "${{ steps.collect_versions.outputs.matrix_results }}" >> results.txt
+      - name: Upload Results Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: merge_results
+          path: results.txt
+      - name: Merge multi-arch manifests
+        run: |
+          docker buildx imagetools create -t ${{ steps.get_version.outputs.pg_version }} \
+          ${{ steps.get_version.outputs.pg_version }}_amd64 \
+          ${{ steps.get_version.outputs.pg_version }}_arm64
+
+  combine_results:
+    needs: merge_manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3  # Required if other file dependencies are in the repository
+      - uses: DeterminateSystems/nix-installer-action@main  # Ensures Nushell is available
+      - name: Download Results Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: merge_results
+      - name: Combine Results
+        id: combine
+        run: |
+          nix run nixpkgs#nushell -- -c '
+            let results = (open results.txt | lines | where { |line| $line != "" })
+            let matrix = { include: ($results | each { |ver| { version: $ver } }) }
+            $"matrix=($matrix | to json -r)" | save --append $env.GITHUB_OUTPUT
+          '
+      - name: Debug Combined Results
+        run: |
+          echo "Combined Results: '${{ steps.combine.outputs.matrix }}'"
+    outputs:
+      matrix: ${{ steps.combine.outputs.matrix }}
+
   publish:
-      needs: combine_versions
+      needs: combine_results
       strategy:
-        matrix: ${{ fromJson(needs.combine_versions.outputs.matrix) }}
+        matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
       uses: ./.github/workflows/mirror.yml
       with:
         version: ${{ matrix.version }}
