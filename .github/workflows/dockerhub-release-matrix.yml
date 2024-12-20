@@ -157,7 +157,9 @@ jobs:
           - name: Collect versions
             id: collect_versions
             run: |
-              echo "results[${{ strategy.job-index }}]=${{ steps.output_version.outputs.result }}" >> $GITHUB_OUTPUT
+              versions=()
+              versions+=("${{ steps.output_version.outputs.result }}")
+              echo "matrix_results=[\"${versions[*]}\"]" >> $GITHUB_OUTPUT
           - name: Merge multi-arch manifests
             run: |
               docker buildx imagetools create -t ${{ steps.get_version.outputs.pg_version }} \
