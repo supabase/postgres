@@ -181,17 +181,19 @@ jobs:
             # Parse the matrix configuration directly
             let matrix_config = ${{ fromJson(needs.prepare.outputs.matrix_config) }}
 
-            # Extract the versions as a list
             let versions = $matrix_config.include | get version
 
             echo "Versions: $versions"
-            let versions_str = ($versions | join ",")
+
+            # Convert the table of versions to a simple list of strings
+            let versions_str = ($versions | get version | join ",")
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
           '
 
       - name: Download Results Artifacts
         run: |
           nix run nixpkgs#nushell -- -c '
+            # Ensure the versions environment variable is correctly set
             let versions = env.versions | str split ","
             foreach $version in $versions {
               let artifact_name = "merge_results-$version"
@@ -201,6 +203,7 @@ jobs:
                 name: $artifact_name
             }
           '
+
 
       - name: Combine Results
         id: combine
