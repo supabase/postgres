@@ -176,7 +176,7 @@ jobs:
       - name: Download Results Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: merge_results-*
+          name: 'merge_results-*'
       - name: Combine Results
         id: combine
         run: |
