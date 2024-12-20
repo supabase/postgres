@@ -168,29 +168,38 @@ jobs:
           ${{ steps.get_version.outputs.pg_version }}_amd64 \
           ${{ steps.get_version.outputs.pg_version }}_arm64
   combine_results:
-    needs: merge_manifest
+    needs: [prepare, merge_manifest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: DeterminateSystems/nix-installer-action@main
+      - name: Get Versions from Matrix Config
+        id: get_versions
+        run: |
+          # Extract the versions from prepare.outputs.matrix_config
+          echo "Versions: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}" # Print the versions for debugging
+          echo "versions=$(echo '${{ fromJson(needs.prepare.outputs.matrix_config).include }}' | jq -r 'map(.version) | join(\",\")')" >> $GITHUB_ENV
+
       - name: Download Results Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: 'merge_results-*'
+        run: |
+          # Split the versions into a list and download each corresponding artifact
+          for version in $(echo ${{ env.versions }} | tr "," "\n"); do
+            artifact_name="merge_results-${version}"
+            echo "Downloading artifact: $artifact_name"
+            actions/download-artifact@v3
+            with:
+              name: $artifact_name
       - name: Combine Results
         id: combine
         run: |
           nix run nixpkgs#nushell -- -c '
-            # Initialize an empty array to store combined results
             let combined_results = []
 
-            # Loop through all downloaded result files
             ls **/results.txt | each { |result_file| 
               let results = (open $result_file | lines | where { $it != "" })
               $combined_results = $combined_results + $results
             }
 
-            # Create the matrix format for the combined results
             let matrix = ($combined_results | each { { version: $it } }) | to json
             $"matrix=$matrix" | save --append $env.GITHUB_OUTPUT
           '
