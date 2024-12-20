@@ -128,7 +128,8 @@ jobs:
           include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
       runs-on: ubuntu-latest
       outputs:
-        tags: ${{ steps.combine_tags.outputs.tags }}  # Changed to reference final combined step
+        tags: ${{ steps.combine_tags.outputs.tags }}
+        matrix-rows: ${{ toJSON(steps.*.outputs.version) }} 
       steps:
           - uses: actions/checkout@v3
           - uses: DeterminateSystems/nix-installer-action@main
@@ -160,8 +161,6 @@ jobs:
             id: step_output
             run: |
               echo "version=${{ steps.get_version.outputs.pg_version }}" >> $GITHUB_OUTPUT
-      outputs:
-        matrix-rows: ${{ toJSON(steps.*.outputs.version) }}
           - name: Combine tags
             if: always()
             id: combine_tags
