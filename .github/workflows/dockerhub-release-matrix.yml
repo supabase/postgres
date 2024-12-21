@@ -180,16 +180,16 @@ jobs:
           nix run nixpkgs#nushell -- -c '
             # Parse the matrix configuration directly
             let matrix_config = ${{ fromJson(needs.prepare.outputs.matrix_config) }}
-
-            let versions = $matrix_config.include | get version
-
+      
+            # Get versions directly from include array
+            let versions = ($matrix_config.include | get version)
+      
             echo "Versions: $versions"
-
-            # Convert the table of versions to a simple list of strings
-            let versions_str = ($versions | get version | join ",")
+      
+            # Convert the versions to a comma-separated string
+            let versions_str = ($versions | join ",")
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
           '
-
       - name: Download Results Artifacts
         run: |
           nix run nixpkgs#nushell -- -c '
