@@ -5,9 +5,8 @@ on:
     branches:
       - develop
       - release/*
-      - sam/docker-oriole17
     paths:
-      - '**'
+      - ".github/workflows/dockerhub-release-matrix.yml"
   workflow_dispatch:
  
 jobs:
