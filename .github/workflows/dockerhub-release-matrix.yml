@@ -195,18 +195,9 @@ jobs:
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
           '
       - name: Download Results Artifacts
-        run: |
-          nix run nixpkgs#nushell -- -c '
-            # Ensure the versions environment variable is correctly set
-            let versions = env.versions | str split ","
-            foreach $version in $versions {
-              let artifact_name = "merge_results-$version"
-              echo "Downloading artifact: $artifact_name"
-              actions/download-artifact@v3
-              with:
-                name: $artifact_name
-            }
-          '
+        uses: actions/download-artifact@v3
+        with:
+          pattern: merge_results-*
       - name: Combine Results
         id: combine
         run: |
