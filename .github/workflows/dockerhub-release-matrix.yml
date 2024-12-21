@@ -203,18 +203,24 @@ jobs:
         run: |
           nix run nixpkgs#nushell -- -c '
             # Get all results files and process them in one go
-            let matrix = (
-              ls **/results.txt 
-              | get name                              # Get just the file paths
-              | each { |file| open $file }            # Open each file
-              | each { |content| $content | lines }   # Split into lines
-              | flatten                               # Flatten the nested lists
-              | where { |line| $line != "" }          # Filter empty lines
-              | each { |line| {version: $line} }      # Create objects
-              | to json                               # Convert to JSON
-            )
+            let files = (ls **/results.txt | get name)
+            echo $"Found files: ($files)"
             
-            $"matrix=($matrix)" | save --append $env.GITHUB_OUTPUT
+            let matrix = {
+              include: (
+                $files
+                | each { |file| open $file }          # Open each file
+                | each { |content| $content | lines }  # Split into lines
+                | flatten                             # Flatten the nested lists
+                | where { |line| $line != "" }        # Filter empty lines
+                | each { |line| {version: $line} }    # Create objects
+              )
+            }
+            
+            let json_output = ($matrix | to json -r)  # -r for raw output
+            echo $"Debug output: ($json_output)"
+            
+            $"matrix=($json_output)" | save --append $env.GITHUB_OUTPUT
           '
       - name: Debug Combined Results
         run: |
