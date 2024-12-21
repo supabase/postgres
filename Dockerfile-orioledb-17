@@ -78,7 +78,7 @@ RUN mkdir -p /usr/lib/postgresql/bin \
     /usr/share/postgresql \
     /var/lib/postgresql \
     && chown -R postgres:postgres /usr/lib/postgresql \
-    && chown -R postgres:postgres /usr/lib/postgresql \
+    && chown -R postgres:postgres /var/lib/postgresql \
     && chown -R postgres:postgres /usr/share/postgresql
 
 # Create symbolic links
