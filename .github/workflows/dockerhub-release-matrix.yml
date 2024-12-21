@@ -213,7 +213,11 @@ jobs:
                 | each { |content| $content | lines }  # Split into lines
                 | flatten                             # Flatten the nested lists
                 | where { |line| $line != "" }        # Filter empty lines
-                | each { |line| {version: $line} }    # Create objects
+                | each { |line| 
+                    # Extract just the version part after the last colon
+                    let version = ($line | parse "supabase/postgres:{version}" | get version.0)
+                    {version: $version}
+                }
               )
             }
             
