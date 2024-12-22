@@ -12,9 +12,7 @@ from
 
 -- Test queue is not case sensitive
 select
-  msg_id,
-  read_ct,
-  message
+  *
 from
   pgmq.send(
     queue_name:='foo', -- note: lowercase useage
@@ -71,12 +69,15 @@ select
 select
   pgmq.drop_queue('my_queue');
 
+/*
+-- Disabled until pg_partman goes back into the image
 select
   pgmq.create_partitioned(
     'my_partitioned_queue',
     '5 seconds',
     '10 seconds'
 );
+*/
 
 
 -- Make sure SQLI enabling characters are blocked

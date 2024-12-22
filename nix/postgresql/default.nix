@@ -1,11 +1,11 @@
 self:
 let
-  #adapted from the postgresql nixpkgs package
   versions = {
     postgresql_15 = ./15.nix;
     postgresql_16 = ./16.nix;
+    postgresql_orioledb-16 = ./orioledb-16.nix;
+    postgresql_orioledb-17 = ./orioledb-17.nix;
   };
-
   mkAttributes = jitSupport:
     self.lib.mapAttrs' (version: path:
       let
@@ -15,7 +15,6 @@ let
         inherit jitSupport self;
       })
     ) versions;
-
 in
 # variations without and with JIT
 (mkAttributes false) // (mkAttributes true)

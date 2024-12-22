@@ -227,9 +227,12 @@ COPY docker/all-in-one/etc/gotrue.env /etc/gotrue.env
 
 # Customizations for envoy
 ARG envoy_release
+ARG envoy_lds="lds.yaml"
 ADD --chmod=755 --chown=envoy:envoy "https://raw.githubusercontent.com/envoyproxy/envoy/v${envoy_release}/restarter/hot-restarter.py" /opt/envoy-hot-restarter.py
 COPY --chmod=775 --chown=envoy:envoy ansible/files/envoy_config/ /etc/envoy/
 COPY --chmod=755 --chown=envoy:envoy ansible/files/start-envoy.sh /opt/
+RUN mv /etc/envoy/${envoy_lds} /etc/envoy/lds.yaml
+RUN rm -f /etc/envoy/lds.supabase.yaml
 
 # Customizations for kong
 COPY docker/all-in-one/etc/kong/kong.conf /etc/kong/kong.conf

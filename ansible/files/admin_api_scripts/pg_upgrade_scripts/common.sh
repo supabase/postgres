@@ -91,11 +91,23 @@ swap_postgres_and_supabase_admin() {
 alter database postgres connection limit 0;
 select pg_terminate_backend(pid) from pg_stat_activity where backend_type = 'client backend' and pid != pg_backend_pid();
 EOSQL
+
+    if [ -z "$IS_CI" ]; then
+        retry 5 systemctl restart postgresql
+    else
+        CI_start_postgres ""
+    fi
+
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     run_sql <<'EOSQL'
 set statement_timeout = '600s';
 begin;
 create role supabase_tmp superuser;
 set session authorization supabase_tmp;
+
+-- to handle snowflakes that happened in the past
+revoke supabase_admin from authenticator;
 
 do $$
 begin
@@ -444,7 +456,10 @@ begin
   foreach obj in array functions
   loop
     if obj->>'owner' = 'postgres' then
-      execute(format('alter routine %s(%s) owner to postgres;', (obj->>'oid')::regproc, pg_get_function_identity_arguments((obj->>'oid')::regproc)));
+      execute(format('alter %s %s(%s) owner to postgres;'
+                     , case when obj->>'kind' = 'p' then 'procedure' else 'function' end
+                     , (obj->>'oid')::regproc
+                     , pg_get_function_identity_arguments((obj->>'oid')::regproc)));
     end if;
     for rec in
       select grantor, grantee, privilege_type, is_grantable

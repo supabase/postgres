@@ -12,8 +12,14 @@ from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 
 # if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
-RUN_ID = os.environ.get("GITHUB_RUN_ID", "unknown-ci-run-" + os.environ.get("USER", "unknown-user") + '@' + socket.gethostname())
-AMI_NAME = os.environ.get('AMI_NAME')
+RUN_ID = os.environ.get(
+    "GITHUB_RUN_ID",
+    "unknown-ci-run-"
+    + os.environ.get("USER", "unknown-user")
+    + "@"
+    + socket.gethostname(),
+)
+AMI_NAME = os.environ.get("AMI_NAME")
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
@@ -158,11 +164,11 @@ init_json_content = f"""
 
 logger = logging.getLogger("ami-tests")
 handler = logging.StreamHandler()
-formatter = logging.Formatter(
-        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+formatter = logging.Formatter("%(asctime)s %(name)-12s %(levelname)-8s %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
+
 
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
@@ -232,7 +238,7 @@ runcmd:
                     "Tags": [
                         {"Key": "Name", "Value": "ci-ami-test-nix"},
                         {"Key": "creator", "Value": "testinfra-ci"},
-                        {"Key": "testinfra-run-id", "Value": RUN_ID}
+                        {"Key": "testinfra-run-id", "Value": RUN_ID},
                     ],
                 }
             ],
@@ -264,48 +270,76 @@ runcmd:
             logger.warning("waiting for ssh to be available")
             sleep(10)
 
-    host = testinfra.get_host(
+    def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
+        for attempt in range(max_retries):
+            try:
+                return testinfra.get_host(
+                    f"paramiko://ubuntu@{instance_ip}?timeout=60",
+                    ssh_identity_file=ssh_identity_file,
+                )
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                logger.warning(
+                    f"Ssh connection failed, retrying: {attempt + 1}/{max_retries} failed, retrying ..."
+                )
+                sleep(5)
+
+    host = get_ssh_connection(
         # paramiko is an ssh backend
-        f"paramiko://ubuntu@{instance.public_ip_address}?timeout=60",
-        ssh_identity_file=temp_key.get_priv_key_file(),
+        instance.public_ip_address,
+        temp_key.get_priv_key_file(),
     )
 
-    def is_healthy(host) -> bool:
-        cmd = host.run("sudo -u postgres /usr/bin/pg_isready -U postgres")
-        if cmd.failed is True:
-            logger.warning("pg not ready")
-            return False
+    def is_healthy(host, instance_ip, ssh_identity_file) -> bool:
+        health_checks = [
+            (
+                "postgres",
+                lambda h: h.run("sudo -u postgres /usr/bin/pg_isready -U postgres"),
+            ),
+            (
+                "adminapi",
+                lambda h: h.run(
+                    f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'"
+                ),
+            ),
+            (
+                "postgrest",
+                lambda h: h.run(
+                    "curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready"
+                ),
+            ),
+            (
+                "gotrue",
+                lambda h: h.run(
+                    "curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health"
+                ),
+            ),
+            ("kong", lambda h: h.run("sudo kong health")),
+            ("fail2ban", lambda h: h.run("sudo fail2ban-client status")),
+        ]
 
-        cmd = host.run(f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'")
-        if cmd.failed is True:
-            logger.warning("adminapi not ready")
-            return False
-
-        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready")
-        if cmd.failed is True:
-            logger.warning("postgrest not ready")
-            return False
-
-        cmd = host.run("curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health")
-        if cmd.failed is True:
-            logger.warning("gotrue not ready")
-            return False
-
-        # TODO(thebengeu): switch to checking Envoy once it's the default.
-        cmd = host.run("sudo kong health")
-        if cmd.failed is True:
-            logger.warning("kong not ready")
-            return False
-
-        cmd = host.run("sudo fail2ban-client status")
-        if cmd.failed is True:
-            logger.warning("fail2ban not ready")
-            return False
+        for service, check in health_checks:
+            try:
+                cmd = check(host)
+                if cmd.failed is True:
+                    logger.warning(f"{service} not ready")
+                    return False
+            except Exception:
+                logger.warning(
+                    f"Connection failed during {service} check, attempting reconnect..."
+                )
+                host = get_ssh_connection(instance_ip, ssh_identity_file)
+                return False
 
         return True
 
     while True:
-        if is_healthy(host):
+        if is_healthy(
+            host=host,
+            instance_ip=instance.public_ip_address,
+            ssh_identity_file=temp_key.get_priv_key_file(),
+        ):
             break
         sleep(1)
 
@@ -392,6 +426,7 @@ def test_postgrest_ending_apikey_query_parameter_is_removed(host):
         },
     )
     assert res.ok
+
 
 # There would be an error if the empty key query parameter isn't removed,
 # since PostgREST treats empty key query parameters as malformed input.

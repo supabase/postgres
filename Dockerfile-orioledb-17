@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-ARG postgresql_major=15
+ARG postgresql_major=17-orioledb
 ARG postgresql_release=${postgresql_major}.1
 
 # Bump default build arg to build a package from source
@@ -48,6 +48,7 @@ RUN apt update -y && apt install -y \
     software-properties-common \
     wget \
     sudo \
+    tree \
     && apt clean
 
 
@@ -65,7 +66,7 @@ COPY . /nixpg
 
 WORKDIR /nixpg
 
-RUN nix profile install .#psql_16/bin 
+RUN nix profile install .#psql_orioledb-17/bin 
 
 
 
@@ -75,11 +76,9 @@ WORKDIR /
 RUN mkdir -p /usr/lib/postgresql/bin \
     /usr/lib/postgresql/share/postgresql \
     /usr/share/postgresql \
-    # /usr/lib/postgresql/share/postgresql/contrib \
-    #/usr/lib/postgresql/share/postgresql/timezonesets \
-    #/usr/lib/postgresql/share/postgresql/tsearch_data \
-    # /usr/lib/postgresql/share/postgresql/extension \
+    /var/lib/postgresql \
     && chown -R postgres:postgres /usr/lib/postgresql \
+    && chown -R postgres:postgres /var/lib/postgresql \
     && chown -R postgres:postgres /usr/share/postgresql
 
 # Create symbolic links
@@ -93,9 +92,7 @@ RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql
 RUN chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/
 RUN chown -R postgres:postgres /usr/share/postgresql/ 
 # Create symbolic links for contrib directory
-RUN mkdir -p /usr/lib/postgresql/share/postgresql/contrib \
-    && find /nix/var/nix/profiles/default/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-    && chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/contrib/
+RUN tree /nix > /tmp/tree.txt && cat /tmp/tree.txt && cat /tmp/tree.txt >&2
 
 RUN chown -R postgres:postgres /usr/lib/postgresql
 
@@ -186,15 +183,28 @@ RUN sed -i \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
 
+    # Remove items from postgresql.conf
+RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
+    #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" 
+RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf" 
+RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf" 
+RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf" 
+
+
+
 # # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
+# Enable orioledb extension first
+RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
+    chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
 # # Add upstream entrypoint script
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+    https://github.com/docker-library/postgres/raw/master/17/bullseye/docker-entrypoint.sh \
     /usr/local/bin/
 
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
@@ -208,6 +218,7 @@ EXPOSE 5432
 ENV POSTGRES_HOST=/var/run/postgresql
 ENV POSTGRES_USER=supabase_admin
 ENV POSTGRES_DB=postgres
+ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     && rm -rf /var/lib/apt/lists/* && \

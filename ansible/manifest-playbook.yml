@@ -18,25 +18,9 @@
     - name: gotrue - download commit archive
       get_url:
         url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
-        dest: /tmp/gotrue.tar.gz
+        dest: /tmp/auth-v{{ gotrue_release }}-arm64.tar.gz
         checksum: "{{ gotrue_release_checksum }}"
         timeout: 60
-
-    - name: gotrue - create /tmp/gotrue
-      file:
-        path: /tmp/gotrue
-        state: directory
-        mode: 0775
-
-    - name: gotrue - unpack archive in /tmp/gotrue
-      unarchive:
-        remote_src: yes
-        src: /tmp/gotrue.tar.gz
-        dest: /tmp/gotrue
-
-    - name: gotrue - pack archive
-      shell: |
-        cd /tmp && tar -cJf gotrue-v{{ gotrue_release }}-arm64.tar.xz gotrue
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
@@ -82,7 +66,7 @@
         aws s3 cp /tmp/{{ item.file }} s3://{{ internal_artifacts_bucket }}/upgrades/{{ item.service }}/{{ item.file }}
       with_items:
         - service: gotrue
-          file: gotrue-v{{ gotrue_release }}-arm64.tar.xz
+          file: auth-v{{ gotrue_release }}-arm64.tar.gz
         - service: postgrest
           file: postgrest-{{ postgrest_release }}-arm64.tar.xz
         - service: supabase-admin-api

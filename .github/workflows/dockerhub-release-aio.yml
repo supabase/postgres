@@ -74,6 +74,7 @@ jobs:
           push: true
           build-args: |
             postgres_version=${{ needs.settings.outputs.base_docker_version }}
+            envoy_lds=lds.supabase.yaml
             ${{ needs.settings.outputs.build_args }}
           target: production
           tags: ${{ needs.settings.outputs.image_tag }}_${{ matrix.arch }}

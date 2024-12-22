@@ -39,6 +39,7 @@ MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
+POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
 SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
@@ -47,7 +48,6 @@ SERVER_ENCODING=$(run_sql -A -t -c "SHOW server_encoding;")
 
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
 PGBINOLD="/usr/lib/postgresql/bin"
-PGLIBOLD="/usr/lib/postgresql/lib"
 
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
@@ -133,6 +133,22 @@ cleanup() {
     echo "Resetting postgres database connection limit"
     retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
 
+    echo "Making sure postgres still has access to pg_shadow"
+    cat << EOF >> $POST_UPGRADE_POSTGRES_PERMS_SCRIPT
+DO \$\$
+begin
+  if exists (select from pg_authid where rolname = 'pg_read_all_data') then
+    execute('grant pg_read_all_data to postgres');
+  end if;
+end
+\$\$;
+grant pg_signal_backend to postgres;
+EOF
+
+    if [ -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT ]; then
+        retry 5 run_sql -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT
+    fi
+
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         echo "Unmounting data disk from ${MOUNT_POINT}"
         retry 3 umount $MOUNT_POINT
@@ -148,6 +164,14 @@ cleanup() {
 }
 
 function handle_extensions {
+    if [ -z "$IS_CI" ]; then
+        retry 5 systemctl restart postgresql
+    else
+        CI_start_postgres
+    fi
+
+    retry 8 pg_isready -h localhost -U supabase_admin
+
     rm -f $POST_UPGRADE_EXTENSION_SCRIPT
     touch $POST_UPGRADE_EXTENSION_SCRIPT
 
@@ -179,58 +203,6 @@ END;
 EOF
         fi
     done
-}
-
-function patch_wrappers {
-    local IS_NIX_UPGRADE=$1
-
-    WRAPPERS_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'wrappers');")
-    if [ "$WRAPPERS_ENABLED" = "f" ]; then
-        echo "Wrappers extension not enabled. Skipping."
-        return
-    fi
-
-    # This is a workaround for older versions of wrappers which don't have the expected
-    #  naming scheme, containing the version in their library's file name
-    #  e.g. wrappers-0.1.16.so, rather than wrappers.so
-    # pg_upgrade errors out when it doesn't find an equivalent file in the new PG version's
-    #  library directory, so we're making sure the new version has the expected (old version's)
-    #  file name.
-    # After the upgrade completes, the new version's library file is used.
-    # i.e. 
-    #  - old version: wrappers-0.1.16.so
-    #  - new version: wrappers-0.1.18.so
-    #  - workaround to make pg_upgrade happy: copy wrappers-0.1.18.so to wrappers-0.1.16.so
-    if [ "$IS_NIX_UPGRADE" = "true" ]; then
-        if [ -d "$PGLIBOLD" ]; then
-            OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
-            OLD_LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
-
-            find /nix/store/ -name "wrappers*so" -print0 | while read -r -d $'\0' WRAPPERS_LIB_PATH; do
-                if [ -f "$WRAPPERS_LIB_PATH" ]; then
-                    WRAPPERS_LIB_PATH_DIR=$(dirname "$WRAPPERS_LIB_PATH")
-                    if [ "$WRAPPERS_LIB_PATH" != "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" ]; then
-                        echo "Copying $WRAPPERS_LIB_PATH to $WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$WRAPPERS_LIB_PATH_DIR/${OLD_LIB_FILE_NAME}" || true
-                    fi
-                fi
-            done
-        fi
-    else
-        if [ -d "$PGLIBOLD" ]; then
-            WRAPPERS_LIB_PATH=$(find "$PGLIBNEW" -name "wrappers*so" -print -quit)
-            if [ -f "$WRAPPERS_LIB_PATH" ]; then
-                OLD_WRAPPER_LIB_PATH=$(find "$PGLIBOLD" -name "wrappers*so" -print -quit)
-                if [ -f "$OLD_WRAPPER_LIB_PATH" ]; then
-                    LIB_FILE_NAME=$(basename "$OLD_WRAPPER_LIB_PATH")
-                    if [ "$WRAPPERS_LIB_PATH" != "$PGLIBNEW/${LIB_FILE_NAME}" ]; then
-                        echo "Copying $WRAPPERS_LIB_PATH to $PGLIBNEW/${LIB_FILE_NAME}"
-                        cp "$WRAPPERS_LIB_PATH" "$PGLIBNEW/${LIB_FILE_NAME}" || true
-                    fi
-                fi
-            fi
-        fi
-    fi
 }
 
 function initiate_upgrade {
@@ -409,8 +381,6 @@ function initiate_upgrade {
         export LD_LIBRARY_PATH="${PGLIBNEW}"
     fi
 
-    patch_wrappers "$IS_NIX_UPGRADE"
-
     echo "9. Creating new data directory, initializing database"
     chown -R postgres:postgres "$MOUNT_POINT/"
     rm -rf "${PGDATANEW:?}/"
@@ -473,6 +443,7 @@ EOF
     cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
     # removing supautils config as to allow the latest one provided by the latest image to be used
     rm -f "$MOUNT_POINT/conf/supautils.conf" || true
+    rm -rf "$MOUNT_POINT/conf/extension-custom-scripts" || true
 
     # removing wal-g config as to allow it to be explicitly enabled on the new instance
     rm -f "$MOUNT_POINT/conf/wal-g.conf"

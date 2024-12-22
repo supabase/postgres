@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c, callPackage, mecab, makeWrapper }:
+{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c, callPackage, mecab, makeWrapper, xxHash  }:
 let
   supabase-groonga = callPackage ../supabase-groonga.nix { };
 in
@@ -10,7 +10,11 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-iF/zh4zDDpAw5fxW1WG8i2bfPt4VYsnYArwOoE/lwgM=";
   };
   nativeBuildInputs = [ pkg-config makeWrapper ];
-  buildInputs = [ postgresql msgpack-c supabase-groonga mecab ];
+  
+  buildInputs = [ postgresql msgpack-c supabase-groonga mecab ] ++ lib.optionals stdenv.isDarwin [
+    xxHash
+  ];
+
   propagatedBuildInputs = [ supabase-groonga ];
   configureFlags = [
     "--with-mecab=${mecab}"
@@ -19,16 +23,30 @@ stdenv.mkDerivation rec {
     "--with-groonga-plugin-dir=${supabase-groonga}/lib/groonga/plugins"
   ];
 
-  makeFlags = [
+ makeFlags = [
     "HAVE_MSGPACK=1"
     "MSGPACK_PACKAGE_NAME=msgpack-c"
     "HAVE_MECAB=1"
   ];
 
+  NIX_CFLAGS_COMPILE = lib.optionalString stdenv.isDarwin (builtins.concatStringsSep " " [
+    "-Wno-error=incompatible-function-pointer-types"
+    "-Wno-error=format"
+    "-Wno-format"
+    "-I${supabase-groonga}/include/groonga"
+    "-I${xxHash}/include"
+    "-DPGRN_VERSION=\"${version}\""
+  ]);
+
   preConfigure = ''
     export GROONGA_LIBS="-L${supabase-groonga}/lib -lgroonga"
     export GROONGA_CFLAGS="-I${supabase-groonga}/include"
     export MECAB_CONFIG="${mecab}/bin/mecab-config"
+    ${lib.optionalString stdenv.isDarwin ''
+      export CPPFLAGS="-I${supabase-groonga}/include/groonga -I${xxHash}/include -DPGRN_VERSION=\"${version}\""
+      export CFLAGS="-I${supabase-groonga}/include/groonga -I${xxHash}/include -DPGRN_VERSION=\"${version}\""
+      export PG_CPPFLAGS="-Wno-error=incompatible-function-pointer-types -Wno-error=format"
+    ''}
   '';
 
   installPhase = ''
