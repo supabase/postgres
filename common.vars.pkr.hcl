@@ -1,1 +1,1 @@
-postgres-version = "15.1.1.95"
+postgres-version = "15.1.1.96"
