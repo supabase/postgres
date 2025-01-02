@@ -69,6 +69,10 @@ stdenv.mkDerivation rec {
       ln -s $prog $prog-${version}
     done
 
+    for file in $out/share/postgresql/extension/postgis_topology*--${version}.sql; do
+      sed -i "/SELECT topology.AddToSearchPath('topology');/i SELECT topology.AddToSearchPath('extensions');" "$file"
+    done
+
     mkdir -p $doc/share/doc/postgis
     mv doc/* $doc/share/doc/postgis/
   '';
