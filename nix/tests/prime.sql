@@ -1,4 +1,3 @@
-create role postgres;
 create extension address_standardizer;
 create extension address_standardizer_data_us;
 create extension adminpack;
@@ -82,7 +81,7 @@ create extension tablefunc;
 create extension tcn;
 create extension timescaledb;
 create extension tsm_system_rows;
-create extension tsm_system_time;
+-- create extension tsm_system_time; not supported in apache license
 create extension unaccent;
 create extension "uuid-ossp";
 create extension vector;
