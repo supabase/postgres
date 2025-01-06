@@ -296,7 +296,7 @@
           #postgresql_orioledb-16 = getPostgresqlPackage "orioledb-16";
           postgresql_orioledb-17 = getPostgresqlPackage "orioledb-17";
         in 
-        postgresVersions //{
+        postgresVersions // {
           supabase-groonga = supabase-groonga;
           cargo-pgrx_0_11_3 = pkgs.cargo-pgrx.cargo-pgrx_0_11_3;
           cargo-pgrx_0_12_6 = pkgs.cargo-pgrx.cargo-pgrx_0_12_6;
@@ -383,6 +383,22 @@
           # Start a version of the server.
           start-server =
             let
+              migrationsDir = builtins.path {
+                name = "migrations";
+                path = ./migrations/db;
+              };
+              postgresqlSchemaSql = builtins.path {
+                name = "postgresql-schema";
+                path = ./nix/tools/postgresql_schema.sql;
+              };
+              pgbouncerAuthSchemaSql = builtins.path {
+                name = "pgbouncer-auth-schema";
+                path = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+              };
+              statExtensionSql = builtins.path {
+                name = "stat-extension";
+                path = ./ansible/files/stat_extension.sql;
+              };
               pgconfigFile = builtins.path {
                 name = "postgresql.conf";
                 path = ./ansible/files/postgresql_config/postgresql.conf.j2;
@@ -411,12 +427,20 @@
                 name = "extension-custom-scripts";
                 path = ./ansible/files/postgresql_extension_custom_scripts;
               };
-              getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+              getkeyScript = builtins.path {
+                name = "pgsodium_getkey.sh";
+                path = ./nix/tests/util/pgsodium_getkey.sh;
+              };
               localeArchive = if pkgs.stdenv.isDarwin
                 then "${pkgs.darwin.locale}/share/locale"
                 else "${pkgs.glibcLocales}/lib/locale/locale-archive";
             in
-            pkgs.runCommand "start-postgres-server" { } ''
+            pkgs.runCommand "start-postgres-server" {
+              inherit migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
+              nativeBuildInputs = with pkgs; [
+                overmind
+              ];
+            } ''
               mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
               cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
@@ -431,6 +455,7 @@
               chmod 644 $out/etc/postgresql-custom/logging.conf
               chmod 644 $out/etc/postgresql/pg_hba.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
+                --subst-var-by 'OVERMIND' '${pkgs.overmind}/bin/overmind' \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
@@ -447,6 +472,10 @@
                 --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts" \
                 --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so' \
                 --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' \
+                --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
+                --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
+                --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
+                --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}' \
                 --subst-var-by 'CURRENT_SYSTEM' '${system}'
 
               chmod +x $out/bin/start-postgres-server
@@ -526,273 +555,188 @@
             chmod +x $out/bin/local-infra-bootstrap
           '';
           dbmate-tool = 
-          let
-            migrationsDir = ./migrations/db;
-            ansibleVars = ./ansible/vars.yml;
-            pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
-            statExtensionSql = ./ansible/files/stat_extension.sql;
-          in
-          pkgs.runCommand "dbmate-tool" {
-            buildInputs = with pkgs; [
-              overmind
-              dbmate
-              nix
-              jq
-              yq
-            ];
-            nativeBuildInputs = with pkgs; [
-              makeWrapper
-            ];
-          } ''
-            mkdir -p $out/bin $out/migrations 
-            cp -r ${migrationsDir}/* $out
-            substitute ${./nix/tools/dbmate-tool.sh.in} $out/bin/dbmate-tool \
-              --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
-              --subst-var-by 'MIGRATIONS_DIR' $out \
-              --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-              --subst-var-by 'ANSIBLE_VARS' ${ansibleVars} \
-              --subst-var-by 'CURRENT_SYSTEM' '${system}' \
-              --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
-              --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
-            chmod +x $out/bin/dbmate-tool
-            wrapProgram $out/bin/dbmate-tool \
-              --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.overmind pkgs.dbmate pkgs.nix pkgs.jq pkgs.yq ]}
-          '';       
+            let
+              migrationsDir = ./migrations/db;
+              ansibleVars = ./ansible/vars.yml;
+              pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+              statExtensionSql = ./ansible/files/stat_extension.sql;
+            in
+            pkgs.runCommand "dbmate-tool" {
+              buildInputs = with pkgs; [
+                overmind
+                dbmate
+                nix
+                jq
+                yq
+              ];
+              nativeBuildInputs = with pkgs; [
+                makeWrapper
+              ];
+            } ''
+              mkdir -p $out/bin $out/migrations 
+              cp -r ${migrationsDir}/* $out
+              substitute ${./nix/tools/dbmate-tool.sh.in} $out/bin/dbmate-tool \
+                --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
+                --subst-var-by 'MIGRATIONS_DIR' $out \
+                --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
+                --subst-var-by 'ANSIBLE_VARS' ${ansibleVars} \
+                --subst-var-by 'CURRENT_SYSTEM' '${system}' \
+                --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
+                --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
+              chmod +x $out/bin/dbmate-tool
+              wrapProgram $out/bin/dbmate-tool \
+                --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.overmind pkgs.dbmate pkgs.nix pkgs.jq pkgs.yq ]}
+            '';       
         };
 
 
         # Create a testing harness for a PostgreSQL package. This is used for
         # 'nix flake check', and works with any PostgreSQL package you hand it.
-        # makeCheckHarness = pgpkg:
-        #   let
-        #     sqlTests = ./nix/tests/smoke;
-        #     pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-        #     supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
-        #     pg_regress = basePackages.pg_regress;
-        #     tmpDirCmd = if pkgs.stdenv.isDarwin then
-        #       ''mkdir -p /tmp/postgres-check.$$ && echo "/tmp/postgres-check.$$"''
-        #     else
-        #       "mktemp -d";
-        #   in
-        #   pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
-        #     {
-        #       nativeBuildInputs = with pkgs; [ coreutils bash pgpkg pg_prove pg_regress procps supabase-groonga ];
-        #     } ''
-        #     TMPDIR=$(${tmpDirCmd})
-        #     if [ $? -ne 0 ]; then
-        #       echo "Failed to create temp directory" >&2
-        #       exit 1
-        #     fi
-        #     chmod -R 755 "$TMPDIR"
 
-        #     # Ensure the temporary directory is removed on exit
-        #     #trap 'rm -rf "$TMPDIR"' EXIT
+        makeCheckHarness = pgpkg:
+          let
+            sqlTests = ./nix/tests/smoke;
+            pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+            pg_regress = basePackages.pg_regress;
+            getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
+            migrationsDir = ./migrations/db;
+            postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
+            pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+            statExtensionSql = ./ansible/files/stat_extension.sql;
 
-        #     export PGDATA="$TMPDIR/pgdata"
-        #     export PGSODIUM_DIR="$TMPDIR/pgsodium"
+            # Function to get the version argument for start-server
+            getVersionArg = pkg:
+              let
+                name = pkg.version;
+              in
+                if builtins.match "15.*" name != null then "15"
+                else if builtins.match "16.*" name != null then "16"
+                else if builtins.match "17,*" name != null then "orioledb-17"
+                else throw "Unsupported PostgreSQL version: ${name}";
+          in
+          pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
+            {
+              nativeBuildInputs = with pkgs; [ 
+                coreutils bash pgpkg pg_prove pg_regress procps  
+                basePackages.start-server
+              ];
+            } ''
+            cleanup() {
+              echo "Cleaning up..."
+              if [[ "$(uname)" == "Darwin" ]]; then
+                for pid in $(ps -ax | grep "[p]ostgres" | awk '{print $1}'); do
+                  echo "Killing PostgreSQL process $pid"
+                  kill $pid 2>/dev/null || true
+                done
+              else
+                for pid in $(pgrep postgres); do
+                  echo "Killing PostgreSQL process $pid"
+                  kill $pid 2>/dev/null || true
+                done
+              fi
+              exit $1
+            }
+            
+            trap 'cleanup 1' ERR
+            set -e
+            
+            # Start the server using the version-specific argument
+            export KEY_FILE="${getkeyScript}"
+            start-postgres-server ${getVersionArg pgpkg} &
+            # Wait for server to be ready
+            for i in {1..60}; do
+              if pg_isready -h localhost -p 5435; then
+                echo "PostgreSQL is ready"
+                break
+              fi
+              sleep 1
+              if [ $i -eq 60 ]; then
+                echo "PostgreSQL is not ready after 60 seconds"
+                echo "PostgreSQL status:"
+                pg_ctl -D "$PGDATA" status
+                echo "PostgreSQL log content:"
+                cat $TMPDIR/logfile/postgresql.log
+                cleanup 1
+              fi
+            done
+            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -d postgres <<-EOSQL
+              create role postgres superuser login;
+              alter database postgres owner to postgres;
+        EOSQL
+            then
+              echo "Failed to create postgres role and set ownership"
+              find /tmp -name postgresql.log -exec cat {} \;
+              cleanup 1
+            fi
 
-        #     mkdir -p $PGDATA
-        #     mkdir -p $TMPDIR/logfile
-        #     # Generate a random key and store it in an environment variable
-        #     export PGSODIUM_KEY=$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n')
-        #     export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
-        #     # Create a simple script to echo the key
-        #     echo '#!/bin/sh' > $TMPDIR/getkey.sh
-        #     echo 'echo $PGSODIUM_KEY' >> $TMPDIR/getkey.sh
-        #     chmod +x $TMPDIR/getkey.sh
-        #     initdb --locale=C --username=supabase_admin
-        #     substitute ${./nix/tests/postgresql.conf.in} $PGDATA/postgresql.conf \
-        #       --subst-var-by PGSODIUM_GETKEY_SCRIPT "$TMPDIR/getkey.sh"
-        #     echo "listen_addresses = '*'" >> $PGDATA/postgresql.conf
-        #     echo "port = 5432" >> $PGDATA/postgresql.conf
-        #     echo "host all all 127.0.0.1/32 trust" >> $PGDATA/pg_hba.conf
-        #     # Add system-specific configuration for aarch64-darwin
+          # Run init scripts
+          for sql in ${migrationsDir}/init-scripts/*.sql; do
+            echo "Running $sql"
+            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -f "$sql" postgres; then
+              echo "Failed running init script $sql"
+              cleanup 1
+            fi
+          done
 
-        #     #postgres -D "$PGDATA" -k "$TMPDIR" -h localhost -p 5432 >$TMPDIR/logfile/postgresql.log 2>&1 &
-        #     pg_ctl -D "$PGDATA" -l $TMPDIR/logfile/postgresql.log -o "-k $TMPDIR -p 5432" start
-        #     for i in {1..60}; do
-        #       if pg_isready -h localhost -p 5432; then
-        #         echo "PostgreSQL is ready"
-        #         break
-        #       fi
-        #       sleep 1
-        #       if [ $i -eq 60 ]; then
-        #         echo "PostgreSQL is not ready after 60 seconds"
-        #         echo "PostgreSQL status:"
-        #         pg_ctl -D "$PGDATA" status
-        #         echo "PostgreSQL log content:"
-        #         cat $TMPDIR/logfile/postgresql.log
-        #         exit 1
-        #       fi
-        #     done
-        #     createdb -p 5432 -h localhost --username=supabase_admin testing
-        #     if ! psql -p 5432 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-        #       echo "Error executing SQL file. PostgreSQL log content:"
-        #       cat $TMPDIR/logfile/postgresql.log
-        #       pg_ctl -D "$PGDATA" stop
-        #       exit 1
-        #     fi
-        #     pg_prove -p 5432 -h localhost --username=supabase_admin -d testing ${sqlTests}/*.sql
+          # Run additional schema files
+          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${pgbouncerAuthSchemaSql}; then
+            echo "Failed running pgbouncer auth schema"
+            cleanup 1
+          fi
 
-        #     mkdir -p $out/regression_output
-        #     pg_regress \
-        #       --use-existing \
-        #       --dbname=testing \
-        #       --inputdir=${./nix/tests} \
-        #       --outputdir=$out/regression_output \
-        #       --host=localhost \
-        #       --port=5432 \
-        #       --user=supabase_admin \
-        #       $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort )
+          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${statExtensionSql}; then
+            echo "Failed running stat extension SQL" 
+            cleanup 1
+          fi
 
-        #     pg_ctl -D "$PGDATA" stop
-        #     mv $TMPDIR/logfile/postgresql.log $out
-        #     echo ${pgpkg}
-        #   '';      
-makeCheckHarness = pgpkg:
-  let
-    sqlTests = ./nix/tests/smoke;
-    pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-    pg_regress = basePackages.pg_regress;
-    getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-    migrationsDir = ./migrations/db;
-    postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
-    pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
-    statExtensionSql = ./ansible/files/stat_extension.sql;
+          # Run migrations as superuser
+          for sql in ${migrationsDir}/migrations/*.sql; do
+            echo "Running $sql"
+            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f "$sql" postgres; then
+              echo "Failed running migration $sql"
+              cleanup 1
+            fi
+          done
 
-    # Function to get the version argument for start-server
-    getVersionArg = pkg:
-      let
-        name = pkg.version;
-      in
-        if builtins.match "15.*" name != null then "15"
-        else if builtins.match "16.*" name != null then "16"
-        else if builtins.match "17,*" name != null then "orioledb-17"
-        else throw "Unsupported PostgreSQL version: ${name}";
-  in
-  pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
-    {
-      nativeBuildInputs = with pkgs; [ 
-        coreutils bash pgpkg pg_prove pg_regress procps  
-        basePackages.start-server
-      ];
-    } ''
-    cleanup() {
-      echo "Cleaning up..."
-      if [[ "$(uname)" == "Darwin" ]]; then
-        for pid in $(ps -ax | grep "[p]ostgres" | awk '{print $1}'); do
-          echo "Killing PostgreSQL process $pid"
-          kill $pid 2>/dev/null || true
-        done
-      else
-        for pid in $(pgrep postgres); do
-          echo "Killing PostgreSQL process $pid"
-          kill $pid 2>/dev/null || true
-        done
-      fi
-      exit $1
-    }
-    
-    trap 'cleanup 1' ERR
-    set -e
-    
-    # Start the server using the version-specific argument
-    export KEY_FILE="${getkeyScript}"
-    start-postgres-server ${getVersionArg pgpkg} &
-    # Wait for server to be ready
-    for i in {1..60}; do
-      if pg_isready -h localhost -p 5435; then
-        echo "PostgreSQL is ready"
-        break
-      fi
-      sleep 1
-      if [ $i -eq 60 ]; then
-        echo "PostgreSQL is not ready after 60 seconds"
-        echo "PostgreSQL status:"
-        pg_ctl -D "$PGDATA" status
-        echo "PostgreSQL log content:"
-        cat $TMPDIR/logfile/postgresql.log
-        cleanup 1
-      fi
-    done
-    if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -d postgres <<-EOSQL
-      create role postgres superuser login;
-      alter database postgres owner to postgres;
-EOSQL
-    then
-      echo "Failed to create postgres role and set ownership"
-      find /tmp -name postgresql.log -exec cat {} \;
-      cleanup 1
-    fi
+          # Run PostgreSQL schema
+          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f ${postgresqlSchemaSql} postgres; then
+            echo "Failed running PostgreSQL schema"
+            cleanup 1
+          fi
+            
+            createdb -p 5435 -h localhost --username=supabase_admin testing
+            if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+              echo "Error executing SQL file. PostgreSQL log content:"
+              cat $TMPDIR/logfile/postgresql.log
+              pg_ctl -D "$PGDATA" stop
+              cleanup 1
+            fi
+            
+            # # Run tests
+            # if ! pg_prove -p 5435 -h localhost --username=supabase_admin -d testing ${sqlTests}/*.sql; then
+            #   echo "pg_prove tests failed"
+            #   cleanup 1
+            # fi
 
-  # Run init scripts
-   for sql in ${migrationsDir}/init-scripts/*.sql; do
-     echo "Running $sql"
-     if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -f "$sql" postgres; then
-       echo "Failed running init script $sql"
-       cleanup 1
-     fi
-   done
-
-   # Run additional schema files
-   if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${pgbouncerAuthSchemaSql}; then
-     echo "Failed running pgbouncer auth schema"
-     cleanup 1
-   fi
-
-   if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${statExtensionSql}; then
-     echo "Failed running stat extension SQL" 
-     cleanup 1
-   fi
-
-   # Run migrations as superuser
-   for sql in ${migrationsDir}/migrations/*.sql; do
-     echo "Running $sql"
-     if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f "$sql" postgres; then
-       echo "Failed running migration $sql"
-       cleanup 1
-     fi
-   done
-
-   # Run PostgreSQL schema
-   if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f ${postgresqlSchemaSql} postgres; then
-     echo "Failed running PostgreSQL schema"
-     cleanup 1
-   fi
-    
-    createdb -p 5435 -h localhost --username=supabase_admin testing
-    if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-      echo "Error executing SQL file. PostgreSQL log content:"
-      cat $TMPDIR/logfile/postgresql.log
-      pg_ctl -D "$PGDATA" stop
-      cleanup 1
-    fi
-    
-    # # Run tests
-    # if ! pg_prove -p 5435 -h localhost --username=supabase_admin -d testing ${sqlTests}/*.sql; then
-    #   echo "pg_prove tests failed"
-    #   cleanup 1
-    # fi
-
-    mkdir -p $out/regression_output
-    if ! pg_regress \
-      --use-existing \
-      --dbname=testing \
-      --inputdir=${./nix/tests} \
-      --outputdir=$out/regression_output \
-      --host=localhost \
-      --port=5435 \
-      --user=supabase_admin \
-      $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort ); then
-      echo "pg_regress tests failed"
-      cleanup 1
-    fi
-    # Find the log file and copy it to output
-    for logfile in $(find /tmp -name postgresql.log -type f); do
-      cp "$logfile" $out/postgresql.log
-    done
-    cleanup 0
-    '';      
+            mkdir -p $out/regression_output
+            if ! pg_regress \
+              --use-existing \
+              --dbname=testing \
+              --inputdir=${./nix/tests} \
+              --outputdir=$out/regression_output \
+              --host=localhost \
+              --port=5435 \
+              --user=supabase_admin \
+              $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort ); then
+              echo "pg_regress tests failed"
+              cleanup 1
+            fi
+            # Find the log file and copy it to output
+            for logfile in $(find /tmp -name postgresql.log -type f); do
+              cp "$logfile" $out/postgresql.log
+            done
+            cleanup 0
+            '';      
     in
       rec {
         # The list of all packages that can be built with 'nix build'. The list
