@@ -438,6 +438,7 @@
             pkgs.runCommand "start-postgres-server" {
               inherit migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
             } ''
+              set -x
               mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
               cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
@@ -452,6 +453,7 @@
               chmod 644 $out/etc/postgresql-custom/logging.conf
               chmod 644 $out/etc/postgresql/pg_hba.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
+                --subst-var-by 'SHELL_PATH' '${pkgs.bash}/bin/bash' \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
@@ -594,8 +596,7 @@
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             pg_regress = basePackages.pg_regress;
-            getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-
+            start-postgres-server-bin = basePackages.start-server;
             getVersionArg = pkg:
               let
                 name = pkg.version;
@@ -609,13 +610,29 @@
             {
               nativeBuildInputs = with pkgs; [ 
                 coreutils bash pgpkg pg_prove pg_regress procps
-                basePackages.start-server
+                start-postgres-server-bin which 
               ];
             } ''
             set -e
-            
-            export KEY_FILE="${getkeyScript}"
-            start-postgres-server ${getVersionArg pgpkg} --daemonize
+            echo "Contents of nativeBuildInputs PATH:"
+            echo $PATH
+            echo "Checking start-postgres-server:"
+            which start-postgres-server
+            ls -l $(which start-postgres-server)
+            file $(which start-postgres-server)
+            # echo "Creating the getKeyScript..."
+            # cat > getKeyScript.sh <<'EOF'
+            # #!/usr/bin/env bash
+            # set -euo pipefail
+
+            # if [[ ! -f "$KEY_FILE" ]]; then
+            #     head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"
+            # fi
+            # cat "$KEY_FILE"
+            # EOF
+
+            # Make the script executable
+            ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
 
             for i in {1..60}; do
                 if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
@@ -692,7 +709,6 @@
             pg-restore = mkApp "pg-restore" "pg-restore";
             local-infra-bootstrap = mkApp "local-infra-bootstrap" "local-infra-bootstrap";
             dbmate-tool = mkApp "dbmate-tool" "dbmate-tool";
-            migration-unit-tests = mkApp "migration-unit-tests" "migration-unit-tests";
           };
 
         # 'devShells.default' lists the set of packages that are included in the

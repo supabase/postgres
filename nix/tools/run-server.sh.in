@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!@SHELL_PATH@
 # shellcheck shell=bash
 [ ! -z "$DEBUG" ] && set -x
 
@@ -7,6 +7,7 @@ SKIP_MIGRATIONS=false
 PSQL_USER="postgres"
 MIGRATION_FILE=""
 DAEMONIZE=false
+GETKEY_SCRIPT=""
 
 # Function to display help
 print_help() {
@@ -16,16 +17,61 @@ print_help() {
     echo "  --skip-migrations        Skip running migrations and SQL statements"
     echo "  --migration-file FILE    Provide a custom migration script"
     echo "  --user USER             Specify the user/role to use (default: postgres)"
+    echo "  --getkey-script SCRIPT   Provide a custom path to the PGSODIUM_GETKEY_SCRIPT"
     echo "  -h, --help              Show this help message"
     echo
     echo "VERSION must be one of: 15, 16, orioledb-17"
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
+# start_postgres() {
+#     local mode=$1
+#     local LOG_DIR="${DATDIR}_logs"
+#     mkdir -p "$LOG_DIR"
+#     local LOG_FILE="$LOG_DIR/postgres.log"
+#     touch "$LOG_FILE"
+    
+#     if [ "$mode" = "daemon" ]; then
+#         # Start in background but follow logs
+#         pg_ctl start -D "$DATDIR" -l "$LOG_FILE" -W \
+#             -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
+#         local PG_STATUS=$?
+        
+#         echo "PostgreSQL startup output:"
+#         cat "$LOG_FILE"
+        
+#         return $PG_STATUS
+#     else
+#         # Foreground mode
+#         exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "/tmp" -F
+#     fi
+# }
+
 start_postgres() {
     local mode=$1
+    local LOG_DIR="${DATDIR}_logs"
+    mkdir -p "$LOG_DIR"
+    local LOG_FILE="$LOG_DIR/postgres.log"
+    touch "$LOG_FILE"
     if [ "$mode" = "daemon" ]; then
-        pg_ctl start -D "$DATDIR" -l "$DATDIR/logfile" -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
+        # Start the server
+        pg_ctl start -D "$DATDIR" -l "$LOG_FILE" \
+            -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
+            
+        # Give it a moment to write logs
+        sleep 1
+        
+        # Check server status and logs
+        if ! pg_ctl status -D "$DATDIR"; then
+            echo "PostgreSQL failed to start. Full logs:"
+            cat "$LOG_FILE"
+            # You might also want to see the postmaster.pid if it exists
+            if [ -f "$DATDIR/postmaster.pid" ]; then
+                echo "postmaster.pid contents:"
+                cat "$DATDIR/postmaster.pid"
+            fi
+            return 1
+        fi
     else
         # Foreground mode
         exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "/tmp" -F
@@ -38,6 +84,7 @@ stop_postgres() {
 
 trap 'stop_postgres' SIGINT SIGTERM
 
+# Parse arguments
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -60,6 +107,15 @@ while [[ "$#" -gt 0 ]]; do
                 shift 2
             else
                 echo "Error: --user requires an argument"
+                exit 1
+            fi
+            ;;
+        --getkey-script)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                GETKEY_SCRIPT="$2"
+                shift 2
+            else
+                echo "Error: --getkey-script requires a script path"
                 exit 1
             fi
             ;;
@@ -90,7 +146,11 @@ while [[ "$#" -gt 0 ]]; do
             ;;
     esac
 done
-
+if [[ -n "${GETKEY_SCRIPT:-}" ]]; then
+    export PGSODIUM_GETKEY_SCRIPT="$GETKEY_SCRIPT"
+else
+    PGSODIUM_GETKEY_SCRIPT="${PGSODIUM_GETKEY_SCRIPT:-@PGSODIUM_GETKEY@}"
+fi
 # Verify version and set binary directory
 if [ "$VERSION" == "15" ]; then
     echo "Starting server for PSQL 15"
@@ -113,7 +173,6 @@ fi
 export PATH=$BINDIR/bin:$PATH
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
-PGSODIUM_GETKEY_SCRIPT=@PGSODIUM_GETKEY@
 PORTNO="${PORTNO:-@PGSQL_DEFAULT_PORT@}"
 SUPAUTILS_CONFIG_FILE=@SUPAUTILS_CONF_FILE@
 LOGGING_CONFIG_FILE=@LOGGING_CONF_FILE@
@@ -140,6 +199,9 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
 export KEY_FILE="$DATDIR/pgsodium.key"
+echo "KEY_FILE: $KEY_FILE"
+echo "KEY_FILE contents:"
+cat "$KEY_FILE" 
 
 echo "PGSODIUM_GETKEY_SCRIPT: $PGSODIUM_GETKEY_SCRIPT"
 echo "NOTE: using port $PORTNO for server"
