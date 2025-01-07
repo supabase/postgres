@@ -616,13 +616,6 @@
                 basePackages.start-server
               ];
             } ''
-            cleanup() {
-              echo "Cleaning up..."
-              @OVERMIND@ quit || true
-              exit $1
-            }
-            
-            trap 'cleanup 1' ERR
             set -e
             
             export KEY_FILE="${getkeyScript}"
@@ -636,14 +629,14 @@
                 sleep 1
                 if [ $i -eq 60 ]; then
                     echo "PostgreSQL failed to start"
-                    cleanup 1
+                    exit 1
                 fi
             done
 
 
             if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file"
-              cleanup 1
+              exit 1
             fi
 
             mkdir -p $out/regression_output
@@ -657,14 +650,14 @@
               --user=supabase_admin \
               $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort ); then
               echo "pg_regress tests failed"
-              cleanup 1
+              exit 1
             fi
 
             # Copy logs to output
             for logfile in $(find /tmp -name postgresql.log -type f); do
               cp "$logfile" $out/postgresql.log
             done
-            cleanup 0
+            exit 0
             '';      
     in
       rec {
