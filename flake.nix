@@ -599,129 +599,57 @@
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             pg_regress = basePackages.pg_regress;
             getkeyScript = ./nix/tests/util/pgsodium_getkey.sh;
-            migrationsDir = ./migrations/db;
-            postgresqlSchemaSql = ./nix/tools/postgresql_schema.sql;
-            pgbouncerAuthSchemaSql = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
-            statExtensionSql = ./ansible/files/stat_extension.sql;
 
-            # Function to get the version argument for start-server
             getVersionArg = pkg:
               let
                 name = pkg.version;
               in
                 if builtins.match "15.*" name != null then "15"
                 else if builtins.match "16.*" name != null then "16"
-                else if builtins.match "17,*" name != null then "orioledb-17"
+                else if builtins.match "17.*" name != null then "orioledb-17"
                 else throw "Unsupported PostgreSQL version: ${name}";
           in
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
               nativeBuildInputs = with pkgs; [ 
-                coreutils bash pgpkg pg_prove pg_regress procps  
+                coreutils bash pgpkg pg_prove pg_regress procps overmind
                 basePackages.start-server
               ];
             } ''
             cleanup() {
               echo "Cleaning up..."
-              if [[ "$(uname)" == "Darwin" ]]; then
-                for pid in $(ps -ax | grep "[p]ostgres" | awk '{print $1}'); do
-                  echo "Killing PostgreSQL process $pid"
-                  kill $pid 2>/dev/null || true
-                done
-              else
-                for pid in $(pgrep postgres); do
-                  echo "Killing PostgreSQL process $pid"
-                  kill $pid 2>/dev/null || true
-                done
-              fi
+              @OVERMIND@ quit || true
               exit $1
             }
             
             trap 'cleanup 1' ERR
             set -e
             
-            # Start the server using the version-specific argument
             export KEY_FILE="${getkeyScript}"
-            start-postgres-server ${getVersionArg pgpkg} &
-            # Wait for server to be ready
+            start-postgres-server ${getVersionArg pgpkg} --daemonize
+
             for i in {1..60}; do
-              if pg_isready -h localhost -p 5435; then
-                echo "PostgreSQL is ready"
-                break
-              fi
-              sleep 1
-              if [ $i -eq 60 ]; then
-                echo "PostgreSQL is not ready after 60 seconds"
-                echo "PostgreSQL status:"
-                pg_ctl -D "$PGDATA" status
-                echo "PostgreSQL log content:"
-                cat $TMPDIR/logfile/postgresql.log
-                cleanup 1
-              fi
+                if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
+                    echo "PostgreSQL is ready"
+                    break
+                fi
+                sleep 1
+                if [ $i -eq 60 ]; then
+                    echo "PostgreSQL failed to start"
+                    cleanup 1
+                fi
             done
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -d postgres <<-EOSQL
-              create role postgres superuser login;
-              alter database postgres owner to postgres;
-        EOSQL
-            then
-              echo "Failed to create postgres role and set ownership"
-              find /tmp -name postgresql.log -exec cat {} \;
+
+
+            if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+              echo "Error executing SQL file"
               cleanup 1
             fi
-
-          # Run init scripts
-          for sql in ${migrationsDir}/init-scripts/*.sql; do
-            echo "Running $sql"
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -f "$sql" postgres; then
-              echo "Failed running init script $sql"
-              cleanup 1
-            fi
-          done
-
-          # Run additional schema files
-          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${pgbouncerAuthSchemaSql}; then
-            echo "Failed running pgbouncer auth schema"
-            cleanup 1
-          fi
-
-          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p 5435 -h localhost -d postgres -f ${statExtensionSql}; then
-            echo "Failed running stat extension SQL" 
-            cleanup 1
-          fi
-
-          # Run migrations as superuser
-          for sql in ${migrationsDir}/migrations/*.sql; do
-            echo "Running $sql"
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f "$sql" postgres; then
-              echo "Failed running migration $sql"
-              cleanup 1
-            fi
-          done
-
-          # Run PostgreSQL schema
-          if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p 5435 -h localhost -f ${postgresqlSchemaSql} postgres; then
-            echo "Failed running PostgreSQL schema"
-            cleanup 1
-          fi
-            
-            createdb -p 5435 -h localhost --username=supabase_admin testing
-            if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-              echo "Error executing SQL file. PostgreSQL log content:"
-              cat $TMPDIR/logfile/postgresql.log
-              pg_ctl -D "$PGDATA" stop
-              cleanup 1
-            fi
-            
-            # # Run tests
-            # if ! pg_prove -p 5435 -h localhost --username=supabase_admin -d testing ${sqlTests}/*.sql; then
-            #   echo "pg_prove tests failed"
-            #   cleanup 1
-            # fi
 
             mkdir -p $out/regression_output
             if ! pg_regress \
               --use-existing \
-              --dbname=testing \
+              --dbname=postgres \
               --inputdir=${./nix/tests} \
               --outputdir=$out/regression_output \
               --host=localhost \
@@ -731,7 +659,8 @@
               echo "pg_regress tests failed"
               cleanup 1
             fi
-            # Find the log file and copy it to output
+
+            # Copy logs to output
             for logfile in $(find /tmp -name postgresql.log -type f); do
               cp "$logfile" $out/postgresql.log
             done

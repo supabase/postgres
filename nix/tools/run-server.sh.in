@@ -6,6 +6,7 @@
 SKIP_MIGRATIONS=false
 PSQL_USER="postgres"
 MIGRATION_FILE=""
+DAEMONIZE=false
 
 # Function to display help
 print_help() {
@@ -57,6 +58,10 @@ while [[ "$#" -gt 0 ]]; do
                 echo "Error: --user requires an argument"
                 exit 1
             fi
+            ;;
+        --daemonize)
+            DAEMONIZE=true
+            shift
             ;;
         -h|--help)
             print_help
@@ -184,10 +189,10 @@ orioledb_config_items() {
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
-        sed -i '' 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
-        sed -i '' 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i '' 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
-        sed -i '' 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
+        sed -i '' -e 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
+        sed -i '' -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        sed -i '' -e 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
+        sed -i '' -e 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     fi
 }
@@ -199,16 +204,17 @@ orioledb_config_items "$VERSION"
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 
 # Create Procfile for postgres only
+mkdir -p "$DATDIR/tmp"
 cat > "$DATDIR/Procfile" << EOL
-postgres: exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k /tmp -F
+postgres: exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "$DATDIR/tmp" -F
 EOL
 
 # Start postgres with overmind
-@OVERMIND@ start -f "$DATDIR/Procfile" &
+@OVERMIND@ start -f "$DATDIR/Procfile" --daemonize --socket "$DATDIR/.overmind.sock"
 
 # Wait for PostgreSQL to start
 for i in {1..60}; do
-    if pg_isready -h localhost -p "$PORTNO"; then
+    if pg_isready -h localhost -p "$PORTNO" -q; then
         echo "PostgreSQL is ready"
         break
     fi
@@ -244,38 +250,52 @@ EOSQL
         # Run default init scripts
         for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
             echo "Running $sql"
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f "$sql" postgres; then
+            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
                 cleanup 1
             fi
         done
 
         # Set superuser password
-        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
+        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
             cleanup 1
         fi
 
         # Run additional schema files
-        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"; then
+        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"; then
             cleanup 1
         fi
-        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"; then
+        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"; then
             cleanup 1
         fi
 
         # Run migrations as superuser
         for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
             echo "Running $sql"
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$sql" postgres; then
+            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
                 cleanup 1
             fi
         done
 
         # Run PostgreSQL schema
-        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres; then
+        if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres; then
             cleanup 1
         fi
     fi
 fi
+echo "Shutting down PostgreSQL..."
+@OVERMIND@ quit  --socket "$DATDIR/.overmind.sock" # This stops the PostgreSQL process
 
-echo "PostgreSQL $VERSION is running. Press Ctrl+C to stop."
-wait
+# Wait for Overmind to clean up and shut down completely
+while ps -ef | grep -E "[o]vermind.*Procfile" > /dev/null; do
+    sleep 0.1
+done
+
+# Step 4: Restart PostgreSQL in the foreground (with log output visible)
+if [ "$DAEMONIZE" = true ]; then
+   echo "Starting PostgreSQL $VERSIOn in daemon mode..."
+   @OVERMIND@ start -f "$DATDIR/Procfile" --daemonize --socket "$DATDIR/.overmind.sock"
+   echo "PostgreSQL $VERSION is running in daemon mode. Use overmind connect to view logs."
+else 
+   echo "Starting PostgreSQL $VERSION in foreground mode, use Ctrl+C to stop ..."
+   exec @OVERMIND@ start -f "$DATDIR/Procfile" --socket "$DATDIR/.overmind.sock"
+fi
