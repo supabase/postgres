@@ -22,17 +22,21 @@ print_help() {
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
-cleanup() {
-   echo "Shutting down PostgreSQL..."
-   @OVERMIND@ quit
-   # Wait for overmind processes to exit
-   while ps -ef | grep "[o]vermind.*Procfile" > /dev/null; do
-       sleep 0.1
-   done
-   exit $1
+start_postgres() {
+    local mode=$1
+    if [ "$mode" = "daemon" ]; then
+        pg_ctl start -D "$DATDIR" -l "$DATDIR/logfile" -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
+    else
+        # Foreground mode
+        exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "/tmp" -F
+    fi
 }
 
-trap cleanup SIGINT SIGTERM
+stop_postgres() {
+    pg_ctl stop -D "$DATDIR" -m fast
+}
+
+trap 'stop_postgres' SIGINT SIGTERM
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -204,13 +208,15 @@ orioledb_config_items "$VERSION"
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 
 # Create Procfile for postgres only
-mkdir -p "$DATDIR/tmp"
-cat > "$DATDIR/Procfile" << EOL
-postgres: exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "$DATDIR/tmp" -F
-EOL
+# mkdir -p "$DATDIR/tmp"
+# cat > "$DATDIR/Procfile" << EOL
+# postgres: exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "$DATDIR/tmp" -F
+# EOL
 
-# Start postgres with overmind
-@OVERMIND@ start -f "$DATDIR/Procfile" --daemonize --socket "$DATDIR/.overmind.sock"
+# Start postgres
+mkdir -p "$DATDIR/tmp"
+chmod 1777 "$DATDIR/tmp"  
+start_postgres "daemon"
 
 # Wait for PostgreSQL to start
 for i in {1..60}; do
@@ -221,7 +227,7 @@ for i in {1..60}; do
     sleep 1
     if [ $i -eq 60 ]; then
         echo "PostgreSQL failed to start"
-        cleanup 1
+        'stop_postgres' 1
     fi
 done
 
@@ -238,64 +244,56 @@ if [ "$SKIP_MIGRATIONS" = false ]; then
         alter database postgres owner to postgres;
 EOSQL
     then
-        cleanup 1
+        'stop_postgres' 1
     fi
 
     if [ -n "$MIGRATION_FILE" ]; then
         echo "Running user-provided migration file $MIGRATION_FILE"
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$MIGRATION_FILE" postgres; then
-            cleanup 1
+            'stop_postgres' 1
         fi
     else
         # Run default init scripts
         for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
             echo "Running $sql"
             if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
-                cleanup 1
+                'stop_postgres' 1
             fi
         done
 
         # Set superuser password
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
-            cleanup 1
+            'stop_postgres' 1
         fi
 
         # Run additional schema files
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"; then
-            cleanup 1
+            'stop_postgres' 1
         fi
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"; then
-            cleanup 1
+            'stop_postgres' 1
         fi
 
         # Run migrations as superuser
         for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
             echo "Running $sql"
             if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
-                cleanup 1
+                'stop_postgres' 1
             fi
         done
 
         # Run PostgreSQL schema
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres; then
-            cleanup 1
+            'stop_postgres' 1
         fi
     fi
 fi
 echo "Shutting down PostgreSQL..."
-@OVERMIND@ quit  --socket "$DATDIR/.overmind.sock" # This stops the PostgreSQL process
+stop_postgres
 
-# Wait for Overmind to clean up and shut down completely
-while ps -ef | grep -E "[o]vermind.*Procfile" > /dev/null; do
-    sleep 0.1
-done
-
-# Step 4: Restart PostgreSQL in the foreground (with log output visible)
+# Step 4: Restart PostgreSQL in the foreground (with log output visible) or as a daemon
 if [ "$DAEMONIZE" = true ]; then
-   echo "Starting PostgreSQL $VERSIOn in daemon mode..."
-   @OVERMIND@ start -f "$DATDIR/Procfile" --daemonize --socket "$DATDIR/.overmind.sock"
-   echo "PostgreSQL $VERSION is running in daemon mode. Use overmind connect to view logs."
+    start_postgres "daemon"
 else 
-   echo "Starting PostgreSQL $VERSION in foreground mode, use Ctrl+C to stop ..."
-   exec @OVERMIND@ start -f "$DATDIR/Procfile" --socket "$DATDIR/.overmind.sock"
+    start_postgres "foreground"
 fi

@@ -437,9 +437,6 @@
             in
             pkgs.runCommand "start-postgres-server" {
               inherit migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
-              nativeBuildInputs = with pkgs; [
-                overmind
-              ];
             } ''
               mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
               cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
@@ -455,7 +452,6 @@
               chmod 644 $out/etc/postgresql-custom/logging.conf
               chmod 644 $out/etc/postgresql/pg_hba.conf
               substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
-                --subst-var-by 'OVERMIND' '${pkgs.overmind}/bin/overmind' \
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
@@ -612,7 +608,7 @@
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
               nativeBuildInputs = with pkgs; [ 
-                coreutils bash pgpkg pg_prove pg_regress procps overmind
+                coreutils bash pgpkg pg_prove pg_regress procps
                 basePackages.start-server
               ];
             } ''
