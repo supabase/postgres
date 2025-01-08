@@ -260,6 +260,116 @@
           recurseForDerivations = true;
         };
 
+        makePostgresDevSetup = { pkgs, name, extraSubstitutions ? {} }: 
+        let
+          paths = {
+            migrationsDir = builtins.path {
+              name = "migrations";
+              path = ./migrations/db;
+            };
+            postgresqlSchemaSql = builtins.path {
+              name = "postgresql-schema";
+              path = ./nix/tools/postgresql_schema.sql;
+            };
+            pgbouncerAuthSchemaSql = builtins.path {
+              name = "pgbouncer-auth-schema";
+              path = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
+            };
+            statExtensionSql = builtins.path {
+              name = "stat-extension";
+              path = ./ansible/files/stat_extension.sql;
+            };
+            pgconfigFile = builtins.path {
+              name = "postgresql.conf";
+              path = ./ansible/files/postgresql_config/postgresql.conf.j2;
+            };
+            supautilsConfigFile = builtins.path {
+              name = "supautils.conf";
+              path = ./ansible/files/postgresql_config/supautils.conf.j2;
+            };
+            loggingConfigFile = builtins.path {
+              name = "logging.conf";
+              path = ./ansible/files/postgresql_config/postgresql-csvlog.conf;
+            };
+            readReplicaConfigFile = builtins.path {
+              name = "readreplica.conf";
+              path = ./ansible/files/postgresql_config/custom_read_replica.conf.j2;
+            };
+            pgHbaConfigFile = builtins.path {
+              name = "pg_hba.conf";
+              path = ./ansible/files/postgresql_config/pg_hba.conf.j2;
+            };
+            pgIdentConfigFile = builtins.path {
+              name = "pg_ident.conf";
+              path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
+            };
+            postgresqlExtensionCustomScriptsPath = builtins.path {
+              name = "extension-custom-scripts";
+              path = ./ansible/files/postgresql_extension_custom_scripts;
+            };
+            getkeyScript = builtins.path {
+              name = "pgsodium_getkey.sh";
+              path = ./nix/tests/util/pgsodium_getkey.sh;
+            };
+          };
+          
+          localeArchive = if pkgs.stdenv.isDarwin
+            then "${pkgs.darwin.locale}/share/locale"
+            else "${pkgs.glibcLocales}/lib/locale/locale-archive";
+          
+          substitutions = {
+            SHELL_PATH = "${pkgs.bash}/bin/bash";
+            PGSQL_DEFAULT_PORT = "${pgsqlDefaultPort}";
+            PGSQL_SUPERUSER = "${pgsqlSuperuser}";
+            PSQL15_BINDIR = "${basePackages.psql_15.bin}";
+            PSQL_CONF_FILE = "${paths.pgconfigFile}";
+            PSQL16_BINDIR = "${basePackages.psql_16.bin}";
+            PSQLORIOLEDB17_BINDIR = "${basePackages.psql_orioledb-17.bin}";
+            PGSODIUM_GETKEY = "${paths.getkeyScript}";
+            READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
+            LOGGING_CONF_FILE = "${paths.loggingConfigFile}";
+            SUPAUTILS_CONF_FILE = "${paths.supautilsConfigFile}";
+            PG_HBA = "${paths.pgHbaConfigFile}";
+            PG_IDENT = "${paths.pgIdentConfigFile}";
+            LOCALES = "${localeArchive}";
+            EXTENSION_CUSTOM_SCRIPTS_DIR = "${paths.postgresqlExtensionCustomScriptsPath}";
+            MECAB_LIB = "${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so";
+            GROONGA_DIR = "${supabase-groonga}";
+            MIGRATIONS_DIR = "${paths.migrationsDir}";
+            POSTGRESQL_SCHEMA_SQL = "${paths.postgresqlSchemaSql}";
+            PGBOUNCER_AUTH_SCHEMA_SQL = "${paths.pgbouncerAuthSchemaSql}";
+            STAT_EXTENSION_SQL = "${paths.statExtensionSql}";
+            CURRENT_SYSTEM = "${system}";
+          } // extraSubstitutions;  # Merge in any extra substitutions            
+        in pkgs.runCommand name {
+          inherit (paths) migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
+        } ''
+          set -x
+          mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
+          
+          # Copy config files with error handling
+          cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
+          cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
+          cp ${paths.loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
+          cp ${paths.readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
+          cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
+          cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
+          cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
+          
+          echo "Copy operation completed"
+          chmod 644 $out/etc/postgresql-custom/supautils.conf
+          chmod 644 $out/etc/postgresql/postgresql.conf
+          chmod 644 $out/etc/postgresql-custom/logging.conf
+          chmod 644 $out/etc/postgresql/pg_hba.conf
+
+          substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
+            ${builtins.concatStringsSep " " (builtins.attrValues (builtins.mapAttrs 
+              (name: value: "--subst-var-by '${name}' '${value}'") 
+              substitutions
+            ))}
+          chmod +x $out/bin/start-postgres-server
+        '';
+
         # The base set of packages that we export from this Nix Flake, that can
         # be used with 'nix build'. Don't use the names listed below; check the
         # name in 'nix flake show' in order to make sure exactly what name you
@@ -381,103 +491,10 @@
           supabase_groonga = supabase-groonga;
           pg_regress = makePgRegress activeVersion;
           # Start a version of the server.
-          start-server =
-            let
-              migrationsDir = builtins.path {
-                name = "migrations";
-                path = ./migrations/db;
-              };
-              postgresqlSchemaSql = builtins.path {
-                name = "postgresql-schema";
-                path = ./nix/tools/postgresql_schema.sql;
-              };
-              pgbouncerAuthSchemaSql = builtins.path {
-                name = "pgbouncer-auth-schema";
-                path = ./ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
-              };
-              statExtensionSql = builtins.path {
-                name = "stat-extension";
-                path = ./ansible/files/stat_extension.sql;
-              };
-              pgconfigFile = builtins.path {
-                name = "postgresql.conf";
-                path = ./ansible/files/postgresql_config/postgresql.conf.j2;
-              };
-              supautilsConfigFile = builtins.path {
-                name = "supautils.conf";
-                path = ./ansible/files/postgresql_config/supautils.conf.j2;
-              };
-              loggingConfigFile = builtins.path {
-                name = "logging.conf";
-                path = ./ansible/files/postgresql_config/postgresql-csvlog.conf;
-              };
-              readReplicaConfigFile = builtins.path {
-                name = "readreplica.conf";
-                path = ./ansible/files/postgresql_config/custom_read_replica.conf.j2;
-              };
-              pgHbaConfigFile = builtins.path {
-                name = "pg_hba.conf";
-                path = ./ansible/files/postgresql_config/pg_hba.conf.j2;
-              };
-              pgIdentConfigFile = builtins.path {
-                name = "pg_ident.conf";
-                path = ./ansible/files/postgresql_config/pg_ident.conf.j2;
-              };
-              postgresqlExtensionCustomScriptsPath = builtins.path {
-                name = "extension-custom-scripts";
-                path = ./ansible/files/postgresql_extension_custom_scripts;
-              };
-              getkeyScript = builtins.path {
-                name = "pgsodium_getkey.sh";
-                path = ./nix/tests/util/pgsodium_getkey.sh;
-              };
-              localeArchive = if pkgs.stdenv.isDarwin
-                then "${pkgs.darwin.locale}/share/locale"
-                else "${pkgs.glibcLocales}/lib/locale/locale-archive";
-            in
-            pkgs.runCommand "start-postgres-server" {
-              inherit migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
-            } ''
-              set -x
-              mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
-              cp ${supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
-              cp ${pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
-              cp ${loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
-              cp ${readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
-              cp ${pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
-              cp ${pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
-              cp -r ${postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
-              echo "Copy operation completed"
-              chmod 644 $out/etc/postgresql-custom/supautils.conf
-              chmod 644 $out/etc/postgresql/postgresql.conf
-              chmod 644 $out/etc/postgresql-custom/logging.conf
-              chmod 644 $out/etc/postgresql/pg_hba.conf
-              substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
-                --subst-var-by 'SHELL_PATH' '${pkgs.bash}/bin/bash' \
-                --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
-                --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
-                --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL_CONF_FILE' $out/etc/postgresql/postgresql.conf \
-                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
-                --subst-var-by 'PSQLORIOLEDB17_BINDIR' '${basePackages.psql_orioledb-17.bin}' \
-                --subst-var-by 'PGSODIUM_GETKEY' '${getkeyScript}' \
-                --subst-var-by 'READREPL_CONF_FILE' "$out/etc/postgresql-custom/read-replica.conf" \
-                --subst-var-by 'LOGGING_CONF_FILE' "$out/etc/postgresql-custom/logging.conf" \
-                --subst-var-by 'SUPAUTILS_CONF_FILE' "$out/etc/postgresql-custom/supautils.conf" \
-                --subst-var-by 'PG_HBA' "$out/etc/postgresql/pg_hba.conf" \
-                --subst-var-by 'PG_IDENT' "$out/etc/postgresql/pg_ident.conf" \
-                --subst-var-by 'LOCALES' '${localeArchive}' \
-                --subst-var-by 'EXTENSION_CUSTOM_SCRIPTS_DIR' "$out/extension-custom-scripts" \
-                --subst-var-by 'MECAB_LIB' '${basePackages.psql_15.exts.pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so' \
-                --subst-var-by 'GROONGA_DIR' '${supabase-groonga}' \
-                --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
-                --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
-                --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
-                --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}' \
-                --subst-var-by 'CURRENT_SYSTEM' '${system}'
-
-              chmod +x $out/bin/start-postgres-server
-            '';
+          start-server =  makePostgresDevSetup {
+            inherit pkgs;
+            name = "start-postgres-server";
+          };
 
           # Start a version of the client and runs migrations script on server.
           start-client =
@@ -596,7 +613,47 @@
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             pg_regress = basePackages.pg_regress;
-            start-postgres-server-bin = basePackages.start-server;
+            getkey-script = pkgs.writeScriptBin "pgsodium-getkey" ''
+              #!${pkgs.bash}/bin/bash
+              set -euo pipefail
+              
+              # Default to a path in /tmp if no argument is provided
+              KEY_FILE=''${1:-"/tmp/pgsodium.key"}
+              KEY_DIR=$(dirname "$KEY_FILE")
+              
+              # Ensure key directory exists with explicit error handling
+              if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
+                echo "Warning: Could not create key directory $KEY_DIR, using /tmp" >&2
+                KEY_FILE="/tmp/pgsodium.key"
+              fi
+              
+              # Generate key if it doesn't exist
+              if [[ ! -f "$KEY_FILE" ]]; then
+                # Try dd first, fallback to openssl
+                if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
+                  if ! (openssl rand -hex 32 > "$KEY_FILE"); then
+                    echo "00000000000000000000000000000000" > "$KEY_FILE"
+                    echo "Warning: Using fallback key" >&2
+                  fi
+                fi
+              fi
+              
+              if [[ -f "$KEY_FILE" ]]; then
+                cat "$KEY_FILE"
+              else
+                echo "00000000000000000000000000000000"
+                echo "Warning: Using default key" >&2
+              fi
+            '';
+            # Use the shared setup but with a test-specific name
+            start-postgres-server-bin = makePostgresDevSetup {
+              inherit pkgs;
+              name = "start-postgres-server-test";
+              extraSubstitutions = {
+                PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
+              };
+            };
+
             getVersionArg = pkg:
               let
                 name = pkg.version;
@@ -610,67 +667,48 @@
             {
               nativeBuildInputs = with pkgs; [ 
                 coreutils bash pgpkg pg_prove pg_regress procps
-                start-postgres-server-bin which 
+                start-postgres-server-bin which getkey-script
               ];
             } ''
-            set -e
-            echo "Contents of nativeBuildInputs PATH:"
-            echo $PATH
-            echo "Checking start-postgres-server:"
-            which start-postgres-server
-            ls -l $(which start-postgres-server)
-            file $(which start-postgres-server)
-            # echo "Creating the getKeyScript..."
-            # cat > getKeyScript.sh <<'EOF'
-            # #!/usr/bin/env bash
-            # set -euo pipefail
+              set -e
+              ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
+              
+              for i in {1..60}; do
+                  if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
+                      echo "PostgreSQL is ready"
+                      break
+                  fi
+                  sleep 1
+                  if [ $i -eq 60 ]; then
+                      echo "PostgreSQL failed to start"
+                      exit 1
+                  fi
+              done
 
-            # if [[ ! -f "$KEY_FILE" ]]; then
-            #     head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"
-            # fi
-            # cat "$KEY_FILE"
-            # EOF
+              if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+                echo "Error executing SQL file"
+                exit 1
+              fi
 
-            # Make the script executable
-            ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
+              mkdir -p $out/regression_output
+              if ! pg_regress \
+                --use-existing \
+                --dbname=postgres \
+                --inputdir=${./nix/tests} \
+                --outputdir=$out/regression_output \
+                --host=localhost \
+                --port=5435 \
+                --user=supabase_admin \
+                $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort ); then
+                echo "pg_regress tests failed"
+                exit 1
+              fi
 
-            for i in {1..60}; do
-                if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
-                    echo "PostgreSQL is ready"
-                    break
-                fi
-                sleep 1
-                if [ $i -eq 60 ]; then
-                    echo "PostgreSQL failed to start"
-                    exit 1
-                fi
-            done
-
-
-            if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-              echo "Error executing SQL file"
-              exit 1
-            fi
-
-            mkdir -p $out/regression_output
-            if ! pg_regress \
-              --use-existing \
-              --dbname=postgres \
-              --inputdir=${./nix/tests} \
-              --outputdir=$out/regression_output \
-              --host=localhost \
-              --port=5435 \
-              --user=supabase_admin \
-              $(ls ${./nix/tests/sql} | sed -e 's/\..*$//' | sort ); then
-              echo "pg_regress tests failed"
-              exit 1
-            fi
-
-            # Copy logs to output
-            for logfile in $(find /tmp -name postgresql.log -type f); do
-              cp "$logfile" $out/postgresql.log
-            done
-            exit 0
+              # Copy logs to output
+              for logfile in $(find /tmp -name postgresql.log -type f); do
+                cp "$logfile" $out/postgresql.log
+              done
+              exit 0
             '';      
     in
       rec {

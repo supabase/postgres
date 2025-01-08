@@ -24,29 +24,6 @@ print_help() {
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
-# start_postgres() {
-#     local mode=$1
-#     local LOG_DIR="${DATDIR}_logs"
-#     mkdir -p "$LOG_DIR"
-#     local LOG_FILE="$LOG_DIR/postgres.log"
-#     touch "$LOG_FILE"
-    
-#     if [ "$mode" = "daemon" ]; then
-#         # Start in background but follow logs
-#         pg_ctl start -D "$DATDIR" -l "$LOG_FILE" -W \
-#             -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
-#         local PG_STATUS=$?
-        
-#         echo "PostgreSQL startup output:"
-#         cat "$LOG_FILE"
-        
-#         return $PG_STATUS
-#     else
-#         # Foreground mode
-#         exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "/tmp" -F
-#     fi
-# }
-
 start_postgres() {
     local mode=$1
     local LOG_DIR="${DATDIR}_logs"
@@ -255,6 +232,8 @@ orioledb_config_items() {
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
+        echo "macOS detected, applying macOS specific configuration"
+        ls -la "$DATDIR"
         sed -i '' -e 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i '' -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         sed -i '' -e 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
@@ -268,12 +247,6 @@ orioledb_config_items "$VERSION"
 
 # Configure Groonga
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
-
-# Create Procfile for postgres only
-# mkdir -p "$DATDIR/tmp"
-# cat > "$DATDIR/Procfile" << EOL
-# postgres: exec postgres --config-file="$DATDIR/postgresql.conf" -p "$PORTNO" -D "$DATDIR" -k "$DATDIR/tmp" -F
-# EOL
 
 # Start postgres
 mkdir -p "$DATDIR/tmp"
