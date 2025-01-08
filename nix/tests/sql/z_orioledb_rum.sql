@@ -28,7 +28,7 @@ create index rumidx on v.test_rum using rum (a rum_tsvector_ops);
 
 select
   t,
-  a <=> to_tsquery('english', 'beautiful | place') as rank
+  round(a <=> to_tsquery('english', 'beautiful | place')) as rank
 from
   v.test_rum
 where

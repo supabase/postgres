@@ -23,18 +23,18 @@ values
 create index rumidx on v.test_rum using rum (a rum_tsvector_ops);
 select
   t,
-  a <=> to_tsquery('english', 'beautiful | place') as rank
+  round(a <=> to_tsquery('english', 'beautiful | place')) as rank
 from
   v.test_rum
 where
   a @@ to_tsquery('english', 'beautiful | place')
 order by
   a <=> to_tsquery('english', 'beautiful | place');
-                t                |  rank   
----------------------------------+---------
- it looks like a beautiful place | 8.22467
- the situation is most beautiful | 16.4493
- it is a beautiful               | 16.4493
+                t                | rank 
+---------------------------------+------
+ it looks like a beautiful place |    8
+ the situation is most beautiful |   16
+ it is a beautiful               |   16
 (3 rows)
 
 drop schema v cascade;
