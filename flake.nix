@@ -666,7 +666,7 @@
           pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
             {
               nativeBuildInputs = with pkgs; [ 
-                coreutils bash pgpkg pg_prove pg_regress procps
+                coreutils bash perl pgpkg pg_prove pg_regress procps
                 start-postgres-server-bin which getkey-script
               ];
             } ''

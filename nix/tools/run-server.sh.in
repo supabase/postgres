@@ -225,6 +225,7 @@ session_preload_libraries = 'supautils'" \
 orioledb_config_items() {
     if [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         # Remove items from postgresql.conf
+        echo "non-macos oriole conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
@@ -234,17 +235,24 @@ orioledb_config_items() {
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
         ls -la "$DATDIR"
-        sed -i '' -e 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
-        sed -i '' -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i '' -e 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
-        sed -i '' -e 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
+        
+        # Use perl instead of sed for macOS
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g' "$DATDIR/postgresql.conf"
+        
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ postgis,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ pgrouting,//g' "$DATDIR/supautils.conf"
+        
+        perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
+        
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     fi
 }
 
 # Apply OrioleDB configuration if needed
 orioledb_config_items "$VERSION"
-
 # Configure Groonga
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 
