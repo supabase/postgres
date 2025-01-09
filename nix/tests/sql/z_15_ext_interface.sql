@@ -20,6 +20,7 @@ create extension if not exists plcoffee;
 create extension if not exists plls;
 create extension if not exists old_snapshot;
 create extension if not exists timescaledb;
+create extension if not exists postgis_tiger_geocoder;
 
 
 select
