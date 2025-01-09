@@ -4,6 +4,137 @@ declare
   r record;
 begin
   set local search_path = '';
+
+/*
+    Override the pgmq.drop_queue to check if relevant tables are owned
+    by the pgmq extension before attempting to run
+    `alter extension pgmq drop table ...`
+    this is necessary becasue, to enable nightly logical backups to include user queues
+    we automatically detach them from pgmq.
+
+    this update is backwards compatible with version 1.4.4 but should be removed once we're on
+    physical backups everywhere
+*/
+-- Detach and delete the official function
+alter extension pgmq drop function pgmq.drop_queue;
+drop function pgmq.drop_queue;
+
+-- Create and reattach the patched function
+CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
+RETURNS BOOLEAN AS $func$
+DECLARE
+    qtable TEXT := pgmq.format_table_name(queue_name, 'q');
+    qtable_seq TEXT := qtable || '_msg_id_seq';
+    fq_qtable TEXT := 'pgmq.' || qtable;
+    atable TEXT := pgmq.format_table_name(queue_name, 'a');
+    fq_atable TEXT := 'pgmq.' || atable;
+    partitioned BOOLEAN;
+BEGIN
+    EXECUTE FORMAT(
+        $QUERY$
+        SELECT is_partitioned FROM pgmq.meta WHERE queue_name = %L
+        $QUERY$,
+        queue_name
+    ) INTO partitioned;
+
+    -- NEW CONDITIONAL CHECK
+    if exists (
+        select 1
+        from pg_class c
+        join pg_depend d on c.oid = d.objid
+        join pg_extension e on d.refobjid = e.oid
+        where c.relname = qtable and e.extname = 'pgmq'
+    ) then
+
+        EXECUTE FORMAT(
+            $QUERY$
+            ALTER EXTENSION pgmq DROP TABLE pgmq.%I
+            $QUERY$,
+            qtable
+        );
+
+    end if;
+
+    -- NEW CONDITIONAL CHECK
+    if exists (
+        select 1
+        from pg_class c
+        join pg_depend d on c.oid = d.objid
+        join pg_extension e on d.refobjid = e.oid
+        where c.relname = qtable_seq and e.extname = 'pgmq'
+    ) then    
+        EXECUTE FORMAT(
+            $QUERY$
+            ALTER EXTENSION pgmq DROP SEQUENCE pgmq.%I
+            $QUERY$,
+            qtable_seq
+        );
+
+    end if;
+
+    -- NEW CONDITIONAL CHECK
+    if exists (
+        select 1
+        from pg_class c
+        join pg_depend d on c.oid = d.objid
+        join pg_extension e on d.refobjid = e.oid
+        where c.relname = atable and e.extname = 'pgmq'
+    ) then
+
+    EXECUTE FORMAT(
+        $QUERY$
+        ALTER EXTENSION pgmq DROP TABLE pgmq.%I
+        $QUERY$,
+        atable
+    );
+
+    end if;
+
+    -- NO CHANGES PAST THIS POINT
+
+    EXECUTE FORMAT(
+        $QUERY$
+        DROP TABLE IF EXISTS pgmq.%I
+        $QUERY$,
+        qtable
+    );
+
+    EXECUTE FORMAT(
+        $QUERY$
+        DROP TABLE IF EXISTS pgmq.%I
+        $QUERY$,
+        atable
+    );
+
+     IF EXISTS (
+          SELECT 1
+          FROM information_schema.tables
+          WHERE table_name = 'meta' and table_schema = 'pgmq'
+     ) THEN
+        EXECUTE FORMAT(
+            $QUERY$
+            DELETE FROM pgmq.meta WHERE queue_name = %L
+            $QUERY$,
+            queue_name
+        );
+     END IF;
+
+     IF partitioned THEN
+        EXECUTE FORMAT(
+          $QUERY$
+          DELETE FROM %I.part_config where parent_table in (%L, %L)
+          $QUERY$,
+          pgmq._get_pg_partman_schema(), fq_qtable, fq_atable
+        );
+     END IF;
+
+    RETURN TRUE;
+END;
+$func$ LANGUAGE plpgsql;
+
+alter extension pgmq add function pgmq.drop_queue;
+
+
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
   for r in (select * from pg_depend where refobjid = extoid) loop
     if r.classid = 'pg_type'::regclass then
