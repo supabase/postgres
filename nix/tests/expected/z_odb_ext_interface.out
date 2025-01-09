@@ -1,0 +1,573 @@
+/*
+This test mirrors ext_interface.sql for extensions that are not yet compatible
+with OrioleDB
+
+This extension is not supported because it includes an unsupported index type
+*/
+create extension if not exists postgis_tiger_geocoder;
+select
+  name
+from 
+  pg_available_extensions
+where
+  installed_version is null
+  and name in (
+    'postgis_tiger_geocoder'
+  )
+order by
+  name asc;
+ name 
+------
+(0 rows)
+
+select
+  extname as extension_name,
+  extrelocatable as is_relocatable
+from
+  pg_extension
+where
+  e.extname in (
+    'postgis_tiger_geocoder'
+  )
+order by
+  extname asc;
+ERROR:  missing FROM-clause entry for table "e"
+LINE 7:   e.extname in (
+          ^
+select
+  e.extname as extension_name,
+  n.nspname as schema_name,
+  p.proname as function_name,
+  pg_catalog.pg_get_function_identity_arguments(p.oid) as argument_types,
+  pg_catalog.pg_get_function_result(p.oid) as return_type
+from
+  pg_catalog.pg_proc p
+  join pg_catalog.pg_namespace n
+    on n.oid = p.pronamespace
+  join pg_catalog.pg_depend d
+    on d.objid = p.oid
+  join pg_catalog.pg_extension e
+    on e.oid = d.refobjid
+where
+  d.deptype = 'e'
+  and e.extname in (
+    'postgis_tiger_geocoder'
+  )
+order by
+  e.extname,
+  n.nspname,
+  p.proname,
+  pg_catalog.pg_get_function_identity_arguments(p.oid);
+     extension_name     | schema_name |            function_name            |                                                                                                                                                     argument_types                                                                                                                                                     |     return_type     
+------------------------+-------------+-------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------
+ postgis_tiger_geocoder | tiger       | count_words                         | character varying                                                                                                                                                                                                                                                                                                      | integer
+ postgis_tiger_geocoder | tiger       | create_census_base_tables           |                                                                                                                                                                                                                                                                                                                        | text
+ postgis_tiger_geocoder | tiger       | cull_null                           | character varying                                                                                                                                                                                                                                                                                                      | character varying
+ postgis_tiger_geocoder | tiger       | diff_zip                            | zip1 character varying, zip2 character varying                                                                                                                                                                                                                                                                         | integer
+ postgis_tiger_geocoder | tiger       | drop_dupe_featnames_generate_script |                                                                                                                                                                                                                                                                                                                        | text
+ postgis_tiger_geocoder | tiger       | drop_indexes_generate_script        | tiger_data_schema text                                                                                                                                                                                                                                                                                                 | text
+ postgis_tiger_geocoder | tiger       | drop_nation_tables_generate_script  | param_schema text                                                                                                                                                                                                                                                                                                      | text
+ postgis_tiger_geocoder | tiger       | drop_state_tables_generate_script   | param_state text, param_schema text                                                                                                                                                                                                                                                                                    | text
+ postgis_tiger_geocoder | tiger       | end_soundex                         | character varying                                                                                                                                                                                                                                                                                                      | character varying
+ postgis_tiger_geocoder | tiger       | geocode                             | in_addy norm_addy, max_results integer, restrict_geom geometry, OUT addy norm_addy, OUT geomout geometry, OUT rating integer                                                                                                                                                                                           | SETOF record
+ postgis_tiger_geocoder | tiger       | geocode                             | input character varying, max_results integer, restrict_geom geometry, OUT addy norm_addy, OUT geomout geometry, OUT rating integer                                                                                                                                                                                     | SETOF record
+ postgis_tiger_geocoder | tiger       | geocode_address                     | parsed norm_addy, max_results integer, restrict_geom geometry, OUT addy norm_addy, OUT geomout geometry, OUT rating integer                                                                                                                                                                                            | SETOF record
+ postgis_tiger_geocoder | tiger       | geocode_intersection                | roadway1 text, roadway2 text, in_state text, in_city text, in_zip text, num_results integer, OUT addy norm_addy, OUT geomout geometry, OUT rating integer                                                                                                                                                              | SETOF record
+ postgis_tiger_geocoder | tiger       | geocode_location                    | parsed norm_addy, restrict_geom geometry, OUT addy norm_addy, OUT geomout geometry, OUT rating integer                                                                                                                                                                                                                 | SETOF record
+ postgis_tiger_geocoder | tiger       | get_geocode_setting                 | setting_name text                                                                                                                                                                                                                                                                                                      | text
+ postgis_tiger_geocoder | tiger       | get_last_words                      | inputstring character varying, count integer                                                                                                                                                                                                                                                                           | character varying
+ postgis_tiger_geocoder | tiger       | get_tract                           | loc_geom geometry, output_field text                                                                                                                                                                                                                                                                                   | text
+ postgis_tiger_geocoder | tiger       | greatest_hn                         | fromhn character varying, tohn character varying                                                                                                                                                                                                                                                                       | integer
+ postgis_tiger_geocoder | tiger       | includes_address                    | given_address integer, addr1 integer, addr2 integer, addr3 integer, addr4 integer                                                                                                                                                                                                                                      | boolean
+ postgis_tiger_geocoder | tiger       | install_geocode_settings            |                                                                                                                                                                                                                                                                                                                        | void
+ postgis_tiger_geocoder | tiger       | install_missing_indexes             |                                                                                                                                                                                                                                                                                                                        | boolean
+ postgis_tiger_geocoder | tiger       | install_pagc_tables                 |                                                                                                                                                                                                                                                                                                                        | void
+ postgis_tiger_geocoder | tiger       | interpolate_from_address            | given_address integer, in_addr1 character varying, in_addr2 character varying, in_road geometry, in_side character varying, in_offset_m double precision                                                                                                                                                               | geometry
+ postgis_tiger_geocoder | tiger       | is_pretype                          | text                                                                                                                                                                                                                                                                                                                   | boolean
+ postgis_tiger_geocoder | tiger       | least_hn                            | fromhn character varying, tohn character varying                                                                                                                                                                                                                                                                       | integer
+ postgis_tiger_geocoder | tiger       | levenshtein_ignore_case             | character varying, character varying                                                                                                                                                                                                                                                                                   | integer
+ postgis_tiger_geocoder | tiger       | loader_generate_census_script       | param_states text[], os text                                                                                                                                                                                                                                                                                           | SETOF text
+ postgis_tiger_geocoder | tiger       | loader_generate_nation_script       | os text                                                                                                                                                                                                                                                                                                                | SETOF text
+ postgis_tiger_geocoder | tiger       | loader_generate_script              | param_states text[], os text                                                                                                                                                                                                                                                                                           | SETOF text
+ postgis_tiger_geocoder | tiger       | loader_load_staged_data             | param_staging_table text, param_target_table text                                                                                                                                                                                                                                                                      | integer
+ postgis_tiger_geocoder | tiger       | loader_load_staged_data             | param_staging_table text, param_target_table text, param_columns_exclude text[]                                                                                                                                                                                                                                        | integer
+ postgis_tiger_geocoder | tiger       | loader_macro_replace                | param_input text, param_keys text[], param_values text[]                                                                                                                                                                                                                                                               | text
+ postgis_tiger_geocoder | tiger       | location_extract                    | fullstreet character varying, stateabbrev character varying                                                                                                                                                                                                                                                            | character varying
+ postgis_tiger_geocoder | tiger       | location_extract_countysub_exact    | fullstreet character varying, stateabbrev character varying                                                                                                                                                                                                                                                            | character varying
+ postgis_tiger_geocoder | tiger       | location_extract_countysub_fuzzy    | fullstreet character varying, stateabbrev character varying                                                                                                                                                                                                                                                            | character varying
+ postgis_tiger_geocoder | tiger       | location_extract_place_exact        | fullstreet character varying, stateabbrev character varying                                                                                                                                                                                                                                                            | character varying
+ postgis_tiger_geocoder | tiger       | location_extract_place_fuzzy        | fullstreet character varying, stateabbrev character varying                                                                                                                                                                                                                                                            | character varying
+ postgis_tiger_geocoder | tiger       | missing_indexes_generate_script     |                                                                                                                                                                                                                                                                                                                        | text
+ postgis_tiger_geocoder | tiger       | normalize_address                   | in_rawinput character varying                                                                                                                                                                                                                                                                                          | norm_addy
+ postgis_tiger_geocoder | tiger       | nullable_levenshtein                | character varying, character varying                                                                                                                                                                                                                                                                                   | integer
+ postgis_tiger_geocoder | tiger       | numeric_streets_equal               | input_street character varying, output_street character varying                                                                                                                                                                                                                                                        | boolean
+ postgis_tiger_geocoder | tiger       | pagc_normalize_address              | in_rawinput character varying                                                                                                                                                                                                                                                                                          | norm_addy
+ postgis_tiger_geocoder | tiger       | pprint_addy                         | input norm_addy                                                                                                                                                                                                                                                                                                        | character varying
+ postgis_tiger_geocoder | tiger       | rate_attributes                     | dirpa character varying, dirpb character varying, streetnamea character varying, streetnameb character varying, streettypea character varying, streettypeb character varying, dirsa character varying, dirsb character varying, locationa character varying, locationb character varying, prequalabr character varying | integer
+ postgis_tiger_geocoder | tiger       | rate_attributes                     | dirpa character varying, dirpb character varying, streetnamea character varying, streetnameb character varying, streettypea character varying, streettypeb character varying, dirsa character varying, dirsb character varying, prequalabr character varying                                                           | integer
+ postgis_tiger_geocoder | tiger       | reverse_geocode                     | pt geometry, include_strnum_range boolean, OUT intpt geometry[], OUT addy norm_addy[], OUT street character varying[]                                                                                                                                                                                                  | record
+ postgis_tiger_geocoder | tiger       | set_geocode_setting                 | setting_name text, setting_value text                                                                                                                                                                                                                                                                                  | text
+ postgis_tiger_geocoder | tiger       | setsearchpathforinstall             | a_schema_name text                                                                                                                                                                                                                                                                                                     | text
+ postgis_tiger_geocoder | tiger       | state_extract                       | rawinput character varying                                                                                                                                                                                                                                                                                             | character varying
+ postgis_tiger_geocoder | tiger       | topology_load_tiger                 | toponame character varying, region_type character varying, region_id character varying                                                                                                                                                                                                                                 | text
+ postgis_tiger_geocoder | tiger       | utmzone                             | geometry                                                                                                                                                                                                                                                                                                               | integer
+ postgis_tiger_geocoder | tiger       | zip_range                           | zip text, range_start integer, range_end integer                                                                                                                                                                                                                                                                       | character varying[]
+(52 rows)
+
+select
+  e.extname as extension_name,
+  n.nspname as schema_name,
+  pc.relname as entity_name,
+  pa.attname
+from
+  pg_catalog.pg_class pc
+  join pg_catalog.pg_namespace n
+    on n.oid = pc.relnamespace
+  join pg_catalog.pg_depend d
+    on d.objid = pc.oid
+  join pg_catalog.pg_extension e
+    on e.oid = d.refobjid
+  left join pg_catalog.pg_attribute pa
+    on pa.attrelid = pc.oid
+    and pa.attnum > 0
+    and not pa.attisdropped
+where
+  d.deptype = 'e'
+  and pc.relkind in ('r', 'v', 'm', 'i')
+  and e.extname in (
+    'postgis_tiger_geocoder'
+  )
+order by
+  e.extname,
+  n.nspname,
+  pc.relname,
+  pa.attname;
+     extension_name     | schema_name |       entity_name        |        attname         
+------------------------+-------------+--------------------------+------------------------
+ postgis_tiger_geocoder | tiger       | addr                     | arid
+ postgis_tiger_geocoder | tiger       | addr                     | fromarmid
+ postgis_tiger_geocoder | tiger       | addr                     | fromhn
+ postgis_tiger_geocoder | tiger       | addr                     | fromtyp
+ postgis_tiger_geocoder | tiger       | addr                     | gid
+ postgis_tiger_geocoder | tiger       | addr                     | mtfcc
+ postgis_tiger_geocoder | tiger       | addr                     | plus4
+ postgis_tiger_geocoder | tiger       | addr                     | side
+ postgis_tiger_geocoder | tiger       | addr                     | statefp
+ postgis_tiger_geocoder | tiger       | addr                     | tlid
+ postgis_tiger_geocoder | tiger       | addr                     | toarmid
+ postgis_tiger_geocoder | tiger       | addr                     | tohn
+ postgis_tiger_geocoder | tiger       | addr                     | totyp
+ postgis_tiger_geocoder | tiger       | addr                     | zip
+ postgis_tiger_geocoder | tiger       | addrfeat                 | aridl
+ postgis_tiger_geocoder | tiger       | addrfeat                 | aridr
+ postgis_tiger_geocoder | tiger       | addrfeat                 | edge_mtfcc
+ postgis_tiger_geocoder | tiger       | addrfeat                 | fullname
+ postgis_tiger_geocoder | tiger       | addrfeat                 | gid
+ postgis_tiger_geocoder | tiger       | addrfeat                 | lfromhn
+ postgis_tiger_geocoder | tiger       | addrfeat                 | lfromtyp
+ postgis_tiger_geocoder | tiger       | addrfeat                 | linearid
+ postgis_tiger_geocoder | tiger       | addrfeat                 | ltohn
+ postgis_tiger_geocoder | tiger       | addrfeat                 | ltotyp
+ postgis_tiger_geocoder | tiger       | addrfeat                 | offsetl
+ postgis_tiger_geocoder | tiger       | addrfeat                 | offsetr
+ postgis_tiger_geocoder | tiger       | addrfeat                 | parityl
+ postgis_tiger_geocoder | tiger       | addrfeat                 | parityr
+ postgis_tiger_geocoder | tiger       | addrfeat                 | plus4l
+ postgis_tiger_geocoder | tiger       | addrfeat                 | plus4r
+ postgis_tiger_geocoder | tiger       | addrfeat                 | rfromhn
+ postgis_tiger_geocoder | tiger       | addrfeat                 | rfromtyp
+ postgis_tiger_geocoder | tiger       | addrfeat                 | rtohn
+ postgis_tiger_geocoder | tiger       | addrfeat                 | rtotyp
+ postgis_tiger_geocoder | tiger       | addrfeat                 | statefp
+ postgis_tiger_geocoder | tiger       | addrfeat                 | the_geom
+ postgis_tiger_geocoder | tiger       | addrfeat                 | tlid
+ postgis_tiger_geocoder | tiger       | addrfeat                 | zipl
+ postgis_tiger_geocoder | tiger       | addrfeat                 | zipr
+ postgis_tiger_geocoder | tiger       | bg                       | aland
+ postgis_tiger_geocoder | tiger       | bg                       | awater
+ postgis_tiger_geocoder | tiger       | bg                       | bg_id
+ postgis_tiger_geocoder | tiger       | bg                       | blkgrpce
+ postgis_tiger_geocoder | tiger       | bg                       | countyfp
+ postgis_tiger_geocoder | tiger       | bg                       | funcstat
+ postgis_tiger_geocoder | tiger       | bg                       | gid
+ postgis_tiger_geocoder | tiger       | bg                       | intptlat
+ postgis_tiger_geocoder | tiger       | bg                       | intptlon
+ postgis_tiger_geocoder | tiger       | bg                       | mtfcc
+ postgis_tiger_geocoder | tiger       | bg                       | namelsad
+ postgis_tiger_geocoder | tiger       | bg                       | statefp
+ postgis_tiger_geocoder | tiger       | bg                       | the_geom
+ postgis_tiger_geocoder | tiger       | bg                       | tractce
+ postgis_tiger_geocoder | tiger       | county                   | aland
+ postgis_tiger_geocoder | tiger       | county                   | awater
+ postgis_tiger_geocoder | tiger       | county                   | cbsafp
+ postgis_tiger_geocoder | tiger       | county                   | classfp
+ postgis_tiger_geocoder | tiger       | county                   | cntyidfp
+ postgis_tiger_geocoder | tiger       | county                   | countyfp
+ postgis_tiger_geocoder | tiger       | county                   | countyns
+ postgis_tiger_geocoder | tiger       | county                   | csafp
+ postgis_tiger_geocoder | tiger       | county                   | funcstat
+ postgis_tiger_geocoder | tiger       | county                   | gid
+ postgis_tiger_geocoder | tiger       | county                   | intptlat
+ postgis_tiger_geocoder | tiger       | county                   | intptlon
+ postgis_tiger_geocoder | tiger       | county                   | lsad
+ postgis_tiger_geocoder | tiger       | county                   | metdivfp
+ postgis_tiger_geocoder | tiger       | county                   | mtfcc
+ postgis_tiger_geocoder | tiger       | county                   | name
+ postgis_tiger_geocoder | tiger       | county                   | namelsad
+ postgis_tiger_geocoder | tiger       | county                   | statefp
+ postgis_tiger_geocoder | tiger       | county                   | the_geom
+ postgis_tiger_geocoder | tiger       | county_lookup            | co_code
+ postgis_tiger_geocoder | tiger       | county_lookup            | name
+ postgis_tiger_geocoder | tiger       | county_lookup            | st_code
+ postgis_tiger_geocoder | tiger       | county_lookup            | state
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | co_code
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | county
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | cs_code
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | name
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | st_code
+ postgis_tiger_geocoder | tiger       | countysub_lookup         | state
+ postgis_tiger_geocoder | tiger       | cousub                   | aland
+ postgis_tiger_geocoder | tiger       | cousub                   | awater
+ postgis_tiger_geocoder | tiger       | cousub                   | classfp
+ postgis_tiger_geocoder | tiger       | cousub                   | cnectafp
+ postgis_tiger_geocoder | tiger       | cousub                   | cosbidfp
+ postgis_tiger_geocoder | tiger       | cousub                   | countyfp
+ postgis_tiger_geocoder | tiger       | cousub                   | cousubfp
+ postgis_tiger_geocoder | tiger       | cousub                   | cousubns
+ postgis_tiger_geocoder | tiger       | cousub                   | funcstat
+ postgis_tiger_geocoder | tiger       | cousub                   | gid
+ postgis_tiger_geocoder | tiger       | cousub                   | intptlat
+ postgis_tiger_geocoder | tiger       | cousub                   | intptlon
+ postgis_tiger_geocoder | tiger       | cousub                   | lsad
+ postgis_tiger_geocoder | tiger       | cousub                   | mtfcc
+ postgis_tiger_geocoder | tiger       | cousub                   | name
+ postgis_tiger_geocoder | tiger       | cousub                   | namelsad
+ postgis_tiger_geocoder | tiger       | cousub                   | nctadvfp
+ postgis_tiger_geocoder | tiger       | cousub                   | nectafp
+ postgis_tiger_geocoder | tiger       | cousub                   | statefp
+ postgis_tiger_geocoder | tiger       | cousub                   | the_geom
+ postgis_tiger_geocoder | tiger       | direction_lookup         | abbrev
+ postgis_tiger_geocoder | tiger       | direction_lookup         | name
+ postgis_tiger_geocoder | tiger       | edges                    | artpath
+ postgis_tiger_geocoder | tiger       | edges                    | countyfp
+ postgis_tiger_geocoder | tiger       | edges                    | deckedroad
+ postgis_tiger_geocoder | tiger       | edges                    | divroad
+ postgis_tiger_geocoder | tiger       | edges                    | exttyp
+ postgis_tiger_geocoder | tiger       | edges                    | featcat
+ postgis_tiger_geocoder | tiger       | edges                    | fullname
+ postgis_tiger_geocoder | tiger       | edges                    | gcseflg
+ postgis_tiger_geocoder | tiger       | edges                    | gid
+ postgis_tiger_geocoder | tiger       | edges                    | hydroflg
+ postgis_tiger_geocoder | tiger       | edges                    | lfromadd
+ postgis_tiger_geocoder | tiger       | edges                    | ltoadd
+ postgis_tiger_geocoder | tiger       | edges                    | mtfcc
+ postgis_tiger_geocoder | tiger       | edges                    | offsetl
+ postgis_tiger_geocoder | tiger       | edges                    | offsetr
+ postgis_tiger_geocoder | tiger       | edges                    | olfflg
+ postgis_tiger_geocoder | tiger       | edges                    | passflg
+ postgis_tiger_geocoder | tiger       | edges                    | persist
+ postgis_tiger_geocoder | tiger       | edges                    | railflg
+ postgis_tiger_geocoder | tiger       | edges                    | rfromadd
+ postgis_tiger_geocoder | tiger       | edges                    | roadflg
+ postgis_tiger_geocoder | tiger       | edges                    | rtoadd
+ postgis_tiger_geocoder | tiger       | edges                    | smid
+ postgis_tiger_geocoder | tiger       | edges                    | statefp
+ postgis_tiger_geocoder | tiger       | edges                    | tfidl
+ postgis_tiger_geocoder | tiger       | edges                    | tfidr
+ postgis_tiger_geocoder | tiger       | edges                    | the_geom
+ postgis_tiger_geocoder | tiger       | edges                    | tlid
+ postgis_tiger_geocoder | tiger       | edges                    | tnidf
+ postgis_tiger_geocoder | tiger       | edges                    | tnidt
+ postgis_tiger_geocoder | tiger       | edges                    | ttyp
+ postgis_tiger_geocoder | tiger       | edges                    | zipl
+ postgis_tiger_geocoder | tiger       | edges                    | zipr
+ postgis_tiger_geocoder | tiger       | faces                    | aiannhce
+ postgis_tiger_geocoder | tiger       | faces                    | aiannhce00
+ postgis_tiger_geocoder | tiger       | faces                    | aiannhfp
+ postgis_tiger_geocoder | tiger       | faces                    | aiannhfp00
+ postgis_tiger_geocoder | tiger       | faces                    | anrcfp
+ postgis_tiger_geocoder | tiger       | faces                    | anrcfp00
+ postgis_tiger_geocoder | tiger       | faces                    | atotal
+ postgis_tiger_geocoder | tiger       | faces                    | blkgrpce
+ postgis_tiger_geocoder | tiger       | faces                    | blkgrpce00
+ postgis_tiger_geocoder | tiger       | faces                    | blkgrpce20
+ postgis_tiger_geocoder | tiger       | faces                    | blockce
+ postgis_tiger_geocoder | tiger       | faces                    | blockce00
+ postgis_tiger_geocoder | tiger       | faces                    | blockce20
+ postgis_tiger_geocoder | tiger       | faces                    | cbsafp
+ postgis_tiger_geocoder | tiger       | faces                    | cd108fp
+ postgis_tiger_geocoder | tiger       | faces                    | cd111fp
+ postgis_tiger_geocoder | tiger       | faces                    | cnectafp
+ postgis_tiger_geocoder | tiger       | faces                    | comptyp
+ postgis_tiger_geocoder | tiger       | faces                    | comptyp00
+ postgis_tiger_geocoder | tiger       | faces                    | conctyfp
+ postgis_tiger_geocoder | tiger       | faces                    | conctyfp00
+ postgis_tiger_geocoder | tiger       | faces                    | countyfp
+ postgis_tiger_geocoder | tiger       | faces                    | countyfp00
+ postgis_tiger_geocoder | tiger       | faces                    | countyfp20
+ postgis_tiger_geocoder | tiger       | faces                    | cousubfp
+ postgis_tiger_geocoder | tiger       | faces                    | cousubfp00
+ postgis_tiger_geocoder | tiger       | faces                    | csafp
+ postgis_tiger_geocoder | tiger       | faces                    | elsdlea
+ postgis_tiger_geocoder | tiger       | faces                    | elsdlea00
+ postgis_tiger_geocoder | tiger       | faces                    | gid
+ postgis_tiger_geocoder | tiger       | faces                    | intptlat
+ postgis_tiger_geocoder | tiger       | faces                    | intptlon
+ postgis_tiger_geocoder | tiger       | faces                    | lwflag
+ postgis_tiger_geocoder | tiger       | faces                    | metdivfp
+ postgis_tiger_geocoder | tiger       | faces                    | nctadvfp
+ postgis_tiger_geocoder | tiger       | faces                    | nectafp
+ postgis_tiger_geocoder | tiger       | faces                    | offset
+ postgis_tiger_geocoder | tiger       | faces                    | placefp
+ postgis_tiger_geocoder | tiger       | faces                    | placefp00
+ postgis_tiger_geocoder | tiger       | faces                    | puma5ce
+ postgis_tiger_geocoder | tiger       | faces                    | puma5ce00
+ postgis_tiger_geocoder | tiger       | faces                    | scsdlea
+ postgis_tiger_geocoder | tiger       | faces                    | scsdlea00
+ postgis_tiger_geocoder | tiger       | faces                    | sldlst
+ postgis_tiger_geocoder | tiger       | faces                    | sldlst00
+ postgis_tiger_geocoder | tiger       | faces                    | sldust
+ postgis_tiger_geocoder | tiger       | faces                    | sldust00
+ postgis_tiger_geocoder | tiger       | faces                    | statefp
+ postgis_tiger_geocoder | tiger       | faces                    | statefp00
+ postgis_tiger_geocoder | tiger       | faces                    | statefp20
+ postgis_tiger_geocoder | tiger       | faces                    | submcdfp
+ postgis_tiger_geocoder | tiger       | faces                    | submcdfp00
+ postgis_tiger_geocoder | tiger       | faces                    | tazce
+ postgis_tiger_geocoder | tiger       | faces                    | tazce00
+ postgis_tiger_geocoder | tiger       | faces                    | tblkgpce
+ postgis_tiger_geocoder | tiger       | faces                    | tfid
+ postgis_tiger_geocoder | tiger       | faces                    | the_geom
+ postgis_tiger_geocoder | tiger       | faces                    | tractce
+ postgis_tiger_geocoder | tiger       | faces                    | tractce00
+ postgis_tiger_geocoder | tiger       | faces                    | tractce20
+ postgis_tiger_geocoder | tiger       | faces                    | trsubce
+ postgis_tiger_geocoder | tiger       | faces                    | trsubce00
+ postgis_tiger_geocoder | tiger       | faces                    | trsubfp
+ postgis_tiger_geocoder | tiger       | faces                    | trsubfp00
+ postgis_tiger_geocoder | tiger       | faces                    | ttractce
+ postgis_tiger_geocoder | tiger       | faces                    | uace
+ postgis_tiger_geocoder | tiger       | faces                    | uace00
+ postgis_tiger_geocoder | tiger       | faces                    | ugace
+ postgis_tiger_geocoder | tiger       | faces                    | ugace00
+ postgis_tiger_geocoder | tiger       | faces                    | unsdlea
+ postgis_tiger_geocoder | tiger       | faces                    | unsdlea00
+ postgis_tiger_geocoder | tiger       | faces                    | vtdst
+ postgis_tiger_geocoder | tiger       | faces                    | vtdst00
+ postgis_tiger_geocoder | tiger       | faces                    | zcta5ce
+ postgis_tiger_geocoder | tiger       | faces                    | zcta5ce00
+ postgis_tiger_geocoder | tiger       | featnames                | fullname
+ postgis_tiger_geocoder | tiger       | featnames                | gid
+ postgis_tiger_geocoder | tiger       | featnames                | linearid
+ postgis_tiger_geocoder | tiger       | featnames                | mtfcc
+ postgis_tiger_geocoder | tiger       | featnames                | name
+ postgis_tiger_geocoder | tiger       | featnames                | paflag
+ postgis_tiger_geocoder | tiger       | featnames                | predir
+ postgis_tiger_geocoder | tiger       | featnames                | predirabrv
+ postgis_tiger_geocoder | tiger       | featnames                | prequal
+ postgis_tiger_geocoder | tiger       | featnames                | prequalabr
+ postgis_tiger_geocoder | tiger       | featnames                | pretyp
+ postgis_tiger_geocoder | tiger       | featnames                | pretypabrv
+ postgis_tiger_geocoder | tiger       | featnames                | statefp
+ postgis_tiger_geocoder | tiger       | featnames                | sufdir
+ postgis_tiger_geocoder | tiger       | featnames                | sufdirabrv
+ postgis_tiger_geocoder | tiger       | featnames                | sufqual
+ postgis_tiger_geocoder | tiger       | featnames                | sufqualabr
+ postgis_tiger_geocoder | tiger       | featnames                | suftyp
+ postgis_tiger_geocoder | tiger       | featnames                | suftypabrv
+ postgis_tiger_geocoder | tiger       | featnames                | tlid
+ postgis_tiger_geocoder | tiger       | geocode_settings         | category
+ postgis_tiger_geocoder | tiger       | geocode_settings         | name
+ postgis_tiger_geocoder | tiger       | geocode_settings         | setting
+ postgis_tiger_geocoder | tiger       | geocode_settings         | short_desc
+ postgis_tiger_geocoder | tiger       | geocode_settings         | unit
+ postgis_tiger_geocoder | tiger       | geocode_settings_default | category
+ postgis_tiger_geocoder | tiger       | geocode_settings_default | name
+ postgis_tiger_geocoder | tiger       | geocode_settings_default | setting
+ postgis_tiger_geocoder | tiger       | geocode_settings_default | short_desc
+ postgis_tiger_geocoder | tiger       | geocode_settings_default | unit
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | columns_exclude
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | insert_mode
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | level_county
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | level_nation
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | level_state
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | load
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | lookup_name
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | post_load_process
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | pre_load_process
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | process_order
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | single_geom_mode
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | single_mode
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | table_name
+ postgis_tiger_geocoder | tiger       | loader_lookuptables      | website_root_override
+ postgis_tiger_geocoder | tiger       | loader_platform          | county_process_command
+ postgis_tiger_geocoder | tiger       | loader_platform          | declare_sect
+ postgis_tiger_geocoder | tiger       | loader_platform          | environ_set_command
+ postgis_tiger_geocoder | tiger       | loader_platform          | loader
+ postgis_tiger_geocoder | tiger       | loader_platform          | os
+ postgis_tiger_geocoder | tiger       | loader_platform          | path_sep
+ postgis_tiger_geocoder | tiger       | loader_platform          | pgbin
+ postgis_tiger_geocoder | tiger       | loader_platform          | psql
+ postgis_tiger_geocoder | tiger       | loader_platform          | unzip_command
+ postgis_tiger_geocoder | tiger       | loader_platform          | wget
+ postgis_tiger_geocoder | tiger       | loader_variables         | data_schema
+ postgis_tiger_geocoder | tiger       | loader_variables         | staging_fold
+ postgis_tiger_geocoder | tiger       | loader_variables         | staging_schema
+ postgis_tiger_geocoder | tiger       | loader_variables         | tiger_year
+ postgis_tiger_geocoder | tiger       | loader_variables         | website_root
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | id
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | is_custom
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | seq
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | stdword
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | token
+ postgis_tiger_geocoder | tiger       | pagc_gaz                 | word
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | id
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | is_custom
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | seq
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | stdword
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | token
+ postgis_tiger_geocoder | tiger       | pagc_lex                 | word
+ postgis_tiger_geocoder | tiger       | pagc_rules               | id
+ postgis_tiger_geocoder | tiger       | pagc_rules               | is_custom
+ postgis_tiger_geocoder | tiger       | pagc_rules               | rule
+ postgis_tiger_geocoder | tiger       | place                    | aland
+ postgis_tiger_geocoder | tiger       | place                    | awater
+ postgis_tiger_geocoder | tiger       | place                    | classfp
+ postgis_tiger_geocoder | tiger       | place                    | cpi
+ postgis_tiger_geocoder | tiger       | place                    | funcstat
+ postgis_tiger_geocoder | tiger       | place                    | gid
+ postgis_tiger_geocoder | tiger       | place                    | intptlat
+ postgis_tiger_geocoder | tiger       | place                    | intptlon
+ postgis_tiger_geocoder | tiger       | place                    | lsad
+ postgis_tiger_geocoder | tiger       | place                    | mtfcc
+ postgis_tiger_geocoder | tiger       | place                    | name
+ postgis_tiger_geocoder | tiger       | place                    | namelsad
+ postgis_tiger_geocoder | tiger       | place                    | pcicbsa
+ postgis_tiger_geocoder | tiger       | place                    | pcinecta
+ postgis_tiger_geocoder | tiger       | place                    | placefp
+ postgis_tiger_geocoder | tiger       | place                    | placens
+ postgis_tiger_geocoder | tiger       | place                    | plcidfp
+ postgis_tiger_geocoder | tiger       | place                    | statefp
+ postgis_tiger_geocoder | tiger       | place                    | the_geom
+ postgis_tiger_geocoder | tiger       | place_lookup             | name
+ postgis_tiger_geocoder | tiger       | place_lookup             | pl_code
+ postgis_tiger_geocoder | tiger       | place_lookup             | st_code
+ postgis_tiger_geocoder | tiger       | place_lookup             | state
+ postgis_tiger_geocoder | tiger       | secondary_unit_lookup    | abbrev
+ postgis_tiger_geocoder | tiger       | secondary_unit_lookup    | name
+ postgis_tiger_geocoder | tiger       | state                    | aland
+ postgis_tiger_geocoder | tiger       | state                    | awater
+ postgis_tiger_geocoder | tiger       | state                    | division
+ postgis_tiger_geocoder | tiger       | state                    | funcstat
+ postgis_tiger_geocoder | tiger       | state                    | gid
+ postgis_tiger_geocoder | tiger       | state                    | intptlat
+ postgis_tiger_geocoder | tiger       | state                    | intptlon
+ postgis_tiger_geocoder | tiger       | state                    | lsad
+ postgis_tiger_geocoder | tiger       | state                    | mtfcc
+ postgis_tiger_geocoder | tiger       | state                    | name
+ postgis_tiger_geocoder | tiger       | state                    | region
+ postgis_tiger_geocoder | tiger       | state                    | statefp
+ postgis_tiger_geocoder | tiger       | state                    | statens
+ postgis_tiger_geocoder | tiger       | state                    | stusps
+ postgis_tiger_geocoder | tiger       | state                    | the_geom
+ postgis_tiger_geocoder | tiger       | state_lookup             | abbrev
+ postgis_tiger_geocoder | tiger       | state_lookup             | name
+ postgis_tiger_geocoder | tiger       | state_lookup             | st_code
+ postgis_tiger_geocoder | tiger       | state_lookup             | statefp
+ postgis_tiger_geocoder | tiger       | street_type_lookup       | abbrev
+ postgis_tiger_geocoder | tiger       | street_type_lookup       | is_hw
+ postgis_tiger_geocoder | tiger       | street_type_lookup       | name
+ postgis_tiger_geocoder | tiger       | tabblock                 | aland
+ postgis_tiger_geocoder | tiger       | tabblock                 | awater
+ postgis_tiger_geocoder | tiger       | tabblock                 | blockce
+ postgis_tiger_geocoder | tiger       | tabblock                 | countyfp
+ postgis_tiger_geocoder | tiger       | tabblock                 | funcstat
+ postgis_tiger_geocoder | tiger       | tabblock                 | gid
+ postgis_tiger_geocoder | tiger       | tabblock                 | intptlat
+ postgis_tiger_geocoder | tiger       | tabblock                 | intptlon
+ postgis_tiger_geocoder | tiger       | tabblock                 | mtfcc
+ postgis_tiger_geocoder | tiger       | tabblock                 | name
+ postgis_tiger_geocoder | tiger       | tabblock                 | statefp
+ postgis_tiger_geocoder | tiger       | tabblock                 | tabblock_id
+ postgis_tiger_geocoder | tiger       | tabblock                 | the_geom
+ postgis_tiger_geocoder | tiger       | tabblock                 | tractce
+ postgis_tiger_geocoder | tiger       | tabblock                 | uace
+ postgis_tiger_geocoder | tiger       | tabblock                 | ur
+ postgis_tiger_geocoder | tiger       | tabblock20               | aland
+ postgis_tiger_geocoder | tiger       | tabblock20               | awater
+ postgis_tiger_geocoder | tiger       | tabblock20               | blockce
+ postgis_tiger_geocoder | tiger       | tabblock20               | countyfp
+ postgis_tiger_geocoder | tiger       | tabblock20               | funcstat
+ postgis_tiger_geocoder | tiger       | tabblock20               | geoid
+ postgis_tiger_geocoder | tiger       | tabblock20               | housing
+ postgis_tiger_geocoder | tiger       | tabblock20               | intptlat
+ postgis_tiger_geocoder | tiger       | tabblock20               | intptlon
+ postgis_tiger_geocoder | tiger       | tabblock20               | mtfcc
+ postgis_tiger_geocoder | tiger       | tabblock20               | name
+ postgis_tiger_geocoder | tiger       | tabblock20               | pop
+ postgis_tiger_geocoder | tiger       | tabblock20               | statefp
+ postgis_tiger_geocoder | tiger       | tabblock20               | the_geom
+ postgis_tiger_geocoder | tiger       | tabblock20               | tractce
+ postgis_tiger_geocoder | tiger       | tabblock20               | uace
+ postgis_tiger_geocoder | tiger       | tabblock20               | uatype
+ postgis_tiger_geocoder | tiger       | tabblock20               | ur
+ postgis_tiger_geocoder | tiger       | tract                    | aland
+ postgis_tiger_geocoder | tiger       | tract                    | awater
+ postgis_tiger_geocoder | tiger       | tract                    | countyfp
+ postgis_tiger_geocoder | tiger       | tract                    | funcstat
+ postgis_tiger_geocoder | tiger       | tract                    | gid
+ postgis_tiger_geocoder | tiger       | tract                    | intptlat
+ postgis_tiger_geocoder | tiger       | tract                    | intptlon
+ postgis_tiger_geocoder | tiger       | tract                    | mtfcc
+ postgis_tiger_geocoder | tiger       | tract                    | name
+ postgis_tiger_geocoder | tiger       | tract                    | namelsad
+ postgis_tiger_geocoder | tiger       | tract                    | statefp
+ postgis_tiger_geocoder | tiger       | tract                    | the_geom
+ postgis_tiger_geocoder | tiger       | tract                    | tract_id
+ postgis_tiger_geocoder | tiger       | tract                    | tractce
+ postgis_tiger_geocoder | tiger       | zcta5                    | aland
+ postgis_tiger_geocoder | tiger       | zcta5                    | awater
+ postgis_tiger_geocoder | tiger       | zcta5                    | classfp
+ postgis_tiger_geocoder | tiger       | zcta5                    | funcstat
+ postgis_tiger_geocoder | tiger       | zcta5                    | gid
+ postgis_tiger_geocoder | tiger       | zcta5                    | intptlat
+ postgis_tiger_geocoder | tiger       | zcta5                    | intptlon
+ postgis_tiger_geocoder | tiger       | zcta5                    | mtfcc
+ postgis_tiger_geocoder | tiger       | zcta5                    | partflg
+ postgis_tiger_geocoder | tiger       | zcta5                    | statefp
+ postgis_tiger_geocoder | tiger       | zcta5                    | the_geom
+ postgis_tiger_geocoder | tiger       | zcta5                    | zcta5ce
+ postgis_tiger_geocoder | tiger       | zip_lookup               | cnt
+ postgis_tiger_geocoder | tiger       | zip_lookup               | co_code
+ postgis_tiger_geocoder | tiger       | zip_lookup               | county
+ postgis_tiger_geocoder | tiger       | zip_lookup               | cousub
+ postgis_tiger_geocoder | tiger       | zip_lookup               | cs_code
+ postgis_tiger_geocoder | tiger       | zip_lookup               | pl_code
+ postgis_tiger_geocoder | tiger       | zip_lookup               | place
+ postgis_tiger_geocoder | tiger       | zip_lookup               | st_code
+ postgis_tiger_geocoder | tiger       | zip_lookup               | state
+ postgis_tiger_geocoder | tiger       | zip_lookup               | zip
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | cnt
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | co_code
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | county
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | cousub
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | cs_code
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | pl_code
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | place
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | st_code
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | state
+ postgis_tiger_geocoder | tiger       | zip_lookup_all           | zip
+ postgis_tiger_geocoder | tiger       | zip_lookup_base          | city
+ postgis_tiger_geocoder | tiger       | zip_lookup_base          | county
+ postgis_tiger_geocoder | tiger       | zip_lookup_base          | state
+ postgis_tiger_geocoder | tiger       | zip_lookup_base          | statefp
+ postgis_tiger_geocoder | tiger       | zip_lookup_base          | zip
+ postgis_tiger_geocoder | tiger       | zip_state                | statefp
+ postgis_tiger_geocoder | tiger       | zip_state                | stusps
+ postgis_tiger_geocoder | tiger       | zip_state                | zip
+ postgis_tiger_geocoder | tiger       | zip_state_loc            | place
+ postgis_tiger_geocoder | tiger       | zip_state_loc            | statefp
+ postgis_tiger_geocoder | tiger       | zip_state_loc            | stusps
+ postgis_tiger_geocoder | tiger       | zip_state_loc            | zip
+(425 rows)
+

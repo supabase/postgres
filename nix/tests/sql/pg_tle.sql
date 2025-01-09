@@ -67,4 +67,11 @@ select
 
 -- Restore original state if any of the above fails
 drop extension pg_tle cascade;
+
+-- temporarily disable notice messages becuase they differ between 15 and 17
+set client_min_messages = warning;
+
 create extension pg_tle;
+
+-- restore notice messages
+reset client_min_messages;

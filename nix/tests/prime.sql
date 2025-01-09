@@ -63,7 +63,6 @@ create extension if not exists plpgsql_check;
 create extension if not exists postgis;
 create extension if not exists postgis_raster;
 create extension if not exists postgis_sfcgal;
-create extension if not exists postgis_tiger_geocoder;
 create extension if not exists postgis_topology;
 create extension if not exists pgrouting; -- requires postgis
 create extension if not exists postgres_fdw;
