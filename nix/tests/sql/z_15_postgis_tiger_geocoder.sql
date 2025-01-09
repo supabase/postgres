@@ -1,8 +1,5 @@
 /*
-This test mirrors ext_interface.sql for extensions that are not yet compatible
-with OrioleDB
-
-This extension is not supported because it includes an unsupported index type
+This extension is excluded from oriole-17 because it uses an unsupported index type
 */
 create extension if not exists postgis_tiger_geocoder;
 

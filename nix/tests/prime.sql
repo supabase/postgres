@@ -1,3 +1,6 @@
+-- disable notice messages becuase they differ between 15 and 17
+set client_min_messages = warning;
+
 create extension if not exists address_standardizer;
 create extension if not exists address_standardizer_data_us;
 create extension if not exists amcheck;

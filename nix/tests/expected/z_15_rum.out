@@ -1,5 +1,5 @@
 /*
-This test is TEMPORARILY excluded from the Postgres 17 suite until OrioleDB is able to support RUM indexes
+This extension is excluded from oriole-17 because it uses an unsupported index type
 */
 create schema v;
 create table v.test_rum(

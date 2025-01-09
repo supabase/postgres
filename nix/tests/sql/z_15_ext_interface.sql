@@ -1,6 +1,18 @@
 /*
-This test mirrors ext_interface.sql for extensions that do not ship with
-the Postgres 17 image
+
+The purpose of this test is to monitor the SQL interface exposed
+by Postgres extensions so we have to manually review/approve any difference
+that emerge as versions change.
+
+*/
+
+
+/*
+
+List all extensions that are not enabled
+If a new entry shows up in this list, that means a new extension has been
+added and you should `create extension ...` to enable it in ./nix/tests/prime
+
 */
 create extension if not exists adminpack;
 create extension if not exists plv8;
@@ -9,31 +21,38 @@ create extension if not exists plls;
 create extension if not exists old_snapshot;
 create extension if not exists timescaledb;
 
+
 select
   name
 from 
   pg_available_extensions
 where
   installed_version is null
-  and name in (
-    'adminpack', 'plv8', 'plls', 'plcoffee', 'old_snapshot', 'timescaledb'
-  )
 order by
   name asc;
 
+
+/*
+
+Monitor relocatability and config of each extension
+- lesson learned from pg_cron
+
+*/
 
 select
   extname as extension_name,
   extrelocatable as is_relocatable
 from
   pg_extension
-where
-  e.extname in (
-    'adminpack', 'plv8', 'plls', 'plcoffee', 'old_snapshot', 'timescaledb'
-  )
 order by
   extname asc;
 
+
+/*
+
+Monitor extension public function interface
+
+*/
 
 select
   e.extname as extension_name,
@@ -51,14 +70,29 @@ from
     on e.oid = d.refobjid
 where
   d.deptype = 'e'
-  and e.extname in (
-    'adminpack', 'plv8', 'plls', 'plcoffee', 'old_snapshot', 'timescaledb'
-  )
+  -- Filter out changes between pg15 and pg16 from extensions that ship with postgres
+  -- new in pg16
+  and not (e.extname = 'fuzzystrmatch' and p.proname = 'daitch_mokotoff')
+  and not (e.extname = 'pageinspect' and p.proname = 'bt_multi_page_stats')
+  and not (e.extname = 'pg_buffercache' and p.proname = 'pg_buffercache_summary')
+  and not (e.extname = 'pg_buffercache' and p.proname = 'pg_buffercache_usage_counts')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_block_info')
+  -- removed in pg16
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_records_info_till_end_of_wal')
+  and not (e.extname = 'pg_walinspect' and p.proname = 'pg_get_wal_stats_till_end_of_wal')
+  -- changed in pg16 - output signature added a column
+  and not (e.extname = 'pageinspect' and p.proname = 'brin_page_items')
 order by
   e.extname,
   n.nspname,
   p.proname,
   pg_catalog.pg_get_function_identity_arguments(p.oid);
+
+/*
+
+Monitor extension public table/view/matview/index interface
+
+*/
 
 select
   e.extname as extension_name,
@@ -80,9 +114,6 @@ from
 where
   d.deptype = 'e'
   and pc.relkind in ('r', 'v', 'm', 'i')
-  and e.extname in (
-    'adminpack', 'plv8', 'plls', 'plcoffee', 'old_snapshot', 'timescaledb'
-  )
 order by
   e.extname,
   n.nspname,
