@@ -146,11 +146,7 @@
           x: 
             x != ./nix/ext/timescaledb.nix &&
             x != ./nix/ext/timescaledb-2.9.1.nix &&
-            x != ./nix/ext/plv8.nix && 
-            x != ./nix/ext/postgis.nix && 
-            x != ./nix/ext/pgrouting.nix &&
-            x != ./nix/ext/pg_jsonschema.nix &&
-            x != ./nix/ext/pg_graphql.nix 
+            x != ./nix/ext/plv8.nix
         ) ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];

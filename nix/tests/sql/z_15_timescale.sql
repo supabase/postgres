@@ -1,3 +1,9 @@
+/*
+This test is excluded from the Postgres 17 suite because it does not ship
+with the Supabase PG17 image
+*/
+create extension if not exists timescaledb;
+
 -- Confirm we're running the apache version
 show timescaledb.license;
 

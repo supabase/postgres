@@ -1,4 +1,11 @@
+/*
+This test is excluded from the Postgres 17 suite because it does not ship
+with the Supabase PG17 image
+*/
+create extension if not exists plv8;
+
 create schema v;
+
 -- create a function to perform some JavaScript operations
 create function v.multiply_numbers(a integer, b integer)
   returns integer
@@ -6,12 +13,8 @@ create function v.multiply_numbers(a integer, b integer)
 as $$
   return a * b;
 $$;
+
 select
   v.multiply_numbers(3, 4);
- multiply_numbers 
-------------------
-               12
-(1 row)
 
 drop schema v cascade;
-NOTICE:  drop cascades to function v.multiply_numbers(integer,integer)

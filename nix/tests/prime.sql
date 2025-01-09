@@ -1,6 +1,8 @@
+-- disable notice messages becuase they differ between 15 and 17
+set client_min_messages = warning;
+
 create extension if not exists address_standardizer;
 create extension if not exists address_standardizer_data_us;
-create extension if not exists adminpack;
 create extension if not exists amcheck;
 create extension if not exists autoinc;
 create extension if not exists bloom;
@@ -25,7 +27,6 @@ create extension if not exists isn;
 create extension if not exists lo;
 create extension if not exists ltree;
 create extension if not exists moddatetime;
-create extension if not exists old_snapshot;
 create extension if not exists pageinspect;
 create extension if not exists pg_backtrace;
 create extension if not exists pg_buffercache;
@@ -62,13 +63,9 @@ create extension if not exists pgsodium;
 create extension if not exists pgrowlocks;
 create extension if not exists pgstattuple;
 create extension if not exists plpgsql_check;
-create extension if not exists plv8;
-create extension if not exists plcoffee;
-create extension if not exists plls;
 create extension if not exists postgis;
 create extension if not exists postgis_raster;
 create extension if not exists postgis_sfcgal;
-create extension if not exists postgis_tiger_geocoder;
 create extension if not exists postgis_topology;
 create extension if not exists pgrouting; -- requires postgis
 create extension if not exists postgres_fdw;
@@ -79,7 +76,6 @@ create extension if not exists sslinfo;
 create extension if not exists supabase_vault;
 create extension if not exists tablefunc;
 create extension if not exists tcn;
-create extension if not exists timescaledb;
 create extension if not exists tsm_system_rows;
 -- create extension if not exists tsm_system_time; not supported in apache license
 create extension if not exists unaccent;

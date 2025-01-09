@@ -1,3 +1,5 @@
+set client_min_messages = warning;
+
 select
   pgtle.install_extension(
     'pg_distance',
@@ -26,8 +28,8 @@ select
 
 create extension pg_distance;
 
-select manhattan_dist(1, 1, 5, 5);
-select euclidean_dist(1, 1, 5, 5);
+select manhattan_dist(1, 1, 5, 5)::numeric(10,2);
+select euclidean_dist(1, 1, 5, 5)::numeric(10,2);
 
 SELECT pgtle.install_update_path(
   'pg_distance',
@@ -67,4 +69,5 @@ select
 
 -- Restore original state if any of the above fails
 drop extension pg_tle cascade;
+
 create extension pg_tle;
