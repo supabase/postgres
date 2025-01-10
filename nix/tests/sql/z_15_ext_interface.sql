@@ -87,7 +87,7 @@ order by
   e.extname,
   n.nspname,
   p.proname,
-  pg_catalog.pg_get_function_identity_arguments(p.oid);
+  md5(pg_catalog.pg_get_function_identity_arguments(p.oid));
 
 /*
 
