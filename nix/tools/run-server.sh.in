@@ -20,7 +20,7 @@ print_help() {
     echo "  --getkey-script SCRIPT   Provide a custom path to the PGSODIUM_GETKEY_SCRIPT"
     echo "  -h, --help              Show this help message"
     echo
-    echo "VERSION must be one of: 15, 16, orioledb-17"
+    echo "VERSION must be one of: 15, orioledb-17"
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
@@ -133,16 +133,12 @@ if [ "$VERSION" == "15" ]; then
     echo "Starting server for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
-elif [ "$VERSION" == "16" ]; then
-    echo "Starting server for PSQL 16"
-    PSQL16=@PSQL16_BINDIR@
-    BINDIR="$PSQL16"
 elif [ "$VERSION" == "orioledb-17" ]; then
     echo "Starting server for PSQL ORIOLEDB 17"
     PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
     BINDIR="$PSQLORIOLEDB17"
 else
-    echo "Please provide a valid Postgres version (15, 16 or orioledb-17)"
+    echo "Please provide a valid Postgres version (15, orioledb-17)"
     exit 1
 fi
 

@@ -150,10 +150,6 @@
         ) ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
-        pg16Extensions = builtins.filter (
-          x:
-          x != ./nix/ext/timescaledb-2.9.1.nix
-        ) ourExtensions;
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
         # Create a 'receipt' file for a given postgresql package. This is a way
@@ -195,10 +191,8 @@
         makeOurPostgresPkgs = version:
           let 
             postgresql = getPostgresqlPackage version;
-            extensionsToUse = if (builtins.elem version ["orioledb-16" "orioledb-17"])
+            extensionsToUse = if (builtins.elem version ["orioledb-17"])
               then orioledbExtensions
-              else if version == "16"
-              then pg16Extensions
               else ourExtensions;
           in map (path: pkgs.callPackage path { inherit postgresql; }) extensionsToUse;
 
@@ -318,7 +312,6 @@
             PGSQL_SUPERUSER = "${pgsqlSuperuser}";
             PSQL15_BINDIR = "${basePackages.psql_15.bin}";
             PSQL_CONF_FILE = "${paths.pgconfigFile}";
-            PSQL16_BINDIR = "${basePackages.psql_16.bin}";
             PSQLORIOLEDB17_BINDIR = "${basePackages.psql_orioledb-17.bin}";
             PGSODIUM_GETKEY = "${paths.getkeyScript}";
             READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
@@ -380,8 +373,6 @@
           # Define the available PostgreSQL versions
           postgresVersions = {
             psql_15 = makePostgres "15";
-            psql_16 = makePostgres "16";
-            #psql_orioledb-16 = makePostgres "orioledb-16" ;
             psql_orioledb-17 = makePostgres "orioledb-17" ;
           };
 
@@ -397,8 +388,6 @@
                 postgresql = postgresqlPackage;
               };
           postgresql_15 = getPostgresqlPackage "15";
-          postgresql_16 = getPostgresqlPackage "16";
-          #postgresql_orioledb-16 = getPostgresqlPackage "orioledb-16";
           postgresql_orioledb-17 = getPostgresqlPackage "orioledb-17";
         in 
         postgresVersions // {
@@ -407,42 +396,17 @@
           cargo-pgrx_0_12_6 = pkgs.cargo-pgrx.cargo-pgrx_0_12_6;
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
-          psql_16 = postgresVersions.psql_16;
-          #psql_orioledb-16 = postgresVersions.psql_orioledb-16;
           psql_orioledb-17 = postgresVersions.psql_orioledb-17;
           sfcgal = sfcgal;
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-          inherit postgresql_15 postgresql_16 postgresql_orioledb-17;
+          inherit postgresql_15 postgresql_orioledb-17;
           postgresql_15_debug = if pkgs.stdenv.isLinux then postgresql_15.debug else null;
-          postgresql_16_debug = if pkgs.stdenv.isLinux then postgresql_16.debug else null;
           postgresql_orioledb-17_debug = if pkgs.stdenv.isLinux then postgresql_orioledb-17.debug else null;
           postgresql_15_src = pkgs.stdenv.mkDerivation {
             pname = "postgresql-15-src";
             version = postgresql_15.version;
 
             src = postgresql_15.src;
-
-            nativeBuildInputs = [ pkgs.bzip2 ];
-
-            phases = [ "unpackPhase" "installPhase" ];
-
-            installPhase = ''
-              mkdir -p $out
-              cp -r . $out
-            '';
-
-            meta = with pkgs.lib; {
-              description = "PostgreSQL 15 source files";
-              homepage = "https://www.postgresql.org/";
-              license = licenses.postgresql;
-              platforms = platforms.all;
-            };
-          };
-          postgresql_16_src = pkgs.stdenv.mkDerivation {
-            pname = "postgresql-16-src";
-            version = postgresql_16.version;
-
-            src = postgresql_16.src;
 
             nativeBuildInputs = [ pkgs.bzip2 ];
 
@@ -505,7 +469,6 @@
                 --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
                 --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
-                --subst-var-by 'PSQL16_BINDIR' '${basePackages.psql_16.bin}' \
                 --subst-var-by 'PSQLORIOLEDB17_BINDIR' '${basePackages.psql_orioledb-17.bin}' \
                 --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
                 --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \
@@ -603,223 +566,222 @@
         # Create a testing harness for a PostgreSQL package. This is used for
         # 'nix flake check', and works with any PostgreSQL package you hand it.
 
-makeCheckHarness = pgpkg:
-  let
-    sqlTests = ./nix/tests/smoke;
-    pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-    pg_regress = basePackages.pg_regress;
-    getkey-script = pkgs.writeScriptBin "pgsodium-getkey" ''
-      #!${pkgs.bash}/bin/bash
-      set -euo pipefail
-      
-      TMPDIR_BASE=$(mktemp -d)
-      
-      if [[ "$(uname)" == "Darwin" ]]; then
-        KEY_DIR="/private/tmp/pgsodium"
-      else
-        KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
-      fi
-      KEY_FILE="$KEY_DIR/pgsodium.key"
-      
-      if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
-        echo "Error: Could not create key directory $KEY_DIR" >&2
-        exit 1
-      fi
-      chmod 1777 "$KEY_DIR"
-      
-      if [[ ! -f "$KEY_FILE" ]]; then
-        if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
-          if ! (openssl rand -hex 32 > "$KEY_FILE"); then
-            echo "00000000000000000000000000000000" > "$KEY_FILE"
-            echo "Warning: Using fallback key" >&2
-          fi
-        fi
-        chmod 644 "$KEY_FILE"
-      fi
-      
-      if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
-        cat "$KEY_FILE"
-      else
-        echo "Error: Cannot read key file $KEY_FILE" >&2
-        exit 1
-      fi
-    '';
-
-    # Use the shared setup but with a test-specific name
-    start-postgres-server-bin = makePostgresDevSetup {
-      inherit pkgs;
-      name = "start-postgres-server-test";
-      extraSubstitutions = {
-        PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
-      };
-    };
-
-    getVersionArg = pkg:
-      let
-        name = pkg.version;
-      in
-        if builtins.match "15.*" name != null then "15"
-        else if builtins.match "16.*" name != null then "16"
-        else if builtins.match "17.*" name != null then "orioledb-17"
-        else throw "Unsupported PostgreSQL version: ${name}";
-
-    # Helper function to filter SQL files based on version
-    filterTestFiles = version: dir:
-      let
-        files = builtins.readDir dir;
-        isValidFile = name:
+        makeCheckHarness = pgpkg:
           let
-            isVersionSpecific = builtins.match "z_([0-9]+)_.*" name != null;
-            matchesVersion = 
-              if isVersionSpecific
-              then builtins.match ("z_" + version + "_.*") name != null
-              else true;
+            sqlTests = ./nix/tests/smoke;
+            pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+            pg_regress = basePackages.pg_regress;
+            getkey-script = pkgs.writeScriptBin "pgsodium-getkey" ''
+              #!${pkgs.bash}/bin/bash
+              set -euo pipefail
+              
+              TMPDIR_BASE=$(mktemp -d)
+              
+              if [[ "$(uname)" == "Darwin" ]]; then
+                KEY_DIR="/private/tmp/pgsodium"
+              else
+                KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
+              fi
+              KEY_FILE="$KEY_DIR/pgsodium.key"
+              
+              if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
+                echo "Error: Could not create key directory $KEY_DIR" >&2
+                exit 1
+              fi
+              chmod 1777 "$KEY_DIR"
+              
+              if [[ ! -f "$KEY_FILE" ]]; then
+                if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
+                  if ! (openssl rand -hex 32 > "$KEY_FILE"); then
+                    echo "00000000000000000000000000000000" > "$KEY_FILE"
+                    echo "Warning: Using fallback key" >&2
+                  fi
+                fi
+                chmod 644 "$KEY_FILE"
+              fi
+              
+              if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
+                cat "$KEY_FILE"
+              else
+                echo "Error: Cannot read key file $KEY_FILE" >&2
+                exit 1
+              fi
+            '';
+
+            # Use the shared setup but with a test-specific name
+            start-postgres-server-bin = makePostgresDevSetup {
+              inherit pkgs;
+              name = "start-postgres-server-test";
+              extraSubstitutions = {
+                PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
+              };
+            };
+
+            getVersionArg = pkg:
+              let
+                name = pkg.version;
+              in
+                if builtins.match "15.*" name != null then "15"
+                else if builtins.match "17.*" name != null then "orioledb-17"
+                else throw "Unsupported PostgreSQL version: ${name}";
+
+            # Helper function to filter SQL files based on version
+            filterTestFiles = version: dir:
+              let
+                files = builtins.readDir dir;
+                isValidFile = name:
+                  let
+                    isVersionSpecific = builtins.match "z_([0-9]+)_.*" name != null;
+                    matchesVersion = 
+                      if isVersionSpecific
+                      then builtins.match ("z_" + version + "_.*") name != null
+                      else true;
+                  in
+                  pkgs.lib.hasSuffix ".sql" name && matchesVersion;
+              in
+              pkgs.lib.filterAttrs (name: _: isValidFile name) files;
+
+            # Get the major version for filtering
+            majorVersion = 
+              if builtins.match ".*17.*" pgpkg.version != null 
+              then "17"
+              else "15";
+
+            # Filter SQL test files
+            filteredSqlTests = filterTestFiles majorVersion ./nix/tests/sql;
+            
+            # Convert filtered tests to a sorted list of basenames (without extension)
+            testList = pkgs.lib.mapAttrsToList (name: _: 
+              builtins.substring 0 (pkgs.lib.stringLength name - 4) name
+            ) filteredSqlTests;
+            sortedTestList = builtins.sort (a: b: a < b) testList;
+
           in
-          pkgs.lib.hasSuffix ".sql" name && matchesVersion;
-      in
-      pkgs.lib.filterAttrs (name: _: isValidFile name) files;
+          pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
+            {
+              nativeBuildInputs = with pkgs; [ 
+                coreutils bash perl pgpkg pg_prove pg_regress procps
+                start-postgres-server-bin which getkey-script supabase-groonga
+              ];
+            } ''
+              set -e
 
-    # Get the major version for filtering
-    majorVersion = 
-      if builtins.match ".*17.*" pgpkg.version != null 
-      then "17"
-      else "15";
+              #First we need to create a generic pg cluster for pgtap tests and run those
+              export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
+              PGTAP_CLUSTER=$(mktemp -d)
+              initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+              substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
+                --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
+              echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
+              echo "port = 5435" >> "$PGTAP_CLUSTER"/postgresql.conf
+              echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
+              # Remove timescaledb if running orioledb-17 check
+              echo "I AM ${pgpkg.version}===================================================="
+              if [[ "${pgpkg.version}" == *"17"* ]]; then
+                perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
+              fi
+              #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
+              echo "PGTAP_CLUSTER directory contents:"
+              ls -la "$PGTAP_CLUSTER"
 
-    # Filter SQL test files
-    filteredSqlTests = filterTestFiles majorVersion ./nix/tests/sql;
-    
-    # Convert filtered tests to a sorted list of basenames (without extension)
-    testList = pkgs.lib.mapAttrsToList (name: _: 
-      builtins.substring 0 (pkgs.lib.stringLength name - 4) name
-    ) filteredSqlTests;
-    sortedTestList = builtins.sort (a: b: a < b) testList;
+              # Check if postgresql.conf exists
+              if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
+                  echo "postgresql.conf is missing!"
+                  exit 1
+              fi
 
-  in
-  pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
-    {
-      nativeBuildInputs = with pkgs; [ 
-        coreutils bash perl pgpkg pg_prove pg_regress procps
-        start-postgres-server-bin which getkey-script supabase-groonga
-      ];
-    } ''
-      set -e
-
-      #First we need to create a generic pg cluster for pgtap tests and run those
-      export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
-      PGTAP_CLUSTER=$(mktemp -d)
-      initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
-      substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
-        --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
-      echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
-      echo "port = 5435" >> "$PGTAP_CLUSTER"/postgresql.conf
-      echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
-      # Remove timescaledb if running orioledb-17 check
-      echo "I AM ${pgpkg.version}===================================================="
-      if [[ "${pgpkg.version}" == *"17"* ]]; then
-        perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
-      fi
-      #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
-      echo "PGTAP_CLUSTER directory contents:"
-      ls -la "$PGTAP_CLUSTER"
-
-      # Check if postgresql.conf exists
-      if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-          echo "postgresql.conf is missing!"
-          exit 1
-      fi
-
-      # PostgreSQL startup
-      if [[ "$(uname)" == "Darwin" ]]; then
-      pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p 5435 -d 5" start 2>&1 
-      else
-      mkdir -p "$PGTAP_CLUSTER/sockets"
-      pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p 5435 -d 5" start 2>&1 
-      fi || {
-      echo "pg_ctl failed to start PostgreSQL" 
-      echo "Contents of postgresql.log:"
-      cat "$PGTAP_CLUSTER"/postgresql.log
-      exit 1
-      }
-      for i in {1..60}; do
-        if pg_isready -h localhost -p 5435; then
-          echo "PostgreSQL is ready"
-          break
-        fi
-        sleep 1
-        if [ $i -eq 60 ]; then
-          echo "PostgreSQL is not ready after 60 seconds"
-          echo "PostgreSQL status:"
-          pg_ctl -D "$PGTAP_CLUSTER" status
-          echo "PostgreSQL log content:"
-          cat "$PGTAP_CLUSTER"/postgresql.log
-          exit 1
-        fi
-      done
-      createdb -p 5435 -h localhost --username=supabase_admin testing
-      if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-        echo "Error executing SQL file. PostgreSQL log content:"
-        cat "$PGTAP_CLUSTER"/postgresql.log
-        pg_ctl -D "$PGTAP_CLUSTER" stop
-        exit 1
-      fi
-      SORTED_DIR=$(mktemp -d)
-      for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-        psql -p 5435 -h localhost --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
-      done
-      rm -rf "$SORTED_DIR"
-      pg_ctl -D "$PGTAP_CLUSTER" stop
-      rm -rf $PGTAP_CLUSTER
-      
-      # End of pgtap tests
-      # from here on out we are running pg_regress tests, we use a different cluster for this
-      # which is start by the start-postgres-server-bin script 
-      # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
-
-      # Ensure pgsodium key directory exists with proper permissions
-      if [[ "$(uname)" == "Darwin" ]]; then
-        mkdir -p /private/tmp/pgsodium
-        chmod 1777 /private/tmp/pgsodium
-      fi
-      unset GRN_PLUGINS_DIR
-      ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
-      
-      for i in {1..60}; do
-          if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
-              echo "PostgreSQL is ready"
-              break
-          fi
-          sleep 1
-          if [ $i -eq 60 ]; then
-              echo "PostgreSQL failed to start"
+              # PostgreSQL startup
+              if [[ "$(uname)" == "Darwin" ]]; then
+              pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p 5435 -d 5" start 2>&1 
+              else
+              mkdir -p "$PGTAP_CLUSTER/sockets"
+              pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p 5435 -d 5" start 2>&1 
+              fi || {
+              echo "pg_ctl failed to start PostgreSQL" 
+              echo "Contents of postgresql.log:"
+              cat "$PGTAP_CLUSTER"/postgresql.log
               exit 1
-          fi
-      done
+              }
+              for i in {1..60}; do
+                if pg_isready -h localhost -p 5435; then
+                  echo "PostgreSQL is ready"
+                  break
+                fi
+                sleep 1
+                if [ $i -eq 60 ]; then
+                  echo "PostgreSQL is not ready after 60 seconds"
+                  echo "PostgreSQL status:"
+                  pg_ctl -D "$PGTAP_CLUSTER" status
+                  echo "PostgreSQL log content:"
+                  cat "$PGTAP_CLUSTER"/postgresql.log
+                  exit 1
+                fi
+              done
+              createdb -p 5435 -h localhost --username=supabase_admin testing
+              if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+                echo "Error executing SQL file. PostgreSQL log content:"
+                cat "$PGTAP_CLUSTER"/postgresql.log
+                pg_ctl -D "$PGTAP_CLUSTER" stop
+                exit 1
+              fi
+              SORTED_DIR=$(mktemp -d)
+              for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
+                psql -p 5435 -h localhost --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
+              done
+              rm -rf "$SORTED_DIR"
+              pg_ctl -D "$PGTAP_CLUSTER" stop
+              rm -rf $PGTAP_CLUSTER
+              
+              # End of pgtap tests
+              # from here on out we are running pg_regress tests, we use a different cluster for this
+              # which is start by the start-postgres-server-bin script 
+              # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
 
-      if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
-        echo "Error executing SQL file"
-        exit 1
-      fi
+              # Ensure pgsodium key directory exists with proper permissions
+              if [[ "$(uname)" == "Darwin" ]]; then
+                mkdir -p /private/tmp/pgsodium
+                chmod 1777 /private/tmp/pgsodium
+              fi
+              unset GRN_PLUGINS_DIR
+              ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
+              
+              for i in {1..60}; do
+                  if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
+                      echo "PostgreSQL is ready"
+                      break
+                  fi
+                  sleep 1
+                  if [ $i -eq 60 ]; then
+                      echo "PostgreSQL failed to start"
+                      exit 1
+                  fi
+              done
 
-      mkdir -p $out/regression_output
-      if ! pg_regress \
-        --use-existing \
-        --dbname=postgres \
-        --inputdir=${./nix/tests} \
-        --outputdir=$out/regression_output \
-        --host=localhost \
-        --port=5435 \
-        --user=supabase_admin \
-        ${builtins.concatStringsSep " " sortedTestList}; then
-        echo "pg_regress tests failed"
-        exit 1
-      fi
+              if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+                echo "Error executing SQL file"
+                exit 1
+              fi
 
-      # Copy logs to output
-      for logfile in $(find /tmp -name postgresql.log -type f); do
-        cp "$logfile" $out/postgresql.log
-      done
-      exit 0
-    '';      
+              mkdir -p $out/regression_output
+              if ! pg_regress \
+                --use-existing \
+                --dbname=postgres \
+                --inputdir=${./nix/tests} \
+                --outputdir=$out/regression_output \
+                --host=localhost \
+                --port=5435 \
+                --user=supabase_admin \
+                ${builtins.concatStringsSep " " sortedTestList}; then
+                echo "pg_regress tests failed"
+                exit 1
+              fi
+
+              # Copy logs to output
+              for logfile in $(find /tmp -name postgresql.log -type f); do
+                cp "$logfile" $out/postgresql.log
+              done
+              exit 0
+            '';      
     in
       rec {
         # The list of all packages that can be built with 'nix build'. The list
@@ -834,7 +796,6 @@ makeCheckHarness = pgpkg:
         # flake check'. This is run in the CI system, as well.
         checks = {
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
-          psql_16 = makeCheckHarness basePackages.psql_16.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;
         };
 
