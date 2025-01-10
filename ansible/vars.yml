@@ -11,7 +11,7 @@ postgres_major:
 postgres_release:
   postgresorioledb-17: "17.0.1.012-orioledb"
   postgres15: "15.8.1.022"
-  #postgres16: "16.3.1.028"
+  postgres16: "16.3.1.028"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
