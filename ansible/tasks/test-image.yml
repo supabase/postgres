@@ -67,7 +67,7 @@
     - name: Remove specified extensions from SQL file
       ansible.builtin.command:
         cmd: >
-          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pg_jsonschema\|pg_graphql\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
+          sed -i '/\\ir.*\(timescaledb\|plv8\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
       when: is_psql_oriole
       become: yes
 
@@ -76,8 +76,6 @@
         paths: /tmp/migrations/tests/extensions
         patterns: 
           - '*timescaledb*.sql'
-          - '*postgis*.sql'
-          - '*pgrouting*.sql'
           - '*plv8*.sql'
       register: files_to_remove
       when: is_psql_oriole
