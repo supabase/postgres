@@ -83,3 +83,4 @@ create extension if not exists "uuid-ossp";
 create extension if not exists vector;
 create extension if not exists wrappers;
 create extension if not exists xml2;
+create extension if not exists mysql_fdw;
