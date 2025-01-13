@@ -77,6 +77,8 @@
         patterns: 
           - '*timescaledb*.sql'
           - '*plv8*.sql'
+          - '*postgis*.sql'
+          - '*pgrouting*.sql'
       register: files_to_remove
       when: is_psql_oriole
 
