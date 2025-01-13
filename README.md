@@ -11,6 +11,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 ## Extensions 
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
+| [mysql_fdw](https://github.com/EnterpriseDB/mysql_fdw) | [REL-2_9_2](https://github.com/EnterpriseDB/mysql_fdw/releases/tag/REL-2_9_2) | PostgreSQL foreign data wrapper for MySQL. |
 | [Postgres contrib modules](https://www.postgresql.org/docs/current/contrib.html) | - | Because everyone should enable `pg_stat_statements`. |
 | [PostGIS](https://postgis.net/) | [3.3.2](https://git.osgeo.org/gitea/postgis/postgis/raw/tag/3.3.2/NEWS) | Postgres' most popular extension - support for geographic objects. |
 | [pgRouting](https://pgrouting.org/) | [v3.4.1](https://github.com/pgRouting/pgrouting/releases/tag/v3.4.1) | Extension of PostGIS - provides geospatial routing functionalities. |
