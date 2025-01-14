@@ -112,41 +112,6 @@ MIGRATIONS_DIR=@MIGRATIONS_DIR@
 POSTGRESQL_SCHEMA_SQL=@POSTGRESQL_SCHEMA_SQL@
 PGBOUNCER_AUTH_SCHEMA_SQL=@PGBOUNCER_AUTH_SCHEMA_SQL@
 STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
-psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres <<-EOSQL
-    create role postgres superuser login password '$PGPASSWORD';
-    alter database postgres owner to postgres;
-EOSQL
-
-# Use custom migration script if provided
-if [ -n "$MIGRATION_FILE" ]; then
-    echo "$0: running user-provided migration file $MIGRATION_FILE"
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$MIGRATION_FILE" postgres
-else
-    # Run default init scripts
-    for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
-        echo "$0: running $sql"
-        psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -f "$sql" postgres
-    done
-
-    # Alter user password
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
-
-    # Run additional schema files
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
-
-    # Run migrations as superuser
-    for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
-        echo "$0: running $sql"
-        psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$sql" postgres
-    done
-
-    # Run PostgreSQL schema
-    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres
-fi
-
-# Optional: Reset stats if needed
-# psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U supabase_admin -p "$PORTNO" -h localhost -c 'SELECT extensions.pg_stat_statements_reset(); SELECT pg_stat_reset();' postgres || true
 
 # Start interactive psql session
 exec psql -U "$PSQL_USER" -p "$PORTNO" -h localhost postgres
