@@ -82,6 +82,25 @@ resources:
                                         name: ':path'
                                         string_match:
                                           contains: apikey=supabase_admin_key
+                        origin_protection_key_missing:
+                          permissions:
+                            - any: true
+                          principals:
+                            - not_id:
+                                header:
+                                  name: sb-opk
+                                  present_match: true
+                        origin_protection_key_not_valid:
+                          permissions:
+                            - any: true
+                          principals:
+                            - not_id:
+                                or_ids:
+                                  ids:
+                                    - header:
+                                        name: sb-opk
+                                        string_match:
+                                          exact: supabase_origin_protection_key
                 - name: envoy.filters.http.lua
                   typed_config:
                     '@type': >-
