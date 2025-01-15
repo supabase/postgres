@@ -156,7 +156,7 @@ trim_schema() {
 }
 overmind_start() {
         cat > Procfile << EOF
-postgres_${PSQL_VERSION}: exec nix run "$FLAKE_URL#start-server" "$PSQL_VERSION"
+postgres_${PSQL_VERSION}: exec nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations
 EOF
     overmind start -D
     echo "Waiting for overmind socket..."
