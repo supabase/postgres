@@ -25,6 +25,13 @@ CREATE SCHEMA extensions;
 
 
 --
+-- Name: graphql; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA graphql;
+
+
+--
 -- Name: graphql_public; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -92,6 +99,20 @@ CREATE EXTENSION IF NOT EXISTS orioledb WITH SCHEMA public;
 --
 
 COMMENT ON EXTENSION orioledb IS 'OrioleDB -- the next generation transactional engine';
+
+
+--
+-- Name: pg_graphql; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA graphql;
+
+
+--
+-- Name: EXTENSION pg_graphql; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_graphql IS 'pg_graphql: GraphQL support';
 
 
 --
@@ -485,39 +506,6 @@ COMMENT ON FUNCTION extensions.set_graphql_placeholder() IS 'Reintroduces placeh
 
 
 --
--- Name: graphql(text, text, jsonb, jsonb); Type: FUNCTION; Schema: graphql_public; Owner: -
---
-
-CREATE FUNCTION graphql_public.graphql("operationName" text DEFAULT NULL::text, query text DEFAULT NULL::text, variables jsonb DEFAULT NULL::jsonb, extensions jsonb DEFAULT NULL::jsonb) RETURNS jsonb
-    LANGUAGE plpgsql
-    AS $$
-    DECLARE
-        server_version float;
-    BEGIN
-        server_version = (SELECT (SPLIT_PART((select version()), ' ', 2))::float);
-
-        IF server_version >= 14 THEN
-            RETURN jsonb_build_object(
-                'errors', jsonb_build_array(
-                    jsonb_build_object(
-                        'message', 'pg_graphql extension is not enabled.'
-                    )
-                )
-            );
-        ELSE
-            RETURN jsonb_build_object(
-                'errors', jsonb_build_array(
-                    jsonb_build_object(
-                        'message', 'pg_graphql is only available on projects running Postgres 14 onwards.'
-                    )
-                )
-            );
-        END IF;
-    END;
-$$;
-
-
---
 -- Name: get_auth(text); Type: FUNCTION; Schema: pgbouncer; Owner: -
 --
 
@@ -625,7 +613,7 @@ CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
 
 SET default_tablespace = '';
 
-SET default_table_access_method = heap;
+SET default_table_access_method = orioledb;
 
 --
 -- Name: audit_log_entries; Type: TABLE; Schema: auth; Owner: -
