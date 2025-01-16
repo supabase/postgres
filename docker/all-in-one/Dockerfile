@@ -156,8 +156,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ####################
 # Install salt
 ####################
-ENV DEBIAN_FRONTEND noninteractive
-ENV SALT_VERSION 3006
+ENV DEBIAN_FRONTEND=noninteractive
+ENV SALT_VERSION=3006
 
 # Install one-dir salt
 RUN cat <<EOF > /etc/apt/preferences.d/salt-pin-1001
