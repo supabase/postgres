@@ -160,13 +160,16 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV SALT_VERSION 3006
 
 # Install one-dir salt
+RUN cat <<EOF > /etc/apt/preferences.d/salt-pin-1001
+Package: salt-*
+Pin: version ${SALT_VERSION}.*
+Pin-Priority: 1001
+EOF
+
 RUN mkdir /etc/apt/keyrings \
-    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023-arm.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023-arm.gpg arch=arm64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/arm64/$SALT_VERSION focal main" | tee /etc/apt/sources.list.d/salt.list \
-    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023-amd.gpg https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023-amd.gpg arch=amd64] https://repo.saltproject.io/salt/py3/ubuntu/20.04/amd64/$SALT_VERSION focal main" | tee -a /etc/apt/sources.list.d/salt.list \
-    && apt-get clean && apt-get update \
-    && apt-get install -y salt-minion
+    && curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring.pgp https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public \
+    && curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources > /etc/apt/sources.list.d/salt.sources \
+    && apt-get clean && apt-get update && apt-get install -y salt-minion
 
 ADD docker/all-in-one/etc/salt/minion /etc/salt/minion
 
