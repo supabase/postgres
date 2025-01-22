@@ -24,10 +24,8 @@ elif [ -n "$(command -v apt-get)" ]; then
  	autoconf \
 	autotools-dev \
  	cmake-data \
-	cpp-8  \
 	cpp-9  \
 	cpp-10  \
-	gcc-8  \
 	gcc-9  \
 	gcc-10  \
 	git  \
@@ -36,7 +34,6 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libicu-dev \
 	libcgal-dev \
 	libgcc-9-dev \
-	libgcc-8-dev \
  	ansible
 
   add-apt-repository --yes --remove ppa:ansible/ansible
