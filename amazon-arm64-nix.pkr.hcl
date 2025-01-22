@@ -1,6 +1,6 @@
 variable "ami" {
   type    = string
-  default = "ubuntu/images/hvm-ssd/ubuntu-noble-24.04-arm64-server-*"
+  default = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"
 }
 
 variable "profile" {
