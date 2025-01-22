@@ -157,9 +157,12 @@ function disable_fsck {
 
 # Don't request hostname during boot but set hostname
 function setup_hostname {
-	sudo sed -i 's/hostname: .*/hostname: "ubuntu"/g' /etc/netplan/*.yaml
 	echo "ubuntu" > /etc/hostname
 	chmod 644 /etc/hostname
+	# Set the hostname
+
+	# Prevent cloud-init from changing the hostname
+	sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg
 }
 
 # Set options for the default interface
