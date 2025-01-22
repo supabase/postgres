@@ -157,8 +157,7 @@ function disable_fsck {
 
 # Don't request hostname during boot but set hostname
 function setup_hostname {
-	sed -i 's/gethostname()/ubuntu /g' /etc/dhcp/dhclient.conf
-	sed -i 's/host-name,//g' /etc/dhcp/dhclient.conf
+	sudo sed -i 's/hostname: .*/hostname: "ubuntu"/g' /etc/netplan/*.yaml
 	echo "ubuntu" > /etc/hostname
 	chmod 644 /etc/hostname
 }
