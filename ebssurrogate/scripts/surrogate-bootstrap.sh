@@ -110,11 +110,6 @@ function format_and_mount_rootfs {
 	fi
 	
 	mkfs.ext4 /dev/xvdh
-
-	# Explicitly reserving 100MiB worth of blocks for the data volume
-	RESERVED_DATA_VOLUME_BLOCK_COUNT=$((100 * 1024 * 1024 / 4096))
-	tune2fs -r $RESERVED_DATA_VOLUME_BLOCK_COUNT /dev/xvdh
-
 	mkdir -p /mnt/data
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
@@ -180,10 +175,13 @@ function setup_chroot_environment {
 	# Copy migrations
 	cp -r /tmp/migrations /mnt/tmp/
 
+	# Copy unit tests 
+	cp -r /tmp/unit-tests /mnt/tmp/
+
 	# Copy the bootstrap script into place and execute inside chroot
-	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
-	chroot /mnt /tmp/chroot-bootstrap-nix.sh
-	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
+	cp /tmp/chroot-bootstrap.sh /mnt/tmp/chroot-bootstrap.sh
+	chroot /mnt /tmp/chroot-bootstrap.sh
+	rm -f /mnt/tmp/chroot-bootstrap.sh
 	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/root/supabase-release
 
 	# Copy the nvme identification script into /sbin inside the chroot
@@ -216,10 +214,7 @@ EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
-	--extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false} ' \
-	--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
-	$ARGS
+	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml --extra-vars '{"debpkg_mode": true, "nixpkg_mode": false, "stage2_nix": false}' $ARGS
 }
 
 function update_systemd_services {
@@ -228,10 +223,11 @@ function update_systemd_services {
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/vector.service
 	ln -s /etc/systemd/system/vector.timer /mnt/etc/systemd/system/multi-user.target.wants/vector.timer
 
-	# Disable services during first boot.
+	# Disable apparmor during first boot
 	rm -f /mnt/etc/systemd/system/sysinit.target.wants/apparmor.service
+
+	# Disable postgresql service during first boot.
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/postgresql.service
-	rm -f /mnt/etc/systemd/system/multi-user.target.wants/salt-minion.service
 
 	# Disable auditd
 	rm -f /mnt/etc/systemd/system/multi-user.target.wants/auditd.service

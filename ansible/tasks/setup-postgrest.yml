@@ -8,7 +8,7 @@
 
 - name: PostgREST - add Postgres PPA main
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: present
     filename: postgresql-pgdg
 
@@ -36,7 +36,7 @@
 
 - name: PostgREST - remove Postgres PPA
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: absent
 
 - name: postgis - ensure dependencies do not get autoremoved
