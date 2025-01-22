@@ -12,7 +12,7 @@
 
 - name: Kong - download deb package
   get_url:
-    url: "https://packages.konghq.com/public/gateway-2839/deb/ubuntu/pool/{{ kong_release_target }}/main/k/ko/kong_3.9.0/{{ kong_deb }}"
+    url: "https://packages.konghq.com/public/gateway-39/deb/ubuntu/pool/{{ kong_release_target }}/main/k/ko/kong_3.9.0/{{ kong_deb }}"
     dest: /tmp/kong.deb
     checksum: "{{ kong_deb_checksum }}"
 
