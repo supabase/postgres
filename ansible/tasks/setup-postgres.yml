@@ -23,7 +23,7 @@
 
 - name: Postgres - install server
   apt:
-    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg20.04+1
+    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg24.04+1
     install_recommends: no
   when: debpkg_mode
 
