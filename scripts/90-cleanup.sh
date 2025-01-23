@@ -39,8 +39,7 @@ elif [ -n "$(command -v apt-get)" ]; then
   add-apt-repository --yes --remove ppa:ansible/ansible
 
   source /etc/os-release
-  apt-get -y remove --purge linux-headers-5.11.0-1021-aws
-
+  
   apt-get -y update
   apt-get -y upgrade
   apt-get -y autoremove
