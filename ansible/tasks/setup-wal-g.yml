@@ -58,7 +58,6 @@
     owner: wal-g
     group: wal-g
     mode: '0664'
-  when: stage2_nix
 
 - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
   template:
@@ -67,7 +66,6 @@
     mode: 0664
     owner: postgres
     group: postgres
-  when: stage2_nix
 
 - name: Add script to be run for restore_command
   template:
@@ -76,7 +74,6 @@
     mode: 0500
     owner: postgres
     group: postgres
-  when: stage2_nix
 
 - name: Add helper script for wal_fetch.sh
   template:
@@ -84,7 +81,6 @@
     dest: /root/wal_change_ownership.sh
     mode: 0700
     owner: root
-  when: stage2_nix
 
 - name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
   become: yes
