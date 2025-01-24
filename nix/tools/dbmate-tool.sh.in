@@ -168,7 +168,7 @@ EOF
     while [ $count -lt $max_wait ]; do
         if [ -S "./.overmind.sock" ]; then
             # Found the socket, give it a moment to be ready
-            sleep 2
+            sleep 5
             echo "Socket file found and ready"
             break
         fi
