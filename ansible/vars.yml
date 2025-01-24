@@ -33,8 +33,8 @@ salt_minion_version: 3007
 
 golang_version: "1.22.11"
 golang_version_checksum:
-  arm64: sha256:9ebfcab26801fa4cf0627c6439db7a4da4d3c6766142a3dd83508240e4f21031
-  amd64: sha256:0fc88d966d33896384fbde56e9a8d80a305dc17a9f48f1832e061724b1719991
+  arm64: sha256:0fc88d966d33896384fbde56e9a8d80a305dc17a9f48f1832e061724b1719991
+  amd64: sha256:9ebfcab26801fa4cf0627c6439db7a4da4d3c6766142a3dd83508240e4f21031
 
 envoy_release: 1.28.0
 envoy_release_checksum: sha1:b0a06e9cfb170f1993f369beaa5aa9d7ec679ce5
