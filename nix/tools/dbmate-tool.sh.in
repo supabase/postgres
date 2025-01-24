@@ -146,6 +146,24 @@ wait_for_postgres() {
     return 1
 }
 
+check_orioledb_ready() {
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres -c "SELECT * FROM pg_am WHERE amname = 'orioledb'" | grep -q orioledb; then
+            echo "Orioledb extension is ready!"
+            return 0
+        fi
+        echo "Waiting for orioledb to be ready (attempt $attempt/$max_attempts)..."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    echo "Orioledb failed to initialize after $max_attempts attempts"
+    return 1
+}
+
 trim_schema() {
     case "$CURRENT_SYSTEM" in
     "x86_64-darwin"|"aarch64-darwin")
@@ -214,6 +232,13 @@ migrate_version() {
     if ! wait_for_postgres; then
         echo "Failed to connect to PostgreSQL server"
         exit 1
+    fi
+    
+    if [ "$PSQL_VERSION" = "orioledb-17" ]; then
+        if ! check_orioledb_ready; then
+            echo "Failed to initialize orioledb extension"
+            exit 1
+        fi
     fi
 
     echo "PostgreSQL server is ready"
