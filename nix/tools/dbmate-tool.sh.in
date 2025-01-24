@@ -19,28 +19,31 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 cleanup() {
     echo "Cleaning up..."
     
-    # Kill overmind processes first
+    # Kill postgres processes first
+    if pgrep -f "postgres" >/dev/null; then
+        pkill -TERM postgres || true
+        sleep 2
+    fi
+
+    # Then kill overmind
     if [ -S "./.overmind.sock" ]; then
         overmind kill || true
         sleep 2
     fi
 
-    # Kill any remaining postgres processes
-    echo "Killing any remaining postgres processes..."
-    pkill -9 postgres || true
-    pkill -9 -f "tmux.*overmind.*postgresql" || true
-    
-    # Extra cleanup for tmux sessions
+    # Kill tmux sessions explicitly
+    pkill -f "tmux.*overmind.*postgresql" || true
     tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
+
+    # Force kill any stragglers
+    pkill -9 -f "(postgres|tmux.*overmind.*postgresql)" || true
     
-    # Remove socket and Procfile
     rm -f .overmind.sock Procfile
-    
-    # Verify cleanup
-    remaining=$(ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep || true)
-    if [ ! -z "$remaining" ]; then
-        echo "Warning: Some processes might still be running:"
-        echo "$remaining"
+
+    # Final verification
+    if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
+        ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
+        return 1
     fi
 }
 
@@ -174,6 +177,25 @@ EOF
         count=$((count + 1))
     done
 }
+perform_dump() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        echo "Attempting dbmate dump (attempt $attempt/$max_attempts)"
+        
+        if dbmate dump; then
+            return 0
+        fi
+        
+        echo "Dump attempt $attempt failed, waiting before retry..."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+    
+    echo "All dump attempts failed"
+    return 1
+}
 migrate_version() {
     echo "PSQL_VERSION: $PSQL_VERSION"
     overmind kill || true
@@ -233,7 +255,7 @@ EOSQL
     fi
 
     echo "Running dbmate dump with $PSQLBIN"
-    dbmate dump
+    perform_dump
 
     echo "CURRENT_SYSTEM: $CURRENT_SYSTEM"
     if [ -f "./db/schema.sql" ]; then
