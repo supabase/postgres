@@ -293,6 +293,9 @@ runcmd:
     )[0]
     instance.wait_until_running()
 
+    # Increase wait time before starting health checks
+    sleep(30)  # Wait for 30 seconds to allow services to start
+
     ec2logger = EC2InstanceConnectLogger(debug=False)
     temp_key = EC2InstanceConnectKey(ec2logger.get_logger())
     ec2ic = boto3.client("ec2-instance-connect", region_name="ap-southeast-1")
