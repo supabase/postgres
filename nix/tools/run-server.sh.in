@@ -198,7 +198,8 @@ echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
 cp "$READREPL_CONFIG_FILE" "$DATDIR/read-replica.conf"
-cp -r "$EXTENSION_CUSTOM_SCRIPTS" "$DATDIR"
+mkdir -p "$DATDIR/extension-custom-scripts"
+cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
 # Configure supautils
 sed "s|supautils.privileged_extensions_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.privileged_extensions_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
