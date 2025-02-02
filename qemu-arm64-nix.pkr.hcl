@@ -85,8 +85,8 @@ source "qemu" "cloudimg" {
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd"],
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=AAVMF_VARS.fd"],
     ["-drive", "file=output-cloudimg/packer-cloudimg,format=qcow2"],
-    ["-drive", "file=seeds-cloudimg.iso,format=raw"],
-    ["--enable-kvm"]
+    ["-drive", "file=seeds-cloudimg.iso,format=raw"]
+    # ["--enable-kvm"]
   ]
   shutdown_command       = "sudo -S shutdown -P now"
   ssh_handshake_attempts = 500
@@ -95,7 +95,7 @@ source "qemu" "cloudimg" {
   ssh_username           = "ubuntu"
   ssh_wait_timeout       = "1h"
   use_backing_file       = false
-  accelerator            = "kvm"
+  # accelerator            = "kvm"
 }
 
 build {
