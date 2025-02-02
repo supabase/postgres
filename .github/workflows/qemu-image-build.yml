@@ -35,13 +35,6 @@ jobs:
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-        # include:
-        #   # TODO (darora): change to use non-self-hosted runners, since they now allow nested virtualization
-        #   - runner: arm-runner
-        #     arch: arm64
-        #     ubuntu_release: focal
-        #     ubuntu_version: 20.04
-        #     mcpu: neoverse-n1
     runs-on:
       group: pg-arm-large
     timeout-minutes: 150
@@ -71,10 +64,9 @@ jobs:
             exit 1
           fi
 
-      - name: Get binaries
+      - name: Install dependencies
         run: |
-          hash
-          echo $PATH
+          sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm
 
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
