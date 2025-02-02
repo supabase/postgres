@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Set PostgreSQL versions - only builds pg15 atm
@@ -54,6 +54,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - name: Get binaries
+        run: |
+          hash
+          echo $PATH
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       # TODO (darora): might need to temporarily disable this
@@ -66,11 +71,17 @@ jobs:
             exit 1
           fi
 
+      - name: Get binaries
+        run: |
+          hash
+          echo $PATH
+
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
           PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
@@ -78,10 +89,6 @@ jobs:
           echo 'postgresql_major = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
-
-      - name: Get binaries
-        run: |
-          hash
 
       - name: Build QEMU artifact
         run: |
