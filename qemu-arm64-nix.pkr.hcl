@@ -21,6 +21,11 @@ variable "postgres-version" {
   default = ""
 }
 
+variable "postgres-major-version" {
+  type = string
+  default = ""
+}
+
 variable "git-head-version" {
   type = string
   default = "unknown"
@@ -124,7 +129,7 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
+      "POSTGRES_MAJOR_VERSION=${var.postgres-major-version}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
       "GIT_SHA=${var.git_sha}"
     ]
