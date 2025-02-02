@@ -82,7 +82,7 @@ jobs:
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo 'postgres_major_version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
