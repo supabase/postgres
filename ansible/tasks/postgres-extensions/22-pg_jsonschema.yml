@@ -1,3 +1,0 @@
-- name: install pg_jsonschema
-  ansible.builtin.apt:
-    deb: "https://github.com/supabase/pg_jsonschema/releases/download/v{{ pg_jsonschema_release }}/pg_jsonschema-v{{ pg_jsonschema_release }}-pg{{ postgresql_major }}-{{ platform }}-linux-gnu.deb"
