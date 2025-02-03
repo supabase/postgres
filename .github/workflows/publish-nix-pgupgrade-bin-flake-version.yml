@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+      
+      - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Grab release version
         id: process_release_version
