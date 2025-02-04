@@ -97,6 +97,10 @@ jobs:
           export PACKER_LOG=1
           packer build -var "git_sha=$(UPSTREAM_NIX_GIT_SHA)" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
 
+      - name: Install dependencies
+        run: |
+          ls -lh output-cloudimg/
+
       - name: Grab release version
         id: process_release_version
         run: |
@@ -136,8 +140,8 @@ jobs:
           push: true
           tags: ${{ steps.process_release_version.outputs.version }}
           platforms: linux/arm64
-          cache-from: type=gha,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ github.ref_name }}-qemu
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-qemu
 
       # - name: Upload software manifest to s3 staging
       #   run: |
