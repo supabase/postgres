@@ -79,7 +79,7 @@ source "qemu" "cloudimg" {
   memory         = 40000
   qemu_binary    = "qemu-system-aarch64"
   qemuargs = [
-    ["-machine", "virt"],
+    ["-machine", "virt,gic-version=3"],
     ["-cpu", "host"],
     ["-device", "virtio-gpu-pci"],
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd"],
