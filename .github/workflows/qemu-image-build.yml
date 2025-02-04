@@ -65,6 +65,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
 
       - name: Set PostgreSQL version environment variable
