@@ -60,7 +60,7 @@ jobs:
 
       - name: enable KVM support
         run: |
-          sudo ls /dev/kvm
+          sudo chown runner /dev/kvm
           sudo chmod 666 /dev/kvm
 
       - name: Install dependencies
