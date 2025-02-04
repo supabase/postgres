@@ -134,7 +134,7 @@ jobs:
         with:
           file: Dockerfile-kubernetes
           push: true
-          tags: ${{ steps.process_release_version.outputs.version }}
+          tags: public.ecr.aws/w9p6e7k7/supabase/postgres-v3:${{ steps.process_release_version.outputs.version }}
           platforms: linux/arm64
           context: .
 
