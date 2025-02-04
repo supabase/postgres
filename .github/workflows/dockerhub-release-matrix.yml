@@ -157,7 +157,7 @@ jobs:
         run: |
           echo "${{ steps.output_version.outputs.result }}" >> results.txt  # Append results
       - name: Upload Results Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: merge_results-${{ matrix.version }}
           path: results.txt
