@@ -84,11 +84,11 @@ jobs:
           echo "" >> common-nix.vars.pkr.hcl
 
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
-          sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+      # - name: Install dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+      #     sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
 
       - name: Build QEMU artifact
         run: |
