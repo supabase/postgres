@@ -80,7 +80,7 @@ source "qemu" "cloudimg" {
   qemu_binary    = "qemu-system-aarch64"
   qemuargs = [
     ["-machine", "virt"],
-    # ["-cpu", "host"],
+    ["-cpu", "host"],
     ["-device", "virtio-gpu-pci"],
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd"],
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=AAVMF_VARS.fd"],
