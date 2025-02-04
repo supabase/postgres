@@ -48,7 +48,6 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # TODO (darora): might need to temporarily disable this
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
@@ -90,12 +89,11 @@ jobs:
           packer build -var "git_sha=$(UPSTREAM_NIX_GIT_SHA)" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
           # packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
-      # TODO (darora): publishing things is temporarily disabled
-      # - name: Grab release version
-      #   id: process_release_version
-      #   run: |
-      #     VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-      #     echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       # - name: Create nix flake revision tarball
       #   run: |
@@ -106,11 +104,34 @@ jobs:
       #     echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
       #     tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
 
-      # - name: configure aws credentials - staging
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-      #     aws-region: "us-east-1"
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - run: docker context create builders
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          endpoint: builders
+
+      - name: Login to ECR
+        uses: docker/login-action@v2
+        with:
+          registry: public.ecr.aws
+
+      - id: build
+        uses: docker/build-push-action@v5
+        with:
+          file: Dockerfile-kubernetes
+          push: true
+          target: production
+          tags: ${{ steps.process_release_version.outputs.version }}
+          platforms: linux/arm64
+          cache-from: type=gha,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
+
 
       # - name: Upload software manifest to s3 staging
       #   run: |
