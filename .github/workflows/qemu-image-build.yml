@@ -73,8 +73,8 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && mv yq /home/runner/.local/bin/
-          PG_VERSION=$(yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq
+          PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
