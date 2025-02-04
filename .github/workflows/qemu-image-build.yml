@@ -14,8 +14,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL versions - only builds pg15 atm
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[0]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
+    needs: prepare
+    strategy:
+      matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
     runs-on: arm-native-runner
     timeout-minutes: 150
     permissions:
@@ -27,7 +46,22 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - name: Get binaries
+        run: |
+          hash
+          echo $PATH
+
       - uses: DeterminateSystems/nix-installer-action@main
+
+      # TODO (darora): might need to temporarily disable this
+      - name: Run checks if triggered manually
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          if [[ -z $SUFFIX ]] ; then
+            echo "Version must include non-numeric characters if built manually."
+            exit 1
+          fi
 
       - name: enable KVM support
         run: |
