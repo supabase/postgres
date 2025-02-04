@@ -195,7 +195,7 @@ jobs:
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
           '
       - name: Download Results Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           pattern: merge_results-*
       - name: Combine Results
