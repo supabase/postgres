@@ -134,7 +134,6 @@ jobs:
         with:
           file: Dockerfile-kubernetes
           push: true
-          target: production
           tags: ${{ steps.process_release_version.outputs.version }}
           platforms: linux/arm64
           cache-from: type=gha,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
