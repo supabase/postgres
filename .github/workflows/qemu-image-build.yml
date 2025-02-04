@@ -62,18 +62,19 @@ jobs:
           sudo chown runner /dev/kvm
           sudo chmod 666 /dev/kvm
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
-          cd && curl -L "https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_$(dpkg --print-architecture).zip" -o packer.zip && unzip packer.zip  && rm -f packer.zip  && sudo mv packer /usr/local/bin/
+      # - name: Install dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+      #     cd && curl -L "https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_$(dpkg --print-architecture).zip" -o packer.zip && unzip packer.zip  && rm -f packer.zip  && sudo mv packer /usr/local/bin/
 
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && sudo mv yq /usr/local/bin
+          PG_VERSION=$(yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
@@ -87,7 +88,6 @@ jobs:
           GIT_SHA=${{github.sha}}
           export PACKER_LOG=1
           packer build -var "git_sha=$(UPSTREAM_NIX_GIT_SHA)" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
-          # packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -131,7 +131,6 @@ jobs:
           platforms: linux/arm64
           cache-from: type=gha,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-qemu-${{ matrix.arch }}
-
 
       # - name: Upload software manifest to s3 staging
       #   run: |
