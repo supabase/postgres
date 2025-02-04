@@ -35,8 +35,7 @@ jobs:
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-    runs-on:
-      group: pg-arm-large
+    runs-on: arm-native-runner
     timeout-minutes: 150
     permissions:
       contents: write
