@@ -46,11 +46,6 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - name: Get binaries
-        run: |
-          hash
-          echo $PATH
-
       - uses: DeterminateSystems/nix-installer-action@main
 
       # TODO (darora): might need to temporarily disable this
