@@ -209,6 +209,8 @@ sed -e "1i\\
 include = '$DATDIR/supautils.conf'" \
 -e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
+-e "\$a\\
+vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|data_directory = '/var/lib/postgresql/data'|data_directory = '$DATDIR'|" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \

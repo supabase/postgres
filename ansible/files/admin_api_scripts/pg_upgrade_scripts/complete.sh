@@ -150,6 +150,43 @@ EOF
 
         run_sql -c "$PATCH_PGMQ_QUERY"
         run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';"
+
+        # Patch to handle upgrading to pgsodium-less Vault
+        REENCRYPT_VAULT_SECRETS_QUERY=$(cat <<EOF
+        DO \$\$
+        BEGIN
+          IF EXISTS (SELECT FROM pg_available_extension_versions WHERE name = 'supabase_vault' AND version = '0.3.0')
+            AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
+          THEN
+            IF (SELECT extversion FROM pg_extension WHERE extname = 'supabase_vault') != '0.2.8' THEN
+              GRANT USAGE ON SCHEMA vault TO postgres WITH GRANT OPTION;
+              GRANT SELECT, DELETE ON vault.secrets, vault.decrypted_secrets TO postgres WITH GRANT OPTION;
+              GRANT EXECUTE ON FUNCTION vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt TO postgres WITH GRANT OPTION;
+            END IF;
+            -- Do an explicit IF EXISTS check to avoid referencing pgsodium objects if the project already migrated away from using pgsodium.
+            IF EXISTS (SELECT FROM vault.secrets WHERE key_id IS NOT NULL) THEN
+              UPDATE vault.secrets s
+              SET
+                secret = encode(
+                  vault._crypto_aead_det_encrypt(
+                    message := pgsodium.crypto_aead_det_decrypt(decode(s.secret, 'base64'), convert_to(s.id || s.description || s.created_at || s.updated_at, 'utf8'), s.key_id, s.nonce),
+                    additional := convert_to(s.id::text, 'utf8'),
+                    key_id := 0,
+                    context := 'pgsodium'::bytea,
+                    nonce := s.nonce
+                  ),
+                  'base64'
+                ),
+                key_id = NULL
+              WHERE
+                key_id IS NOT NULL;
+            END IF;
+          END IF;
+        END
+        \$\$;
+EOF
+        )
+        run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY"
     fi
 
     run_sql -c "grant pg_read_all_data, pg_signal_backend to postgres"
