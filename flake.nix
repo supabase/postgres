@@ -670,8 +670,6 @@
               export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
               PGTAP_CLUSTER=$(mktemp -d)
               initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
-              substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
-                --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
               echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
               echo "port = 5435" >> "$PGTAP_CLUSTER"/postgresql.conf
               echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
