@@ -18,122 +18,41 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
-
-    # 1. Gracefully stop Overmind if it's running
+    
+    # First, gracefully stop Overmind if it's running
     if [ -S "./.overmind.sock" ]; then
         echo "Stopping Overmind gracefully..."
-        if overmind quit; then
-            echo "Overmind stopped successfully"
-        else
-            echo "Warning: Overmind quit command failed"
-        fi
-        
-        # Wait for Overmind to fully shut down
-        max_wait=30  # Increased from 10 to 30 seconds
-        count=0
-        while [ -S "./.overmind.sock" ] && [ $count -lt $max_wait ]; do
-            echo "Waiting for Overmind socket to close (attempt $count/$max_wait)..."
-            sleep 1
-            count=$((count + 1))
-        done
-
-        # Force remove the socket file if it still exists
-        if [ -S "./.overmind.sock" ]; then
-            echo "Warning: Overmind socket still exists after waiting, forcefully removing..."
-            rm -f ./.overmind.sock
-        else
-            echo "Overmind socket closed successfully"
-        fi
+        overmind quit || true
+        sleep 5  # Give Overmind time to shut down
     fi
 
-    # 2. Gracefully stop PostgreSQL using pg_ctl if possible
+    # Stop PostgreSQL processes gracefully
     if pgrep -f "postgres" >/dev/null; then
-        echo "Attempting to stop PostgreSQL gracefully..."
-        
-        # Improved logic to find PostgreSQL data directory
-        PGDATA=$(ps aux | grep postgres | grep -v grep | grep -oP '(?<= -D ).*?(?=\s)' || true)
-        
-        if [ -n "$PGDATA" ] && [ -d "$PGDATA" ]; then
-            # Use pg_ctl for graceful shutdown if available
-            if command -v "${PSQLBIN}/pg_ctl" >/dev/null; then
-                echo "Using pg_ctl to stop PostgreSQL..."
-                "${PSQLBIN}/pg_ctl" -D "$PGDATA" stop -m smart
-                
-                # Wait for PostgreSQL to shut down
-                max_wait=60  # Increased from 30 to 60 seconds
-                count=0
-                while pgrep -f "postgres" >/dev/null && [ $count -lt $max_wait ]; do
-                    echo "Waiting for PostgreSQL to stop (attempt $count/$max_wait)..."
-                    sleep 1
-                    count=$((count + 1))
-                done
-                
-                if pgrep -f "postgres" >/dev/null; then
-                    echo "Warning: PostgreSQL did not shut down gracefully, attempting fast shutdown..."
-                    "${PSQLBIN}/pg_ctl" -D "$PGDATA" stop -m fast
-                    sleep 5
-                fi
-            else
-                echo "Warning: pg_ctl not found, falling back to signal-based shutdown"
-                pkill -TERM postgres || true
-                sleep 5
-            fi
-        else
-            echo "Warning: Could not determine PostgreSQL data directory, using enhanced signal-based shutdown"
-            
-            # Enhanced shutdown with multiple signals
-            pkill -TERM postgres || true
-            sleep 5
-            if pgrep -f "postgres" >/dev/null; then
-                pkill -INT postgres || true
-                sleep 5
-                if pgrep -f "postgres" >/dev/null; then
-                    pkill -KILL postgres || true
-                fi
-            fi
-        fi
+        echo "Stopping PostgreSQL gracefully..."
+        pkill -TERM postgres || true
+        sleep 5  # Wait for PostgreSQL to shut down
     fi
 
-    # 3. Clean up tmux sessions gracefully
+    # Clean up any remaining tmux sessions
     if tmux ls 2>/dev/null | grep 'overmind'; then
         echo "Cleaning up tmux sessions..."
-        tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | while IFS= read -r session; do
-            echo "Stopping tmux session: $session"
-            tmux send-keys -t "$session" C-c  # Send Ctrl+C to gracefully stop processes
-            sleep 2
-            tmux kill-session -t "$session" || true
-        done
+        tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
         sleep 2
     fi
 
-    # 4. Final verification and cleanup
+    # Final cleanup: Force kill if necessary (as a last resort)
     if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-        echo "Warning: Some processes are still running after graceful shutdown attempts:"
-        ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
-        
-        # More aggressive cleanup
-        echo "Sending SIGTERM to remaining processes..."
-        pkill -TERM -f "(postgres|overmind|tmux.*postgresql)" || true
-        sleep 5
-        
-        if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-            echo "Sending SIGINT to remaining processes..."
-            pkill -INT -f "(postgres|overmind|tmux.*postgresql)" || true
-            sleep 5
-            
-            if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-                echo "Force killing remaining processes..."
-                pkill -KILL -f "(postgres|overmind|tmux.*postgresql)" || true
-            fi
-        fi
+        echo "Force killing remaining processes..."
+        pkill -9 -f "(postgres|overmind|tmux.*postgresql)" || true
+        sleep 2
     fi
 
     # Remove socket and Procfile
     rm -f .overmind.sock Procfile
 
-    # Final verification
+    # Verify cleanup
     if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-        echo "Error: Cleanup incomplete. Remaining processes:"
+        echo "Warning: Some processes could not be cleaned up:"
         ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
         return 1
     else
