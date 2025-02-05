@@ -196,7 +196,7 @@ perform_dump() {
 
 migrate_version() {
     echo "PSQL_VERSION: $PSQL_VERSION"
-    pkill -f "postgres" || true  # Ensure PostgreSQL is stopped before starting
+    #pkill -f "postgres" || true  # Ensure PostgreSQL is stopped before starting
     PSQLBIN=$(nix build --no-link "$FLAKE_URL#psql_$PSQL_VERSION/bin" --json | jq -r '.[].outputs.out + "/bin"')
     echo "Using PostgreSQL version $PSQL_VERSION from $PSQLBIN"
     
