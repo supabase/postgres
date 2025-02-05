@@ -56,7 +56,11 @@ start_postgres() {
 }
 
 stop_postgres() {
-    pg_ctl stop -D "$DATDIR" -m fast
+    if [ "$DAEMONIZE" = true ]; then
+        echo "PostgreSQL is running in daemon mode. Please stop it using pg_ctl."
+    else
+        pg_ctl stop -D "$DATDIR" -m fast
+    fi
 }
 
 trap 'stop_postgres' SIGINT SIGTERM
@@ -331,6 +335,7 @@ EOSQL
     fi
 fi
 echo "Shutting down PostgreSQL..."
+
 stop_postgres
 
 # Step 4: Restart PostgreSQL in the foreground (with log output visible) or as a daemon
