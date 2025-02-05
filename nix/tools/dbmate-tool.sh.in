@@ -19,36 +19,49 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 cleanup() {
     echo "Cleaning up..."
     
-    # Kill postgres processes first
-    if pgrep -f "postgres" >/dev/null; then
-        pkill -TERM postgres || true
-        sleep 2
-    fi
-
-    # Then kill overmind
+    # First, gracefully stop Overmind if it's running
     if [ -S "./.overmind.sock" ]; then
-        overmind kill || true
+        echo "Stopping Overmind gracefully..."
+        overmind quit || true
+        sleep 5  # Give Overmind time to shut down
+    fi
+
+    # Stop PostgreSQL processes gracefully
+    if pgrep -f "postgres" >/dev/null; then
+        echo "Stopping PostgreSQL gracefully..."
+        pkill -TERM postgres || true
+        sleep 5  # Wait for PostgreSQL to shut down
+    fi
+
+    # Clean up any remaining tmux sessions
+    if tmux ls 2>/dev/null | grep 'overmind'; then
+        echo "Cleaning up tmux sessions..."
+        tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
         sleep 2
     fi
 
-    # Kill tmux sessions explicitly
-    pkill -f "tmux.*overmind.*postgresql" || true
-    tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
+    # Final cleanup: Force kill if necessary (as a last resort)
+    if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
+        echo "Force killing remaining processes..."
+        pkill -9 -f "(postgres|overmind|tmux.*postgresql)" || true
+        sleep 2
+    fi
 
-    # Force kill any stragglers
-    pkill -9 -f "(postgres|tmux.*overmind.*postgresql)" || true
-    
+    # Remove socket and Procfile
     rm -f .overmind.sock Procfile
 
-    # Final verification
+    # Verify cleanup
     if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
+        echo "Warning: Some processes could not be cleaned up:"
         ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
         return 1
+    else
+        echo "Cleanup completed successfully"
     fi
 }
 
 # Set up trap for cleanup on script exit
-
+trap cleanup EXIT INT TERM
 # Function to display help
 print_help() {
     echo "Usage: nix run .#dbmate-tool -- [options]"
