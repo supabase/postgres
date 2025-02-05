@@ -18,41 +18,106 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
-    
-    # First, gracefully stop Overmind if it's running
+
+    # 1. Gracefully stop Overmind if it's running
     if [ -S "./.overmind.sock" ]; then
         echo "Stopping Overmind gracefully..."
-        overmind quit || true
-        sleep 5  # Give Overmind time to shut down
+        if overmind quit; then
+            echo "Overmind stopped successfully"
+        else
+            echo "Warning: Overmind quit command failed"
+        fi
+        
+        # Wait for Overmind to fully shut down
+        max_wait=10
+        count=0
+        while [ -S "./.overmind.sock" ] && [ $count -lt $max_wait ]; do
+            echo "Waiting for Overmind socket to close (attempt $count/$max_wait)..."
+            sleep 1
+            count=$((count + 1))
+        done
+
+        if [ -S "./.overmind.sock" ]; then
+            echo "Warning: Overmind socket still exists after waiting"
+        else
+            echo "Overmind socket closed successfully"
+        fi
     fi
 
-    # Stop PostgreSQL processes gracefully
+    # 2. Gracefully stop PostgreSQL using pg_ctl if possible
     if pgrep -f "postgres" >/dev/null; then
-        echo "Stopping PostgreSQL gracefully..."
-        pkill -TERM postgres || true
-        sleep 5  # Wait for PostgreSQL to shut down
+        echo "Attempting to stop PostgreSQL gracefully..."
+        
+        # Try to find the PostgreSQL data directory
+        PGDATA=$(ps aux | grep postgres | grep -v grep | grep -oP '(?<= -D ).*?(?=\s)')
+        
+        if [ -n "$PGDATA" ] && [ -d "$PGDATA" ]; then
+            # Use pg_ctl for graceful shutdown if available
+            if command -v "${PSQLBIN}/pg_ctl" >/dev/null; then
+                echo "Using pg_ctl to stop PostgreSQL..."
+                "${PSQLBIN}/pg_ctl" -D "$PGDATA" stop -m smart
+                
+                # Wait for PostgreSQL to shut down
+                max_wait=30
+                count=0
+                while pgrep -f "postgres" >/dev/null && [ $count -lt $max_wait ]; do
+                    echo "Waiting for PostgreSQL to stop (attempt $count/$max_wait)..."
+                    sleep 1
+                    count=$((count + 1))
+                done
+                
+                if pgrep -f "postgres" >/dev/null; then
+                    echo "Warning: PostgreSQL did not shut down gracefully, attempting fast shutdown..."
+                    "${PSQLBIN}/pg_ctl" -D "$PGDATA" stop -m fast
+                    sleep 5
+                fi
+            else
+                echo "Warning: pg_ctl not found, falling back to signal-based shutdown"
+                pkill -TERM postgres || true
+                sleep 5
+            fi
+        else
+            echo "Warning: Could not determine PostgreSQL data directory, using signal-based shutdown"
+            pkill -TERM postgres || true
+            sleep 5
+        fi
     fi
 
-    # Clean up any remaining tmux sessions
+    # 3. Clean up tmux sessions gracefully
     if tmux ls 2>/dev/null | grep 'overmind'; then
         echo "Cleaning up tmux sessions..."
-        tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
+        tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | while IFS= read -r session; do
+            echo "Stopping tmux session: $session"
+            tmux send-keys -t "$session" C-c  # Send Ctrl+C to gracefully stop processes
+            sleep 2
+            tmux kill-session -t "$session" || true
+        done
         sleep 2
     fi
 
-    # Final cleanup: Force kill if necessary (as a last resort)
+    # 4. Final verification and cleanup
     if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-        echo "Force killing remaining processes..."
-        pkill -9 -f "(postgres|overmind|tmux.*postgresql)" || true
-        sleep 2
+        echo "Warning: Some processes are still running after graceful shutdown attempts:"
+        ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
+        
+        # Last resort: Use SIGINT before SIGKILL
+        echo "Sending SIGINT to remaining processes..."
+        pkill -INT -f "(postgres|overmind|tmux.*postgresql)" || true
+        sleep 5
+        
+        # If processes still remain, use SIGKILL as a final measure
+        if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
+            echo "Force killing remaining processes..."
+            pkill -KILL -f "(postgres|overmind|tmux.*postgresql)" || true
+        fi
     fi
 
     # Remove socket and Procfile
     rm -f .overmind.sock Procfile
 
-    # Verify cleanup
+    # Final verification
     if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-        echo "Warning: Some processes could not be cleaned up:"
+        echo "Error: Cleanup incomplete. Remaining processes:"
         ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
         return 1
     else
@@ -70,7 +135,7 @@ print_help() {
     echo "  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
     echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
     echo "  -h, --help                         Show this help message"
-    echo
+    echo "  -f, --flake-url URL                Specify the flake URL to use (default: github:supabase/postgres)"
     echo "Description:"
     echo "  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions."
     echo "  NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file."
@@ -79,6 +144,7 @@ print_help() {
     echo "  nix run .#dbmate-tool"
     echo "  nix run .#dbmate-tool -- --version 15"
     echo "  nix run .#dbmate-tool -- --version 16 --port 5433"
+    echo "  nix run .#dbmate-tool -- --version 16 --port 5433 --flake-url github:supabase/postgres/<commithash>"
 }
 
 
