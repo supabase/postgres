@@ -32,13 +32,15 @@ cleanup() {
         echo "Stopping PostgreSQL gracefully..."
         pkill -f "postgres" || true  # Adjust this if you have a specific way to stop the service
         sleep 5  # Wait for PostgreSQL to shut down
+    else
+        echo "PostgreSQL is not running, skipping stop."
     fi
 
     # Verify cleanup
     if pgrep -f "postgres" >/dev/null; then
         echo "Warning: Some PostgreSQL processes could not be cleaned up:"
         pgrep -f "postgres"
-        return 1
+        exit 1  # Exit with an error code
     else
         echo "Cleanup completed successfully"
     fi
