@@ -19,7 +19,7 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 # Start PostgreSQL using nix
 start_postgres() {
     echo "Starting PostgreSQL..."
-    nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations --daemonize &
+    nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations --daemonize 
     echo "PostgreSQL started."
 }
 
@@ -47,8 +47,6 @@ cleanup() {
 # Set up trap for cleanup on script exit
 trap cleanup EXIT INT TERM
 
-# Start PostgreSQL
-start_postgres
 
 # Function to display help
 print_help() {
@@ -288,13 +286,11 @@ if [ "$PSQL_VERSION" == "all" ]; then
     echo "$VERSIONS" | while read -r version; do
         PSQL_VERSION="$version"
         echo "Migrating to PostgreSQL version $PSQL_VERSION"
-        start_postgres
         migrate_version
         cleanup
     done
 else
     echo "Migrating to PostgreSQL version $PSQL_VERSION"
-    start_postgres
     migrate_version
     cleanup
 fi
