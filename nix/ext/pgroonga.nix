@@ -4,10 +4,10 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "pgroonga";
-  version = "3.0.7";
+  version = "3.2.5";
   src = fetchurl {
     url = "https://packages.groonga.org/source/${pname}/${pname}-${version}.tar.gz";
-    sha256 = "sha256-iF/zh4zDDpAw5fxW1WG8i2bfPt4VYsnYArwOoE/lwgM=";
+    sha256 = "sha256-GM9EOQty72hdE4Ecq8jpDudhZLiH3pP9ODLxs8DXcSY=";
   };
   nativeBuildInputs = [ pkg-config makeWrapper ];
   
