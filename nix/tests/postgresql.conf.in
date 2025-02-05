@@ -795,6 +795,7 @@ jit_provider = 'llvmjit'		# JIT library to use
 # Add settings for extensions here
 
 pgsodium.getkey_script = '@PGSODIUM_GETKEY_SCRIPT@'
+vault.getkey_script = '@PGSODIUM_GETKEY_SCRIPT@'
 
 auto_explain.log_min_duration = 10s
 cron.database_name = 'postgres'

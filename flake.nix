@@ -571,42 +571,49 @@
             sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             pg_regress = basePackages.pg_regress;
-            getkey-script = pkgs.writeScriptBin "pgsodium-getkey" ''
-              #!${pkgs.bash}/bin/bash
-              set -euo pipefail
-              
-              TMPDIR_BASE=$(mktemp -d)
-              
-              if [[ "$(uname)" == "Darwin" ]]; then
-                KEY_DIR="/private/tmp/pgsodium"
-              else
-                KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
-              fi
-              KEY_FILE="$KEY_DIR/pgsodium.key"
-              
-              if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
-                echo "Error: Could not create key directory $KEY_DIR" >&2
-                exit 1
-              fi
-              chmod 1777 "$KEY_DIR"
-              
-              if [[ ! -f "$KEY_FILE" ]]; then
-                if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
-                  if ! (openssl rand -hex 32 > "$KEY_FILE"); then
-                    echo "00000000000000000000000000000000" > "$KEY_FILE"
-                    echo "Warning: Using fallback key" >&2
-                  fi
+            getkey-script = pkgs.stdenv.mkDerivation {
+              name = "pgsodium-getkey";
+              buildCommand = ''
+                mkdir -p $out/bin
+                cat > $out/bin/pgsodium-getkey << 'EOF'
+                #!${pkgs.bash}/bin/bash
+                set -euo pipefail
+                
+                TMPDIR_BASE=$(mktemp -d)
+                
+                if [[ "$(uname)" == "Darwin" ]]; then
+                  KEY_DIR="/private/tmp/pgsodium"
+                else
+                  KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
                 fi
-                chmod 644 "$KEY_FILE"
-              fi
-              
-              if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
-                cat "$KEY_FILE"
-              else
-                echo "Error: Cannot read key file $KEY_FILE" >&2
-                exit 1
-              fi
-            '';
+                KEY_FILE="$KEY_DIR/pgsodium.key"
+                
+                if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
+                  echo "Error: Could not create key directory $KEY_DIR" >&2
+                  exit 1
+                fi
+                chmod 1777 "$KEY_DIR"
+                
+                if [[ ! -f "$KEY_FILE" ]]; then
+                  if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
+                    if ! (openssl rand -hex 32 > "$KEY_FILE"); then
+                      echo "00000000000000000000000000000000" > "$KEY_FILE"
+                      echo "Warning: Using fallback key" >&2
+                    fi
+                  fi
+                  chmod 644 "$KEY_FILE"
+                fi
+                
+                if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
+                  cat "$KEY_FILE"
+                else
+                  echo "Error: Cannot read key file $KEY_FILE" >&2
+                  exit 1
+                fi
+                EOF
+                chmod +x $out/bin/pgsodium-getkey
+              '';
+            };
 
             # Use the shared setup but with a test-specific name
             start-postgres-server-bin = makePostgresDevSetup {
@@ -670,9 +677,13 @@
               export GRN_PLUGINS_DIR=${supabase-groonga}/lib/groonga/plugins
               PGTAP_CLUSTER=$(mktemp -d)
               initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+              substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
+                --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
               echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
               echo "port = 5435" >> "$PGTAP_CLUSTER"/postgresql.conf
               echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
+              echo "Checking shared_preload_libraries setting:"
+              grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
               # Remove timescaledb if running orioledb-17 check
               echo "I AM ${pgpkg.version}===================================================="
               if [[ "${pgpkg.version}" == *"17"* ]]; then
