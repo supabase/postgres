@@ -46,9 +46,6 @@ cleanup() {
     fi
 }
 
-# Set up trap for cleanup on script exit
-trap cleanup EXIT INT TERM
-
 
 # Function to display help
 print_help() {
