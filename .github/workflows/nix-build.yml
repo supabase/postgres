@@ -5,7 +5,6 @@ on:
     branches:
       - develop
       - release/*
-      - da/qemu*
   pull_request:
   workflow_dispatch:
 

@@ -5,7 +5,6 @@ on:
     branches:
       - develop
       - release/*
-      - da/merging-qemu
     paths:
       - '.github/workflows/qemu-image-build.yml'
       - 'qemu-arm64-nix.pkr.hcl'
@@ -62,28 +61,20 @@ jobs:
           sudo chown runner /dev/kvm
           sudo chmod 666 /dev/kvm
 
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
-      #     cd && curl -L "https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_$(dpkg --print-architecture).zip" -o packer.zip && unzip packer.zip  && rm -f packer.zip  && sudo mv packer /usr/local/bin/
-
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq
-          chmod +x yq
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
           PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
-          # echo 'postgresql_major = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
-
+      # TODO (darora): not quite sure why I'm having to uninstall and re-install these deps, but the build fails w/o this
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -95,11 +86,7 @@ jobs:
           make init
           GIT_SHA=${{github.sha}}
           export PACKER_LOG=1
-          packer build -var "git_sha=$(UPSTREAM_NIX_GIT_SHA)" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
-
-      - name: Install dependencies
-        run: |
-          ls -lh output-cloudimg/
+          packer build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -122,21 +109,21 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
 
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Login to ECR
-        uses: docker/login-action@v2
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: public.ecr.aws
+          registry-type: public
 
-      - id: build
-        uses: docker/build-push-action@v5
-        with:
-          file: Dockerfile-kubernetes
-          push: true
-          tags: public.ecr.aws/w9p6e7k7/supabase/postgres-v3:${{ steps.process_release_version.outputs.version }}
-          platforms: linux/arm64
-          context: .
+      - name: Build, tag, and push docker image to Amazon ECR Public
+        env:
+          REGISTRY: public.ecr.aws/w9p6e7k7
+          REGISTRY_ALIAS: supabase
+          REPOSITORY: postgres-vm-image
+          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
+        run: |
+          docker build -f Dockerfile-kubernetes -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
 
       # - name: Upload software manifest to s3 staging
       #   run: |

@@ -273,7 +273,7 @@
   shell: |
     mkdir -p /run/postgresql
     chown -R postgres:postgres /run/postgresql
-  when: stage2_nix and qemu_mode
+  when: stage2_nix and qemu_mode is defined
 
 - name: Restart Postgres Database without Systemd
   become: yes
