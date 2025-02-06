@@ -18,8 +18,9 @@ STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 
 # Start PostgreSQL using nix
 start_postgres() {
-    echo "Starting PostgreSQL..."
-    nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations --daemonize 
+    DATDIR=$(mktemp -d)
+    echo "Starting PostgreSQL in directory: $DATDIR"  # Create the DATDIR if it doesn't exist
+    nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations --daemonize --datdir "$DATDIR" 
     echo "PostgreSQL started."
 }
 
@@ -31,16 +32,15 @@ cleanup() {
     if pgrep -f "postgres" >/dev/null; then
         echo "Stopping PostgreSQL gracefully..."
         
-        # Use a more specific signal handling approach
-        pkill -15 -f "postgres"  # Send SIGTERM
+        # Use pg_ctl to stop PostgreSQL
+        pg_ctl -D "$DATDIR" stop
         
         # Wait a bit for graceful shutdown
         sleep 5
         
-        # If processes are still running, force kill
+        # Check if processes are still running
         if pgrep -f "postgres" >/dev/null; then
-            echo "Forcing PostgreSQL processes to stop..."
-            pkill -9 -f "postgres"  # Send SIGKILL if SIGTERM didn't work
+            echo "Warning: Some PostgreSQL processes could not be stopped gracefully."
         fi
     else
         echo "PostgreSQL is not running, skipping stop."
@@ -53,9 +53,6 @@ cleanup() {
     else
         echo "Cleanup completed successfully"
     fi
-
-    # Explicitly exit with 0 to prevent workflow failure
-    exit 0
 }
 
 
