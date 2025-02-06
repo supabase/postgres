@@ -23,5 +23,4 @@ result*
 .idea/
 .vscode/
 
-db
-!migrations/db
+db/schema.sql
