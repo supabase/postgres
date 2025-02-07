@@ -9,7 +9,7 @@ Given the size of the image, the first VM using it on a node might take a while 
 The current AMI process involves a few steps:
 
 1. nix package is build and published using GHA (`.github/workflows/nix-build.yml`)
-  - this builds Postgres alongwith the PG extensions we use.
+  - this builds Postgres along with the PG extensions we use.
 2. "stage1" build (`amazon-arm64-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
   - uses an upstream Ubuntu image to initialize the AMI
   - installs and configures the majority of the software that gets shipped as part of the AMI (e.g. gotrue, postgrest, ...)
