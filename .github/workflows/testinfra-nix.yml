@@ -97,10 +97,10 @@ jobs:
         run: |
           aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
 
-      - name: Cleanup resources after build
-        if: ${{ always() }}
-        run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
+      # - name: Cleanup resources after build
+      #   if: ${{ always() }}
+      #   run: |
+      #     aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
 
       - name: Cleanup AMIs
         if: always()
@@ -115,7 +115,7 @@ jobs:
             local ami_ids=$(aws ec2 describe-images --region ap-southeast-1 --owners self --filters "Name=name,Values=${ami_name_pattern}" --query 'Images[*].ImageId' --output text)
             for ami_id in $ami_ids; do
               echo "Deregistering AMI: $ami_id"
-              aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id
+              # aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id
             done
           }
           
