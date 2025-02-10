@@ -29,33 +29,18 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-    trap 'echo "Error on line $LINENO"' ERR
-    
-    retry() {
-        local retries=3
-        local count=1
-        until "$@"; do
-            [[ $count -eq $retries ]] && return 1
-            echo "Command failed, attempt $count/$retries"
-            ((count++))
-            sleep 10
-        done
-        return 0
-    }
+	# Setup Ansible on host VM
+	apt-get update && sudo apt-get install software-properties-common -y
+	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
+	ansible-galaxy collection install community.general
 
-    retry apt-get update
-    retry apt-get install -y software-properties-common
-    retry add-apt-repository --yes --update ppa:ansible/ansible
-    
-    retry apt-get install -y ansible
-    if ! command -v ansible &>/dev/null; then
-        echo "Ansible installation failed"
-        return 1
-    fi
-
-    retry ansible-galaxy collection install community.general
-    retry apt-get update
-    retry apt-get install -y gdisk e2fsprogs debootstrap nvme-cli
+	# Update apt and install required packages
+	apt-get update
+	apt-get install -y \
+		gdisk \
+		e2fsprogs \
+		debootstrap \
+		nvme-cli
 }
 
 # Partition the new root EBS volume
