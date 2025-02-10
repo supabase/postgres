@@ -22,7 +22,22 @@
       -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/' 
       /etc/postgresql/postgresql.conf
   when: debpkg_mode or stage2_nix
-  
+
+- name: Verify pgsodium and vault removal from config
+  become: yes
+  become_user: postgres
+  shell:
+    cmd: |
+      FOUND=$(grep -E "shared_preload_libraries.*pgsodium|shared_preload_libraries.*supabase_vault|^pgsodium\.getkey_script" /etc/postgresql/postgresql.conf)
+      if [ ! -z "$FOUND" ]; then
+        echo "Found unremoved references:"
+        echo "$FOUND"
+        exit 1
+      fi
+  register: verify_result
+  failed_when: verify_result.rc != 0
+  when: debpkg_mode or stage2_nix
+
 - name: Start Postgres Database to load all extensions.
   become: yes
   become_user: postgres
