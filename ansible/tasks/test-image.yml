@@ -11,7 +11,7 @@
 #     cmd: sed -i.bak -e "s/pg_net,\ pgsodium,\ timescaledb/pg_net,\ timescaledb/g" -e "s/pgsodium.getkey_script=/#pgsodium.getkey_script=/g" /etc/postgresql/postgresql.conf
 #   when: debpkg_mode or stage2_nix
 
-- name: Temporarily disable PG Sodium and Supabase Vault references in config
+-- name: Temporarily disable PG Sodium and Supabase Vault references in config
   become: yes
   become_user: postgres
   shell:
@@ -19,7 +19,8 @@
       sed -i.bak 
       -e 's/\(shared_preload_libraries = '\''.*\)pgsodium,\(.*'\''\)/\1\2/' 
       -e 's/\(shared_preload_libraries = '\''.*\)supabase_vault,\(.*'\''\)/\1\2/' 
-      -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/' 
+      -e 's/\(shared_preload_libraries = '\''.*\), *supabase_vault'\''/\1'\''/'
+      -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/'
       /etc/postgresql/postgresql.conf
   when: debpkg_mode or stage2_nix
 
