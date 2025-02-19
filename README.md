@@ -45,7 +45,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [vault](https://github.com/supabase/vault) | [0.2.9](https://github.com/supabase/vault/releases/tag/v0.2.9) | Store encrypted secrets in PostgreSQL |
 | [wal2json](https://github.com/supabase/wal2json) | [2_6](https://github.com/supabase/wal2json/releases/tag/v2_6) | PostgreSQL JSON output plugin for changeset extraction |
 
-### PostgreSQL 17 Extensions
+### PostgreSQL orioledb-17 Extensions
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [hypopg](https://github.com/supabase/hypopg) | [1.4.1](https://github.com/supabase/hypopg/releases/tag/v1.4.1) | Hypothetical Indexes for PostgreSQL |

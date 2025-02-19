@@ -107,11 +107,15 @@ def create_version_link [pg_info] {
 }
 
 def create_ext_table [extensions, pg_info] {
-    let major_version = ($pg_info.version | split row "." | first)
+    let header_version = if $pg_info.is_orioledb {
+        $"orioledb-($pg_info.version)"  # Add orioledb prefix for orioledb versions
+    } else {
+        $pg_info.version
+    }
     
     let header = [
         "",  # blank line for spacing
-        $"### PostgreSQL ($major_version) Extensions",
+        $"### PostgreSQL ($header_version) Extensions",
         "| Extension | Version | Description |",
         "| ------------- | :-------------: | ------------- |"
     ]
