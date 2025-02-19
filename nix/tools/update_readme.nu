@@ -20,8 +20,7 @@ def get_systems [flake_json] {
 }
 
 def get_postgres_versions [flake_json] {
-    let sys = ($flake_json | get packages | columns | first)
-    let packages = ($flake_json | get packages | get $sys)
+    let packages = ($flake_json | get packages | get aarch64-linux)
     
     # Get available versions from postgresql packages
     let available_versions = ($packages 
@@ -49,8 +48,16 @@ def get_postgres_versions [flake_json] {
     $available_versions | uniq | sort-by version
 }
 
+def get_src_url [pkg_attr] {
+    let result = (do { nix eval $".#($pkg_attr).src.url" } | complete)
+    if $result.exit_code == 0 {
+        $result.stdout | str trim | str replace -a '"' ''  # Remove all quotes
+    } else {
+        null
+    }
+}
+
 def get_extension_info [flake_json, pg_info] {
-    let systems = (get_systems $flake_json)
     let major_version = ($pg_info.version | split row "." | first)
     let version_prefix = if $pg_info.is_orioledb {
         "psql_orioledb-" + $major_version + "/exts/"
@@ -60,36 +67,31 @@ def get_extension_info [flake_json, pg_info] {
     
     print $"Looking for extensions with prefix: ($version_prefix)"
     
-    let all_exts = ($systems | each {|sys|
-        try {
-            let sys_packages = ($flake_json | get packages | get $sys)
-            let ext_names = ($sys_packages 
-                | columns 
-                | where {|col| $col =~ $"^($version_prefix)"}
-            )
-            print $"Found extensions for ($sys): ($ext_names | str join ', ')"
-            
-            $ext_names | each {|ext_name| 
-                let ext_info = ($sys_packages | get $ext_name)
-                let name = ($ext_name | str replace $version_prefix "")
-                let version = if $name == "orioledb" {
-                    $ext_info.name  # Use name directly for orioledb
-                } else if ($ext_info.name | str contains "-") {
-                    $ext_info.name | split row "-" | last
-                } else {
-                    $ext_info.name
-                }
-                {
-                    name: $name,
-                    version: $version,
-                    description: $ext_info.description
-                }
-            }
-        } catch {
-            print $"Error processing system ($sys)"
-            []
+    let sys_packages = ($flake_json | get packages | get aarch64-linux)
+    let ext_names = ($sys_packages 
+        | columns 
+        | where {|col| $col =~ $"^($version_prefix)"}
+    )
+    print $"Found extensions: ($ext_names | str join ', ')"
+    
+    let all_exts = ($ext_names | each {|ext_name| 
+        let ext_info = ($sys_packages | get $ext_name)
+        let name = ($ext_name | str replace $version_prefix "")
+        let version = if $name == "orioledb" {
+            $ext_info.name  # Use name directly for orioledb
+        } else if ($ext_info.name | str contains "-") {
+            $ext_info.name | split row "-" | last
+        } else {
+            $ext_info.name
         }
-    } | flatten | uniq)
+        let src_url = (get_src_url $ext_name)
+        {
+            name: $name,
+            version: $version,
+            description: $ext_info.description,
+            url: $src_url
+        }
+    })
     
     $all_exts | sort-by name
 }
@@ -124,15 +126,9 @@ def create_ext_table [extensions, pg_info] {
         let name = $ext.name
         let version = $ext.version
         let desc = $ext.description
+        let url = $ext.url  # Get URL from extension info
         
-        if $name == "orioledb" {
-            let link = "https://github.com/orioledb/orioledb"
-            $"| ['$name']\(($link)\) | ($version) | ($desc) |"
-        } else {
-            let gh_url = $"https://github.com/supabase/($name)"
-            let release_url = $"($gh_url)/releases/tag/v($version)"
-            $"| [($name)]\(($gh_url)\) | [($version)]\(($release_url)\) | ($desc) |"
-        }
+        $"| [($name)]\(($url)\) | [($version)]\(($url)\) | ($desc) |"
     })
     
     $header | append $rows
