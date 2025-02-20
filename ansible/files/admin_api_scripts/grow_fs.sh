@@ -21,6 +21,11 @@ fi
 # └─nvme0n1p3 / -> nvme0n1p3 -> 3
 ROOT_PARTITION_NUMBER=$(lsblk -no NAME,MOUNTPOINT | grep ' /$' | awk '{print $1;}' | sed 's/.*nvme[0-9]n[0-9]p//g')
 
+if ! [[ "$ROOT_PARTITION_NUMBER" =~ ^[0-9]+$ ]]; then
+  echo "Error: ROOT_PARTITION_NUMBER is not a valid number: $ROOT_PARTITION_NUMBER"
+  exit 1
+fi
+
 if [ -b /dev/nvme1n1 ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
         resize2fs /dev/nvme1n1
