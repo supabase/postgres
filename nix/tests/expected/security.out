@@ -1,0 +1,30 @@
+-- get a list of security definer functions owned by supabase_admin
+-- this list should be vetted to ensure the functions are safe to use as security definer
+select
+    p.proname
+from pg_catalog.pg_proc p
+    left join pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+where p.proowner = (select oid from pg_catalog.pg_roles where rolname = 'supabase_admin')
+        and p.prosecdef = true
+order by 1;
+            proname             
+--------------------------------
+ dblink_connect_u
+ dblink_connect_u
+ disable_security_label_trigger
+ enable_security_label_trigger
+ get_key_by_id
+ get_key_by_name
+ get_named_keys
+ get_schema_version
+ increment_schema_version
+ mask_role
+ pgaudit_ddl_command_end
+ pgaudit_sql_drop
+ repack_trigger
+ st_estimatedextent
+ st_estimatedextent
+ st_estimatedextent
+ update_mask
+(17 rows)
+
