@@ -1,35 +1,41 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_12_6, cargo, rust-bin }:
+{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_12_9, cargo, rust-bin }:
+
 let
-  rustVersion = "1.80.0";
-  cargo = rust-bin.stable.${rustVersion}.default;
+    rustVersion = "nightly";
+    cargo = rust-bin.nightly.latest.default;
 in
-buildPgrxExtension_0_12_6 rec {
+buildPgrxExtension_0_12_9 rec {
   pname = "pg_graphql";
-  version = "1.5.9";
+  version = "1.5.11";
   inherit postgresql;
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-YpLN43FtLhp2cb7cyM+4gEx8GTwsRiKTfxaMq0b8hk0=";
+    hash = "sha256-BMZc9ui+2J3U24HzZZVCU5+KWhz+5qeUsRGeptiqbek=";
   };
 
   nativeBuildInputs = [ cargo ];
   buildInputs = [ postgresql ];
   
-  CARGO="${cargo}/bin/cargo";
-  #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
+  CARGO = "${cargo}/bin/cargo";
+  
+  cargoLock = {
+    lockFile = "${src}/Cargo.lock";
+  };
+  # Setting RUSTFLAGS in env to ensure it's available for all phases
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
-    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
     PGPORT = "5434";
+    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+    NIX_BUILD_CORES = "4";  # Limit parallel jobs
+    CARGO_BUILD_JOBS = "4"; # Limit cargo parallelism
   };
-  cargoHash = "sha256-d2RSHtJgbYlOvArjOTaeYoca01UyWPUEO5vhktxxB6U=";
+CARGO_BUILD_RUSTFLAGS = "--cfg tokio_unstable -C debuginfo=0";
+  CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG = true;
 
-  # FIXME (aseipp): disable the tests since they try to install .control
-  # files into the wrong spot, aside from that the one main test seems
-  # to work, though
+  
   doCheck = false;
 
   meta = with lib; {

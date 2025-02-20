@@ -68,6 +68,11 @@
               buildPgrxExtension_0_12_6 = prev.buildPgrxExtension.override {
                 cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_6;
               };
+
+              buildPgrxExtension_0_12_9 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_9;
+              };
+
             })
             (final: prev: {
               postgresql = final.callPackage ./nix/postgresql/default.nix {
@@ -394,6 +399,7 @@
           supabase-groonga = supabase-groonga;
           cargo-pgrx_0_11_3 = pkgs.cargo-pgrx.cargo-pgrx_0_11_3;
           cargo-pgrx_0_12_6 = pkgs.cargo-pgrx.cargo-pgrx_0_12_6;
+          cargo-pgrx_0_12_9 = pkgs.cargo-pgrx.cargo-pgrx_0_12_9;
           # PostgreSQL versions.
           psql_15 = postgresVersions.psql_15;
           psql_orioledb-17 = postgresVersions.psql_orioledb-17;
