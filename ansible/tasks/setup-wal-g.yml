@@ -1,72 +1,73 @@
 # Downloading dependencies
-- name: wal-g dependencies
-  become: yes
-  apt:
-    pkg:
-      - libbrotli-dev
-      - liblzo2-dev
-      - libsodium-dev
-      - cmake
+# - name: wal-g dependencies
+#   become: yes
+#   apt:
+#     pkg:
+#       - libbrotli-dev
+#       - liblzo2-dev
+#       - libsodium-dev
+#       - cmake
 
 # install go dependency for WAL-G
-- name: wal-g go dependency
-  get_url:
-    url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
-    dest: /tmp
-    checksum: "{{ golang_version_checksum[platform] }}"
-    timeout: 60
+# - name: wal-g go dependency
+#   get_url:
+#     url: "https://golang.org/dl/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+#     dest: /tmp
+#     checksum: "{{ golang_version_checksum[platform] }}"
+#     timeout: 60
 
-- name: unpack go archive
-  unarchive:
-    remote_src: yes
-    src: "/tmp/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
-    dest: /usr/local
+# - name: unpack go archive
+#   unarchive:
+#     remote_src: yes
+#     src: "/tmp/go{{ golang_version }}.linux-{{ platform }}.tar.gz"
+#     dest: /usr/local
 
-# Download WAL-G
-- name: wal-g - download latest version
-  git:
-    repo: https://github.com/wal-g/wal-g.git
-    dest: /tmp/wal-g
-    version: "v{{ wal_g_release }}"
-  become: yes
+# # Download WAL-G
+# - name: wal-g - download latest version
+#   git:
+#     repo: https://github.com/wal-g/wal-g.git
+#     dest: /tmp/wal-g
+#     version: "v{{ wal_g_release }}"
+#   become: yes
 
-- name: wal-g - pg_clean
-  make:
-    chdir: /tmp/wal-g
-    target: pg_clean
-    params:
-      GOBIN: "/usr/local/bin"
-      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-      USE_LIBSODIUM: true
-  become: yes
-  ignore_errors: yes
+# - name: wal-g - pg_clean
+#   make:
+#     chdir: /tmp/wal-g
+#     target: pg_clean
+#     params:
+#       GOBIN: "/usr/local/bin"
+#       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+#       USE_LIBSODIUM: true
+#   become: yes
+#   ignore_errors: yes
 
-- name: wal-g - deps
-  make:
-    chdir: /tmp/wal-g
-    target: deps
-    params:
-      GOBIN: "/usr/local/bin"
-      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-      USE_LIBSODIUM: true
-  become: yes
-  ignore_errors: yes
+# - name: wal-g - deps
+#   make:
+#     chdir: /tmp/wal-g
+#     target: deps
+#     params:
+#       GOBIN: "/usr/local/bin"
+#       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+#       USE_LIBSODIUM: true
+#   become: yes
+#   ignore_errors: yes
 
-- name: wal-g - build and install
-  community.general.make:
-    chdir: /tmp/wal-g
-    target: pg_install
-    jobs: "{{ parallel_jobs | default(omit) }}"
-    params:
-      GOBIN: "/usr/local/bin"
-      PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
-      USE_LIBSODIUM: true
-  become: yes
+# - name: wal-g - build and install
+#   community.general.make:
+#     chdir: /tmp/wal-g
+#     target: pg_install
+#     jobs: "{{ parallel_jobs | default(omit) }}"
+#     params:
+#       GOBIN: "/usr/local/bin"
+#       PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+#       USE_LIBSODIUM: true
+#   become: yes
 
 - name: Create wal-g group
   group:
     name: wal-g
     state: present
+  when: stage2_nix
 
 - name: Create wal-g user
   user:
@@ -75,7 +76,7 @@
     comment: WAL-G user
     group: wal-g
     groups: wal-g, postgres
-
+  when: stage2_nix
 - name: Create a config directory owned by wal-g
   file:
     path: /etc/wal-g
@@ -83,7 +84,22 @@
     owner: wal-g
     group: wal-g
     mode: '0770'
+  when: stage2_nix
 
+- name: Install wal-g from nix binary cache
+  become: yes
+  shell: |
+    sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
+  when: stage2_nix
+
+- name: Create symlink for wal-g from Nix profile to /usr/local/bin
+  ansible.builtin.file:
+    src: /home/wal-g/.nix-profile/bin/wal-g
+    dest: /usr/local/bin/wal-g
+    state: link
+    force: yes  # This will replace existing file/symlink if it exists
+  become: yes   # Need sudo to write to /usr/local/bin
+  when: stage2_nix
 - name: Create /etc/wal-g/config.json
   file:
     path: /etc/wal-g/config.json
@@ -91,6 +107,7 @@
     owner: wal-g
     group: wal-g
     mode: '0664'
+  when: stage2_nix
 
 - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
   template:
@@ -99,6 +116,7 @@
     mode: 0664
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Add script to be run for restore_command
   template:
@@ -107,6 +125,7 @@
     mode: 0500
     owner: postgres
     group: postgres
+  when: stage2_nix
 
 - name: Add helper script for wal_fetch.sh
   template:
@@ -114,6 +133,7 @@
     dest: /root/wal_change_ownership.sh
     mode: 0700
     owner: root
+  when: stage2_nix
 
 - name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
   become: yes
@@ -121,10 +141,4 @@
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
     replace: "include = '/etc/postgresql-custom/wal-g.conf'"
-
-# Clean up Go
-- name: Uninstall Go
-  become: yes
-  file:
-    path: /usr/local/go
-    state: absent
+  when: stage2_nix
