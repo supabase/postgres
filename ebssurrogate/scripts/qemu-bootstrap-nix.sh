@@ -22,7 +22,7 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update && sudo apt-get install software-properties-common e2fsprogs -y
+	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common -y
 	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
