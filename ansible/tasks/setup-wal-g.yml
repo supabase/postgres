@@ -67,7 +67,7 @@
   group:
     name: wal-g
     state: present
-  when: stage2_nix
+  when: nixpkg_mode
 
 - name: Create wal-g user
   user:
@@ -76,7 +76,7 @@
     comment: WAL-G user
     group: wal-g
     groups: wal-g, postgres
-  when: stage2_nix
+  when: nixpkg_mode
 - name: Create a config directory owned by wal-g
   file:
     path: /etc/wal-g
@@ -84,7 +84,7 @@
     owner: wal-g
     group: wal-g
     mode: '0770'
-  when: stage2_nix
+  when: nixpkg_mode
 
 - name: Install wal-g from nix binary cache
   become: yes
