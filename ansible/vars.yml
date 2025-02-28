@@ -8,8 +8,8 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.0.1.048-orioledb"
-  postgres15: "15.8.1.055"
+  postgresorioledb-17: "17.0.1.041-orioledb-walg-1"
+  postgres15: "15.8.1.047-walg-1"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -45,7 +45,6 @@ kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
 nginx_release: 1.22.0
 nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
 
-wal_g_release: "2.0.1"
 
 postgres_exporter_release: "0.15.0"
 postgres_exporter_release_checksum:
