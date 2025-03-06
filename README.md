@@ -42,7 +42,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | [0.4.4](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | [2.6.0](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | PostgreSQL extension for enhanced security |
 | [timescaledb-apache](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | [2.16.1](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | Scales PostgreSQL for time-series data via automatic partitioning across time and space |
-| [vault](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | [0.2.9](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | Store encrypted secrets in PostgreSQL |
+| [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
 
 ### PostgreSQL orioledb-17 Extensions
@@ -76,7 +76,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
 | [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | [0.4.4](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | [2.6.0](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | PostgreSQL extension for enhanced security |
-| [vault](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | [0.2.9](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | Store encrypted secrets in PostgreSQL |
+| [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
 ## Additional Goodies
 *This is only available for our AWS EC2*

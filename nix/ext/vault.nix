@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "vault";
-  version = "0.2.9";
+  version = "0.3.1";
 
   buildInputs = [ postgresql ];
 
