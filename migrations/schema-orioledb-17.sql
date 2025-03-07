@@ -70,7 +70,7 @@ CREATE SCHEMA vault;
 -- Name: orioledb; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS orioledb WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS orioledb WITH SCHEMA extensions;
 
 
 --

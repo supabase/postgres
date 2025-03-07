@@ -28,7 +28,6 @@ create extension if not exists lo;
 create extension if not exists ltree;
 create extension if not exists moddatetime;
 create extension if not exists pageinspect;
-create extension if not exists pg_backtrace;
 create extension if not exists pg_buffercache;
 
 /*

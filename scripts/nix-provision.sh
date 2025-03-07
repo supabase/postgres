@@ -6,11 +6,18 @@ set -o pipefail
 set -o xtrace
 
 function install_packages {
-	# Setup Ansible on host VM
-	sudo apt-get update && sudo apt-get install software-properties-common -y
-	sudo add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
-	ansible-galaxy collection install community.general
+    # Setup Ansible on host VM
+    sudo apt-get update && sudo apt-get install -y software-properties-common
 
+    # Manually add GPG key with explicit keyserver
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
+
+    # Add repository and install
+    sudo add-apt-repository --yes ppa:ansible/ansible
+    sudo apt-get update
+    sudo apt-get install -y ansible
+
+    ansible-galaxy collection install community.general
 }
 
 
