@@ -164,7 +164,7 @@
 
 - name: import pgsodium_getkey script
   template:
-    src: /tmp/ansible-playbook/ansible/files/pgsodium_getkey_readonly.sh.j2
+    src: files/pgsodium_getkey_readonly.sh.j2
     dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
     owner: postgres
     group: postgres
@@ -172,12 +172,11 @@
   when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/lib/postgresql/bin
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/bin/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/bin/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/bin/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "{{ item }}/$(basename $0)"' {} \;
+  loop:
+    - /usr/lib/postgresql/bin
+    - /usr/bin
   become: yes
   when: stage2_nix
 
@@ -194,23 +193,9 @@
   when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk and stage2_nix
   become: yes
 
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/bin
-  file:
-    src: "{{ item }}"
-    dest: "/usr/bin/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/bin/*"
-  become: yes
-  when: stage2_nix
-
 - name: Ensure postgres user has ownership of symlink
-  file:
-    path: "/usr/bin/{{ item | basename }}"
-    owner: postgres
-    group: postgres
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/bin/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/bin/ -maxdepth 1 -type f,l -exec chown postgres:postgres "/usr/bin/$(basename {})" \;
   become: yes
   when: stage2_nix
 
@@ -225,22 +210,14 @@
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/share/postgresql/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/share/postgresql/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/share/postgresql/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/$(basename $0)"' {} \;
   become: yes
   when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/share/postgresql/extension/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/share/postgresql/extension/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/share/postgresql/extension/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/extension/$(basename $0)"' {} \;
   become: yes
   when: stage2_nix
 
@@ -266,22 +243,14 @@
       when: stage2_nix and not is_psql_oriole
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/share/postgresql/timezonesets/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/timezonesets/$(basename $0)"' {} \;
   become: yes
   when: stage2_nix
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
-  file:
-    src: "{{ item }}"
-    dest: "/usr/lib/postgresql/share/postgresql/tsearch_data/{{ item | basename }}"
-    state: link
-  with_fileglob:
-    - "/var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/*"
+  shell: >-
+    find /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/tsearch_data/$(basename $0)"' {} \;
   become: yes
   when: stage2_nix
 

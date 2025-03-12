@@ -11,11 +11,37 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
+      - name: Load postgres_release values
+        id: load_postgres_release
+        uses: mikefarah/yq@master
+        with:
+          args: eval '.postgres_release' ansible/vars.yml
+        # The output will be available as steps.load_postgres_release.outputs.stdout
+
       - name: Run checks
-        # Update `ami-release.yaml` too if changing constraints.
         run: |
-          SUFFIX=$(sed -E 's/postgres-version = "[0-9\.]+(.*)"/\1/g' common.vars.pkr.hcl)
-          if [[ -n $SUFFIX ]] ; then
-            echo "We no longer allow merging RC versions to develop."
-            exit 1
-          fi
+          POSTGRES_RELEASES="${{ steps.load_postgres_release.outputs.stdout }}"
+
+          # Iterate through each release
+          for release in $(echo "$POSTGRES_RELEASES" | yq eval 'keys | .[]' -); do
+            VERSION=$(echo "$POSTGRES_RELEASES" | yq eval ".\"$release\"" -)
+            if [[ "$release" == "postgresorioledb-17" ]]; then
+              # Check for suffix after -orioledb
+              if [[ "$VERSION" =~ -orioledb(.*) ]]; then
+                SUFFIX="${BASH_REMATCH[1]}"
+                if [[ -n "$SUFFIX" ]]; then
+                  echo "We no longer allow merging versions with suffixes after -orioledb."
+                  exit 1
+                fi
+              fi
+            else
+              # Check for suffix after version digits
+              if [[ "$VERSION" =~ ([0-9]+\.[0-9]+\.[0-9]+)(.*) ]]; then
+                SUFFIX="${BASH_REMATCH[2]}"
+                if [[ -n "$SUFFIX" ]]; then
+                  echo "We no longer allow merging versions with suffixes after version $VERSION."
+                  exit 1
+                fi
+              fi
+            fi
+          done

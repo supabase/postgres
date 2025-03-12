@@ -64,6 +64,15 @@ while [[ "$#" -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        -p|--port)
+            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                PORTNO="$2"
+                shift 2
+            else
+                echo "Error: --port requires an argument"
+                exit 1
+            fi
+            ;;
         -h|--help)
             print_help
             exit 0
@@ -106,7 +115,6 @@ export PATH=$BINDIR/bin:$PATH
 export POSTGRES_DB=postgres
 export POSTGRES_HOST=localhost
 
-PORTNO="${2:-@PGSQL_DEFAULT_PORT@}"
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 MIGRATIONS_DIR=@MIGRATIONS_DIR@
 POSTGRESQL_SCHEMA_SQL=@POSTGRESQL_SCHEMA_SQL@

@@ -1,3 +1,0 @@
-- name: install pg_graphql
-  ansible.builtin.apt:
-    deb: "https://github.com/supabase/pg_graphql/releases/download/v{{ pg_graphql_release }}/pg_graphql-v{{ pg_graphql_release }}-pg{{ postgresql_major }}-{{ platform }}-linux-gnu.deb"

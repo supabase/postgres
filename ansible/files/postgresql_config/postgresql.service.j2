@@ -20,6 +20,6 @@ Restart=always
 RestartSec=5
 OOMScoreAdjust=-1000
 EnvironmentFile=-/etc/environment.d/postgresql.env
-
+LimitNOFILE=16384
 [Install]
 WantedBy=multi-user.target

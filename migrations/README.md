@@ -78,15 +78,18 @@ Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/deve
 
 ### Add a Migration
 
+First, start a local postgres server and apply the migrations
+
 ```shell
 # Start the database server
-docker-compose up
+nix run .#dbmate-tool -- --version 15 --flake-url "."
 
 # create a new migration
+nix develop
 dbmate new '<some message>'
 ```
 
-Then, populate the migration at `./db/migrations/xxxxxxxxx_<some_message>` and make sure it execute sucessfully with
+Then, execute the migration at `./db/migrations/xxxxxxxxx_<some_message>` and make sure it runs sucessfully with
 
 ```shell
 dbmate up

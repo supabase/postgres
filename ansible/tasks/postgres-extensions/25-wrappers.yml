@@ -1,3 +1,0 @@
-- name: install wrappers
-  ansible.builtin.apt:
-    deb: "https://github.com/supabase/wrappers/releases/download/v{{ wrappers_release }}/wrappers-v{{ wrappers_release }}-pg{{ postgresql_major }}-{{ platform }}-linux-gnu.deb"

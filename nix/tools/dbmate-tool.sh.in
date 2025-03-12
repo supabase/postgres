@@ -15,39 +15,46 @@ CURRENT_SYSTEM="@CURRENT_SYSTEM@"
 ANSIBLE_VARS="@ANSIBLE_VARS@"
 PGBOUNCER_AUTH_SCHEMA_SQL=@PGBOUNCER_AUTH_SCHEMA_SQL@
 STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
+
+# Start PostgreSQL using nix
+start_postgres() {
+    DATDIR=$(mktemp -d)
+    echo "Starting PostgreSQL in directory: $DATDIR"  # Create the DATDIR if it doesn't exist
+    nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations --daemonize --datdir "$DATDIR" 
+    echo "PostgreSQL started."
+}
+
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
     
-    # Kill postgres processes first
+    # Check if PostgreSQL processes exist
     if pgrep -f "postgres" >/dev/null; then
-        pkill -TERM postgres || true
-        sleep 2
+        echo "Stopping PostgreSQL gracefully..."
+        
+        # Use pg_ctl to stop PostgreSQL
+        pg_ctl -D "$DATDIR" stop
+        
+        # Wait a bit for graceful shutdown
+        sleep 5
+        
+        # Check if processes are still running
+        if pgrep -f "postgres" >/dev/null; then
+            echo "Warning: Some PostgreSQL processes could not be stopped gracefully."
+        fi
+    else
+        echo "PostgreSQL is not running, skipping stop."
     fi
 
-    # Then kill overmind
-    if [ -S "./.overmind.sock" ]; then
-        overmind kill || true
-        sleep 2
-    fi
-
-    # Kill tmux sessions explicitly
-    pkill -f "tmux.*overmind.*postgresql" || true
-    tmux ls 2>/dev/null | grep 'overmind' | cut -d: -f1 | xargs -I{} tmux kill-session -t {} || true
-
-    # Force kill any stragglers
-    pkill -9 -f "(postgres|tmux.*overmind.*postgresql)" || true
-    
-    rm -f .overmind.sock Procfile
-
-    # Final verification
-    if ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep >/dev/null; then
-        ps aux | grep -E "(postgres|overmind|tmux.*postgresql)" | grep -v grep
-        return 1
+    # Always exit successfully, log any remaining processes
+    if pgrep -f "postgres" >/dev/null; then
+        echo "Warning: Some PostgreSQL processes could not be cleaned up:"
+        pgrep -f "postgres"
+    else
+        echo "Cleanup completed successfully"
     fi
 }
 
-# Set up trap for cleanup on script exit
 
 # Function to display help
 print_help() {
@@ -57,7 +64,7 @@ print_help() {
     echo "  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
     echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
     echo "  -h, --help                         Show this help message"
-    echo
+    echo "  -f, --flake-url URL                Specify the flake URL to use (default: github:supabase/postgres)"
     echo "Description:"
     echo "  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions."
     echo "  NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file."
@@ -66,8 +73,8 @@ print_help() {
     echo "  nix run .#dbmate-tool"
     echo "  nix run .#dbmate-tool -- --version 15"
     echo "  nix run .#dbmate-tool -- --version 16 --port 5433"
+    echo "  nix run .#dbmate-tool -- --version 16 --port 5433 --flake-url github:supabase/postgres/<commithash>"
 }
-
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -125,7 +132,7 @@ wait_for_postgres() {
     local max_attempts=30  # Increased significantly
     local attempt=1
     
-    # Give overmind a moment to actually start the process
+    # Give PostgreSQL a moment to actually start the process
     sleep 2
     
     while [ $attempt -le $max_attempts ]; do
@@ -142,7 +149,6 @@ wait_for_postgres() {
     done
     
     echo "PostgreSQL failed to start after $max_attempts attempts"
-    overmind echo postgres
     return 1
 }
 
@@ -175,26 +181,7 @@ trim_schema() {
         ;;
     esac
 }
-overmind_start() {
-        cat > Procfile << EOF
-postgres_${PSQL_VERSION}: exec nix run "$FLAKE_URL#start-server" -- "$PSQL_VERSION" --skip-migrations
-EOF
-    overmind start -D
-    echo "Waiting for overmind socket..."
-    max_wait=5
-    count=0
-    while [ $count -lt $max_wait ]; do
-        if [ -S "./.overmind.sock" ]; then
-            # Found the socket, give it a moment to be ready
-            sleep 5
-            echo "Socket file found and ready"
-            break
-        fi
-        echo "Waiting for socket file (attempt $count/$max_wait)"
-        sleep 1
-        count=$((count + 1))
-    done
-}
+
 perform_dump() {
     local max_attempts=3
     local attempt=1
@@ -214,21 +201,18 @@ perform_dump() {
     echo "All dump attempts failed"
     return 1
 }
+
 migrate_version() {
     echo "PSQL_VERSION: $PSQL_VERSION"
-    overmind kill || true
-    rm -f .overmind.sock Procfile  || true
+    #pkill -f "postgres" || true  # Ensure PostgreSQL is stopped before starting
     PSQLBIN=$(nix build --no-link "$FLAKE_URL#psql_$PSQL_VERSION/bin" --json | jq -r '.[].outputs.out + "/bin"')
     echo "Using PostgreSQL version $PSQL_VERSION from $PSQLBIN"
     
-    # Start overmind
-    overmind_start
-    echo "Waiting for overmind socket..."
-
-
+    # Start PostgreSQL
+    start_postgres
     echo "Waiting for PostgreSQL to be ready..."
 
-    #Wait for PostgreSQL to be ready to accept connections
+    # Wait for PostgreSQL to be ready to accept connections
     if ! wait_for_postgres; then
         echo "Failed to connect to PostgreSQL server"
         exit 1
@@ -255,11 +239,11 @@ EOSQL
     "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"
     "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"
 
-    #set db url to run dbmate
+    # Set db url to run dbmate
     export DATABASE_URL="postgres://$PGSQL_USER:$PGPASSWORD@localhost:$PORTNO/postgres?sslmode=disable"
-    #export path so dbmate can find correct psql and pg_dump
+    # Export path so dbmate can find correct psql and pg_dump
     export PATH="$PSQLBIN:$PATH"
-    # run init scripts
+    # Run init scripts
     if ! dbmate --migrations-dir "$MIGRATIONS_DIR/init-scripts" up; then
         echo "Error: Initial migration failed"
         exit 1

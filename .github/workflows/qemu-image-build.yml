@@ -1,0 +1,185 @@
+name: Build QEMU image
+
+on:
+  push:
+    branches:
+      - develop
+      - release/*
+    paths:
+      - '.github/workflows/qemu-image-build.yml'
+      - 'qemu-arm64-nix.pkr.hcl'
+      - 'common-nix.vars.pkr.hcl'
+      - 'ansible/vars.yml'
+  workflow_dispatch:
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Set PostgreSQL versions - only builds pg15 atm
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[0]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+
+  build:
+    needs: prepare
+    strategy:
+      matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
+    runs-on: arm-native-runner
+    timeout-minutes: 150
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Run checks if triggered manually
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          if [[ -z $SUFFIX ]] ; then
+            echo "Version must include non-numeric characters if built manually."
+            exit 1
+          fi
+
+      - name: enable KVM support
+        run: |
+          sudo chown runner /dev/kvm
+          sudo chmod 666 /dev/kvm
+
+      - name: Set PostgreSQL version environment variable
+        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
+          PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
+          echo "" >> common-nix.vars.pkr.hcl
+
+      # TODO (darora): not quite sure why I'm having to uninstall and re-install these deps, but the build fails w/o this
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+          sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+
+      - name: Build QEMU artifact
+        run: |
+          make init
+          GIT_SHA=${{github.sha}}
+          export PACKER_LOG=1
+          packer build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
+
+      - name: Grab release version
+        id: process_release_version
+        run: |
+          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # - name: Create nix flake revision tarball
+      #   run: |
+      #     GIT_SHA=${{github.sha}}
+      #     MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
+
+      #     mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
+      #     echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
+      #     tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Build, tag, and push docker image to Amazon ECR Public
+        env:
+          REGISTRY: public.ecr.aws/w9p6e7k7
+          REGISTRY_ALIAS: supabase
+          REPOSITORY: postgres-vm-image
+          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
+        run: |
+          docker build -f Dockerfile-kubernetes -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
+
+      # - name: Upload software manifest to s3 staging
+      #   run: |
+      #     cd ansible
+      #     ansible-playbook -i localhost \
+      #       -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+      #       -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
+      #       -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
+      #       manifest-playbook.yml
+
+      # - name: Upload nix flake revision to s3 staging
+      #   run: |
+      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+
+      # - name: configure aws credentials - prod
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+      #     aws-region: "us-east-1"
+
+      # - name: Upload software manifest to s3 prod
+      #   run: |
+      #     cd ansible
+      #     ansible-playbook -i localhost \
+      #       -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+      #       -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
+      #       -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
+      #       manifest-playbook.yml
+
+      # - name: Upload nix flake revision to s3 prod
+      #   run: |
+      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+
+      # - name: Create release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     name: ${{ steps.process_release_version.outputs.version }}
+      #     tag_name: ${{ steps.process_release_version.outputs.version }}
+      #     target_commitish: ${{github.sha}}
+
+      # - name: Slack Notification on Failure
+      #   if: ${{ failure() }}
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+      #     SLACK_USERNAME: 'gha-failures-notifier'
+      #     SLACK_COLOR: 'danger'
+      #     SLACK_MESSAGE: 'Building Postgres AMI failed'
+      #     SLACK_FOOTER: ''
+
+      - name: Cleanup resources after build
+        if: ${{ always() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+
+      - name: Cleanup resources on build cancellation
+        if: ${{ cancelled() }}
+        run: |
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids

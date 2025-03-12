@@ -215,6 +215,10 @@ resources:
                                   prefix: /metrics/aggregated
                                 invert_match: true
                     status_code: 401
+                    headers_to_add:
+                      - header:
+                          key: x-sb-error-code
+                          value: '%RESPONSE_CODE_DETAILS%'
                     body_format_override:
                       json_format:
                         message: >-

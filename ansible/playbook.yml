@@ -142,6 +142,7 @@
       import_tasks: tasks/setup-fail2ban.yml
       when: debpkg_mode or nixpkg_mode
 
+
     # Install EC2 instance connect
     # Only for AWS images
     - name: install EC2 instance connect
@@ -151,6 +152,7 @@
           - ec2-instance-connect
       tags:
         - aws-only
+      when: qemu_mode is undefined
 
     # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
     - name: Install security tools
@@ -199,13 +201,19 @@
     - name: Install osquery from nixpkgs binary cache
       become: yes
       shell: |
+        apt autoremove -y --purge snapd
+      when: stage2_nix
+
+    - name: Install osquery from nixpkgs binary cache
+      become: yes
+      shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:nixos/nixpkgs/f98ec4f73c762223d62bee706726138cb6ea27cc#osquery"
       when: stage2_nix
 
     - name: Run osquery permission checks
       become: yes
       shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && /usr/bin/python3 /tmp/ansible-playbook/ansible/files/permission_check.py"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && /usr/bin/python3 /tmp/ansible-playbook/ansible/files/permission_check.py {{ '--qemu' if qemu_mode is defined else '' }}"
       when: stage2_nix
 
     - name: Remove osquery    

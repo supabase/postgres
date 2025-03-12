@@ -1,14 +1,11 @@
-name: Release all major versions on Dockerhub
+name: Manual Docker Artifacts Release 
 
 on:
-  push:
-    branches:
-      - develop
-      - release/*
-    paths:
-      - ".github/workflows/dockerhub-release-matrix.yml"
-      - "ansible/vars.yml"
   workflow_dispatch:
+    inputs:
+      postgresVersion:
+        description: 'Optional. Postgres version to publish against, i.e. 15.1.1.78'
+        required: false
  
 jobs:
   prepare:
@@ -94,7 +91,13 @@ jobs:
               } else {
                 $"postgres($version)"
               }
-              open ansible/vars.yml | get postgres_release | get $release_key | str trim
+              let base_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let final_version = if "${{ inputs.postgresVersion }}" != "" {
+                "${{ inputs.postgresVersion }}"
+              } else {
+                $base_version
+              }
+              $final_version | str trim
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           else
@@ -105,7 +108,13 @@ jobs:
               } else {
                 $"postgres($version)"
               }
-              open ansible/vars.yml | get postgres_release | get $release_key | str trim
+              let base_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let final_version = if "${{ inputs.postgresVersion }}" != "" {
+                "${{ inputs.postgresVersion }}"
+              } else {
+                $base_version
+              }
+              $final_version | str trim
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           fi
@@ -237,5 +246,5 @@ jobs:
         matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
       uses: ./.github/workflows/mirror.yml
       with:
-        version: ${{ matrix.version }}
+        version: ${{ inputs.postgresVersion != '' && inputs.postgresVersion || matrix.version }}
       secrets: inherit

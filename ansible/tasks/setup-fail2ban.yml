@@ -65,13 +65,6 @@
     - install-supabase-internal
   when: debpkg_mode or nixpkg_mode
 
-# Restart
-- name: fail2ban - restart
-  systemd:
-    name: fail2ban
-    state: restarted
-  when: debpkg_mode or nixpkg_mode
-
 - name: fail2ban - disable service
   systemd:
     name: fail2ban
