@@ -68,7 +68,7 @@ WORKDIR /nixpg
 
 RUN nix profile install .#psql_orioledb-17/bin 
 
-
+RUN nix store gc
 
 WORKDIR /
 

@@ -38,6 +38,9 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+            (final: prev: {
+              xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
+            })
             (import rust-overlay)
             (final: prev: {
               cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
