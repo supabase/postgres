@@ -17,6 +17,7 @@ BEGIN
         extension_array := ARRAY[
             'plpgsql',
             'pg_stat_statements',
+            'pgsodium',
             'pgtap',
             'pg_graphql',
             'pgcrypto',
@@ -29,6 +30,7 @@ BEGIN
         extension_array := ARRAY[
             'plpgsql',
             'pg_stat_statements',
+            'pgsodium',
             'pgtap',
             'pg_graphql',
             'pgcrypto',
@@ -42,7 +44,7 @@ BEGIN
     PERFORM set_config('myapp.extensions', array_to_string(extension_array, ','), false);
 END $$;
 
-SELECT no_plan();
+SELECT plan(8);
 
 SELECT extensions_are(
     string_to_array(current_setting('myapp.extensions'), ',')::text[]
@@ -53,6 +55,10 @@ SELECT has_schema('pg_toast');
 SELECT has_schema('pg_catalog');
 SELECT has_schema('information_schema');
 SELECT has_schema('public');
+
+SELECT function_privs_are('pgsodium', 'crypto_aead_det_decrypt', array['bytea', 'bytea', 'uuid', 'bytea'], 'service_role', array['EXECUTE']);
+SELECT function_privs_are('pgsodium', 'crypto_aead_det_encrypt', array['bytea', 'bytea', 'uuid', 'bytea'], 'service_role', array['EXECUTE']);
+SELECT function_privs_are('pgsodium', 'crypto_aead_det_keygen', array[]::text[], 'service_role', array['EXECUTE']);
 
 SELECT * FROM finish();
 ROLLBACK;

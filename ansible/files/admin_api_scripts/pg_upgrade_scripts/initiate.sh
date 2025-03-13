@@ -12,6 +12,7 @@
 EXTENSIONS_TO_DISABLE=(
     "pg_graphql"
     "pg_stat_monitor"
+    "pg_backtrace"
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -217,6 +218,7 @@ function initiate_upgrade {
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_net//" | xargs)
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/check_role_membership//" | xargs)
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/safeupdate//" | xargs)
+    SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_backtrace//" | xargs)
 
     # Exclude empty-string entries, as well as leading/trailing commas and spaces resulting from the above lib exclusions
     #  i.e. " , pg_stat_statements, , pgsodium, " -> "pg_stat_statements, pgsodium"

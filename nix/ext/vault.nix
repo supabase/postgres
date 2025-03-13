@@ -1,24 +1,23 @@
-{ lib, stdenv, fetchFromGitHub, libsodium, postgresql }:
+{ lib, stdenv, fetchFromGitHub, postgresql }:
 
 stdenv.mkDerivation rec {
   pname = "vault";
-  version = "0.3.1";
+  version = "0.2.9";
 
-  buildInputs = [ libsodium postgresql ];
+  buildInputs = [ postgresql ];
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-MC87bqgtynnDhmNZAu96jvfCpsGDCPB0g5TZfRQHd30=";
+    hash = "sha256-kXTngBW4K6FkZM8HvJG2Jha6OQqbejhnk7tchxy031I=";
   };
 
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
 
-    install -D *${postgresql.dlSuffix} $out/lib
-    install -D -t $out/share/postgresql/extension sql/*.sql
-    install -D -t $out/share/postgresql/extension *.control
+    cp sql/*.sql $out/share/postgresql/extension
+    cp *.control $out/share/postgresql/extension
   '';
 
   meta = with lib; {
