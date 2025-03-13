@@ -7,24 +7,25 @@ from pg_catalog.pg_proc p
 where p.proowner = (select oid from pg_catalog.pg_roles where rolname = 'supabase_admin')
         and p.prosecdef = true
 order by 1,2;
- nspname  |            proname             
-----------+--------------------------------
- graphql  | get_schema_version
- graphql  | increment_schema_version
- pgsodium | disable_security_label_trigger
- pgsodium | enable_security_label_trigger
- pgsodium | get_key_by_id
- pgsodium | get_key_by_name
- pgsodium | get_named_keys
- pgsodium | mask_role
- pgsodium | update_mask
- public   | dblink_connect_u
- public   | dblink_connect_u
- public   | pgaudit_ddl_command_end
- public   | pgaudit_sql_drop
- public   | st_estimatedextent
- public   | st_estimatedextent
- public   | st_estimatedextent
- repack   | repack_trigger
-(17 rows)
+  nspname  |            proname             
+-----------+--------------------------------
+ graphql   | get_schema_version
+ graphql   | increment_schema_version
+ pgbouncer | get_auth
+ pgsodium  | disable_security_label_trigger
+ pgsodium  | enable_security_label_trigger
+ pgsodium  | get_key_by_id
+ pgsodium  | get_key_by_name
+ pgsodium  | get_named_keys
+ pgsodium  | mask_role
+ pgsodium  | update_mask
+ public    | dblink_connect_u
+ public    | dblink_connect_u
+ public    | pgaudit_ddl_command_end
+ public    | pgaudit_sql_drop
+ public    | st_estimatedextent
+ public    | st_estimatedextent
+ public    | st_estimatedextent
+ repack    | repack_trigger
+(18 rows)
 
