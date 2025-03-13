@@ -1,0 +1,9 @@
+FROM alpine:3.21
+
+ADD ./output-cloudimg/packer-cloudimg /disk/focal.qcow2
+
+RUN apk add --no-cache qemu-system-aarch64 qemu-img openssh-client nftables cloud-utils-localds aavmf virtiofsd
+# dev stuff
+# RUN apk add --no-cache iproute2
+
+CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"

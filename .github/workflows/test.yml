@@ -26,7 +26,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[] | select(. != "orioledb-17")' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c "split(\"\n\")[:-1]")
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
   build:
     needs: prepare
@@ -76,7 +76,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
       - name: verify schema.sql is committed
         run: |
-          nix run github:supabase/postgres/${{ github.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }}
+          nix run github:supabase/postgres/${{ github.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }} --flake-url github:supabase/postgres/${{ github.sha }}
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
             echo "Detected changes in schema.sql:"
             git diff migrations/schema-${{ env.PGMAJOR }}.sql

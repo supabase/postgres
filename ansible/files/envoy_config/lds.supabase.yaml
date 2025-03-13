@@ -37,51 +37,6 @@ resources:
                     rules:
                       action: DENY
                       policies:
-                        api_key_missing:
-                          permissions:
-                            - any: true
-                          principals:
-                            - not_id:
-                                or_ids:
-                                  ids:
-                                    - header:
-                                        name: apikey
-                                        present_match: true
-                                    - header:
-                                        name: ':path'
-                                        string_match:
-                                          contains: apikey=
-                        api_key_not_valid:
-                          permissions:
-                            - any: true
-                          principals:
-                            - not_id:
-                                or_ids:
-                                  ids:
-                                    - header:
-                                        name: apikey
-                                        string_match:
-                                          exact: anon_key
-                                    - header:
-                                        name: apikey
-                                        string_match:
-                                          exact: service_key
-                                    - header:
-                                        name: apikey
-                                        string_match:
-                                          exact: supabase_admin_key
-                                    - header:
-                                        name: ':path'
-                                        string_match:
-                                          contains: apikey=anon_key
-                                    - header:
-                                        name: ':path'
-                                        string_match:
-                                          contains: apikey=service_key
-                                    - header:
-                                        name: ':path'
-                                        string_match:
-                                          contains: apikey=supabase_admin_key
                         origin_protection_key_missing:
                           permissions:
                             - any: true
@@ -234,6 +189,10 @@ resources:
                                   prefix: /metrics/aggregated
                                 invert_match: true
                     status_code: 401
+                    headers_to_add:
+                      - header:
+                          key: x-sb-error-code
+                          value: '%RESPONSE_CODE_DETAILS%'
                     body_format_override:
                       json_format:
                         message: >-
@@ -383,24 +342,6 @@ resources:
                         route:
                           cluster: admin_api
                           prefix_rewrite: /privileged/
-                        typed_per_filter_config:
-                          envoy.filters.http.rbac:
-                            '@type': >-
-                              type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
-                            rbac:
-                              rules:
-                                action: DENY
-                                policies:
-                                  basic_auth:
-                                    permissions:
-                                      - any: true
-                                    principals:
-                                      - header:
-                                          name: authorization
-                                          invert_match: true
-                                          string_match:
-                                            exact: Basic c2VydmljZV9yb2xlOnNlcnZpY2Vfa2V5
-                                          treat_missing_header_as_empty: true
                       - match:
                           prefix: /metrics/aggregated
                         request_headers_to_remove:

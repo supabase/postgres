@@ -78,6 +78,7 @@ jobs:
         run: |
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
+          # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
@@ -143,7 +144,7 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.process_release_version.outputs.version }}
           tag_name: ${{ steps.process_release_version.outputs.version }}

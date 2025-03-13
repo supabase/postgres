@@ -183,3 +183,17 @@
   ansible.posix.sysctl:
     name: 'net.ipv4.ip_local_port_range'
     value: '1025 65000'
+
+#Set Sysctl params specific to keepalives
+- name: Set net.ipv4.tcp_keepalive_time=1800
+  ansible.builtin.sysctl:
+    name: net.ipv4.tcp_keepalive_time
+    value: 1800
+    state: present
+  when: debpkg_mode or nixpkg_mode
+- name: Set net.ipv4.tcp_keepalive_intvl=60
+  ansible.builtin.sysctl:
+    name: net.ipv4.tcp_keepalive_intvl
+    value: 60
+    state: present
+  when: debpkg_mode or nixpkg_mode

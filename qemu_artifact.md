@@ -1,0 +1,50 @@
+# QEMU artifact
+
+We build a container image that contains a QEMU qcow2 disk image. Container images are a convenient mechanism to ship the disk image to the nodes where they're needed.
+
+Given the size of the image, the first VM using it on a node might take a while to come up, while the image is being pulled down. The image can be pre-fetched to avoid this; we might also switch to other deployment mechanisms in the future.
+
+### Build process
+
+The current AMI process involves a few steps:
+
+1. nix package is build and published using GHA (`.github/workflows/nix-build.yml`)
+  - this builds Postgres along with the PG extensions we use.
+2. "stage1" build (`amazon-arm64-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
+  - uses an upstream Ubuntu image to initialize the AMI
+  - installs and configures the majority of the software that gets shipped as part of the AMI (e.g. gotrue, postgrest, ...)
+3. "stage2" build (`stage2-nix-psql.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
+  - uses the image published from (2)
+  - installs and configures the software that is build and published using nix in (1)
+  - cleans up build dependencies etc
+
+The QEMU artifact process collapses (2) and (3):
+
+a. nix package is build and published using GHA (`.github/workflows/nix-build.yml`)
+b. packer build (`qemu-arm64-nix.pkr.hcl`)
+  - uses an upstream Ubuntu live image as the base
+  - performs the work that was performed as part of the "stage1" and "stage2" builds
+  - this work is executed using `ebssurrogate/scripts/qemu-bootstrap-nix.sh`
+
+## Publish image for later use
+
+Following `make init alpine-image`, the generated VM image should be bundled as a container image with the name: `supabase-postgres-test` . Publish the built docker image to a registry of your choosing, and use the published image with e.g. KubeVirt.
+
+## Iterating on image
+
+For faster iteration, it's more convenient to build the image on an ubuntu bare-metal node that's part of the EKS cluster you're using. Build the image in the `k8s.io` namespace in order for it to be available for immediate use on that node.
+
+### Dependencies note
+
+Installing `docker.io` on an EKS node might interfere with the k8s setup of the node. You can instead install `nerdctl` and `buildkit`:
+
+```bash
+curl -L -O https://github.com/containerd/nerdctl/releases/download/v2.0.0/nerdctl-2.0.0-linux-arm64.tar.gz
+tar -xzf nerdctl-2.0.0-linux-arm64.tar.gz
+mv ./nerdctl /usr/local/bin/
+curl -O -L https://github.com/moby/buildkit/releases/download/v0.17.1/buildkit-v0.17.1.linux-arm64.tar.gz
+tar -xzf buildkit-v0.17.1.linux-arm64.tar.gz
+mv bin/* /usr/local/bin/
+```
+
+You'll need to run buildkit: `buildkitd`

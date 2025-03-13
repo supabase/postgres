@@ -67,7 +67,7 @@
     - name: Remove specified extensions from SQL file
       ansible.builtin.command:
         cmd: >
-          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\|pg_jsonschema\|pg_graphql\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
+          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
       when: is_psql_oriole
       become: yes
 
@@ -76,11 +76,9 @@
         paths: /tmp/migrations/tests/extensions
         patterns: 
           - '*timescaledb*.sql'
+          - '*plv8*.sql'
           - '*postgis*.sql'
           - '*pgrouting*.sql'
-          - '*plv8*.sql'
-          - '*pg_jsonschema*.sql'
-          - '*pg_graphql*.sql'
       register: files_to_remove
       when: is_psql_oriole
 
@@ -91,29 +89,6 @@
       loop: "{{ files_to_remove.files }}"
       when: is_psql_oriole
       become: yes
-  
-    - name: Remove specified extensions from SQL file
-      ansible.builtin.command:
-        cmd: >
-          sed -i "/'pg_graphql',/d" /tmp/unit-tests/unit-test-01.sql
-      when: is_psql_oriole
-      become: yes
-
-    - name: Remove graphql schema test
-      lineinfile:
-        path: /tmp/migrations/tests/database/exists.sql
-        regexp: "^SELECT has_schema\\('graphql'\\);$"
-        state: absent
-      become: yes
-      when: is_psql_oriole
-
-    - name: Remove graphql schema test
-      lineinfile:
-        path: /tmp/migrations/tests/database/exists.sql
-        regexp: "^SELECT has_schema\\('graphql_public'\\);$"
-        state: absent
-      become: yes
-      when: is_psql_oriole
 
 - name: Run Unit tests (with filename unit-test-*) on Postgres Database
   shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
