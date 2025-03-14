@@ -145,4 +145,5 @@ install_nix
 execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
 rm -rf /data/pgdata
+clean_system
 cloud-init clean --logs
