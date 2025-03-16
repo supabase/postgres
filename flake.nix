@@ -846,8 +846,7 @@
             start-server = mkApp "start-server" "start-postgres-server";
             start-client = mkApp "start-client" "start-postgres-client";
             start-replica = mkApp "start-replica" "start-postgres-replica";
-            migrate-postgres = mkApp "migrate-tool" "migrate-postgres";
-            # deactivated for now.
+            # migrate-postgres = mkApp "migrate-tool" "migrate-postgres";
             # sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
             pg-restore = mkApp "pg-restore" "pg-restore";
             local-infra-bootstrap = mkApp "local-infra-bootstrap" "local-infra-bootstrap";
