@@ -568,6 +568,21 @@
               wrapProgram $out/bin/dbmate-tool \
                 --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.overmind pkgs.dbmate pkgs.nix pkgs.jq pkgs.yq ]}
             '';
+          show-commands = pkgs.runCommand "show-commands" {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            buildInputs = [ pkgs.nushell ];
+          } ''
+            mkdir -p $out/bin
+            cat > $out/bin/show-commands << 'EOF'
+            #!${pkgs.nushell}/bin/nu
+            let json_output = (nix flake show --json --quiet --all-systems | from json)
+            let apps = ($json_output | get apps.${system})
+            $apps | transpose name info | select name | each { |it| echo $"Run this app with: nix run .#($it.name)" }
+            EOF
+            chmod +x $out/bin/show-commands
+            wrapProgram $out/bin/show-commands \
+              --prefix PATH : ${pkgs.nushell}/bin
+          '';
           update-readme = pkgs.runCommand "update-readme" {
             nativeBuildInputs = [ pkgs.makeWrapper ];
             buildInputs = [ pkgs.nushell ];
