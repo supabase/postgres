@@ -38,6 +38,9 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
+            (final: prev: {
+              xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
+            })
             (import rust-overlay)
             (final: prev: {
               cargo-pgrx = final.callPackage ./nix/cargo-pgrx/default.nix {
@@ -565,6 +568,21 @@
               wrapProgram $out/bin/dbmate-tool \
                 --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.overmind pkgs.dbmate pkgs.nix pkgs.jq pkgs.yq ]}
             '';
+          show-commands = pkgs.runCommand "show-commands" {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            buildInputs = [ pkgs.nushell ];
+          } ''
+            mkdir -p $out/bin
+            cat > $out/bin/show-commands << 'EOF'
+            #!${pkgs.nushell}/bin/nu
+            let json_output = (nix flake show --json --quiet --all-systems | from json)
+            let apps = ($json_output | get apps.${system})
+            $apps | transpose name info | select name | each { |it| echo $"Run this app with: nix run .#($it.name)" }
+            EOF
+            chmod +x $out/bin/show-commands
+            wrapProgram $out/bin/show-commands \
+              --prefix PATH : ${pkgs.nushell}/bin
+          '';
           update-readme = pkgs.runCommand "update-readme" {
             nativeBuildInputs = [ pkgs.makeWrapper ];
             buildInputs = [ pkgs.nushell ];
@@ -838,8 +856,8 @@
             start-server = mkApp "start-server" "start-postgres-server";
             start-client = mkApp "start-client" "start-postgres-client";
             start-replica = mkApp "start-replica" "start-postgres-replica";
-            migrate-postgres = mkApp "migrate-tool" "migrate-postgres";
-            sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
+            # migrate-postgres = mkApp "migrate-tool" "migrate-postgres";
+            # sync-exts-versions = mkApp "sync-exts-versions" "sync-exts-versions";
             pg-restore = mkApp "pg-restore" "pg-restore";
             local-infra-bootstrap = mkApp "local-infra-bootstrap" "local-infra-bootstrap";
             dbmate-tool = mkApp "dbmate-tool" "dbmate-tool";
