@@ -13,8 +13,8 @@ stdenv.mkDerivation ( finalAttrs: {
     sha256 = "sha256-CLnSaV+pv+i/k1RlFmMVMK9hXWQkJvEim/xYghXv2cs=";
   };
 
-  configure = ''
-    export LDFLAGS="-L${libmysqlclient}/lib/mariadb -lmysqlclient"
+  preConfigure = ''
+    export NIX_LDFLAGS="-L${libmysqlclient}/lib/mariadb -lmysqlclient"
   '';
 
   makeFlags = [
@@ -32,8 +32,8 @@ stdenv.mkDerivation ( finalAttrs: {
   '';
 
   postInstall = ''
-    ln -s ${libmysqlclient}/lib/mariadb/libmysqlclient.so ${postgresql.lib}/lib/libmysqlclient.so
-    ldconfig
+    # Ensure mysql_fdw.so finds the correct libmysqlclient.so path
+    patchelf --set-rpath ${libmysqlclient}/lib/mariadb $out/lib/mysql_fdw.so
   '';
 
   meta = with lib; {
