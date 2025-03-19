@@ -13,8 +13,9 @@ nix build .#checks.$SYSTEM.psql_orioledb-17 -L --no-link
 nix build .#psql_15/bin -o psql_15
 
 nix build .#psql_orioledb-17/bin -o psql_orioledb_17
-
+nix build .#wal-g -o wal-g
 # Copy to S3
+nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./wal-g
 nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_15
 nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_orioledb_17
 if [ "$SYSTEM" = "aarch64-linux" ]; then
@@ -26,4 +27,5 @@ if [ "$SYSTEM" = "aarch64-linux" ]; then
     nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_15_src
     nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_orioledb-17_debug-debug
     nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_orioledb-17_src
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./wal-g
 fi

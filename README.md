@@ -16,9 +16,8 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [hypopg](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | [1.4.1](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | Hypothetical Indexes for PostgreSQL |
 | [index_advisor](https://github.com/olirice/index_advisor/archive/v0.2.0.tar.gz) | [0.2.0](https://github.com/olirice/index_advisor/archive/v0.2.0.tar.gz) | Recommend indexes to improve query performance in PostgreSQL |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
-| [pg_backtrace](https://github.com/pashkinelfe/pg_backtrace/archive/d100bac815a7365e199263f5b3741baf71b14c70.tar.gz) | [1.1](https://github.com/pashkinelfe/pg_backtrace/archive/d100bac815a7365e199263f5b3741baf71b14c70.tar.gz) | Updated fork of pg_backtrace |
 | [pg_cron](https://github.com/citusdata/pg_cron/archive/v1.6.4.tar.gz) | [1.6.4](https://github.com/citusdata/pg_cron/archive/v1.6.4.tar.gz) | Run Cron jobs through PostgreSQL |
-| [pg_graphql](https://github.com/supabase/pg_graphql/archive/v1.5.9.tar.gz) | [1.5.9](https://github.com/supabase/pg_graphql/archive/v1.5.9.tar.gz) | GraphQL support for PostreSQL |
+| [pg_graphql](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | [1.5.11](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | GraphQL support for PostreSQL |
 | [pg_hashids](https://github.com/iCyberon/pg_hashids/archive/cd0e1b31d52b394a0df64079406a14a4f7387cd6.tar.gz) | [cd0e1b31d52b394a0df64079406a14a4f7387cd6](https://github.com/iCyberon/pg_hashids/archive/cd0e1b31d52b394a0df64079406a14a4f7387cd6.tar.gz) | Generate short unique IDs in PostgreSQL |
 | [pg_jsonschema](https://github.com/supabase/pg_jsonschema/archive/v0.3.3.tar.gz) | [0.3.3](https://github.com/supabase/pg_jsonschema/archive/v0.3.3.tar.gz) | JSON Schema Validation for PostgreSQL |
 | [pg_net](https://github.com/supabase/pg_net/archive/refs/tags/v0.14.0.tar.gz) | [0.14.0](https://github.com/supabase/pg_net/archive/refs/tags/v0.14.0.tar.gz) | Async networking for Postgres |
@@ -39,7 +38,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [plv8](https://github.com/plv8/plv8/archive/v3.1.10.tar.gz) | [3.1.10](https://github.com/plv8/plv8/archive/v3.1.10.tar.gz) | V8 Engine Javascript Procedural Language add-on for PostgreSQL |
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
 | [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
-| [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | [0.4.4](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
+| [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.5.tar.gz) | [0.4.5](https://github.com/supabase/wrappers/archive/v0.4.5.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | [2.6.0](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | PostgreSQL extension for enhanced security |
 | [timescaledb-apache](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | [2.16.1](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | Scales PostgreSQL for time-series data via automatic partitioning across time and space |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | [0.2.9](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | Store encrypted secrets in PostgreSQL |
@@ -52,9 +51,8 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [index_advisor](https://github.com/olirice/index_advisor/archive/v0.2.0.tar.gz) | [0.2.0](https://github.com/olirice/index_advisor/archive/v0.2.0.tar.gz) | Recommend indexes to improve query performance in PostgreSQL |
 | [orioledb](https://github.com/orioledb/orioledb/archive/beta9.tar.gz) | [orioledb](https://github.com/orioledb/orioledb/archive/beta9.tar.gz) | orioledb |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
-| [pg_backtrace](https://github.com/pashkinelfe/pg_backtrace/archive/d100bac815a7365e199263f5b3741baf71b14c70.tar.gz) | [1.1](https://github.com/pashkinelfe/pg_backtrace/archive/d100bac815a7365e199263f5b3741baf71b14c70.tar.gz) | Updated fork of pg_backtrace |
 | [pg_cron](https://github.com/citusdata/pg_cron/archive/v1.6.4.tar.gz) | [1.6.4](https://github.com/citusdata/pg_cron/archive/v1.6.4.tar.gz) | Run Cron jobs through PostgreSQL |
-| [pg_graphql](https://github.com/supabase/pg_graphql/archive/v1.5.9.tar.gz) | [1.5.9](https://github.com/supabase/pg_graphql/archive/v1.5.9.tar.gz) | GraphQL support for PostreSQL |
+| [pg_graphql](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | [1.5.11](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | GraphQL support for PostreSQL |
 | [pg_hashids](https://github.com/iCyberon/pg_hashids/archive/cd0e1b31d52b394a0df64079406a14a4f7387cd6.tar.gz) | [cd0e1b31d52b394a0df64079406a14a4f7387cd6](https://github.com/iCyberon/pg_hashids/archive/cd0e1b31d52b394a0df64079406a14a4f7387cd6.tar.gz) | Generate short unique IDs in PostgreSQL |
 | [pg_jsonschema](https://github.com/supabase/pg_jsonschema/archive/v0.3.3.tar.gz) | [0.3.3](https://github.com/supabase/pg_jsonschema/archive/v0.3.3.tar.gz) | JSON Schema Validation for PostgreSQL |
 | [pg_net](https://github.com/supabase/pg_net/archive/refs/tags/v0.14.0.tar.gz) | [0.14.0](https://github.com/supabase/pg_net/archive/refs/tags/v0.14.0.tar.gz) | Async networking for Postgres |
@@ -74,7 +72,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [plpgsql-check](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | [2.7.11](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | Linter tool for language PL/pgSQL |
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
 | [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
-| [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | [0.4.4](https://github.com/supabase/wrappers/archive/v0.4.4.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
+| [supabase-wrappers](https://github.com/supabase/wrappers/archive/v0.4.5.tar.gz) | [0.4.5](https://github.com/supabase/wrappers/archive/v0.4.5.tar.gz) | Various Foreign Data Wrappers (FDWs) for PostreSQL |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | [2.6.0](https://github.com/supabase/supautils/archive/refs/tags/v2.6.0.tar.gz) | PostgreSQL extension for enhanced security |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | [0.2.9](https://github.com/supabase/vault/archive/refs/tags/v0.2.9.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
