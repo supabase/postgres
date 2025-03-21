@@ -2,7 +2,6 @@ BEGIN;
 -- create net extension as supabase_admin
 create extension if not exists pg_net with schema "extensions";
 
--- \ir migrations/db/init-scripts/00000000000003-post-setup.sql
 grant usage on schema net TO postgres, anon, authenticated, service_role;
 alter function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) security definer;
 alter function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) security definer;

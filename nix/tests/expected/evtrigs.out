@@ -1,0 +1,19 @@
+select proname, proowner::regrole
+from pg_proc where prorettype = 'event_trigger'::regtype
+order by proname;
+           proname            |    proowner    
+------------------------------+----------------
+ event_trigger_in             | supabase_admin
+ grant_pg_cron_access         | supabase_admin
+ grant_pg_graphql_access      | supabase_admin
+ grant_pg_net_access          | supabase_admin
+ increment_schema_version     | supabase_admin
+ pg_tle_feature_info_sql_drop | supabase_admin
+ pgaudit_ddl_command_end      | supabase_admin
+ pgaudit_sql_drop             | supabase_admin
+ pgrst_ddl_watch              | supabase_admin
+ pgrst_drop_watch             | supabase_admin
+ set_graphql_placeholder      | supabase_admin
+ trg_mask_update              | supabase_admin
+(12 rows)
+

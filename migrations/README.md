@@ -42,8 +42,6 @@ nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
 
 aiming to provide a single source of truth for migrations on the platform that can be depended upon by those components. For more information on goals see [the RFC](https://www.notion.so/supabase/Centralize-SQL-Migrations-cd3847ae027d4f2bba9defb2cc82f69a)
 
-
-
 ## How it was Created
 
 Migrations were pulled (in order) from:
@@ -53,9 +51,8 @@ Migrations were pulled (in order) from:
 
 For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that executes migrations in the same order as ami build:
 
-1. Run all `db/init-scripts` with `postgres` superuser role.
-2. Run all `db/migrations` with `supabase_admin` superuser role.
-3. Finalize role passwords with `/etc/postgresql.schema.sql` if present.
+1. Run all `db/migrations` with `supabase_admin` superuser role.
+2. Finalize role passwords with `/etc/postgresql.schema.sql` if present.
 
 Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/develop/ansible/playbook-docker.yml#L9) image contains several migration scripts to configure default extensions. These are run first by docker entrypoint and included in ami by ansible.
 

@@ -807,9 +807,6 @@
                 exit 1
               fi
 
-              echo "Running migrations tests"
-              pg_prove -p 5435 -U supabase_admin -h localhost -d postgres -v ${./migrations/tests}/test.sql
-
               mkdir -p $out/regression_output
               if ! pg_regress \
                 --use-existing \
@@ -825,12 +822,15 @@
                 exit 1
               fi
 
+              echo "Running migrations tests"
+              pg_prove -p 5435 -U supabase_admin -h localhost -d postgres -v ${./migrations/tests}/test.sql
+
               # Copy logs to output
               for logfile in $(find /tmp -name postgresql.log -type f); do
                 cp "$logfile" $out/postgresql.log
               done
               exit 0
-            '';      
+            '';
     in
       rec {
         # The list of all packages that can be built with 'nix build'. The list

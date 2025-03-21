@@ -243,11 +243,6 @@ EOSQL
     export DATABASE_URL="postgres://$PGSQL_USER:$PGPASSWORD@localhost:$PORTNO/postgres?sslmode=disable"
     # Export path so dbmate can find correct psql and pg_dump
     export PATH="$PSQLBIN:$PATH"
-    # Run init scripts
-    if ! dbmate --migrations-dir "$MIGRATIONS_DIR/init-scripts" up; then
-        echo "Error: Initial migration failed"
-        exit 1
-    fi
 
     # Password update command
     if ! "${PSQLBIN}/psql" -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then

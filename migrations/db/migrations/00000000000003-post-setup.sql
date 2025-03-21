@@ -39,8 +39,20 @@ BEGIN
 
 END;
 $$;
-CREATE EVENT TRIGGER issue_pg_cron_access ON ddl_command_end WHEN TAG in ('CREATE SCHEMA')
-EXECUTE PROCEDURE extensions.grant_pg_cron_access();
+DO $$
+
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_catalog.pg_event_trigger
+    WHERE evtname = 'issue_pg_cron_access'
+  )
+  THEN
+    CREATE EVENT TRIGGER issue_pg_cron_access ON ddl_command_end WHEN TAG in ('CREATE SCHEMA')
+    EXECUTE PROCEDURE extensions.grant_pg_cron_access();
+  END IF;
+END
+$$;
 COMMENT ON FUNCTION extensions.grant_pg_cron_access IS 'Grants access to pg_cron';
 
 -- Event trigger for pg_net
@@ -82,7 +94,6 @@ BEGIN
   END IF;
 END;
 $$;
-COMMENT ON FUNCTION extensions.grant_pg_net_access IS 'Grants access to pg_net';
 
 DO
 $$
@@ -99,9 +110,21 @@ BEGIN
   END IF;
 END
 $$;
+COMMENT ON FUNCTION extensions.grant_pg_net_access IS 'Grants access to pg_net';
 
 -- Supabase dashboard user
-CREATE ROLE dashboard_user NOSUPERUSER CREATEDB CREATEROLE REPLICATION;
+do $$
+begin
+  if not exists (
+    select 1 from pg_roles
+    where rolname = 'dashboard_user'
+  )
+  then
+    CREATE ROLE dashboard_user NOSUPERUSER CREATEDB CREATEROLE REPLICATION;
+  end if;
+end
+$$;
+
 GRANT ALL ON DATABASE postgres TO dashboard_user;
 GRANT ALL ON SCHEMA auth TO dashboard_user;
 GRANT ALL ON SCHEMA extensions TO dashboard_user;

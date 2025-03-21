@@ -309,14 +309,6 @@ EOSQL
             'stop_postgres' 1
         fi
     else
-        # Run default init scripts
-        for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
-            echo "Running $sql"
-            if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
-                'stop_postgres' 1
-            fi
-        done
-
         # Set superuser password
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
             'stop_postgres' 1
