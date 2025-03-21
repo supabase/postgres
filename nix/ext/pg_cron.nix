@@ -25,7 +25,6 @@ stdenv.mkDerivation rec {
     description = "Run Cron jobs through PostgreSQL";
     homepage    = "https://github.com/citusdata/pg_cron";
     changelog   = "https://github.com/citusdata/pg_cron/raw/v${version}/CHANGELOG.md";
-    maintainers = with maintainers; [ samrose ];
     platforms   = postgresql.meta.platforms;
     license     = licenses.postgresql;
   };

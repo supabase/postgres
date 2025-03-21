@@ -26,7 +26,6 @@ stdenv.mkDerivation rec {
     description = "Partition management extension for PostgreSQL";
     homepage    = "https://github.com/pgpartman/pg_partman";
     changelog   = "https://github.com/pgpartman/pg_partman/blob/v${version}/CHANGELOG.md";
-    maintainers = with maintainers; [ samrose ];
     platforms   = postgresql.meta.platforms;
     license     = licenses.postgresql;
     broken      = versionOlder postgresql.version "14";

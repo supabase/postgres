@@ -81,7 +81,6 @@ postInstall = ''
     homepage = "https://postgis.net/";
     changelog = "https://git.osgeo.org/gitea/postgis/postgis/raw/tag/${version}/NEWS";
     license = licenses.gpl2;
-    maintainers = with maintainers; [ samrose ];
     inherit (postgresql.meta) platforms;
   };
 }

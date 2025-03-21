@@ -26,6 +26,5 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/postgrespro/rum";
     license = licenses.postgresql;
     platforms = postgresql.meta.platforms;
-    maintainers = with maintainers; [ samrose ];
   };
 }

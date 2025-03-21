@@ -26,6 +26,5 @@ stdenv.mkDerivation rec {
     '';
     license = licenses.mit;
     platforms = postgresql.meta.platforms;
-    maintainers = with maintainers; [samrose];
   };
 }

@@ -60,7 +60,6 @@ let
         license = licenses.asl20;
         description = "Archival restoration tool for PostgreSQL";
         mainProgram = "wal-g-${majorVersion}";
-        maintainers = [ samrose ];
       };
     };
 in

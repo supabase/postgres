@@ -25,7 +25,6 @@ stdenv.mkDerivation rec {
       as well as the ability to integrate with other TAP-emitting test frameworks.
       It can also be used in the xUnit testing style.
     '';
-    maintainers = with maintainers; [ samrose ];
     homepage = "https://pgtap.org";
     inherit (postgresql.meta) platforms;
     license = licenses.mit;

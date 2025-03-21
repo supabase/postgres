@@ -46,6 +46,5 @@ maven.buildMavenPackage rec {
     description = "PL/Java extension for PostgreSQL";
     homepage = https://github.com/tada/pljava;
     license = licenses.bsd3;
-    maintainers = [ maintainers.samrose ];  # Update with actual maintainer info
   };
 }

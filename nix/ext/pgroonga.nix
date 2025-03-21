@@ -74,6 +74,5 @@ stdenv.mkDerivation rec {
     changelog = "https://github.com/pgroonga/pgroonga/releases/tag/${version}";
     license = licenses.postgresql;
     platforms = postgresql.meta.platforms;
-    maintainers = with maintainers; [ samrose ];
   };
 }

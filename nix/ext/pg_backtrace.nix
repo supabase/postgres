@@ -26,7 +26,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Updated fork of pg_backtrace";
     homepage    = "https://github.com/pashkinelfe/pg_backtrace";
-    maintainers = with maintainers; [ samrose ];
     platforms   = postgresql.meta.platforms;
     license     = licenses.postgresql;
   };

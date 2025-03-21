@@ -131,7 +131,6 @@ buildPgrxExtension_0_11_3 rec {
   meta = with lib; {
     description = "JSON Schema Validation for PostgreSQL";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

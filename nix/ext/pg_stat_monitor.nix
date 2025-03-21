@@ -41,7 +41,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Query Performance Monitoring Tool for PostgreSQL";
     homepage = "https://github.com/percona/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
     broken = lib.versionOlder postgresql.version "15";

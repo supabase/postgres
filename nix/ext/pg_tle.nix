@@ -29,7 +29,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Framework for 'Trusted Language Extensions' in PostgreSQL";
     homepage = "https://github.com/aws/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

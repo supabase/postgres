@@ -23,7 +23,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Filter PostgreSQL statements by execution plans";
     homepage = "https://github.com/pgexperts/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

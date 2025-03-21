@@ -41,7 +41,6 @@ stdenv.mkDerivation {
     description = "Open Source PostgreSQL Audit Logging";
     homepage = "https://github.com/pgaudit/pgaudit";
     changelog = "https://github.com/pgaudit/pgaudit/releases/tag/${source.version}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

@@ -59,7 +59,6 @@ stdenv.mkDerivation (finalAttrs: {
     '';
     homepage = "https://github.com/reorg/pg_repack";
     license = licenses.bsd3;
-    maintainers = with maintainers; [ samrose ];
     inherit (postgresql.meta) platforms;
     mainProgram = "pg_repack";
   };

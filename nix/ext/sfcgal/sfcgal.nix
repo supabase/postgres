@@ -26,6 +26,5 @@ stdenv.mkDerivation rec {
     homepage = "https://sfcgal.gitlab.io/SFCGAL/";
     license = with licenses; [ gpl3Plus lgpl3Plus];
     platforms = platforms.all;
-    maintainers = with maintainers; [ samrose ];
   };
 }

@@ -35,13 +35,12 @@ buildPgrxExtension_0_12_9 rec {
 CARGO_BUILD_RUSTFLAGS = "--cfg tokio_unstable -C debuginfo=0";
   CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG = true;
 
-  
+
   doCheck = false;
 
   meta = with lib; {
     description = "GraphQL support for PostreSQL";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };
