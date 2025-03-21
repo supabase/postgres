@@ -603,8 +603,6 @@
 
         makeCheckHarness = pgpkg:
           let
-            # TODO: None of these tests are used
-            sqlTests = ./nix/tests/smoke;
             pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
             pg_regress = basePackages.pg_regress;
             getkey-script = pkgs.stdenv.mkDerivation {
