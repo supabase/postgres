@@ -23,10 +23,10 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Set PostgreSQL versions - only builds pg15 atm
+      - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[0]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[1]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
