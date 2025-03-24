@@ -73,17 +73,17 @@ source "amazon-ebs" "ubuntu" {
     most_recent = true
     owners      = ["amazon", "self"]
   }
-  
+
   communicator = "ssh"
   ssh_pty = true
   ssh_username = "ubuntu"
   ssh_timeout = "5m"
-  
+
   associate_public_ip_address = true
 
 
   ena_support = true
-  
+
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
@@ -127,15 +127,10 @@ build {
   }
 
   provisioner "file" {
-    source       = "ebssurrogate/files/unit-tests"
-    destination  = "/tmp/unit-tests"
-  }
-
-  provisioner "file" {
     source = "scripts"
     destination = "/tmp/ansible-playbook"
   }
-  
+
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
@@ -143,5 +138,5 @@ build {
     ]
      script = "scripts/nix-provision.sh"
   }
-  
+
 }

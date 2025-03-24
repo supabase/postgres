@@ -807,6 +807,9 @@
                 exit 1
               fi
 
+              echo "Running migrations tests"
+              pg_prove -p 5435 -U supabase_admin -h localhost -d postgres -v ${./migrations/tests}/test.sql
+
               mkdir -p $out/regression_output
               if ! pg_regress \
                 --use-existing \

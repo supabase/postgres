@@ -1,9 +1,3 @@
-- name: install pg_prove
-  apt:
-    pkg:
-      - libtap-parser-sourcehandler-pgtap-perl
-  when: debpkg_mode
-
 # - name: Temporarily disable PG Sodium references in config
 #   become: yes
 #   become_user: postgres
@@ -16,9 +10,9 @@
   become_user: postgres
   shell:
     cmd: >
-      sed -i.bak 
-      -e 's/\(shared_preload_libraries = '\''.*\)pgsodium,\(.*'\''\)/\1\2/' 
-      -e 's/\(shared_preload_libraries = '\''.*\)supabase_vault,\(.*'\''\)/\1\2/' 
+      sed -i.bak
+      -e 's/\(shared_preload_libraries = '\''.*\)pgsodium,\(.*'\''\)/\1\2/'
+      -e 's/\(shared_preload_libraries = '\''.*\)supabase_vault,\(.*'\''\)/\1\2/'
       -e 's/\(shared_preload_libraries = '\''.*\), *supabase_vault'\''/\1'\''/'
       -e 's/pgsodium.getkey_script=/#pgsodium.getkey_script=/'
       /etc/postgresql/postgresql.conf
@@ -74,53 +68,6 @@
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   when: stage2_nix
 
-
-- name: Check psql_version and modify migrations if oriole-xx
-  block:
-    - name: Check if psql_version is psql_orioledb-xx
-      set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
-
-    - name: Remove specified extensions from SQL file
-      ansible.builtin.command:
-        cmd: >
-          sed -i '/\\ir.*\(timescaledb\|postgis\|pgrouting\|plv8\).*\.sql/d' /tmp/migrations/tests/extensions/test.sql
-      when: is_psql_oriole
-      become: yes
-
-    - name: Remove specified extension files from extensions directory
-      ansible.builtin.find:
-        paths: /tmp/migrations/tests/extensions
-        patterns: 
-          - '*timescaledb*.sql'
-          - '*plv8*.sql'
-          - '*postgis*.sql'
-          - '*pgrouting*.sql'
-      register: files_to_remove
-      when: is_psql_oriole
-
-    - name: Delete matched extension files
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: absent
-      loop: "{{ files_to_remove.files }}"
-      when: is_psql_oriole
-      become: yes
-
-- name: Run Unit tests (with filename unit-test-*) on Postgres Database
-  shell: /usr/bin/pg_prove -U postgres -h localhost -d postgres -v /tmp/unit-tests/unit-test-*.sql
-  register: retval
-  failed_when: retval.rc != 0
-  when: debpkg_mode or stage2_nix
-
-- name: Run migrations tests
-  shell: /usr/bin/pg_prove -U supabase_admin -h localhost -d postgres -v tests/test.sql
-  register: retval
-  failed_when: retval.rc != 0
-  when: debpkg_mode or stage2_nix
-  args:
-    chdir: /tmp/migrations
-
 - name: Re-enable PG Sodium references in config
   become: yes
   become_user: postgres
@@ -131,14 +78,6 @@
 - name: Reset db stats
   shell: /usr/lib/postgresql/bin/psql --no-password --no-psqlrc -d postgres -h localhost -U supabase_admin -c 'SELECT pg_stat_statements_reset(); SELECT pg_stat_reset();'
   when: debpkg_mode or stage2_nix
-
-- name: remove pg_prove
-  apt:
-    pkg:
-      - libtap-parser-sourcehandler-pgtap-perl
-    state: absent
-    autoremove: yes
-  when: debpkg_mode
 
 - name: Stop Postgres Database
   become: yes

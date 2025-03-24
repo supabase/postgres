@@ -180,9 +180,6 @@ function setup_chroot_environment {
 	# Copy migrations
 	cp -r /tmp/migrations /mnt/tmp/
 
-	# Copy unit tests 
-	cp -r /tmp/unit-tests /mnt/tmp/
-
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh
