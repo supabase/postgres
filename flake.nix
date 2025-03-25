@@ -865,6 +865,7 @@
             local-infra-bootstrap = mkApp "local-infra-bootstrap" "local-infra-bootstrap";
             dbmate-tool = mkApp "dbmate-tool" "dbmate-tool";
             update-readme = mkApp "update-readme" "update-readme";
+            show-commands = mkApp "show-commands" "show-commands";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
