@@ -5,7 +5,6 @@
 
 # Default values
 PSQL_VERSION="15"
-MIGRATION_FILE=""
 PORTNO="@PGSQL_DEFAULT_PORT@"
 PSQL_USER="postgres"
 
@@ -15,7 +14,6 @@ print_help() {
     echo
     echo "Options:"
     echo "  -v, --version [15|16|orioledb-16]  Specify the PostgreSQL version to use (required)"
-    echo "  -f, --file FILE                    Provide a custom migration script"
     echo "  -u, --user USER                    Specify the user/role to use (default: postgres)"
     echo "  -h, --help                         Show this help message"
     echo
@@ -29,7 +27,6 @@ print_help() {
     echo "Examples:"
     echo "  nix run .#start-client"
     echo "  nix run .#start-client -- --version 15"
-    echo "  nix run .#start-client -- --version 16 --file custom_migration.sql"
     echo "  nix run .#start-client -- --version 16 --port 5433"
     echo "  nix run .#start-client -- --version 16 --user supabase_admin"
 }
@@ -43,15 +40,6 @@ while [[ "$#" -gt 0 ]]; do
                 shift 2
             else
                 echo "Error: --version requires an argument (15, 16, or orioledb-16)"
-                exit 1
-            fi
-            ;;
-        -f|--file)
-            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
-                MIGRATION_FILE="$2"
-                shift 2
-            else
-                echo "Error: --file requires a filename"
                 exit 1
             fi
             ;;
@@ -114,12 +102,6 @@ fi
 export PATH=$BINDIR/bin:$PATH
 export POSTGRES_DB=postgres
 export POSTGRES_HOST=localhost
-
-PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
-MIGRATIONS_DIR=@MIGRATIONS_DIR@
-POSTGRESQL_SCHEMA_SQL=@POSTGRESQL_SCHEMA_SQL@
-PGBOUNCER_AUTH_SCHEMA_SQL=@PGBOUNCER_AUTH_SCHEMA_SQL@
-STAT_EXTENSION_SQL=@STAT_EXTENSION_SQL@
 
 # Start interactive psql session
 exec psql -U "$PSQL_USER" -p "$PORTNO" -h localhost postgres
