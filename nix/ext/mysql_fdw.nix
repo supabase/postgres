@@ -29,6 +29,7 @@ stdenv.mkDerivation ( finalAttrs: {
     cp *${postgresql.dlSuffix}      $out/lib
     cp *.sql     $out/share/postgresql/extension
     cp *.control $out/share/postgresql/extension
+    cp *.config  $out/share/postgresql/extension
   '';
 
   postInstall = ''
