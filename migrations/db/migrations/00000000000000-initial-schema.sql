@@ -111,10 +111,11 @@ grant authenticated     to authenticator;
 grant service_role      to authenticator;
 grant supabase_admin    to authenticator;
 
+-- These are required so that the users receive grants whenever "postgres" creates tables/function
 grant usage                     on schema public to postgres, anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to postgres, anon, authenticated, service_role;
-alter default privileges in schema public grant all on functions to postgres, anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to postgres, anon, authenticated, service_role;
+alter default privileges for role postgres in schema public grant all on tables to postgres, anon, authenticated, service_role;
+alter default privileges for role postgres in schema public grant all on functions to postgres, anon, authenticated, service_role;
+alter default privileges for role postgres in schema public grant all on sequences to postgres, anon, authenticated, service_role;
 
 -- Allow Extensions to be used in the API
 grant usage                     on schema extensions to postgres, anon, authenticated, service_role;
