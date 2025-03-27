@@ -7,7 +7,7 @@ alter default privileges in schema storage grant all on tables to postgres, anon
 alter default privileges in schema storage grant all on functions to postgres, anon, authenticated, service_role;
 alter default privileges in schema storage grant all on sequences to postgres, anon, authenticated, service_role;
 
-CREATE TABLE IF NOT EXISTS "storage"."buckets" (
+CREATE TABLE "storage"."buckets" (
     "id" text not NULL,
     "name" text NOT NULL,
     "owner" uuid,
@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS "storage"."buckets" (
     CONSTRAINT "buckets_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "bname" ON "storage"."buckets" USING BTREE ("name");
+CREATE UNIQUE INDEX "bname" ON "storage"."buckets" USING BTREE ("name");
 
-CREATE TABLE IF NOT EXISTS "storage"."objects" (
+CREATE TABLE "storage"."objects" (
     "id" uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
     "bucket_id" text,
     "name" text,
@@ -31,12 +31,12 @@ CREATE TABLE IF NOT EXISTS "storage"."objects" (
     CONSTRAINT "objects_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX IF NOT EXISTS "bucketid_objname" ON "storage"."objects" USING BTREE ("bucket_id","name");
-CREATE INDEX IF NOT EXISTS name_prefix_search ON storage.objects(name text_pattern_ops);
+CREATE UNIQUE INDEX "bucketid_objname" ON "storage"."objects" USING BTREE ("bucket_id","name");
+CREATE INDEX name_prefix_search ON storage.objects(name text_pattern_ops);
 
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE FUNCTION storage.foldername(name text)
+CREATE FUNCTION storage.foldername(name text)
  RETURNS text[]
  LANGUAGE plpgsql
 AS $function$
@@ -48,7 +48,7 @@ BEGIN
 END
 $function$;
 
-CREATE OR REPLACE FUNCTION storage.filename(name text)
+CREATE FUNCTION storage.filename(name text)
  RETURNS text
  LANGUAGE plpgsql
 AS $function$
@@ -60,7 +60,7 @@ BEGIN
 END
 $function$;
 
-CREATE OR REPLACE FUNCTION storage.extension(name text)
+CREATE FUNCTION storage.extension(name text)
  RETURNS text
  LANGUAGE plpgsql
 AS $function$
@@ -75,7 +75,7 @@ BEGIN
 END
 $function$;
 
-CREATE OR REPLACE FUNCTION storage.search(prefix text, bucketname text, limits int DEFAULT 100, levels int DEFAULT 1, offsets int DEFAULT 0)
+CREATE FUNCTION storage.search(prefix text, bucketname text, limits int DEFAULT 100, levels int DEFAULT 1, offsets int DEFAULT 0)
  RETURNS TABLE (
     name text,
     id uuid,
@@ -104,17 +104,7 @@ CREATE TABLE IF NOT EXISTS storage.migrations (
   executed_at timestamp DEFAULT current_timestamp
 );
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_roles
-    where rolname = 'supabase_storage_admin'
-  )
-  then
-    CREATE USER supabase_storage_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
-  end if;
-end
-$$;
+CREATE USER supabase_storage_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
 GRANT ALL PRIVILEGES ON SCHEMA storage TO supabase_storage_admin;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA storage TO supabase_storage_admin;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA storage TO supabase_storage_admin;
