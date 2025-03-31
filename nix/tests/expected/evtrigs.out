@@ -1,0 +1,25 @@
+SELECT
+  e.evtname,
+  e.evtowner::regrole AS evtowner,
+  e.evtfoid::regproc AS evtfunction,
+  p.proowner::regrole AS function_owner
+FROM pg_event_trigger e
+JOIN pg_proc p
+  ON e.evtfoid = p.oid
+WHERE p.prorettype = 'event_trigger'::regtype;
+                evtname                 |    evtowner    |            evtfunction             | function_owner 
+----------------------------------------+----------------+------------------------------------+----------------
+ issue_pg_net_access                    | postgres       | grant_pg_net_access                | postgres
+ issue_pg_graphql_access                | supabase_admin | grant_pg_graphql_access            | supabase_admin
+ issue_graphql_placeholder              | supabase_admin | set_graphql_placeholder            | supabase_admin
+ pgrst_ddl_watch                        | supabase_admin | pgrst_ddl_watch                    | supabase_admin
+ pgrst_drop_watch                       | supabase_admin | pgrst_drop_watch                   | supabase_admin
+ graphql_watch_ddl                      | supabase_admin | graphql.increment_schema_version   | supabase_admin
+ graphql_watch_drop                     | supabase_admin | graphql.increment_schema_version   | supabase_admin
+ issue_pg_cron_access                   | supabase_admin | grant_pg_cron_access               | postgres
+ pg_tle_event_trigger_for_drop_function | supabase_admin | pgtle.pg_tle_feature_info_sql_drop | supabase_admin
+ pgaudit_ddl_command_end                | supabase_admin | pgaudit_ddl_command_end            | supabase_admin
+ pgaudit_sql_drop                       | supabase_admin | pgaudit_sql_drop                   | supabase_admin
+ pgsodium_trg_mask_update               | supabase_admin | pgsodium.trg_mask_update           | supabase_admin
+(12 rows)
+
