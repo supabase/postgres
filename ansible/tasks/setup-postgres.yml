@@ -239,12 +239,12 @@
       become: yes
       become_user: postgres
       shell: >
-        source /var/lib/postgresql/.bashrc && initdb -D /var/lib/postgresql/data 
-        --allow-group-access 
-        --username=supabase_admin 
-        --locale-provider=icu 
-        --encoding=UTF-8 
-        --icu-locale=en_US.UTF-8 
+        source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+        -o "--allow-group-access"
+        -o "--username=supabase_admin"
+        -o "--locale-provider=icu"
+        -o "--encoding=UTF-8"
+        -o "--icu-locale=en_US.UTF-8"
       args:
         executable: /bin/bash
       environment:
