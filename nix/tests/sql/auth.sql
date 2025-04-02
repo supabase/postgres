@@ -28,20 +28,26 @@ select
 from pg_roles r
 where r.rolname = 'supabase_auth_admin';
 
--- auth schema tables with owners
+-- auth schema tables with owners and rls policies
 select
-  n.nspname as schema_name,
+  ns.nspname as schema_name,
   c.relname as table_name,
-  r.rolname as owner
+  r.rolname as owner,
+  c.relrowsecurity as rls_enabled,
+  string_agg(p.polname, ', ' order by p.polname) as rls_policies
 from
   pg_class c
 join
-  pg_namespace n on c.relnamespace = n.oid
+  pg_namespace ns on c.relnamespace = ns.oid
 join
   pg_roles r on c.relowner = r.oid
+left join
+  pg_policy p on p.polrelid = c.oid
 where
-  c.relkind in ('r')  -- 'r' for regular tables
-  and n.nspname = 'auth'
+  ns.nspname = 'auth'
+  and c.relkind = 'r'
+group by
+  ns.nspname, c.relname, r.rolname, c.relrowsecurity
 order by
   c.relname;
 

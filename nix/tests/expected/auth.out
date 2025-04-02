@@ -40,29 +40,35 @@ where r.rolname = 'supabase_auth_admin';
  {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
 (1 row)
 
--- auth schema tables with owners
+-- auth schema tables with owners and rls policies
 select
-  n.nspname as schema_name,
+  ns.nspname as schema_name,
   c.relname as table_name,
-  r.rolname as owner
+  r.rolname as owner,
+  c.relrowsecurity as rls_enabled,
+  string_agg(p.polname, ', ' order by p.polname) as rls_policies
 from
   pg_class c
 join
-  pg_namespace n on c.relnamespace = n.oid
+  pg_namespace ns on c.relnamespace = ns.oid
 join
   pg_roles r on c.relowner = r.oid
+left join
+  pg_policy p on p.polrelid = c.oid
 where
-  c.relkind in ('r')  -- 'r' for regular tables
-  and n.nspname = 'auth'
+  ns.nspname = 'auth'
+  and c.relkind = 'r'
+group by
+  ns.nspname, c.relname, r.rolname, c.relrowsecurity
 order by
   c.relname;
- schema_name |    table_name     |        owner        
--------------+-------------------+---------------------
- auth        | audit_log_entries | supabase_auth_admin
- auth        | instances         | supabase_auth_admin
- auth        | refresh_tokens    | supabase_auth_admin
- auth        | schema_migrations | supabase_auth_admin
- auth        | users             | supabase_auth_admin
+ schema_name |    table_name     |        owner        | rls_enabled | rls_policies 
+-------------+-------------------+---------------------+-------------+--------------
+ auth        | audit_log_entries | supabase_auth_admin | f           | 
+ auth        | instances         | supabase_auth_admin | f           | 
+ auth        | refresh_tokens    | supabase_auth_admin | f           | 
+ auth        | schema_migrations | supabase_auth_admin | f           | 
+ auth        | users             | supabase_auth_admin | f           | 
 (5 rows)
 
 -- auth indexes with owners
