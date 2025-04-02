@@ -1,0 +1,174 @@
+-- auth schema owner
+select
+  n.nspname as schema_name,
+  r.rolname as owner
+from
+  pg_namespace n
+join
+  pg_roles r on n.nspowner = r.oid
+where
+  n.nspname = 'auth';
+ schema_name |     owner      
+-------------+----------------
+ auth        | supabase_admin
+(1 row)
+
+-- attributes of the supabase_auth_admin
+select
+  rolcreaterole  ,
+  rolcanlogin    ,
+  rolsuper       ,
+  rolinherit     ,
+  rolcreatedb    ,
+  rolreplication ,
+  rolconnlimit   ,
+  rolbypassrls   ,
+  rolvaliduntil
+from pg_roles r
+where r.rolname = 'supabase_auth_admin';
+ rolcreaterole | rolcanlogin | rolsuper | rolinherit | rolcreatedb | rolreplication | rolconnlimit | rolbypassrls | rolvaliduntil 
+---------------+-------------+----------+------------+-------------+----------------+--------------+--------------+---------------
+ t             | t           | f        | f          | f           | f              |           -1 | f            | 
+(1 row)
+
+select
+  rolconfig
+from pg_roles r
+where r.rolname = 'supabase_auth_admin';
+                                    rolconfig                                    
+---------------------------------------------------------------------------------
+ {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
+(1 row)
+
+-- auth schema tables with owners
+select
+  n.nspname as schema_name,
+  c.relname as table_name,
+  r.rolname as owner
+from
+  pg_class c
+join
+  pg_namespace n on c.relnamespace = n.oid
+join
+  pg_roles r on c.relowner = r.oid
+where
+  c.relkind in ('r')  -- 'r' for regular tables
+  and n.nspname = 'auth'
+order by
+  c.relname;
+ schema_name |    table_name     |        owner        
+-------------+-------------------+---------------------
+ auth        | audit_log_entries | supabase_auth_admin
+ auth        | instances         | supabase_auth_admin
+ auth        | refresh_tokens    | supabase_auth_admin
+ auth        | schema_migrations | supabase_auth_admin
+ auth        | users             | supabase_auth_admin
+(5 rows)
+
+-- auth indexes with owners
+select
+  ns.nspname as table_schema,
+  t.relname as table_name,
+  i.relname as index_name,
+  r.rolname as index_owner
+from
+  pg_class t
+join
+  pg_namespace ns on t.relnamespace = ns.oid
+join
+  pg_index idx on t.oid = idx.indrelid
+join
+  pg_class i on idx.indexrelid = i.oid
+join
+  pg_roles r on i.relowner = r.oid
+where
+  ns.nspname = 'auth'
+order by
+  t.relname, i.relname;
+ table_schema |    table_name     |               index_name               |     index_owner     
+--------------+-------------------+----------------------------------------+---------------------
+ auth         | audit_log_entries | audit_log_entries_pkey                 | supabase_auth_admin
+ auth         | audit_log_entries | audit_logs_instance_id_idx             | supabase_auth_admin
+ auth         | instances         | instances_pkey                         | supabase_auth_admin
+ auth         | refresh_tokens    | refresh_tokens_instance_id_idx         | supabase_auth_admin
+ auth         | refresh_tokens    | refresh_tokens_instance_id_user_id_idx | supabase_auth_admin
+ auth         | refresh_tokens    | refresh_tokens_pkey                    | supabase_auth_admin
+ auth         | refresh_tokens    | refresh_tokens_token_idx               | supabase_auth_admin
+ auth         | schema_migrations | schema_migrations_pkey                 | supabase_auth_admin
+ auth         | users             | users_email_key                        | supabase_auth_admin
+ auth         | users             | users_instance_id_email_idx            | supabase_auth_admin
+ auth         | users             | users_instance_id_idx                  | supabase_auth_admin
+ auth         | users             | users_pkey                             | supabase_auth_admin
+(12 rows)
+
+-- auth schema functions with owners
+select
+  n.nspname as schema_name,
+  p.proname as function_name,
+  r.rolname as owner
+from
+  pg_proc p
+join
+  pg_namespace n on p.pronamespace = n.oid
+join
+  pg_roles r on p.proowner = r.oid
+where
+  n.nspname = 'auth'
+order by
+  p.proname;
+ schema_name | function_name |        owner        
+-------------+---------------+---------------------
+ auth        | email         | supabase_auth_admin
+ auth        | role          | supabase_auth_admin
+ auth        | uid           | supabase_auth_admin
+(3 rows)
+
+-- roles which have USAGE on the auth schema
+select
+  n.nspname as schema_name,
+  r.rolname as role_name,
+  a.privilege_type
+from
+  pg_namespace n
+cross join lateral aclexplode(n.nspacl) as a
+join
+  pg_roles r on a.grantee = r.oid
+where
+  n.nspname = 'auth'
+  and a.privilege_type = 'USAGE'
+order by
+  r.rolname;
+ schema_name |      role_name      | privilege_type 
+-------------+---------------------+----------------
+ auth        | anon                | USAGE
+ auth        | authenticated       | USAGE
+ auth        | dashboard_user      | USAGE
+ auth        | postgres            | USAGE
+ auth        | service_role        | USAGE
+ auth        | supabase_admin      | USAGE
+ auth        | supabase_auth_admin | USAGE
+(7 rows)
+
+-- roles which have CREATE on the auth schema
+select
+  n.nspname as schema_name,
+  r.rolname as role_name,
+  a.privilege_type
+from
+  pg_namespace n
+cross join lateral aclexplode(n.nspacl) as a
+join
+  pg_roles r on a.grantee = r.oid
+where
+  n.nspname = 'auth'
+  and a.privilege_type = 'CREATE'
+order by
+  r.rolname;
+ schema_name |      role_name      | privilege_type 
+-------------+---------------------+----------------
+ auth        | dashboard_user      | CREATE
+ auth        | postgres            | CREATE
+ auth        | supabase_admin      | CREATE
+ auth        | supabase_auth_admin | CREATE
+(4 rows)
+
