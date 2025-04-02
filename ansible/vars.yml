@@ -53,8 +53,8 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: 0.76.0
-adminmgr_release: 0.24.1
+adminapi_release: 0.77.0
+adminmgr_release: 0.25.0
 
 vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
 vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
