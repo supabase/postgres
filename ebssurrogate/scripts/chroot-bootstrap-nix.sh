@@ -58,7 +58,7 @@ function update_install_packages {
 	apt-get upgrade -y
 
 	# Install OpenSSH and other packages
-	sudo add-apt-repository universe -y
+	sudo add-apt-repository universe
 	apt-get update
 	apt-get install -y --no-install-recommends \
 		openssh-server \
@@ -157,12 +157,10 @@ function disable_fsck {
 
 # Don't request hostname during boot but set hostname
 function setup_hostname {
+	sed -i 's/gethostname()/ubuntu /g' /etc/dhcp/dhclient.conf
+	sed -i 's/host-name,//g' /etc/dhcp/dhclient.conf
 	echo "ubuntu" > /etc/hostname
 	chmod 644 /etc/hostname
-	# Set the hostname
-
-	# Prevent cloud-init from changing the hostname
-	sed -i 's/^preserve_hostname: false/preserve_hostname: true/' /etc/cloud/cloud.cfg
 }
 
 # Set options for the default interface
