@@ -139,9 +139,6 @@ function clean_system {
 	chmod -R 0310 /var/log/wal-g
 	chmod 0340 /var/log/wal-g/pitr.log
 
-	chmod 0600 /etc/vector/vector.yaml
-	chown vector:vector /etc/vector/vector.yaml
-
 	# # audit logs directory for apparmor
 	mkdir /var/log/audit
 
