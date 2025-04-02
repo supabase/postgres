@@ -255,7 +255,7 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: stage2_nix and is_psql_oriole or is_psql_17
+      when: stage2_nix and (is_psql_oriole or is_psql_17)
 
 - name: copy PG systemd unit
   template:

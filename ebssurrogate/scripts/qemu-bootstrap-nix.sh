@@ -106,7 +106,7 @@ EOF
 
 function clean_legacy_things {
     # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
-    apt-get unmark zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+    apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
     apt-get -y purge kong
     apt-get autoremove -y
 }
@@ -135,7 +135,12 @@ function clean_system {
 	mkdir /var/log/sysstat
 
 	chown -R postgres:postgres /var/log/wal-g
-	chmod -R 0300 /var/log/wal-g
+	# moving up fixes from init scripts
+	chmod -R 0310 /var/log/wal-g
+	chmod 0340 /var/log/wal-g/pitr.log
+
+	chmod 0600 /etc/vector/vector.yaml
+	chown vector:vector /etc/vector/vector.yaml
 
 	# # audit logs directory for apparmor
 	mkdir /var/log/audit
