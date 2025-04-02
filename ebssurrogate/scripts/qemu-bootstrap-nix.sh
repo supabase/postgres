@@ -104,6 +104,13 @@ EOF
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
 }
 
+function clean_legacy_things {
+    # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
+    apt-get unmark zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+    apt-get -y purge kong
+    apt-get autoremove -y
+}
+
 function clean_system {
 	# Copy cleanup scripts
 	chmod +x /tmp/ansible-playbook/scripts/90-cleanup-qemu.sh
@@ -146,5 +153,6 @@ execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
 mkdir -p /db/template
 mv /data/pgdata /db/template
+clean_legacy_things
 clean_system
 cloud-init clean --logs
