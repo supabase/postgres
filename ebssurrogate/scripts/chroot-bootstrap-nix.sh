@@ -58,7 +58,7 @@ function update_install_packages {
 	apt-get upgrade -y
 
 	# Install OpenSSH and other packages
-	sudo add-apt-repository universe
+	sudo add-apt-repository --yes universe
 	apt-get update
 	apt-get install -y --no-install-recommends \
 		openssh-server \
