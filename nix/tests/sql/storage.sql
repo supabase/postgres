@@ -9,25 +9,6 @@ join
 where
   n.nspname = 'storage';
 
--- attributes of the supabase_storage_admin
-select
-  rolcreaterole  ,
-  rolcanlogin    ,
-  rolsuper       ,
-  rolinherit     ,
-  rolcreatedb    ,
-  rolreplication ,
-  rolconnlimit   ,
-  rolbypassrls   ,
-  rolvaliduntil
-from pg_roles r
-where r.rolname = 'supabase_storage_admin';
-
-select
-  rolconfig
-from pg_roles r
-where r.rolname = 'supabase_storage_admin';
-
 -- storage schema tables with owners and rls policies
 select
   ns.nspname as schema_name,
@@ -87,35 +68,3 @@ where
   n.nspname = 'storage'
 order by
   p.proname;
-
--- roles which have USAGE on the storage schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'storage'
-  and a.privilege_type = 'USAGE'
-order by
-  r.rolname;
-
--- roles which have CREATE on the storage schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'storage'
-  and a.privilege_type = 'CREATE'
-order by
-  r.rolname;

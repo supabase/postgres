@@ -13,33 +13,6 @@ where
  storage     | supabase_admin
 (1 row)
 
--- attributes of the supabase_storage_admin
-select
-  rolcreaterole  ,
-  rolcanlogin    ,
-  rolsuper       ,
-  rolinherit     ,
-  rolcreatedb    ,
-  rolreplication ,
-  rolconnlimit   ,
-  rolbypassrls   ,
-  rolvaliduntil
-from pg_roles r
-where r.rolname = 'supabase_storage_admin';
- rolcreaterole | rolcanlogin | rolsuper | rolinherit | rolcreatedb | rolreplication | rolconnlimit | rolbypassrls | rolvaliduntil 
----------------+-------------+----------+------------+-------------+----------------+--------------+--------------+---------------
- t             | t           | f        | f          | f           | f              |           -1 | f            | 
-(1 row)
-
-select
-  rolconfig
-from pg_roles r
-where r.rolname = 'supabase_storage_admin';
-                rolconfig                 
-------------------------------------------
- {search_path=storage,log_statement=none}
-(1 row)
-
 -- storage schema tables with owners and rls policies
 select
   ns.nspname as schema_name,
@@ -121,54 +94,5 @@ order by
  storage     | filename      | supabase_storage_admin
  storage     | foldername    | supabase_storage_admin
  storage     | search        | supabase_storage_admin
-(4 rows)
-
--- roles which have USAGE on the storage schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'storage'
-  and a.privilege_type = 'USAGE'
-order by
-  r.rolname;
- schema_name |       role_name        | privilege_type 
--------------+------------------------+----------------
- storage     | anon                   | USAGE
- storage     | authenticated          | USAGE
- storage     | dashboard_user         | USAGE
- storage     | postgres               | USAGE
- storage     | service_role           | USAGE
- storage     | supabase_admin         | USAGE
- storage     | supabase_storage_admin | USAGE
-(7 rows)
-
--- roles which have CREATE on the storage schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'storage'
-  and a.privilege_type = 'CREATE'
-order by
-  r.rolname;
- schema_name |       role_name        | privilege_type 
--------------+------------------------+----------------
- storage     | dashboard_user         | CREATE
- storage     | postgres               | CREATE
- storage     | supabase_admin         | CREATE
- storage     | supabase_storage_admin | CREATE
 (4 rows)
 

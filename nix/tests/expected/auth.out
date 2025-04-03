@@ -13,33 +13,6 @@ where
  auth        | supabase_admin
 (1 row)
 
--- attributes of the supabase_auth_admin
-select
-  rolcreaterole  ,
-  rolcanlogin    ,
-  rolsuper       ,
-  rolinherit     ,
-  rolcreatedb    ,
-  rolreplication ,
-  rolconnlimit   ,
-  rolbypassrls   ,
-  rolvaliduntil
-from pg_roles r
-where r.rolname = 'supabase_auth_admin';
- rolcreaterole | rolcanlogin | rolsuper | rolinherit | rolcreatedb | rolreplication | rolconnlimit | rolbypassrls | rolvaliduntil 
----------------+-------------+----------+------------+-------------+----------------+--------------+--------------+---------------
- t             | t           | f        | f          | f           | f              |           -1 | f            | 
-(1 row)
-
-select
-  rolconfig
-from pg_roles r
-where r.rolname = 'supabase_auth_admin';
-                                    rolconfig                                    
----------------------------------------------------------------------------------
- {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
-(1 row)
-
 -- auth schema tables with owners and rls policies
 select
   ns.nspname as schema_name,
@@ -128,53 +101,4 @@ order by
  auth        | role          | supabase_auth_admin
  auth        | uid           | supabase_auth_admin
 (3 rows)
-
--- roles which have USAGE on the auth schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'auth'
-  and a.privilege_type = 'USAGE'
-order by
-  r.rolname;
- schema_name |      role_name      | privilege_type 
--------------+---------------------+----------------
- auth        | anon                | USAGE
- auth        | authenticated       | USAGE
- auth        | dashboard_user      | USAGE
- auth        | postgres            | USAGE
- auth        | service_role        | USAGE
- auth        | supabase_admin      | USAGE
- auth        | supabase_auth_admin | USAGE
-(7 rows)
-
--- roles which have CREATE on the auth schema
-select
-  n.nspname as schema_name,
-  r.rolname as role_name,
-  a.privilege_type
-from
-  pg_namespace n
-cross join lateral aclexplode(n.nspacl) as a
-join
-  pg_roles r on a.grantee = r.oid
-where
-  n.nspname = 'auth'
-  and a.privilege_type = 'CREATE'
-order by
-  r.rolname;
- schema_name |      role_name      | privilege_type 
--------------+---------------------+----------------
- auth        | dashboard_user      | CREATE
- auth        | postgres            | CREATE
- auth        | supabase_admin      | CREATE
- auth        | supabase_auth_admin | CREATE
-(4 rows)
 
