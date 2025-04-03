@@ -82,7 +82,7 @@
       import_tasks: tasks/fix_ipv6_ndisc.yml
       tags:
         - install-supabase-internal
-      when: debpkg_mode or nixpkg_mode
+      when: (debpkg_mode or nixpkg_mode) and (qemu_mode is undefined)
 
     - name: Start Postgres Database without Systemd
       become: yes
