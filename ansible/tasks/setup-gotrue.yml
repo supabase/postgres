@@ -35,7 +35,7 @@
     path: /etc/auth.d
     state: directory
     owner: gotrue
-    mode: 0755
+    mode: 0775
 
 - name: gotrue - unpack archive in /opt/gotrue
   unarchive:
