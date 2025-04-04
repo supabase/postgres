@@ -79,6 +79,7 @@ expected_results = {
         {"groupname": "admin", "username": "adminapi"},
         {"groupname": "adminapi", "username": "adminapi"},
         {"groupname": "envoy", "username": "adminapi"},
+        {"groupname": "gotrue", "username": "adminapi"},
         {"groupname": "kong", "username": "adminapi"},
         {"groupname": "pgbouncer", "username": "adminapi"},
         {"groupname": "postgres", "username": "adminapi"},
