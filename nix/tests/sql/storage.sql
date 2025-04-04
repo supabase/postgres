@@ -68,3 +68,6 @@ where
   n.nspname = 'storage'
 order by
   p.proname;
+
+-- storage service migrations
+select * from storage.migrations ;

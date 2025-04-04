@@ -102,3 +102,16 @@ order by
  auth        | uid           | supabase_auth_admin
 (3 rows)
 
+-- auth service schema migrations
+select * from auth.schema_migrations;
+    version     
+----------------
+ 20171026211738
+ 20171026211808
+ 20171026211834
+ 20180103212743
+ 20180108183307
+ 20180119214651
+ 20180125194653
+(7 rows)
+

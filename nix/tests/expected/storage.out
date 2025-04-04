@@ -96,3 +96,9 @@ order by
  storage     | search        | supabase_storage_admin
 (4 rows)
 
+-- storage service migrations
+select * from storage.migrations ;
+ id | name | hash | executed_at 
+----+------+------+-------------
+(0 rows)
+

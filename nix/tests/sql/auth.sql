@@ -68,3 +68,6 @@ where
   n.nspname = 'auth'
 order by
   p.proname;
+
+-- auth service schema migrations
+select * from auth.schema_migrations;
