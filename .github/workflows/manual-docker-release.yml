@@ -7,6 +7,10 @@ on:
         description: 'Optional. Postgres version to publish against, i.e. 15.1.1.78'
         required: false
  
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -241,6 +245,10 @@ jobs:
     outputs:
       matrix: ${{ steps.combine.outputs.matrix }}
   publish:
+      permissions:
+        contents: read
+        packages: write
+        id-token: write
       needs: combine_results
       strategy:
         matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}

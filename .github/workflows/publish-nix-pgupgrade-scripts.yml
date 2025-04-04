@@ -51,9 +51,9 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION=${{ inputs.postgresVersion }}
+            VERSION="${{ inputs.postgresVersion }}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -102,9 +102,9 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION=${{ inputs.postgresVersion }}
+            VERSION="${{ inputs.postgresVersion }}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -122,7 +122,7 @@ jobs:
   
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

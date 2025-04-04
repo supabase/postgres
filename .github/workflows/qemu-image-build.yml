@@ -12,6 +12,10 @@ on:
       - 'ansible/vars.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -68,7 +72,7 @@ jobs:
         run: |
           curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
           PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
@@ -122,8 +126,8 @@ jobs:
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
-          docker build -f Dockerfile-kubernetes -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG
+          docker build -f Dockerfile-kubernetes -t "$REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG" .
+          docker push "$REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG"
 
       # - name: Upload software manifest to s3 staging
       #   run: |

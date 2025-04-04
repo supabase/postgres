@@ -3,6 +3,9 @@ name: Check merge requirements
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check-release-version:
     timeout-minutes: 5

@@ -8,6 +8,9 @@ on:
       - ".github/workflows/mirror-postgrest.yml"
       - "common.vars*"
 
+permissions:
+  contents: read
+
 jobs:
   version:
     runs-on: ubuntu-latest
