@@ -5,7 +5,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 ## Primary Features
 - ✅ Postgres [postgresql-15.8](https://www.postgresql.org/docs/15/index.html)
 - ✅ Postgres [postgresql-17.4](https://www.postgresql.org/docs/17/index.html)
-- ✅ Postgres [orioledb-postgresql-17_5](https://github.com/orioledb/orioledb)
+- ✅ Postgres [orioledb-postgresql-17_6](https://github.com/orioledb/orioledb)
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
