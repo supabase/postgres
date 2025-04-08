@@ -643,13 +643,13 @@
                 buildInputs = with pkgs; [
                   packer
                   awscli2
-                  docker
                   yq
                   jq
                   openssl
                   pythonEnv
                   git
                   coreutils
+                  aws-vault
                 ];
               } ''
                 mkdir -p $out/bin
@@ -660,26 +660,27 @@
                 export PATH="${pkgs.lib.makeBinPath (with pkgs; [
                   packer
                   awscli2
-                  docker
                   yq
                   jq
                   openssl
                   pythonEnv
                   git
                   coreutils
+                  aws-vault
                 ])}:$PATH"
 
                 # Check for required tools
-                for cmd in packer aws docker yq jq openssl; do
+                for cmd in packer aws-vault yq jq openssl; do
                   if ! command -v $cmd &> /dev/null; then
                     echo "Error: $cmd is required but not found"
                     exit 1
                   fi
                 done
 
-                # Check AWS credentials
-                if [ -z "''${AWS_ACCESS_KEY_ID:-}" ] || [ -z "''${AWS_SECRET_ACCESS_KEY:-}" ]; then
-                  echo "Error: AWS credentials (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY) must be set"
+                # Check AWS Vault profile
+                if [ -z "''${AWS_VAULT:-}" ]; then
+                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#testinfra-env 15"
                   exit 1
                 fi
 
@@ -694,10 +695,6 @@
                 PG_VERSION=$(yq -r ".postgres_release[\"postgres$POSTGRES_VERSION\"]" ansible/vars.yml)
                 echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
 
-                # Create docker builder context
-                docker context create builders || true
-                docker buildx create --use --name builders builders || true
-
                 # Build AMI Stage 1
                 packer init amazon-arm64-nix.pkr.hcl
                 packer build \
@@ -708,7 +705,7 @@
                   -var "ansible_arguments=" \
                   -var "postgres-version=$RANDOM_STRING" \
                   -var "region=$REGION" \
-                  -var "ami_regions=$REGION" \
+                  -var 'ami_regions=["'"$REGION"'"]' \
                   -var "force-deregister=true" \
                   -var "ansible_arguments=-e postgresql_major=$POSTGRES_VERSION" \
                   amazon-arm64-nix.pkr.hcl
@@ -723,7 +720,7 @@
                   -var-file="common-nix.vars.pkr.hcl" \
                   -var "postgres-version=$RANDOM_STRING" \
                   -var "region=$REGION" \
-                  -var "ami_regions=$REGION" \
+                  -var 'ami_regions=["'"$REGION"'"]' \
                   -var "force-deregister=true" \
                   -var "git_sha=$GIT_SHA" \
                   stage2-nix-psql.pkr.hcl
@@ -1101,6 +1098,7 @@
                 basePackages.testinfra-env
                 dbmate
                 nushell
+                pythonEnv
               ];
               shellHook = ''
                 export HISTFILE=.history
