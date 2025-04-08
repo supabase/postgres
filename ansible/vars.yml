@@ -9,9 +9,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.0.1.062-orioledb"
-  postgres17: "17.4.1.012"
-  postgres15: "15.8.1.069"
+  postgresorioledb-17: "17.0.1.063-orioledb"
+  postgres17: "17.4.1.013"
+  postgres15: "15.8.1.070"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -52,7 +52,7 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: 0.77.0
+adminapi_release: 0.77.1
 adminmgr_release: 0.25.0
 
 vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
