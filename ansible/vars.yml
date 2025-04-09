@@ -40,9 +40,9 @@ envoy_release: 1.28.0
 envoy_release_checksum: sha1:b0a06e9cfb170f1993f369beaa5aa9d7ec679ce5
 envoy_hot_restarter_release_checksum: sha1:6d43b89d266fb2427a4b51756b649883b0617eda
 
-kong_release_target: noble
-kong_deb: kong_3.9.0_arm64.deb
-kong_deb_checksum: sha1:f458c8b183f79cffae4cd84c989cea4a4ecaaaba
+kong_release_target: focal
+kong_deb: kong_2.8.1_arm64.deb
+kong_deb_checksum: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
 
 nginx_release: 1.22.0
 nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
