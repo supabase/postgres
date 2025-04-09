@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -66,7 +70,7 @@ jobs:
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl

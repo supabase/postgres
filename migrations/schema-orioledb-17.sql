@@ -123,20 +123,6 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
--- Name: pgjwt; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pgjwt WITH SCHEMA extensions;
-
-
---
--- Name: EXTENSION pgjwt; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pgjwt IS 'JSON Web Token API for Postgresql';
-
-
---
 -- Name: supabase_vault; Type: EXTENSION; Schema: -; Owner: -
 --
 

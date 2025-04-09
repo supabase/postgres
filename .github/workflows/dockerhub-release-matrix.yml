@@ -9,7 +9,11 @@ on:
       - ".github/workflows/dockerhub-release-matrix.yml"
       - "ansible/vars.yml"
   workflow_dispatch:
- 
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -233,6 +237,10 @@ jobs:
       matrix: ${{ steps.combine.outputs.matrix }}
   publish:
       needs: combine_results
+      permissions:
+        contents: read
+        packages: write
+        id-token: write
       strategy:
         matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
       uses: ./.github/workflows/mirror.yml

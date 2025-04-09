@@ -6,32 +6,36 @@
 
 - name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
-    - name: Check if psql_version is psql_orioledb-16
+    - name: Check if psql_version is psql_orioledb-17
       set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
 
-    - name: Remove specified extensions from postgresql.conf if oriole-16 build
+    - name: Check if psql_version is psql_17
+      set_fact:
+        is_psql_17: "{{ psql_version in ['psql_17'] }}"
+    
+    - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
       ansible.builtin.command:
         cmd: >
           sed -i 's/ timescaledb,//g' 
           /etc/postgresql/postgresql.conf
-      when: is_psql_oriole and stage2_nix
+      when: is_psql_oriole or is_psql_17 and stage2_nix 
       become: yes
 
-    - name: Remove specified extensions from supautils.conf if oriole-16 build
+    - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
       ansible.builtin.command:
         cmd: >
-          sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' 
+          sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g' 
           /etc/postgresql-custom/supautils.conf
-      when: is_psql_oriole and stage2_nix
+      when: is_psql_oriole or is_psql_17 and stage2_nix
       become: yes
 
-    - name: Remove db_user_namespace from postgresql.conf if oriole-xx build
+    - name: Remove db_user_namespace from postgresql.conf if orioledb-17 or 17 build
       ansible.builtin.command:
         cmd: >
           sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' 
           /etc/postgresql/postgresql.conf
-      when: is_psql_oriole and stage2_nix
+      when: is_psql_oriole or is_psql_17 and stage2_nix
       become: yes
 
     - name: Append orioledb to shared_preload_libraries append within closing quote
@@ -153,15 +157,6 @@
     group: postgres
   when: stage2_nix
 
-# - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
-#   file:
-#     path: /usr/lib/postgresql/share/postgresql/pljava
-#     state: directory
-#     owner: postgres
-#     group: postgres
-#   when: stage2_nix
-# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
-
 - name: import pgsodium_getkey script
   template:
     src: files/pgsodium_getkey_readonly.sh.j2
@@ -198,16 +193,6 @@
     find /var/lib/postgresql/.nix-profile/bin/ -maxdepth 1 -type f,l -exec chown postgres:postgres "/usr/bin/$(basename {})" \;
   become: yes
   when: stage2_nix
-
-# - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
-#   file:
-#     src: "{{ item }}"
-#     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
-#     state: link
-#   with_fileglob:
-#     - "/var/lib/postgresql/.nix-profile/share/pljava/*"
-#   become: yes
-# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
   shell: >-

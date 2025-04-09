@@ -83,8 +83,8 @@ let
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv'.isLinux [ linux-pam ]
       ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
-      ++ lib.optionals (builtins.match "[0-9][0-9]_.*" version != null) [ 
-        perl bison flex docbook_xsl docbook_xml_dtd_45 docbook_xsl_ns libxslt
+      ++ lib.optionals ((builtins.match "[0-9][0-9]_.*" version != null) || (lib.versionAtLeast version "17")) [ 
+      perl bison flex docbook_xsl docbook_xml_dtd_45 docbook_xsl_ns libxslt
       ];
 
     nativeBuildInputs = [

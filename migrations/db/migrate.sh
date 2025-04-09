@@ -38,6 +38,11 @@ begin
   end if;
 end \$\$
 EOSQL
+    # run init scripts as postgres user
+    for sql in "$db"/init-scripts/*.sql; do
+        echo "$0: running $sql"
+        psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -f "$sql"
+    done
     psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
     # run migrations as super user - postgres user demoted in post-setup
     for sql in "$db"/migrations/*.sql; do
@@ -49,6 +54,8 @@ else
   create role postgres superuser login password '$PGPASSWORD';
   alter database postgres owner to postgres;
 EOSQL
+    # run init scripts as postgres user
+    DBMATE_MIGRATIONS_DIR="$db/init-scripts" DATABASE_URL="postgres://postgres:$connect" dbmate --no-dump-schema migrate
     psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U postgres -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"
     # run migrations as super user - postgres user demoted in post-setup
     DBMATE_MIGRATIONS_DIR="$db/migrations" DATABASE_URL="postgres://supabase_admin:$connect" dbmate --no-dump-schema migrate

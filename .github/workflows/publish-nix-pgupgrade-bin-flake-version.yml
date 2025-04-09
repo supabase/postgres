@@ -44,9 +44,9 @@ jobs:
         id: process_release_version
         run: |
           VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION=${{ inputs.postgresVersion }}
+            VERSION="${{ inputs.postgresVersion }}"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
@@ -54,9 +54,9 @@ jobs:
       - name: Create a tarball containing the latest nix flake version
         working-directory: /tmp/
         run: |
-          mkdir -p ${{ steps.process_release_version.outputs.major_version }}
-          echo $GITHUB_SHA > ${{ steps.process_release_version.outputs.major_version }}/nix_flake_version
-          tar -czvf pg_upgrade_bin.tar.gz ${{ steps.process_release_version.outputs.major_version }}
+          mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
+          echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
+          tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v1
@@ -66,7 +66,7 @@ jobs:
 
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
-          aws s3 cp /tmp/pg_upgrade_bin.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_upgrade_bin.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -101,9 +101,9 @@ jobs:
       - name: Create a tarball containing the latest nix flake version
         working-directory: /tmp/
         run: |
-          mkdir -p ${{ steps.process_release_version.outputs.major_version }}
-          echo $GITHUB_SHA > ${{ steps.process_release_version.outputs.major_version }}/nix_flake_version
-          tar -czvf pg_upgrade_bin.tar.gz ${{ steps.process_release_version.outputs.major_version }}
+          mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
+          echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
+          tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@v1
@@ -113,7 +113,7 @@ jobs:
   
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
-          aws s3 cp /tmp/pg_upgrade_bin.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_upgrade_bin.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

@@ -216,7 +216,8 @@
   block:
     - name: Check if psql_version is psql_orioledb
       set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
+        is_psql_17: "{{ psql_version in ['psql_17'] }}"
 
     - name: Initialize the database stage2_nix (non-orioledb)
       become: yes
@@ -232,18 +233,18 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: stage2_nix and not is_psql_oriole
+      when: stage2_nix and not is_psql_oriole and not is_psql_17
 
     - name: Initialize the database stage2_nix (orioledb)
       become: yes
       become_user: postgres
       shell: >
-        source /var/lib/postgresql/.bashrc && initdb -D /var/lib/postgresql/data 
-        --allow-group-access 
-        --username=supabase_admin 
-        --locale-provider=icu 
-        --encoding=UTF-8 
-        --icu-locale=en_US.UTF-8 
+        source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
+        -o "--allow-group-access"
+        -o "--username=supabase_admin"
+        -o "--locale-provider=icu"
+        -o "--encoding=UTF-8"
+        -o "--icu-locale=en_US.UTF-8"
       args:
         executable: /bin/bash
       environment:
@@ -254,7 +255,7 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: stage2_nix and is_psql_oriole
+      when: stage2_nix and (is_psql_oriole or is_psql_17)
 
 - name: copy PG systemd unit
   template:
