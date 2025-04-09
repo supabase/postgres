@@ -74,8 +74,8 @@ source "qemu" "cloudimg" {
   format         = "qcow2"
   headless       = true
   http_directory = "http"
-  iso_checksum   = "file:https://cloud-images.ubuntu.com/focal/current/SHA256SUMS"
-  iso_url        = "https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-arm64.img"
+  iso_checksum   = "file:https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
+  iso_url        = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
   memory         = 40000
   qemu_binary    = "qemu-system-aarch64"
   qemuargs = [
