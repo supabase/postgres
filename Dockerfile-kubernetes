@@ -1,6 +1,6 @@
 FROM alpine:3.22
 
-ADD ./output-cloudimg/packer-cloudimg /disk/focal.qcow2
+ADD ./output-cloudimg/packer-cloudimg /disk/image.qcow2
 
 RUN apk add --no-cache qemu-system-aarch64 qemu-img openssh-client aavmf virtiofsd \
     && truncate -s 64M /root/varstore.img \
