@@ -98,15 +98,6 @@ jobs:
           VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # - name: Create nix flake revision tarball
-      #   run: |
-      #     GIT_SHA=${{github.sha}}
-      #     MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-
-      #     mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
-      #     echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
-      #     tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
-
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v4
         with:
