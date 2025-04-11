@@ -575,6 +575,7 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  topology           | USAGE          | supabase_admin           | supabase_admin
  vault              | CREATE         | supabase_admin           | supabase_admin
  vault              | USAGE          | postgres                 | supabase_admin
+ vault              | USAGE          | service_role             | supabase_admin
  vault              | USAGE          | supabase_admin           | supabase_admin
-(390 rows)
+(391 rows)
 
