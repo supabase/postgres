@@ -43,14 +43,16 @@ buildPgrxExtension_0_12_9 rec {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
     # Calculate unique port for each PostgreSQL version:
-    # - Take first 2 chars of version (e.g., "15" from "15.8", "17" from "17.0")
-    # - Convert to number and subtract 15 to get offset
-    # - Add to base port 5435
+    # - Check if version contains underscore (indicating OrioleDB)
+    # - Add 1 to port if it's OrioleDB
+    # - Add 2 for each major version above 15
     # Examples:
-    # - PostgreSQL 15.8 → 5435 + (15-15) = 5435
-    # - PostgreSQL 17.0 → 5435 + (17-15) = 5437
-    # - PostgreSQL 17.4 → 5435 + (17-15) = 5437
-    PGPORT = toString (5435 + (builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15);
+    # - PostgreSQL 15.8 → 5435 + 0 + (15-15)*2 = 5435
+    # - PostgreSQL 17_0 (OrioleDB) → 5435 + 1 + (17-15)*2 = 5440
+    # - PostgreSQL 17.4 → 5435 + 0 + (17-15)*2 = 5439
+    PGPORT = toString (5435 + 
+      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
+      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
   };
 
   OPENSSL_NO_VENDOR = 1;
