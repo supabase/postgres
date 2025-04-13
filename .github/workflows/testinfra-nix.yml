@@ -90,8 +90,8 @@ jobs:
       - name: Clean up after AMI stage 1
         if: always()  # Run even if previous steps fail
         run: |
-          nix-collect-garbage -d  # Delete old generations of all profiles
-          rm -rf /tmp/*  # Clean temporary files
+          sudo nix-collect-garbage -d  # Delete old generations of all profiles
+          sudo rm -rf /tmp/*  # Clean temporary files
           df -h /  # Display available space
 
       - name: Build AMI stage 2
@@ -103,8 +103,8 @@ jobs:
       - name: Clean up after AMI stage 2
         if: always()  # Run even if previous steps fail
         run: |
-          nix-collect-garbage -d  # Delete old generations of all profiles
-          rm -rf /tmp/*  # Clean temporary files
+          sudo nix-collect-garbage -d  # Delete old generations of all profiles
+          sudo rm -rf /tmp/*  # Clean temporary files
           df -h /  # Display available space
 
       - name: Run tests
