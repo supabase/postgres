@@ -21,8 +21,8 @@ jobs:
 
       - name: Clean Nix store before build
         run: |
-          nix-collect-garbage -d
-          nix-store --optimize
+          sudo nix-collect-garbage -d || true
+          sudo nix-store --optimize || true
           df -h /  # Display available space
 
       - name: Set PostgreSQL versions
