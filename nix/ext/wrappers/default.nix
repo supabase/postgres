@@ -38,11 +38,19 @@ buildPgrxExtension_0_12_9 rec {
 
   NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
 
-  # Set necessary environment variables for pgrx
+  # Set necessary environment variables for pgrx in darwin only
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-    PGPORT = "5435";
+    # Calculate unique port for each PostgreSQL version:
+    # - Take first 2 chars of version (e.g., "15" from "15.8", "17" from "17.0")
+    # - Convert to number and subtract 15 to get offset
+    # - Add to base port 5435
+    # Examples:
+    # - PostgreSQL 15.8 → 5435 + (15-15) = 5435
+    # - PostgreSQL 17.0 → 5435 + (17-15) = 5437
+    # - PostgreSQL 17.4 → 5435 + (17-15) = 5437
+    PGPORT = toString (5435 + (builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15);
   };
 
   OPENSSL_NO_VENDOR = 1;

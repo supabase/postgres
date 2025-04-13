@@ -19,6 +19,12 @@ jobs:
       
       - uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Clean Nix store before build
+        run: |
+          nix-collect-garbage -d
+          nix-store --optimize
+          df -h /  # Display available space
+
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
@@ -80,12 +86,26 @@ jobs:
           packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
-      
+
+      - name: Clean up after AMI stage 1
+        if: always()  # Run even if previous steps fail
+        run: |
+          nix-collect-garbage -d  # Delete old generations of all profiles
+          rm -rf /tmp/*  # Clean temporary files
+          df -h /  # Display available space
+
       - name: Build AMI stage 2
         run: |
           packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
           packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
+
+      - name: Clean up after AMI stage 2
+        if: always()  # Run even if previous steps fail
+        run: |
+          nix-collect-garbage -d  # Delete old generations of all profiles
+          rm -rf /tmp/*  # Clean temporary files
+          df -h /  # Display available space
 
       - name: Run tests
         timeout-minutes: 10
