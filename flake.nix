@@ -897,7 +897,7 @@
                 # Check if we're on a standard branch
                 if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
                   echo "Warning: Running workflow from non-standard branch: $BRANCH"
-                  echo "This is allowed but may not be the intended behavior in production."
+                  echo "This is supported for testing purposes."
                   read -p "Continue? [y/N] " -n 1 -r
                   echo
                   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -926,7 +926,17 @@
                 echo "The script will automatically exit when the workflow completes."
                 echo "Press Ctrl+C to stop watching (workflow will continue running)"
                 echo "----------------------------------------"
-                gh run watch "$RUN_ID" --exit-status
+
+                # Try to watch the run, but handle network errors gracefully
+                while true; do
+                  if gh run watch "$RUN_ID" --exit-status; then
+                    break
+                  else
+                    echo "Network error while watching workflow. Retrying in 5 seconds..."
+                    echo "You can also check the status manually with: gh run view $RUN_ID"
+                    sleep 5
+                  fi
+                done
                 EOL
                 chmod +x $out/bin/trigger-nix-build
               '';
