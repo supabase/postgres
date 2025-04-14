@@ -638,7 +638,7 @@
                 --prefix PATH : ${pkgs.nushell}/bin
             '';
             # Script to run the AMI build and tests locally
-            testinfra-env = pkgs.runCommand "testinfra-env"
+            build-test-ami = pkgs.runCommand "build-test-ami"
               {
                 buildInputs = with pkgs; [
                   packer
@@ -646,14 +646,13 @@
                   yq
                   jq
                   openssl
-                  pythonEnv
                   git
                   coreutils
                   aws-vault
                 ];
               } ''
                 mkdir -p $out/bin
-                cat > $out/bin/testinfra-env << 'EOL'
+                cat > $out/bin/build-test-ami << 'EOL'
                 #!/usr/bin/env bash
                 set -euo pipefail
 
@@ -663,7 +662,6 @@
                   yq
                   jq
                   openssl
-                  pythonEnv
                   git
                   coreutils
                   aws-vault
@@ -680,7 +678,7 @@
                 # Check AWS Vault profile
                 if [ -z "''${AWS_VAULT:-}" ]; then
                   echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#testinfra-env 15"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#build-test-ami 15"
                   exit 1
                 fi
 
@@ -725,33 +723,212 @@
                   -var "git_sha=$GIT_SHA" \
                   stage2-nix-psql.pkr.hcl
 
-                # Run tests
-                AMI_NAME="supabase-postgres-$RANDOM_STRING"
-                ${pythonEnv}/bin/pytest -vv -s testinfra/test_ami_nix.py --ami-name="$AMI_NAME"
-
-                # Cleanup
-                cleanup() {
-                  # Terminate instances
+                # Cleanup instances from AMI builds
+                cleanup_instances() {
                   aws ec2 --region $REGION describe-instances \
                     --filters "Name=tag:packerExecutionId,Values=$RUN_ID" \
                     --query "Reservations[].Instances[].InstanceId" \
                     --output text | xargs -r aws ec2 terminate-instances \
                     --region $REGION --instance-ids || true
-
-                  # Deregister AMIs
-                  for AMI_PATTERN in "supabase-postgres-ci-ami-test-stage-1" "$RANDOM_STRING"; do
-                    aws ec2 describe-images --region $REGION --owners self \
-                      --filters "Name=name,Values=$AMI_PATTERN" \
-                      --query 'Images[*].ImageId' --output text | while read -r ami_id; do
-                        echo "Deregistering AMI: $ami_id"
-                        aws ec2 deregister-image --region $REGION --image-id "$ami_id" || true
-                      done
-                  done
                 }
 
-                trap cleanup EXIT
+                trap cleanup_instances EXIT
+
+                # Print the AMI name for use with run-testinfra
+                echo "supabase-postgres-$RANDOM_STRING"
                 EOL
-                chmod +x $out/bin/testinfra-env
+                chmod +x $out/bin/build-test-ami
+              '';
+
+            run-testinfra = pkgs.runCommand "run-testinfra"
+              {
+                buildInputs = with pkgs; [
+                  pythonEnv
+                  awscli2
+                  aws-vault
+                ];
+              } ''
+                mkdir -p $out/bin
+                cat > $out/bin/run-testinfra << 'EOL'
+                #!/usr/bin/env bash
+                set -euo pipefail
+
+                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                  pythonEnv
+                  awscli2
+                  aws-vault
+                ])}:$PATH"
+
+                # Check for required tools
+                for cmd in aws-vault; do
+                  if ! command -v $cmd &> /dev/null; then
+                    echo "Error: $cmd is required but not found"
+                    exit 1
+                  fi
+                done
+
+                # Check AWS Vault profile
+                if [ -z "''${AWS_VAULT:-}" ]; then
+                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name>"
+                  exit 1
+                fi
+
+                # Check for AMI name argument
+                if [ -z "''${1:-}" ]; then
+                  echo "Error: AMI name must be provided"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name>"
+                  exit 1
+                fi
+
+                AMI_NAME="$1"
+                REGION="ap-southeast-1"
+                RUN_ID=$(date +%s)
+
+                # Run tests
+                ${pythonEnv}/bin/pytest -vv -s testinfra/test_ami_nix.py --ami-name="$AMI_NAME"
+
+                # Cleanup test instance
+                cleanup_instance() {
+                  aws ec2 --region $REGION describe-instances \
+                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
+                    --query "Reservations[].Instances[].InstanceId" \
+                    --output text | xargs -r aws ec2 terminate-instances \
+                    --region $REGION --instance-ids || true
+                }
+
+                trap cleanup_instance EXIT
+                EOL
+                chmod +x $out/bin/run-testinfra
+              '';
+
+            cleanup-ami = pkgs.runCommand "cleanup-ami"
+              {
+                buildInputs = with pkgs; [
+                  awscli2
+                  aws-vault
+                ];
+              } ''
+                mkdir -p $out/bin
+                cat > $out/bin/cleanup-ami << 'EOL'
+                #!/usr/bin/env bash
+                set -euo pipefail
+
+                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                  awscli2
+                  aws-vault
+                ])}:$PATH"
+
+                # Check for required tools
+                for cmd in aws-vault; do
+                  if ! command -v $cmd &> /dev/null; then
+                    echo "Error: $cmd is required but not found"
+                    exit 1
+                  fi
+                done
+
+                # Check AWS Vault profile
+                if [ -z "''${AWS_VAULT:-}" ]; then
+                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#cleanup-ami <ami-name>"
+                  exit 1
+                fi
+
+                # Check for AMI name argument
+                if [ -z "''${1:-}" ]; then
+                  echo "Error: AMI name must be provided"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#cleanup-ami <ami-name>"
+                  exit 1
+                fi
+
+                AMI_NAME="$1"
+                REGION="ap-southeast-1"
+
+                # Deregister AMIs
+                for AMI_PATTERN in "supabase-postgres-ci-ami-test-stage-1" "$AMI_NAME"; do
+                  aws ec2 describe-images --region $REGION --owners self \
+                    --filters "Name=name,Values=$AMI_PATTERN" \
+                    --query 'Images[*].ImageId' --output text | while read -r ami_id; do
+                      echo "Deregistering AMI: $ami_id"
+                      aws ec2 deregister-image --region $REGION --image-id "$ami_id" || true
+                    done
+                done
+                EOL
+                chmod +x $out/bin/cleanup-ami
+              '';
+
+            trigger-nix-build = pkgs.runCommand "trigger-nix-build"
+              {
+                buildInputs = with pkgs; [
+                  gh
+                  git
+                  coreutils
+                ];
+              } ''
+                mkdir -p $out/bin
+                cat > $out/bin/trigger-nix-build << 'EOL'
+                #!/usr/bin/env bash
+                set -euo pipefail
+
+                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                  gh
+                  git
+                  coreutils
+                ])}:$PATH"
+
+                # Check for required tools
+                for cmd in gh git; do
+                  if ! command -v $cmd &> /dev/null; then
+                    echo "Error: $cmd is required but not found"
+                    exit 1
+                  fi
+                done
+
+                # Check if user is authenticated with GitHub
+                if ! gh auth status &>/dev/null; then
+                  echo "Error: Not authenticated with GitHub. Please run 'gh auth login' first."
+                  exit 1
+                fi
+
+                # Get current branch and commit
+                BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                COMMIT=$(git rev-parse HEAD)
+
+                # Check if we're on a standard branch
+                if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
+                  echo "Warning: Running workflow from non-standard branch: $BRANCH"
+                  echo "This is allowed but may not be the intended behavior in production."
+                  read -p "Continue? [y/N] " -n 1 -r
+                  echo
+                  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                    echo "Aborted."
+                    exit 1
+                  fi
+                fi
+
+                # Trigger the workflow
+                echo "Triggering nix-build workflow for branch $BRANCH (commit: $COMMIT)"
+                gh workflow run nix-build.yml --ref "$BRANCH"
+
+                # Wait for workflow to start and get the run ID
+                echo "Waiting for workflow to start..."
+                sleep 5
+                
+                # Get the latest run ID for this workflow
+                RUN_ID=$(gh run list --workflow=nix-build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+                
+                if [ -z "$RUN_ID" ]; then
+                  echo "Error: Could not find workflow run ID"
+                  exit 1
+                fi
+
+                echo "Watching workflow run $RUN_ID..."
+                echo "The script will automatically exit when the workflow completes."
+                echo "Press Ctrl+C to stop watching (workflow will continue running)"
+                echo "----------------------------------------"
+                gh run watch "$RUN_ID" --exit-status
+                EOL
+                chmod +x $out/bin/trigger-nix-build
               '';
           };
 
@@ -1054,7 +1231,10 @@
             dbmate-tool = mkApp "dbmate-tool" "dbmate-tool";
             update-readme = mkApp "update-readme" "update-readme";
             show-commands = mkApp "show-commands" "show-commands";
-            testinfra-env = mkApp "testinfra-env" "testinfra-env";
+            build-test-ami = mkApp "build-test-ami" "build-test-ami";
+            run-testinfra = mkApp "run-testinfra" "run-testinfra";
+            cleanup-ami = mkApp "cleanup-ami" "cleanup-ami";
+            trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
@@ -1095,7 +1275,9 @@
                 basePackages.start-replica
                 basePackages.migrate-tool
                 basePackages.sync-exts-versions
-                basePackages.testinfra-env
+                basePackages.build-test-ami
+                basePackages.run-testinfra
+                basePackages.cleanup-ami
                 dbmate
                 nushell
                 pythonEnv
