@@ -93,6 +93,8 @@
           pytest
           pytest-testinfra
           requests
+          ec2instanceconnectcli
+          paramiko
         ]);
         sfcgal = pkgs.callPackage ./nix/ext/sfcgal/sfcgal.nix { };
         supabase-groonga = pkgs.callPackage ./nix/supabase-groonga.nix { };
@@ -750,54 +752,67 @@
               } ''
                 mkdir -p $out/bin
                 cat > $out/bin/run-testinfra << 'EOL'
-                #!/usr/bin/env bash
-                set -euo pipefail
+                #!/bin/sh
+                set -e
 
-                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
-                  pythonEnv
-                  awscli2
-                  aws-vault
-                ])}:$PATH"
-
-                # Check for required tools
-                for cmd in aws-vault; do
-                  if ! command -v $cmd &> /dev/null; then
-                    echo "Error: $cmd is required but not found"
-                    exit 1
-                  fi
+                # Parse command line arguments
+                PROFILE=""
+                AMI_NAME=""
+                PYTEST_ARGS=""
+                while [ $# -gt 0 ]; do
+                  case "$1" in
+                    --profile)
+                      PROFILE="$2"
+                      shift 2
+                      ;;
+                    --)
+                      shift
+                      PYTEST_ARGS="$*"
+                      break
+                      ;;
+                    *)
+                      if [ -z "$AMI_NAME" ]; then
+                        AMI_NAME="$1"
+                      else
+                        echo "Error: Unexpected argument: $1"
+                        echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
+                        exit 1
+                      fi
+                      shift
+                      ;;
+                  esac
                 done
 
-                # Check AWS Vault profile
-                if [ -z "''${AWS_VAULT:-}" ]; then
-                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name>"
+                if [ -z "$PROFILE" ]; then
+                  echo "Error: --profile must be specified"
+                  echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
                   exit 1
                 fi
 
-                # Check for AMI name argument
-                if [ -z "''${1:-}" ]; then
+                if [ -z "$AMI_NAME" ]; then
                   echo "Error: AMI name must be provided"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name>"
+                  echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
                   exit 1
                 fi
 
-                AMI_NAME="$1"
-                REGION="ap-southeast-1"
-                RUN_ID=$(date +%s)
+                # Set environment variables
+                export AWS_VAULT="$PROFILE"
+                export AMI_NAME="$AMI_NAME"
+                export TESTINFRAPY_TIMEOUT="300"  # 5 minutes timeout
 
-                # Run tests
-                ${pythonEnv}/bin/pytest -vv -s testinfra/test_ami_nix.py --ami-name="$AMI_NAME"
-
-                # Cleanup test instance
+                # Function to cleanup instance on exit
                 cleanup_instance() {
-                  aws ec2 --region $REGION describe-instances \
-                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
-                    --query "Reservations[].Instances[].InstanceId" \
-                    --output text | xargs -r aws ec2 terminate-instances \
-                    --region $REGION --instance-ids || true
+                  if [ -n "$INSTANCE_ID" ]; then
+                    echo "Cleaning up instance $INSTANCE_ID..."
+                    aws-vault exec "$AWS_VAULT" -- aws ec2 terminate-instances --instance-ids "$INSTANCE_ID"
+                  fi
                 }
 
-                trap cleanup_instance EXIT
+                # Set up trap to cleanup on exit or interruption
+                trap cleanup_instance EXIT INT TERM
+
+                # Run tests with AMI name as environment variable and any additional pytest arguments
+                ${pythonEnv}/bin/pytest -vv -s $PYTEST_ARGS testinfra/test_ami_nix.py
                 EOL
                 chmod +x $out/bin/run-testinfra
               '';
