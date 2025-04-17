@@ -89,7 +89,7 @@ Then, in your main terminal window:
 
 ```shell
 # Set up the database URL for migrations
-export DATABASE_URL="postgres://postgres@localhost:5435/postgres?sslmode=disable"
+export DATABASE_URL="postgres://supabase_admin@localhost:5435/postgres?sslmode=disable"
 
 # Create a new migration (make sure to specify the migrations directory)
 dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
