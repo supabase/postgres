@@ -120,7 +120,17 @@ Then, populate the migration at `./db/migrations/xxxxxxxxx_<some_message>` and m
 ```shell
 docker-compose run --rm dbmate up
 ```
+### Updating schema.sql for each major version
 
+After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:
+
+```shell
+# First, stop any running PostgreSQL servers
+# Then from the root of supabase/postgres run:
+nix run .#dbmate-tool -- --version all
+```
+
+This will create a schema.sql file for each major version of PostgreSQL. Commit these changes to your repository and push to your branch. The test.yml workflow will verify these changes against the test matrix.
 ## Testing
 
 Migrations are tested in CI to ensure they do not raise an exception against previously released `supabase/postgres` docker images. The full version matrix is at [test.yml](./.github/workflows/test.yml) in the `supabase-version` variable.
