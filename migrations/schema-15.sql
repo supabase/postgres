@@ -483,15 +483,21 @@ COMMENT ON FUNCTION extensions.set_graphql_placeholder() IS 'Reintroduces placeh
 
 CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(username text, password text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RAISE WARNING 'PgBouncer auth request: %', p_usename;
+    AS $_$
+begin
+    raise debug 'PgBouncer auth request: %', p_usename;
 
-    RETURN QUERY
-    SELECT usename::TEXT, passwd::TEXT FROM pg_catalog.pg_shadow
-    WHERE usename = p_usename;
-END;
-$$;
+    return query
+    select
+        rolname::text,
+        case when rolvaliduntil < now()
+            then null
+            else rolpassword::text
+        end
+    from pg_authid
+    where rolname=$1 and rolcanlogin;
+end;
+$_$;
 
 
 --
@@ -1003,3 +1009,46 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- Dbmate schema migrations
 --
 
+INSERT INTO public.schema_migrations (version) VALUES
+    ('00000000000000'),
+    ('00000000000001'),
+    ('00000000000002'),
+    ('00000000000003'),
+    ('10000000000000'),
+    ('20211115181400'),
+    ('20211118015519'),
+    ('20211122051245'),
+    ('20211124212715'),
+    ('20211130151719'),
+    ('20220118070449'),
+    ('20220126121436'),
+    ('20220224211803'),
+    ('20220317095840'),
+    ('20220321174452'),
+    ('20220322085208'),
+    ('20220404205710'),
+    ('20220609081115'),
+    ('20220613123923'),
+    ('20220713082019'),
+    ('20221028101028'),
+    ('20221103090837'),
+    ('20221207154255'),
+    ('20230201083204'),
+    ('20230224042246'),
+    ('20230306081037'),
+    ('20230327032006'),
+    ('20230529180330'),
+    ('20231013070755'),
+    ('20231017062225'),
+    ('20231020085357'),
+    ('20231130133139'),
+    ('20240124080435'),
+    ('20240606060239'),
+    ('20241031003909'),
+    ('20241215003910'),
+    ('20250205060043'),
+    ('20250205144616'),
+    ('20250218031949'),
+    ('20250220051611'),
+    ('20250312095419'),
+    ('20250417190610');
