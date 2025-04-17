@@ -92,7 +92,7 @@ Then, in your main terminal window:
 export DATABASE_URL="postgres://postgres@localhost:5435/postgres?sslmode=disable"
 
 # Create a new migration (make sure to specify the migrations directory)
-dbmate --migrations-dir="migrations/db" new '<some message>'
+dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 ```
 
 Then, execute the migration at `./migrations/db/xxxxxxxxx_<some_message>` and make sure it runs successfully with:
