@@ -134,7 +134,7 @@ This will create automatically  schema.sql file for each major version of Postgr
 
 ## Testing
 
-In addition to ci test mentioned above, you can test migrations locallay by running the following test for each major version of postgres one at a time.
+In addition to ci test mentioned above, you can test migrations locally by running the following test for each major version of postgres one at a time.
 
 Examples:
 
