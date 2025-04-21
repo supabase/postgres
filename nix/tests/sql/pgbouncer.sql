@@ -1,0 +1,26 @@
+-- pgbouncer schema owner
+select
+  n.nspname as schema_name,
+  r.rolname as owner
+from
+  pg_namespace n
+join
+  pg_roles r on n.nspowner = r.oid
+where
+  n.nspname = 'pgbouncer';
+
+-- pgbouncer schema functions with owners
+select
+  n.nspname as schema_name,
+  p.proname as function_name,
+  r.rolname as owner
+from
+  pg_proc p
+join
+  pg_namespace n on p.pronamespace = n.oid
+join
+  pg_roles r on p.proowner = r.oid
+where
+  n.nspname = 'pgbouncer'
+order by
+  p.proname;
