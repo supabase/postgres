@@ -8,9 +8,9 @@ join
   pg_roles r on n.nspowner = r.oid
 where
   n.nspname = 'pgbouncer';
- schema_name |     owner      
--------------+----------------
- pgbouncer   | supabase_admin
+ schema_name |   owner   
+-------------+-----------
+ pgbouncer   | pgbouncer
 (1 row)
 
 -- pgbouncer schema functions with owners
@@ -28,8 +28,8 @@ where
   n.nspname = 'pgbouncer'
 order by
   p.proname;
- schema_name | function_name |        owner        
--------------+---------------+---------------------
+ schema_name | function_name |     owner      
+-------------+---------------+----------------
  pgbouncer   | get_auth      | supabase_admin
 (1 row)
 
@@ -60,8 +60,10 @@ FROM pg_proc p
 JOIN schema_obj s ON s.oid = p.pronamespace 
 CROSS JOIN LATERAL aclexplode(p.proacl) AS acl 
 ORDER BY object_name, grantee, privilege_type; 
- schema   | object_name |    grantee     | privilege_type
+  schema   | object_name |    grantee     | privilege_type 
 -----------+-------------+----------------+----------------
  pgbouncer | get_auth    | pgbouncer      | EXECUTE
  pgbouncer | get_auth    | postgres       | EXECUTE
  pgbouncer | get_auth    | supabase_admin | EXECUTE
+(3 rows)
+
