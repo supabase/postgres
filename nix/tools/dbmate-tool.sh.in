@@ -189,8 +189,15 @@ perform_dump() {
     while [ $attempt -le $max_attempts ]; do
         echo "Attempting dbmate dump (attempt $attempt/$max_attempts)"
         
+        # Run dbmate dump
         if dbmate dump; then
-            return 0
+            # Post-process schema.sql to remove schema_migrations INSERT statements
+            if [ -f "db/schema.sql" ]; then
+                # Remove INSERT INTO schema_migrations lines
+                sed -i '/^INSERT INTO schema_migrations/d' db/schema.sql
+                echo "Schema dump completed successfully (schema_migrations data removed)"
+                return 0
+            fi
         fi
         
         echo "Dump attempt $attempt failed, waiting before retry..."

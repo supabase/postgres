@@ -85,12 +85,16 @@ First, start a local postgres server in another terminal window:
 nix run .#start-server 15
 ```
 
-Then, in your main terminal window:
+Then, in your main terminal window, run:
 
 ```shell
-# Set up the database URL for migrations
-export DATABASE_URL="postgres://supabase_admin@localhost:5435/postgres?sslmode=disable"
 
+nix develop
+```
+in the root of `supabase/postgres`. 
+
+Next run: 
+``` shell
 # Create a new migration (make sure to specify the migrations directory)
 dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 ```
@@ -98,7 +102,7 @@ dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 Then, execute the migration at `./migrations/db/xxxxxxxxx_<some_message>` and make sure it runs successfully with:
 
 ```shell
-dbmate up
+dbmate --no-dump-schema --migrations-dir"migrations/db/migrations" up
 ```
 
 Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.

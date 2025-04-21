@@ -951,6 +951,7 @@
           ];
           shellHook = ''
             export HISTFILE=.history
+            export DATABASE_URL="postgres://supabase_admin@localhost:5435/postgres?sslmode=disable"
           '';
         };
         cargo-pgrx_0_11_3 = mkCargoPgrxDevShell {
