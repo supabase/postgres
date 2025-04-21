@@ -187,17 +187,10 @@ perform_dump() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        echo "Attempting dbmate dump (attempt $attempt/$max_attempts)"
+        echo "Attempting pg_dump (attempt $attempt/$max_attempts)"
         
-        # Run dbmate dump
-        if dbmate dump; then
-            # Post-process schema.sql to remove schema_migrations INSERT statements
-            if [ -f "db/schema.sql" ]; then
-                # Remove INSERT INTO schema_migrations lines
-                sed -i '/^INSERT INTO schema_migrations/d' db/schema.sql
-                echo "Schema dump completed successfully (schema_migrations data removed)"
-                return 0
-            fi
+        if "${PSQLBIN}/pg_dump" -h localhost -p "$PORTNO" -U "$PGSQL_SUPERUSER" -d postgres --schema-only --no-owner --no-privileges > "./db/schema.sql"; then
+            return 0
         fi
         
         echo "Dump attempt $attempt failed, waiting before retry..."
