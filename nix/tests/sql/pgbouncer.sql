@@ -26,7 +26,6 @@ order by
   p.proname;
 
 -- Tests role privileges on the pgbouncer objects
--- INSERT and UPDATE privileges should not be present on the pgbouncer tables for postgres and service_role, only SELECT and DELETE
 WITH schema_obj AS ( 
   SELECT oid, nspname 
   FROM pg_namespace 
