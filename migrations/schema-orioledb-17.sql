@@ -489,13 +489,13 @@ begin
     raise debug 'PgBouncer auth request: %', p_usename;
 
     return query
-    select
-        rolname::text,
-        case when rolvaliduntil < now()
-            then null
-            else rolpassword::text
-        end
-    from pg_authid
+    select 
+        rolname::text, 
+        case when rolvaliduntil < now() 
+            then null 
+            else rolpassword::text 
+        end 
+    from pg_authid 
     where rolname=$1 and rolcanlogin;
 end;
 $_$;
