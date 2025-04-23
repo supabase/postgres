@@ -170,18 +170,6 @@ check_orioledb_ready() {
     return 1
 }
 
-trim_schema() {
-    case "$CURRENT_SYSTEM" in
-    "x86_64-darwin"|"aarch64-darwin")
-        sed -i '' '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
-        echo "Matched: $CURRENT_SYSTEM"
-        ;;
-    *)
-        sed -i '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
-        ;;
-    esac
-}
-
 perform_dump() {
     local max_attempts=3
     local attempt=1

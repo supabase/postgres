@@ -154,12 +154,14 @@
           x: 
             x != ./nix/ext/timescaledb.nix &&
             x != ./nix/ext/timescaledb-2.9.1.nix &&
-            x != ./nix/ext/plv8.nix &&
-            x != ./nix/ext/pgjwt.nix
+            x != ./nix/ext/plv8.nix
         ) ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
-        dbExtensions17 = orioleFilteredExtensions; 
+        dbExtensions17 = builtins.filter (
+          x: 
+            x != ./nix/ext/pgjwt.nix
+        ) orioleFilteredExtensions; 
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
         # Create a 'receipt' file for a given postgresql package. This is a way
