@@ -58,7 +58,7 @@ SELECT
 FROM pg_proc p 
 JOIN schema_obj s ON s.oid = p.pronamespace 
 CROSS JOIN LATERAL aclexplode(p.proacl) AS acl 
-ORDER BY object_name, grantee, privilege_type; 
+ORDER BY object_name, grantee, privilege_type;
   schema   | object_name |    grantee     | privilege_type 
 -----------+-------------+----------------+----------------
  pgbouncer | get_auth    | pgbouncer      | EXECUTE
@@ -66,3 +66,22 @@ ORDER BY object_name, grantee, privilege_type;
  pgbouncer | get_auth    | supabase_admin | EXECUTE
 (3 rows)
 
+-- Ensure that pgbouncer.get_auth() function does not return an expired password
+create role test_expired_user_password with login password 'expired_password' valid until '2000-01-01 00:00:00+00';
+create role test_valid_user_password with login password 'valid_password' valid until '2100-01-01 00:00:00+00';
+-- Update the pg_authid catalog directly to replace with a known SCRAM hash
+update pg_authid set rolpassword = 'SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64' where rolname = 'test_valid_user_password';
+select pgbouncer.get_auth('test_expired_user_password');
+           get_auth            
+-------------------------------
+ (test_expired_user_password,)
+(1 row)
+
+select pgbouncer.get_auth('test_valid_user_password');
+                                           get_auth                                           
+----------------------------------------------------------------------------------------------
+ (test_valid_user_password,SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64)
+(1 row)
+
+drop role test_expired_user_password;
+drop role test_valid_user_password;
