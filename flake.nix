@@ -4,13 +4,11 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    poetry2nix.url = "github:nix-community/poetry2nix";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix2container, nix-editor, rust-overlay, poetry2nix, ... }:
+  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, ... }:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -24,7 +22,6 @@
       let
         pgsqlDefaultPort = "5435";
         pgsqlSuperuser = "supabase_admin";
-        nix2img = nix2container.packages.${system}.nix2container;
 
         pkgs = import nixpkgs {
           config = {
@@ -39,7 +36,6 @@
             # pull them from the overlays/ directory automatically, but we don't
             # want to have an arbitrary order, since it might matter. being
             # explicit is better.
-            poetry2nix.overlays.default
             (final: prev: {
               xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
             })
@@ -658,6 +654,47 @@
                 #!/usr/bin/env bash
                 set -euo pipefail
 
+                show_help() {
+                  cat << EOF
+                Usage: build-test-ami [--help] <postgres-version>
+
+                Build AMI images for PostgreSQL testing.
+
+                This script will:
+                1. Check for required tools and AWS authentication
+                2. Build two AMI stages using Packer
+                3. Clean up any temporary instances
+                4. Output the final AMI name for use with run-testinfra
+
+                Arguments:
+                  postgres-version    PostgreSQL major version to build (required)
+
+                Options:
+                  --help    Show this help message and exit
+
+                Requirements:
+                  - AWS Vault profile must be set in AWS_VAULT environment variable
+                  - Packer, AWS CLI, yq, jq, and OpenSSL must be installed
+                  - Must be run from a git repository
+
+                Example:
+                  aws-vault exec supabase-dev -- nix run .#build-test-ami 15
+                EOF
+                }
+
+                # Handle help flag
+                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
+                  show_help
+                  exit 0
+                fi
+
+                # Check for required PostgreSQL version argument
+                if [ -z "$1" ]; then
+                  echo "Error: PostgreSQL version must be provided"
+                  show_help
+                  exit 1
+                fi
+
                 export PATH="${pkgs.lib.makeBinPath (with pkgs; [
                   packer
                   awscli2
@@ -680,13 +717,13 @@
                 # Check AWS Vault profile
                 if [ -z "''${AWS_VAULT:-}" ]; then
                   echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#build-test-ami 15"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#build-test-ami <postgres-version>"
                   exit 1
                 fi
 
-                # Set default values
+                # Set values
                 REGION="ap-southeast-1"
-                POSTGRES_VERSION="''${1:-15}"  # Default to 15 if not specified
+                POSTGRES_VERSION="$1"
                 RANDOM_STRING=$(openssl rand -hex 8)
                 GIT_SHA=$(git rev-parse HEAD)
                 RUN_ID=$(date +%s)
@@ -745,74 +782,126 @@
             run-testinfra = pkgs.runCommand "run-testinfra"
               {
                 buildInputs = with pkgs; [
-                  pythonEnv
-                  awscli2
-                  aws-vault
+                  gh
+                  git
+                  coreutils
                 ];
               } ''
                 mkdir -p $out/bin
                 cat > $out/bin/run-testinfra << 'EOL'
-                #!/bin/sh
-                set -e
+                #!/usr/bin/env bash
+                set -euo pipefail
 
-                # Parse command line arguments
-                PROFILE=""
-                AMI_NAME=""
-                PYTEST_ARGS=""
-                while [ $# -gt 0 ]; do
-                  case "$1" in
-                    --profile)
-                      PROFILE="$2"
-                      shift 2
-                      ;;
-                    --)
-                      shift
-                      PYTEST_ARGS="$*"
-                      break
-                      ;;
-                    *)
-                      if [ -z "$AMI_NAME" ]; then
-                        AMI_NAME="$1"
-                      else
-                        echo "Error: Unexpected argument: $1"
-                        echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
-                        exit 1
-                      fi
-                      shift
-                      ;;
-                  esac
-                done
+                show_help() {
+                  cat << EOF
+                Usage: run-testinfra [--help] <ami-name>
 
-                if [ -z "$PROFILE" ]; then
-                  echo "Error: --profile must be specified"
-                  echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
-                  exit 1
-                fi
+                Trigger the testinfra-test-only workflow to test a specific AMI.
 
-                if [ -z "$AMI_NAME" ]; then
-                  echo "Error: AMI name must be provided"
-                  echo "Usage: aws-vault exec <profile> -- nix run .#run-testinfra -- --profile <profile> <ami-name> [-- pytest-args]"
-                  exit 1
-                fi
+                This script will:
+                1. Check if you're authenticated with GitHub
+                2. Get the current branch and commit
+                3. Trigger the testinfra-test-only workflow with the specified AMI name
+                4. Watch the workflow progress until completion
 
-                # Set environment variables
-                export AWS_VAULT="$PROFILE"
-                export AMI_NAME="$AMI_NAME"
-                export TESTINFRAPY_TIMEOUT="300"  # 5 minutes timeout
+                Arguments:
+                  ami-name    The name of the AMI to test
 
-                # Function to cleanup instance on exit
-                cleanup_instance() {
-                  if [ -n "$INSTANCE_ID" ]; then
-                    echo "Cleaning up instance $INSTANCE_ID..."
-                    aws-vault exec "$AWS_VAULT" -- aws ec2 terminate-instances --instance-ids "$INSTANCE_ID"
-                  fi
+                Options:
+                  --help    Show this help message and exit
+
+                Requirements:
+                  - GitHub CLI (gh) installed and authenticated
+                  - Git installed
+                  - Must be run from a git repository
+
+                Example:
+                  run-testinfra supabase-postgres-abc123
+                EOF
                 }
 
-                # Set up trap to cleanup on exit or interruption
-                trap cleanup_instance EXIT INT TERM
+                # Handle help flag
+                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
+                  show_help
+                  exit 0
+                fi
 
-                # Run tests with AMI name as environment variable and any additional pytest arguments
-                ${pythonEnv}/bin/pytest -vv -s $PYTEST_ARGS testinfra/test_ami_nix.py
+                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                  gh
+                  git
+                  coreutils
+                ])}:$PATH"
+
+                # Check for required tools
+                for cmd in gh git; do
+                  if ! command -v $cmd &> /dev/null; then
+                    echo "Error: $cmd is required but not found"
+                    exit 1
+                  fi
+                done
+
+                # Check if user is authenticated with GitHub
+                if ! gh auth status &>/dev/null; then
+                  echo "Error: Not authenticated with GitHub. Please run 'gh auth login' first."
+                  exit 1
+                fi
+
+                # Check for AMI name argument
+                if [ -z "$1" ]; then
+                  echo "Error: AMI name must be provided"
+                  show_help
+                  exit 1
+                fi
+
+                AMI_NAME="$1"
+
+                # Get current branch and commit
+                BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                COMMIT=$(git rev-parse HEAD)
+
+                # Check if we're on a standard branch
+                if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
+                  echo "Warning: Running workflow from non-standard branch: $BRANCH"
+                  echo "This is supported for testing purposes."
+                  read -p "Continue? [y/N] " -n 1 -r
+                  echo
+                  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                    echo "Aborted."
+                    exit 1
+                  fi
+                fi
+
+                # Trigger the workflow with the AMI name
+                echo "Triggering testinfra-test-only workflow for AMI: $AMI_NAME"
+                gh workflow run testinfra-test-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
+
+                # Wait for workflow to start and get the run ID
+                echo "Waiting for workflow to start..."
+                sleep 5
+                
+                # Get the latest run ID for this workflow
+                RUN_ID=$(gh run list --workflow=testinfra-test-only.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+                
+                if [ -z "$RUN_ID" ]; then
+                  echo "Error: Could not find workflow run ID"
+                  exit 1
+                fi
+
+                echo "Watching workflow run $RUN_ID..."
+                echo "The script will automatically exit when the workflow completes."
+                echo "Press Ctrl+C to stop watching (workflow will continue running)"
+                echo "----------------------------------------"
+
+                # Try to watch the run, but handle network errors gracefully
+                while true; do
+                  if gh run watch "$RUN_ID" --exit-status; then
+                    break
+                  else
+                    echo "Network error while watching workflow. Retrying in 5 seconds..."
+                    echo "You can also check the status manually with: gh run view $RUN_ID"
+                    sleep 5
+                  fi
+                done
                 EOL
                 chmod +x $out/bin/run-testinfra
               '';
@@ -884,6 +973,38 @@
                 cat > $out/bin/trigger-nix-build << 'EOL'
                 #!/usr/bin/env bash
                 set -euo pipefail
+
+                show_help() {
+                  cat << EOF
+                Usage: trigger-nix-build [--help]
+
+                Trigger the nix-build workflow for the current branch and watch its progress.
+
+                This script will:
+                1. Check if you're authenticated with GitHub
+                2. Get the current branch and commit
+                3. Verify you're on a standard branch (develop or release/*) or prompt for confirmation
+                4. Trigger the nix-build workflow
+                5. Watch the workflow progress until completion
+
+                Options:
+                  --help    Show this help message and exit
+
+                Requirements:
+                  - GitHub CLI (gh) installed and authenticated
+                  - Git installed
+                  - Must be run from a git repository
+
+                Example:
+                  trigger-nix-build
+                EOF
+                }
+
+                # Handle help flag
+                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
+                  show_help
+                  exit 0
+                fi
 
                 export PATH="${pkgs.lib.makeBinPath (with pkgs; [
                   gh
