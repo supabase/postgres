@@ -32,6 +32,30 @@ group by
 order by
   c.relname;
 
+-- auth schema objects with roles privileges
+select
+  ns.nspname    as schema_name,
+  c.relname     as table_name,
+  r.rolname     as role_name,
+  a.privilege_type,
+  a.is_grantable
+from
+  pg_class      c
+join
+  pg_namespace  ns  on c.relnamespace = ns.oid
+cross join lateral
+  aclexplode(c.relacl) as a
+join
+  pg_roles      r   on a.grantee = r.oid
+where
+  ns.nspname = 'auth'
+  and c.relkind in ('r', 'v', 'm')
+  and a.privilege_type <> 'MAINTAIN'
+order by
+  c.relname,
+  r.rolname,
+  a.privilege_type;
+
 -- auth indexes with owners
 select
   ns.nspname as table_schema,

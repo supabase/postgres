@@ -42,6 +42,138 @@ order by
  storage     | objects    | supabase_storage_admin | t           | 
 (3 rows)
 
+-- storage schema objects with roles privileges
+select
+  ns.nspname    as schema_name,
+  c.relname     as table_name,
+  r.rolname     as role_name,
+  a.privilege_type,
+  a.is_grantable
+from
+  pg_class      c
+join
+  pg_namespace  ns  on c.relnamespace = ns.oid
+cross join lateral
+  aclexplode(c.relacl) as a
+join
+  pg_roles      r   on a.grantee = r.oid
+where
+  ns.nspname = 'storage'
+  and c.relkind in ('r', 'v', 'm')
+  and a.privilege_type <> 'MAINTAIN'
+order by
+  c.relname,
+  r.rolname,
+  a.privilege_type;
+ schema_name | table_name |       role_name        | privilege_type | is_grantable 
+-------------+------------+------------------------+----------------+--------------
+ storage     | buckets    | anon                   | DELETE         | f
+ storage     | buckets    | anon                   | INSERT         | f
+ storage     | buckets    | anon                   | REFERENCES     | f
+ storage     | buckets    | anon                   | SELECT         | f
+ storage     | buckets    | anon                   | TRIGGER        | f
+ storage     | buckets    | anon                   | TRUNCATE       | f
+ storage     | buckets    | anon                   | UPDATE         | f
+ storage     | buckets    | authenticated          | DELETE         | f
+ storage     | buckets    | authenticated          | INSERT         | f
+ storage     | buckets    | authenticated          | REFERENCES     | f
+ storage     | buckets    | authenticated          | SELECT         | f
+ storage     | buckets    | authenticated          | TRIGGER        | f
+ storage     | buckets    | authenticated          | TRUNCATE       | f
+ storage     | buckets    | authenticated          | UPDATE         | f
+ storage     | buckets    | postgres               | DELETE         | f
+ storage     | buckets    | postgres               | INSERT         | f
+ storage     | buckets    | postgres               | REFERENCES     | f
+ storage     | buckets    | postgres               | SELECT         | f
+ storage     | buckets    | postgres               | TRIGGER        | f
+ storage     | buckets    | postgres               | TRUNCATE       | f
+ storage     | buckets    | postgres               | UPDATE         | f
+ storage     | buckets    | service_role           | DELETE         | f
+ storage     | buckets    | service_role           | INSERT         | f
+ storage     | buckets    | service_role           | REFERENCES     | f
+ storage     | buckets    | service_role           | SELECT         | f
+ storage     | buckets    | service_role           | TRIGGER        | f
+ storage     | buckets    | service_role           | TRUNCATE       | f
+ storage     | buckets    | service_role           | UPDATE         | f
+ storage     | buckets    | supabase_storage_admin | DELETE         | f
+ storage     | buckets    | supabase_storage_admin | INSERT         | f
+ storage     | buckets    | supabase_storage_admin | REFERENCES     | f
+ storage     | buckets    | supabase_storage_admin | SELECT         | f
+ storage     | buckets    | supabase_storage_admin | TRIGGER        | f
+ storage     | buckets    | supabase_storage_admin | TRUNCATE       | f
+ storage     | buckets    | supabase_storage_admin | UPDATE         | f
+ storage     | migrations | anon                   | DELETE         | f
+ storage     | migrations | anon                   | INSERT         | f
+ storage     | migrations | anon                   | REFERENCES     | f
+ storage     | migrations | anon                   | SELECT         | f
+ storage     | migrations | anon                   | TRIGGER        | f
+ storage     | migrations | anon                   | TRUNCATE       | f
+ storage     | migrations | anon                   | UPDATE         | f
+ storage     | migrations | authenticated          | DELETE         | f
+ storage     | migrations | authenticated          | INSERT         | f
+ storage     | migrations | authenticated          | REFERENCES     | f
+ storage     | migrations | authenticated          | SELECT         | f
+ storage     | migrations | authenticated          | TRIGGER        | f
+ storage     | migrations | authenticated          | TRUNCATE       | f
+ storage     | migrations | authenticated          | UPDATE         | f
+ storage     | migrations | postgres               | DELETE         | f
+ storage     | migrations | postgres               | INSERT         | f
+ storage     | migrations | postgres               | REFERENCES     | f
+ storage     | migrations | postgres               | SELECT         | f
+ storage     | migrations | postgres               | TRIGGER        | f
+ storage     | migrations | postgres               | TRUNCATE       | f
+ storage     | migrations | postgres               | UPDATE         | f
+ storage     | migrations | service_role           | DELETE         | f
+ storage     | migrations | service_role           | INSERT         | f
+ storage     | migrations | service_role           | REFERENCES     | f
+ storage     | migrations | service_role           | SELECT         | f
+ storage     | migrations | service_role           | TRIGGER        | f
+ storage     | migrations | service_role           | TRUNCATE       | f
+ storage     | migrations | service_role           | UPDATE         | f
+ storage     | migrations | supabase_storage_admin | DELETE         | f
+ storage     | migrations | supabase_storage_admin | INSERT         | f
+ storage     | migrations | supabase_storage_admin | REFERENCES     | f
+ storage     | migrations | supabase_storage_admin | SELECT         | f
+ storage     | migrations | supabase_storage_admin | TRIGGER        | f
+ storage     | migrations | supabase_storage_admin | TRUNCATE       | f
+ storage     | migrations | supabase_storage_admin | UPDATE         | f
+ storage     | objects    | anon                   | DELETE         | f
+ storage     | objects    | anon                   | INSERT         | f
+ storage     | objects    | anon                   | REFERENCES     | f
+ storage     | objects    | anon                   | SELECT         | f
+ storage     | objects    | anon                   | TRIGGER        | f
+ storage     | objects    | anon                   | TRUNCATE       | f
+ storage     | objects    | anon                   | UPDATE         | f
+ storage     | objects    | authenticated          | DELETE         | f
+ storage     | objects    | authenticated          | INSERT         | f
+ storage     | objects    | authenticated          | REFERENCES     | f
+ storage     | objects    | authenticated          | SELECT         | f
+ storage     | objects    | authenticated          | TRIGGER        | f
+ storage     | objects    | authenticated          | TRUNCATE       | f
+ storage     | objects    | authenticated          | UPDATE         | f
+ storage     | objects    | postgres               | DELETE         | f
+ storage     | objects    | postgres               | INSERT         | f
+ storage     | objects    | postgres               | REFERENCES     | f
+ storage     | objects    | postgres               | SELECT         | f
+ storage     | objects    | postgres               | TRIGGER        | f
+ storage     | objects    | postgres               | TRUNCATE       | f
+ storage     | objects    | postgres               | UPDATE         | f
+ storage     | objects    | service_role           | DELETE         | f
+ storage     | objects    | service_role           | INSERT         | f
+ storage     | objects    | service_role           | REFERENCES     | f
+ storage     | objects    | service_role           | SELECT         | f
+ storage     | objects    | service_role           | TRIGGER        | f
+ storage     | objects    | service_role           | TRUNCATE       | f
+ storage     | objects    | service_role           | UPDATE         | f
+ storage     | objects    | supabase_storage_admin | DELETE         | f
+ storage     | objects    | supabase_storage_admin | INSERT         | f
+ storage     | objects    | supabase_storage_admin | REFERENCES     | f
+ storage     | objects    | supabase_storage_admin | SELECT         | f
+ storage     | objects    | supabase_storage_admin | TRIGGER        | f
+ storage     | objects    | supabase_storage_admin | TRUNCATE       | f
+ storage     | objects    | supabase_storage_admin | UPDATE         | f
+(105 rows)
+
 -- storage indexes with owners
 select
   ns.nspname as table_schema,

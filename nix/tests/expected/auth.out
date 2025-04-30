@@ -44,6 +44,138 @@ order by
  auth        | users             | supabase_auth_admin | f           | 
 (5 rows)
 
+-- auth schema objects with roles privileges
+select
+  ns.nspname    as schema_name,
+  c.relname     as table_name,
+  r.rolname     as role_name,
+  a.privilege_type,
+  a.is_grantable
+from
+  pg_class      c
+join
+  pg_namespace  ns  on c.relnamespace = ns.oid
+cross join lateral
+  aclexplode(c.relacl) as a
+join
+  pg_roles      r   on a.grantee = r.oid
+where
+  ns.nspname = 'auth'
+  and c.relkind in ('r', 'v', 'm')
+  and a.privilege_type <> 'MAINTAIN'
+order by
+  c.relname,
+  r.rolname,
+  a.privilege_type;
+ schema_name |    table_name     |      role_name      | privilege_type | is_grantable 
+-------------+-------------------+---------------------+----------------+--------------
+ auth        | audit_log_entries | dashboard_user      | DELETE         | f
+ auth        | audit_log_entries | dashboard_user      | INSERT         | f
+ auth        | audit_log_entries | dashboard_user      | REFERENCES     | f
+ auth        | audit_log_entries | dashboard_user      | SELECT         | f
+ auth        | audit_log_entries | dashboard_user      | TRIGGER        | f
+ auth        | audit_log_entries | dashboard_user      | TRUNCATE       | f
+ auth        | audit_log_entries | dashboard_user      | UPDATE         | f
+ auth        | audit_log_entries | postgres            | DELETE         | f
+ auth        | audit_log_entries | postgres            | INSERT         | f
+ auth        | audit_log_entries | postgres            | REFERENCES     | f
+ auth        | audit_log_entries | postgres            | SELECT         | f
+ auth        | audit_log_entries | postgres            | TRIGGER        | f
+ auth        | audit_log_entries | postgres            | TRUNCATE       | f
+ auth        | audit_log_entries | postgres            | UPDATE         | f
+ auth        | audit_log_entries | supabase_auth_admin | DELETE         | f
+ auth        | audit_log_entries | supabase_auth_admin | INSERT         | f
+ auth        | audit_log_entries | supabase_auth_admin | REFERENCES     | f
+ auth        | audit_log_entries | supabase_auth_admin | SELECT         | f
+ auth        | audit_log_entries | supabase_auth_admin | TRIGGER        | f
+ auth        | audit_log_entries | supabase_auth_admin | TRUNCATE       | f
+ auth        | audit_log_entries | supabase_auth_admin | UPDATE         | f
+ auth        | instances         | dashboard_user      | DELETE         | f
+ auth        | instances         | dashboard_user      | INSERT         | f
+ auth        | instances         | dashboard_user      | REFERENCES     | f
+ auth        | instances         | dashboard_user      | SELECT         | f
+ auth        | instances         | dashboard_user      | TRIGGER        | f
+ auth        | instances         | dashboard_user      | TRUNCATE       | f
+ auth        | instances         | dashboard_user      | UPDATE         | f
+ auth        | instances         | postgres            | DELETE         | f
+ auth        | instances         | postgres            | INSERT         | f
+ auth        | instances         | postgres            | REFERENCES     | f
+ auth        | instances         | postgres            | SELECT         | f
+ auth        | instances         | postgres            | TRIGGER        | f
+ auth        | instances         | postgres            | TRUNCATE       | f
+ auth        | instances         | postgres            | UPDATE         | f
+ auth        | instances         | supabase_auth_admin | DELETE         | f
+ auth        | instances         | supabase_auth_admin | INSERT         | f
+ auth        | instances         | supabase_auth_admin | REFERENCES     | f
+ auth        | instances         | supabase_auth_admin | SELECT         | f
+ auth        | instances         | supabase_auth_admin | TRIGGER        | f
+ auth        | instances         | supabase_auth_admin | TRUNCATE       | f
+ auth        | instances         | supabase_auth_admin | UPDATE         | f
+ auth        | refresh_tokens    | dashboard_user      | DELETE         | f
+ auth        | refresh_tokens    | dashboard_user      | INSERT         | f
+ auth        | refresh_tokens    | dashboard_user      | REFERENCES     | f
+ auth        | refresh_tokens    | dashboard_user      | SELECT         | f
+ auth        | refresh_tokens    | dashboard_user      | TRIGGER        | f
+ auth        | refresh_tokens    | dashboard_user      | TRUNCATE       | f
+ auth        | refresh_tokens    | dashboard_user      | UPDATE         | f
+ auth        | refresh_tokens    | postgres            | DELETE         | f
+ auth        | refresh_tokens    | postgres            | INSERT         | f
+ auth        | refresh_tokens    | postgres            | REFERENCES     | f
+ auth        | refresh_tokens    | postgres            | SELECT         | f
+ auth        | refresh_tokens    | postgres            | TRIGGER        | f
+ auth        | refresh_tokens    | postgres            | TRUNCATE       | f
+ auth        | refresh_tokens    | postgres            | UPDATE         | f
+ auth        | refresh_tokens    | supabase_auth_admin | DELETE         | f
+ auth        | refresh_tokens    | supabase_auth_admin | INSERT         | f
+ auth        | refresh_tokens    | supabase_auth_admin | REFERENCES     | f
+ auth        | refresh_tokens    | supabase_auth_admin | SELECT         | f
+ auth        | refresh_tokens    | supabase_auth_admin | TRIGGER        | f
+ auth        | refresh_tokens    | supabase_auth_admin | TRUNCATE       | f
+ auth        | refresh_tokens    | supabase_auth_admin | UPDATE         | f
+ auth        | schema_migrations | dashboard_user      | DELETE         | f
+ auth        | schema_migrations | dashboard_user      | INSERT         | f
+ auth        | schema_migrations | dashboard_user      | REFERENCES     | f
+ auth        | schema_migrations | dashboard_user      | SELECT         | f
+ auth        | schema_migrations | dashboard_user      | TRIGGER        | f
+ auth        | schema_migrations | dashboard_user      | TRUNCATE       | f
+ auth        | schema_migrations | dashboard_user      | UPDATE         | f
+ auth        | schema_migrations | postgres            | DELETE         | f
+ auth        | schema_migrations | postgres            | INSERT         | f
+ auth        | schema_migrations | postgres            | REFERENCES     | f
+ auth        | schema_migrations | postgres            | SELECT         | f
+ auth        | schema_migrations | postgres            | TRIGGER        | f
+ auth        | schema_migrations | postgres            | TRUNCATE       | f
+ auth        | schema_migrations | postgres            | UPDATE         | f
+ auth        | schema_migrations | supabase_auth_admin | DELETE         | f
+ auth        | schema_migrations | supabase_auth_admin | INSERT         | f
+ auth        | schema_migrations | supabase_auth_admin | REFERENCES     | f
+ auth        | schema_migrations | supabase_auth_admin | SELECT         | f
+ auth        | schema_migrations | supabase_auth_admin | TRIGGER        | f
+ auth        | schema_migrations | supabase_auth_admin | TRUNCATE       | f
+ auth        | schema_migrations | supabase_auth_admin | UPDATE         | f
+ auth        | users             | dashboard_user      | DELETE         | f
+ auth        | users             | dashboard_user      | INSERT         | f
+ auth        | users             | dashboard_user      | REFERENCES     | f
+ auth        | users             | dashboard_user      | SELECT         | f
+ auth        | users             | dashboard_user      | TRIGGER        | f
+ auth        | users             | dashboard_user      | TRUNCATE       | f
+ auth        | users             | dashboard_user      | UPDATE         | f
+ auth        | users             | postgres            | DELETE         | f
+ auth        | users             | postgres            | INSERT         | f
+ auth        | users             | postgres            | REFERENCES     | f
+ auth        | users             | postgres            | SELECT         | f
+ auth        | users             | postgres            | TRIGGER        | f
+ auth        | users             | postgres            | TRUNCATE       | f
+ auth        | users             | postgres            | UPDATE         | f
+ auth        | users             | supabase_auth_admin | DELETE         | f
+ auth        | users             | supabase_auth_admin | INSERT         | f
+ auth        | users             | supabase_auth_admin | REFERENCES     | f
+ auth        | users             | supabase_auth_admin | SELECT         | f
+ auth        | users             | supabase_auth_admin | TRIGGER        | f
+ auth        | users             | supabase_auth_admin | TRUNCATE       | f
+ auth        | users             | supabase_auth_admin | UPDATE         | f
+(105 rows)
+
 -- auth indexes with owners
 select
   ns.nspname as table_schema,
