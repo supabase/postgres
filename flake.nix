@@ -872,14 +872,14 @@
 
                 # Trigger the workflow with the AMI name
                 echo "Triggering testinfra-only workflow for AMI: $AMI_NAME on branch: $BRANCH"
-                gh workflow run testinfra-only.yml --repo "$REPO" --ref "$BRANCH" -f ami_name="$AMI_NAME"
+                gh workflow run testinfra-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
 
                 # Wait for workflow to start and get the run ID
                 echo "Waiting for workflow to start..."
                 sleep 5
                 
                 # Get the latest run ID for this workflow
-                RUN_ID=$(gh run list --workflow=testinfra-only.yml --repo "$REPO" --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
+                RUN_ID=$(gh run list --workflow=testinfra-only.yml  --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
                 
                 if [ -z "$RUN_ID" ]; then
                   echo "Error: Could not find workflow run ID"
