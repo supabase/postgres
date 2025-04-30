@@ -870,6 +870,13 @@
                 # Get current repository name
                 REPO=$(git remote get-url origin | sed -E 's/.*github.com[:/](.*)\.git/\1/')
 
+                # Check AWS credentials
+                if [ -z "${AWS_VAULT:-}" ]; then
+                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name> [branch]"
+                  exit 1
+                fi
+
                 # Trigger the workflow with the AMI name
                 echo "Triggering testinfra-only workflow for AMI: $AMI_NAME on branch: $BRANCH"
                 gh workflow run testinfra-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
@@ -879,7 +886,7 @@
                 sleep 5
                 
                 # Get the latest run ID for this workflow
-                RUN_ID=$(gh run list --workflow=testinfra-only.yml  --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
+                RUN_ID=$(gh run list --workflow=testinfra-only.yml --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
                 
                 if [ -z "$RUN_ID" ]; then
                   echo "Error: Could not find workflow run ID"
@@ -893,11 +900,11 @@
 
                 # Try to watch the run, but handle network errors gracefully
                 while true; do
-                  if gh run watch "$RUN_ID" --repo "$REPO" --exit-status; then
+                  if gh run watch "$RUN_ID" --exit-status; then
                     break
                   else
                     echo "Network error while watching workflow. Retrying in 5 seconds..."
-                    echo "You can also check the status manually with: gh run view $RUN_ID --repo $REPO"
+                    echo "You can also check the status manually with: gh run view $RUN_ID"
                     sleep 5
                   fi
                 done
