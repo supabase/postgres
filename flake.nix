@@ -2,7 +2,7 @@
   description = "Prototype tooling for deploying PostgreSQL";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d?narHash=sha256-WwjUkWsjlU8iUImbivlYxNyMB1L5YVqE8QotQdL9jWc%3D";
     flake-utils.url = "github:numtide/flake-utils";
     nix-editor.url = "github:snowfallorg/nix-editor";
     rust-overlay.url = "github:oxalica/rust-overlay";
