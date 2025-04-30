@@ -870,13 +870,6 @@
                 # Get current repository name
                 REPO=$(git remote get-url origin | sed -E 's/.*github.com[:/](.*)\.git/\1/')
 
-                # Check AWS credentials
-                if [ -z "${AWS_VAULT:-}" ]; then
-                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#run-testinfra <ami-name> [branch]"
-                  exit 1
-                fi
-
                 # Trigger the workflow with the AMI name
                 echo "Triggering testinfra-only workflow for AMI: $AMI_NAME on branch: $BRANCH"
                 gh workflow run testinfra-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
