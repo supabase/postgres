@@ -688,13 +688,6 @@
                   exit 0
                 fi
 
-                # Check for required PostgreSQL version argument
-                if [ -z "$1" ]; then
-                  echo "Error: PostgreSQL version must be provided"
-                  show_help
-                  exit 1
-                fi
-
                 export PATH="${pkgs.lib.makeBinPath (with pkgs; [
                   packer
                   awscli2
@@ -794,18 +787,19 @@
 
                 show_help() {
                   cat << EOF
-                Usage: run-testinfra [--help] <ami-name>
+                Usage: run-testinfra [--help] <ami-name> [branch]
 
                 Trigger the testinfra-test-only workflow to test a specific AMI.
 
                 This script will:
                 1. Check if you're authenticated with GitHub
-                2. Get the current branch and commit
+                2. Get the current branch and commit (or use provided branch)
                 3. Trigger the testinfra-test-only workflow with the specified AMI name
                 4. Watch the workflow progress until completion
 
                 Arguments:
                   ami-name    The name of the AMI to test
+                  branch      Optional branch to run the workflow on (default: current branch)
 
                 Options:
                   --help    Show this help message and exit
@@ -815,8 +809,9 @@
                   - Git installed
                   - Must be run from a git repository
 
-                Example:
+                Examples:
                   run-testinfra supabase-postgres-abc123
+                  run-testinfra supabase-postgres-abc123 develop
                 EOF
                 }
 
@@ -854,13 +849,14 @@
                 fi
 
                 AMI_NAME="$1"
+                if [ -n "$2" ]; then
+                  BRANCH="$2"
+                else
+                  BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                fi
 
-                # Get current branch and commit
-                BRANCH=$(git rev-parse --abbrev-ref HEAD)
-                COMMIT=$(git rev-parse HEAD)
-
-                # Check if we're on a standard branch
-                if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
+                # Check if we're on a standard branch (only if using current branch)
+                if [[ -z "$2" && "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
                   echo "Warning: Running workflow from non-standard branch: $BRANCH"
                   echo "This is supported for testing purposes."
                   read -p "Continue? [y/N] " -n 1 -r
@@ -871,16 +867,19 @@
                   fi
                 fi
 
+                # Get current repository name
+                REPO=$(git remote get-url origin | sed -E 's/.*github.com[:/](.*)\.git/\1/')
+
                 # Trigger the workflow with the AMI name
-                echo "Triggering testinfra-test-only workflow for AMI: $AMI_NAME"
-                gh workflow run testinfra-test-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
+                echo "Triggering testinfra-only workflow for AMI: $AMI_NAME on branch: $BRANCH"
+                gh workflow run testinfra-only.yml --repo "$REPO" --ref "$BRANCH" -f ami_name="$AMI_NAME"
 
                 # Wait for workflow to start and get the run ID
                 echo "Waiting for workflow to start..."
                 sleep 5
                 
                 # Get the latest run ID for this workflow
-                RUN_ID=$(gh run list --workflow=testinfra-test-only.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+                RUN_ID=$(gh run list --workflow=testinfra-only.yml --repo "$REPO" --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
                 
                 if [ -z "$RUN_ID" ]; then
                   echo "Error: Could not find workflow run ID"
@@ -894,11 +893,11 @@
 
                 # Try to watch the run, but handle network errors gracefully
                 while true; do
-                  if gh run watch "$RUN_ID" --exit-status; then
+                  if gh run watch "$RUN_ID" --repo "$REPO" --exit-status; then
                     break
                   else
                     echo "Network error while watching workflow. Retrying in 5 seconds..."
-                    echo "You can also check the status manually with: gh run view $RUN_ID"
+                    echo "You can also check the status manually with: gh run view $RUN_ID --repo $REPO"
                     sleep 5
                   fi
                 done
