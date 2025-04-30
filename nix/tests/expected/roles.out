@@ -137,8 +137,6 @@ order by
  postgres                   | pg_signal_backend      | f
  postgres                   | pgtle_admin            | f
  postgres                   | service_role           | f
- postgres                   | supabase_auth_admin    | f
- postgres                   | supabase_storage_admin | f
  service_role               |                        | 
  supabase_admin             |                        | 
  supabase_auth_admin        |                        | 
@@ -146,7 +144,7 @@ order by
  supabase_read_only_user    | pg_read_all_data       | f
  supabase_replication_admin |                        | 
  supabase_storage_admin     | authenticator          | f
-(42 rows)
+(40 rows)
 
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
@@ -281,7 +279,6 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  public             | USAGE          | service_role             | pg_database_owner
  public             | USAGE          | service_role             | postgres
  auth               | CREATE         | dashboard_user           | supabase_admin
- auth               | CREATE         | postgres                 | supabase_admin
  auth               | CREATE         | supabase_admin           | supabase_admin
  auth               | CREATE         | supabase_auth_admin      | supabase_admin
  auth               | DELETE         | dashboard_user           | supabase_auth_admin
@@ -517,7 +514,6 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  repack             | USAGE          | postgres                 | supabase_admin
  repack             | USAGE          | supabase_admin           | supabase_admin
  storage            | CREATE         | dashboard_user           | supabase_admin
- storage            | CREATE         | postgres                 | supabase_admin
  storage            | CREATE         | supabase_admin           | supabase_admin
  storage            | CREATE         | supabase_storage_admin   | supabase_admin
  storage            | DELETE         | anon                     | postgres
@@ -577,5 +573,5 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  vault              | USAGE          | postgres                 | supabase_admin
  vault              | USAGE          | service_role             | supabase_admin
  vault              | USAGE          | supabase_admin           | supabase_admin
-(391 rows)
+(389 rows)
 

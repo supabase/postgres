@@ -132,20 +132,6 @@ order by
  auth        | refresh_tokens    | supabase_auth_admin | TRIGGER        | f
  auth        | refresh_tokens    | supabase_auth_admin | TRUNCATE       | f
  auth        | refresh_tokens    | supabase_auth_admin | UPDATE         | f
- auth        | schema_migrations | dashboard_user      | DELETE         | f
- auth        | schema_migrations | dashboard_user      | INSERT         | f
- auth        | schema_migrations | dashboard_user      | REFERENCES     | f
- auth        | schema_migrations | dashboard_user      | SELECT         | f
- auth        | schema_migrations | dashboard_user      | TRIGGER        | f
- auth        | schema_migrations | dashboard_user      | TRUNCATE       | f
- auth        | schema_migrations | dashboard_user      | UPDATE         | f
- auth        | schema_migrations | postgres            | DELETE         | f
- auth        | schema_migrations | postgres            | INSERT         | f
- auth        | schema_migrations | postgres            | REFERENCES     | f
- auth        | schema_migrations | postgres            | SELECT         | f
- auth        | schema_migrations | postgres            | TRIGGER        | f
- auth        | schema_migrations | postgres            | TRUNCATE       | f
- auth        | schema_migrations | postgres            | UPDATE         | f
  auth        | schema_migrations | supabase_auth_admin | DELETE         | f
  auth        | schema_migrations | supabase_auth_admin | INSERT         | f
  auth        | schema_migrations | supabase_auth_admin | REFERENCES     | f
@@ -174,7 +160,7 @@ order by
  auth        | users             | supabase_auth_admin | TRIGGER        | f
  auth        | users             | supabase_auth_admin | TRUNCATE       | f
  auth        | users             | supabase_auth_admin | UPDATE         | f
-(105 rows)
+(91 rows)
 
 -- auth indexes with owners
 select

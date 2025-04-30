@@ -102,34 +102,6 @@ order by
  storage     | buckets    | supabase_storage_admin | TRIGGER        | f
  storage     | buckets    | supabase_storage_admin | TRUNCATE       | f
  storage     | buckets    | supabase_storage_admin | UPDATE         | f
- storage     | migrations | anon                   | DELETE         | f
- storage     | migrations | anon                   | INSERT         | f
- storage     | migrations | anon                   | REFERENCES     | f
- storage     | migrations | anon                   | SELECT         | f
- storage     | migrations | anon                   | TRIGGER        | f
- storage     | migrations | anon                   | TRUNCATE       | f
- storage     | migrations | anon                   | UPDATE         | f
- storage     | migrations | authenticated          | DELETE         | f
- storage     | migrations | authenticated          | INSERT         | f
- storage     | migrations | authenticated          | REFERENCES     | f
- storage     | migrations | authenticated          | SELECT         | f
- storage     | migrations | authenticated          | TRIGGER        | f
- storage     | migrations | authenticated          | TRUNCATE       | f
- storage     | migrations | authenticated          | UPDATE         | f
- storage     | migrations | postgres               | DELETE         | f
- storage     | migrations | postgres               | INSERT         | f
- storage     | migrations | postgres               | REFERENCES     | f
- storage     | migrations | postgres               | SELECT         | f
- storage     | migrations | postgres               | TRIGGER        | f
- storage     | migrations | postgres               | TRUNCATE       | f
- storage     | migrations | postgres               | UPDATE         | f
- storage     | migrations | service_role           | DELETE         | f
- storage     | migrations | service_role           | INSERT         | f
- storage     | migrations | service_role           | REFERENCES     | f
- storage     | migrations | service_role           | SELECT         | f
- storage     | migrations | service_role           | TRIGGER        | f
- storage     | migrations | service_role           | TRUNCATE       | f
- storage     | migrations | service_role           | UPDATE         | f
  storage     | migrations | supabase_storage_admin | DELETE         | f
  storage     | migrations | supabase_storage_admin | INSERT         | f
  storage     | migrations | supabase_storage_admin | REFERENCES     | f
@@ -172,7 +144,7 @@ order by
  storage     | objects    | supabase_storage_admin | TRIGGER        | f
  storage     | objects    | supabase_storage_admin | TRUNCATE       | f
  storage     | objects    | supabase_storage_admin | UPDATE         | f
-(105 rows)
+(77 rows)
 
 -- storage indexes with owners
 select
