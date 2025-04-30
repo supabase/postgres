@@ -11,9 +11,6 @@ on:
         description: 'AMI name to test'
         required: true
         type: string
-  push:
-    branches:
-      - sam/build-ami-local
 env:
   AWS_REGION: ap-southeast-1
   AWS_DEFAULT_REGION: ap-southeast-1
@@ -22,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Run tests
         timeout-minutes: 10
         env:
