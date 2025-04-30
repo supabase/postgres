@@ -16,15 +16,9 @@ env:
   AWS_DEFAULT_REGION: ap-southeast-1
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: arm-runner
     steps:
       - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Run tests
         timeout-minutes: 10
