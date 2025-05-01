@@ -758,17 +758,33 @@
 
                 # Cleanup instances from AMI builds
                 cleanup_instances() {
+                  echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
                   aws ec2 --region $REGION describe-instances \
-                    --filters "Name=tag:packerExecutionId,Values=$RUN_ID" \
+                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
                     --query "Reservations[].Instances[].InstanceId" \
                     --output text | xargs -r aws ec2 terminate-instances \
                     --region $REGION --instance-ids || true
                 }
 
-                trap cleanup_instances EXIT
+                # Set up traps for various signals to ensure cleanup
+                trap cleanup_instances EXIT HUP INT QUIT TERM
 
-                # Print the AMI name for use with run-testinfra
-                echo "supabase-postgres-$RANDOM_STRING"
+                # Create and activate virtual environment
+                VENV_DIR=$(mktemp -d)
+                trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
+                python3 -m venv "$VENV_DIR"
+                source "$VENV_DIR/bin/activate"
+
+                # Install required Python packages
+                echo "Installing required Python packages..."
+                pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
+
+                # Run the tests with aws-vault
+                echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: supabase-dev"
+                aws-vault exec supabase-dev -- pytest -vv -s testinfra/test_ami_nix.py
+
+                # Deactivate virtual environment (cleanup is handled by trap)
+                deactivate
                 EOL
                 chmod +x $out/bin/build-test-ami
               '';
@@ -797,7 +813,7 @@
                 1. Check if aws-vault is installed and configured
                 2. Set up the required environment variables
                 3. Create and activate a virtual environment
-                4. Install required Python packages
+                4. Install required Python packages from pip
                 5. Run the tests with aws-vault credentials
                 6. Clean up the virtual environment
 
@@ -868,19 +884,19 @@
                 # Function to terminate EC2 instances
                 terminate_instances() {
                   echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
-                  aws ec2 --region ap-southeast-1 describe-instances \
+                  aws-vault exec supabase-dev -- aws ec2 --region ap-southeast-1 describe-instances \
                     --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
                     --query "Reservations[].Instances[].InstanceId" \
-                    --output text | xargs -r aws ec2 terminate-instances \
+                    --output text | xargs -r aws-vault exec supabase-dev -- aws ec2 terminate-instances \
                     --region ap-southeast-1 --instance-ids || true
                 }
 
-                # Set up trap to terminate instances on script exit
-                trap terminate_instances EXIT
+                # Set up traps for various signals to ensure cleanup
+                trap terminate_instances EXIT HUP INT QUIT TERM
 
                 # Create and activate virtual environment
                 VENV_DIR=$(mktemp -d)
-                trap 'rm -rf "$VENV_DIR"' EXIT
+                trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
                 python3 -m venv "$VENV_DIR"
                 source "$VENV_DIR/bin/activate"
 
@@ -888,12 +904,26 @@
                 echo "Installing required Python packages..."
                 pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
 
-                # Run the tests with aws-vault
-                echo "Running tests for AMI: $AMI_NAME using AWS Vault profile: $AWS_VAULT_PROFILE"
-                aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py
+                # Function to run tests and ensure cleanup
+                run_tests() {
+                  local exit_code=0
+                  echo "Running tests for AMI: $AMI_NAME using AWS Vault profile: $AWS_VAULT_PROFILE"
+                  aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py || exit_code=$?
+                  return $exit_code
+                }
 
-                # Deactivate virtual environment (cleanup is handled by trap)
+                # Run tests and capture exit code
+                run_tests
+                test_exit_code=$?
+
+                # Deactivate virtual environment
                 deactivate
+
+                # Explicitly call cleanup
+                terminate_instances
+
+                # Exit with the test exit code
+                exit $test_exit_code
                 EOL
                 chmod +x $out/bin/run-testinfra
               '';
