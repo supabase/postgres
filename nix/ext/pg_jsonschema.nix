@@ -26,7 +26,10 @@ buildPgrxExtension_0_12_6 rec {
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-    PGPORT = "5433";
+    PGPORT = toString (5441 + 
+      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
+      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
+
   };
 
   cargoLock = {
