@@ -6,10 +6,11 @@ import os
 import pytest
 import requests
 import socket
-import testinfra
 from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
+import subprocess
+import paramiko
 
 # if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
@@ -170,6 +171,51 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 
+def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
+    """Create and return a single SSH connection that can be reused."""
+    for attempt in range(max_retries):
+        try:
+            # Create SSH client
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # Connect with our working parameters
+            ssh.connect(
+                hostname=instance_ip,
+                username='ubuntu',
+                key_filename=ssh_identity_file,
+                timeout=10,
+                banner_timeout=10
+            )
+            
+            # Test the connection
+            stdin, stdout, stderr = ssh.exec_command('echo "SSH test"')
+            if stdout.channel.recv_exit_status() == 0 and "SSH test" in stdout.read().decode():
+                logger.info("SSH connection established successfully")
+                return ssh
+            else:
+                raise Exception("SSH test command failed")
+                
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            logger.warning(
+                f"Ssh connection failed, retrying: {attempt + 1}/{max_retries} failed, retrying ..."
+            )
+            sleep(5)
+
+
+def run_ssh_command(ssh, command):
+    """Run a command over the established SSH connection."""
+    stdin, stdout, stderr = ssh.exec_command(command)
+    exit_code = stdout.channel.recv_exit_status()
+    return {
+        'succeeded': exit_code == 0,
+        'stdout': stdout.read().decode(),
+        'stderr': stderr.read().decode()
+    }
+
+
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
@@ -230,6 +276,7 @@ runcmd:
     - 'sudo echo \"pgbouncer\" \"postgres\" >> /etc/pgbouncer/userlist.txt'
     - 'cd /tmp && aws s3 cp --region ap-southeast-1 s3://init-scripts-staging/project/init.sh .'
     - 'bash init.sh "staging"'
+    - 'touch /var/lib/init-complete'
     - 'rm -rf /tmp/*'
 """,
             TagSpecifications=[
@@ -256,108 +303,95 @@ runcmd:
     )
     assert response["Success"]
 
-    # instance doesn't have public ip yet
+    # Wait for instance to have public IP
     while not instance.public_ip_address:
         logger.warning("waiting for ip to be available")
         sleep(5)
         instance.reload()
 
-    while True:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if sock.connect_ex((instance.public_ip_address, 22)) == 0:
-            break
-        else:
-            logger.warning("waiting for ssh to be available")
-            sleep(10)
-
-    def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
-        for attempt in range(max_retries):
-            try:
-                return testinfra.get_host(
-                    f"paramiko://ubuntu@{instance_ip}?timeout=60",
-                    ssh_identity_file=ssh_identity_file,
-                )
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    raise
-                logger.warning(
-                    f"Ssh connection failed, retrying: {attempt + 1}/{max_retries} failed, retrying ..."
-                )
-                sleep(5)
-
-    host = get_ssh_connection(
-        # paramiko is an ssh backend
+    # Create single SSH connection
+    ssh = get_ssh_connection(
         instance.public_ip_address,
         temp_key.get_priv_key_file(),
     )
 
-    def is_healthy(host, instance_ip, ssh_identity_file) -> bool:
+    # Check PostgreSQL data directory
+    logger.info("Checking PostgreSQL data directory...")
+    result = run_ssh_command(ssh, "ls -la /var/lib/postgresql")
+    if result['succeeded']:
+        logger.info("PostgreSQL data directory contents:\n" + result['stdout'])
+    else:
+        logger.warning("Failed to list PostgreSQL data directory: " + result['stderr'])
+
+    # Wait for init.sh to complete
+    logger.info("Waiting for init.sh to complete...")
+    max_attempts = 60  # 5 minutes
+    attempt = 0
+    while attempt < max_attempts:
+        try:
+            result = run_ssh_command(ssh, "test -f /var/lib/init-complete")
+            if result['succeeded']:
+                logger.info("init.sh has completed")
+                break
+        except Exception as e:
+            logger.warning(f"Error checking init.sh status: {str(e)}")
+        
+        attempt += 1
+        logger.warning(f"Waiting for init.sh to complete (attempt {attempt}/{max_attempts})")
+        sleep(5)
+
+    if attempt >= max_attempts:
+        logger.error("init.sh failed to complete within the timeout period")
+        instance.terminate()
+        raise TimeoutError("init.sh failed to complete within the timeout period")
+
+    def is_healthy(ssh) -> bool:
         health_checks = [
-            (
-                "postgres",
-                lambda h: h.run("sudo -u postgres /usr/bin/pg_isready -U postgres"),
-            ),
-            (
-                "adminapi",
-                lambda h: h.run(
-                    f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'"
-                ),
-            ),
-            (
-                "postgrest",
-                lambda h: h.run(
-                    "curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready"
-                ),
-            ),
-            (
-                "gotrue",
-                lambda h: h.run(
-                    "curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health"
-                ),
-            ),
-            ("kong", lambda h: h.run("sudo kong health")),
-            ("fail2ban", lambda h: h.run("sudo fail2ban-client status")),
+            ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
+            ("adminapi", f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'"),
+            ("postgrest", "curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready"),
+            ("gotrue", "curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health"),
+            ("kong", "sudo kong health"),
+            ("fail2ban", "sudo fail2ban-client status"),
         ]
 
-        for service, check in health_checks:
+        for service, command in health_checks:
             try:
-                cmd = check(host)
-                if cmd.failed is True:
+                result = run_ssh_command(ssh, command)
+                if not result['succeeded']:
                     logger.warning(f"{service} not ready")
                     return False
             except Exception:
-                logger.warning(
-                    f"Connection failed during {service} check, attempting reconnect..."
-                )
-                host = get_ssh_connection(instance_ip, ssh_identity_file)
+                logger.warning(f"Connection failed during {service} check")
                 return False
 
         return True
 
     while True:
-        if is_healthy(
-            host=host,
-            instance_ip=instance.public_ip_address,
-            ssh_identity_file=temp_key.get_priv_key_file(),
-        ):
+        if is_healthy(ssh):
             break
         sleep(1)
 
-    # return a testinfra connection to the instance
-    yield host
+    # Return both the SSH connection and instance IP for use in tests
+    yield {
+        'ssh': ssh,
+        'ip': instance.public_ip_address
+    }
 
     # at the end of the test suite, destroy the instance
     instance.terminate()
 
 
 def test_postgrest_is_running(host):
-    postgrest = host.service("postgrest")
-    assert postgrest.is_running
+    """Check if postgrest service is running using our SSH connection."""
+    result = run_ssh_command(host['ssh'], "systemctl is-active postgrest")
+    assert result['succeeded'] and result['stdout'].strip() == 'active', "PostgREST service is not running"
 
 
 def test_postgrest_responds_to_requests(host):
+    """Test if PostgREST responds to requests."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/",
+        f"http://{host['ip']}/rest/v1/",
         headers={
             "apikey": anon_key,
             "authorization": f"Bearer {anon_key}",
@@ -367,8 +401,9 @@ def test_postgrest_responds_to_requests(host):
 
 
 def test_postgrest_can_connect_to_db(host):
+    """Test if PostgREST can connect to the database."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "apikey": service_role_key,
             "authorization": f"Bearer {service_role_key}",
@@ -378,14 +413,10 @@ def test_postgrest_can_connect_to_db(host):
     assert res.ok
 
 
-# There would be an error if the `apikey` query parameter isn't removed,
-# since PostgREST treats query parameters as conditions.
-#
-# Worth testing since remove_apikey_query_parameters uses regexp instead
-# of parsed query parameters.
 def test_postgrest_starting_apikey_query_parameter_is_removed(host):
+    """Test if PostgREST removes apikey query parameter at start."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },
@@ -399,8 +430,9 @@ def test_postgrest_starting_apikey_query_parameter_is_removed(host):
 
 
 def test_postgrest_middle_apikey_query_parameter_is_removed(host):
+    """Test if PostgREST removes apikey query parameter in middle."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },
@@ -414,8 +446,9 @@ def test_postgrest_middle_apikey_query_parameter_is_removed(host):
 
 
 def test_postgrest_ending_apikey_query_parameter_is_removed(host):
+    """Test if PostgREST removes apikey query parameter at end."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },
@@ -428,14 +461,10 @@ def test_postgrest_ending_apikey_query_parameter_is_removed(host):
     assert res.ok
 
 
-# There would be an error if the empty key query parameter isn't removed,
-# since PostgREST treats empty key query parameters as malformed input.
-#
-# Worth testing since remove_apikey_and_empty_key_query_parameters uses regexp instead
-# of parsed query parameters.
 def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
+    """Test if PostgREST removes empty key query parameter at start."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },
@@ -449,8 +478,9 @@ def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
 
 
 def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
+    """Test if PostgREST removes empty key query parameter in middle."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },
@@ -464,8 +494,9 @@ def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
 
 
 def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
+    """Test if PostgREST removes empty key query parameter at end."""
     res = requests.get(
-        f"http://{host.backend.get_hostname()}/rest/v1/buckets",
+        f"http://{host['ip']}/rest/v1/buckets",
         headers={
             "accept-profile": "storage",
         },

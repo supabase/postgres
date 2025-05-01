@@ -775,8 +775,9 @@
             run-testinfra = pkgs.runCommand "run-testinfra"
               {
                 buildInputs = with pkgs; [
-                  gh
-                  git
+                  aws-vault
+                  python3
+                  python3Packages.pip
                   coreutils
                 ];
               } ''
@@ -787,120 +788,111 @@
 
                 show_help() {
                   cat << EOF
-                Usage: run-testinfra [--help] <ami-name> [branch]
+                Usage: run-testinfra --ami-name NAME [--aws-vault-profile PROFILE]
 
-                Trigger the testinfra-test-only workflow to test a specific AMI.
+                Run the testinfra tests locally against a specific AMI.
 
                 This script will:
-                1. Check if you're authenticated with GitHub
-                2. Get the current branch and commit (or use provided branch)
-                3. Trigger the testinfra-test-only workflow with the specified AMI name
-                4. Watch the workflow progress until completion
+                1. Check if aws-vault is installed and configured
+                2. Set up the required environment variables
+                3. Create and activate a virtual environment
+                4. Install required Python packages
+                5. Run the tests with aws-vault credentials
+                6. Clean up the virtual environment
 
-                Arguments:
-                  ami-name    The name of the AMI to test
-                  branch      Optional branch to run the workflow on (default: current branch)
+                Required flags:
+                  --ami-name NAME              The name of the AMI to test
 
-                Options:
-                  --help    Show this help message and exit
+                Optional flags:
+                  --aws-vault-profile PROFILE  AWS Vault profile to use (default: staging)
+                  --help                       Show this help message and exit
 
                 Requirements:
-                  - GitHub CLI (gh) installed and authenticated
-                  - Git installed
-                  - Must be run from a git repository
+                  - aws-vault installed and configured
+                  - Python 3 with pip
+                  - Must be run from the repository root
 
                 Examples:
-                  run-testinfra supabase-postgres-abc123
-                  run-testinfra supabase-postgres-abc123 develop
+                  run-testinfra --ami-name supabase-postgres-abc123
+                  run-testinfra --ami-name supabase-postgres-abc123 --aws-vault-profile production
                 EOF
                 }
 
-                # Handle help flag
-                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
-                  show_help
-                  exit 0
-                fi
+                # Default values
+                AWS_VAULT_PROFILE="staging"
+                AMI_NAME=""
 
-                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
-                  gh
-                  git
-                  coreutils
-                ])}:$PATH"
-
-                # Check for required tools
-                for cmd in gh git; do
-                  if ! command -v $cmd &> /dev/null; then
-                    echo "Error: $cmd is required but not found"
-                    exit 1
-                  fi
+                # Parse arguments
+                while [[ $# -gt 0 ]]; do
+                  case $1 in
+                    --aws-vault-profile)
+                      AWS_VAULT_PROFILE="$2"
+                      shift 2
+                      ;;
+                    --ami-name)
+                      AMI_NAME="$2"
+                      shift 2
+                      ;;
+                    --help)
+                      show_help
+                      exit 0
+                      ;;
+                    *)
+                      echo "Error: Unexpected argument: $1"
+                      show_help
+                      exit 1
+                      ;;
+                  esac
                 done
 
-                # Check if user is authenticated with GitHub
-                if ! gh auth status &>/dev/null; then
-                  echo "Error: Not authenticated with GitHub. Please run 'gh auth login' first."
+                # Check for required tools
+                if ! command -v aws-vault &> /dev/null; then
+                  echo "Error: aws-vault is required but not found"
                   exit 1
                 fi
 
                 # Check for AMI name argument
-                if [ -z "$1" ]; then
-                  echo "Error: AMI name must be provided"
+                if [ -z "$AMI_NAME" ]; then
+                  echo "Error: --ami-name is required"
                   show_help
                   exit 1
                 fi
 
-                AMI_NAME="$1"
-                if [ -n "$2" ]; then
-                  BRANCH="$2"
-                else
-                  BRANCH=$(git rev-parse --abbrev-ref HEAD)
-                fi
+                # Set environment variables
+                export AWS_REGION="ap-southeast-1"
+                export AWS_DEFAULT_REGION="ap-southeast-1"
+                export AMI_NAME="$AMI_NAME"  # Export AMI_NAME for pytest
+                export RUN_ID="local-$(date +%s)"  # Generate a unique RUN_ID
 
-                # Check if we're on a standard branch (only if using current branch)
-                if [[ -z "$2" && "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
-                  echo "Warning: Running workflow from non-standard branch: $BRANCH"
-                  echo "This is supported for testing purposes."
-                  read -p "Continue? [y/N] " -n 1 -r
-                  echo
-                  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                    echo "Aborted."
-                    exit 1
-                  fi
-                fi
+                # Function to terminate EC2 instances
+                terminate_instances() {
+                  echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
+                  aws ec2 --region ap-southeast-1 describe-instances \
+                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
+                    --query "Reservations[].Instances[].InstanceId" \
+                    --output text | xargs -r aws ec2 terminate-instances \
+                    --region ap-southeast-1 --instance-ids || true
+                }
 
-                # Get current repository name
-                REPO=$(git remote get-url origin | sed -E 's/.*github.com[:/](.*)\.git/\1/')
+                # Set up trap to terminate instances on script exit
+                trap terminate_instances EXIT
 
-                # Trigger the workflow with the AMI name
-                echo "Triggering testinfra-only workflow for AMI: $AMI_NAME on branch: $BRANCH"
-                gh workflow run testinfra-only.yml --ref "$BRANCH" -f ami_name="$AMI_NAME"
+                # Create and activate virtual environment
+                VENV_DIR=$(mktemp -d)
+                trap 'rm -rf "$VENV_DIR"' EXIT
+                python3 -m venv "$VENV_DIR"
+                source "$VENV_DIR/bin/activate"
 
-                # Wait for workflow to start and get the run ID
-                echo "Waiting for workflow to start..."
-                sleep 5
-                
-                # Get the latest run ID for this workflow
-                RUN_ID=$(gh run list --workflow=testinfra-only.yml --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
-                
-                if [ -z "$RUN_ID" ]; then
-                  echo "Error: Could not find workflow run ID"
-                  exit 1
-                fi
+                # Install required Python packages
+                echo "Installing required Python packages..."
+                pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
 
-                echo "Watching workflow run $RUN_ID..."
-                echo "The script will automatically exit when the workflow completes."
-                echo "Press Ctrl+C to stop watching (workflow will continue running)"
-                echo "----------------------------------------"
+                # Run the tests with aws-vault
+                echo "Running tests for AMI: $AMI_NAME using AWS Vault profile: $AWS_VAULT_PROFILE"
+                aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py
 
-                # Try to watch the run, but handle network errors gracefully
-                while true; do
-                  if gh run watch "$RUN_ID" --exit-status; then
-                    break
-                  else
-                    echo "Network error while watching workflow. Retrying in 5 seconds..."
-                    echo "You can also check the status manually with: gh run view $RUN_ID"
-                    sleep 5
-                  fi
-                done
+                # Deactivate virtual environment (cleanup is handled by trap)
+                deactivate
                 EOL
                 chmod +x $out/bin/run-testinfra
               '';
