@@ -2,13 +2,14 @@
   description = "Prototype tooling for deploying PostgreSQL";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d?narHash=sha256-WwjUkWsjlU8iUImbivlYxNyMB1L5YVqE8QotQdL9jWc%3D";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, ... }:
+  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, nix2container, ... }:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
