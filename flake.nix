@@ -679,7 +679,7 @@
                   - Must be run from a git repository
 
                 Example:
-                  aws-vault exec supabase-dev -- nix run .#build-test-ami 15
+                  aws-vault exec <profile-name> -- nix run .#build-test-ami 15
                 EOF
                 }
 
@@ -711,7 +711,7 @@
                 # Check AWS Vault profile
                 if [ -z "''${AWS_VAULT:-}" ]; then
                   echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#build-test-ami <postgres-version>"
+                  echo "Usage: aws-vault exec <profile-name> -- nix run .#build-test-ami <postgres-version>"
                   exit 1
                 fi
 
@@ -780,8 +780,8 @@
                 pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
 
                 # Run the tests with aws-vault
-                echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: supabase-dev"
-                aws-vault exec supabase-dev -- pytest -vv -s testinfra/test_ami_nix.py
+                echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: $AWS_VAULT_PROFILE"
+                aws-vault exec $AWS_VAULT_PROFILE -- pytest -vv -s testinfra/test_ami_nix.py
 
                 # Deactivate virtual environment (cleanup is handled by trap)
                 deactivate
@@ -884,10 +884,10 @@
                 # Function to terminate EC2 instances
                 terminate_instances() {
                   echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
-                  aws-vault exec supabase-dev -- aws ec2 --region ap-southeast-1 describe-instances \
+                  aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 --region ap-southeast-1 describe-instances \
                     --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
                     --query "Reservations[].Instances[].InstanceId" \
-                    --output text | xargs -r aws-vault exec supabase-dev -- aws ec2 terminate-instances \
+                    --output text | xargs -r aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 terminate-instances \
                     --region ap-southeast-1 --instance-ids || true
                 }
 
@@ -956,14 +956,14 @@
                 # Check AWS Vault profile
                 if [ -z "''${AWS_VAULT:-}" ]; then
                   echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#cleanup-ami <ami-name>"
+                  echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
                   exit 1
                 fi
 
                 # Check for AMI name argument
                 if [ -z "''${1:-}" ]; then
                   echo "Error: AMI name must be provided"
-                  echo "Usage: aws-vault exec supabase-dev -- nix run .#cleanup-ami <ami-name>"
+                  echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
                   exit 1
                 fi
 
