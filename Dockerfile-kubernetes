@@ -1,9 +1,12 @@
-FROM alpine:3.21
+FROM alpine:3.22
 
 ADD ./output-cloudimg/packer-cloudimg /disk/focal.qcow2
 
-RUN apk add --no-cache qemu-system-aarch64 qemu-img openssh-client nftables cloud-utils-localds aavmf virtiofsd
-# dev stuff
-# RUN apk add --no-cache iproute2
+RUN apk add --no-cache qemu-system-aarch64 qemu-img openssh-client aavmf virtiofsd \
+    && truncate -s 64M /root/varstore.img \
+    && truncate -s 64M /root/efi.img \
+    && dd if=/usr/share/AAVMF/QEMU_EFI.fd of=/root/efi.img conv=notrunc \
+    && qemu-img create -f qcow2 /tmp/disk.qcow2 -b /disk/focal.qcow2 -F qcow2 \
+    && apk del --no-cache aavmf qemu-img
 
 CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
