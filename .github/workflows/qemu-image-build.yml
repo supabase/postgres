@@ -10,6 +10,7 @@ on:
       - 'qemu-arm64-nix.pkr.hcl'
       - 'common-nix.vars.pkr.hcl'
       - 'ansible/vars.yml'
+      - 'scripts/*'
   workflow_dispatch:
 
 permissions:

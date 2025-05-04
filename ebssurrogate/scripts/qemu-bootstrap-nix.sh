@@ -155,6 +155,6 @@ execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
 mkdir -p /db/template
 mv /data/pgdata /db/template
+cloud-init clean --logs
 clean_legacy_things
 clean_system
-cloud-init clean --logs
