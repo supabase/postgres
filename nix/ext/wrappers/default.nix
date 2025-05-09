@@ -12,7 +12,7 @@
 , git
 }:
 let
-  rustVersion = "1.81.0";
+  rustVersion = "1.84.0";
   cargo = rust-bin.stable.${rustVersion}.default;
 in
 buildPgrxExtension_0_12_9 rec {
@@ -50,7 +50,7 @@ buildPgrxExtension_0_12_9 rec {
     # - PostgreSQL 15.8 → 5435 + 0 + (15-15)*2 = 5435
     # - PostgreSQL 17_0 (OrioleDB) → 5435 + 1 + (17-15)*2 = 5440
     # - PostgreSQL 17.4 → 5435 + 0 + (17-15)*2 = 5439
-    PGPORT = toString (5435 + 
+    PGPORT = toString (5534 + 
       (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
       ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
   };
