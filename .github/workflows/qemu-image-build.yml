@@ -98,85 +98,50 @@ jobs:
           VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # - name: Create nix flake revision tarball
-      #   run: |
-      #     GIT_SHA=${{github.sha}}
-      #     MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-
-      #     mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
-      #     echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
-      #     tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
-
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
           aws-region: "us-east-1"
 
-      - name: Login to Amazon ECR Public
-        id: login-ecr-public
+      - name: Login to Amazon ECR
+        id: login-ecr-private-dev
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
 
-      - name: Build, tag, and push docker image to Amazon ECR Public
+      - name: Build image
         env:
-          REGISTRY: public.ecr.aws/w9p6e7k7
-          REGISTRY_ALIAS: supabase
+          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
+        run: |
+          docker build -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" .
+
+      - name: Push docker image to Amazon ECR
+        env:
+          REGISTRY: 812073016711.dkr.ecr.us-east-1.amazonaws.com
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
-          docker build -f Dockerfile-kubernetes -t "$REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG" .
-          docker push "$REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG"
+          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
-      # - name: Upload software manifest to s3 staging
-      #   run: |
-      #     cd ansible
-      #     ansible-playbook -i localhost \
-      #       -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
-      #       -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
-      #       -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
-      #       manifest-playbook.yml
+      # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
+      - name: configure aws credentials - prod
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
+          aws-region: "us-east-1"
 
-      # - name: Upload nix flake revision to s3 staging
-      #   run: |
-      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+      - name: Login to Amazon ECR
+        id: login-ecr-private-prod
+        uses: aws-actions/amazon-ecr-login@v2
 
-      # - name: configure aws credentials - prod
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-      #     aws-region: "us-east-1"
-
-      # - name: Upload software manifest to s3 prod
-      #   run: |
-      #     cd ansible
-      #     ansible-playbook -i localhost \
-      #       -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
-      #       -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
-      #       -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
-      #       manifest-playbook.yml
-
-      # - name: Upload nix flake revision to s3 prod
-      #   run: |
-      #     aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-
-      # - name: Create release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     name: ${{ steps.process_release_version.outputs.version }}
-      #     tag_name: ${{ steps.process_release_version.outputs.version }}
-      #     target_commitish: ${{github.sha}}
-
-      # - name: Slack Notification on Failure
-      #   if: ${{ failure() }}
-      #   uses: rtCamp/action-slack-notify@v2
-      #   env:
-      #     SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-      #     SLACK_USERNAME: 'gha-failures-notifier'
-      #     SLACK_COLOR: 'danger'
-      #     SLACK_MESSAGE: 'Building Postgres AMI failed'
-      #     SLACK_FOOTER: ''
+      - name: Push docker image to Amazon ECR
+        env:
+          REGISTRY: 156470330064.dkr.ecr.us-east-1.amazonaws.com
+          REPOSITORY: postgres-vm-image
+          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
+        run: |
+          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
       - name: Cleanup resources after build
         if: ${{ always() }}
