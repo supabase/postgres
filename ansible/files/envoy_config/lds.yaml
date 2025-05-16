@@ -25,6 +25,9 @@ resources:
                     '@type': >-
                       type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
               generate_request_id: false
+              use_remote_address: true
+              xff_num_trusted_hops: 1
+              skip_xff_append: true
               http_filters:
                 - name: envoy.filters.http.cors
                   typed_config:
