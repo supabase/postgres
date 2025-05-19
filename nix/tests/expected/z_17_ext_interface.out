@@ -23,10 +23,11 @@ order by
           name          
 ------------------------
  pg_cron
+ pg_partman
  pgjwt
  postgis_tiger_geocoder
  tsm_system_time
-(4 rows)
+(5 rows)
 
 /*
 

@@ -30,9 +30,10 @@ order by
       name       
 -----------------
  pg_cron
+ pg_partman
  pgjwt
  tsm_system_time
-(3 rows)
+(4 rows)
 
 /*
 
