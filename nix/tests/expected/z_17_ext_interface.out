@@ -23,11 +23,12 @@ order by
           name          
 ------------------------
  pg_cron
+ pg_partman
  pgjwt
  postgis_tiger_geocoder
  tsm_system_time
  wal2json
-(5 rows)
+(6 rows)
 
 /*
 

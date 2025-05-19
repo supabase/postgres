@@ -30,10 +30,11 @@ order by
       name       
 -----------------
  pg_cron
+ pg_partman
  pgjwt
  tsm_system_time
  wal2json
-(4 rows)
+(5 rows)
 
 /*
 

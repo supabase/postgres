@@ -7,7 +7,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_partman";
-  version = "5.1.0";
+  version = "5.2.4";
 
   buildInputs = [ postgresql ];
 
