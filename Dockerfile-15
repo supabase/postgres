@@ -216,8 +216,6 @@ RUN echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/l
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-ENV LC_CTYPE=C.UTF-8
-ENV LC_COLLATE=C.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
 RUN mkdir -p /usr/share/postgresql/extension/ && \
     ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \
