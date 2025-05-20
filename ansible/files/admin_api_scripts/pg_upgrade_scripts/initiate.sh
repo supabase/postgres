@@ -41,7 +41,7 @@ LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
-OLD_PGVERSION=$(pg_config --version | sed 's/PostgreSQL \([0-9]*\.[0-9]*\).*/\1/')
+OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
 # Skip locale settings if both versions are PostgreSQL 17+
 if ! [[ "$OLD_PGVERSION" =~ ^17.* && "$PGVERSION" =~ ^17.* ]]; then
