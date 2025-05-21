@@ -181,6 +181,10 @@ RUN sed -i \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \    
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
+    # Remove supabase_admin line from pg_hba.conf
+    sed -i '/local all  supabase_admin     scram-sha-256/d' /etc/postgresql/pg_hba.conf && \
+    # Add supabase_admin mappings block to pg_ident.conf before supabase-specific users
+    sed -i '/# supabase-specific users/i\# supabase_admin user mappings\nsupabase_map  postgres   supabase_admin\nsupabase_map  root       supabase_admin\nsupabase_map  ubuntu     supabase_admin\n' /etc/postgresql/pg_ident.conf && \
     usermod -aG postgres wal-g && \
     mkdir -p /etc/postgresql-custom && \
     chown postgres:postgres /etc/postgresql-custom
@@ -194,7 +198,9 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
-    /usr/local/bin/
+    /usr/local/bin/upstream-docker-entrypoint.sh
+# # Add custom entrypoint script
+COPY --chmod=0755 docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 
