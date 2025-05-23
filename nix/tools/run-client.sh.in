@@ -13,7 +13,7 @@ print_help() {
     echo "Usage: nix run .#start-client -- [options]"
     echo
     echo "Options:"
-    echo "  -v, --version [15|16|orioledb-16]  Specify the PostgreSQL version to use (required)"
+    echo "  -v, --version [14|15|16|orioledb-16]  Specify the PostgreSQL version to use (required)"
     echo "  -u, --user USER                    Specify the user/role to use (default: postgres)"
     echo "  -h, --help                         Show this help message"
     echo
@@ -81,7 +81,11 @@ if [[ -z "$PSQL_VERSION" ]]; then
 fi
 
 # Determine PostgreSQL version
-if [ "$PSQL_VERSION" == "15" ]; then
+if [ "$PSQL_VERSION" == "14" ]; then
+    echo "Starting client for PSQL 14"
+    PSQL14=@PSQL14_BINDIR@
+    BINDIR="$PSQL14"
+elif [ "$PSQL_VERSION" == "15" ]; then
     echo "Starting client for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"

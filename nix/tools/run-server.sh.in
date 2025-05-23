@@ -141,7 +141,12 @@ else
     PGSODIUM_GETKEY_SCRIPT="${PGSODIUM_GETKEY_SCRIPT:-@PGSODIUM_GETKEY@}"
 fi
 # Verify version and set binary directory
-if [ "$VERSION" == "15" ]; then
+
+if [ "$VERSION" == "14" ]; then
+    echo "Starting server for PSQL 14"
+    PSQL14=@PSQL14_BINDIR@
+    BINDIR="$PSQL14"
+elif [ "$VERSION" == "15" ]; then
     echo "Starting server for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
@@ -154,7 +159,7 @@ elif [ "$VERSION" == "orioledb-17" ]; then
     PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
     BINDIR="$PSQLORIOLEDB17"
 else
-    echo "Please provide a valid Postgres version (15, 17, orioledb-17)"
+    echo "Please provide a valid Postgres version (14, 15, 17, orioledb-17)"
     exit 1
 fi
 
