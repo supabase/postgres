@@ -226,9 +226,14 @@ EOF
         AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
       THEN
         IF (SELECT extversion FROM pg_extension WHERE extname = 'supabase_vault') != '0.2.8' THEN
-          GRANT USAGE ON SCHEMA vault TO postgres WITH GRANT OPTION;
-          GRANT SELECT, DELETE ON vault.secrets, vault.decrypted_secrets TO postgres WITH GRANT OPTION;
-          GRANT EXECUTE ON FUNCTION vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt TO postgres WITH GRANT OPTION;
+          grant usage on schema vault to postgres with grant option;
+          grant select, delete, truncate, references on vault.secrets, vault.decrypted_secrets to postgres with grant option;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to postgres with grant option;
+
+          -- service_role used to be able to manage secrets in Vault <=0.2.8 because it had privileges to pgsodium functions
+          grant usage on schema vault to service_role;
+          grant select, delete on vault.secrets, vault.decrypted_secrets to service_role;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
         END IF;
         -- Do an explicit IF EXISTS check to avoid referencing pgsodium objects if the project already migrated away from using pgsodium.
         IF EXISTS (SELECT FROM vault.secrets WHERE key_id IS NOT NULL) THEN
