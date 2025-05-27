@@ -148,5 +148,9 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
+<<<<<<< HEAD
           aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids 
 
+=======
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids 
+>>>>>>> 0bbd35ab (feat: workflow_dispatch release of single version of postgres)
