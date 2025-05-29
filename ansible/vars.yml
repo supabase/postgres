@@ -13,6 +13,11 @@ postgres_release:
   postgres17: "17.4.1.057"
   postgres15: "15.8.1.114"
 
+# Note, postgres14 AMI image  is not built on every release, but is available in the nix cache. 
+# postgres14 is included here to support upgrading from postgres14 to newer versions.
+# an image can be created with a special workflow that builds postgres14 image. 
+# Supabase will not create and release postgres14 images other than as a utility for internal use.
+
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
 pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
