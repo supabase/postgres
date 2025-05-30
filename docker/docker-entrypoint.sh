@@ -16,8 +16,7 @@ pg_sync_password() {
 		ALTER USER supabase_admin WITH PASSWORD :'pgpass';
 	EOSQL
 
-	# execute the roles SQL file using docker_process_sql
-	docker_process_sql -f /docker-entrypoint-initdb.d/init-scripts/99-roles.sql
+	docker_process_sql -f "${ROLES_INIT_SCRIPT_PATH}"
 
 	docker_temp_server_stop
 	unset PGPASSWORD
@@ -72,7 +71,7 @@ _main() {
 			EOM
 		fi
 
-		if [ -n "${SUPABASE_SELF_HOSTING:-}" ]; then
+		if [ -n "${ROLES_INIT_SCRIPT_PATH:-}" ]; then
 			pg_sync_password "$@"
 		fi
 	fi
