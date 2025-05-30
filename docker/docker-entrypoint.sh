@@ -72,7 +72,9 @@ _main() {
 			EOM
 		fi
 
-		pg_sync_password "$@"
+		if [ -n "${SUPABASE_SELF_HOSTING:-}" ]; then
+			pg_sync_password "$@"
+		fi
 	fi
 
 	exec "$@"
