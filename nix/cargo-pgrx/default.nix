@@ -74,7 +74,7 @@ in
   cargo-pgrx_0_12_9 = generic {
     version = "0.12.9";
     hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
-    cargoHash = "sha256-53HKhvsKLTa2JCByLEcK3UzWXoM+LTatd98zvS1C9no=";
+    cargoHash = "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY=";
   };
   cargo-pgrx_0_14_3 = generic {
     version = "0.14.3";
