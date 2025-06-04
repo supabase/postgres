@@ -22,6 +22,7 @@
     flake-utils.lib.eachSystem ourSystems (system:
       let
         pgsqlDefaultPort = "5435";
+        pgsqlDefaultHost = "localhost";
         pgsqlSuperuser = "supabase_admin";
 
         pkgs = import nixpkgs {
@@ -345,7 +346,7 @@
               PGBOUNCER_AUTH_SCHEMA_SQL = "${paths.pgbouncerAuthSchemaSql}";
               STAT_EXTENSION_SQL = "${paths.statExtensionSql}";
               CURRENT_SYSTEM = "${system}";
-            } // extraSubstitutions; # Merge in any extra substitutions            
+            } // extraSubstitutions; # Merge in any extra substitutions
           in
           pkgs.runCommand name
             {
@@ -353,7 +354,7 @@
             } ''
             set -x
             mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
-          
+
             # Copy config files with error handling
             cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
             cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
@@ -362,7 +363,7 @@
             cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
             cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
             cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
-          
+
             echo "Copy operation completed"
             chmod 644 $out/etc/postgresql-custom/supautils.conf
             chmod 644 $out/etc/postgresql/postgresql.conf
@@ -370,8 +371,8 @@
             chmod 644 $out/etc/postgresql/pg_hba.conf
 
             substitute ${./nix/tools/run-server.sh.in} $out/bin/start-postgres-server \
-              ${builtins.concatStringsSep " " (builtins.attrValues (builtins.mapAttrs 
-                (name: value: "--subst-var-by '${name}' '${value}'") 
+              ${builtins.concatStringsSep " " (builtins.attrValues (builtins.mapAttrs
+                (name: value: "--subst-var-by '${name}' '${value}'")
                 substitutions
               ))}
             chmod +x $out/bin/start-postgres-server
@@ -560,7 +561,7 @@
                 chmod +x $out/bin/pg-restore
               '';
             sync-exts-versions = pkgs.runCommand "sync-exts-versions" { } ''
-              mkdir -p $out/bin 
+              mkdir -p $out/bin
               substitute ${./nix/tools/sync-exts-versions.sh.in} $out/bin/sync-exts-versions \
                 --subst-var-by 'YQ' '${pkgs.yq}/bin/yq' \
                 --subst-var-by 'JQ' '${pkgs.jq}/bin/jq' \
@@ -595,7 +596,7 @@
                     makeWrapper
                   ];
                 } ''
-                mkdir -p $out/bin $out/migrations 
+                mkdir -p $out/bin $out/migrations
                 cp -r ${migrationsDir}/* $out
                 substitute ${./nix/tools/dbmate-tool.sh.in} $out/bin/dbmate-tool \
                   --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
@@ -1071,10 +1072,10 @@
                 # Wait for workflow to start and get the run ID
                 echo "Waiting for workflow to start..."
                 sleep 5
-                
+
                 # Get the latest run ID for this workflow
                 RUN_ID=$(gh run list --workflow=nix-build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-                
+
                 if [ -z "$RUN_ID" ]; then
                   echo "Error: Could not find workflow run ID"
                   exit 1
@@ -1116,22 +1117,22 @@
                 cat > $out/bin/pgsodium-getkey << 'EOF'
                 #!${pkgs.bash}/bin/bash
                 set -euo pipefail
-                
+
                 TMPDIR_BASE=$(mktemp -d)
-                
+
                 if [[ "$(uname)" == "Darwin" ]]; then
                   KEY_DIR="/private/tmp/pgsodium"
                 else
                   KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
                 fi
                 KEY_FILE="$KEY_DIR/pgsodium.key"
-                
+
                 if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
                   echo "Error: Could not create key directory $KEY_DIR" >&2
                   exit 1
                 fi
                 chmod 1777 "$KEY_DIR"
-                
+
                 if [[ ! -f "$KEY_FILE" ]]; then
                   if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
                     if ! (openssl rand -hex 32 > "$KEY_FILE"); then
@@ -1141,7 +1142,7 @@
                   fi
                   chmod 644 "$KEY_FILE"
                 fi
-                
+
                 if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
                   cat "$KEY_FILE"
                 else
@@ -1245,7 +1246,7 @@
             substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
             echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
-            echo "port = 5435" >> "$PGTAP_CLUSTER"/postgresql.conf
+            echo "port = ${pgsqlDefaultPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
             echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
             echo "Checking shared_preload_libraries setting:"
             grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
@@ -1266,18 +1267,18 @@
 
             # PostgreSQL startup
             if [[ "$(uname)" == "Darwin" ]]; then
-            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p 5435 -d 5" start 2>&1 
+            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgsqlDefaultPort} -d 5" start 2>&1
             else
             mkdir -p "$PGTAP_CLUSTER/sockets"
-            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p 5435 -d 5" start 2>&1 
+            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgsqlDefaultPort} -d 5" start 2>&1
             fi || {
-            echo "pg_ctl failed to start PostgreSQL" 
+            echo "pg_ctl failed to start PostgreSQL"
             echo "Contents of postgresql.log:"
             cat "$PGTAP_CLUSTER"/postgresql.log
             exit 1
             }
             for i in {1..60}; do
-              if pg_isready -h localhost -p 5435; then
+              if pg_isready -h ${pgsqlDefaultHost} -p ${pgsqlDefaultPort}; then
                 echo "PostgreSQL is ready"
                 break
               fi
@@ -1291,8 +1292,8 @@
                 exit 1
               fi
             done
-            createdb -p 5435 -h localhost --username=supabase_admin testing
-            if ! psql -p 5435 -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+            createdb -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin testing
+            if ! psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file. PostgreSQL log content:"
               cat "$PGTAP_CLUSTER"/postgresql.log
               pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -1300,15 +1301,15 @@
             fi
             SORTED_DIR=$(mktemp -d)
             for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-              psql -p 5435 -h localhost --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
+              psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
             done
             rm -rf "$SORTED_DIR"
             pg_ctl -D "$PGTAP_CLUSTER" stop
             rm -rf $PGTAP_CLUSTER
-              
+
             # End of pgtap tests
             # from here on out we are running pg_regress tests, we use a different cluster for this
-            # which is start by the start-postgres-server-bin script 
+            # which is start by the start-postgres-server-bin script
             # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
 
             # Ensure pgsodium key directory exists with proper permissions
@@ -1318,9 +1319,9 @@
             fi
             unset GRN_PLUGINS_DIR
             ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
-              
+
             for i in {1..60}; do
-                if pg_isready -h localhost -p 5435 -U supabase_admin -q; then
+                if pg_isready -h ${pgsqlDefaultHost} -p ${pgsqlDefaultPort} -U supabase_admin -q; then
                     echo "PostgreSQL is ready"
                     break
                 fi
@@ -1331,7 +1332,7 @@
                 fi
             done
 
-            if ! psql -p 5435 -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+            if ! psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file"
               exit 1
             fi
@@ -1342,8 +1343,8 @@
               --dbname=postgres \
               --inputdir=${./nix/tests} \
               --outputdir=$out/regression_output \
-              --host=localhost \
-              --port=5435 \
+              --host=${pgsqlDefaultHost} \
+              --port=${pgsqlDefaultPort} \
               --user=supabase_admin \
               ${builtins.concatStringsSep " " sortedTestList}; then
               echo "pg_regress tests failed"
@@ -1352,7 +1353,7 @@
             fi
 
             echo "Running migrations tests"
-            pg_prove -p 5435 -U supabase_admin -h localhost -d postgres -v ${./migrations/tests}/test.sql
+            pg_prove -p ${pgsqlDefaultPort} -U supabase_admin -h ${pgsqlDefaultHost} -d postgres -v ${./migrations/tests}/test.sql
 
             # Copy logs to output
             for logfile in $(find /tmp -name postgresql.log -type f); do
