@@ -91,43 +91,6 @@ order by rolname;
  supabase_storage_admin     | {search_path=storage,log_statement=none}
 (29 rows)
 
--- all role memberships
-select
-    r.rolname as member,
-    g.rolname as "member_of (can become)",
-    m.admin_option
-from
-    pg_roles r
-left join
-    pg_auth_members m on r.oid = m.member
-left join
-    pg_roles g on m.roleid = g.oid
-where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
-and g.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
-order by
-    r.rolname, g.rolname;
-         member          | member_of (can become) | admin_option 
--------------------------+------------------------+--------------
- authenticator           | anon                   | f
- authenticator           | authenticated          | f
- authenticator           | service_role           | f
- pg_monitor              | pg_read_all_settings   | f
- pg_monitor              | pg_read_all_stats      | f
- pg_monitor              | pg_stat_scan_tables    | f
- pgsodium_keyholder      | pgsodium_keyiduser     | f
- pgsodium_keymaker       | pgsodium_keyholder     | f
- pgsodium_keymaker       | pgsodium_keyiduser     | f
- postgres                | anon                   | f
- postgres                | authenticated          | f
- postgres                | pg_monitor             | f
- postgres                | pg_read_all_data       | f
- postgres                | pg_signal_backend      | f
- postgres                | pgtle_admin            | f
- postgres                | service_role           | f
- supabase_read_only_user | pg_read_all_data       | f
- supabase_storage_admin  | authenticator          | f
-(18 rows)
-
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
 from (
