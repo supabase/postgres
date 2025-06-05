@@ -632,5 +632,23 @@
       ],
       "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
     }
+  },
+  "pg_hashids": {
+    "1.2.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "v1.2.1",
+      "hash": "sha256-2yQ0JrhwZF9dGEIydOviDpQ+3ZhJ8T16dQt6KIirAJ0="
+    },
+    "1.3.0-cd0e1b31d52b394a0df64079406a14a4f7387cd6": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "cd0e1b31d52b394a0df64079406a14a4f7387cd6",
+      "hash": "sha256-Nmb7XLqQflYZfqj0yrewfb1Hl5YgEB5wfjBunPwIuOU="
+    }
   }
 }
