@@ -117,13 +117,13 @@ order by
  pgsodium_keyholder      | pgsodium_keyiduser     | f
  pgsodium_keymaker       | pgsodium_keyholder     | f
  pgsodium_keymaker       | pgsodium_keyiduser     | f
- postgres                | anon                   | f
- postgres                | authenticated          | f
+ postgres                | anon                   | t
+ postgres                | authenticated          | t
  postgres                | pg_monitor             | f
  postgres                | pg_read_all_data       | f
  postgres                | pg_signal_backend      | f
  postgres                | pgtle_admin            | f
- postgres                | service_role           | f
+ postgres                | service_role           | t
  supabase_read_only_user | pg_read_all_data       | f
  supabase_storage_admin  | authenticator          | f
 (18 rows)
