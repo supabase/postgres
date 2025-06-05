@@ -63,6 +63,10 @@
                 inherit (final) writeShellScriptBin;
               };
 
+              buildPgrxExtension_0_10_2 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_10_2;
+              };
+
               buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
                 cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
               };
@@ -146,7 +150,7 @@
           ./nix/ext/pgsodium.nix
           ./nix/ext/pg_graphql.nix
           ./nix/ext/pg_stat_monitor.nix
-          ./nix/ext/pg_jsonschema.nix
+          ./nix/ext/pg_jsonschema
           ./nix/ext/pgvector.nix
           ./nix/ext/vault.nix
           ./nix/ext/hypopg.nix
@@ -1376,6 +1380,7 @@
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
           psql_17 = makeCheckHarness basePackages.psql_17.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;
+          pg_jsonschema = import ./nix/tests/pg_jsonschema.nix { inherit self; inherit pkgs; };
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
