@@ -39,7 +39,7 @@
         ../ext/pgsodium.nix
         ../ext/pg_graphql
         ../ext/pg_stat_monitor.nix
-        ../ext/pg_jsonschema.nix
+        ../ext/pg_jsonschema
         ../ext/pgvector.nix
         ../ext/vault.nix
         ../ext/hypopg.nix

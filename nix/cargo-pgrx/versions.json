@@ -36,6 +36,9 @@
     "rust": {
       "1.70.0": {
         "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
+      },
+      "1.76.0": {
+        "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
       }
     }
   },

@@ -204,6 +204,7 @@ builtins.listToAttrs (
       "index_advisor"
       "pg_cron"
       "pg_graphql"
+      "pg_jsonschema"
       "pg_net"
       "pgmq"
       "vector"

@@ -39,6 +39,49 @@
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
     }
   },
+  "pg_jsonschema": {
+    "0.1.0": {
+      "postgresql": [
+        "12",
+        "13",
+        "14"
+      ],
+      "hash": "sha256-wd05ARaV88BhKxsKkdrEE7yEadOKlCCdmhK3F6tNmsM="
+    },
+    "0.1.1": {
+      "postgresql": [
+        "12",
+        "13",
+        "14"
+      ],
+      "hash": "sha256-9jdOReqfObjEG/Gxb9fI9v/5XtqCF8WErsDL+WlOl0g="
+    },
+    "0.2.0": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-57gZbUVi8P4EB8T0P19JBVXcetQcr6IxuIx96NNFA/0=",
+      "pgrx": "0.10.2",
+      "rust": "1.76.0"
+    },
+    "0.3.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-YdKpOEiDIz60xE7C+EzpYjBcH0HabnDbtZl23CYls6g=",
+      "pgrx": "0.11.3",
+      "rust": "1.76.0"
+    },
+    "0.3.3": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-Au1mqatoFKVq9EzJrpu1FVq5a1kBb510sfC980mDlsU=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    }
+  },
   "pg_cron": {
     "1.3.1": {
       "postgresql": [
