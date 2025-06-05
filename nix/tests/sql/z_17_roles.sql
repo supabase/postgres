@@ -28,7 +28,7 @@ select
     m.admin_option
 from
     pg_roles r
-left join
+join
     pg_auth_members m on r.oid = m.member
 left join
     pg_roles g on m.roleid = g.oid
