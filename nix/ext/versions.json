@@ -321,7 +321,39 @@
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     }
   },
-    "pgmq": {
+  "pgaudit": {
+    "1.6.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-vxUDVq7nWkq7Qugy7HJLOXk4B61MSBIYQkzcbU6wSG8="
+    },
+    "1.7.0": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-8pShPr4HJaJQPjW1iPJIpj3CutTx8Tgr+rOqoXtgCcw="
+    },
+    "1.7.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-emwoTowT7WKFX0RQDqJXjIblrzqaUIUkzqSqBCHVKQ8="
+    },
+    "17.0": {
+      "postgresql": [
+        "17"
+      ],
+      "hash": "sha256-3ksq09wiudQPuBQI3dhEQi8IkXKLVIsPFgBnwLiicro="
+    },
+    "17.1": {
+      "postgresql": [
+        "17"
+      ],
+      "hash": "sha256-9St/ESPiFq2NiPKqbwHLwkIyATKUkOGxFcUrWgT+Iqo="
+   }
+  },
+  "pgmq": {
     "1.4.4": {
       "postgresql": [
         "15"
