@@ -1381,6 +1381,7 @@
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
           psql_17 = makeCheckHarness basePackages.psql_17.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;
+          pg_tle = import ./nix/tests/pg_tle.nix { inherit self; inherit pkgs; };
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
