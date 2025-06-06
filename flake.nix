@@ -64,6 +64,10 @@
                 inherit (final) writeShellScriptBin;
               };
 
+              buildPgrxExtension_0_11_2 = prev.buildPgrxExtension.override {
+                cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_2;
+              };
+
               buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
                 cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
               };
@@ -1382,6 +1386,8 @@
           inherit (basePackages) wal-g-2 wal-g-3 dbmate-tool pg_regress;
         } // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
           inherit (basePackages) postgresql_15_debug postgresql_15_src postgresql_orioledb-17_debug postgresql_orioledb-17_src postgresql_17_debug postgresql_17_src;
+        } // pkgs.lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
+          pg_graphql = import ./nix/ext/tests/pg_graphql.nix { inherit self; inherit pkgs; };
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
