@@ -268,6 +268,7 @@ EOF
       SELECT current_setting('server_version_num')::INT / 10000 INTO major_version;
       IF major_version >= 16 THEN
         GRANT pg_create_subscription TO postgres;
+        GRANT anon, authenticated, service_role, authenticator, pg_monitor, pg_read_all_data, pg_signal_backend TO postgres WITH ADMIN OPTION;
       END IF;
       GRANT pg_monitor, pg_read_all_data, pg_signal_backend TO postgres;
     END
