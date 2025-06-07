@@ -6,7 +6,7 @@
       ],
       "hash": "sha256-Kxo4o8+hfSTOjvhYyGF2BpksWfW/AMCCH4qom4AGw18=",
       "pgrx": "0.11.2",
-      "rust": "1.85.1"
+      "rust": "1.70.0"
     },
     "1.5.0": {
       "postgresql": [
