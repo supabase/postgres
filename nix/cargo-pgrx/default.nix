@@ -7,14 +7,14 @@
   makeRustPlatform,
   stdenv,
   rust-bin,
+  rustVersion ? "1.85.1",
 }:
 let
-  rustVersion = "1.85.1";
   rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
   };
-  generic =
+  mkCargoPgrx =
     {
       version,
       hash,
@@ -57,25 +57,25 @@ let
     };
 in
 {
-  cargo-pgrx_0_11_3 = generic {
+  cargo-pgrx_0_11_3 = mkCargoPgrx {
     version = "0.11.3";
     hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";
     cargoHash = "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw=";
   };
-  cargo-pgrx_0_12_6 = generic {
+  cargo-pgrx_0_12_6 = mkCargoPgrx {
     version = "0.12.6";
     hash = "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=";
     cargoHash = "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w=";
   };
-  cargo-pgrx_0_12_9 = generic {
+  cargo-pgrx_0_12_9 = mkCargoPgrx {
     version = "0.12.9";
     hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
     cargoHash = "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY=";
   };
-  cargo-pgrx_0_14_3 = generic {
+  cargo-pgrx_0_14_3 = mkCargoPgrx {
     version = "0.14.3";
     hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
     cargoHash = "sha256-Ny7j56pwB+2eEK62X0nWfFKQy5fBz+Q1oyvecivxLkk=";
   };
-  inherit rustPlatform;
+  inherit mkCargoPgrx;
 }

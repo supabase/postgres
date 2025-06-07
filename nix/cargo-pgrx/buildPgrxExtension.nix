@@ -26,14 +26,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 {
   lib,
   cargo-pgrx,
   pkg-config,
   rustPlatform,
   stdenv,
-  Security,
+  darwin,
   writeShellScriptBin,
 }:
 
@@ -112,7 +111,9 @@ let
   # so we don't accidentally `(rustPlatform.buildRustPackage argsForBuildRustPackage) // { ... }` because
   # we forgot parentheses
   finalArgs = argsForBuildRustPackage // {
-    buildInputs = (args.buildInputs or [ ]) ++ lib.optionals stdenv.hostPlatform.isDarwin [ Security ];
+    buildInputs =
+      (args.buildInputs or [ ])
+      ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
 
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
@@ -156,6 +157,7 @@ let
       cargo-pgrx pgrx stop all
 
       mv $out/${postgresql}/* $out
+      mv $out/${postgresql.lib}/* $out
       rm -rf $out/nix
 
       ${maybeLeaveBuildAndTestSubdir}
