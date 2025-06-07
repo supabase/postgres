@@ -63,11 +63,6 @@ let
     };
 in
 {
-  cargo-pgrx_0_11_2 = mkCargoPgrx {
-    version = "0.11.2";
-    hash = "sha256-8NlpMDFaltTIA8G4JioYm8LaPJ2RGKH5o6sd6lBHmmM=";
-    cargoHash = "sha256-CbU5B0pvB9ApTZOdYP/ZwuIG8bqGzk/ING2PCM0q2bQ=";
-  };
   cargo-pgrx_0_11_3 = mkCargoPgrx {
     version = "0.11.3";
     hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";

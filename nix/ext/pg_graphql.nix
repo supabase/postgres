@@ -1,13 +1,10 @@
 {
+  callPackages,
   lib,
   stdenv,
   buildEnv,
   fetchFromGitHub,
   postgresql,
-  buildPgrxExtension_0_11_2,
-  buildPgrxExtension_0_11_3,
-  buildPgrxExtension_0_12_6,
-  buildPgrxExtension_0_12_9,
   rust-bin,
   rsync,
 }:
@@ -15,12 +12,16 @@
 let
   pname = "pg_graphql";
   build =
-    version: hash: rustVersion: buildPgrxExtension:
+    version: hash: rustVersion: pgrxVersion:
     let
       cargo = rust-bin.stable.${rustVersion}.default;
-      previousVersions = lib.filter (v: v != version) versions;
+      previousVersions = lib.filter (v: v != version) versions; # FIXME
+      mkPgrxExtension = callPackages ../cargo-pgrx/mkPgrxExtension.nix {
+        inherit rustVersion pgrxVersion;
+      };
+
     in
-    buildPgrxExtension rec {
+    mkPgrxExtension rec {
       inherit pname version postgresql;
 
       src = fetchFromGitHub {
@@ -125,19 +126,8 @@ let
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
   numberOfVersions = builtins.length versions;
-  mapPgrxExtension =
-    version:
-    {
-      "0.11.2" = buildPgrxExtension_0_11_2;
-      "0.11.3" = buildPgrxExtension_0_11_3;
-      "0.12.6" = buildPgrxExtension_0_12_6;
-      "0.12.9" = buildPgrxExtension_0_12_9;
-    }
-    ."${version}";
   packages = builtins.attrValues (
-    lib.mapAttrs (
-      name: value: build name value.hash value.rust (mapPgrxExtension value.pgrx)
-    ) supportedVersions
+    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
   );
 in
 buildEnv {
