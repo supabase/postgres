@@ -306,6 +306,12 @@
             postgresql_17_debug
             postgresql_17_src
             ;
+        }
+        // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          wrappers = import ./ext/tests/wrappers.nix {
+            inherit self;
+            inherit pkgs;
+          };
         };
     };
 }
