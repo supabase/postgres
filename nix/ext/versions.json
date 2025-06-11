@@ -1,5 +1,21 @@
 {
   "wrappers": {
+    "0.3.0": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-ogpF8NJ7kW3Ut8jaKMDiKYIXnI38nfRq2mMK4rqFAIA=",
+      "pgrx": "0.11.2",
+      "rust": "1.76.0"
+    },
+    "0.4.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-AU9Y43qEMcIBVBThu+Aor1HCtfFIg+CdkzK9IxVdkzM=",
+      "pgrx": "0.11.3",
+      "rust": "1.76.0"
+    },
     "0.4.2": {
       "postgresql": [
         "15"
@@ -51,6 +67,15 @@
       "hash": "sha256-FbRTUcpEHBa5DI6dutvBeahYM0RZVAXIzIAZWIaxvn0=",
       "pgrx": "0.12.9",
       "rust": "1.84.0"
+    },
+    "0.5.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-3GfN3vZMFWf4FV/fSOe9ZN6KETmjoNw3Paz+JRzaH3c=",
+      "pgrx": "0.12.9",
+      "rust": "1.87.0"
     }
   }
 }

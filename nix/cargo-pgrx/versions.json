@@ -5,6 +5,9 @@
       "1.70.0": {
         "cargoHash": "sha256-qTb3JV3u42EilaK2jP9oa5D09mkuHyRbGGRs9Rg4TzI="
       },
+      "1.76.0": {
+        "cargoHash": "sha256-qTb3JV3u42EilaK2jP9oa5D09mkuHyRbGGRs9Rg4TzI="
+      },
       "1.85.1": {
         "cargoHash": "sha256-CbU5B0pvB9ApTZOdYP/ZwuIG8bqGzk/ING2PCM0q2bQ="
       }
@@ -39,6 +42,9 @@
         "cargoHash": "sha256-53HKhvsKLTa2JCByLEcK3UzWXoM+LTatd98zvS1C9no="
       },
       "1.84.0": {
+        "cargoHash": "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY="
+      },
+      "1.87.0": {
         "cargoHash": "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY="
       }
     }
