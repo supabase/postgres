@@ -163,7 +163,7 @@
 
         #Where we import and build the orioledb extension, we add on our custom extensions
         # plus the orioledb option
-        #we're not using timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase extensions
+        #we're not using timescaledb or plv8 in the orioledb-17 version but timescaledb is now enabled for pg 17
         orioleFilteredExtensions = builtins.filter
           (
             x:
@@ -173,7 +173,12 @@
         ) ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
-        dbExtensions17 = orioleFilteredExtensions;
+        dbExtensions17 = builtins.filter
+          (
+            x:
+            x != ./nix/ext/plv8.nix &&
+            x != ./nix/ext/timescaledb-2.9.1.nix
+        ) ourExtensions;
         getPostgresqlPackage = version:
           pkgs.postgresql."postgresql_${version}";
         # Create a 'receipt' file for a given postgresql package. This is a way

@@ -18,20 +18,20 @@
       set_fact:
         is_psql_15: "{{ psql_version in ['psql_15'] }}"
     
-    - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
+    - name: Remove specified extensions from postgresql.conf if orioledb-17 build
       ansible.builtin.command:
         cmd: >
           sed -i 's/ timescaledb,//g' 
           /etc/postgresql/postgresql.conf
-      when: is_psql_oriole or is_psql_17 and stage2_nix 
+      when: is_psql_oriole and stage2_nix 
       become: yes
 
-    - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
+    - name: Remove specified extensions from supautils.conf if orioledb-17 build
       ansible.builtin.command:
         cmd: >
           sed -i 's/ timescaledb,//g; s/ plv8,//g' 
           /etc/postgresql-custom/supautils.conf
-      when: is_psql_oriole or is_psql_17 and stage2_nix
+      when: is_psql_oriole and stage2_nix
       become: yes
 
     - name: Remove db_user_namespace from postgresql.conf if orioledb-17 or 17 build

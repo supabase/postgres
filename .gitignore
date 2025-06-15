@@ -25,3 +25,6 @@ result*
 
 db/schema.sql
 common-nix.vars.pkr.hcl
+
+# CEP PostgreSQL source archives
+*.tar.gz
