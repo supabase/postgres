@@ -111,7 +111,7 @@
           /*"postgis"*/
         ];
 
-        #FIXME for now, timescaledb is not included in the orioledb version of supabase extensions, as there is an issue
+        # FIXME for now, timescaledb is not included in the orioledb version of supabase extensions, as there is an issue
         # with building timescaledb with the orioledb patched version of postgresql
         orioledbPsqlExtensions = [
           /* pljava */
@@ -130,7 +130,6 @@
         ourExtensions = [
           ./nix/ext/rum.nix
           ./nix/ext/timescaledb.nix
-          ./nix/ext/timescaledb-2.9.1.nix
           ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
           ./nix/ext/wal2json.nix
@@ -161,16 +160,13 @@
           ./nix/ext/plv8.nix
         ];
 
-        #Where we import and build the orioledb extension, we add on our custom extensions
-        # plus the orioledb option
-        #we're not using timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase extensions
+        # Where we import and build the orioledb extension, we add on our
+        # custom extensions plus the orioledb option. We're not using
+        # timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase
+        # extensions
         orioleFilteredExtensions = builtins.filter
-          (
-            x:
-            x != ./nix/ext/timescaledb.nix &&
-            x != ./nix/ext/timescaledb-2.9.1.nix &&
-            x != ./nix/ext/plv8.nix
-        ) ourExtensions;
+          (x: x != ./nix/ext/timescaledb.nix && x != ./nix/ext/plv8.nix)
+          ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
         dbExtensions17 = orioleFilteredExtensions;
@@ -1377,6 +1373,7 @@
         # The list of exported 'checks' that are run with every run of 'nix
         # flake check'. This is run in the CI system, as well.
         checks = {
+          timescaledb = import ./nix/tests/timescaledb.nix { inherit self; inherit pkgs; };
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
           psql_17 = makeCheckHarness basePackages.psql_17.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;

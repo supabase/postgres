@@ -25,3 +25,5 @@ result*
 
 db/schema.sql
 common-nix.vars.pkr.hcl
+
+.envrc
