@@ -18,11 +18,13 @@ nix build .#wal-g-2 -o wal-g-2 -L
 nix build .#wal-g-3 -o wal-g-3 -L
 
 # Copy to S3
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./wal-g-2
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./wal-g-3
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_15
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_orioledb_17
-nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_17
+if [[ -n "${AWS_ACCESS_KEY_ID-}" && -n "${AWS_SECRET_ACCESS_KEY-}" ]]; then
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./wal-g-2
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./wal-g-3
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_15
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_orioledb_17
+    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./psql_17
+fi
 
 if [ "$SYSTEM" = "aarch64-linux" ]; then
     nix build .#postgresql_15_debug -o ./postgresql_15_debug
@@ -31,10 +33,13 @@ if [ "$SYSTEM" = "aarch64-linux" ]; then
     nix build .#postgresql_orioledb-17_src -o ./postgresql_orioledb-17_src
     nix build .#postgresql_17_debug -o ./postgresql_17_debug
     nix build .#postgresql_17_src -o ./postgresql_17_src
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_15_debug-debug
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_15_src
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_orioledb-17_debug-debug
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_orioledb-17_src
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_17_debug-debug
-    nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_17_src
+
+    if [[ -n "${AWS_ACCESS_KEY_ID-}" && -n "${AWS_SECRET_ACCESS_KEY-}" ]]; then
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_15_debug-debug
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_15_src
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_orioledb-17_debug-debug
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_orioledb-17_src
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key ./postgresql_17_debug-debug
+        nix copy --to s3://nix-postgres-artifacts?secret-key=nix-secret-key  ./postgresql_17_src
+    fi
 fi
