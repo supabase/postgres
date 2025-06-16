@@ -131,6 +131,20 @@
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     }
   },
+    "timescaledb": {
+    "2.9.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-fvVSxDiGZAewyuQ2vZDb0I6tmlDXl6trjZp8+qDBtb8="
+    },
+    "2.16.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-sLxWdBmih9mgiO51zLLxn9uwJVYc5JVHJjSWoADoJ+w="
+    }
+  },
   "vector": {
     "0.4.0": {
       "postgresql": [
