@@ -1382,6 +1382,9 @@
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
           psql_17 = makeCheckHarness basePackages.psql_17.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;
+          inherit (basePackages) wal-g-2 wal-g-3;
+        } // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
+          inherit (basePackages) postgresql_15_debug postgresql_15_src postgresql_orioledb-17_debug postgresql_orioledb-17_src postgresql_17_debug postgresql_17_src;
         };
 
         # Apps is a list of names of things that can be executed with 'nix run';
