@@ -62,8 +62,9 @@ let
   allVersions =
     (builtins.fromJSON (builtins.readFile ./versions.json)).timescaledb;
   supportedVersions = lib.filterAttrs (_: value:
-    builtins.elem (lib.versions.major postgresql.version) value.postgresql)
-    allVersions;
+    (!value ? ignore || value.ignore != true) &&
+    builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
   numberOfVersions = builtins.length versions;
