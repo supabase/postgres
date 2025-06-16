@@ -21,8 +21,8 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
 
-      - name: Checkout Repo
-        uses: actions/checkout@v2
+      - name: Checkout repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Merging migration files
         run: cat $(ls -1) > ../migration-output.sql

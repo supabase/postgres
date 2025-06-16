@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - name: Generate build matrix
         id: set-matrix
         run: |
@@ -53,7 +53,8 @@ jobs:
     outputs:
       build_args: ${{ steps.args.outputs.result }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
@@ -77,7 +78,8 @@ jobs:
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'arm-runner' }}
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v3
@@ -132,7 +134,8 @@ jobs:
         include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
@@ -175,7 +178,8 @@ jobs:
     needs: [prepare, merge_manifest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Debug Input from Prepare

@@ -16,8 +16,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
-
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - name: Merging migration files
         run: cat $(ls -1) > ../migration-output.sql
         working-directory: ${{ github.workspace }}/migrations/db/migrations

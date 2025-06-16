@@ -17,7 +17,8 @@ jobs:
     outputs:
       postgrest_release: ${{ steps.args.outputs.result }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - id: args
         uses: mikefarah/yq@master
         with:

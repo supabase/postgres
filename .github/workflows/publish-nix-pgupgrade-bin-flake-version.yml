@@ -17,8 +17,8 @@ jobs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
-      
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Set PostgreSQL versions
@@ -36,8 +36,8 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
-      
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - uses: DeterminateSystems/nix-installer-action@main  
 
       - name: Grab release version
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Grab release version
         id: process_release_version
