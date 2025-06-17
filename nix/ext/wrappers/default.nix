@@ -73,6 +73,11 @@ let
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0=";
               }
+            else if builtins.compareVersions "0.5.2" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
             else
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
