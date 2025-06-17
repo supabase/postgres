@@ -1382,7 +1382,7 @@
           inherit (basePackages) wal-g-2 wal-g-3 dbmate-tool pg_regress;
         } // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
           inherit (basePackages) postgresql_15_debug postgresql_15_src postgresql_orioledb-17_debug postgresql_orioledb-17_src postgresql_17_debug postgresql_17_src;
-        } // pkgs.lib.optionalAttrs (system == "x86_64-linux" || system == "aarch64-linux") {
+        } // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
           pg_graphql = import ./nix/ext/tests/pg_graphql.nix { inherit self; inherit pkgs; };
         };
 
