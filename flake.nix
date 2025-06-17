@@ -1125,11 +1125,7 @@
 
                 TMPDIR_BASE=$(mktemp -d)
 
-                if [[ "$(uname)" == "Darwin" ]]; then
-                  KEY_DIR="/private/tmp/pgsodium"
-                else
-                  KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
-                fi
+                KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
                 KEY_FILE="$KEY_DIR/pgsodium.key"
 
                 if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
@@ -1165,6 +1161,7 @@
               name = "start-postgres-server-test";
               extraSubstitutions = {
                 PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
+                PGSQL_DEFAULT_PORT = pgPort;
               };
             };
 
@@ -1217,6 +1214,12 @@
             # Filter SQL test files
             filteredSqlTests = filterTestFiles majorVersion ./nix/tests/sql;
 
+            pgPort = if (majorVersion == "17") then
+                "5535"
+                else if (majorVersion == "15") then
+                "5536"
+                else "5537";
+
             # Convert filtered tests to a sorted list of basenames (without extension)
             testList = pkgs.lib.mapAttrsToList
               (name: _:
@@ -1251,7 +1254,7 @@
             substitute ${./nix/tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
               --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
             echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
-            echo "port = ${pgsqlDefaultPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
+            echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
             echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
             echo "Checking shared_preload_libraries setting:"
             grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
@@ -1272,10 +1275,10 @@
 
             # PostgreSQL startup
             if [[ "$(uname)" == "Darwin" ]]; then
-            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgsqlDefaultPort} -d 5" start 2>&1
+            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgPort} -d 5" start 2>&1
             else
             mkdir -p "$PGTAP_CLUSTER/sockets"
-            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgsqlDefaultPort} -d 5" start 2>&1
+            pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start 2>&1
             fi || {
             echo "pg_ctl failed to start PostgreSQL"
             echo "Contents of postgresql.log:"
@@ -1283,7 +1286,7 @@
             exit 1
             }
             for i in {1..60}; do
-              if pg_isready -h ${pgsqlDefaultHost} -p ${pgsqlDefaultPort}; then
+              if pg_isready -h ${pgsqlDefaultHost} -p ${pgPort}; then
                 echo "PostgreSQL is ready"
                 break
               fi
@@ -1297,8 +1300,8 @@
                 exit 1
               fi
             done
-            createdb -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin testing
-            if ! psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+            createdb -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin testing
+            if ! psql -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file. PostgreSQL log content:"
               cat "$PGTAP_CLUSTER"/postgresql.log
               pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -1306,7 +1309,7 @@
             fi
             SORTED_DIR=$(mktemp -d)
             for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-              psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
+              psql -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -f "${./nix/tests/sql}/$t.sql" || true
             done
             rm -rf "$SORTED_DIR"
             pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -1317,16 +1320,11 @@
             # which is start by the start-postgres-server-bin script
             # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
 
-            # Ensure pgsodium key directory exists with proper permissions
-            if [[ "$(uname)" == "Darwin" ]]; then
-              mkdir -p /private/tmp/pgsodium
-              chmod 1777 /private/tmp/pgsodium
-            fi
             unset GRN_PLUGINS_DIR
             ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
 
             for i in {1..60}; do
-                if pg_isready -h ${pgsqlDefaultHost} -p ${pgsqlDefaultPort} -U supabase_admin -q; then
+                if pg_isready -h ${pgsqlDefaultHost} -p ${pgPort} -U supabase_admin -q; then
                     echo "PostgreSQL is ready"
                     break
                 fi
@@ -1337,7 +1335,7 @@
                 fi
             done
 
-            if ! psql -p ${pgsqlDefaultPort} -h ${pgsqlDefaultHost} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xaf ${./nix/tests/prime.sql}; then
+            if ! psql -p ${pgPort} -h ${pgsqlDefaultHost} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./nix/tests/prime.sql}; then
               echo "Error executing SQL file"
               exit 1
             fi
@@ -1349,7 +1347,7 @@
               --inputdir=${./nix/tests} \
               --outputdir=$out/regression_output \
               --host=${pgsqlDefaultHost} \
-              --port=${pgsqlDefaultPort} \
+              --port=${pgPort} \
               --user=supabase_admin \
               ${builtins.concatStringsSep " " sortedTestList}; then
               echo "pg_regress tests failed"
@@ -1358,7 +1356,7 @@
             fi
 
             echo "Running migrations tests"
-            pg_prove -p ${pgsqlDefaultPort} -U supabase_admin -h ${pgsqlDefaultHost} -d postgres -v ${./migrations/tests}/test.sql
+            pg_prove -p ${pgPort} -U supabase_admin -h ${pgsqlDefaultHost} -d postgres -v ${./migrations/tests}/test.sql
 
             # Copy logs to output
             for logfile in $(find /tmp -name postgresql.log -type f); do
