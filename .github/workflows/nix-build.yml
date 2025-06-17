@@ -18,12 +18,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: larger-runner-4cpu
-            arch: amd64
-          - runner: arm-runner
-            arch: arm64
-          - runner: macos-latest
-            arch: arm64
+          - runner: large-linux-x86
+            system: x86_64-linux
+          - runner: large-linux-arm
+            system: aarch64-linux
+          - runner: macos-latest-xlarge
+            system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     steps:
@@ -75,5 +75,5 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
 
-    name: build psql bundle on ${{ matrix.arch }}
+    name: build psql bundle on ${{ matrix.system }}
     
