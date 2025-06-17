@@ -75,6 +75,14 @@
     }
   },
   "pg_graphql": {
+    "1.4.2": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-/JweVmfcWqDtFeP3tBl/g6hlqAqbwPHpcHdX9HeqZuU=",
+      "pgrx": "0.10.2",
+      "rust": "1.70.0"
+    },
     "1.4.4": {
       "postgresql": [
         "15"

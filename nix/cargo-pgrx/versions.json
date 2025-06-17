@@ -1,4 +1,12 @@
 {
+  "0.10.2": {
+    "hash": "sha256-FqjfbJmSy5UCpPPPk4bkEyvQCnaH9zYtkI7txgIn+ls=",
+    "rust": {
+      "1.70.0": {
+        "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
+      }
+    }
+  },
   "0.11.2": {
     "hash": "sha256-8NlpMDFaltTIA8G4JioYm8LaPJ2RGKH5o6sd6lBHmmM=",
     "rust": {
