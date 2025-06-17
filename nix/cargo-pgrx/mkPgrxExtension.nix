@@ -26,12 +26,12 @@ let
     let
       pgrx =
         versions.${pgrxVersion}
-          or (throw "Unsupported pgrx version ${pgrxVersion}. Available versions: ${builtins.attrNames versions}. Change 'nix/cargo-pgrx/versions.json' to add support for new versions.");
+          or (throw "Unsupported pgrx version ${pgrxVersion}. Available versions: ${builtins.toString (builtins.attrNames versions)}. Change 'nix/cargo-pgrx/versions.json' to add support for new versions.");
       mapping = {
         inherit (pgrx) hash;
         cargoHash =
           pgrx.rust."${rustVersion}".cargoHash
-            or (throw "Unsupported rust version ${rustVersion} for pgrx version ${pgrxVersion}. Available Rust versions: ${builtins.attrNames pgrx.rust}. Change 'nix/cargo-pgrx/versions.json' to add support for new versions.");
+            or (throw "Unsupported rust version ${rustVersion} for pgrx version ${pgrxVersion}. Available Rust versions: ${builtins.toString (builtins.attrNames pgrx.rust)}. Change 'nix/cargo-pgrx/versions.json' to add support for new versions.");
       };
     in
     mkCargoPgrx {

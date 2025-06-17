@@ -15,7 +15,6 @@ let
     version: hash: rustVersion: pgrxVersion:
     let
       cargo = rust-bin.stable.${rustVersion}.default;
-      previousVersions = lib.filter (v: v != version) versions; # FIXME
       mkPgrxExtension = callPackages ../cargo-pgrx/mkPgrxExtension.nix {
         inherit rustVersion pgrxVersion;
       };
@@ -42,49 +41,14 @@ let
       # Setting RUSTFLAGS in env to ensure it's available for all phases
       env = lib.optionalAttrs stdenv.isDarwin {
         POSTGRES_LIB = "${postgresql}/lib";
-        PGPORT = toString (
-          5430
-          + (if builtins.match ".*_.*" postgresql.version != null then 1 else 0)
-          # +1 for OrioleDB
-          + ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2
-        ); # +2 for each major version
         RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
         NIX_BUILD_CORES = "4"; # Limit parallel jobs
         CARGO_BUILD_JOBS = "4"; # Limit cargo parallelism
       };
       CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG = true;
 
-      preBuild = ''
-        echo "Processing git tags..."
-        echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
-      '';
-
       postInstall = ''
         mv $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
-
-        create_sql_files() {
-          echo "Creating SQL files for previous versions..."
-          current_version="${version}"
-          sql_file="$out/share/postgresql/extension/${pname}--$current_version.sql"
-
-          if [ -f "$sql_file" ]; then
-            while read -r previous_version; do
-              if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
-                new_file="$out/share/postgresql/extension/${pname}--$previous_version--$current_version.sql"
-                sed -i 's/create\s\+function/CREATE OR REPLACE FUNCTION/Ig' "$sql_file"
-                echo "Creating $new_file"
-                {
-                  echo "DROP EVENT TRIGGER IF EXISTS graphql_watch_ddl;"
-                  echo "DROP EVENT TRIGGER IF EXISTS graphql_watch_drop;"
-                  cat $sql_file
-                } > "$new_file"
-              fi
-            done < git_tags.txt
-          else
-            echo "Warning: $sql_file not found"
-          fi
-          rm git_tags.txt
-        }
 
         create_control_files() {
           sed -e "/^default_version =/d" \
@@ -101,7 +65,6 @@ let
           fi
         }
 
-        create_sql_files
         create_control_files
       '';
 
@@ -141,6 +104,23 @@ buildEnv {
     "/share/postgresql/extension"
   ];
   postBuild = ''
+    create_sql_files() {
+      PREVIOUS_VERSION=""
+      while IFS= read -r i; do
+        FILENAME=$(basename "$i")
+        DIRNAME=$(dirname "$i")
+        VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
+        if [[ "$PREVIOUS_VERSION" != "" ]]; then
+          echo "Processing $i"
+          MIGRATION_FILENAME="$DIRNAME/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
+          cp "$i" "$MIGRATION_FILENAME"
+        fi
+        PREVIOUS_VERSION="$VERSION"
+      done < <(find $out -name '*.sql' | sort -V)
+    }
+
+    create_sql_files
+
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
