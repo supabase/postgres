@@ -1,9 +1,10 @@
 name: Test Database
 on:
-  push:
-    branches:
-      - develop
-  pull_request:
+  # Trigger this workflow when the "Nix CI" workflow completes
+  workflow_run:
+    workflows: ["Nix CI"]
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   prepare:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: large-linux-x86
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
@@ -29,6 +31,7 @@ jobs:
           VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c "split(\"\n\")[:-1]")
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
   build:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     needs: prepare
     strategy:
       matrix:
