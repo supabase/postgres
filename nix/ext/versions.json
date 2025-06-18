@@ -709,6 +709,16 @@
       "hash": "sha256-YNeIfmccT/DtOrwDmpYFCuV2/P6k3Zj23VWBDkOh6sw="
     }
   },
+  "pgjwt": {
+    "0.2.0": {
+      "revision": "f3d82fd30151e754e19ce5d6a06c71c20689ce3d",
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-nDZEDf5+sFc1HDcG2eBNQj+kGcdAYRXJseKi9oww+JU="
+    }
+  },
   "pg_repack": {
     "1.4.8": {
       "postgresql": [
