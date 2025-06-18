@@ -8,20 +8,23 @@
 
 - name: PostgREST - add Postgres PPA
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
     state: present
+    filename: postgresql-pgdg
 
-- name: PostgREST - update apt cache
-  apt:
-    update_cache: yes
-
-# libpq is a C library that enables user programs to communicate with
-# the PostgreSQL database server.
-- name: PostgREST - system dependencies
+- name: PostgREST - install system dependencies
   apt:
     pkg:
-      - "libpq5=15.*"
+      - "libpq5>=15"
       - libnuma-dev
+    update_cache: yes
+    state: present
+
+- name: PostgREST - verify libpq5 version
+  shell: dpkg -l libpq5 | grep '^ii' | awk '{print $3}' | grep -E '^15'
+  register: libpq5_version
+  failed_when: libpq5_version.rc != 0
+  changed_when: false
 
 - name: PostgREST - remove Postgres PPA gpg key
   apt_key:
@@ -88,7 +91,6 @@
       #! /usr/bin/env bash
       set -euo pipefail
       set -x
-
       cd "$(dirname "$0")"
       cat $@ > merged.conf
     dest: /etc/postgrest/merge.sh
