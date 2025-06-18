@@ -46,14 +46,14 @@ jobs:
       - name: Setup cache script
         if: ${{ github.secret_source == 'Actions' }}
         run: |
-          mkdir -p /etc/nix
+          sudo mkdir -p /etc/nix
           cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
           #!/usr/bin/env bash
           set -eouf
           export IFS=' '
           echo /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=nix-secret-key' \$OUT_PATHS
           EOF
-          chmod +x /etc/nix/upload-to-cache.sh
+          sudo chmod +x /etc/nix/upload-to-cache.sh
       - name: Install nix
         uses: DeterminateSystems/nix-installer-action@main
         if: ${{ github.secret_source == 'Actions' }}
