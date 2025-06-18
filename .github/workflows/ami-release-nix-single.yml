@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: arm-runner
+    runs-on: large-linux-arm
     timeout-minutes: 150
 
     steps:

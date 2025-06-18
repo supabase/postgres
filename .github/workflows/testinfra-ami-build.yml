@@ -38,7 +38,11 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: large-linux-arm
+          - runner: arm-runner
+            arch: arm64
+            ubuntu_release: focal
+            ubuntu_version: 20.04
+            mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}    
     timeout-minutes: 150
     permissions:

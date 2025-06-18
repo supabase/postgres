@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, linux]
+    runs-on: large-linux-arm
     timeout-minutes: 15
     permissions:
       id-token: write
