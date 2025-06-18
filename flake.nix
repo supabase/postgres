@@ -356,7 +356,6 @@
             {
               inherit (paths) migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
             } ''
-            set -x
             mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
 
             # Copy config files with error handling
