@@ -20,7 +20,7 @@
 - name: PostgREST - system dependencies
   apt:
     pkg:
-      - libpq5
+      - "libpq5={{ postgresql_major }}.*"
       - libnuma-dev
 
 - name: PostgREST - remove Postgres PPA gpg key
