@@ -54,8 +54,6 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: DeterminateSystems/nix-installer-action@main
-
       - id: args
         uses: mikefarah/yq@master
         with:

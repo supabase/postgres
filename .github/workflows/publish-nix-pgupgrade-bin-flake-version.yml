@@ -93,7 +93,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"

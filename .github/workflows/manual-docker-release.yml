@@ -90,7 +90,7 @@ jobs:
         id: image
         run: |
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            pg_version=$(sudo nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let release_key = if ($version | str contains "orioledb") {
                 $"postgresorioledb-17"
