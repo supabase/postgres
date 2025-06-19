@@ -131,6 +131,7 @@
           ./nix/ext/rum.nix
           ./nix/ext/timescaledb.nix
           ./nix/ext/timescaledb-2.9.1.nix
+          ./nix/ext/timescaledb-toolkit.nix
           ./nix/ext/pgroonga.nix
           ./nix/ext/index_advisor.nix
           ./nix/ext/wal2json.nix
@@ -169,6 +170,7 @@
             x:
             x != ./nix/ext/timescaledb.nix &&
             x != ./nix/ext/timescaledb-2.9.1.nix &&
+            x != ./nix/ext/timescaledb-toolkit.nix &&
             x != ./nix/ext/plv8.nix
         ) ourExtensions;
 
