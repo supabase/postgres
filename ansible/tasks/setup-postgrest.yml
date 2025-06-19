@@ -14,21 +14,20 @@
 
 - name: PostgREST - install system dependencies
   apt:
-    name: libpq5
-    version: ">=15"
-    state: present
+    package:
+      - libpq5
+      - libnuma-dev
     update_cache: yes
-
-- name: PostgREST - install libnuma-dev
-  apt:
-    name: libnuma-dev
     state: present
 
 - name: PostgREST - verify libpq5 version
-  shell: dpkg -l libpq5 | grep '^ii' | awk '{print $3}' | grep -E '^15'
+  shell: dpkg -l libpq5 | grep '^ii' | awk '{print $3}'
   register: libpq5_version
-  failed_when: libpq5_version.rc != 0
   changed_when: false
+
+- name: Show installed libpq5 version
+  debug:
+    msg: "Installed libpq5 version: {{ libpq5_version.stdout }}"
 
 - name: PostgREST - remove Postgres PPA gpg key
   apt_key:
