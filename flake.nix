@@ -7,9 +7,10 @@
     nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    nix-fast-build.url = "github:Mic92/nix-fast-build";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, nix2container, ... }:
+  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, nix2container, ... }@inputs:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -1429,6 +1430,7 @@
                 export HISTFILE=.history
               '';
             };
+            nix-fast-build = inputs.nix-fast-build.packages.${system}.default;
           in
           {
             default = pkgs.mkShell {
