@@ -9,8 +9,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
   id-token: write
+  # required by testinfra-ami-build dependent workflows
+  contents: write
+  packages: write
 
 jobs:
   build-run-image:
@@ -84,3 +86,13 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+  
+  run-testinfra:
+    needs: build-run-image
+    if: ${{ success() }}
+    uses: ./.github/workflows/testinfra-ami-build.yml
+    
+  run-tests:
+    needs: build-run-image
+    if: ${{ success() }}
+    uses: ./.github/workflows/test.yml

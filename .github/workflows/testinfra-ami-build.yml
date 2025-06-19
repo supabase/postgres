@@ -1,12 +1,8 @@
 name: Testinfra Integration Tests Nix
 
 on:
-  # Trigger this workflow when the "Nix CI" workflow completes
-  workflow_run:
-    workflows: ["Nix CI"]
-    types:
-      - completed
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -14,7 +10,6 @@ permissions:
 
 jobs:
   prepare:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: large-linux-x86
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
@@ -31,7 +26,6 @@ jobs:
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   test-ami-nix:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     needs: prepare
     strategy:
       fail-fast: false
