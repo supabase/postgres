@@ -526,3 +526,25 @@ def test_postgresql_version(host):
     
     # This test always passes, it's just for informational purposes
     assert True
+
+
+def test_postgrest_logs_no_target_session_attrs_error(host):
+    """Check that PostgREST logs don't contain the target_session_attrs error."""
+    # Check recent PostgREST logs for the specific error
+    result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '1 hour ago' | grep -i 'target_session_attrs' || true")
+    
+    if result['stdout'].strip():
+        print(f"\nFound target_session_attrs errors in PostgREST logs:\n{result['stdout']}")
+        assert False, "PostgREST logs contain target_session_attrs errors"
+    else:
+        print("\nNo target_session_attrs errors found in PostgREST logs")
+    
+    # Also check for the specific error pattern mentioned
+    result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '1 hour ago' | grep -i 'invalid target_session_attrs value.*read-only' || true")
+    
+    if result['stdout'].strip():
+        print(f"\nFound specific target_session_attrs read-only error:\n{result['stdout']}")
+        assert False, "PostgREST logs contain invalid target_session_attrs read-only error"
+    else:
+        print("No invalid target_session_attrs read-only errors found in PostgREST logs")
+
