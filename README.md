@@ -1,5 +1,18 @@
 # Postgres + goodies
 
+This is a fork of the Supabase postgres project. It adds the full version of timescaledb for postgres17 and the timescaledb toolkit.
+
+To build: `docker build -f Dockerfile-17 -t ghcr.io/cepro/postgres:v<IMAGE_VERSION_NUMBER> .`
+
+To push your build to the Github docker registry: `docker push ghcr.io/cepro/postgres:v<IMAGE_VERSION_NUMBER>`
+
+Before pushing you will need to login to the Github docker registry with: `docker login --username <GITHUB_USERNAME> ghcr.io` . You will need to use a personal access token as the password - see here for instructions: https://medium.com/devopsturkiye/pushing-docker-images-to-githubs-registry-manual-and-automated-methods-19cce3544eb1
+
+
+---
+---
+---
+
 Unmodified Postgres with some useful plugins. Our goal with this repo is not to modify Postgres, but to provide some of the most common extensions with a one-click install.
 
 ## Primary Features
