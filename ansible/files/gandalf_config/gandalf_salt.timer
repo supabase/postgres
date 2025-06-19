@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Supabase gandalf salt on a schedule
+Requires=gandalf_salt.service
+
+[Timer]
+OnCalendar=*:0/10
+# Random delay up to 30 seconds splay
+RandomizedDelaySec=30
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

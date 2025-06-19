@@ -57,3 +57,5 @@ adminmgr_release: 0.25.1
 
 vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
 vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
+
+gandalf_release: 1.4.18
