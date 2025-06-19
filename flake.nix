@@ -1413,6 +1413,8 @@
             trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";
           };
 
+        formatter = pkgs.treefmt;
+
         # 'devShells.default' lists the set of packages that are included in the
         # ambient $PATH environment when you run 'nix develop'. This is useful
         # for development and puts many convenient devtools instantly within
@@ -1456,7 +1458,10 @@
                 basePackages.run-testinfra
                 basePackages.cleanup-ami
                 dbmate
+                formatter # treefmt
+                nixpkgs-fmt
                 nushell
+                pre-commit
                 pythonEnv
                 nix-fast-build
               ];
