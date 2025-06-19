@@ -507,3 +507,22 @@ def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
         },
     )
     assert res.ok
+
+
+def test_postgresql_version(host):
+    """Print the PostgreSQL version being tested."""
+    result = run_ssh_command(host['ssh'], "sudo -u postgres psql -c 'SELECT version();'")
+    if result['succeeded']:
+        print(f"\nPostgreSQL Version:\n{result['stdout']}")
+    else:
+        print(f"\nFailed to get PostgreSQL version: {result['stderr']}")
+    
+    # Also get the version from the command line
+    result = run_ssh_command(host['ssh'], "sudo -u postgres psql --version")
+    if result['succeeded']:
+        print(f"PostgreSQL Client Version: {result['stdout'].strip()}")
+    else:
+        print(f"Failed to get PostgreSQL client version: {result['stderr']}")
+    
+    # This test always passes, it's just for informational purposes
+    assert True
