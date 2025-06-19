@@ -15,7 +15,7 @@
 - name: PostgREST - install system dependencies
   apt:
     pkg:
-      - "libpq5>=15"
+      - "libpq5 (>= 15)"
       - libnuma-dev
     update_cache: yes
     state: present
