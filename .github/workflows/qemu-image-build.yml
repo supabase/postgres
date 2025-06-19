@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: large-linux-x86
+    runs-on: ubuntu-latest
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-    runs-on: large-linux-arm
+    runs-on: arm-native-runner
     timeout-minutes: 150
     permissions:
       contents: write
@@ -54,7 +54,7 @@ jobs:
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
