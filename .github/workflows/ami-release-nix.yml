@@ -45,7 +45,13 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Run checks if triggered manually
