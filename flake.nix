@@ -171,7 +171,8 @@
             x != ./nix/ext/timescaledb.nix &&
             x != ./nix/ext/timescaledb-2.9.1.nix &&
             x != ./nix/ext/plv8.nix
-        ) ourExtensions;
+          )
+          ourExtensions;
 
         orioledbExtensions = orioleFilteredExtensions ++ [ ./nix/ext/orioledb.nix ];
         dbExtensions17 = orioleFilteredExtensions;
@@ -656,144 +657,144 @@
                   aws-vault
                 ];
               } ''
-                mkdir -p $out/bin
-                cat > $out/bin/build-test-ami << 'EOL'
-                #!/usr/bin/env bash
-                set -euo pipefail
+              mkdir -p $out/bin
+              cat > $out/bin/build-test-ami << 'EOL'
+              #!/usr/bin/env bash
+              set -euo pipefail
 
-                show_help() {
-                  cat << EOF
-                Usage: build-test-ami [--help] <postgres-version>
+              show_help() {
+                cat << EOF
+              Usage: build-test-ami [--help] <postgres-version>
 
-                Build AMI images for PostgreSQL testing.
+              Build AMI images for PostgreSQL testing.
 
-                This script will:
-                1. Check for required tools and AWS authentication
-                2. Build two AMI stages using Packer
-                3. Clean up any temporary instances
-                4. Output the final AMI name for use with run-testinfra
+              This script will:
+              1. Check for required tools and AWS authentication
+              2. Build two AMI stages using Packer
+              3. Clean up any temporary instances
+              4. Output the final AMI name for use with run-testinfra
 
-                Arguments:
-                  postgres-version    PostgreSQL major version to build (required)
+              Arguments:
+                postgres-version    PostgreSQL major version to build (required)
 
-                Options:
-                  --help    Show this help message and exit
+              Options:
+                --help    Show this help message and exit
 
-                Requirements:
-                  - AWS Vault profile must be set in AWS_VAULT environment variable
-                  - Packer, AWS CLI, yq, jq, and OpenSSL must be installed
-                  - Must be run from a git repository
+              Requirements:
+                - AWS Vault profile must be set in AWS_VAULT environment variable
+                - Packer, AWS CLI, yq, jq, and OpenSSL must be installed
+                - Must be run from a git repository
 
-                Example:
-                  aws-vault exec <profile-name> -- nix run .#build-test-ami 15
-                EOF
-                }
+              Example:
+                aws-vault exec <profile-name> -- nix run .#build-test-ami 15
+              EOF
+              }
 
-                # Handle help flag
-                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
-                  show_help
-                  exit 0
-                fi
+              # Handle help flag
+              if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
+                show_help
+                exit 0
+              fi
 
-                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
-                  packer
-                  awscli2
-                  yq
-                  jq
-                  openssl
-                  git
-                  coreutils
-                  aws-vault
-                ])}:$PATH"
+              export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                packer
+                awscli2
+                yq
+                jq
+                openssl
+                git
+                coreutils
+                aws-vault
+              ])}:$PATH"
 
-                # Check for required tools
-                for cmd in packer aws-vault yq jq openssl; do
-                  if ! command -v $cmd &> /dev/null; then
-                    echo "Error: $cmd is required but not found"
-                    exit 1
-                  fi
-                done
-
-                # Check AWS Vault profile
-                if [ -z "''${AWS_VAULT:-}" ]; then
-                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec <profile-name> -- nix run .#build-test-ami <postgres-version>"
+              # Check for required tools
+              for cmd in packer aws-vault yq jq openssl; do
+                if ! command -v $cmd &> /dev/null; then
+                  echo "Error: $cmd is required but not found"
                   exit 1
                 fi
+              done
 
-                # Set values
-                REGION="ap-southeast-1"
-                POSTGRES_VERSION="$1"
-                RANDOM_STRING=$(openssl rand -hex 8)
-                GIT_SHA=$(git rev-parse HEAD)
-                RUN_ID=$(date +%s)
+              # Check AWS Vault profile
+              if [ -z "''${AWS_VAULT:-}" ]; then
+                echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                echo "Usage: aws-vault exec <profile-name> -- nix run .#build-test-ami <postgres-version>"
+                exit 1
+              fi
 
-                # Generate common-nix.vars.pkr.hcl
-                PG_VERSION=$(yq -r ".postgres_release[\"postgres$POSTGRES_VERSION\"]" ansible/vars.yml)
-                echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
+              # Set values
+              REGION="ap-southeast-1"
+              POSTGRES_VERSION="$1"
+              RANDOM_STRING=$(openssl rand -hex 8)
+              GIT_SHA=$(git rev-parse HEAD)
+              RUN_ID=$(date +%s)
 
-                # Build AMI Stage 1
-                packer init amazon-arm64-nix.pkr.hcl
-                packer build \
-                  -var "git-head-version=$GIT_SHA" \
-                  -var "packer-execution-id=$RUN_ID" \
-                  -var-file="development-arm.vars.pkr.hcl" \
-                  -var-file="common-nix.vars.pkr.hcl" \
-                  -var "ansible_arguments=" \
-                  -var "postgres-version=$RANDOM_STRING" \
-                  -var "region=$REGION" \
-                  -var 'ami_regions=["'"$REGION"'"]' \
-                  -var "force-deregister=true" \
-                  -var "ansible_arguments=-e postgresql_major=$POSTGRES_VERSION" \
-                  amazon-arm64-nix.pkr.hcl
+              # Generate common-nix.vars.pkr.hcl
+              PG_VERSION=$(yq -r ".postgres_release[\"postgres$POSTGRES_VERSION\"]" ansible/vars.yml)
+              echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
 
-                # Build AMI Stage 2
-                packer init stage2-nix-psql.pkr.hcl
-                packer build \
-                  -var "git-head-version=$GIT_SHA" \
-                  -var "packer-execution-id=$RUN_ID" \
-                  -var "postgres_major_version=$POSTGRES_VERSION" \
-                  -var-file="development-arm.vars.pkr.hcl" \
-                  -var-file="common-nix.vars.pkr.hcl" \
-                  -var "postgres-version=$RANDOM_STRING" \
-                  -var "region=$REGION" \
-                  -var 'ami_regions=["'"$REGION"'"]' \
-                  -var "force-deregister=true" \
-                  -var "git_sha=$GIT_SHA" \
-                  stage2-nix-psql.pkr.hcl
+              # Build AMI Stage 1
+              packer init amazon-arm64-nix.pkr.hcl
+              packer build \
+                -var "git-head-version=$GIT_SHA" \
+                -var "packer-execution-id=$RUN_ID" \
+                -var-file="development-arm.vars.pkr.hcl" \
+                -var-file="common-nix.vars.pkr.hcl" \
+                -var "ansible_arguments=" \
+                -var "postgres-version=$RANDOM_STRING" \
+                -var "region=$REGION" \
+                -var 'ami_regions=["'"$REGION"'"]' \
+                -var "force-deregister=true" \
+                -var "ansible_arguments=-e postgresql_major=$POSTGRES_VERSION" \
+                amazon-arm64-nix.pkr.hcl
 
-                # Cleanup instances from AMI builds
-                cleanup_instances() {
-                  echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
-                  aws ec2 --region $REGION describe-instances \
-                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
-                    --query "Reservations[].Instances[].InstanceId" \
-                    --output text | xargs -r aws ec2 terminate-instances \
-                    --region $REGION --instance-ids || true
-                }
+              # Build AMI Stage 2
+              packer init stage2-nix-psql.pkr.hcl
+              packer build \
+                -var "git-head-version=$GIT_SHA" \
+                -var "packer-execution-id=$RUN_ID" \
+                -var "postgres_major_version=$POSTGRES_VERSION" \
+                -var-file="development-arm.vars.pkr.hcl" \
+                -var-file="common-nix.vars.pkr.hcl" \
+                -var "postgres-version=$RANDOM_STRING" \
+                -var "region=$REGION" \
+                -var 'ami_regions=["'"$REGION"'"]' \
+                -var "force-deregister=true" \
+                -var "git_sha=$GIT_SHA" \
+                stage2-nix-psql.pkr.hcl
 
-                # Set up traps for various signals to ensure cleanup
-                trap cleanup_instances EXIT HUP INT QUIT TERM
+              # Cleanup instances from AMI builds
+              cleanup_instances() {
+                echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
+                aws ec2 --region $REGION describe-instances \
+                  --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
+                  --query "Reservations[].Instances[].InstanceId" \
+                  --output text | xargs -r aws ec2 terminate-instances \
+                  --region $REGION --instance-ids || true
+              }
 
-                # Create and activate virtual environment
-                VENV_DIR=$(mktemp -d)
-                trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
-                python3 -m venv "$VENV_DIR"
-                source "$VENV_DIR/bin/activate"
+              # Set up traps for various signals to ensure cleanup
+              trap cleanup_instances EXIT HUP INT QUIT TERM
 
-                # Install required Python packages
-                echo "Installing required Python packages..."
-                pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
+              # Create and activate virtual environment
+              VENV_DIR=$(mktemp -d)
+              trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
+              python3 -m venv "$VENV_DIR"
+              source "$VENV_DIR/bin/activate"
 
-                # Run the tests with aws-vault
-                echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: $AWS_VAULT_PROFILE"
-                aws-vault exec $AWS_VAULT_PROFILE -- pytest -vv -s testinfra/test_ami_nix.py
+              # Install required Python packages
+              echo "Installing required Python packages..."
+              pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
 
-                # Deactivate virtual environment (cleanup is handled by trap)
-                deactivate
-                EOL
-                chmod +x $out/bin/build-test-ami
-              '';
+              # Run the tests with aws-vault
+              echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: $AWS_VAULT_PROFILE"
+              aws-vault exec $AWS_VAULT_PROFILE -- pytest -vv -s testinfra/test_ami_nix.py
+
+              # Deactivate virtual environment (cleanup is handled by trap)
+              deactivate
+              EOL
+              chmod +x $out/bin/build-test-ami
+            '';
 
             run-testinfra = pkgs.runCommand "run-testinfra"
               {
@@ -804,135 +805,135 @@
                   coreutils
                 ];
               } ''
-                mkdir -p $out/bin
-                cat > $out/bin/run-testinfra << 'EOL'
-                #!/usr/bin/env bash
-                set -euo pipefail
+              mkdir -p $out/bin
+              cat > $out/bin/run-testinfra << 'EOL'
+              #!/usr/bin/env bash
+              set -euo pipefail
 
-                show_help() {
-                  cat << EOF
-                Usage: run-testinfra --ami-name NAME [--aws-vault-profile PROFILE]
+              show_help() {
+                cat << EOF
+              Usage: run-testinfra --ami-name NAME [--aws-vault-profile PROFILE]
 
-                Run the testinfra tests locally against a specific AMI.
+              Run the testinfra tests locally against a specific AMI.
 
-                This script will:
-                1. Check if aws-vault is installed and configured
-                2. Set up the required environment variables
-                3. Create and activate a virtual environment
-                4. Install required Python packages from pip
-                5. Run the tests with aws-vault credentials
-                6. Clean up the virtual environment
+              This script will:
+              1. Check if aws-vault is installed and configured
+              2. Set up the required environment variables
+              3. Create and activate a virtual environment
+              4. Install required Python packages from pip
+              5. Run the tests with aws-vault credentials
+              6. Clean up the virtual environment
 
-                Required flags:
-                  --ami-name NAME              The name of the AMI to test
+              Required flags:
+                --ami-name NAME              The name of the AMI to test
 
-                Optional flags:
-                  --aws-vault-profile PROFILE  AWS Vault profile to use (default: staging)
-                  --help                       Show this help message and exit
+              Optional flags:
+                --aws-vault-profile PROFILE  AWS Vault profile to use (default: staging)
+                --help                       Show this help message and exit
 
-                Requirements:
-                  - aws-vault installed and configured
-                  - Python 3 with pip
-                  - Must be run from the repository root
+              Requirements:
+                - aws-vault installed and configured
+                - Python 3 with pip
+                - Must be run from the repository root
 
-                Examples:
-                  run-testinfra --ami-name supabase-postgres-abc123
-                  run-testinfra --ami-name supabase-postgres-abc123 --aws-vault-profile production
-                EOF
-                }
+              Examples:
+                run-testinfra --ami-name supabase-postgres-abc123
+                run-testinfra --ami-name supabase-postgres-abc123 --aws-vault-profile production
+              EOF
+              }
 
-                # Default values
-                AWS_VAULT_PROFILE="staging"
-                AMI_NAME=""
+              # Default values
+              AWS_VAULT_PROFILE="staging"
+              AMI_NAME=""
 
-                # Parse arguments
-                while [[ $# -gt 0 ]]; do
-                  case $1 in
-                    --aws-vault-profile)
-                      AWS_VAULT_PROFILE="$2"
-                      shift 2
-                      ;;
-                    --ami-name)
-                      AMI_NAME="$2"
-                      shift 2
-                      ;;
-                    --help)
-                      show_help
-                      exit 0
-                      ;;
-                    *)
-                      echo "Error: Unexpected argument: $1"
-                      show_help
-                      exit 1
-                      ;;
-                  esac
-                done
+              # Parse arguments
+              while [[ $# -gt 0 ]]; do
+                case $1 in
+                  --aws-vault-profile)
+                    AWS_VAULT_PROFILE="$2"
+                    shift 2
+                    ;;
+                  --ami-name)
+                    AMI_NAME="$2"
+                    shift 2
+                    ;;
+                  --help)
+                    show_help
+                    exit 0
+                    ;;
+                  *)
+                    echo "Error: Unexpected argument: $1"
+                    show_help
+                    exit 1
+                    ;;
+                esac
+              done
 
-                # Check for required tools
-                if ! command -v aws-vault &> /dev/null; then
-                  echo "Error: aws-vault is required but not found"
-                  exit 1
-                fi
+              # Check for required tools
+              if ! command -v aws-vault &> /dev/null; then
+                echo "Error: aws-vault is required but not found"
+                exit 1
+              fi
 
-                # Check for AMI name argument
-                if [ -z "$AMI_NAME" ]; then
-                  echo "Error: --ami-name is required"
-                  show_help
-                  exit 1
-                fi
+              # Check for AMI name argument
+              if [ -z "$AMI_NAME" ]; then
+                echo "Error: --ami-name is required"
+                show_help
+                exit 1
+              fi
 
-                # Set environment variables
-                export AWS_REGION="ap-southeast-1"
-                export AWS_DEFAULT_REGION="ap-southeast-1"
-                export AMI_NAME="$AMI_NAME"  # Export AMI_NAME for pytest
-                export RUN_ID="local-$(date +%s)"  # Generate a unique RUN_ID
+              # Set environment variables
+              export AWS_REGION="ap-southeast-1"
+              export AWS_DEFAULT_REGION="ap-southeast-1"
+              export AMI_NAME="$AMI_NAME"  # Export AMI_NAME for pytest
+              export RUN_ID="local-$(date +%s)"  # Generate a unique RUN_ID
 
-                # Function to terminate EC2 instances
-                terminate_instances() {
-                  echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
-                  aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 --region ap-southeast-1 describe-instances \
-                    --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
-                    --query "Reservations[].Instances[].InstanceId" \
-                    --output text | xargs -r aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 terminate-instances \
-                    --region ap-southeast-1 --instance-ids || true
-                }
+              # Function to terminate EC2 instances
+              terminate_instances() {
+                echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
+                aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 --region ap-southeast-1 describe-instances \
+                  --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
+                  --query "Reservations[].Instances[].InstanceId" \
+                  --output text | xargs -r aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 terminate-instances \
+                  --region ap-southeast-1 --instance-ids || true
+              }
 
-                # Set up traps for various signals to ensure cleanup
-                trap terminate_instances EXIT HUP INT QUIT TERM
+              # Set up traps for various signals to ensure cleanup
+              trap terminate_instances EXIT HUP INT QUIT TERM
 
-                # Create and activate virtual environment
-                VENV_DIR=$(mktemp -d)
-                trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
-                python3 -m venv "$VENV_DIR"
-                source "$VENV_DIR/bin/activate"
+              # Create and activate virtual environment
+              VENV_DIR=$(mktemp -d)
+              trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
+              python3 -m venv "$VENV_DIR"
+              source "$VENV_DIR/bin/activate"
 
-                # Install required Python packages
-                echo "Installing required Python packages..."
-                pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
+              # Install required Python packages
+              echo "Installing required Python packages..."
+              pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
 
-                # Function to run tests and ensure cleanup
-                run_tests() {
-                  local exit_code=0
-                  echo "Running tests for AMI: $AMI_NAME using AWS Vault profile: $AWS_VAULT_PROFILE"
-                  aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py || exit_code=$?
-                  return $exit_code
-                }
+              # Function to run tests and ensure cleanup
+              run_tests() {
+                local exit_code=0
+                echo "Running tests for AMI: $AMI_NAME using AWS Vault profile: $AWS_VAULT_PROFILE"
+                aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py || exit_code=$?
+                return $exit_code
+              }
 
-                # Run tests and capture exit code
-                run_tests
-                test_exit_code=$?
+              # Run tests and capture exit code
+              run_tests
+              test_exit_code=$?
 
-                # Deactivate virtual environment
-                deactivate
+              # Deactivate virtual environment
+              deactivate
 
-                # Explicitly call cleanup
-                terminate_instances
+              # Explicitly call cleanup
+              terminate_instances
 
-                # Exit with the test exit code
-                exit $test_exit_code
-                EOL
-                chmod +x $out/bin/run-testinfra
-              '';
+              # Exit with the test exit code
+              exit $test_exit_code
+              EOL
+              chmod +x $out/bin/run-testinfra
+            '';
 
             cleanup-ami = pkgs.runCommand "cleanup-ami"
               {
@@ -941,53 +942,53 @@
                   aws-vault
                 ];
               } ''
-                mkdir -p $out/bin
-                cat > $out/bin/cleanup-ami << 'EOL'
-                #!/usr/bin/env bash
-                set -euo pipefail
+              mkdir -p $out/bin
+              cat > $out/bin/cleanup-ami << 'EOL'
+              #!/usr/bin/env bash
+              set -euo pipefail
 
-                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
-                  awscli2
-                  aws-vault
-                ])}:$PATH"
+              export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                awscli2
+                aws-vault
+              ])}:$PATH"
 
-                # Check for required tools
-                for cmd in aws-vault; do
-                  if ! command -v $cmd &> /dev/null; then
-                    echo "Error: $cmd is required but not found"
-                    exit 1
-                  fi
-                done
-
-                # Check AWS Vault profile
-                if [ -z "''${AWS_VAULT:-}" ]; then
-                  echo "Error: AWS_VAULT environment variable must be set with the profile name"
-                  echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
+              # Check for required tools
+              for cmd in aws-vault; do
+                if ! command -v $cmd &> /dev/null; then
+                  echo "Error: $cmd is required but not found"
                   exit 1
                 fi
+              done
 
-                # Check for AMI name argument
-                if [ -z "''${1:-}" ]; then
-                  echo "Error: AMI name must be provided"
-                  echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
-                  exit 1
-                fi
+              # Check AWS Vault profile
+              if [ -z "''${AWS_VAULT:-}" ]; then
+                echo "Error: AWS_VAULT environment variable must be set with the profile name"
+                echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
+                exit 1
+              fi
 
-                AMI_NAME="$1"
-                REGION="ap-southeast-1"
+              # Check for AMI name argument
+              if [ -z "''${1:-}" ]; then
+                echo "Error: AMI name must be provided"
+                echo "Usage: aws-vault exec <profile-name> -- nix run .#cleanup-ami <ami-name>"
+                exit 1
+              fi
 
-                # Deregister AMIs
-                for AMI_PATTERN in "supabase-postgres-ci-ami-test-stage-1" "$AMI_NAME"; do
-                  aws ec2 describe-images --region $REGION --owners self \
-                    --filters "Name=name,Values=$AMI_PATTERN" \
-                    --query 'Images[*].ImageId' --output text | while read -r ami_id; do
-                      echo "Deregistering AMI: $ami_id"
-                      aws ec2 deregister-image --region $REGION --image-id "$ami_id" || true
-                    done
-                done
-                EOL
-                chmod +x $out/bin/cleanup-ami
-              '';
+              AMI_NAME="$1"
+              REGION="ap-southeast-1"
+
+              # Deregister AMIs
+              for AMI_PATTERN in "supabase-postgres-ci-ami-test-stage-1" "$AMI_NAME"; do
+                aws ec2 describe-images --region $REGION --owners self \
+                  --filters "Name=name,Values=$AMI_PATTERN" \
+                  --query 'Images[*].ImageId' --output text | while read -r ami_id; do
+                    echo "Deregistering AMI: $ami_id"
+                    aws ec2 deregister-image --region $REGION --image-id "$ami_id" || true
+                  done
+              done
+              EOL
+              chmod +x $out/bin/cleanup-ami
+            '';
 
             trigger-nix-build = pkgs.runCommand "trigger-nix-build"
               {
@@ -997,113 +998,113 @@
                   coreutils
                 ];
               } ''
-                mkdir -p $out/bin
-                cat > $out/bin/trigger-nix-build << 'EOL'
-                #!/usr/bin/env bash
-                set -euo pipefail
+              mkdir -p $out/bin
+              cat > $out/bin/trigger-nix-build << 'EOL'
+              #!/usr/bin/env bash
+              set -euo pipefail
 
-                show_help() {
-                  cat << EOF
-                Usage: trigger-nix-build [--help]
+              show_help() {
+                cat << EOF
+              Usage: trigger-nix-build [--help]
 
-                Trigger the nix-build workflow for the current branch and watch its progress.
+              Trigger the nix-build workflow for the current branch and watch its progress.
 
-                This script will:
-                1. Check if you're authenticated with GitHub
-                2. Get the current branch and commit
-                3. Verify you're on a standard branch (develop or release/*) or prompt for confirmation
-                4. Trigger the nix-build workflow
-                5. Watch the workflow progress until completion
+              This script will:
+              1. Check if you're authenticated with GitHub
+              2. Get the current branch and commit
+              3. Verify you're on a standard branch (develop or release/*) or prompt for confirmation
+              4. Trigger the nix-build workflow
+              5. Watch the workflow progress until completion
 
-                Options:
-                  --help    Show this help message and exit
+              Options:
+                --help    Show this help message and exit
 
-                Requirements:
-                  - GitHub CLI (gh) installed and authenticated
-                  - Git installed
-                  - Must be run from a git repository
+              Requirements:
+                - GitHub CLI (gh) installed and authenticated
+                - Git installed
+                - Must be run from a git repository
 
-                Example:
-                  trigger-nix-build
-                EOF
-                }
+              Example:
+                trigger-nix-build
+              EOF
+              }
 
-                # Handle help flag
-                if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
-                  show_help
-                  exit 0
-                fi
+              # Handle help flag
+              if [[ "$#" -gt 0 && "$1" == "--help" ]]; then
+                show_help
+                exit 0
+              fi
 
-                export PATH="${pkgs.lib.makeBinPath (with pkgs; [
-                  gh
-                  git
-                  coreutils
-                ])}:$PATH"
+              export PATH="${pkgs.lib.makeBinPath (with pkgs; [
+                gh
+                git
+                coreutils
+              ])}:$PATH"
 
-                # Check for required tools
-                for cmd in gh git; do
-                  if ! command -v $cmd &> /dev/null; then
-                    echo "Error: $cmd is required but not found"
-                    exit 1
-                  fi
-                done
-
-                # Check if user is authenticated with GitHub
-                if ! gh auth status &>/dev/null; then
-                  echo "Error: Not authenticated with GitHub. Please run 'gh auth login' first."
+              # Check for required tools
+              for cmd in gh git; do
+                if ! command -v $cmd &> /dev/null; then
+                  echo "Error: $cmd is required but not found"
                   exit 1
                 fi
+              done
 
-                # Get current branch and commit
-                BRANCH=$(git rev-parse --abbrev-ref HEAD)
-                COMMIT=$(git rev-parse HEAD)
+              # Check if user is authenticated with GitHub
+              if ! gh auth status &>/dev/null; then
+                echo "Error: Not authenticated with GitHub. Please run 'gh auth login' first."
+                exit 1
+              fi
 
-                # Check if we're on a standard branch
-                if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
-                  echo "Warning: Running workflow from non-standard branch: $BRANCH"
-                  echo "This is supported for testing purposes."
-                  read -p "Continue? [y/N] " -n 1 -r
-                  echo
-                  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                    echo "Aborted."
-                    exit 1
-                  fi
-                fi
+              # Get current branch and commit
+              BRANCH=$(git rev-parse --abbrev-ref HEAD)
+              COMMIT=$(git rev-parse HEAD)
 
-                # Trigger the workflow
-                echo "Triggering nix-build workflow for branch $BRANCH (commit: $COMMIT)"
-                gh workflow run nix-build.yml --ref "$BRANCH"
-
-                # Wait for workflow to start and get the run ID
-                echo "Waiting for workflow to start..."
-                sleep 5
-
-                # Get the latest run ID for this workflow
-                RUN_ID=$(gh run list --workflow=nix-build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-
-                if [ -z "$RUN_ID" ]; then
-                  echo "Error: Could not find workflow run ID"
+              # Check if we're on a standard branch
+              if [[ "$BRANCH" != "develop" && ! "$BRANCH" =~ ^release/ ]]; then
+                echo "Warning: Running workflow from non-standard branch: $BRANCH"
+                echo "This is supported for testing purposes."
+                read -p "Continue? [y/N] " -n 1 -r
+                echo
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                  echo "Aborted."
                   exit 1
                 fi
+              fi
 
-                echo "Watching workflow run $RUN_ID..."
-                echo "The script will automatically exit when the workflow completes."
-                echo "Press Ctrl+C to stop watching (workflow will continue running)"
-                echo "----------------------------------------"
+              # Trigger the workflow
+              echo "Triggering nix-build workflow for branch $BRANCH (commit: $COMMIT)"
+              gh workflow run nix-build.yml --ref "$BRANCH"
 
-                # Try to watch the run, but handle network errors gracefully
-                while true; do
-                  if gh run watch "$RUN_ID" --exit-status; then
-                    break
-                  else
-                    echo "Network error while watching workflow. Retrying in 5 seconds..."
-                    echo "You can also check the status manually with: gh run view $RUN_ID"
-                    sleep 5
-                  fi
-                done
-                EOL
-                chmod +x $out/bin/trigger-nix-build
-              '';
+              # Wait for workflow to start and get the run ID
+              echo "Waiting for workflow to start..."
+              sleep 5
+
+              # Get the latest run ID for this workflow
+              RUN_ID=$(gh run list --workflow=nix-build.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+
+              if [ -z "$RUN_ID" ]; then
+                echo "Error: Could not find workflow run ID"
+                exit 1
+              fi
+
+              echo "Watching workflow run $RUN_ID..."
+              echo "The script will automatically exit when the workflow completes."
+              echo "Press Ctrl+C to stop watching (workflow will continue running)"
+              echo "----------------------------------------"
+
+              # Try to watch the run, but handle network errors gracefully
+              while true; do
+                if gh run watch "$RUN_ID" --exit-status; then
+                  break
+                else
+                  echo "Network error while watching workflow. Retrying in 5 seconds..."
+                  echo "You can also check the status manually with: gh run view $RUN_ID"
+                  sleep 5
+                fi
+              done
+              EOL
+              chmod +x $out/bin/trigger-nix-build
+            '';
           };
 
 
@@ -1214,11 +1215,12 @@
             # Filter SQL test files
             filteredSqlTests = filterTestFiles majorVersion ./nix/tests/sql;
 
-            pgPort = if (majorVersion == "17") then
+            pgPort =
+              if (majorVersion == "17") then
                 "5535"
-                else if (majorVersion == "15") then
+              else if (majorVersion == "15") then
                 "5536"
-                else "5537";
+              else "5537";
 
             # Convert filtered tests to a sorted list of basenames (without extension)
             testList = pkgs.lib.mapAttrsToList

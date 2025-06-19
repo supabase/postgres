@@ -1,7 +1,28 @@
-{ lib, stdenv, cmake, fetchurl, kytea, msgpack-c, mecab, pkg-config, rapidjson
-, testers, xxHash, zstd, postgresqlPackages, makeWrapper, suggestSupport ? false
-, zeromq, libevent, openssl, lz4Support ? false, lz4, zlibSupport ? true, zlib
-, writeShellScriptBin, callPackage }:
+{ lib
+, stdenv
+, cmake
+, fetchurl
+, kytea
+, msgpack-c
+, mecab
+, pkg-config
+, rapidjson
+, testers
+, xxHash
+, zstd
+, postgresqlPackages
+, makeWrapper
+, suggestSupport ? false
+, zeromq
+, libevent
+, openssl
+, lz4Support ? false
+, lz4
+, zlibSupport ? true
+, zlib
+, writeShellScriptBin
+, callPackage
+}:
 let mecab-naist-jdic = callPackage ./ext/mecab-naist-jdic { };
 in stdenv.mkDerivation (finalAttrs: {
   pname = "supabase-groonga";

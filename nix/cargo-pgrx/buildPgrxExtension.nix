@@ -52,15 +52,15 @@
 , buildFeatures ? [ ]
 , cargoBuildFlags ? [ ]
 , postgresql
-# cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
-# dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
-# if you include the generated code in the output via postInstall.
+  # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
+  # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
+  # if you include the generated code in the output via postInstall.
 , useFakeRustfmt ? true
 , usePgTestCheckFeature ? true
 , ...
 } @ args:
 let
-  rustfmtInNativeBuildInputs = lib.lists.any (dep: lib.getName dep == "rustfmt") (args.nativeBuildInputs or []);
+  rustfmtInNativeBuildInputs = lib.lists.any (dep: lib.getName dep == "rustfmt") (args.nativeBuildInputs or [ ]);
 in
 
 assert lib.asserts.assertMsg ((args.installPhase or "") == "")
@@ -75,7 +75,7 @@ assert lib.asserts.assertMsg (!useFakeRustfmt -> rustfmtInNativeBuildInputs)
 let
   fakeRustfmt = writeShellScriptBin "rustfmt" ''
     exit 0
-    '';
+  '';
   maybeDebugFlag = lib.optionalString (buildType != "release") "--debug";
   maybeEnterBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) ''
     export CARGO_TARGET_DIR="$(pwd)/target"

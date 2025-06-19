@@ -3,14 +3,14 @@
 stdenv.mkDerivation rec {
   pname = "mecab-naist-jdic";
   version = "0.6.3b-20111013";
-  
+
   src = fetchurl {
     url = "https://github.com/supabase/mecab-naist-jdic/raw/main/mecab-naist-jdic-${version}.tar.gz";
     sha256 = "sha256-yzdwDcmne5U/K/OxW0nP7NZ4SFMKLPirywm1lMpWKMw=";
   };
-  
+
   buildInputs = [ mecab ];
-  
+
   configureFlags = [
     "--with-charset=utf8"
   ];

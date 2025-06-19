@@ -20,15 +20,15 @@ buildPgrxExtension_0_12_6 rec {
   # update the following array when the pg_jsonschema version is updated
   # required to ensure that extensions update scripts from previous versions are generated
 
-  previousVersions = ["0.3.1" "0.3.0" "0.2.0" "0.1.4" "0.1.4" "0.1.2" "0.1.1" "0.1.0"];
-  CARGO="${cargo}/bin/cargo";
+  previousVersions = [ "0.3.1" "0.3.0" "0.2.0" "0.1.4" "0.1.4" "0.1.2" "0.1.1" "0.1.0" ];
+  CARGO = "${cargo}/bin/cargo";
   #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-    PGPORT = toString (5441 + 
-      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
-      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
+    PGPORT = toString (5441 +
+      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) + # +1 for OrioleDB
+      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2); # +2 for each major version
 
   };
 
@@ -36,7 +36,7 @@ buildPgrxExtension_0_12_6 rec {
     lockFile = "${src}/Cargo.lock";
     allowBuiltinFetchGit = false;
   };
-  
+
   # FIXME (aseipp): testsuite tries to write files into /nix/store; we'll have
   # to fix this a bit later.
   doCheck = false;

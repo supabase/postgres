@@ -38,7 +38,7 @@ let
       ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
         darwin.apple_sdk.frameworks.Security
       ];
-      
+
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
       OPENSSL_LIB_DIR = "${openssl.out}/lib";

@@ -14,10 +14,10 @@ stdenv.mkDerivation rec {
     hash = "sha256-crxj5R9jblIv0h8lpqddAoYe2UqgUlnvbOajKTzVces=";
   };
 
-  
+
   makeFlags = [ "FLEX=flex" ];
 
-  
+
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
 

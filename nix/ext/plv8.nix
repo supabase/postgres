@@ -4,9 +4,9 @@
 , v8
 , perl
 , postgresql
-# For passthru test on various systems, and local development on macos
-# not we are not currently using passthru tests but retaining for possible contrib
-# to nixpkgs 
+  # For passthru test on various systems, and local development on macos
+  # not we are not currently using passthru tests but retaining for possible contrib
+  # to nixpkgs 
 , runCommand
 , coreutils
 , gnugrep
@@ -54,7 +54,7 @@ stdenv.mkDerivation (finalAttrs: {
     # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
     "USE_SYSTEM_V8=1"
     "V8_OUTDIR=${v8}/lib"
-     "PG_CONFIG=${postgresql}/bin/pg_config"
+    "PG_CONFIG=${postgresql}/bin/pg_config"
   ] ++ lib.optionals stdenv.isDarwin [
     "CC=${clang}/bin/clang"
     "CXX=${clang}/bin/clang++"
@@ -71,12 +71,15 @@ stdenv.mkDerivation (finalAttrs: {
     "-lpgcommon"
     "-lpgport"
     "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
-    "-framework" "CoreFoundation"
+    "-framework"
+    "CoreFoundation"
     "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
-    "-framework" "Kerberos"
-    "-undefined" "dynamic_lookup"
+    "-framework"
+    "Kerberos"
+    "-undefined"
+    "dynamic_lookup"
     "-flat_namespace"
-  ]); 
+  ]);
 
   installFlags = [
     # PGXS only supports installing to postgresql prefix so we need to redirect this
@@ -97,7 +100,7 @@ stdenv.mkDerivation (finalAttrs: {
     ''}
   '';
 
- postInstall = ''
+  postInstall = ''
     # Move the redirected to proper directory.
     # There appear to be no references to the install directories
     # so changing them does not cause issues.

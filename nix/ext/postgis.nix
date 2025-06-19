@@ -1,5 +1,6 @@
 { fetchurl
-, lib, stdenv
+, lib
+, stdenv
 , perl
 , libxml2
 , postgresql
@@ -31,7 +32,7 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [ libxml2 postgresql geos proj gdal json_c protobufc pcre2.dev sfcgal ]
-                ++ lib.optional stdenv.isDarwin libiconv;
+    ++ lib.optional stdenv.isDarwin libiconv;
   nativeBuildInputs = [ perl pkg-config ];
   dontDisableStatic = true;
 
@@ -57,22 +58,22 @@ stdenv.mkDerivation rec {
     ln -s ${postgresql}/bin/postgres $out/bin/postgres
   '';
 
-postInstall = ''
-  rm $out/bin/postgres
-  for prog in $out/bin/*; do # */
-    ln -s $prog $prog-${version}
-  done
-  # Add function definition and usage to tiger geocoder files
-  for file in $out/share/postgresql/extension/postgis_tiger_geocoder*--${version}.sql; do
-      sed -i "/SELECT postgis_extension_AddToSearchPath('tiger');/a SELECT postgis_extension_AddToSearchPath('extensions');" "$file"
-  done
-  # Original topology patching
-  for file in $out/share/postgresql/extension/postgis_topology*--${version}.sql; do
-    sed -i "/SELECT topology.AddToSearchPath('topology');/i SELECT topology.AddToSearchPath('extensions');" "$file"
-  done
-  mkdir -p $doc/share/doc/postgis
-  mv doc/* $doc/share/doc/postgis/
-'';
+  postInstall = ''
+    rm $out/bin/postgres
+    for prog in $out/bin/*; do # */
+      ln -s $prog $prog-${version}
+    done
+    # Add function definition and usage to tiger geocoder files
+    for file in $out/share/postgresql/extension/postgis_tiger_geocoder*--${version}.sql; do
+        sed -i "/SELECT postgis_extension_AddToSearchPath('tiger');/a SELECT postgis_extension_AddToSearchPath('extensions');" "$file"
+    done
+    # Original topology patching
+    for file in $out/share/postgresql/extension/postgis_topology*--${version}.sql; do
+      sed -i "/SELECT topology.AddToSearchPath('topology');/i SELECT topology.AddToSearchPath('extensions');" "$file"
+    done
+    mkdir -p $doc/share/doc/postgis
+    mv doc/* $doc/share/doc/postgis/
+  '';
 
   passthru.tests.postgis = nixosTests.postgis;
 
