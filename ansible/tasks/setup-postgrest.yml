@@ -36,7 +36,7 @@
 
 - name: PostgREST - remove Postgres PPA
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
     state: absent
 
 - name: postgis - ensure dependencies do not get autoremoved
