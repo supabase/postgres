@@ -540,11 +540,20 @@ def test_postgresql_version(host):
 
 
 def test_libpq5_version(host):
-    """Print the libpq5 version installed."""
+    """Print the libpq5 version installed and ensure it's >= 14."""
     # Try different package managers to find libpq5
     result = run_ssh_command(host['ssh'], "dpkg -l | grep libpq5 || true")
     if result['succeeded'] and result['stdout'].strip():
         print(f"\nlibpq5 package info:\n{result['stdout']}")
+        # Extract version from dpkg output (format: ii libpq5:arm64 17.5-1.pgdg20.04+1)
+        import re
+        version_match = re.search(r'libpq5[^ ]* +(\d+)\.', result['stdout'])
+        if version_match:
+            major_version = int(version_match.group(1))
+            print(f"libpq5 major version: {major_version}")
+            assert major_version >= 14, f"libpq5 version {major_version} is less than 14"
+        else:
+            print("Could not parse libpq5 version from dpkg output")
     else:
         print("\nlibpq5 not found via dpkg")
     
@@ -562,8 +571,21 @@ def test_libpq5_version(host):
     else:
         print("\nCould not find libpq dependency for psql")
     
-    # This test always passes, it's just for informational purposes
-    assert True
+    # Try to get version from libpq directly
+    result = run_ssh_command(host['ssh'], "psql --version 2>&1 | head -1")
+    if result['succeeded'] and result['stdout'].strip():
+        print(f"\npsql version output: {result['stdout'].strip()}")
+        # The psql version should match the libpq version
+        import re
+        version_match = re.search(r'psql \(PostgreSQL\) (\d+)\.', result['stdout'])
+        if version_match:
+            major_version = int(version_match.group(1))
+            print(f"psql/libpq major version: {major_version}")
+            assert major_version >= 14, f"psql/libpq version {major_version} is less than 14"
+        else:
+            print("Could not parse psql version")
+    
+    print("✓ libpq5 version is >= 14")
 
 
 def test_postgrest_read_only_session_attrs(host):
