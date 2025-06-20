@@ -1,4 +1,4 @@
-self:
+pkgs:
 let
   versions = {
     postgresql_15 = ./15.nix;
@@ -6,12 +6,13 @@ let
     postgresql_orioledb-17 = ./orioledb-17.nix;
   };
   mkAttributes = jitSupport:
-    self.lib.mapAttrs' (version: path:
+    pkgs.lib.mapAttrs' (version: path:
       let
         attrName = if jitSupport then "${version}_jit" else version;
       in
-      self.lib.nameValuePair attrName (import path {
-        inherit jitSupport self;
+      pkgs.lib.nameValuePair attrName (import path {
+        inherit jitSupport;
+        self = pkgs;
       })
     ) versions;
 in
