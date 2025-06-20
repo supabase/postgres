@@ -57,7 +57,7 @@ jobs:
         run: |
           cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
           #!/usr/bin/env bash
-          set -eouf
+          set -euf
           export IFS=' '
           /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
           EOF
@@ -80,7 +80,7 @@ jobs:
       - name: Build psql bundle
         run: >
           nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
-          -- --skip-cached --no-nom 
+          -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }}
           --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
