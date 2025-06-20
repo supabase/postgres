@@ -68,3 +68,5 @@ examples:
 - **A.1**: `nix profile install nixpkgs#ripgrep`
 - **A.2**: `nix profile install nixpkgs#bat`
 - **A.3**: And yes, you also have exa, fd, hyperfine, and more!
+
+Next you might want to setup a developer environment for this project by reading the [contributing guide](./contributing.md)!
