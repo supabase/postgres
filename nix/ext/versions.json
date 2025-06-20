@@ -1,14 +1,5 @@
 {
   "wrappers": {
-    "0.5.1": {
-      "postgresql": [
-        "15",
-        "17"
-      ],
-      "hash": "sha256-3GfN3vZMFWf4FV/fSOe9ZN6KETmjoNw3Paz+JRzaH3c=",
-      "pgrx": "0.12.9",
-      "rust": "1.87.0"
-    },
     "0.5.2": {
       "postgresql": [
         "15",
