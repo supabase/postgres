@@ -69,12 +69,20 @@ let
             enable = true;
             package = psql_15;
             enableTCPIP = true;
-            initialScript = pkgs.writeText "init-postgres-with-password" ''
-              CREATE USER test WITH PASSWORD 'secret';
-            '';
             authentication = ''
-              host test postgres samenet scram-sha-256
+              local all postgres peer map=postgres
+              local all all peer map=root
             '';
+            identMap = ''
+              root root supabase_admin
+              postgres postgres postgres
+            '';
+            ensureUsers = [
+              {
+                name = "supabase_admin";
+                ensureClauses.superuser = true;
+              }
+            ];
             settings = (installedExtension "15").defaultSettings or { };
           };
 
