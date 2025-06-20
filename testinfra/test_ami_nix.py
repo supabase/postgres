@@ -668,7 +668,7 @@ def test_postgrest_read_only_session_attrs(host):
         result = run_ssh_command(host['ssh'], "sudo systemctl is-active postgrest")
         if not (result['succeeded'] and result['stdout'].strip() == 'active'):
             # If PostgREST failed to start, check the logs to see why
-            log_result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '5 minutes ago' --no-pager")
+            log_result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '5 seconds ago' --no-pager")
             print(f"PostgREST failed to start. Recent logs:\n{log_result['stdout']}")
             assert False, "PostgREST failed to start after config change"
         
@@ -684,7 +684,7 @@ def test_postgrest_read_only_session_attrs(host):
             print(f"Test request failed: {str(e)}")
         
         # Check PostgREST logs for "session is not read-only" errors
-        result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '5 minutes ago' | grep -i 'session is not read-only' || true")
+        result = run_ssh_command(host['ssh'], "sudo journalctl -u postgrest --since '5 seconds ago' | grep -i 'session is not read-only' || true")
         
         if result['stdout'].strip():
             print(f"\nFound 'session is not read-only' errors in PostgREST logs:\n{result['stdout']}")
