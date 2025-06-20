@@ -1,0 +1,52 @@
+{
+  "vector": {
+    "0.4.0": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-bOckX7zvHhgJDDhoAm+VZVIeVIf2hG/3oWZWuTtnZPo="
+    },
+    "0.5.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-ZNzq+dATZn9LUgeOczsaadr5hwdbt9y/+sAOPIdr77U="
+    },
+    "0.6.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-hXm+k0BZ9xZP1Tnek14jPoKCPQkA5ovscu9IX2mW7Kc="
+    },
+    "0.6.2": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-r+TpFJg6WrMn0L2B7RpmSRvw3XxpHzMRtpFWDCzLvgs="
+    },
+    "0.7.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-vFn7sNphOYyig6Jl1HILMaC2t9strFQBQ8ywL8Ibx1M="
+    },
+    "0.7.4": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-qwPaguQUdDHV8q6GDneLq5MuhVroPizpbqt7f08gKJI="
+    },
+    "0.8.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-JsZV+I4eRMypXTjGmjCtMBXDVpqTIPHQa28ogXncE/Q="
+    }
+  }
+}

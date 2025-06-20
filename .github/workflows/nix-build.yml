@@ -57,7 +57,7 @@ jobs:
         run: |
           cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
           #!/usr/bin/env bash
-          set -eouf
+          set -euf
           export IFS=' '
           /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
           EOF
