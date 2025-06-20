@@ -38,12 +38,12 @@ class PostgresExtensionTest(object):
 
     def run_sql(self, query: str) -> str:
         return self.vm.succeed(
-            f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """
+            f"""psql -U supabase_admin -d postgres -t -A -F\",\" -c \"{query}\" """
         ).strip()
 
     def run_sql_file(self, file: str) -> str:
         return self.vm.succeed(
-            f"""sudo -u postgres psql -v ON_ERROR_STOP=1 -f \"{file}\""""
+            f"""psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f \"{file}\""""
         ).strip()
 
     def drop_extension(self):
