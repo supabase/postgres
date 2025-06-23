@@ -18,8 +18,8 @@ begin
     physical backups everywhere
 */
 -- Detach and delete the official function
-alter extension pgmq drop function pgmq.drop_queue;
-drop function pgmq.drop_queue;
+alter extension pgmq drop function pgmq.drop_queue(TEXT);
+drop function pgmq.drop_queue(TEXT);
 
 -- Create and reattach the patched function
 CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
@@ -134,7 +134,7 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-alter extension pgmq add function pgmq.drop_queue;
+alter extension pgmq add function pgmq.drop_queue(TEXT);
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
