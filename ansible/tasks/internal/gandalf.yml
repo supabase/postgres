@@ -57,7 +57,7 @@
     dest: /etc/sudoers.d/gandalf
     mode: "0644"
 
-- name: gandalf - create salt systemd timer file 
+- name: gandalf - create salt systemd timer file
   copy:
      src: files/gandalf_config/gandalf_salt.timer
      dest: /etc/systemd/system/gandalf_salt.timer
