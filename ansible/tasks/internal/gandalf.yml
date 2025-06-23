@@ -32,8 +32,10 @@
   unarchive:
     remote_src: yes
     src: /tmp/gandalf.tar.gz
-    dest: /opt
+    dest: /opt/gandalf/
     owner: gandalf
+    extra_opts:
+      - --strip-components=1
 
 - name: gandalf - create symlink
   ansible.builtin.file:
