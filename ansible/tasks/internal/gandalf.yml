@@ -62,13 +62,13 @@
     src: "/opt/gandalf/gandalf-linux-{{ arch }}"
     state: link
     owner: gandalf
-    mode: '0755'
+    mode: "0755"
     force: yes
 
 - name: gandalf - create salt systemd timer file
   copy:
-     src: files/gandalf_config/gandalf_salt.timer
-     dest: /etc/systemd/system/gandalf_salt.timer
+    src: files/gandalf_config/gandalf_salt.timer
+    dest: /etc/systemd/system/gandalf_salt.timer
 
 - name: gandalf - create salt service file
   copy:
