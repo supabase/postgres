@@ -1,7 +1,8 @@
 - name: gandalf - system user
   user:
     name: gandalf
-    groups: admin,gandalf,salt
+    group: gandalf
+    groups: admin,salt
     append: yes
     system: yes
     shell: /bin/sh
