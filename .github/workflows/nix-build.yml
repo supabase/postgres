@@ -9,9 +9,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  id-token: write    
-    
+  id-token: write
+  # required by testinfra-ami-build dependent workflows
+  contents: write
+  packages: write
+
 jobs:
   build-run-image:
     strategy:
@@ -37,21 +39,27 @@ jobs:
           aws-region: "us-east-1"
           output-credentials: true
           role-duration-seconds: 7200
+      - name: Setup AWS credentials for Nix
+        if: ${{ github.secret_source == 'Actions' }}
+        run: |
+          sudo -H aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          sudo -H aws configure set aws_session_token $AWS_SESSION_TOKEN
       - name: write secret key
         # use python so we don't interpolate the secret into the workflow logs, in case of bugs
         run: |
-          python -c "import os; file = open('nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
+          sudo mkdir -p /etc/nix
+          sudo -E python -c "import os; file = open('/etc/nix/nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
         env:
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Setup cache script
         if: ${{ github.secret_source == 'Actions' }}
         run: |
-          sudo mkdir -p /etc/nix
           cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
           #!/usr/bin/env bash
           set -eouf
           export IFS=' '
-          echo /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=nix-secret-key' \$OUT_PATHS
+          /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
           EOF
           sudo chmod +x /etc/nix/upload-to-cache.sh
       - name: Install nix
@@ -78,3 +86,13 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+  
+  run-testinfra:
+    needs: build-run-image
+    if: ${{ success() }}
+    uses: ./.github/workflows/testinfra-ami-build.yml
+    
+  run-tests:
+    needs: build-run-image
+    if: ${{ success() }}
+    uses: ./.github/workflows/test.yml

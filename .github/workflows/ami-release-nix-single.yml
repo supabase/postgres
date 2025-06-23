@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: arm-runner
+    runs-on: large-linux-arm
     timeout-minutes: 150
 
     steps:
@@ -27,6 +27,13 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
         with:
           ref: ${{ github.event.inputs.branch }}
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
 
       - name: Get current branch SHA
         id: get_sha
@@ -40,7 +47,7 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ env.POSTGRES_MAJOR_VERSION }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ env.POSTGRES_MAJOR_VERSION }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file

@@ -7,9 +7,10 @@
     nix2container.url = "github:nlewo/nix2container";
     nix-editor.url = "github:snowfallorg/nix-editor";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    nix-fast-build.url = "github:Mic92/nix-fast-build";
   };
 
-  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, nix2container, ... }:
+  outputs = { self, nixpkgs, flake-utils, nix-editor, rust-overlay, nix2container, ... }@inputs:
     let
       gitRev = "vcs=${self.shortRev or "dirty"}+${builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")}";
 
@@ -356,7 +357,6 @@
             {
               inherit (paths) migrationsDir postgresqlSchemaSql pgbouncerAuthSchemaSql statExtensionSql;
             } ''
-            set -x
             mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
 
             # Copy config files with error handling
@@ -1380,7 +1380,8 @@
           psql_15 = makeCheckHarness basePackages.psql_15.bin;
           psql_17 = makeCheckHarness basePackages.psql_17.bin;
           psql_orioledb-17 = makeCheckHarness basePackages.psql_orioledb-17.bin;
-          inherit (basePackages) wal-g-2 wal-g-3;
+          inherit (basePackages) wal-g-2 wal-g-3 dbmate-tool pg_regress;
+          devShell = devShells.default;
         } // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
           inherit (basePackages) postgresql_15_debug postgresql_15_src postgresql_orioledb-17_debug postgresql_orioledb-17_src postgresql_17_debug postgresql_17_src;
         };
@@ -1430,6 +1431,7 @@
                 export HISTFILE=.history
               '';
             };
+            nix-fast-build = inputs.nix-fast-build.packages.${system}.default;
           in
           {
             default = pkgs.mkShell {
@@ -1456,6 +1458,7 @@
                 dbmate
                 nushell
                 pythonEnv
+                nix-fast-build
               ];
               shellHook = ''
                 export HISTFILE=.history
