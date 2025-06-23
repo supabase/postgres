@@ -27,7 +27,7 @@
 
 - name: give gandalf user permissions
   copy:
-    src: files/gandalf.sudoers.conf
+    src: files/gandalf_config/gandalf.sudoers.conf
     dest: /etc/sudoers.d/gandalf
     mode: "0644"
 
