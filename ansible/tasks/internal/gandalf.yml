@@ -1,3 +1,8 @@
+- name: gandalf - system group
+  group:
+    name: gandalf
+    system: yes
+
 - name: gandalf - system user
   user:
     name: gandalf
