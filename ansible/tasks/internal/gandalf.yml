@@ -12,6 +12,25 @@
     system: yes
     shell: /bin/sh
 
+- name: gandalf - config dir
+  file:
+    path: /opt/gandalf
+    owner: gandalf
+    state: directory
+
+- name: gandalf - gpg dir
+  file:
+    path: /etc/salt/gpgkeys
+    owner: root
+    group: salt
+    state: directory
+
+- name: give gandalf user permissions
+  copy:
+    src: files/gandalf.sudoers.conf
+    dest: /etc/sudoers.d/gandalf
+    mode: "0644"
+
 - name: Setting arch (x86)
   set_fact:
     arch: "x86"
@@ -45,25 +64,6 @@
     owner: gandalf
     mode: '0755'
     force: yes
-
-- name: gandalf - config dir
-  file:
-    path: /opt/gandalf
-    owner: gandalf
-    state: directory
-
-- name: gandalf - gpg dir
-  file:
-    path: /etc/salt/gpgkeys
-    owner: root
-    group: salt
-    state: directory
-
-- name: give gandalf user permissions
-  copy:
-    src: files/gandalf.sudoers.conf
-    dest: /etc/sudoers.d/gandalf
-    mode: "0644"
 
 - name: gandalf - create salt systemd timer file
   copy:
