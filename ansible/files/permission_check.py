@@ -242,6 +242,7 @@ def main():
         "postgrest",
         "tcpdump",
         "systemd-coredump",
+        "gandalf",
     ]
     if not qemu_artifact:
         usernames.append("ec2-instance-connect")
