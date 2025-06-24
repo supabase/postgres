@@ -4,7 +4,12 @@ Description=Gotrue
 [Service]
 Type=simple
 WorkingDirectory=/opt/gotrue
+{% if qemu_mode is defined and qemu_mode %}
+ExecStart=/opt/gotrue/gotrue
+{% else %}
 ExecStart=/opt/gotrue/gotrue --config-dir /etc/auth.d
+{% endif %}
+
 User=gotrue
 Restart=always
 RestartSec=3
