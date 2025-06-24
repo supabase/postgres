@@ -88,12 +88,14 @@ let
     pushd "${buildAndTestSubdir}"
   '';
   maybeLeaveBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) "popd";
+  pgrxBinaryName = if builtins.compareVersions "0.7.4" cargo-pgrx.version >= 0 then "pgx" else "pgrx";
 
   pgrxPostgresMajor = lib.versions.major postgresql.version;
   preBuildAndTest = ''
     export PGRX_HOME=$(mktemp -d)
+    export PGX_HOME=$PGRX_HOME
     export PGDATA="$PGRX_HOME/data-${pgrxPostgresMajor}/"
-    cargo-pgrx pgrx init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
+    cargo-${pgrxBinaryName} ${pgrxBinaryName} init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
 
     # unix sockets work in sandbox, too.
     export PGHOST="$(mktemp -d)"
@@ -128,7 +130,6 @@ let
         cargo-pgrx
         postgresql
         pkg-config
-        rustPlatform.bindgenHook
       ]
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
@@ -139,9 +140,10 @@ let
       ${preBuildAndTest}
       ${maybeEnterBuildAndTestSubdir}
 
-      PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}" \
-      ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
-      cargo pgrx package \
+      export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
+      export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
+      ${lib.optionalString true ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
+      cargo ${pgrxBinaryName} package \
         --pg-config ${lib.getDev postgresql}/bin/pg_config \
         ${maybeDebugFlag} \
         --features "${builtins.concatStringsSep " " buildFeatures}" \
@@ -161,7 +163,7 @@ let
 
       ${maybeEnterBuildAndTestSubdir}
 
-      cargo-pgrx pgrx stop all
+      cargo-${pgrxBinaryName} ${pgrxBinaryName} stop all
 
       mv $out/${postgresql}/* $out
       mv $out/${postgresql.lib}/* $out
