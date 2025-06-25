@@ -77,6 +77,23 @@ jobs:
           extra-conf: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@main
+        if: ${{ github.secret_source == 'None' }} && matrix.runner == 'macos-latest-xlarge'
+        with:
+          extra-conf: |
+            max-jobs =1
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@main
+        if: ${{ github.secret_source == 'Actions' }} && matrix.runner == 'macos-latest-xlarge'
+        with:
+          extra-conf: |
+            max-jobs = 1
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            post-build-hook = /etc/nix/upload-to-cache.sh
       - name: Aggressive disk cleanup for DuckDB build
         if: matrix.runner == 'macos-latest-xlarge'
         run: |
