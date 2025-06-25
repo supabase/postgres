@@ -295,7 +295,6 @@
             dbmate-tool
             pg_regress
             ;
-          devShell = self'.devShells.default;
         }
         // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
           inherit (self'.packages)
@@ -312,6 +311,7 @@
             inherit self;
             inherit pkgs;
           };
+          devShell = self'.devShells.default;
         };
     };
 }
