@@ -3,9 +3,10 @@
     "0.5.3": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "orioledb-17"
       ],
-      "hash": "sha256-EmnSSYG4jWFCffYnGYz56vpHGsmPdlHx1zk6n1Qbb94=",
+      "hash": "sha256-iaJriPEa0iVLpmnuUk9R3HS545Jhz7aH1clYvHEuEvs=",
       "pgrx": "0.14.3",
       "rust": "1.87.0"
     }
