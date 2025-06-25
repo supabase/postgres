@@ -75,7 +75,7 @@
 
     - name: gandalf - pack archive
       shell: |
-        cd /tmp && tar -cJf gandalf-{{ gandalf_release }}-arm64.tar.xz gandalf
+        cd /tmp && tar -cJf gandalf-{{ gandalf_release }}-arm64.tar.xz gandalf-{{ gandalf_release }}-linux-arm64
 
     - name: upload archives
       shell: |
