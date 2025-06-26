@@ -122,7 +122,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
           assert installed_version == firstVersion, f"Expected ${pname} version {firstVersion}, but found {installed_version}"
           for version in versions[pg_version][1:]:
-            run_sql(f"""ALTER EXTENSION ${pname} UPDATE TO '{version}';""")
+            server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
+            run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{version}' CASCADE;""")
             installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
             assert installed_version == version, f"Expected ${pname} version {version}, but found {installed_version}"
 
