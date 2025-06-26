@@ -92,9 +92,9 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      // lib.optionalAttrs (version == "1.2.0") {
+      // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
         patches = [
-          ./0001-Add-missing-Cargo.lock-1.2.0.patch
+          ./0001-Add-missing-Cargo.lock-${version}.patch
         ];
 
         nativeBuildInputs =
@@ -115,9 +115,15 @@ let
           ];
 
         cargoLock = {
-          lockFile = ./Cargo-1.2.0.lock;
+          lockFile = ./Cargo-${version}.lock;
           outputHashes = {
-            "pgx-contrib-spiext-0.1.0" = "sha256-sUokKg8Jaf2/faXlHg1ui2pyJ05jdGxxgeJzhPOds9M=";
+            "pgx-contrib-spiext-0.1.0" =
+              if (version == "1.2.0") then
+                "sha256-sUokKg8Jaf2/faXlHg1ui2pyJ05jdGxxgeJzhPOds9M="
+              else if (version == "1.1.0") then
+                "sha256-1hAA8DnCYkKDRdIDXrJzo59+sCz4i+oI9CPN+Ti6jWA="
+              else
+                "";
           };
         };
       }
