@@ -101,7 +101,6 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           requires = [ "postgresql-migrate.service" ];
         };
       };
-
     };
   testScript =
     { nodes, ... }:

@@ -53,6 +53,10 @@
   buildFeatures ? [ ],
   cargoBuildFlags ? [ ],
   postgresql,
+  # enable override to generate bindings using bindgenHook.
+  # Some older versions of cargo-pgrx use a bindgenHook that is not compatible with the
+  # current clang version present in stdenv
+  bindgenHook ? rustPlatform.bindgenHook,
   # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
   # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
   # if you include the generated code in the output via postInstall.
@@ -129,6 +133,7 @@ let
         cargo-pgrx
         postgresql
         pkg-config
+        bindgenHook
       ]
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 

@@ -20,11 +20,8 @@ let
       hash,
       cargoHash,
     }:
-    let 
-      pname =  if builtins.compareVersions "0.7.4" version >= 0 then
-        "cargo-pgx"
-      else
-        "cargo-pgrx";
+    let
+      pname = if builtins.compareVersions "0.7.4" version >= 0 then "cargo-pgx" else "cargo-pgrx";
     in
     rustPlatform.buildRustPackage rec {
       # rust-overlay uses 'cargo-auditable' wrapper for 'cargo' command, but it
@@ -36,16 +33,10 @@ let
       inherit version;
       src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
-      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-        pkg-config
-      ];
+      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
       buildInputs =
-        lib.optionals stdenv.hostPlatform.isLinux [
-          openssl
-        ]
-        ++ lib.optionals stdenv.hostPlatform.isDarwin [
-          darwin.apple_sdk.frameworks.Security
-        ];
+        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
+        ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
 
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";

@@ -6,14 +6,7 @@
   rust-bin,
 }:
 let
-  inherit
-    (
-      (callPackage ./default.nix {
-        inherit rustVersion;
-      })
-    )
-    mkCargoPgrx
-    ;
+  inherit ((callPackage ./default.nix { inherit rustVersion; })) mkCargoPgrx;
 
   rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
