@@ -15,7 +15,7 @@
       ourExtensions = [
         ../ext/rum.nix
         ../ext/timescaledb.nix
-        ../ext/pgroonga.nix
+        ../ext/pgroonga
         ../ext/index_advisor.nix
         ../ext/wal2json.nix
         ../ext/pgmq
