@@ -283,4 +283,4 @@ drop table if exists actors;
 drop table if exists performances;
 drop table if exists movies;
 drop table if exists categories;
-drop schema if exists private; 
+drop schema if exists private;
