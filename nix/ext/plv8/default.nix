@@ -53,6 +53,9 @@ let
         # Allow building with system v8.
         # https://github.com/plv8/plv8/pull/505 (rejected)
         ./0001-build-Allow-using-V8-from-system-${version}.patch
+      ] ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
+        # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
+        ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
       ];
 
       nativeBuildInputs =
@@ -108,11 +111,6 @@ let
         "-undefined"
         "dynamic_lookup"
         "-flat_namespace"
-      ];
-
-      installFlags = [
-        # PGXS only supports installing to postgresql prefix so we need to redirect this
-        #"DESTDIR=${placeholder "out"}"
       ];
 
       # No configure script.
