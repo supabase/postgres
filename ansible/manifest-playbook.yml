@@ -61,22 +61,6 @@
       shell: |
         cd /tmp && tar -cJf admin-mgr-{{ adminmgr_release }}-arm64.tar.xz admin-mgr
 
-    - name: Download gandalf archive
-      get_url:
-        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/gandalf/v{{ gandalf_release }}/gandalf_{{ gandalf_release }}_linux_arm64.tar.gz"
-        dest: "/tmp/gandalf.tar.gz"
-        timeout: 90
-
-    - name: gandalf - unpack archive in /tmp
-      unarchive:
-        remote_src: yes
-        src: /tmp/gandalf.tar.gz
-        dest: /tmp
-
-    - name: gandalf - pack archive
-      shell: |
-        cd /tmp && tar -cJf gandalf-{{ gandalf_release }}-arm64.tar.xz gandalf
-
     - name: upload archives
       shell: |
         aws s3 cp /tmp/{{ item.file }} s3://{{ internal_artifacts_bucket }}/upgrades/{{ item.service }}/{{ item.file }}
@@ -89,5 +73,3 @@
           file: supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz
         - service: admin-mgr
           file: admin-mgr-{{ adminmgr_release }}-arm64.tar.xz
-        - service: gandalf
-          file: gandalf-{{ gandalf_release }}-arm64.tar.xz

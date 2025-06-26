@@ -94,16 +94,10 @@ expected_results = {
     "systemd-coredump": [
         {"groupname": "systemd-coredump", "username": "systemd-coredump"}
     ],
-    "gandalf": [
-        {"groupname": "gandalf", "username": "gandalf"},
-        {"groupname": "admin", "username": "gandalf"},
-        {"groupname": "salt", "username": "gandalf"},
-    ],
 }
 
 # postgresql.service is expected to mount /etc as read-only
 expected_mount = "/etc ro"
-
 
 # This program depends on osquery being installed on the system
 # Function to run osquery
@@ -160,7 +154,6 @@ def check_nixbld_users():
 
     print("All nixbld users are in the 'nixbld' group.")
 
-
 def check_postgresql_mount():
     # processes table has the nix .postgres-wrapped path as the
     # binary path, rather than /usr/lib/postgresql/bin/postgres which
@@ -188,7 +181,6 @@ def check_postgresql_mount():
             sys.exit(1)
 
     print("postgresql.service mounts /etc as read-only.")
-
 
 def main():
     parser = argparse.ArgumentParser(
@@ -242,7 +234,6 @@ def main():
         "postgrest",
         "tcpdump",
         "systemd-coredump",
-        "gandalf",
     ]
     if not qemu_artifact:
         usernames.append("ec2-instance-connect")
@@ -259,7 +250,6 @@ def main():
 
     # Check if postgresql.service is using a read-only mount for /etc
     check_postgresql_mount()
-
 
 if __name__ == "__main__":
     main()
