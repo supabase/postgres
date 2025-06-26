@@ -92,12 +92,9 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
-        patches = [
-          ./0001-Add-missing-Cargo.lock-${version}.patch
-        ];
-
-        nativeBuildInputs =
+      // lib.optionalAttrs (builtins.compareVersions "1.4.4" version >= 0) {
+        # Fix bindgen error on aarch64-linux by using an older version of clang
+        bindgenHook =
           let
             nixos2211 = (
               import (builtins.fetchTarball {
@@ -106,13 +103,16 @@ let
               }) { inherit system; }
             );
           in
-          [
-            cargo
-            (rustPlatform.bindgenHook.overrideAttrs {
-              libclang = nixos2211.clang.cc.lib;
-              clang = nixos2211.clang;
-            })
-          ];
+          rustPlatform.bindgenHook.overrideAttrs {
+            libclang = nixos2211.clang.cc.lib;
+            clang = nixos2211.clang;
+          };
+      }
+      // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
+        # Add missing Cargo.lock
+        patches = [
+          ./0001-Add-missing-Cargo.lock-${version}.patch
+        ];
 
         cargoLock = {
           lockFile = ./Cargo-${version}.lock;
@@ -120,10 +120,8 @@ let
             "pgx-contrib-spiext-0.1.0" =
               if (version == "1.2.0") then
                 "sha256-sUokKg8Jaf2/faXlHg1ui2pyJ05jdGxxgeJzhPOds9M="
-              else if (version == "1.1.0") then
-                "sha256-1hAA8DnCYkKDRdIDXrJzo59+sCz4i+oI9CPN+Ti6jWA="
               else
-                "";
+                "sha256-1hAA8DnCYkKDRdIDXrJzo59+sCz4i+oI9CPN+Ti6jWA=";
           };
         };
       }
