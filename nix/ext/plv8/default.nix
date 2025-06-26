@@ -131,6 +131,7 @@ let
 
       installPhase = ''
         runHook preInstall
+        set -eo pipefail
 
         mkdir -p $out/{lib,share/postgresql/extension}
 
@@ -162,22 +163,29 @@ let
           ''}
         fi
 
-
         # plv8 3.2.x removed support for coffeejs and livescript
-        if (builtins.compareVersions "3.1.10" version >= 0) then
-        EXTENSIONS="plv8 plcoffee plls"
-        else
-        EXTENSIONS="plv8"
-        fi
-
-        for ext in $EXTENSIONS; do
+        EXTENSIONS=(${if (builtins.compareVersions "3.1.10" version >= 0) then "plv8 plcoffee plls" else "plv8"})
+        for ext in "''${EXTENSIONS[@]}" ; do
           cp $ext--${version}.sql $out/share/postgresql/extension
           install -Dm644 $ext.control $out/share/postgresql/extension/$ext--${version}.control
           # Create versioned control file with modified module path
           sed -e "/^default_version =/d" \
-              -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
-            ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+              -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+            $ext.control > $out/share/postgresql/extension/$ext--${version}.control
         done
+
+        # For the latest 3.1.x version, also create the default control file
+        # for coffeejs and livescript extensions
+        if [[ ${version} == "3.1.10" ]]; then
+          for ext in "''${EXTENSIONS[@]}" ; do
+            if [[ "$ext" != "plv8" ]]; then
+              {
+                echo "default_version = '${version}'"
+                cat $out/share/postgresql/extension/$ext--${version}.control
+              } > $out/share/postgresql/extension/$ext.control
+            fi
+          done
+        fi
 
         # For the latest version, create default control file and symlink
         if [[ "${version}" == "${latestVersion}" ]]; then
