@@ -131,7 +131,7 @@ let
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
           }
           extension_name = "${pname}"
-          support_upgrade = True
+          support_upgrade = False
           pg17_configuration = "${pg17-configuration}"
           ext_has_background_worker = ${
             if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
