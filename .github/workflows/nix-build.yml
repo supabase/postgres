@@ -79,19 +79,19 @@ jobs:
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Build psql bundle
         run: >
-            nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
-            -- --skip-cached --no-nom 
-            --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
+          nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
+          -- --skip-cached --no-nom 
+          --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-  
+
   run-testinfra:
     needs: build-run-image
     if: ${{ success() }}
     uses: ./.github/workflows/testinfra-ami-build.yml
-    
+
   run-tests:
     needs: build-run-image
     if: ${{ success() }}
