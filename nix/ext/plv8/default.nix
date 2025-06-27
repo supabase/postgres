@@ -50,49 +50,47 @@ let
         inherit hash;
       };
 
-      patches =
-        [
-          # Allow building with system v8.
-          # https://github.com/plv8/plv8/pull/505 (rejected)
-          ./0001-build-Allow-using-V8-from-system-${version}.patch
-        ]
-        ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
-          # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
-          ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
-        ];
+      patches = [
+        # Allow building with system v8.
+        # https://github.com/plv8/plv8/pull/505 (rejected)
+        ./0001-build-Allow-using-V8-from-system-${version}.patch
+      ]
+      ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
+        # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
+        ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
+      ];
 
-      nativeBuildInputs =
-        [ perl ]
-        ++ lib.optionals stdenv.isDarwin [
-          clang
-          xcbuild
-        ];
+      nativeBuildInputs = [
+        perl
+      ]
+      ++ lib.optionals stdenv.isDarwin [
+        clang
+        xcbuild
+      ];
 
-      buildInputs =
-        [
-          (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8)
-          postgresql
-        ]
-        ++ lib.optionals stdenv.isDarwin [
-          darwin.apple_sdk.frameworks.CoreFoundation
-          darwin.apple_sdk.frameworks.Kerberos
-        ];
+      buildInputs = [
+        (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8)
+        postgresql
+      ]
+      ++ lib.optionals stdenv.isDarwin [
+        darwin.apple_sdk.frameworks.CoreFoundation
+        darwin.apple_sdk.frameworks.Kerberos
+      ];
 
       buildFlags = [ "all" ];
 
-      makeFlags =
-        [
-          # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
-          "USE_SYSTEM_V8=1"
-          "V8_OUTDIR=${v8}/lib"
-          "PG_CONFIG=${postgresql}/bin/pg_config"
-        ]
-        ++ lib.optionals stdenv.isDarwin [
-          "CC=${clang}/bin/clang"
-          "CXX=${clang}/bin/clang++"
-          "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-        ]
-        ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
+      makeFlags = [
+        # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
+        "USE_SYSTEM_V8=1"
+        "V8_OUTDIR=${v8}/lib"
+        "PG_CONFIG=${postgresql}/bin/pg_config"
+      ]
+      ++ lib.optionals stdenv.isDarwin [
+        "CC=${clang}/bin/clang"
+        "CXX=${clang}/bin/clang++"
+        "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+      ]
+      ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
       NIX_LDFLAGS = lib.optionals stdenv.isDarwin [
         "-L${postgresql}/lib"
@@ -144,11 +142,9 @@ let
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
-          ${
-            lib.optionalString (!stdenv.isDarwin) ''
-              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
-            ''
-          }
+          ${lib.optionalString (!stdenv.isDarwin) ''
+            ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
+          ''}
         else
           ${lib.optionalString stdenv.isDarwin ''
             install_name_tool -add_rpath "${v8}/lib" $out/lib/$LIB_NAME
@@ -157,11 +153,9 @@ let
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
-          ${
-            lib.optionalString (!stdenv.isDarwin) ''
-              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
-            ''
-          }
+          ${lib.optionalString (!stdenv.isDarwin) ''
+            ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
+          ''}
         fi
 
         # plv8 3.2.x removed support for coffeejs and livescript
