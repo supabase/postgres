@@ -27,6 +27,7 @@
         nix/ext
         nix/nixpkgs.nix
         nix/packages
+        nix/overlays
       ];
     });
 }
