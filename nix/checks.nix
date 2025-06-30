@@ -1,4 +1,4 @@
-{ ... }:
+{ self, ... }:
 {
   perSystem =
     {
@@ -9,13 +9,13 @@
       ...
     }:
     let
-      pgsqlDefaultHost = "localhost";
       pkgs-lib = pkgs.callPackage ./packages/lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         inherit (self'.packages) supabase_groonga;
         pgroonga = self'.packages."psql_15/exts/pgroonga";
+        inherit (self.supabase) defaults;
       };
     in
     {
@@ -209,7 +209,7 @@
                 exit 1
                 }
                 for i in {1..60}; do
-                  if pg_isready -h ${pgsqlDefaultHost} -p ${pgPort}; then
+                  if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort}; then
                     echo "PostgreSQL is ready"
                     break
                   fi
@@ -223,8 +223,8 @@
                     exit 1
                   fi
                 done
-                createdb -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin testing
-                if ! psql -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                createdb -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin testing
+                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
                   echo "Error executing SQL file. PostgreSQL log content:"
                   cat "$PGTAP_CLUSTER"/postgresql.log
                   pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -232,7 +232,7 @@
                 fi
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-                  psql -p ${pgPort} -h ${pgsqlDefaultHost} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
+                  psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
                 done
                 rm -rf "$SORTED_DIR"
                 pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -247,7 +247,7 @@
                 ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
 
                 for i in {1..60}; do
-                    if pg_isready -h ${pgsqlDefaultHost} -p ${pgPort} -U supabase_admin -q; then
+                    if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort} -U supabase_admin -q; then
                         echo "PostgreSQL is ready"
                         break
                     fi
@@ -258,7 +258,7 @@
                     fi
                 done
 
-                if ! psql -p ${pgPort} -h ${pgsqlDefaultHost} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
                   echo "Error executing SQL file"
                   exit 1
                 fi
@@ -269,7 +269,7 @@
                   --dbname=postgres \
                   --inputdir=${./tests} \
                   --outputdir=$out/regression_output \
-                  --host=${pgsqlDefaultHost} \
+                  --host=${self.supabase.defaults.host} \
                   --port=${pgPort} \
                   --user=supabase_admin \
                   ${builtins.concatStringsSep " " sortedTestList}; then
@@ -279,7 +279,7 @@
                 fi
 
                 echo "Running migrations tests"
-                pg_prove -p ${pgPort} -U supabase_admin -h ${pgsqlDefaultHost} -d postgres -v ${../migrations/tests}/test.sql
+                pg_prove -p ${pgPort} -U supabase_admin -h ${self.supabase.defaults.host} -d postgres -v ${../migrations/tests}/test.sql
 
                 # Copy logs to output
                 for logfile in $(find /tmp -name postgresql.log -type f); do

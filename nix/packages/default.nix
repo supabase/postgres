@@ -1,4 +1,4 @@
-{ ... }:
+{ self, ... }:
 {
   imports = [
     ./postgres.nix
@@ -29,7 +29,7 @@
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         pgroonga = self'.packages."psql_15/exts/pgroonga";
-        inherit (self'.packages) supabase_groonga;
+        inherit (self.supabase) defaults;
       };
     in
     {
@@ -37,8 +37,8 @@
         {
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
-          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { };
-          supabase_groonga = pkgs.callPackage ../supabase-groonga.nix { };
+          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          supabase-groonga = pkgs.callPackage ./groonga { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
@@ -59,6 +59,7 @@
             psql_15 = self'.packages."psql_15/bin";
             psql_17 = self'.packages."psql_17/bin";
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+            inherit (self.supabase) defaults;
           };
           start-replica = pkgs.callPackage ./start-replica.nix {
             psql_15 = self'.packages."psql_15/bin";
@@ -83,15 +84,16 @@
         }
         // lib.filterAttrs (n: v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
           pkgs.callPackage ../postgresql/default.nix {
-            inherit (pkgs)
-              lib
-              stdenv
-              fetchurl
-              makeWrapper
-              callPackage
-              buildEnv
-              newScope
-              ;
+            inherit (self.supabase) supportedPostgresVersions;
+            # inherit (pkgs)
+            #   lib
+            #   stdenv
+            #   fetchurl
+            #   makeWrapper
+            #   callPackage
+            #   buildEnv
+            #   newScope
+            #   ;
           }
           // lib.optionalAttrs (pkgs.stdenv.isLinux) {
             postgresql_15_debug = self'.packages.postgresql_15.debug;

@@ -1,20 +1,40 @@
-pkgs:
+{ pkgs, supportedPostgresVersions }:
 let
-  versions = {
-    postgresql_15 = ./15.nix;
-    postgresql_17 = ./17.nix;
-    postgresql_orioledb-17 = ./orioledb-17.nix;
-  };
-  mkAttributes = jitSupport:
-    pkgs.lib.mapAttrs' (version: path:
-      let
-        attrName = if jitSupport then "${version}_jit" else version;
+  # Creates Postgres packages for a specific flavor (standard or orioledb)
+  mkPostgresqlPackages =
+    {
+      namePrefix,
+      jitSupport,
+      supportedVersions,
+    }:
+    pkgs.lib.mapAttrs' (
+      version: config:
+      let versionSuffix = if jitSupport then "${version}_jit" else version;
       in
-      pkgs.lib.nameValuePair attrName (import path {
+      pkgs.lib.nameValuePair "${namePrefix}${versionSuffix}" (
+        pkgs.callPackage ./generic.nix {
+          inherit (config) version hash;
+          jitSupport = jitSupport;
+          self = pkgs;
+        }
+      )
+    ) supportedVersions;
+
+  # Define Postgres flavors with their configuration
+  postgresFlavors = [
+    { namePrefix = "postgresql_"; versions = supportedPostgresVersions.postgres; }
+    { namePrefix = "postgresql_orioledb-"; versions = supportedPostgresVersions.orioledb; }
+  ];
+
+  # Generate packages for all flavors with both JIT enabled and disabled
+  mkAllPackages = flavors: jitSupport:
+    pkgs.lib.foldl' (acc: flavor:
+      acc // (mkPostgresqlPackages {
+        inherit (flavor) namePrefix;
         inherit jitSupport;
-        self = pkgs;
+        supportedVersions = flavor.versions;
       })
-    ) versions;
+    ) {} flavors;
 in
-# variations without and with JIT
-(mkAttributes false) // (mkAttributes true)
+# Combine packages with JIT disabled and enabled
+(mkAllPackages postgresFlavors false) // (mkAllPackages postgresFlavors true)

@@ -313,8 +313,9 @@ let
   };
 
 in
+  generic
 # passed by <major>.nix
-versionArgs:
-# passed by default.nix
-{ self, ... } @defaultArgs:
-self.callPackage generic (defaultArgs // versionArgs)
+# versionArgs:
+# # passed by default.nix
+# { self, ... } @defaultArgs:
+# self.callPackage generic (defaultArgs // versionArgs)

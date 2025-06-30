@@ -2,9 +2,10 @@
   psql_17,
   psql_15,
   psql_orioledb-17,
-  pgsqlDefaultPort ? "5435",
-  pgsqlDefaultHost ? "localhost",
-  pgsqlSuperuser ? "supabase_admin",
+  defaults,
+  # pgsqlDefaultPort ? "5435",
+  # pgsqlDefaultHost ? "localhost",
+  # pgsqlSuperuser ? "supabase_admin",
   supabase_groonga,
   system,
   pgroonga,
@@ -76,8 +77,8 @@
 
       substitutions = {
         SHELL_PATH = "${pkgs.bash}/bin/bash";
-        PGSQL_DEFAULT_PORT = "${pgsqlDefaultPort}";
-        PGSQL_SUPERUSER = "${pgsqlSuperuser}";
+        PGSQL_DEFAULT_PORT = "${defaults.port}";
+        PGSQL_SUPERUSER = "${defaults.superuser}";
         PSQL15_BINDIR = "${psql_15}";
         PSQL17_BINDIR = "${psql_17}";
         PSQL_CONF_FILE = "${paths.pgconfigFile}";

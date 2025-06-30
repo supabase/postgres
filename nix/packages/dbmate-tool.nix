@@ -1,4 +1,4 @@
-{ pkgs, system }:
+{ pkgs, system, defaults }:
 let
   migrationsDir = ../../migrations/db;
   ansibleVars = ../../ansible/vars.yml;
@@ -24,9 +24,9 @@ pkgs.runCommand "dbmate-tool"
     mkdir -p $out/bin $out/migrations
     cp -r ${migrationsDir}/* $out
     substitute ${../tools/dbmate-tool.sh.in} $out/bin/dbmate-tool \
-      --subst-var-by 'PGSQL_DEFAULT_PORT' '${pgsqlDefaultPort}' \
+      --subst-var-by 'PGSQL_DEFAULT_PORT' '${defaults.port}' \
       --subst-var-by 'MIGRATIONS_DIR' $out \
-      --subst-var-by 'PGSQL_SUPERUSER' '${pgsqlSuperuser}' \
+      --subst-var-by 'PGSQL_SUPERUSER' '${defaults.superuser}' \
       --subst-var-by 'ANSIBLE_VARS' ${ansibleVars} \
       --subst-var-by 'CURRENT_SYSTEM' '${system}' \
       --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \

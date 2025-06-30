@@ -23,6 +23,7 @@
       imports = [
         nix/apps.nix
         nix/checks.nix
+        nix/config.nix
         nix/devShells.nix
         nix/ext
         nix/nixpkgs.nix
