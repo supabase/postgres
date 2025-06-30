@@ -382,6 +382,23 @@
       "hash": "sha256-j5F1PPdwfQRbV8XJ8Mloi8FvZF0MTl4eyIJcBYQy1E4="
     }
   },
+  "plpgsql_check": {
+    "2.2": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-8HFyIzJ1iF3K2vTlibFallvkMKjFTJ2DO64fORToD8E=",
+      "revision": "2.2.6"
+    },
+    "2.7": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-vR3MvfmUP2QEAtXFpq0NCCKck3wZPD+H3QleHtyVQJs=",
+      "revision": "2.7.11"
+    }
+  },
   "postgis": {
     "3.3.2": {
       "postgresql": [
