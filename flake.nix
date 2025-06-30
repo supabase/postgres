@@ -9,6 +9,8 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-fast-build.url = "github:Mic92/nix-fast-build";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -26,6 +28,7 @@
         nix/config.nix
         nix/devShells.nix
         nix/ext
+        nix/fmt.nix
         nix/nixpkgs.nix
         nix/packages
         nix/overlays
