@@ -11,6 +11,8 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+    git-hooks.url = "github:cachix/git-hooks.nix";
+    git-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -29,6 +31,7 @@
         nix/devShells.nix
         nix/ext
         nix/fmt.nix
+        nix/hooks.nix
         nix/nixpkgs.nix
         nix/packages
         nix/overlays

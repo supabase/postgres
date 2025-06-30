@@ -4,6 +4,7 @@
     {
       pkgs,
       self',
+      config,
       ...
     }:
     let
@@ -60,6 +61,7 @@
           ];
           shellHook = ''
             export HISTFILE=.history
+            ${config.pre-commit.installationScript}
           '';
         };
         cargo-pgrx_0_11_3 = mkCargoPgrxDevShell {
