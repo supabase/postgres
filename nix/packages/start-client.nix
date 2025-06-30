@@ -3,7 +3,7 @@
   psql_15,
   psql_17,
   psql_orioledb-17,
-  defaults
+  defaults,
 }:
 let
   migrationsDir = ../../migrations/db;

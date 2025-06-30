@@ -1,13 +1,7 @@
 { ... }:
 {
   perSystem =
-    {
-      inputs',
-      config,
-      lib,
-      pkgs,
-      ...
-    }:
+    { pkgs, ... }:
     {
       packages = {
         sfcgal = pkgs.callPackage ./sfcgal/sfcgal.nix { };

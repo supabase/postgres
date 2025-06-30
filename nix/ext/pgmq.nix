@@ -1,13 +1,18 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pgmq";
   version = "1.4.4";
   buildInputs = [ postgresql ];
   src = fetchFromGitHub {
-    owner  = "tembo-io";
-    repo   = pname;
-    rev    = "v${version}";
+    owner = "tembo-io";
+    repo = pname;
+    rev = "v${version}";
     hash = "sha256-z+8/BqIlHwlMnuIzMz6eylmYbSmhtsNt7TJf/CxbdVw=";
   };
 
@@ -25,9 +30,9 @@ stdenv.mkDerivation rec {
 
   meta = with lib; {
     description = "A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.";
-    homepage    = "https://github.com/tembo-io/pgmq";
+    homepage = "https://github.com/tembo-io/pgmq";
     maintainers = with maintainers; [ olirice ];
-    platforms   = postgresql.meta.platforms;
-    license     = licenses.postgresql;
+    platforms = postgresql.meta.platforms;
+    license = licenses.postgresql;
   };
 }

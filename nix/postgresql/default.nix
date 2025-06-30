@@ -13,7 +13,8 @@ let
     }:
     pkgs.lib.mapAttrs' (
       version: config:
-      let versionSuffix = if jitSupport then "${version}_jit" else version;
+      let
+        versionSuffix = if jitSupport then "${version}_jit" else version;
       in
       pkgs.lib.nameValuePair "${namePrefix}${versionSuffix}" (
         pkgs.callPackage ./generic.nix {
@@ -58,15 +59,14 @@ let
       // (pkgs.lib.mapAttrs' (
         version: _:
         pkgs.lib.nameValuePair "${flavor.namePrefix}${version}_src" (
-          pkgs.callPackage ./src.nix {
-            postgresql = self'.packages."${flavor.namePrefix}${version}";
-          }
+          pkgs.callPackage ./src.nix { postgresql = self'.packages."${flavor.namePrefix}${version}"; }
         )
       ) flavor.versions)
     ) { } flavors;
 
   # Generate debug packages dynamically from supported versions (Linux only)
-  mkDebugPackages = flavors:
+  mkDebugPackages =
+    flavors:
     pkgs.lib.foldl' (
       acc: flavor:
       acc
@@ -77,7 +77,6 @@ let
         )
       ) flavor.versions)
     ) { } flavors;
-
 in
 # Combine all PostgreSQL packages: runtime packages + source packages + debug packages
 (mkAllPackages postgresFlavors false)

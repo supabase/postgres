@@ -1,4 +1,8 @@
-{ runCommand, makeWrapper, nushell }:
+{
+  runCommand,
+  makeWrapper,
+  nushell,
+}:
 runCommand "update-readme"
   {
     nativeBuildInputs = [ makeWrapper ];

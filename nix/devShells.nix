@@ -2,9 +2,6 @@
 {
   perSystem =
     {
-      inputs',
-      config,
-      lib,
       pkgs,
       self',
       ...
@@ -27,9 +24,7 @@
         pkgs.mkShell {
           packages = with pkgs; [
             self'.packages."cargo-pgrx_${pgrxVersion}"
-            (rust-bin.stable.${rustVersion}.default.override {
-              extensions = [ "rust-src" ];
-            })
+            (rust-bin.stable.${rustVersion}.default.override { extensions = [ "rust-src" ]; })
           ];
           shellHook = ''
             export HISTFILE=.history
@@ -47,7 +42,7 @@
             shellcheck
             ansible
             ansible-lint
-            (packer.overrideAttrs (oldAttrs: {
+            (packer.overrideAttrs (_oldAttrs: {
               version = "1.7.8";
             }))
 

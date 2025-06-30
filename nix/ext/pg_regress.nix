@@ -1,6 +1,7 @@
-{ lib
-, stdenv
-, postgresql
+{
+  lib,
+  stdenv,
+  postgresql,
 }:
 
 stdenv.mkDerivation {

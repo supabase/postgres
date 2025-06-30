@@ -1,11 +1,12 @@
-{ lib
-, darwin
-, fetchCrate
-, openssl
-, pkg-config
-, makeRustPlatform
-, stdenv
-, rust-bin
+{
+  lib,
+  darwin,
+  fetchCrate,
+  openssl,
+  pkg-config,
+  makeRustPlatform,
+  stdenv,
+  rust-bin,
 }:
 let
   rustVersion = "1.85.1";
@@ -14,9 +15,10 @@ let
     rustc = rust-bin.stable.${rustVersion}.default;
   };
   generic =
-    { version
-    , hash
-    , cargoHash
+    {
+      version,
+      hash,
+      cargoHash,
     }:
     rustPlatform.buildRustPackage rec {
       # rust-overlay uses 'cargo-auditable' wrapper for 'cargo' command, but it
@@ -26,19 +28,13 @@ let
       auditable = false;
       pname = "cargo-pgrx";
       inherit version;
-      src = fetchCrate {
-        inherit version pname hash;
-      };
+      src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
-      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-        pkg-config
-      ];
-      buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-        openssl
-      ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
-        darwin.apple_sdk.frameworks.Security
-      ];
-      
+      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
+      buildInputs =
+        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
+        ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
       OPENSSL_LIB_DIR = "${openssl.out}/lib";

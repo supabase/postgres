@@ -1,4 +1,8 @@
-{ pkgs, system, defaults }:
+{
+  pkgs,
+  system,
+  defaults,
+}:
 let
   migrationsDir = ../../migrations/db;
   ansibleVars = ../../ansible/vars.yml;
@@ -14,9 +18,7 @@ pkgs.runCommand "dbmate-tool"
       jq
       yq
     ];
-    nativeBuildInputs = with pkgs; [
-      makeWrapper
-    ];
+    nativeBuildInputs = with pkgs; [ makeWrapper ];
   }
   ''
     mkdir -p $out/bin $out/migrations

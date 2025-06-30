@@ -3,7 +3,6 @@
   jq,
   yq,
   nix-editor,
-  system,
   nixVersions,
 }:
 runCommand "sync-exts-versions" { } ''

@@ -1,4 +1,12 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, perl, perlPackages, which }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+  perl,
+  perlPackages,
+  which,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pgtap";
@@ -11,7 +19,12 @@ stdenv.mkDerivation rec {
     hash = "sha256-lb0PRffwo6J5a6Hqw1ggvn0cW7gPZ02OEcLPi9ineI8=";
   };
 
-  nativeBuildInputs = [ postgresql perl perlPackages.TAPParserSourceHandlerpgTAP which ];
+  nativeBuildInputs = [
+    postgresql
+    perl
+    perlPackages.TAPParserSourceHandlerpgTAP
+    which
+  ];
 
   installPhase = ''
     install -D {sql/pgtap--${version}.sql,pgtap.control} -t $out/share/postgresql/extension

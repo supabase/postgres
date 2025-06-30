@@ -18,19 +18,13 @@ let
   };
   postgresqlVersion = lib.types.submodule {
     options = {
-      version = lib.mkOption {
-        type = lib.types.str;
-      };
-      hash = lib.mkOption {
-        type = lib.types.str;
-      };
+      version = lib.mkOption { type = lib.types.str; };
+      hash = lib.mkOption { type = lib.types.str; };
     };
   };
   supabaseSubmodule = lib.types.submodule {
     options = {
-      defaults = lib.mkOption {
-        type = postgresqlDefaults;
-      };
+      defaults = lib.mkOption { type = postgresqlDefaults; };
       supportedPostgresVersions = lib.mkOption {
         type = lib.types.attrsOf (lib.types.attrsOf postgresqlVersion);
         default = { };
@@ -41,12 +35,10 @@ in
 {
   flake = {
     options = {
-      supabase = lib.mkOption {
-        type = supabaseSubmodule;
-      };
+      supabase = lib.mkOption { type = supabaseSubmodule; };
     };
     config.supabase = {
-      defaults = {};
+      defaults = { };
       supportedPostgresVersions = {
         postgres = {
           "15" = {

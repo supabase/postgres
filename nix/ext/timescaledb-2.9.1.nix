@@ -1,11 +1,23 @@
-{ lib, stdenv, fetchFromGitHub, cmake, postgresql, openssl, libkrb5 }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  postgresql,
+  openssl,
+  libkrb5,
+}:
 
 stdenv.mkDerivation rec {
   pname = "timescaledb-apache";
   version = "2.9.1";
 
   nativeBuildInputs = [ cmake ];
-  buildInputs = [ postgresql openssl libkrb5 ];
+  buildInputs = [
+    postgresql
+    openssl
+    libkrb5
+  ];
 
   src = fetchFromGitHub {
     owner = "timescale";
@@ -14,8 +26,12 @@ stdenv.mkDerivation rec {
     hash = "sha256-fvVSxDiGZAewyuQ2vZDb0I6tmlDXl6trjZp8+qDBtb8=";
   };
 
-  cmakeFlags = [ "-DSEND_TELEMETRY_DEFAULT=OFF" "-DREGRESS_CHECKS=OFF" "-DTAP_CHECKS=OFF" "-DAPACHE_ONLY=1" ]
-    ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
+  cmakeFlags = [
+    "-DSEND_TELEMETRY_DEFAULT=OFF"
+    "-DREGRESS_CHECKS=OFF"
+    "-DTAP_CHECKS=OFF"
+    "-DAPACHE_ONLY=1"
+  ] ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
 
   # Fix the install phase which tries to install into the pgsql extension dir,
   # and cannot be manually overridden. This is rather fragile but works OK.
@@ -30,7 +46,6 @@ stdenv.mkDerivation rec {
         --replace 'DESTINATION ''${PG_PKGLIBDIR}' "DESTINATION \"$out/lib\""
     done
   '';
-
 
   # timescaledb-2.9.1.so already exists in the lib directory
   # we have no need for the timescaledb.so or control file

@@ -1,10 +1,19 @@
-{ lib, stdenv, fetchFromGitHub, libsodium, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  libsodium,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pgsodium";
   version = "3.1.8";
 
-  buildInputs = [ libsodium postgresql ];
+  buildInputs = [
+    libsodium
+    postgresql
+  ];
 
   src = fetchFromGitHub {
     owner = "michelp";

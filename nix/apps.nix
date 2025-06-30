@@ -1,13 +1,7 @@
 { ... }:
 {
   perSystem =
-    {
-      lib,
-      self',
-      system,
-      pkgs,
-      ...
-    }:
+    { self', ... }:
     let
       mkApp = attrName: binName: {
         type = "app";

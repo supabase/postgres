@@ -1,12 +1,9 @@
 { self, ... }:
 {
-  imports = [
-    ./postgres.nix
-  ];
+  imports = [ ./postgres.nix ];
   perSystem =
     {
       inputs',
-      config,
       lib,
       pkgs,
       self',
@@ -20,9 +17,7 @@
         let
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
-        pkgs.callPackage ../ext/pg_regress.nix {
-          postgresql = postgresqlPackage;
-        };
+        pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
@@ -60,9 +55,7 @@
             inherit pkgs;
             name = "start-postgres-server";
           };
-          sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix {
-            inherit (inputs') nix-editor;
-          };
+          sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
@@ -73,7 +66,7 @@
             cargo-pgrx_0_14_3
             ;
         }
-        // lib.filterAttrs (n: v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
+        // lib.filterAttrs (n: _v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
           pkgs.callPackage ../postgresql/default.nix {
             inherit self';
             inherit (self.supabase) supportedPostgresVersions;

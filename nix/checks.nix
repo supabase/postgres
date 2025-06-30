@@ -119,7 +119,6 @@
               majorVersion =
                 let
                   version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
-                  _ = builtins.trace "Entering majorVersion logic";
                   isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
                   isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
                   result =
@@ -148,7 +147,6 @@
                 name: _: builtins.substring 0 (pkgs.lib.stringLength name - 4) name
               ) filteredSqlTests;
               sortedTestList = builtins.sort (a: b: a < b) testList;
-
             in
             pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
               {

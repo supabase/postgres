@@ -52,13 +52,11 @@ runCommand "trigger-nix-build"
     fi
 
     export PATH="${
-      lib.makeBinPath (
-        [
-          gh
-          git
-          coreutils
-        ]
-      )
+      lib.makeBinPath ([
+        gh
+        git
+        coreutils
+      ])
     }:$PATH"
 
     # Check for required tools

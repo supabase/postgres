@@ -1,8 +1,4 @@
-{
-  self,
-  inputs,
-  ...
-}:
+{ self, inputs, ... }:
 {
   perSystem =
     { pkgs, ... }:
@@ -144,7 +140,7 @@
             version = ext.version;
           }) (makeOurPostgresPkgs version);
 
-          pgbin = postgresql.withPackages (ps: makeOurPostgresPkgs version);
+          pgbin = postgresql.withPackages (_ps: makeOurPostgresPkgs version);
         in
         pkgs.symlinkJoin {
           inherit (pgbin) name version;
