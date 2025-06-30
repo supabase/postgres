@@ -44,15 +44,6 @@
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
-          postgresql_15_src = pkgs.callPackage ./postgresql-src.nix {
-            postgresql = self'.packages.postgresql_15;
-          };
-          postgresql_17_src = pkgs.callPackage ./postgresql-src.nix {
-            postgresql = self'.packages.postgresql_17;
-          };
-          postgresql_orioledb-17_src = pkgs.callPackage ./postgresql-src.nix {
-            postgresql = self'.packages.postgresql_orioledb-17;
-          };
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
@@ -84,21 +75,8 @@
         }
         // lib.filterAttrs (n: v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
           pkgs.callPackage ../postgresql/default.nix {
+            inherit self';
             inherit (self.supabase) supportedPostgresVersions;
-            # inherit (pkgs)
-            #   lib
-            #   stdenv
-            #   fetchurl
-            #   makeWrapper
-            #   callPackage
-            #   buildEnv
-            #   newScope
-            #   ;
-          }
-          // lib.optionalAttrs (pkgs.stdenv.isLinux) {
-            postgresql_15_debug = self'.packages.postgresql_15.debug;
-            postgresql_17_debug = self'.packages.postgresql_17.debug;
-            postgresql_orioledb-17_debug = self'.packages.postgresql_orioledb-17.debug;
           }
         )
       );
