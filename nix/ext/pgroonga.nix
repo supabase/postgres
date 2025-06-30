@@ -1,7 +1,4 @@
-{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c, callPackage, mecab, makeWrapper, xxHash  }:
-let
-  supabase-groonga = callPackage ../supabase-groonga.nix { };
-in
+{ lib, stdenv, fetchurl, pkg-config, postgresql, msgpack-c,  mecab, makeWrapper, xxHash, supabase-groonga }:
 stdenv.mkDerivation rec {
   pname = "pgroonga";
   version = "3.2.5";
@@ -10,7 +7,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-GM9EOQty72hdE4Ecq8jpDudhZLiH3pP9ODLxs8DXcSY=";
   };
   nativeBuildInputs = [ pkg-config makeWrapper ];
-  
+
   buildInputs = [ postgresql msgpack-c supabase-groonga mecab ] ++ lib.optionals stdenv.isDarwin [
     xxHash
   ];

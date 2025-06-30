@@ -4,8 +4,6 @@ let
   ansibleVars = ../../ansible/vars.yml;
   pgbouncerAuthSchemaSql = ../../ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql;
   statExtensionSql = ../../ansible/files/stat_extension.sql;
-  pgsqlDefaultPort = "5435";
-  pgsqlSuperuser = "supabase_admin";
 in
 pkgs.runCommand "dbmate-tool"
   {

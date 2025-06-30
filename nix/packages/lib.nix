@@ -3,10 +3,7 @@
   psql_15,
   psql_orioledb-17,
   defaults,
-  # pgsqlDefaultPort ? "5435",
-  # pgsqlDefaultHost ? "localhost",
-  # pgsqlSuperuser ? "supabase_admin",
-  supabase_groonga,
+  supabase-groonga,
   system,
   pgroonga,
 }:
@@ -92,7 +89,7 @@
         LOCALES = "${localeArchive}";
         EXTENSION_CUSTOM_SCRIPTS_DIR = "${paths.postgresqlExtensionCustomScriptsPath}";
         MECAB_LIB = "${pgroonga}/lib/groonga/plugins/tokenizers/tokenizer_mecab.so";
-        GROONGA_DIR = "${supabase_groonga}";
+        GROONGA_DIR = "${supabase-groonga}";
         MIGRATIONS_DIR = "${paths.migrationsDir}";
         POSTGRESQL_SCHEMA_SQL = "${paths.postgresqlSchemaSql}";
         PGBOUNCER_AUTH_SCHEMA_SQL = "${paths.pgbouncerAuthSchemaSql}";

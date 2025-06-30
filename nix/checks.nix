@@ -13,7 +13,6 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
-        inherit (self'.packages) supabase_groonga;
         pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
       };
@@ -164,14 +163,14 @@
                   start-postgres-server-bin
                   which
                   getkey-script
-                  self'.packages.supabase_groonga
+                  supabase-groonga
                 ];
               }
               ''
                 set -e
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
-                export GRN_PLUGINS_DIR=${self'.packages.supabase_groonga}/lib/groonga/plugins
+                export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
                 initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
