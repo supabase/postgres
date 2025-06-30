@@ -749,6 +749,23 @@
       "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
     }
   },
+  "pg_stat_monitor": {
+    "1.0": {
+      "postgresql": [
+        "15"
+      ],
+      "revision": "1.0.1",
+      "hash": "sha256-sQEpIknAFOmvNTX2G23X4BvMdy3Ms7sXx7hLZt8jyUk="
+    },
+    "2.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "2.1.0",
+      "hash": "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s="
+    }
+  },
   "pg_tle": {
     "1.0.1": {
       "postgresql": [
