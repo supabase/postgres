@@ -170,6 +170,8 @@ network:
       dhcp4-overrides:
         send-hostname: false
 EOF
+	# Set proper permissions for netplan security
+	chmod 600 /etc/netplan/01-hostname.yaml
 }
 
 # Set options for the default interface
@@ -181,6 +183,8 @@ network:
     eth0:
       dhcp4: true
 EOF
+	# Set proper permissions for netplan security
+	chmod 600 /etc/netplan/eth0.yaml
 }
 
 function disable_sshd_passwd_auth {
