@@ -31,3 +31,7 @@
   systemd:
     name: systemd-networkd-check-and-fix.timer
     enabled: true
+
+- name: Apply netplan configuration
+  shell: sudo netplan apply
+  when: debpkg_mode or nixpkg_mode
