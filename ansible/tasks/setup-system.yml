@@ -112,6 +112,21 @@
   systemd: daemon_reload=yes
   when: debpkg_mode or nixpkg_mode
 
+- name: Install netplan apply service
+  copy:
+    src: files/netplan-apply.service
+    dest: /etc/systemd/system/netplan-apply.service
+    owner: root
+    group: root
+    mode: 0644
+  when: debpkg_mode or nixpkg_mode
+
+- name: Enable netplan apply service
+  systemd:
+    name: netplan-apply.service
+    enabled: yes
+  when: debpkg_mode or nixpkg_mode
+
 - name: Configure journald
   copy:
     src: files/journald.conf
