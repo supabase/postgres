@@ -9,6 +9,27 @@ repo_url: https://github.com/supabase/postgres
 
 nav:
   - Home: README.md
+  - Development:
+    - Getting Started: start-here.md
+    - Nix tree structure: nix-directory-structure.md
+    - Workflow: development-workflow.md
+    - Build PostgreSQL: build-postgres.md
+    - Start Client/Server: start-client-server.md
+    - Docker: docker.md
+    - Use direnv: use-direnv.md
+    - Code Formatter: nix-formatter.md
+    - Pre-commit Hooks: pre-commit-hooks.md
+    - Documentation: documentation.md
+  - Package Management:
+    - Adding New Packages: adding-new-package.md
+    - Update Extensions: update-extension.md
+    - New Major PostgreSQL: new-major-postgres.md
+    - Nix Overlays: nix-overlays.md
+  - Testing:
+    - Adding Tests: adding-tests.md
+    - Migration Tests: migration-tests.md
+    - Testing PG Upgrade Scripts: testing-pg-upgrade-scripts.md
+  - References: references.md
 
 validation:
     omitted_files: warn
@@ -98,7 +119,14 @@ markdown_extensions:
     - pymdownx.snippets:
           base_path: ../.
     - pymdownx.keys
+    - pymdownx.superfences:
+          # make exceptions to highlighting of code:
+        custom_fences:
+          - name: mermaid
+            class: mermaid
+            format: !!python/name:mermaid2.fence_mermaid_custom
 
 plugins:
     - mike
     - search
+    - mermaid2

@@ -8,7 +8,7 @@ Overlays are a feature of Nixpkgs that allow you to:
     disabled-by-default feature.
 
 First, you need to define a file for the overlay under
-[overlays/](../overlays/), and then import it in `flake.nix`. There is an
+[overlays/](../overlays/), and then import it in `nix/overlays/default.nix`. There is an
 example pull request in
 [#14](https://github.com/supabase/nix-postgres/issues/14) for this; an overlay
 typically looks like this:

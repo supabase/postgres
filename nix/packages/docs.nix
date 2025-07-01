@@ -9,6 +9,7 @@ stdenvNoCC.mkDerivation {
     mkdocs
     mkdocs-material
     mkdocs-linkcheck
+    mkdocs-mermaid2-plugin
   ];
 
   buildPhase = ''
