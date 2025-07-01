@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Default values
+PG_OLD=""
+PG_NEW=""
+WAL_G_CONF=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --pg-old)
+      PG_OLD="$2"
+      shift 2
+      ;;
+    --pg-new)
+      PG_NEW="$2"
+      shift 2
+      ;;
+    --wal-g-conf)
+      WAL_G_CONF="$2"
+      shift 2
+      ;;
+    --help)
+      echo "Usage: $0 --pg-old <version> --pg-new <version> [--wal-g-conf <path>]"
+      echo ""
+      echo "Arguments:"
+      echo "  --pg-old <version>     Old PostgreSQL version (postgresql_15, postgresql_17)"
+      echo "  --pg-new <version>     New PostgreSQL version (postgresql_15, postgresql_17)"
+      echo "  --wal-g-conf <path>    Path to WAL-G configuration file (optional)"
+      echo "  --help                 Show this help message"
+      echo ""
+      echo "Example:"
+      echo "  $0 --pg-old postgresql_15 --pg-new postgresql_17 --wal-g-conf /path/to/config"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Validate required arguments
+if [[ -z "$PG_OLD" ]]; then
+  echo "Error: --pg-old is required"
+  echo "Use --help for usage information"
+  exit 1
+fi
+
+if [[ -z "$PG_NEW" ]]; then
+  echo "Error: --pg-new is required"
+  echo "Use --help for usage information"
+  exit 1
+fi
+
+# Validate PostgreSQL versions
+valid_versions=("postgresql_15" "postgresql_17")
+if [[ ! " ${valid_versions[@]} " =~ " ${PG_OLD} " ]]; then
+  echo "Error: Invalid --pg-old version: $PG_OLD"
+  echo "Valid versions: ${valid_versions[*]}"
+  exit 1
+fi
+
+if [[ ! " ${valid_versions[@]} " =~ " ${PG_NEW} " ]]; then
+  echo "Error: Invalid --pg-new version: $PG_NEW"
+  echo "Valid versions: ${valid_versions[*]}"
+  exit 1
+fi
+
+# Get PostgreSQL binary paths based on version
+get_postgres_path() {
+  local version=$1
+  case $version in
+    postgresql_15)
+      echo "@PSQL15_BINDIR@"
+      ;;
+    postgresql_17)
+      echo "@PSQL17_BINDIR@"
+      ;;
+    *)
+      echo "Error: Unknown PostgreSQL version: $version"
+      exit 1
+      ;;
+  esac
+}
+
+# Get the binary paths
+OLD_BINDIR=$(get_postgres_path "$PG_OLD")
+NEW_BINDIR=$(get_postgres_path "$PG_NEW")
+
+# Set environment variables
+export PG_OLD="$OLD_BINDIR"
+export PG_NEW="$NEW_BINDIR"
+
+echo "PostgreSQL Upgrade Tool"
+echo "======================"
+echo ""
+echo "Old PostgreSQL version: $PG_OLD"
+echo "Old PostgreSQL binaries: $OLD_BINDIR"
+echo ""
+echo "New PostgreSQL version: $PG_NEW"
+echo "New PostgreSQL binaries: $NEW_BINDIR"
+echo ""
+echo "Environment variables set:"
+echo "  PG_OLD=$PG_OLD"
+echo "  PG_NEW=$PG_NEW"
+echo ""
+
+if [[ -n "$WAL_G_CONF" ]]; then
+  echo "WAL-G configuration: $WAL_G_CONF"
+  if [[ ! -f "$WAL_G_CONF" ]]; then
+    echo "Warning: WAL-G configuration file does not exist: $WAL_G_CONF"
+  fi
+else
+  echo "WAL-G configuration: Not specified"
+fi
+
+echo ""
+echo "Key binaries available:"
+echo "Old version:"
+echo "  - initdb: $OLD_BINDIR/initdb"
+echo "  - pg_ctl: $OLD_BINDIR/pg_ctl"
+echo "  - psql: $OLD_BINDIR/psql"
+echo "  - pg_dump: $OLD_BINDIR/pg_dump"
+echo "  - pg_dumpall: $OLD_BINDIR/pg_dumpall"
+echo ""
+echo "New version:"
+echo "  - initdb: $NEW_BINDIR/initdb"
+echo "  - pg_ctl: $NEW_BINDIR/pg_ctl"
+echo "  - psql: $NEW_BINDIR/psql"
+echo "  - pg_upgrade: $NEW_BINDIR/pg_upgrade"
+echo "  - pg_dump: $NEW_BINDIR/pg_dump"
+echo "  - pg_dumpall: $NEW_BINDIR/pg_dumpall" 

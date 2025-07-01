@@ -551,6 +551,14 @@
                 chmod +x $out/bin/migrate-postgres
               '';
 
+            pg-upgrade-tool = pkgs.runCommand "pg-upgrade-tool" { } ''
+              mkdir -p $out/bin
+              substitute ${./nix/tools/pg-upgrade-tool.sh.in} $out/bin/pg-upgrade-tool \
+                --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
+                --subst-var-by 'PSQL17_BINDIR' '${basePackages.psql_17.bin}'
+              chmod +x $out/bin/pg-upgrade-tool
+            '';
+
             start-replica = pkgs.runCommand "start-postgres-replica" { } ''
               mkdir -p $out/bin
               substitute ${./nix/tools/run-replica.sh.in} $out/bin/start-postgres-replica \
@@ -1411,6 +1419,7 @@
             run-testinfra = mkApp "run-testinfra" "run-testinfra";
             cleanup-ami = mkApp "cleanup-ami" "cleanup-ami";
             trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";
+            pg-upgrade-tool = mkApp "pg-upgrade-tool" "pg-upgrade-tool";
           };
 
         # 'devShells.default' lists the set of packages that are included in the
