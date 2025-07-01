@@ -18,8 +18,8 @@ pgbouncer_release: "1.19.0"
 pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
 
 # to get these use
-# wget https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-ubuntu-aarch64.tar.xz -q -O- | sha1sum
-# wget https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz -q -O- | sha1sum
+# wget https://github.com/PostgREST/postgrest/releases/download/v13.0.4/postgrest-v13.0.4-ubuntu-aarch64.tar.xz -q -O- | sha1sum
+# wget https://github.com/PostgREST/postgrest/releases/download/v13.0.4/postgrest-v13.0.4-linux-static-x86-64.tar.xz -q -O- | sha1sum
 postgrest_release: "13.0.4"
 postgrest_arm_release_checksum: sha1:d4be5a9d8b661b241e057ac87cdb5c877b15a19e
 postgrest_x86_release_checksum: sha1:dff3e1132ca3b34b6b34325d2261104dbed842c0
