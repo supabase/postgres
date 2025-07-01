@@ -36,6 +36,9 @@ let
       };
     in
     pkg;
+  pg_regress = pkgs.callPackage ../pg_regress.nix {
+    postgresql = self.packages.${pkgs.system}.postgresql_15;
+  };
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
@@ -118,6 +121,13 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       def run_sql(query):
         return server.succeed(f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """).strip()
 
+      def run_pg_regress(sql_file, pg_version):
+        try:
+          server.succeed(f"""sudo -u postgres ${pg_regress}/bin/pg_regress --inputdir=${../../tests} --use-existing --dbname=postgres --outputdir=/tmp/regression_output_{pg_version} "{sql_file}" """)
+        except:
+          server.copy_from_vm(f"/tmp/regression_output_{pg_version}", "")
+          raise
+
       def check_upgrade_path(pg_version):
         with subtest("Check ${pname} upgrade path"):
           firstVersion = versions[pg_version][0]
@@ -129,6 +139,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             run_sql(f"""ALTER EXTENSION ${pname} UPDATE TO '{version}';""")
             installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
             assert installed_version == version, f"Expected ${pname} version {version}, but found {installed_version}"
+          run_pg_regress("${pname}", pg_version)
 
       start_all()
 
