@@ -35,30 +35,34 @@
     {
       devShells = {
         default = pkgs.mkShell {
-          packages = with pkgs; [
-            coreutils
-            just
-            nix-update
-            #pg_prove
-            shellcheck
-            ansible
-            ansible-lint
-            (packer.overrideAttrs (_oldAttrs: {
-              version = "1.7.8";
-            }))
+          packages =
+            with pkgs;
+            [
+              coreutils
+              just
+              nix-update
+              #pg_prove
+              shellcheck
+              ansible
+              ansible-lint
+              (packer.overrideAttrs (_oldAttrs: {
+                version = "1.7.8";
+              }))
 
-            self'.packages.start-server
-            self'.packages.start-client
-            self'.packages.start-replica
-            self'.packages.migrate-tool
-            self'.packages.sync-exts-versions
-            self'.packages.build-test-ami
-            self'.packages.run-testinfra
-            self'.packages.cleanup-ami
-            dbmate
-            nushell
-            pythonEnv
-          ];
+              self'.packages.start-server
+              self'.packages.start-client
+              self'.packages.start-replica
+              self'.packages.migrate-tool
+              self'.packages.sync-exts-versions
+              self'.packages.build-test-ami
+              self'.packages.run-testinfra
+              self'.packages.cleanup-ami
+              dbmate
+              nushell
+              pythonEnv
+              config.treefmt.build.wrapper
+            ]
+            ++ self'.packages.docs.nativeBuildInputs;
           shellHook = ''
             export HISTFILE=.history
             ${config.pre-commit.installationScript}

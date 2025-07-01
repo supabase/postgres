@@ -33,6 +33,7 @@
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          docs = pkgs.callPackage ./docs.nix { };
           supabase-groonga = pkgs.callPackage ./groonga { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
