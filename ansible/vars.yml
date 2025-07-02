@@ -54,7 +54,7 @@ postgres_exporter_release_checksum:
 
 adminapi_release: 0.84.1
 adminmgr_release: 0.25.1
-supabase_admin_agent_release: 1.4.35
+supabase_admin_agent_release: 1.4.36
 
 vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
 vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
