@@ -576,5 +576,35 @@
       "pgrx": "0.16.0",
       "rust": "1.87.0"
     }
+  },
+  "pg_repack": {
+    "1.4.8": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-Et8aMRzG7ez0uy9wG6qsg57/kPPZdUhb+/gFxW86D08="
+    },
+    "1.5.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-do80phyMxwcRIkYyUt9z02z7byNQhK+pbSaCUmzG+4c="
+    },
+    "1.5.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-wJwy4qIt6/kgWqT6HbckUVqDayDkixqHpYiC1liLERw="
+    },
+    "1.5.2": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
+    }
   }
 }
