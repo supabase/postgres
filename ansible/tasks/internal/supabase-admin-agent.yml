@@ -50,7 +50,7 @@
 - name: supabase-admin-agent - unpack archive in /opt
   unarchive:
     remote_src: yes
-    src: /tmp/supabase-admin-agent.tar.xz
+    src: /tmp/supabase-admin-agent.tar.gz
     dest: /opt/supabase-admin-agent/
     owner: supabase-admin-agent
     extra_opts:
