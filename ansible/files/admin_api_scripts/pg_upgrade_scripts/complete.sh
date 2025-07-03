@@ -267,8 +267,6 @@ function complete_pg_upgrade {
         retry 3 service gotrue restart
         retry 3 service postgrest restart
         
-        echo "5.2. Applying netplan configuration to fix network issues"
-        retry 3 sudo netplan apply
     else
         retry 3 CI_stop_postgres || true
         retry 3 CI_start_postgres
