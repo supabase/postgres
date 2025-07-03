@@ -172,5 +172,6 @@
     in
     {
       packages = inputs.flake-utils.lib.flattenTree basePackages;
+      legacyPackages = basePackages;
     };
 }

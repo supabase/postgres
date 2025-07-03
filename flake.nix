@@ -35,6 +35,7 @@
         nix/nixpkgs.nix
         nix/packages
         nix/overlays
+        nix/nixosModules
       ];
     });
 }
