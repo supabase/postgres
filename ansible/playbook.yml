@@ -79,7 +79,7 @@
       when: debpkg_mode or nixpkg_mode
 
     - name: Fix IPv6 NDisc issues (disabled)
-      import_tasks: tasks/fix_ipv6_ndisc.yml
+      import_tasks: tasks/fix-ipv6-ndisc.yml
       tags:
         - install-supabase-internal
       when: (debpkg_mode or nixpkg_mode) and (qemu_mode is undefined)
