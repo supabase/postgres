@@ -9,9 +9,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.0.1.105-orioledb"
-  postgres17: "17.4.1.055"
-  postgres15: "15.8.1.112"
+  postgresorioledb-17: "17.0.1.106-orioledb"
+  postgres17: "17.4.1.056"
+  postgres15: "15.8.1.113"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -55,5 +55,5 @@ adminapi_release: 0.84.1
 adminmgr_release: 0.25.1
 supabase_admin_agent_release: 1.4.36
 
-vector_x86_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_amd64.deb"
-vector_arm_deb: "https://packages.timber.io/vector/0.22.3/vector_0.22.3-1_arm64.deb"
+vector_x86_deb: "https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_amd64.deb"
+vector_arm_deb: "https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_arm64.deb"
