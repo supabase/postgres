@@ -1,14 +1,19 @@
 # Welcome to Supabase Postgres contributing guide
 
-## Adding a new extension
+## Adding a New Extension
 
-Extensions can either be built from source or installed through a debian package. In general, you want to add the installation commands for your extension to the [Dockerfile](Dockerfile) following the steps below.
+Supabase Postgres supports multiple Dockerfiles for different versions and deployment scenarios (e.g., `Dockerfile-15`, `Dockerfile-17`, `Dockerfile-kubernetes`, `Dockerfile-orioledb-17`).  
+**Please add your extension to each relevant Dockerfile according to the images you want to support.**
 
-1. Create a [build stage](Dockerfile#L777) named after your extension.
-2. Add build args that specify the extension's [release version](Dockerfile#L37).
-3. If your extension is published as a package, download it to `/tmp/<name>.deb` using the [ADD command](Dockerfile#L705).
-4. If you need to build the extensions from source, use [checkinstall](Dockerfile#L791) to create a `/tmp/<name>.deb` package.
-5. Copy your extension's package from build stage to [extensions stage](Dockerfile#L851).
+### Steps
+
+1. **Add a build stage** for your extension in the target Dockerfile, named after your extension.  
+   _Tip: Search for `FROM base as` in the Dockerfile to find all extension build stages._
+2. **Add build arguments** for your extension's release version if needed.
+3. **Download or build the extension package** (`.deb`) in your build stage and place it in `/tmp/`.
+   - If your extension is published as a `.deb` package, use `ADD` or `COPY`.
+   - If you need to build from source, use `checkinstall` or a similar tool to create a `.deb` package.
+4. **In the `extensions` stage**, use `COPY --from=your_stage` to copy your package into the final image.
 
 Here's a minimal example:
 
