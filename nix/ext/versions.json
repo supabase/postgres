@@ -131,6 +131,16 @@
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     }
   },
+   "rum": {
+    "1.3": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-VsfpxQqRBu9bIAP+TfMRXd+B3hSjuhU2NsutocNiCt8=",
+      "revision": "1.3.14"
+    }
+  },
     "timescaledb": {
     "2.9.1": {
       "postgresql": [

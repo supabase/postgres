@@ -27,7 +27,7 @@
             pgpkg:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-              pg_regress = self'.packages.pg_regress;
+              inherit (self'.packages) pg_regress;
               getkey-script = pkgs.stdenv.mkDerivation {
                 name = "pgsodium-getkey";
                 buildCommand = ''
@@ -309,6 +309,7 @@
             ;
         }
         // pkgs.lib.optionalAttrs (system == "x86_64-linux") (
+<<<<<<< HEAD
           {
             devShell = self'.devShells.default;
           }
@@ -316,6 +317,12 @@
             inherit self;
             inherit pkgs;
           })
+=======
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+>>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
         );
     };
 }
