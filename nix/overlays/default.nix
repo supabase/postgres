@@ -1,6 +1,6 @@
 { self, ... }:
 {
-  flake.overlays.default = final: prev: {
+  flake.overlays.default = final: _prev: {
     # NOTE: add any needed overlays here. in theory we could
     # pull them from the overlays/ directory automatically, but we don't
     # want to have an arbitrary order, since it might matter. being
@@ -31,24 +31,23 @@
       inherit (final) lib;
       inherit (final) Security;
       inherit (final) pkg-config;
-      inherit (final) makeRustPlatform;
       inherit (final) stdenv;
       inherit (final) writeShellScriptBin;
     };
 
-    buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
+    buildPgrxExtension_0_11_3 = final.buildPgrxExtension.override {
       cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
     };
 
-    buildPgrxExtension_0_12_6 = prev.buildPgrxExtension.override {
+    buildPgrxExtension_0_12_6 = final.buildPgrxExtension.override {
       cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_6;
     };
 
-    buildPgrxExtension_0_12_9 = prev.buildPgrxExtension.override {
+    buildPgrxExtension_0_12_9 = final.buildPgrxExtension.override {
       cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_12_9;
     };
 
-    buildPgrxExtension_0_14_3 = prev.buildPgrxExtension.override {
+    buildPgrxExtension_0_14_3 = final.buildPgrxExtension.override {
       cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_14_3;
     };
   };
