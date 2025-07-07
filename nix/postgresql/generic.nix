@@ -21,7 +21,7 @@ let
       libxml2,
       tzdata,
       libkrb5,
-      substituteAll,
+      replaceVars,
       darwin,
       linux-pam,
       #orioledb specific
@@ -188,8 +188,7 @@ let
           ./patches/specify_pkglibdir_at_runtime.patch
           ./patches/paths-with-postgresql-suffix.patch
 
-          (substituteAll {
-            src = ./patches/locale-binary-path.patch;
+          (replaceVars ./patches/locale-binary-path.patch {
             locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
           })
         ]
