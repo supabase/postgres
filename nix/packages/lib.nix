@@ -125,13 +125,11 @@
         chmod 644 $out/etc/postgresql/pg_hba.conf
 
         substitute ${../tools/run-server.sh.in} $out/bin/start-postgres-server \
-          ${
-            builtins.concatStringsSep " " (
-              builtins.attrValues (
-                builtins.mapAttrs (name: value: "--subst-var-by '${name}' '${value}'") substitutions
-              )
+          ${builtins.concatStringsSep " " (
+            builtins.attrValues (
+              builtins.mapAttrs (name: value: "--subst-var-by '${name}' '${value}'") substitutions
             )
-          }
+          )}
         chmod +x $out/bin/start-postgres-server
       '';
 }
