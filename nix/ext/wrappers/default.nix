@@ -66,13 +66,9 @@ let
           lockFile = "${src}/Cargo.lock";
           outputHashes =
             if builtins.compareVersions "0.4.2" version >= 0 then
-              {
-                "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
-              }
+              { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
             else if builtins.compareVersions "0.5.0" version >= 0 then
-              {
-                "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0=";
-              }
+              { "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0="; }
             else if builtins.compareVersions "0.5.2" version == 0 then
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
@@ -159,9 +155,7 @@ let
         };
       }
       // lib.optionalAttrs (version == "0.3.0") {
-        patches = [
-          ./0001-bump-pgrx-to-0.11.3.patch
-        ];
+        patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
 
         cargoLock = {
           lockFile = ./Cargo.lock-0.3.0;
@@ -181,7 +175,6 @@ let
   packages = builtins.attrValues (
     lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
   );
-
 in
 buildEnv {
   name = pname;

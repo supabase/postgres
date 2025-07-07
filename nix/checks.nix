@@ -22,6 +22,7 @@
         let
           # Create a testing harness for a PostgreSQL package. This is used for
           # 'nix flake check', and works with any PostgreSQL package you hand it.
+          # deadnix: skip
           makeCheckHarness =
             pgpkg:
             let
