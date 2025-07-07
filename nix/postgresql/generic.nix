@@ -21,6 +21,7 @@ let
       libxml2,
       tzdata,
       libkrb5,
+      replaceVars,
       darwin,
       linux-pam,
       #orioledb specific
@@ -192,7 +193,10 @@ let
           ./patches/paths-for-split-outputs.patch
           ./patches/specify_pkglibdir_at_runtime.patch
           ./patches/paths-with-postgresql-suffix.patch
-          ./patches/locale-binary-path.patch
+
+          (replaceVars ./patches/locale-binary-path.patch {
+            locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
+          })
         ]
         ++ lib.optionals stdenv'.hostPlatform.isMusl (
           # Using fetchurl instead of fetchpatch on purpose: https://github.com/NixOS/nixpkgs/issues/240141
