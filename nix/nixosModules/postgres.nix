@@ -1,4 +1,4 @@
-{ withSystem }:
+{ self, withSystem }:
 {
   config,
   lib,
@@ -7,28 +7,13 @@
 }:
 let
   cfg = config.supabase.postgres;
-  productionConfig = builtins.fromJSON (
-    builtins.readFile (
-      pkgs.runCommand "parse-config" { nativeBuildInputs = [ pkgs.jc ]; } ''
-        cat ${../../ansible/files/postgresql_config/postgresql.conf.j2} | sed "s/#.*//" | jc --ini > "$out"
-      ''
-    )
+  pgsodium_getkey = pkgs.lib.getExe (
+    withSystem pkgs.system ({ self', ... }: self'.packages.pgsodium_getkey_urandom)
   );
-  pgsodium_getkey = toString (
-    pkgs.writeShellScript "getkey" (
-      builtins.readFile (../../ansible/files/pgsodium_getkey_urandom.sh.j2)
-    )
-  );
-  defaultSettings =
-    builtins.removeAttrs productionConfig [
-      "hba_file"
-      "ident_file"
-      "data_directory"
-    ]
-    // {
-      "pgsodium.getkey_script" = pgsodium_getkey;
-      "vault.getkey_script" = pgsodium_getkey;
-    };
+  defaultSettings = self.supabase.defaults.settings // {
+    "pgsodium.getkey_script" = pgsodium_getkey;
+    "vault.getkey_script" = pgsodium_getkey;
+  };
   postgresqlWithExtension =
     postgresql: extensions:
     let

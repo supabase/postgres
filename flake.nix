@@ -13,6 +13,11 @@
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    system-manager.url = "github:numtide/system-manager";
+    #
+    system-manager.inputs.nixpkgs.follows = "nixpkgs";
+    nix-vm-test.url = "github:numtide/nix-vm-test";
+    nix-vm-test.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -36,6 +41,7 @@
         nix/packages
         nix/overlays
         nix/nixosModules
+        nix/systemModules
       ];
     });
 }

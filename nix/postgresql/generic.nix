@@ -340,6 +340,7 @@ let
           ma27
           wolfgangwalther
         ];
+        teams = [ ];
         pkgConfigModules = [
           "libecpg"
           "libecpg_compat"

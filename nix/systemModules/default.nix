@@ -7,7 +7,7 @@
 {
   imports = [ ./tests ];
   flake = {
-    nixosModules = {
+    systemModules = {
       postgres = flake-parts-lib.importApply ./postgres.nix { inherit withSystem self; };
     };
   };

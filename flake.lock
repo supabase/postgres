@@ -173,6 +173,26 @@
         "type": "github"
       }
     },
+    "nix-vm-test": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1748241170,
+        "narHash": "sha256-uloGXUZdjTmrLpTKbFetLzNhmKO1ySQdEDiLTFB+4i8=",
+        "owner": "numtide",
+        "repo": "nix-vm-test",
+        "rev": "2440f3ab2e131515253777b0d27b66c0357f299b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "nix-vm-test",
+        "type": "github"
+      }
+    },
     "nix2container": {
       "inputs": {
         "flake-utils": "flake-utils_2",
@@ -256,11 +276,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1712666087,
-        "narHash": "sha256-WwjUkWsjlU8iUImbivlYxNyMB1L5YVqE8QotQdL9jWc=",
+        "lastModified": 1751786137,
+        "narHash": "sha256-lIlUKVGCGsh0Q2EA7/6xRtKUZjaQ/ur8uUyY+MynHXQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "a76c4553d7e741e17f289224eda135423de0491d",
+        "rev": "ceb24d94c6feaa4e8737a8e2bd3cf71c3a7eaaa0",
         "type": "github"
       },
       "original": {
@@ -293,9 +313,11 @@
         "git-hooks": "git-hooks",
         "nix-editor": "nix-editor",
         "nix-fast-build": "nix-fast-build",
+        "nix-vm-test": "nix-vm-test",
         "nix2container": "nix2container",
         "nixpkgs": "nixpkgs_4",
         "rust-overlay": "rust-overlay",
+        "system-manager": "system-manager",
         "treefmt-nix": "treefmt-nix_2"
       }
     },
@@ -314,6 +336,26 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "system-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1748252092,
+        "narHash": "sha256-6nL55wvV7SthEXaXDiQo8xxkxQLAVcNBU21YJ7GJLm8=",
+        "owner": "numtide",
+        "repo": "system-manager",
+        "rev": "c6850451ef769fd03d0ad5474f928b916aa23775",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "system-manager",
         "type": "github"
       }
     },

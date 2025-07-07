@@ -42,6 +42,7 @@
           pg_regress = makePgRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
+          pgsodium_getkey_urandom = pkgs.callPackage ./pgsodium_getkey_urandom.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
             psql_17 = self'.packages."psql_17/bin";
