@@ -1,6 +1,7 @@
-{ lib
-, stdenv
-, postgresql
+{
+  lib,
+  stdenv,
+  postgresql,
 }:
 
 stdenv.mkDerivation {
@@ -17,7 +18,6 @@ stdenv.mkDerivation {
   meta = with lib; {
     description = "Regression testing tool for PostgreSQL";
     homepage = "https://www.postgresql.org/";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

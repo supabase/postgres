@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Supabase supabase-admin-agent salt on a schedule
+Requires=supabase-admin-agent_salt.service
+
+[Timer]
+OnCalendar=*:0/10
+# Random delay up to {{ splay }} seconds splay
+RandomizedDelaySec={{ splay }}
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -122,11 +122,6 @@ build {
     destination = "/tmp"
   }
 
-  provisioner "file" {
-    source = "ebssurrogate/files/unit-tests"
-    destination = "/tmp"
-  }
-
   provisioner "shell" {
     environment_vars = [
       "POSTGRES_MAJOR_VERSION=${var.postgres-major-version}",

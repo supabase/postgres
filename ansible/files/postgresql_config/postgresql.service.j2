@@ -21,5 +21,8 @@ RestartSec=5
 OOMScoreAdjust=-1000
 EnvironmentFile=-/etc/environment.d/postgresql.env
 LimitNOFILE=16384
+{% if supabase_internal is defined %}
+ReadOnlyPaths=/etc
+{% endif %}
 [Install]
 WantedBy=multi-user.target

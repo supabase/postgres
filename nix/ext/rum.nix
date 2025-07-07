@@ -1,4 +1,9 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "rum";
@@ -26,6 +31,5 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/postgrespro/rum";
     license = licenses.postgresql;
     platforms = postgresql.meta.platforms;
-    maintainers = with maintainers; [ samrose ];
   };
 }

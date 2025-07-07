@@ -1,39 +1,40 @@
-{ lib
-, darwin
-, fetchCrate
-, openssl
-, pkg-config
-, makeRustPlatform
-, stdenv
-, rust-bin
+{
+  lib,
+  darwin,
+  fetchCrate,
+  openssl,
+  pkg-config,
+  makeRustPlatform,
+  stdenv,
+  rust-bin,
 }:
 let
-  rustVersion = "1.76.0";
+  rustVersion = "1.85.1";
   rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
   };
   generic =
-    { version
-    , hash
-    , cargoHash
+    {
+      version,
+      hash,
+      cargoHash,
     }:
     rustPlatform.buildRustPackage rec {
+      # rust-overlay uses 'cargo-auditable' wrapper for 'cargo' command, but it
+      # is using older version 0.18.1 of 'cargo_metadata' which doesn't support
+      # rust edition 2024, so we disable the 'cargo-auditable' just for now.
+      # ref: https://github.com/oxalica/rust-overlay/issues/153
+      auditable = false;
       pname = "cargo-pgrx";
       inherit version;
-      src = fetchCrate {
-        inherit version pname hash;
-      };
+      src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
-      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-        pkg-config
-      ];
-      buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-        openssl
-      ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
-        darwin.apple_sdk.frameworks.Security
-      ];
-      
+      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
+      buildInputs =
+        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
+        ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
       OPENSSL_LIB_DIR = "${openssl.out}/lib";
@@ -69,7 +70,12 @@ in
   cargo-pgrx_0_12_9 = generic {
     version = "0.12.9";
     hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
-    cargoHash = "sha256-53HKhvsKLTa2JCByLEcK3UzWXoM+LTatd98zvS1C9no=";
+    cargoHash = "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY=";
+  };
+  cargo-pgrx_0_14_3 = generic {
+    version = "0.14.3";
+    hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
+    cargoHash = "sha256-Ny7j56pwB+2eEK62X0nWfFKQy5fBz+Q1oyvecivxLkk=";
   };
   inherit rustPlatform;
 }

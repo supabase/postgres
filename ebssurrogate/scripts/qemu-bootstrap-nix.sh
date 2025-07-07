@@ -35,7 +35,7 @@ callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false}' \
+	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false, "qemu_mode": true}' \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
@@ -104,6 +104,13 @@ EOF
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
 }
 
+function clean_legacy_things {
+    # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
+    apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+    apt-get -y purge kong
+    apt-get autoremove -y
+}
+
 function clean_system {
 	# Copy cleanup scripts
 	chmod +x /tmp/ansible-playbook/scripts/90-cleanup-qemu.sh
@@ -128,7 +135,9 @@ function clean_system {
 	mkdir /var/log/sysstat
 
 	chown -R postgres:postgres /var/log/wal-g
-	chmod -R 0300 /var/log/wal-g
+	# moving up fixes from init scripts
+	chmod -R 0310 /var/log/wal-g
+	chmod 0340 /var/log/wal-g/pitr.log
 
 	# # audit logs directory for apparmor
 	mkdir /var/log/audit
@@ -144,5 +153,8 @@ function clean_system {
 install_nix
 execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
-rm -rf /data/pgdata
+mkdir -p /db/template
+mv /data/pgdata /db/template
 cloud-init clean --logs
+clean_legacy_things
+clean_system

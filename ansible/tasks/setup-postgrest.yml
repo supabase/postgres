@@ -6,22 +6,28 @@
     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
     state: present
 
-- name: PostgREST - add Postgres PPA
+- name: PostgREST - add Postgres PPA main
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
     state: present
+    filename: postgresql-pgdg
 
-- name: PostgREST - update apt cache
+- name: PostgREST - install system dependencies
   apt:
-    update_cache: yes
-
-# libpq is a C library that enables user programs to communicate with
-# the PostgreSQL database server.
-- name: PostgREST - system dependencies
-  apt:
-    pkg:
+    package:
       - libpq5
       - libnuma-dev
+    update_cache: yes
+    state: present
+
+- name: PostgREST - verify libpq5 version
+  shell: dpkg -l libpq5 | grep '^ii' | awk '{print $3}'
+  register: libpq5_version
+  changed_when: false
+
+- name: Show installed libpq5 version
+  debug:
+    msg: "Installed libpq5 version: {{ libpq5_version.stdout }}"
 
 - name: PostgREST - remove Postgres PPA gpg key
   apt_key:
@@ -30,7 +36,7 @@
 
 - name: PostgREST - remove Postgres PPA
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg {{ postgresql_major }}"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
     state: absent
 
 - name: postgis - ensure dependencies do not get autoremoved
@@ -88,7 +94,6 @@
       #! /usr/bin/env bash
       set -euo pipefail
       set -x
-
       cd "$(dirname "$0")"
       cat $@ > merged.conf
     dest: /etc/postgrest/merge.sh

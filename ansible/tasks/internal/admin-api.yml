@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,envoy,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
+    groups: root,admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
     append: yes
 
 - name: Move shell scripts to /root dir

@@ -11,15 +11,19 @@ on:
       - 'ansible/vars.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: large-linux-x86
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
-      
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Set PostgreSQL versions
@@ -34,29 +38,27 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: arm-runner
-            arch: arm64
-            ubuntu_release: focal
-            ubuntu_version: 20.04
-            mcpu: neoverse-n1
+          - runner: large-linux-arm
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
-
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
-          if [[ -z $SUFFIX ]] ; then
+          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          if [[ -z "$SUFFIX" ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
           fi
@@ -66,8 +68,8 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl

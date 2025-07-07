@@ -1,3 +1,10 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.0
+-- Dumped by pg_dump version 17.0
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -43,27 +50,6 @@ CREATE SCHEMA graphql_public;
 --
 
 CREATE SCHEMA pgbouncer;
-
-
---
--- Name: pgsodium; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA pgsodium;
-
-
---
--- Name: pgsodium; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pgsodium WITH SCHEMA pgsodium;
-
-
---
--- Name: EXTENSION pgsodium; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pgsodium IS 'Pgsodium is a modern cryptography library for Postgres.';
 
 
 --
@@ -141,20 +127,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 --
 
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
-
-
---
--- Name: pgjwt; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS pgjwt WITH SCHEMA extensions;
-
-
---
--- Name: EXTENSION pgjwt; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION pgjwt IS 'JSON Web Token API for Postgresql';
 
 
 --
@@ -519,15 +491,21 @@ COMMENT ON FUNCTION extensions.set_graphql_placeholder() IS 'Reintroduces placeh
 
 CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(username text, password text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RAISE WARNING 'PgBouncer auth request: %', p_usename;
+    AS $_$
+begin
+    raise debug 'PgBouncer auth request: %', p_usename;
 
-    RETURN QUERY
-    SELECT usename::TEXT, passwd::TEXT FROM pg_catalog.pg_shadow
-    WHERE usename = p_usename;
-END;
-$$;
+    return query
+    select 
+        rolname::text, 
+        case when rolvaliduntil < now() 
+            then null 
+            else rolpassword::text 
+        end 
+    from pg_authid 
+    where rolname=$1 and rolcanlogin;
+end;
+$_$;
 
 
 --
@@ -595,28 +573,6 @@ BEGIN
     -- saving space for cloud-init
 END
 $$;
-
-
---
--- Name: secrets_encrypt_secret_secret(); Type: FUNCTION; Schema: vault; Owner: -
---
-
-CREATE FUNCTION vault.secrets_encrypt_secret_secret() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-		BEGIN
-		        new.secret = CASE WHEN new.secret IS NULL THEN NULL ELSE
-			CASE WHEN new.key_id IS NULL THEN NULL ELSE pg_catalog.encode(
-			  pgsodium.crypto_aead_det_encrypt(
-				pg_catalog.convert_to(new.secret, 'utf8'),
-				pg_catalog.convert_to((new.id::text || new.description::text || new.created_at::text || new.updated_at::text)::text, 'utf8'),
-				new.key_id::uuid,
-				new.nonce
-			  ),
-				'base64') END END;
-		RETURN new;
-		END;
-		$$;
 
 
 SET default_tablespace = '';
@@ -803,30 +759,6 @@ CREATE TABLE storage.objects (
     last_accessed_at timestamp with time zone DEFAULT now(),
     metadata jsonb
 );
-
-
---
--- Name: decrypted_secrets; Type: VIEW; Schema: vault; Owner: -
---
-
-CREATE VIEW vault.decrypted_secrets AS
- SELECT id,
-    name,
-    description,
-    secret,
-        CASE
-            WHEN (secret IS NULL) THEN NULL::text
-            ELSE
-            CASE
-                WHEN (key_id IS NULL) THEN NULL::text
-                ELSE convert_from(pgsodium.crypto_aead_det_decrypt(decode(secret, 'base64'::text), convert_to(((((id)::text || description) || (created_at)::text) || (updated_at)::text), 'utf8'::name), key_id, nonce), 'utf8'::name)
-            END
-        END AS decrypted_secret,
-    key_id,
-    nonce,
-    created_at,
-    updated_at
-   FROM vault.secrets;
 
 
 --
@@ -1078,10 +1010,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 
 --
 -- PostgreSQL database dump complete
---
-
-
---
--- Dbmate schema migrations
 --
 

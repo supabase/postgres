@@ -32,6 +32,72 @@ function execute_extension_upgrade_patches {
     fi
 }
 
+function execute_wrappers_patch {
+    # If upgrading to pgsodium-less Vault, Wrappers need to be updated so that
+    # foreign servers use `vault.secrets.id` instead of `vault.secrets.key_id`
+    UPDATE_WRAPPERS_SERVER_OPTIONS_QUERY=$(cat <<EOF
+  DO \$\$
+  DECLARE
+    server_rec RECORD;
+    option_rec RECORD;
+    vault_secrets RECORD;
+  BEGIN
+    IF EXISTS (SELECT FROM pg_extension WHERE extname = 'wrappers')
+      AND EXISTS (SELECT FROM pg_available_extension_versions WHERE name = 'wrappers' AND version NOT IN (
+      '0.1.0',
+      '0.1.1',
+      '0.1.4',
+      '0.1.5',
+      '0.1.6',
+      '0.1.7',
+      '0.1.8',
+      '0.1.9',
+      '0.1.10',
+      '0.1.11',
+      '0.1.12',
+      '0.1.14',
+      '0.1.15',
+      '0.1.16',
+      '0.1.17',
+      '0.1.18',
+      '0.1.19',
+      '0.2.0',
+      '0.3.0',
+      '0.3.1',
+      '0.4.0',
+      '0.4.1',
+      '0.4.2',
+      '0.4.3',
+      '0.4.4',
+      '0.4.5'
+    ))
+    THEN
+      FOR server_rec IN
+        SELECT srvname, srvoptions
+        FROM pg_foreign_server
+      LOOP
+        FOR option_rec IN
+          SELECT split_part(srvoption, '=', 1) AS option_name, split_part(srvoption, '=', 2) AS option_value
+          FROM UNNEST(server_rec.srvoptions) AS srvoption
+        LOOP
+          IF EXISTS (SELECT FROM vault.secrets WHERE option_rec.option_value IN (id::text, key_id::text)) THEN
+            EXECUTE format(
+              'ALTER SERVER %I OPTIONS (SET %I %L)',
+              server_rec.srvname,
+              option_rec.option_name,
+              (SELECT id FROM vault.secrets WHERE option_rec.option_value IN (id::text, key_id::text))
+            );
+          END IF;
+        END LOOP;
+      END LOOP;
+    END IF;
+  END;
+  \$\$;
+EOF
+    )
+    run_sql -c "$UPDATE_WRAPPERS_SERVER_OPTIONS_QUERY"
+}
+
 function execute_patches {
     # Patch pg_net grants
     PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';")
@@ -85,7 +151,64 @@ EOF
         run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';"
     fi
 
-    run_sql -c "grant pg_read_all_data, pg_signal_backend to postgres"
+    # Patch to handle upgrading to pgsodium-less Vault
+    REENCRYPT_VAULT_SECRETS_QUERY=$(cat <<EOF
+    DO \$\$
+    BEGIN
+      IF EXISTS (SELECT FROM pg_available_extension_versions WHERE name = 'supabase_vault' AND version = '0.3.0')
+        AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
+      THEN
+        IF (SELECT extversion FROM pg_extension WHERE extname = 'supabase_vault') != '0.2.8' THEN
+          grant usage on schema vault to postgres with grant option;
+          grant select, delete, truncate, references on vault.secrets, vault.decrypted_secrets to postgres with grant option;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to postgres with grant option;
+
+          -- service_role used to be able to manage secrets in Vault <=0.2.8 because it had privileges to pgsodium functions
+          grant usage on schema vault to service_role;
+          grant select, delete on vault.secrets, vault.decrypted_secrets to service_role;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
+        END IF;
+        -- Do an explicit IF EXISTS check to avoid referencing pgsodium objects if the project already migrated away from using pgsodium.
+        IF EXISTS (SELECT FROM vault.secrets WHERE key_id IS NOT NULL) THEN
+          UPDATE vault.secrets s
+          SET
+            secret = encode(
+              vault._crypto_aead_det_encrypt(
+                message := pgsodium.crypto_aead_det_decrypt(decode(s.secret, 'base64'), convert_to(s.id || s.description || s.created_at || s.updated_at, 'utf8'), s.key_id, s.nonce),
+                additional := convert_to(s.id::text, 'utf8'),
+                key_id := 0,
+                context := 'pgsodium'::bytea,
+                nonce := s.nonce
+              ),
+              'base64'
+            ),
+            key_id = NULL
+          WHERE
+            key_id IS NOT NULL;
+        END IF;
+      END IF;
+    END
+    \$\$;
+EOF
+    )
+    run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY"
+
+    GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY=$(cat <<EOF
+    DO \$\$
+    DECLARE
+      major_version INT;
+    BEGIN
+      SELECT current_setting('server_version_num')::INT / 10000 INTO major_version;
+      IF major_version >= 16 THEN
+        GRANT pg_create_subscription TO postgres;
+        GRANT anon, authenticated, service_role, authenticator, pg_monitor, pg_read_all_data, pg_signal_backend TO postgres WITH ADMIN OPTION;
+      END IF;
+      GRANT pg_monitor, pg_read_all_data, pg_signal_backend TO postgres;
+    END
+    \$\$;
+EOF
+    )
+    run_sql -c "$GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY"
 }
 
 function complete_pg_upgrade {
@@ -115,6 +238,13 @@ function complete_pg_upgrade {
     fi
 
     execute_extension_upgrade_patches || true
+
+    # For this to work we need `vault.secrets` from the old project to be
+    # preserved, but `run_generated_sql` includes `ALTER EXTENSION
+    # supabase_vault UPDATE` which modifies that. So we need to run it
+    # beforehand.
+    echo "3.1. Patch Wrappers server options"
+    execute_wrappers_patch
 
     echo "4. Running generated SQL files"
     retry 3 run_generated_sql

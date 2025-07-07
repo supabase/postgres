@@ -18,7 +18,7 @@ grant pg_read_all_data to supabase_read_only_user;
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp"      with schema extensions;
 create extension if not exists pgcrypto         with schema extensions;
-create extension if not exists pgjwt            with schema extensions;
+
 
 -- Set up auth roles for the developer
 create role anon                nologin noinherit;

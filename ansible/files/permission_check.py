@@ -79,6 +79,7 @@ expected_results = {
         {"groupname": "admin", "username": "adminapi"},
         {"groupname": "adminapi", "username": "adminapi"},
         {"groupname": "envoy", "username": "adminapi"},
+        {"groupname": "gotrue", "username": "adminapi"},
         {"groupname": "kong", "username": "adminapi"},
         {"groupname": "pgbouncer", "username": "adminapi"},
         {"groupname": "postgres", "username": "adminapi"},
@@ -93,7 +94,15 @@ expected_results = {
     "systemd-coredump": [
         {"groupname": "systemd-coredump", "username": "systemd-coredump"}
     ],
+    "supabase-admin-agent": [
+        {"groupname": "supabase-admin-agent", "username": "supabase-admin-agent"},
+        {"groupname": "admin", "username": "supabase-admin-agent"},
+        {"groupname": "salt", "username": "supabase-admin-agent"},
+    ],
 }
+
+# postgresql.service is expected to mount /etc as read-only
+expected_mount = "/etc ro"
 
 
 # This program depends on osquery being installed on the system
@@ -152,6 +161,35 @@ def check_nixbld_users():
     print("All nixbld users are in the 'nixbld' group.")
 
 
+def check_postgresql_mount():
+    # processes table has the nix .postgres-wrapped path as the
+    # binary path, rather than /usr/lib/postgresql/bin/postgres which
+    # is a symlink to /var/lib/postgresql/.nix-profile/bin/postgres, a script
+    # that ultimately calls /nix/store/...-postgresql-and-plugins-15.8/bin/.postgres-wrapped
+    query = """
+    SELECT pid
+    FROM processes
+    WHERE path LIKE '%.postgres-wrapped%'
+    AND cmdline LIKE '%-D /etc/postgresql%';
+    """
+    query_result = run_osquery(query)
+    parsed_result = parse_json(query_result)
+
+    pid = parsed_result[0].get("pid")
+
+    # get the mounts for the process
+    with open(f"/proc/{pid}/mounts", "r") as o:
+        lines = [line for line in o if "/etc" in line and "ro," in line]
+        if len(lines) == 0:
+            print(f"Expected exactly 1 match, got 0")
+            sys.exit(1)
+        if len(lines) != 1:
+            print(f"Expected exactly 1 match, got {len(lines)}: {';'.join(lines)}")
+            sys.exit(1)
+
+    print("postgresql.service mounts /etc as read-only.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="Supabase Postgres Artifact Permissions Checker",
@@ -204,6 +242,7 @@ def main():
         "postgrest",
         "tcpdump",
         "systemd-coredump",
+        "supabase-admin-agent",
     ]
     if not qemu_artifact:
         usernames.append("ec2-instance-connect")
@@ -217,6 +256,9 @@ def main():
 
     # Check if all nixbld users are in the nixbld group
     check_nixbld_users()
+
+    # Check if postgresql.service is using a read-only mount for /etc
+    check_postgresql_mount()
 
 
 if __name__ == "__main__":

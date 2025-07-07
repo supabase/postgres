@@ -1,4 +1,9 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pg_hashids";
@@ -24,7 +29,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Generate short unique IDs in PostgreSQL";
     homepage = "https://github.com/iCyberon/pg_hashids";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

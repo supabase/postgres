@@ -1,4 +1,9 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "index_advisor";
@@ -23,7 +28,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Recommend indexes to improve query performance in PostgreSQL";
     homepage = "https://github.com/olirice/index_advisor";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

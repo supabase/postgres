@@ -1,0 +1,87 @@
+- name: supabase-admin-agent - system group
+  group:
+    name: supabase-admin-agent
+    system: yes
+
+- name: supabase-admin-agent - system user
+  user:
+    name: supabase-admin-agent
+    group: supabase-admin-agent
+    groups: admin,salt
+    append: yes
+    system: yes
+    shell: /bin/sh
+
+- name: supabase-admin-agent - config dir
+  file:
+    path: /opt/supabase-admin-agent
+    owner: supabase-admin-agent
+    state: directory
+
+- name: supabase-admin-agent - gpg dir
+  file:
+    path: /etc/salt/gpgkeys
+    owner: root
+    group: salt
+    state: directory
+
+- name: give supabase-admin-agent user permissions
+  copy:
+    src: files/supabase_admin_agent_config/supabase-admin-agent.sudoers.conf
+    dest: /etc/sudoers.d/supabase-admin-agent
+    mode: "0644"
+
+- name: Setting arch (x86)
+  set_fact:
+    arch: "x86"
+  when: platform == "amd64"
+
+- name: Setting arch (arm)
+  set_fact:
+    arch: "arm64"
+  when: platform == "arm64"
+
+- name: Download supabase-admin-agent archive
+  get_url:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
+    dest: "/tmp/supabase-admin-agent.tar.gz"
+    timeout: 90
+
+- name: supabase-admin-agent - unpack archive in /opt
+  unarchive:
+    remote_src: yes
+    src: /tmp/supabase-admin-agent.tar.gz
+    dest: /opt/supabase-admin-agent/
+    owner: supabase-admin-agent
+    extra_opts:
+      - --strip-components=1
+
+- name: supabase-admin-agent - create symlink
+  ansible.builtin.file:
+    path: /opt/supabase-admin-agent/supabase-admin-agent
+    src: "/opt/supabase-admin-agent/supabase-admin-agent-linux-{{ arch }}"
+    state: link
+    owner: supabase-admin-agent
+    mode: "0755"
+    force: yes
+
+- name: supabase-admin-agent - create salt systemd timer file
+  copy:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.timer
+    dest: /etc/systemd/system/supabase-admin-agent_salt.timer
+
+- name: supabase-admin-agent - create salt service file
+  copy:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.service
+    dest: /etc/systemd/system/supabase-admin-agent_salt.service
+
+- name: supabase-admin-agent - reload systemd
+  systemd:
+    daemon_reload: yes
+
+# Initially ensure supabase-admin-agent is installed but not started
+- name: supabase-admin-agent - DISABLE service
+  systemd:
+    name: supabase-admin-agent_salt
+    enabled: no
+    state: stopped

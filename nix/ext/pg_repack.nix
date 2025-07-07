@@ -1,12 +1,10 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, openssl
-, postgresql
-, postgresqlTestHook
-, readline
-, testers
-, zlib
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+  postgresqlTestHook,
+  testers,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -29,9 +27,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   passthru.tests = {
-    version = testers.testVersion {
-      package = finalAttrs.finalPackage;
-    };
+    version = testers.testVersion { package = finalAttrs.finalPackage; };
     extension = stdenv.mkDerivation {
       name = "plpgsql-check-test";
       dontUnpack = true;
@@ -59,7 +55,6 @@ stdenv.mkDerivation (finalAttrs: {
     '';
     homepage = "https://github.com/reorg/pg_repack";
     license = licenses.bsd3;
-    maintainers = with maintainers; [ samrose ];
     inherit (postgresql.meta) platforms;
     mainProgram = "pg_repack";
   };
