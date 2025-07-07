@@ -331,6 +331,7 @@ let
         description = "Powerful, open source object-relational database system";
         license = licenses.postgresql;
         changelog = "https://www.postgresql.org/docs/release/${finalAttrs.version}/";
+        teams = [ ];
         maintainers = with maintainers; [
           thoughtpolice
           danbst
