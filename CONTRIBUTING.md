@@ -3,17 +3,8 @@
 ## Adding a New Extension
 
 Supabase Postgres supports multiple Dockerfiles for different versions and deployment scenarios (e.g., `Dockerfile-15`, `Dockerfile-17`, `Dockerfile-kubernetes`, `Dockerfile-orioledb-17`).  
-**Please add your extension to each relevant Dockerfile according to the images you want to support.**
 
-### Steps
-
-1. **Add a build stage** for your extension in the target Dockerfile, named after your extension.  
-   _Tip: Search for `FROM base as` in the Dockerfile to find all extension build stages._
-2. **Add build arguments** for your extension's release version if needed.
-3. **Download or build the extension package** (`.deb`) in your build stage and place it in `/tmp/`.
-   - If your extension is published as a `.deb` package, use `ADD` or `COPY`.
-   - If you need to build from source, use `checkinstall` or a similar tool to create a `.deb` package.
-4. **In the `extensions` stage**, use `COPY --from=your_stage` to copy your package into the final image.
+> Instructions for [adding extensions](https://github.com/supabase/postgres/blob/develop/nix/docs/adding-new-package.md)
 
 Here's a minimal example:
 
