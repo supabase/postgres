@@ -287,9 +287,9 @@
               '';
         in
         {
-          psql_15 = self'.packages."psql_15/bin";
-          psql_17 = self'.packages."psql_17/bin";
-          psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+          psql_15 = makeCheckHarness self'.packages."psql_15/bin";
+          psql_17 = makeCheckHarness self'.packages."psql_17/bin";
+          psql_orioledb-17 = makeCheckHarness self'.packages."psql_orioledb-17/bin";
           inherit (self'.packages)
             wal-g-2
             wal-g-3
