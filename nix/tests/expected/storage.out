@@ -206,3 +206,24 @@ select * from storage.migrations ;
 ----+------+------+-------------
 (0 rows)
 
+-- postgres can grant storage privileges to custom roles
+create role r;
+grant r to postgres with admin option;
+set role r;
+select * from storage.buckets;
+ERROR:  permission denied for schema storage
+LINE 1: select * from storage.buckets;
+                      ^
+set role postgres;
+grant usage on schema storage to r;
+grant select on storage.buckets to r;
+set role r;
+select * from storage.buckets;
+ id | name | owner | created_at | updated_at 
+----+------+-------+------------+------------
+(0 rows)
+
+set role postgres;
+drop owned by r cascade;
+drop role r;
+reset role;
