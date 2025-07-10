@@ -24,7 +24,7 @@
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
-        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
+        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-20.04-aarch64.tar.xz"
         dest: /tmp/postgrest-{{ postgrest_release }}-arm64.tar.xz
         checksum: "{{ postgrest_arm_release_checksum }}"
         timeout: 60
