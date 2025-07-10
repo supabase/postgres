@@ -171,7 +171,9 @@
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
-                initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+
+                # Use --allow-group-access to allow initdb to run as root (needed on macOS)
+                initdb --locale=C --username=supabase_admin --allow-group-access -D "$PGTAP_CLUSTER"
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
                 echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
