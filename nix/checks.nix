@@ -308,12 +308,11 @@
             postgresql_17_src
             ;
         }
-        // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
-          wrappers = import ./ext/tests/wrappers.nix {
+        // pkgs.lib.optionalAttrs (system == "x86_64-linux") (
+          import ./ext/tests {
             inherit self;
             inherit pkgs;
-          };
-          devShell = self'.devShells.default;
-        };
+          }
+        );
     };
 }
