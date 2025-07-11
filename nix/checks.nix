@@ -168,80 +168,80 @@
               ''
                 set -e
 
-                # #First we need to create a generic pg cluster for pgtap tests and run those
-                # export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
-                # PGTAP_CLUSTER=$(mktemp -d)
-                # initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
-                # substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
-                #   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
-                # echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
-                # echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
-                # echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
-                # echo "Checking shared_preload_libraries setting:"
-                # grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
-                # # Remove timescaledb if running orioledb-17 check
-                # echo "I AM ${pgpkg.version}===================================================="
-                # if [[ "${pgpkg.version}" == *"17"* ]]; then
-                #   perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
-                # fi
-                # #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
-                # echo "PGTAP_CLUSTER directory contents:"
-                # ls -la "$PGTAP_CLUSTER"
+                #First we need to create a generic pg cluster for pgtap tests and run those
+                export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
+                PGTAP_CLUSTER=$(mktemp -d)
+                initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+                substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
+                  --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
+                echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
+                echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
+                echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
+                echo "Checking shared_preload_libraries setting:"
+                grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
+                # Remove timescaledb if running orioledb-17 check
+                echo "I AM ${pgpkg.version}===================================================="
+                if [[ "${pgpkg.version}" == *"17"* ]]; then
+                  perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
+                fi
+                #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
+                echo "PGTAP_CLUSTER directory contents:"
+                ls -la "$PGTAP_CLUSTER"
 
-                # # Check if postgresql.conf exists
-                # if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-                #     echo "postgresql.conf is missing!"
-                #     exit 1
-                # fi
+                # Check if postgresql.conf exists
+                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
+                    echo "postgresql.conf is missing!"
+                    exit 1
+                fi
 
-                # # PostgreSQL startup
-                # if [[ "$(uname)" == "Darwin" ]]; then
-                # pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgPort} -d 5" start 2>&1
-                # else
-                # mkdir -p "$PGTAP_CLUSTER/sockets"
-                # pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start 2>&1
-                # fi || {
-                # echo "pg_ctl failed to start PostgreSQL"
-                # echo "Contents of postgresql.log:"
-                # cat "$PGTAP_CLUSTER"/postgresql.log
-                # exit 1
-                # }
-                # for i in {1..60}; do
-                #   if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort}; then
-                #     echo "PostgreSQL is ready"
-                #     break
-                #   fi
-                #   sleep 1
-                #   if [ $i -eq 60 ]; then
-                #     echo "PostgreSQL is not ready after 60 seconds"
-                #     echo "PostgreSQL status:"
-                #     pg_ctl -D "$PGTAP_CLUSTER" status
-                #     echo "PostgreSQL log content:"
-                #     cat "$PGTAP_CLUSTER"/postgresql.log
-                #     exit 1
-                #   fi
-                # done
-                # createdb -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin testing
-                # if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
-                #   echo "Error executing SQL file. PostgreSQL log content:"
-                #   cat "$PGTAP_CLUSTER"/postgresql.log
-                #   pg_ctl -D "$PGTAP_CLUSTER" stop
-                #   exit 1
-                # fi
-                # SORTED_DIR=$(mktemp -d)
-                # for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-                #   psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
-                # done
-                # rm -rf "$SORTED_DIR"
-                # pg_ctl -D "$PGTAP_CLUSTER" stop
-                # rm -rf $PGTAP_CLUSTER
+                # PostgreSQL startup
+                if [[ "$(uname)" == "Darwin" ]]; then
+                pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgPort} -d 5" start 2>&1
+                else
+                mkdir -p "$PGTAP_CLUSTER/sockets"
+                pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start 2>&1
+                fi || {
+                echo "pg_ctl failed to start PostgreSQL"
+                echo "Contents of postgresql.log:"
+                cat "$PGTAP_CLUSTER"/postgresql.log
+                exit 1
+                }
+                for i in {1..60}; do
+                  if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort}; then
+                    echo "PostgreSQL is ready"
+                    break
+                  fi
+                  sleep 1
+                  if [ $i -eq 60 ]; then
+                    echo "PostgreSQL is not ready after 60 seconds"
+                    echo "PostgreSQL status:"
+                    pg_ctl -D "$PGTAP_CLUSTER" status
+                    echo "PostgreSQL log content:"
+                    cat "$PGTAP_CLUSTER"/postgresql.log
+                    exit 1
+                  fi
+                done
+                createdb -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin testing
+                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                  echo "Error executing SQL file. PostgreSQL log content:"
+                  cat "$PGTAP_CLUSTER"/postgresql.log
+                  pg_ctl -D "$PGTAP_CLUSTER" stop
+                  exit 1
+                fi
+                SORTED_DIR=$(mktemp -d)
+                for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
+                  psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
+                done
+                rm -rf "$SORTED_DIR"
+                pg_ctl -D "$PGTAP_CLUSTER" stop
+                rm -rf $PGTAP_CLUSTER
 
-                # # End of pgtap tests
-                # # from here on out we are running pg_regress tests, we use a different cluster for this
-                # # which is start by the start-postgres-server-bin script
-                # # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
+                # End of pgtap tests
+                # from here on out we are running pg_regress tests, we use a different cluster for this
+                # which is start by the start-postgres-server-bin script
+                # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
 
-                # unset GRN_PLUGINS_DIR
+                unset GRN_PLUGINS_DIR
                 ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
 
                 for i in {1..60}; do
