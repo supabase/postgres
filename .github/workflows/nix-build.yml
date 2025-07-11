@@ -24,7 +24,7 @@ jobs:
             arch: amd64
           - runner: large-linux-arm
             arch: arm64
-          - runner: macos-latest-xlarge
+          - runner: macos-14-xlarge
             arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180

@@ -171,29 +171,7 @@
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
-                # Set USER environment variable to handle root user restriction on macOS
-                # This is a common pattern in Nix builds to handle user-related issues
-                export USER="$(whoami)"
-                if [[ "$(uname)" == "Darwin" ]]; then
-                  # On macOS, ensure we're not running as root for initdb
-                  if [[ "$USER" == "root" ]]; then
-                    export USER="nobody"
-                  fi
-                fi
-
-                # Initialize database with proper flags based on version
-                if [ "${majorVersion}" = "orioledb-17" ]; then
-                  initdb -D "$PGTAP_CLUSTER" \
-                    --allow-group-access \
-                    --username=supabase_admin \
-                    --locale-provider=icu \
-                    --encoding=UTF-8 \
-                    --icu-locale=en_US.UTF-8
-                else
-                  initdb -D "$PGTAP_CLUSTER" \
-                    --allow-group-access \
-                    --username=supabase_admin
-                fi
+                initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
                 echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
