@@ -79,30 +79,30 @@ jobs:
           extra_nix_config: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-      - name: Aggressive disk cleanup for DuckDB build
-        if: matrix.runner == 'macos-latest-xlarge'
-        run: |
-          echo "=== BEFORE CLEANUP ==="
-          df -h
-          # Remove major space consumers
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/watchOS.platform || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/tvOS.platform || true
-          # Clean everything possible
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/share/boost || true
-          sudo rm -rf /opt/homebrew || true
-          sudo xcrun simctl delete all 2>/dev/null || true
-          # Aggressive cache cleanup
-          sudo rm -rf /System/Library/Caches/* 2>/dev/null || true
-          sudo rm -rf /Library/Caches/* 2>/dev/null || true
-          sudo rm -rf ~/Library/Caches/* 2>/dev/null || true
-          sudo rm -rf /private/var/log/* 2>/dev/null || true
-          sudo rm -rf /tmp/* 2>/dev/null || true
-          echo "=== AFTER CLEANUP ==="
-          df -h
+      # - name: Aggressive disk cleanup for DuckDB build
+      #   if: matrix.runner == 'macos-latest-xlarge'
+      #   run: |
+      #     echo "=== BEFORE CLEANUP ==="
+      #     df -h
+      #     # Remove major space consumers
+      #     sudo rm -rf /usr/share/dotnet || true
+      #     sudo rm -rf /usr/local/lib/android || true
+      #     sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform || true
+      #     sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/watchOS.platform || true
+      #     sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/tvOS.platform || true
+      #     # Clean everything possible
+      #     sudo rm -rf /opt/ghc || true
+      #     sudo rm -rf /usr/local/share/boost || true
+      #     sudo rm -rf /opt/homebrew || true
+      #     sudo xcrun simctl delete all 2>/dev/null || true
+      #     # Aggressive cache cleanup
+      #     sudo rm -rf /System/Library/Caches/* 2>/dev/null || true
+      #     sudo rm -rf /Library/Caches/* 2>/dev/null || true
+      #     sudo rm -rf ~/Library/Caches/* 2>/dev/null || true
+      #     sudo rm -rf /private/var/log/* 2>/dev/null || true
+      #     sudo rm -rf /tmp/* 2>/dev/null || true
+      #     echo "=== AFTER CLEANUP ==="
+      #     df -h
       - name: Build psql bundle
         run: >
           nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
