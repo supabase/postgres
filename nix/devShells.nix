@@ -47,6 +47,7 @@
               ansible-lint
               (packer.overrideAttrs (_oldAttrs: {
                 version = "1.7.8";
+                __intentionallyOverridingVersion = true;
               }))
 
               self'.packages.start-server
