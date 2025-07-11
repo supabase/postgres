@@ -82,6 +82,7 @@ jobs:
       - name: Aggressive disk cleanup for DuckDB build
         if: matrix.runner == 'macos-latest-xlarge'
         run: |
+          nix --version
           echo "=== BEFORE CLEANUP ==="
           df -h
           # Remove major space consumers
