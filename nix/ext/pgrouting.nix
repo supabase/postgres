@@ -10,7 +10,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgrouting";
-  version = "3.4.1";
+  version = "3.8.0";
 
   nativeBuildInputs = [
     cmake
@@ -25,7 +25,7 @@ stdenv.mkDerivation rec {
     owner = "pgRouting";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-QC77AnPGpPQGEWi6JtJdiNsB2su5+aV2pKg5ImR2B0k=";
+    hash = "sha256-Lvf7TQ3GywbzZmcd9wi3s8I5sCXIQAPeXNTRk/J46to=";
   };
 
   #disable compile time warnings for incompatible pointer types only on macos and pg16
