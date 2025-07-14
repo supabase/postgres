@@ -74,6 +74,9 @@ fi
 get_postgres_path() {
   local version=$1
   case $version in
+    postgresql_14)
+      echo "@PSQL14_BINDIR@"
+      ;;
     postgresql_15)
       echo "@PSQL15_BINDIR@"
       ;;

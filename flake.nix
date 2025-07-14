@@ -551,7 +551,9 @@
                 chmod +x $out/bin/migrate-postgres
               '';
 
-            pg-upgrade-tool = pkgs.runCommand "pg-upgrade-tool" { } ''
+            pg-upgrade-tool = pkgs.runCommand "pg-upgrade-tool" {
+              buildInputs = [ pkgs.tmux pkgs.magic-wormhole ];
+            } ''
               mkdir -p $out/bin
               substitute ${./nix/tools/pg-upgrade-tool.sh.in} $out/bin/pg-upgrade-tool \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
