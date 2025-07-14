@@ -57,7 +57,7 @@ if [[ -z "$PG_NEW" ]]; then
 fi
 
 # Validate PostgreSQL versions
-valid_versions=("postgresql_15" "postgresql_17")
+valid_versions=("postgresql_14" "postgresql_15" "postgresql_17")
 if [[ ! " ${valid_versions[@]} " =~ " ${PG_OLD} " ]]; then
   echo "Error: Invalid --pg-old version: $PG_OLD"
   echo "Valid versions: ${valid_versions[*]}"

@@ -556,6 +556,7 @@
             } ''
               mkdir -p $out/bin
               substitute ${./nix/tools/pg-upgrade-tool.sh.in} $out/bin/pg-upgrade-tool \
+                --subst-var-by 'PSQL14_BINDIR' '${basePackages.psql_14.bin}' \
                 --subst-var-by 'PSQL15_BINDIR' '${basePackages.psql_15.bin}' \
                 --subst-var-by 'PSQL17_BINDIR' '${basePackages.psql_17.bin}'
               chmod +x $out/bin/pg-upgrade-tool
