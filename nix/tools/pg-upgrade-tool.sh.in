@@ -75,7 +75,8 @@ get_postgres_path() {
   local version=$1
   case $version in
     postgresql_14)
-      echo "@PSQL14_BINDIR@"
+      PSQL14_BINDIR=$(nix build "github:supabase/postgres/14.18.1.001-test-3#psql_14/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
+      echo "${PSQL14_BINDIR}"
       ;;
     postgresql_15)
       echo "@PSQL15_BINDIR@"
