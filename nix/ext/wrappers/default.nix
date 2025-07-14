@@ -146,6 +146,8 @@ let
         };
       }
       // lib.optionalAttrs (version == "0.3.0") {
+        # TODO: there is an inference error on crate `time` caused by an API change in Rust 1.80.0;
+        # so we should patch `Cargo.toml` with `time >= 0.3.35`, to use a more recent Rust version!
         patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
 
         cargoLock = {
@@ -189,7 +191,9 @@ let
   numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
   supportedVersions = lib.filterAttrs (
-    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+    _: value:
+    (!value ? ignore || value.ignore != true)
+    && builtins.elem (lib.versions.major postgresql.version) value.postgresql
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
