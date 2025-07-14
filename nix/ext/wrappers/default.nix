@@ -64,7 +64,9 @@ let
         cargoLock = {
           lockFile = "${src}/Cargo.lock";
           outputHashes =
-            if builtins.compareVersions "0.4.2" version >= 0 then
+            if builtins.compareVersions "0.2.0" version >= 0 then
+              { "clickhouse-rs-1.0.0-alpha.1" = ""; }
+            else if builtins.compareVersions "0.4.2" version >= 0 then
               { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
             else if builtins.compareVersions "0.5.0" version >= 0 then
               { "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0="; }
@@ -154,6 +156,18 @@ let
           lockFile = ./Cargo.lock-0.3.0;
           outputHashes = {
             "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
+          };
+        };
+      }
+      // lib.optionalAttrs (version == "0.2.0") {
+        # TODO: there is an inference error on crate `time` caused by an API change in Rust 1.80.0;
+        # so we should patch `Cargo.toml` with `time >= 0.3.35`, to use a more recent Rust version!
+        #patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
+
+        cargoLock = {
+          lockFile = ./Cargo.lock-0.2.0;
+          outputHashes = {
+            # "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
           };
         };
       }
