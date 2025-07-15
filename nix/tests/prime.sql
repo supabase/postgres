@@ -53,7 +53,12 @@ create extension if not exists pg_surgery;
 create extension if not exists pg_tle;
 create extension if not exists pg_trgm;
 create extension if not exists pg_visibility;
-create extension if not exists pg_walinspect;
+DO $$
+BEGIN
+    IF current_setting('server_version_num')::integer >= 150000 THEN
+        CREATE EXTENSION IF NOT EXISTS pg_walinspect;
+    END IF;
+END $$;
 create extension if not exists pgaudit;
 create extension if not exists pgcrypto;
 create extension if not exists pgtap;

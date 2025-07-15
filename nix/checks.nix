@@ -84,7 +84,7 @@
                 let
                   name = pkg.version;
                 in
-                if builtins.match "15.*" name != null then
+                if builtins.match "15.*" name != null || builtins.match "14.*" name != null then
                   "15"
                 else if builtins.match "17.*" name != null then
                   "17"
@@ -108,6 +108,8 @@
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
+                          else if version == "14" then
+                            builtins.match "z_15_.*" name != null
                           else
                             builtins.match "z_15_.*" name != null
                         else
@@ -123,11 +125,14 @@
                   version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
                   isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
                   isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
+                  isFourteenMatch = builtins.match "^14[.][0-9]+$" version != null;
                   result =
                     if isOrioledbMatch then
                       "orioledb-17"
                     else if isSeventeenMatch then
                       "17"
+                    else if isFourteenMatch then
+                      "14"
                     else
                       "15";
                 in
@@ -141,6 +146,8 @@
                   "5535"
                 else if (majorVersion == "15") then
                   "5536"
+                else if (majorVersion == "14") then
+                  "5538"
                 else
                   "5537";
 
@@ -222,6 +229,10 @@
                     exit 1
                   fi
                 done
+
+                # Print PostgreSQL version
+                echo "PostgreSQL version:"
+                postgres --version
                 createdb -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin testing
                 if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
                   echo "Error executing SQL file. PostgreSQL log content:"
@@ -291,6 +302,7 @@
           psql_15 = makeCheckHarness self'.packages."psql_15/bin";
           psql_17 = makeCheckHarness self'.packages."psql_17/bin";
           psql_orioledb-17 = makeCheckHarness self'.packages."psql_orioledb-17/bin";
+          psql_legacy-14 = makeCheckHarness self'.packages."psql_legacy-14/bin";
           inherit (self'.packages)
             wal-g-2
             wal-g-3
