@@ -47,7 +47,7 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ env.POSTGRES_MAJOR_VERSION }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq-go -- '.postgres_release["postgres'${{ env.POSTGRES_MAJOR_VERSION }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
