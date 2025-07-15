@@ -20,7 +20,7 @@ print_help() {
     echo "  --getkey-script SCRIPT   Provide a custom path to the PGSODIUM_GETKEY_SCRIPT"
     echo "  -h, --help              Show this help message"
     echo
-    echo "VERSION must be one of: 15, orioledb-17"
+    echo "VERSION must be one of: 14, 15, 17, orioledb-17"
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
@@ -162,7 +162,7 @@ else
     echo "Please provide a valid Postgres version (14, 15, 17, orioledb-17)"
     exit 1
 fi
-
+echo "$BINDIR"
 # Set environment variables and paths
 export PATH=$BINDIR/bin:$PATH
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@

@@ -7,6 +7,7 @@
     # explicit is better.
 
     inherit (self.packages.${final.system})
+      postgresql_14
       postgresql_15
       postgresql_17
       postgresql_orioledb-17

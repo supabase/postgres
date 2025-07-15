@@ -20,6 +20,7 @@
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       pkgs-lib = pkgs.callPackage ./lib.nix {
+        psql_legacy-14 = self'.packages."psql_legacy-14/bin";
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
@@ -43,6 +44,7 @@
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
+            psql_legacy-14 = self'.packages."psql_legacy-14/bin";
             psql_15 = self'.packages."psql_15/bin";
             psql_17 = self'.packages."psql_17/bin";
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";

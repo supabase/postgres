@@ -1,6 +1,7 @@
 {
   psql_17,
   psql_15,
+  psql_legacy-14,
   psql_orioledb-17,
   defaults,
   supabase-groonga,
@@ -76,6 +77,7 @@
         SHELL_PATH = "${pkgs.bash}/bin/bash";
         PGSQL_DEFAULT_PORT = "${defaults.port}";
         PGSQL_SUPERUSER = "${defaults.superuser}";
+        PSQL14_BINDIR = "${psql_legacy-14}";
         PSQL15_BINDIR = "${psql_15}";
         PSQL17_BINDIR = "${psql_17}";
         PSQL_CONF_FILE = "${paths.pgconfigFile}";

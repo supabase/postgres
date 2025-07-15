@@ -22,6 +22,10 @@ let
         version = "1.7.0";
         hash = "sha256-8pShPr4HJaJQPjW1iPJIpj3CutTx8Tgr+rOqoXtgCcw=";
       };
+      "14" = {
+        version = "1.6.3";
+        hash = "sha256-KgLidJHjUK9BTp6ffmGUj1chcwIe6IzlcadRpGCfNdM=";
+      };
     }
     .${lib.versions.major postgresql.version}
     or (throw "Source for pgaudit is not available for ${postgresql.version}");
