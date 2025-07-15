@@ -2,6 +2,7 @@
   "wrappers": {
     "0.5.3": {
       "postgresql": [
+        "14",
         "15",
         "17",
         "orioledb-17"

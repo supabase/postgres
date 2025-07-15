@@ -1,5 +1,6 @@
 {
   runCommand,
+  psql_legacy-14,
   psql_15,
   psql_17,
   psql_orioledb-17,
@@ -16,6 +17,7 @@ runCommand "start-postgres-client" { } ''
   substitute ${../tools/run-client.sh.in} $out/bin/start-postgres-client \
     --subst-var-by 'PGSQL_DEFAULT_PORT' '${defaults.port}' \
     --subst-var-by 'PGSQL_SUPERUSER' '${defaults.superuser}' \
+    --subst-var-by 'PSQL14_BINDIR' '${psql_legacy-14}' \
     --subst-var-by 'PSQL15_BINDIR' '${psql_15}' \
     --subst-var-by 'PSQL17_BINDIR' '${psql_17}' \
     --subst-var-by 'PSQLORIOLEDB17_BINDIR' '${psql_orioledb-17}' \

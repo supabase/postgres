@@ -41,6 +41,10 @@ in
       defaults = { };
       supportedPostgresVersions = {
         postgres = {
+          "14" = {
+            version = "14.18";
+            hash = "sha256-g6sp1r/D3Fiy7TxmQRT9++tqBFDEuNf6aa7pHjyhT44=";
+          };
           "15" = {
             version = "15.8";
             hash = "sha256-RANRX5pp7rPv68mPMLjGlhIr/fiV6Ss7I/W452nty2o=";

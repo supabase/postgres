@@ -165,6 +165,7 @@
         recurseForDerivations = true;
       };
       basePackages = {
+        psql_legacy-14 = makePostgres "14";
         psql_15 = makePostgres "15";
         psql_17 = makePostgres "17";
         psql_orioledb-17 = makePostgres "orioledb-17";
