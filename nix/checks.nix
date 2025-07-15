@@ -10,6 +10,7 @@
     }:
     let
       pkgs-lib = pkgs.callPackage ./packages/lib.nix {
+        psql_legacy-14 = self'.packages."psql_legacy-14/bin";
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
