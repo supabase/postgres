@@ -10,6 +10,9 @@ alter user  supabase_admin with superuser createdb createrole replication bypass
 -- Supabase replication user
 create user supabase_replication_admin with login replication;
 
+-- Supabase etl user
+create user supabase_etl_admin with login replication;
+
 -- Supabase read-only user
 create role supabase_read_only_user with login bypassrls;
 grant pg_read_all_data to supabase_read_only_user;
