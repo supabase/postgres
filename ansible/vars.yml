@@ -13,7 +13,7 @@ postgres_release:
   postgresorioledb-17: "17.0.1.108-orioledb-rc2"
   postgres17: "17.4.1.058-rc3"
   postgres15: "15.8.1.115-rc3"
-  postgres14: "14.18.1.001-rc3" #legacy for internal maintenance only. 
+  postgres14: "14.18.1.002" #legacy for internal maintenance only. 
 
 # Note, postgres14 is not built on every release, but is available in the nix cache. 
 # postgres14 is included here to support upgrading from postgres14 to newer versions.
