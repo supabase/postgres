@@ -12,6 +12,11 @@ on:
         required: true
         type: string
         default: 'main'
+      release_to_prod:
+        description: 'Release AMI to production (will also create GitHub release)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -105,12 +110,14 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
 
       - name: configure aws credentials - prod
+        if: ${{ github.event.inputs.release_to_prod == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
 
       - name: Upload software manifest to s3 prod
+        if: ${{ github.event.inputs.release_to_prod == 'true' }}
         run: |
           cd ansible
           ansible-playbook -i localhost \
@@ -120,10 +127,12 @@ jobs:
             manifest-playbook.yml
     
       - name: Upload nix flake revision to s3 prod
+        if: ${{ github.event.inputs.release_to_prod == 'true' }}
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
 
       - name: Create release
+        if: ${{ github.event.inputs.release_to_prod == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ steps.process_release_version.outputs.version }}
