@@ -10,7 +10,7 @@
     }:
     let
       pkgs-lib = pkgs.callPackage ./packages/lib.nix {
-        psql_legacy-14 = self'.packages."psql_legacy-14/bin";
+        psql_14 = self'.packages."psql_14/bin";
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
@@ -302,7 +302,7 @@
           psql_15 = makeCheckHarness self'.packages."psql_15/bin";
           psql_17 = makeCheckHarness self'.packages."psql_17/bin";
           psql_orioledb-17 = makeCheckHarness self'.packages."psql_orioledb-17/bin";
-          psql_legacy-14 = makeCheckHarness self'.packages."psql_legacy-14/bin";
+          psql_14 = makeCheckHarness self'.packages."psql_14/bin";
           inherit (self'.packages)
             wal-g-2
             wal-g-3
