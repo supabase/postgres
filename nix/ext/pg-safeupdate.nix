@@ -18,16 +18,22 @@ stdenv.mkDerivation rec {
     hash = "sha256-1cyvVEC9MQGMr7Tg6EUbsVBrMc8ahdFS3+CmDkmAq4Y=";
   };
 
+  buildPhase = ''
+    runHook preBuild
+    make PG_CONFIG=${postgresql}/bin/pg_config
+    runHook postBuild
+  '';
+
   installPhase = ''
-    install -D safeupdate${postgresql.dlSuffix} -t $out/lib
+    runHook preInstall
+    make install PG_CONFIG=${postgresql}/bin/pg_config DESTDIR=$out
+    runHook postInstall
   '';
 
   meta = with lib; {
     description = "A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE";
     homepage = "https://github.com/eradman/pg-safeupdate";
-    changelog = "https://github.com/eradman/pg-safeupdate/raw/${src.rev}/NEWS";
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
-    broken = versionOlder postgresql.version "14";
   };
 }

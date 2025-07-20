@@ -1,4 +1,4 @@
-# 01 &mdash; Using supabase nix
+01 &mdash; Using supabase nix
 
 Let's clone this repo:
 

@@ -228,6 +228,14 @@
                   pg_ctl -D "$PGTAP_CLUSTER" stop
                   exit 1
                 fi
+
+                echo "Running pgTAP smoke tests"
+                if ! pg_prove -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ${./tests/smoke}/*.sql; then
+                 echo "pgTAP smoke tests failed"
+                    pg_ctl -D "$PGTAP_CLUSTER" stop
+                  exit 1
+                fi
+
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
                   psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true

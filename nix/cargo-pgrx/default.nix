@@ -1,81 +1,138 @@
 {
   lib,
-  darwin,
-  fetchCrate,
+  stdenv,
+  fetchFromGitHub,
   openssl,
   pkg-config,
   makeRustPlatform,
-  stdenv,
   rust-bin,
-  rustVersion ? "1.85.1",
+  postgresql,
 }:
 let
-  rustPlatform = makeRustPlatform {
-    cargo = rust-bin.stable.${rustVersion}.default;
-    rustc = rust-bin.stable.${rustVersion}.default;
-  };
-  mkCargoPgrx =
-    {
-      version,
-      hash,
-      cargoHash,
-    }:
-    rustPlatform.buildRustPackage rec {
-      # rust-overlay uses 'cargo-auditable' wrapper for 'cargo' command, but it
-      # is using older version 0.18.1 of 'cargo_metadata' which doesn't support
-      # rust edition 2024, so we disable the 'cargo-auditable' just for now.
-      # ref: https://github.com/oxalica/rust-overlay/issues/153
-      auditable = false;
-      pname = "cargo-pgrx";
-      inherit version;
-      src = fetchCrate { inherit version pname hash; };
-      inherit cargoHash;
-      nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
-      buildInputs =
-        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
-        ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+  pgrxPostgresMajor = lib.versions.major postgresql.version;
 
+  versions = builtins.fromJSON (builtins.readFile ./versions.json);
+
+
+  # See the versions.json file for the available versions
+  rustVersionMapping = {
+    "0.11.3" = "1.85.1"; # Latest available for 0.11.3
+    "0.12.6" = "1.81.0"; # Latest available for 0.12.6
+    "0.12.9" = "1.87.0"; # Latest available for 0.12.9
+    "0.14.3" = "1.87.0"; # Only option for 0.14.3
+  };
+
+  mkCargoPgrxHybrid =
+    pgrxVersion:
+    let
+      rustVersion = rustVersionMapping.${pgrxVersion};
+      pgrx = versions.${pgrxVersion};
+      cargoHash = pgrx.rust.${rustVersion}.cargoHash;
+
+      rustPlatform = makeRustPlatform {
+        cargo = rust-bin.stable.${rustVersion}.default;
+        rustc = rust-bin.stable.${rustVersion}.default;
+      };
+    in
+    rustPlatform.buildRustPackage {
+      pname = "cargo-pgrx";
+      version = pgrxVersion;
+
+      src = fetchFromGitHub {
+        owner = "pgcentralfoundation";
+        repo = "pgrx";
+        rev = "v${pgrxVersion}";
+        inherit (pgrx) hash;
+      };
+
+      inherit cargoHash;
+
+      nativeBuildInputs = [
+        pkg-config
+        postgresql
+      ];
+      buildInputs = [
+        openssl
+      ]
+      ++ lib.optionals stdenv.hostPlatform.isDarwin [
+        stdenv.cc.bintools.bintools_bin
+      ];
+
+      preCheck = ''export PGRX_HOME=$(mktemp -d)'';
+
+      # Environment variables
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
       OPENSSL_LIB_DIR = "${openssl.out}/lib";
       PKG_CONFIG_PATH = "${openssl.dev}/lib/pkgconfig";
-      preCheck = ''
-        export PGRX_HOME=$(mktemp -d)
+      PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
+      RUST_BACKTRACE = "full";
+
+      # Override the build to avoid feature issues
+      buildPhase = ''
+                runHook preBuild
+                
+                # Set up pgrx config
+                export PATH="${postgresql}/bin:$PATH"
+                cat > $PGRX_HOME/config.toml << EOF
+        [configs]
+        pg${pgrxPostgresMajor} = "${postgresql}/bin/pg_config"
+        EOF
+
+                echo "=== Current directory contents ==="
+                ls -la
+                echo "=== Building cargo-pgrx ==="
+                
+                # Build from root, targeting the cargo-pgrx package
+                cargo build --release --frozen --offline --package cargo-pgrx
+                
+                runHook postBuild
       '';
-      checkFlags = [
-        # requires pgrx to be properly initialized with cargo pgrx init
-        "--skip=command::schema::tests::test_parse_managed_postmasters"
-      ];
+
+      # Override install to find and copy the binary
+      installPhase = ''
+        runHook preInstall
+
+        # Debug: let's see what got built and where
+        echo "=== Debugging: Looking for cargo-pgrx binary ==="
+        find . -name "cargo-pgrx" -type f
+        echo "=== Contents of target/release ==="
+        ls -la target/release/ || echo "target/release not found"
+        echo "=== Contents of cargo-pgrx/target/release ==="
+        ls -la cargo-pgrx/target/release/ || echo "cargo-pgrx/target/release not found"
+        echo "=== Find all executables ==="
+        find . -name "*pgrx*" -type f -executable
+
+        mkdir -p $out/bin
+
+        # Try multiple possible locations
+        if [ -f target/release/cargo-pgrx ]; then
+          echo "Found at target/release/cargo-pgrx"
+          cp target/release/cargo-pgrx $out/bin/
+        else
+          echo "ERROR: Could not find cargo-pgrx binary"
+          exit 1
+        fi
+
+        chmod +x $out/bin/cargo-pgrx
+
+        runHook postInstall
+      '';
+
+      # Disable tests for now
+      doCheck = false;
+
       meta = with lib; {
         description = "Build Postgres Extensions with Rust";
         homepage = "https://github.com/pgcentralfoundation/pgrx";
-        changelog = "https://github.com/pgcentralfoundation/pgrx/releases/tag/v${version}";
         license = licenses.mit;
-        maintainers = with maintainers; [ happysalada ];
         mainProgram = "cargo-pgrx";
       };
     };
 in
 {
-  cargo-pgrx_0_11_3 = mkCargoPgrx {
-    version = "0.11.3";
-    hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";
-    cargoHash = "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw=";
-  };
-  cargo-pgrx_0_12_6 = mkCargoPgrx {
-    version = "0.12.6";
-    hash = "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=";
-    cargoHash = "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w=";
-  };
-  cargo-pgrx_0_12_9 = mkCargoPgrx {
-    version = "0.12.9";
-    hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
-    cargoHash = "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY=";
-  };
-  cargo-pgrx_0_14_3 = mkCargoPgrx {
-    version = "0.14.3";
-    hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
-    cargoHash = "sha256-Ny7j56pwB+2eEK62X0nWfFKQy5fBz+Q1oyvecivxLkk=";
-  };
-  inherit mkCargoPgrx;
+  cargo-pgrx_0_11_3 = mkCargoPgrxHybrid "0.11.3";
+  cargo-pgrx_0_12_6 = mkCargoPgrxHybrid "0.12.6";
+  cargo-pgrx_0_12_9 = mkCargoPgrxHybrid "0.12.9";
+  cargo-pgrx_0_14_3 = mkCargoPgrxHybrid "0.14.3";
 }

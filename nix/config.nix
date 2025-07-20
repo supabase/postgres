@@ -11,6 +11,7 @@ let
         default = "localhost";
       };
       superuser = lib.mkOption {
+
         type = lib.types.str;
         default = "supabase_admin";
       };

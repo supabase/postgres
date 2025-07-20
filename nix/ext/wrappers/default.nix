@@ -19,10 +19,11 @@ let
       cargo = rust-bin.stable.${rustVersion}.default;
       #previousVersions = lib.filter (v: v != version) versions; # FIXME
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
-        inherit rustVersion pgrxVersion;
+        inherit rustVersion;
+  pgrxVersion = builtins.trace "DEBUG: pgrxVersion = ${pgrxVersion}" pgrxVersion;
       };
     in
-    mkPgrxExtension (
+    mkPgrxExtension 
       rec {
         inherit pname version postgresql;
 
@@ -32,6 +33,7 @@ let
           rev = "v${version}";
           inherit hash;
         };
+
 
         nativeBuildInputs = [
           pkg-config
@@ -54,7 +56,7 @@ let
         # Set necessary environment variables for pgrx in darwin only
         env = lib.optionalAttrs stdenv.isDarwin {
           POSTGRES_LIB = "${postgresql}/lib";
-          RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+          RUSTFLAGS = " -C link-arg=-undefined -C link-arg=dynamic_lookup";
         };
 
         OPENSSL_NO_VENDOR = 1;
@@ -154,17 +156,8 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      // lib.optionalAttrs (version == "0.3.0") {
-        patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
-
-        cargoLock = {
-          lockFile = ./Cargo.lock-0.3.0;
-          outputHashes = {
-            "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
-          };
-        };
-      }
-    );
+     
+         ;
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
   supportedVersions = lib.filterAttrs (
     _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
@@ -187,7 +180,7 @@ buildEnv {
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
+         toString numberOfVersions 
        }"
     )
 

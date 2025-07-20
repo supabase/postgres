@@ -42,6 +42,7 @@
         ../ext/pg_stat_monitor.nix
         ../ext/pg_jsonschema.nix
         ../ext/pgvector.nix
+        ../ext/pgvectorscale.nix
         ../ext/vault.nix
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
@@ -52,13 +53,17 @@
 
       #Where we import and build the orioledb extension, we add on our custom extensions
       # plus the orioledb option
-      #we're not using timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase extensions
-      orioleFilteredExtensions = builtins.filter (
+      #we're not using timescaledb, plv8, or pgvectorscale in the orioledb-17 version
+      #pgvectorscale is incompatible with OrioleDB's modified PostgreSQL APIs
+      commonFilteredExtensions = builtins.filter (
         x: x != ../ext/timescaledb.nix && x != ../ext/timescaledb-2.9.1.nix && x != ../ext/plv8.nix
       ) ourExtensions;
 
-      orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
-      dbExtensions17 = orioleFilteredExtensions;
+      orioledbExtensions =
+        builtins.filter (x: x != ../ext/pgvectorscale.nix) commonFilteredExtensions
+        ++ [ ../ext/orioledb.nix ];
+
+      dbExtensions17 = commonFilteredExtensions;
       getPostgresqlPackage = version: pkgs."postgresql_${version}";
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
