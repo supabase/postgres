@@ -29,7 +29,6 @@
     buildPgrxExtension = final.callPackage ../cargo-pgrx/buildPgrxExtension.nix {
       inherit (final) cargo-pgrx;
       inherit (final) lib;
-      inherit (final) Security;
       inherit (final) pkg-config;
       inherit (final) stdenv;
       inherit (final) writeShellScriptBin;
