@@ -328,8 +328,8 @@ let
           moveToOutput "lib/*.a" "$dev"
         ''
         + lib.optionalString jitSupport ''
-          # In the case of JIT support, prevent a retained dependency on clang-wrapper
-          nuke-refs $out/lib/llvmjit_types.bc $(find $out/lib/bitcode -type f)
+          # In the case of JIT support, prevent useless dependencies on header files
+          find "$out/lib" -iname '*.bc' -type f -exec nuke-refs '{}' +
 
           # Stop lib depending on the -dev output of llvm
           remove-references-to -t ${llvmPackages.llvm.dev} "$out/lib/llvmjit${dlSuffix}"
