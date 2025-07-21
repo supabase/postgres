@@ -9,17 +9,20 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
+      extension = installedExtension majorVersion;
       pkg = pkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
-          (installedExtension majorVersion)
+          extension
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
           lib = pkg;
           withPackages = _: pkg;
+          installedExtensions = [ extension ];
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
