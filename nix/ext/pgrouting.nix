@@ -10,10 +10,6 @@
 }:
 let
   pname = "pgrouting";
-<<<<<<< HEAD
-=======
-  version = "3.8.0";
->>>>>>> 054e04ac (chore: bump `pgrouting` version to 3.8.0)
 
   # Load version configuration from external file
   allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
@@ -126,19 +122,10 @@ buildEnv {
     "/share/postgresql/extension"
   ];
 
-<<<<<<< HEAD
   postBuild = ''
     #Verify all expected library files are present
     expectedFiles=${toString (numberOfVersions + 1)}
     actualFiles=$(ls -l $out/lib/lib${pname}*${postgresql.dlSuffix} | wc -l)
-=======
-  src = fetchFromGitHub {
-    owner = "pgRouting";
-    repo = pname;
-    rev = "v${version}";
-    hash = "sha256-Lvf7TQ3GywbzZmcd9wi3s8I5sCXIQAPeXNTRk/J46to=";
-  };
->>>>>>> 054e04ac (chore: bump `pgrouting` version to 3.8.0)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
       echo "Error: Expected $expectedFiles library files, found $actualFiles"
