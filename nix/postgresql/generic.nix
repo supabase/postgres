@@ -78,6 +78,8 @@ let
         else
           (lib.warn "postgresql: argument enableSystemd is deprecated, please use systemdSupport instead." enableSystemd);
 
+      isOrioleDB = (builtins.match "[0-9][0-9]_.*" version) != null;
+
       pname = "postgresql";
 
       stdenv' = if jitSupport then llvmPackages.stdenv else stdenv;
@@ -87,7 +89,7 @@ let
       pname = pname + lib.optionalString jitSupport "-jit";
 
       src =
-        if (builtins.match "[0-9][0-9]_.*" version != null) then
+        if (isOrioleDB) then
           fetchurl {
             url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
             inherit hash;
@@ -123,18 +125,15 @@ let
         ++ lib.optionals gssSupport [ libkrb5 ]
         ++ lib.optionals stdenv'.isLinux [ linux-pam ]
         ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
-        ++
-          lib.optionals
-            ((builtins.match "[0-9][0-9]_.*" version != null) || (lib.versionAtLeast version "17"))
-            [
-              perl
-              bison
-              flex
-              docbook_xsl
-              docbook_xml_dtd_45
-              docbook_xsl_ns
-              libxslt
-            ];
+        ++ lib.optionals (isOrioleDB || (lib.versionAtLeast version "17")) [
+          perl
+          bison
+          flex
+          docbook_xsl
+          docbook_xml_dtd_45
+          docbook_xsl_ns
+          libxslt
+        ];
 
       nativeBuildInputs =
         [
