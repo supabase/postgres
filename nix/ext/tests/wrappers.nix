@@ -13,7 +13,6 @@ let
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
-          postgresql.lib
           (installedExtension majorVersion)
         ];
         passthru = {
@@ -21,17 +20,11 @@ let
           lib = pkg;
           withPackages = _: pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
           "/lib"
         ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
       };
     in
     pkg;

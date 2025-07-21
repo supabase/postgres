@@ -160,7 +160,6 @@ let
       cargo-pgrx pgrx stop all
 
       mv $out/${postgresql}/* $out
-      mv $out/${postgresql.lib}/* $out
       rm -rf $out/nix
 
       ${maybeLeaveBuildAndTestSubdir}
