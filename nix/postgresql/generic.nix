@@ -25,6 +25,7 @@ let
       replaceVars,
       darwin,
       linux-pam,
+      removeReferencesTo,
       #orioledb specific
       perl,
       bison,
@@ -116,17 +117,42 @@ let
 
       outputs = [
         "out"
-        "lib"
+        "dev"
         "doc"
+        "lib"
         "man"
       ];
-      setOutputFlags = false; # $out retains configureFlags :-/
-      outputChecks.lib = {
+      outputChecks.out = {
         disallowedReferences = [
-          "out"
+          "dev"
           "doc"
           "man"
         ];
+        disallowedRequisites =
+          [
+            stdenv'.cc
+          ]
+          ++ (map lib.getDev (builtins.filter (drv: drv ? "dev") finalAttrs.buildInputs))
+          ++ lib.optionals jitSupport [
+            llvmPackages.llvm.out
+          ];
+      };
+
+      outputChecks.lib = {
+        disallowedReferences = [
+          "out"
+          "dev"
+          "doc"
+          "man"
+        ];
+        disallowedRequisites =
+          [
+            stdenv'.cc
+          ]
+          ++ (map lib.getDev (builtins.filter (drv: drv ? "dev") finalAttrs.buildInputs))
+          ++ lib.optionals jitSupport [
+            llvmPackages.llvm.out
+          ];
       };
 
       buildInputs =
@@ -160,6 +186,7 @@ let
         [
           makeWrapper
           pkg-config
+          removeReferencesTo
         ]
         ++ lib.optionals jitSupport [
           llvmPackages.llvm.dev
@@ -192,7 +219,6 @@ let
           "--with-libxml"
           "--with-icu"
           "--sysconfdir=/etc"
-          "--libdir=$(lib)/lib"
           "--with-system-tzdata=${tzdata}/share/zoneinfo"
           "--enable-debug"
           (lib.optionalString systemdSupport' "--with-systemd")
@@ -215,6 +241,12 @@ let
               ./patches/relative-to-symlinks-16+.patch
             else
               ./patches/relative-to-symlinks.patch
+          )
+          (
+            if atLeast "15" then
+              ./patches/empty-pg-config-view-15+.patch
+            else
+              ./patches/empty-pg-config-view.patch
           )
           ./patches/less-is-more.patch
           ./patches/paths-for-split-outputs.patch
@@ -253,21 +285,38 @@ let
 
       postPatch = ''
         substituteInPlace "src/Makefile.global.in" --subst-var out
-        # Hardcode the path to pgxs so pg_config returns the path in $out
-        substituteInPlace "src/common/config_info.c" --subst-var out
+        # Hardcode the path to pgxs so pg_config returns the path in $dev
+        substituteInPlace "src/common/config_info.c" --subst-var dev
       '';
 
       postInstall =
         ''
-          moveToOutput "lib/libpgcommon*.a" "$out"
-          moveToOutput "lib/libpgport*.a" "$out"
+          moveToOutput "bin/ecpg" "$dev"
+          moveToOutput "lib/pgxs" "$dev"
 
-          # Prevent a retained dependency on gcc-wrapper.
-          substituteInPlace "$out/lib/pgxs/src/Makefile.global" --replace ${stdenv'.cc}/bin/ld ld
+          # Pretend pg_config is located in $out/bin to return correct paths, but
+          # actually have it in -dev to avoid pulling in all other outputs.
+          moveToOutput "bin/pg_config" "$dev"
+          # To prevent a "pg_config: could not find own program executable" error, we fake
+          # pg_config in the default output.
+          cat << EOF > "$out/bin/pg_config" && chmod +x "$out/bin/pg_config"
+          #!${stdenv'.shell}
+          echo The real pg_config can be found in the -dev output.
+          exit 1
+          EOF
+          wrapProgram "$dev/bin/pg_config" --argv0 "$out/bin/pg_config"
+
+          # postgres exposes external symbols get_pkginclude_path and similar. Those
+          # can't be stripped away by --gc-sections/LTO, because they could theoretically
+          # be used by dynamically loaded modules / extensions. To avoid circular dependencies,
+          # references to -dev, -doc and -man are removed here. References to -lib must be kept,
+          # because there is a realistic use-case for extensions to locate the /lib directory to
+          # load other shared modules.
+          remove-references-to -t "$dev" -t "$doc" -t "$man" "$out/bin/postgres"
 
           if [ -z "''${dontDisableStatic:-}" ]; then
             # Remove static libraries in case dynamic are available.
-            for i in $out/lib/*.a $lib/lib/*.a; do
+            for i in $lib/lib/*.a; do
               name="$(basename "$i")"
               ext="${stdenv'.hostPlatform.extensions.sharedLibrary}"
               if [ -e "$lib/lib/''${name%.a}$ext" ] || [ -e "''${i%.a}$ext" ]; then
@@ -275,21 +324,13 @@ let
               fi
             done
           fi
+          # The remaining static libraries are libpgcommon.a, libpgport.a and related.
+          # Those are only used when building e.g. extensions, so go to $dev.
+          moveToOutput "lib/*.a" "$dev"
         ''
         + lib.optionalString jitSupport ''
           # In the case of JIT support, prevent a retained dependency on clang-wrapper
-          substituteInPlace "$out/lib/pgxs/src/Makefile.global" --replace ${stdenv'.cc}/bin/clang clang
           nuke-refs $out/lib/llvmjit_types.bc $(find $out/lib/bitcode -type f)
-
-          # Stop out depending on the default output of llvm
-          substituteInPlace $out/lib/pgxs/src/Makefile.global \
-            --replace ${llvmPackages.llvm.out}/bin "" \
-            --replace '$(LLVM_BINPATH)/' ""
-
-          # Stop out depending on the -dev output of llvm
-          substituteInPlace $out/lib/pgxs/src/Makefile.global \
-            --replace ${llvmPackages.llvm.dev}/bin/llvm-config llvm-config \
-            --replace -I${llvmPackages.llvm.dev}/include ""
 
           ${lib.optionalString (!stdenv'.isDarwin) ''
             # Stop lib depending on the -dev output of llvm
@@ -308,8 +349,6 @@ let
       doCheck = !stdenv'.isDarwin;
       # autodetection doesn't seem to able to find this, but it's there.
       checkTarget = "check";
-
-      disallowedReferences = [ stdenv'.cc ];
 
       passthru =
         let
