@@ -2,7 +2,6 @@
   stdenv,
   lib,
   fetchFromGitHub,
-  nodejs,
   perl,
   postgresql,
   # For passthru test on various systems, and local development on macos
@@ -13,7 +12,14 @@
   darwin,
   patchelf,
 }:
-
+let
+  # plv8 3.1 requires an older version of v8 (we cannot use nodejs.libv8)
+  node_pkgs = import (fetchTarball {
+    url = "https://github.com/nixos/nixpkgs/archive/a76c4553d7e741e17f289224eda135423de0491d.tar.gz";
+    sha256 = "0rwdzp942b8ay625lqgra83qrp64b3wqm6w9a0i4z593df8x822v";
+  }) { system = stdenv.system; };
+  inherit (node_pkgs) v8;
+in
 stdenv.mkDerivation (finalAttrs: {
   pname = "plv8";
   version = "3.1.10";
@@ -40,7 +46,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs =
     [
-      nodejs.libv8
+      v8
       postgresql
     ]
     ++ lib.optionals stdenv.isDarwin [
@@ -54,20 +60,20 @@ stdenv.mkDerivation (finalAttrs: {
     [
       # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
       "USE_SYSTEM_V8=1"
-      "V8_OUTDIR=${nodejs.libv8}/lib"
+      "V8_OUTDIR=${v8}/lib"
       "PG_CONFIG=${postgresql}/bin/pg_config"
     ]
     ++ lib.optionals stdenv.isDarwin [
       "CC=${clang}/bin/clang"
       "CXX=${clang}/bin/clang++"
-      "SHLIB_LINK=-L${nodejs.libv8}/lib -lv8_monolith -Wl,-rpath,${nodejs.libv8}/lib"
+      "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
     ]
     ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
   NIX_LDFLAGS = (
     lib.optionals stdenv.isDarwin [
       "-L${postgresql}/lib"
-      "-L${nodejs.libv8}/lib"
+      "-L${v8}/lib"
       "-lv8_monolith"
       "-lpq"
       "-lpgcommon"
@@ -119,25 +125,25 @@ stdenv.mkDerivation (finalAttrs: {
       sed -i 's|module_pathname = '"'"'$libdir/plv8-[0-9.]*'"'"'|module_pathname = '"'"'$libdir/plv8'"'"'|' "$out/share/postgresql/extension/plls.control"
 
       ${lib.optionalString stdenv.isDarwin ''
-        install_name_tool -add_rpath "${nodejs.libv8}/lib" $out/lib/plv8.so
+        install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8.so
         install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8.so
         install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
-        install_name_tool -change @rpath/libv8_monolith.dylib ${nodejs.libv8}/lib/libv8_monolith.dylib $out/lib/plv8.so
+        install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8.so
       ''}
 
       ${lib.optionalString (!stdenv.isDarwin) ''
-        ${patchelf}/bin/patchelf --set-rpath "${nodejs.libv8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
+        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
       ''}
     else
       ${lib.optionalString stdenv.isDarwin ''
-        install_name_tool -add_rpath "${nodejs.libv8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+        install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
         install_name_tool -add_rpath "${postgresql}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
         install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
-        install_name_tool -change @rpath/libv8_monolith.dylib ${nodejs.libv8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+        install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
       ''}
 
       ${lib.optionalString (!stdenv.isDarwin) ''
-        ${patchelf}/bin/patchelf --set-rpath "${nodejs.libv8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
       ''}
     fi
   '';
