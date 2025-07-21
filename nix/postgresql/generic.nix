@@ -81,6 +81,8 @@ let
         else
           (lib.warn "postgresql: argument enableSystemd is deprecated, please use systemdSupport instead." enableSystemd);
 
+      isOrioleDB = (builtins.match "[0-9][0-9]_.*" version) != null;
+
       pname = "postgresql";
 
       stdenv' = if jitSupport then llvmPackages.stdenv else stdenv;
@@ -90,17 +92,11 @@ let
       pname = pname + lib.optionalString jitSupport "-jit";
 
       src =
-        if isOrioleDB then
-          if revision != null then
-            fetchurl {
-              url = "https://github.com/orioledb/postgres/archive/${revision}.tar.gz";
-              inherit hash;
-            }
-          else
-            fetchurl {
-              url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
-              inherit hash;
-            }
+        if (isOrioleDB) then
+          fetchurl {
+            url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
+            inherit hash;
+          }
         else
           fetchurl {
             url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
