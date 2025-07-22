@@ -106,9 +106,7 @@ jobs:
           df -h
       - name: Build psql bundle
         run: >
-          nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
-          -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }}
-          --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
+          nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
