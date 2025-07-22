@@ -75,7 +75,7 @@
 
     - name: supabase-admin-agent - pack archive
       shell: |
-        cd /tmp && tar -cJf supabase-admin-agent-{{ supabase_admin_agent_release }}-arm64.tar.xz supabase-admin-agent
+        cd /tmp && tar -cJf supabase-admin-agent-{{ supabase_admin_agent_release }}-arm64.tar.xz supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-arm64
 
     - name: upload archives
       shell: |
