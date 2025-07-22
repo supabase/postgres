@@ -119,13 +119,11 @@ let
         "dev"
         "doc"
         "lib"
-        "man"
       ];
       outputChecks.out = {
         disallowedReferences = [
           "dev"
           "doc"
-          "man"
         ];
         disallowedRequisites =
           [
@@ -140,8 +138,6 @@ let
         disallowedReferences = [
           "out"
           "dev"
-          "doc"
-          "man"
         ];
         disallowedRequisites =
           [
@@ -195,7 +191,7 @@ let
 
       separateDebugInfo = true;
 
-      buildFlags = [ "world" ];
+      buildFlags = [ "world-bin" ];
 
       # libpgcommon.a and libpgport.a contain all paths returned by pg_config and are linked
       # into all binaries. However, almost no binaries actually use those paths. The following
@@ -279,7 +275,7 @@ let
           ./patches/export-dynamic-darwin-15-.patch
         ];
 
-      installTargets = [ "install-world" ];
+      installTargets = [ "install-world-bin" ];
 
       postPatch = ''
         substituteInPlace "src/Makefile.global.in" --subst-var out
@@ -305,7 +301,8 @@ let
           # references to -dev, -doc and -man are removed here. References to -lib must be kept,
           # because there is a realistic use-case for extensions to locate the /lib directory to
           # load other shared modules.
-          remove-references-to -t "$dev" -t "$doc" -t "$man" "$out/bin/postgres"
+          remove-references-to -t "$dev" -t "$doc" "$out/bin/postgres"
+          remove-references-to -t "$dev" -t "$doc" "$out/bin/pg_rewind"
 
           if [ -z "''${dontDisableStatic:-}" ]; then
             # Remove static libraries in case dynamic are available.
