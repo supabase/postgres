@@ -65,3 +65,10 @@ from (
         a.privilege_type in ('CREATE', 'USAGE')
 ) sub
 order by schema_order, schema_name, privilege_type, grantee, default_for;
+
+-- postgres can alter API roles' timeout
+set role postgres;
+alter role anon set statement_timeout = '10min';
+
+alter role anon reset statement_timeout;
+reset role;

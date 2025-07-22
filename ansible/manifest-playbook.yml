@@ -61,6 +61,22 @@
       shell: |
         cd /tmp && tar -cJf admin-mgr-{{ adminmgr_release }}-arm64.tar.xz admin-mgr
 
+    - name: Download supabase-admin-agent archive
+      get_url:
+        url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-arm64.tar.gz"
+        dest: "/tmp/supabase-admin-agent.tar.gz"
+        timeout: 90
+
+    - name: supabase-admin-agent - unpack archive in /tmp
+      unarchive:
+        remote_src: yes
+        src: /tmp/supabase-admin-agent.tar.gz
+        dest: /tmp
+
+    - name: supabase-admin-agent - pack archive
+      shell: |
+        cd /tmp && tar -cJf supabase-admin-agent-{{ supabase_admin_agent_release }}-arm64.tar.xz supabase-admin-agent
+
     - name: upload archives
       shell: |
         aws s3 cp /tmp/{{ item.file }} s3://{{ internal_artifacts_bucket }}/upgrades/{{ item.service }}/{{ item.file }}
@@ -73,3 +89,5 @@
           file: supabase-admin-api-{{ adminapi_release }}-arm64.tar.xz
         - service: admin-mgr
           file: admin-mgr-{{ adminmgr_release }}-arm64.tar.xz
+        - service: supabase-admin-agent
+          file: supabase-admin-agent-{{ supabase_admin_agent_release }}-arm64.tar.xz
