@@ -6,7 +6,7 @@ RUN apk add --no-cache qemu-system-aarch64 qemu-img openssh-client aavmf virtiof
     && truncate -s 64M /root/varstore.img \
     && truncate -s 64M /root/efi.img \
     && dd if=/usr/share/AAVMF/QEMU_EFI.fd of=/root/efi.img conv=notrunc \
-    && qemu-img create -f qcow2 /tmp/disk.qcow2 -b /disk/focal.qcow2 -F qcow2 \
+    && qemu-img create -f qcow2 /tmp/disk.qcow2 -b /disk/image.qcow2 -F qcow2 \
     && apk del --no-cache aavmf qemu-img
 
 CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
