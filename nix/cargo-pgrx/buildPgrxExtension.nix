@@ -34,7 +34,7 @@ let
   cargo-pgrx = pkgs.callPackage ./pgrx.nix {
     inherit cargoHash;
     pgrxHash = pgrx.hash;
-    pgrxVersion = builtins.trace "TRACE buildPgrxExtension: pgrxVersion = ${pgrxVersion}" pgrxVersion;
+    inherit pgrxVersion;
     inherit cargoVersion;
   };
   fakeRustfmt = writeShellScriptBin "rustfmt" "exit 0";

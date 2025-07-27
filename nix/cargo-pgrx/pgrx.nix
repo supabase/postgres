@@ -25,9 +25,10 @@ rustPlatform.buildRustPackage rec {
   src = pkgs.fetchFromGitHub {
     owner = "pgcentralfoundation";
     repo = "pgrx";
-    rev = builtins.trace "TRACE pgrx.nix: fetching pgrx rev = v${pgrxVersion}" "v${pgrxVersion}";
-    hash = builtins.trace "TRACE pgrx.nix: using pgrxHash = ${pgrxHash}" pgrxHash;
+    rev = pgrxVersion;
+    hash = pgrxHash;
   };
+
   inherit cargoHash;
 
   # Add this right after the src definition

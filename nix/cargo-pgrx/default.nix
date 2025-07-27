@@ -15,10 +15,10 @@ let
 
   # See the versions.json file for the available versions
   rustVersionMapping = {
-    "0.11.3" = "1.85.1"; # Latest available for 0.11.3
-    "0.12.6" = "1.81.0"; # Latest available for 0.12.6
-    "0.12.9" = "1.87.0"; # Latest available for 0.12.9
-    "0.14.3" = "1.87.0"; # Only option for 0.14.3
+    "0.11.3" = "1.85.1";
+    "0.12.6" = "1.81.0";
+    "0.12.9" = "1.87.0";
+    "0.14.3" = "1.87.0";
   };
 
   mkCargoPgrxHybrid =

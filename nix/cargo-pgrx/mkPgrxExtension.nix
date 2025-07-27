@@ -13,8 +13,8 @@ let
 
   buildPgrxExtension = callPackage ./buildPgrxExtension.nix {
     inherit rustPlatform;
-    pgrxVersion = builtins.trace "TRACE mkPgrxExtension: pgrxVersion = ${pgrxVersion}" pgrxVersion;
-    rustVersion = builtins.trace "TRACE mkPgrxExtension: rustVersion = ${rustVersion}" rustVersion;
+    inherit pgrxVersion;
+    inherit rustVersion;
   };
 in
 buildPgrxExtension
