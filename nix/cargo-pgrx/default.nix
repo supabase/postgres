@@ -21,7 +21,7 @@ let
     "0.14.3" = "1.87.0";
   };
 
-  mkCargoPgrxHybrid =
+  mkPgrx =
     pgrxVersion:
     let
       rustVersion = rustVersionMapping.${pgrxVersion};
@@ -64,58 +64,30 @@ let
       PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
       RUST_BACKTRACE = "full";
 
-      # Override the build to avoid feature issues
       buildPhase = ''
-                runHook preBuild
-                
-                # Set up pgrx config
-                export PATH="${postgresql}/bin:$PATH"
-                cat > $PGRX_HOME/config.toml << EOF
+        runHook preBuild
+
+        export PATH="${postgresql}/bin:$PATH"
+        cat > $PGRX_HOME/config.toml << EOF
         [configs]
         pg${pgrxPostgresMajor} = "${postgresql}/bin/pg_config"
         EOF
 
-                echo "=== Current directory contents ==="
-                ls -la
-                echo "=== Building cargo-pgrx ==="
-                
-                # Build from root, targeting the cargo-pgrx package
-                cargo build --release --frozen --offline --package cargo-pgrx
-                
-                runHook postBuild
+        cargo build --release --frozen --offline --package cargo-pgrx
+
+        runHook postBuild
       '';
 
-      # Override install to find and copy the binary
       installPhase = ''
         runHook preInstall
 
-        # Debug: let's see what got built and where
-        echo "=== Debugging: Looking for cargo-pgrx binary ==="
-        find . -name "cargo-pgrx" -type f
-        echo "=== Contents of target/release ==="
-        ls -la target/release/ || echo "target/release not found"
-        echo "=== Contents of cargo-pgrx/target/release ==="
-        ls -la cargo-pgrx/target/release/ || echo "cargo-pgrx/target/release not found"
-        echo "=== Find all executables ==="
-        find . -name "*pgrx*" -type f -executable
-
         mkdir -p $out/bin
-
-        # Try multiple possible locations
-        if [ -f target/release/cargo-pgrx ]; then
-          echo "Found at target/release/cargo-pgrx"
-          cp target/release/cargo-pgrx $out/bin/
-        else
-          echo "ERROR: Could not find cargo-pgrx binary"
-          exit 1
-        fi
-
+        cp target/release/cargo-pgrx $out/bin/
         chmod +x $out/bin/cargo-pgrx
 
         runHook postInstall
       '';
 
-      # Disable tests for now
       doCheck = false;
 
       meta = with lib; {
@@ -127,8 +99,8 @@ let
     };
 in
 {
-  cargo-pgrx_0_11_3 = mkCargoPgrxHybrid "0.11.3";
-  cargo-pgrx_0_12_6 = mkCargoPgrxHybrid "0.12.6";
-  cargo-pgrx_0_12_9 = mkCargoPgrxHybrid "0.12.9";
-  cargo-pgrx_0_14_3 = mkCargoPgrxHybrid "0.14.3";
+  cargo-pgrx_0_11_3 = mkPgrx "0.11.3";
+  cargo-pgrx_0_12_6 = mkPgrx "0.12.6";
+  cargo-pgrx_0_12_9 = mkPgrx "0.12.9";
+  cargo-pgrx_0_14_3 = mkPgrx "0.14.3";
 }

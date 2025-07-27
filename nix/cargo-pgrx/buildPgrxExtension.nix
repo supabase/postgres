@@ -1,3 +1,44 @@
+# preBuildAndTest and some small other bits
+# taken from https://github.com/tcdi/pgrx/blob/v0.9.4/nix/extension.nix
+# (but now heavily modified)
+# which uses MIT License with the following license file
+#
+# MIT License
+#
+# Portions Copyright 2019-2021 ZomboDB, LLC.
+# Portions Copyright 2021-2022 Technology Concepts & Design, Inc. <support@tcdi.com>.
+# All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Build PostgreSQL extensions using the pgrx framework.
+#
+# Use it mostly like rustPlatform.buildRustPackage and so
+# we hand most of the arguments down.
+#
+# Additional arguments are:
+#   - `postgresql` postgresql package of the version of postgresql this extension should be build for.
+#                  Needs to be the build platform variant.
+#   - `useFakeRustfmt` Whether to use a noop fake command as rustfmt. cargo-pgrx tries to call rustfmt.
+#                      If the generated rust bindings aren't needed to use the extension, its a
+#                      unnecessary and heavy dependency. If you set this to true, you also
+#                      have to add `rustfmt` to `nativeBuildInputs`.
 {
   lib,
   pkg-config,
@@ -45,85 +86,6 @@ let
   };
   fakeRustfmt = writeShellScriptBin "rustfmt" "exit 0";
   pgrxPostgresMajor = lib.versions.major postgresql.version;
-
-  setupVendorEnvironment = ''
-    echo "=== ROOT CAUSE ANALYSIS ==="
-
-    if [ -n "''${cargoDeps:-}" ] && [ -d "$cargoDeps" ]; then
-      echo "Vendor source: $cargoDeps"
-      
-      echo ""
-      echo "=== TESTING KEY PACKAGES ==="
-      for pkg in "shlex-1.3.0" "cc-1.2.30"; do
-        pkg_path="$cargoDeps/$pkg"
-        if [ -L "$pkg_path" ]; then
-          target=$(readlink "$pkg_path")
-          echo "$pkg -> $target"
-          
-          toml_file="$target/Cargo.toml"
-          if [ -f "$toml_file" ]; then
-            size=$(wc -c < "$toml_file")
-            echo "  Cargo.toml: $size bytes"
-            if [ "$size" -gt 0 ]; then
-              echo "  ✅ Has content"
-            else
-              echo "  ❌ Empty file"
-            fi
-          else
-            echo "  ❌ No Cargo.toml"
-          fi
-        fi
-      done
-      
-      echo ""
-      echo "=== SUMMARY ==="
-      total_items=$(ls "$cargoDeps" | wc -l)
-      symlinks=0
-      working=0
-      broken=0
-      broken_list=""
-      
-      echo "Total items in vendor dir: $total_items"
-      
-      for item in "$cargoDeps"/*; do
-        item_name=$(basename "$item")
-        if [ "$item_name" = "Cargo.lock" ] || [ "$item_name" = ".cargo" ]; then
-          continue
-        fi
-        if [ -L "$item" ]; then
-          symlinks=$((symlinks + 1))
-          target=$(readlink "$item")
-          toml_file="$target/Cargo.toml"
-          if [ -f "$toml_file" ] && [ -s "$toml_file" ]; then
-            working=$((working + 1))
-          else
-            broken=$((broken + 1))
-            broken_list="$broken_list $item_name"
-          fi
-        fi
-      done
-      
-      echo "Total symlinks (packages): $symlinks"
-      echo "Working packages: $working"
-      echo "Broken packages: $broken"
-      echo "Non-symlink items: $((total_items - symlinks))"
-      
-      if [ "$broken" -gt 0 ]; then
-        echo ""
-        echo "=== CORRUPTED PACKAGES LIST ==="
-        echo "$broken_list" | tr ' ' '\n' | grep -v '^$' | sort
-        echo ""
-        echo "❌ NIX STORE CORRUPTION CONFIRMED"
-        echo "Packages in Nix store have 0-byte Cargo.toml files"
-        exit 1
-      else
-        echo "✅ Nix store packages are valid"
-      fi
-    else
-      echo "❌ No cargoDeps found!"
-      exit 1
-    fi
-  '';
 
   setupPgrxEnvironment = ''
         echo "=== Setting up PGRX environment ==="
@@ -231,7 +193,6 @@ rustPlatform.buildRustPackage (
     buildPhase = ''
       runHook preBuild
 
-      ${setupVendorEnvironment}
       ${setupPgrxEnvironment}  
       ${setupPostgreSQLForTesting}
       ${buildExtensionPhase}
