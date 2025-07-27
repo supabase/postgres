@@ -92,6 +92,16 @@
                 else
                   throw "Unsupported PostgreSQL version: ${name}";
 
+              filterSmokeDirectories =
+                version:
+                if version == "orioledb-17" then
+                  [ "standard" ]
+                else
+                  [
+                    "standard"
+                    "no-oriol"
+                  ];
+
               # Helper function to filter SQL files based on version
               filterTestFiles =
                 version: dir:
@@ -230,8 +240,21 @@
                 fi
 
                 echo "Running pgTAP smoke tests"
-                if ! pg_prove -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ${./tests/smoke}/*.sql; then
-                 echo "pgTAP smoke tests failed"
+                SMOKE_DIRS=(${
+                  builtins.concatStringsSep " " (
+                    map (dir: "${./tests/smoke}/${dir}") (filterSmokeDirectories majorVersion)
+                  )
+                })
+                SMOKE_FILES=()
+                for dir in "''${SMOKE_DIRS[@]}"; do
+                  for sql_file in "$dir"/*.sql; do
+                    if [ -f "$sql_file" ]; then
+                      SMOKE_FILES+=("$sql_file")
+                    fi
+                  done
+                done
+                if ! pg_prove -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v "''${SMOKE_FILES[@]}"; then
+                echo "pgTAP smoke tests failed"
                     pg_ctl -D "$PGTAP_CLUSTER" stop
                   exit 1
                 fi
