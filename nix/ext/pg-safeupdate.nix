@@ -25,9 +25,7 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    runHook preInstall
-    make install PG_CONFIG=${postgresql}/bin/pg_config DESTDIR=$out
-    runHook postInstall
+    install -D safeupdate${postgresql.dlSuffix} -t $out/lib
   '';
 
   meta = with lib; {
