@@ -183,7 +183,6 @@ let
       pg_ctl stop -w || true
     fi
   '';
-
 in
 
 assert lib.asserts.assertMsg (
@@ -211,9 +210,7 @@ rustPlatform.buildRustPackage (
   // {
     buildInputs =
       (args.buildInputs or [ ])
-      ++ lib.optionals stdenv.hostPlatform.isDarwin [
-        darwin.apple_sdk.frameworks.Security
-      ];
+      ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
 
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])

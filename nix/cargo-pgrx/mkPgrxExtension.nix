@@ -16,6 +16,5 @@ let
     pgrxVersion = builtins.trace "TRACE mkPgrxExtension: pgrxVersion = ${pgrxVersion}" pgrxVersion;
     rustVersion = builtins.trace "TRACE mkPgrxExtension: rustVersion = ${rustVersion}" rustVersion;
   };
-
 in
 buildPgrxExtension

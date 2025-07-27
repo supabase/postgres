@@ -13,7 +13,6 @@ let
 
   versions = builtins.fromJSON (builtins.readFile ./versions.json);
 
-
   # See the versions.json file for the available versions
   rustVersionMapping = {
     "0.11.3" = "1.85.1"; # Latest available for 0.11.3
@@ -53,10 +52,7 @@ let
       ];
       buildInputs = [
         openssl
-      ]
-      ++ lib.optionals stdenv.hostPlatform.isDarwin [
-        stdenv.cc.bintools.bintools_bin
-      ];
+      ] ++ lib.optionals stdenv.hostPlatform.isDarwin [ stdenv.cc.bintools.bintools_bin ];
 
       preCheck = ''export PGRX_HOME=$(mktemp -d)'';
 

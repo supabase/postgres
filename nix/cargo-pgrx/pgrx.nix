@@ -1,6 +1,6 @@
 {
   pkgs,
-  pgrxHash ,
+  pgrxHash,
   cargoHash,
   pgrxVersion,
   cargoVersion,
@@ -10,20 +10,11 @@
 
 let
   lib = pkgs.lib;
-  pgVersion = lib.versions.major postgresql.version;
-  actualPostgresql = 
-    if pgVersion == "15" then pkgs.postgresql_15
-    else if pgVersion == "17" then 
-      if (builtins.match ".*orioledb.*" postgresql.name) != null 
-      then pkgs.postgresql_orioledb-17 
-      else pkgs.postgresql_17
-    else throw "Unsupported PostgreSQL version: ${pgVersion}";
 
   rustPlatform = pkgs.makeRustPlatform {
     cargo = pkgs.rust-bin.stable.${cargoVersion}.default;
     rustc = pkgs.rust-bin.stable.${cargoVersion}.default;
   };
-
 in
 
 rustPlatform.buildRustPackage rec {
@@ -32,31 +23,31 @@ rustPlatform.buildRustPackage rec {
   version = pgrxVersion;
 
   src = pkgs.fetchFromGitHub {
-  owner = "pgcentralfoundation";
-  repo = "pgrx";
-  rev = builtins.trace "TRACE pgrx.nix: fetching pgrx rev = v${pgrxVersion}" "v${pgrxVersion}";
-  hash = builtins.trace "TRACE pgrx.nix: using pgrxHash = ${pgrxHash}" pgrxHash;
-};
+    owner = "pgcentralfoundation";
+    repo = "pgrx";
+    rev = builtins.trace "TRACE pgrx.nix: fetching pgrx rev = v${pgrxVersion}" "v${pgrxVersion}";
+    hash = builtins.trace "TRACE pgrx.nix: using pgrxHash = ${pgrxHash}" pgrxHash;
+  };
   inherit cargoHash;
 
-# Add this right after the src definition
-postUnpack = ''
-    echo "=== TOOLCHAIN DEBUG ==="
-  echo "Rust version: $(rustc --version)"
-  echo "Cargo version: $(cargo --version)"
-  echo "PWD: $(pwd)"
-  echo "Rust location: $(which rustc)"
-  echo "Cargo location: $(which cargo)"
-  echo "=== Patching lockfile version before vendoring ==="
-  echo "Original lockfile:"
-  head -5 source/Cargo.lock
-  
-  # Patch lockfile version from 4 to 3
-  sed -i 's/version = 4/version = 3/' source/Cargo.lock
-  
-  echo "Patched lockfile:"
-  head -5 source/Cargo.lock
-'';
+  # Add this right after the src definition
+  postUnpack = ''
+      echo "=== TOOLCHAIN DEBUG ==="
+    echo "Rust version: $(rustc --version)"
+    echo "Cargo version: $(cargo --version)"
+    echo "PWD: $(pwd)"
+    echo "Rust location: $(which rustc)"
+    echo "Cargo location: $(which cargo)"
+    echo "=== Patching lockfile version before vendoring ==="
+    echo "Original lockfile:"
+    head -5 source/Cargo.lock
+
+    # Patch lockfile version from 4 to 3
+    sed -i 's/version = 4/version = 3/' source/Cargo.lock
+
+    echo "Patched lockfile:"
+    head -5 source/Cargo.lock
+  '';
 
   nativeBuildInputs = [
     pkgs.pkg-config
@@ -65,10 +56,7 @@ postUnpack = ''
 
   buildInputs = [
     pkgs.openssl
-  ]
-  ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-    pkgs.darwin.apple_sdk.frameworks.Security
-  ];
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ];
 
   OPENSSL_DIR = "${pkgs.openssl.dev}";
   OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include";
@@ -82,40 +70,40 @@ postUnpack = ''
 
   doCheck = false;
 
- preBuild = ''
-  echo "=== TOOLCHAIN DEBUG ==="
-  echo "Rust version: $(rustc --version)"
-  echo "Cargo version: $(cargo --version)"
-  echo "PWD: $(pwd)"
-  echo "Rust location: $(which rustc)"
-  echo "Cargo location: $(which cargo)"
-  
-  echo ""
-  echo "=== LOCKFILE DEBUG ==="
-  echo "Cargo.lock location and content:"
-  find . -name "Cargo.lock" -exec echo "Found: {}" \; -exec head -5 {} \;
-  
-  echo ""
-  echo "=== ENVIRONMENT ==="
-  echo "RUSTFLAGS: ''${RUSTFLAGS:-<not set>}"
-  echo "CARGO_BUILD_TARGET: ''${CARGO_BUILD_TARGET:-<not set>}"
-  
-  echo ""
-  echo "=== TEST BASIC CARGO COMMAND ==="
-  if cargo check --version 2>&1; then
-    echo "✅ Cargo responds to basic commands"
-  else
-    echo "❌ Cargo basic command failed"
-  fi
-  
-  echo ""
-  echo "=== TRY PARSING LOCKFILE ==="
-  if cargo tree --offline --quiet 2>&1; then
-    echo "✅ Cargo can parse lockfile"
-  else
-    echo "❌ Cargo lockfile parse failed"
-  fi
-'';
+  preBuild = ''
+    echo "=== TOOLCHAIN DEBUG ==="
+    echo "Rust version: $(rustc --version)"
+    echo "Cargo version: $(cargo --version)"
+    echo "PWD: $(pwd)"
+    echo "Rust location: $(which rustc)"
+    echo "Cargo location: $(which cargo)"
+
+    echo ""
+    echo "=== LOCKFILE DEBUG ==="
+    echo "Cargo.lock location and content:"
+    find . -name "Cargo.lock" -exec echo "Found: {}" \; -exec head -5 {} \;
+
+    echo ""
+    echo "=== ENVIRONMENT ==="
+    echo "RUSTFLAGS: ''${RUSTFLAGS:-<not set>}"
+    echo "CARGO_BUILD_TARGET: ''${CARGO_BUILD_TARGET:-<not set>}"
+
+    echo ""
+    echo "=== TEST BASIC CARGO COMMAND ==="
+    if cargo check --version 2>&1; then
+      echo "✅ Cargo responds to basic commands"
+    else
+      echo "❌ Cargo basic command failed"
+    fi
+
+    echo ""
+    echo "=== TRY PARSING LOCKFILE ==="
+    if cargo tree --offline --quiet 2>&1; then
+      echo "✅ Cargo can parse lockfile"
+    else
+      echo "❌ Cargo lockfile parse failed"
+    fi
+  '';
 
   buildPhase = ''
         runHook preBuild
