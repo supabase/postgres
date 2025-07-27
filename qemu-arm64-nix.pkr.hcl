@@ -74,9 +74,15 @@ source "qemu" "cloudimg" {
   format         = "qcow2"
   headless       = true
   http_directory = "http"
+  # TODO (darora): switch to minimal images
+  # iso_checksum   = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
+  # iso_url        = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img"
   iso_checksum   = "file:https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
   iso_url        = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
   memory         = 40000
+  qemu_img_args {
+    convert = ["-o", "compression_type=zstd"]
+  }
   qemu_binary    = "qemu-system-aarch64"
   qemuargs = [
     ["-machine", "virt,gic-version=3"],
@@ -84,7 +90,7 @@ source "qemu" "cloudimg" {
     ["-device", "virtio-gpu-pci"],
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd"],
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=AAVMF_VARS.fd"],
-    ["-drive", "file=output-cloudimg/packer-cloudimg,format=qcow2"],
+    ["-drive", "file=output-cloudimg/packer-cloudimg,if=virtio,format=qcow2,discard=on,detect-zeroes=unmap"],
     ["-drive", "file=seeds-cloudimg.iso,format=raw"],
     ["--enable-kvm"]
   ]

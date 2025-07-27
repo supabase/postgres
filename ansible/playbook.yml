@@ -198,7 +198,7 @@
         - collect-binaries
       when: debpkg_mode
 
-    - name: Install osquery from nixpkgs binary cache
+    - name: Purge snapd
       become: yes
       shell: |
         apt autoremove -y --purge snapd
