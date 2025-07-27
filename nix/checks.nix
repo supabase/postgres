@@ -281,7 +281,7 @@
                   ${builtins.concatStringsSep " " sortedTestList}; then
                   echo "pg_regress tests failed"
                   cat $out/regression_output/regression.diffs
-                  exit 0
+                  exit 1
                 fi
 
                 echo "Running migrations tests"

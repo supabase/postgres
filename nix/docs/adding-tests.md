@@ -13,6 +13,28 @@ and [prime.sql](../tests/prime.sql) (extensions may be enabled in either place.)
 pg\_regress tests are in [tests/sql](./../tests/sql/) with output in [tests/expected](./../tests/expected/).
 To create a new test, create a new SQL file in [tests/sql](./../tests/sql/)
 
+Creating Expected Outputs for New Tests:
+
+When adding a new regression test, you'll need to generate the expected output files. Since the test will fail on the first run (no expected output exists yet), you need to temporarily modify the build configuration to capture the output:
+Step 1: Temporarily disable test failure exit
+In checks.nix, locate the pg_regress block around line 208 and change the exit code from 1 to 0:
+
+```
+nixif ! pg_regress \
+  --use-existing \
+  --dbname=postgres \
+  --inputdir=${./tests} \
+  --outputdir=$out/regression_output \
+  --host=${self.supabase.defaults.host} \
+  --port=${pgPort} \
+  --user=supabase_admin \
+  ${builtins.concatStringsSep " " sortedTestList}; then
+  echo "pg_regress tests failed"
+  cat $out/regression_output/regression.diffs
+  exit 0  # Changed from 'exit 1' to capture output
+fi
+```
+
 Next, for each current major version of postgres, we run a "flake check" build one at a time.
 
 Examples:
