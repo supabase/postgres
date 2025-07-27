@@ -20,7 +20,7 @@ let
       #previousVersions = lib.filter (v: v != version) versions; # FIXME
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
         inherit rustVersion;
-        pgrxVersion = builtins.trace "DEBUG: pgrxVersion = ${pgrxVersion}" pgrxVersion;
+        inherit pgrxVersion;
       };
     in
     mkPgrxExtension rec {
