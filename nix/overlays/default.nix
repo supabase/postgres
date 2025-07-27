@@ -10,12 +10,12 @@
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
 
-    buildPgrxExtension_0_12_6 = final.callPackage ../cargo-pgrx/mkPgrxExtension.nix {
+    buildPgrxExtension_0_12_6 = final.callPackage ../cargo-pgrx/buildPgrxExtension.nix {
       rustVersion = "1.81.0";
       pgrxVersion = "0.12.6";
     };
 
-    buildPgrxExtension_0_12_9 = final.callPackage ../cargo-pgrx/mkPgrxExtension.nix {
+    buildPgrxExtension_0_12_9 = final.callPackage ../cargo-pgrx/buildPgrxExtension.nix {
       rustVersion = "1.87.0";
       pgrxVersion = "0.12.9";
     };

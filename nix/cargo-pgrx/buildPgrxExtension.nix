@@ -1,13 +1,14 @@
 {
   lib,
   pkg-config,
-  rustPlatform,
   stdenv,
   darwin,
   writeShellScriptBin,
   pgrxVersion,
   rustVersion,
   pkgs,
+  makeRustPlatform,
+  rust-bin,
 }:
 
 {
@@ -22,6 +23,11 @@
 }@args:
 
 let
+  rustPlatform = makeRustPlatform {
+    cargo = rust-bin.stable.${rustVersion}.default;
+    rustc = rust-bin.stable.${rustVersion}.default;
+  };
+
   versions = builtins.fromJSON (builtins.readFile ./versions.json);
   pgrx = versions.${pgrxVersion};
   cargoHash = pgrx.rust."${rustVersion}".cargoHash;
