@@ -86,7 +86,7 @@ order by rolname;
  supabase_admin             | {"search_path=\"$user\", public, auth, extensions",log_statement=none}
  supabase_auth_admin        | {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
  supabase_functions_admin   | 
- supabase_read_only_user    | 
+ supabase_read_only_user    | {default_transaction_read_only=on}
  supabase_replication_admin | 
  supabase_storage_admin     | {search_path=storage,log_statement=none}
 (29 rows)

@@ -148,7 +148,7 @@ EOF
 }
 
 function setup_chroot_environment {
-	UBUNTU_VERSION=$(lsb_release -cs) # 'focal' for Ubuntu 20.04
+	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
 
 	# Bootstrap Ubuntu into /mnt
 	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt

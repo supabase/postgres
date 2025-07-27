@@ -66,8 +66,8 @@
     force: yes
 
 - name: supabase-admin-agent - create salt systemd timer file
-  copy:
-    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.timer
+  template:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.timer.j2
     dest: /etc/systemd/system/supabase-admin-agent_salt.timer
 
 - name: supabase-admin-agent - create salt service file

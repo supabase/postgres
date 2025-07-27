@@ -1,5 +1,6 @@
 [Unit]
 Description=Check if systemd-networkd has broken NDisc routes and fix
+# Remove Requisite to prevent being killed when restarting networkd
 Requisite=systemd-networkd.service
 After=systemd-networkd.service
 

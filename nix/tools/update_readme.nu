@@ -153,7 +153,7 @@ def update_readme [] {
     # Update Primary Features section
     let features_content = [
         ($pg_versions | each {|version| create_version_link $version} | str join "\n")
-        "- ✅ Ubuntu 20.04 (Focal Fossa)."
+        "- ✅ Ubuntu 24.04 (Noble Numbat)."
         "- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication."
         "- ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images."
     ]

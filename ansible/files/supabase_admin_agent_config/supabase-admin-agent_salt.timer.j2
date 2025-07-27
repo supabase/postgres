@@ -4,8 +4,8 @@ Requires=supabase-admin-agent_salt.service
 
 [Timer]
 OnCalendar=*:0/10
-# Random delay up to {{ splay }} seconds splay
-RandomizedDelaySec={{ splay }}
+# Random delay up to {{ supabase_admin_agent_splay }} seconds splay
+RandomizedDelaySec={{ supabase_admin_agent_splay }}
 AccuracySec=1s
 Persistent=true
 
