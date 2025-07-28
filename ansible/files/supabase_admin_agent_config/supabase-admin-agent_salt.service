@@ -1,6 +1,8 @@
 [Unit]
 Description=Configuration management via supabase-admin-agent salt
-After=network.target
+After=network.target local-fs.target tmp.mount
+Wants=network-online.target
+Requires=local-fs.target
 
 [Service]
 Type=oneshot
