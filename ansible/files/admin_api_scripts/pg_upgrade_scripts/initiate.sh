@@ -467,7 +467,11 @@ EOF
     # Extra work to ensure postgres is actually stopped
     #  Mostly needed for PG12 projects with odd systemd unit behavior
     if [ -z "$IS_CI" ]; then
-        retry 5 systemctl restart postgresql
+        REPLICATION_SLOT_COUNT=$(run_sql -A -t -c "SELECT COUNT(*) FROM pg_replication_slots;")
+        if [[ "$REPLICATION_SLOT_COUNT" -eq 0 ]]; then
+            echo "No replication slots found; restarting postgres"
+            retry 5 systemctl restart postgresql
+        fi
         systemctl disable postgresql
         retry 5 systemctl stop postgresql
 
