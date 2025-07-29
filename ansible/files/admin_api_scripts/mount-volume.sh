@@ -36,6 +36,8 @@ fi
 
 mkdir -p "$MOUNT_POINT"
 
+e2fsck -pf "$DEVICE"
+
 if ! mountpoint -q "$MOUNT_POINT"; then
   echo "Mounting $DEVICE to $MOUNT_POINT"
   mount -t "$FSTYPE" -o "$MOUNT_OPTS" "$DEVICE" "$MOUNT_POINT"
