@@ -11,6 +11,11 @@ if [[ -z "$DEVICE" || -z "$MOUNT_POINT" ]]; then
   exit 1
 fi
 
+#  Mount a block device to a specified mount point
+#  If the device is not formatted, format it as ext4
+#  Set ownership to postgres:postgres and permissions to 750
+#  Add the mount entry to /etc/fstab for persistence across reboots
+
 OWNER="postgres:postgres"
 PERMISSIONS="750"
 FSTYPE="ext4"
