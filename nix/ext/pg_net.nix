@@ -8,7 +8,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pg_net";
-  version = "0.14.0";
+  version = "0.19.5";
 
   buildInputs = [
     curl
@@ -19,10 +19,8 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-c1pxhTyrE5j6dY+M5eKAboQNofIORS+Dccz+7HKEKQI=";
+    hash = "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y=";
   };
-
-  env.NIX_CFLAGS_COMPILE = "-Wno-error";
 
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
