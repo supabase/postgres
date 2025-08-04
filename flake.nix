@@ -32,6 +32,10 @@
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    system-manager = {
+      url = "github:numtide/system-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -54,6 +58,7 @@
         nix/nixpkgs.nix
         nix/packages
         nix/overlays
+        nix/systemModules
       ];
     });
 }
