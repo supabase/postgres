@@ -34,19 +34,19 @@
     aws configure set default.s3.use_dualstack_endpoint true
 
 - name: install Vector for logging
-  become: yes
+  become: true
   apt:
     deb: "{{ vector_x86_deb }}"
   when: platform == "amd64"
 
 - name: install Vector for logging
-  become: yes
+  become: true
   apt:
     deb: "{{ vector_arm_deb }}"
   when: platform == "arm64"
 
 - name: add Vector to postgres group
-  become: yes
+  become: true
   shell:
     cmd: |
       usermod -a -G postgres vector
@@ -72,21 +72,21 @@
     daemon_reload: yes
 
 - name: Create checkpoints dir
-  become: yes
+  become: true
   file:
     path: /var/lib/vector
     state: directory
     owner: vector
 
 - name: Include file for generated optimizations in postgresql.conf
-  become: yes
+  become: true
   replace:
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
     replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
 
 - name: Include file for custom overrides in postgresql.conf
-  become: yes
+  become: true
   replace:
     path: /etc/postgresql/postgresql.conf
     regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
@@ -112,6 +112,11 @@
 
 - name: Install salt minion
   import_tasks: internal/install-salt.yml
+  tags:
+    - aws-only
+
+- name: Install supabase-admin-agent
+  import_tasks: internal/supabase-admin-agent.yml
   tags:
     - aws-only
 

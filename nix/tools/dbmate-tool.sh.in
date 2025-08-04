@@ -61,7 +61,7 @@ print_help() {
     echo "Usage: nix run .#dbmate-tool -- [options]"
     echo
     echo "Options:"
-    echo "  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
+    echo "  -v, --version [15|17|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
     echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
     echo "  -h, --help                         Show this help message"
     echo "  -f, --flake-url URL                Specify the flake URL to use (default: github:supabase/postgres)"
@@ -170,26 +170,14 @@ check_orioledb_ready() {
     return 1
 }
 
-trim_schema() {
-    case "$CURRENT_SYSTEM" in
-    "x86_64-darwin"|"aarch64-darwin")
-        sed -i '' '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
-        echo "Matched: $CURRENT_SYSTEM"
-        ;;
-    *)
-        sed -i '/INSERT INTO public.schema_migrations/,$d' "./db/schema.sql"
-        ;;
-    esac
-}
-
 perform_dump() {
     local max_attempts=3
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        echo "Attempting dbmate dump (attempt $attempt/$max_attempts)"
+        echo "Attempting pg_dump (attempt $attempt/$max_attempts)"
         
-        if dbmate dump; then
+        if "${PSQLBIN}/pg_dump" -h localhost -p "$PORTNO" -U "$PGSQL_SUPERUSER" -d postgres --schema-only --no-owner --no-privileges > "./db/schema.sql"; then
             return 0
         fi
         
@@ -215,6 +203,7 @@ migrate_version() {
     # Wait for PostgreSQL to be ready to accept connections
     if ! wait_for_postgres; then
         echo "Failed to connect to PostgreSQL server"
+        cleanup
         exit 1
     fi
     

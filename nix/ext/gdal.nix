@@ -1,22 +1,23 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, cmake
-, pkg-config
-, curl
-, expat
-, libgeotiff
-, geos
-, json_c
-, libxml2
-, postgresql
-, proj
-, sqlite
-, libtiff
-, zlib
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  pkg-config,
+  curl,
+  expat,
+  libgeotiff,
+  geos,
+  json_c,
+  libxml2,
+  postgresql,
+  proj,
+  sqlite,
+  libtiff,
+  zlib,
 }:
 
-stdenv.mkDerivation rec  {
+stdenv.mkDerivation rec {
   pname = "gdal";
   version = "3.8.5";
 
@@ -46,16 +47,15 @@ stdenv.mkDerivation rec  {
     zlib
   ];
 
-  cmakeFlags = [
-    "-DGDAL_USE_INTERNAL_LIBS=OFF"
-    "-DGEOTIFF_INCLUDE_DIR=${lib.getDev libgeotiff}/include"
-    "-DGEOTIFF_LIBRARY_RELEASE=${lib.getLib libgeotiff}/lib/libgeotiff${stdenv.hostPlatform.extensions.sharedLibrary}"
-    "-DBUILD_PYTHON_BINDINGS=OFF"
-  ] ++ lib.optionals (!stdenv.isDarwin) [
-    "-DCMAKE_SKIP_BUILD_RPATH=ON"
-  ] ++ lib.optionals stdenv.isDarwin [
-    "-DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON"
-  ];
+  cmakeFlags =
+    [
+      "-DGDAL_USE_INTERNAL_LIBS=OFF"
+      "-DGEOTIFF_INCLUDE_DIR=${lib.getDev libgeotiff}/include"
+      "-DGEOTIFF_LIBRARY_RELEASE=${lib.getLib libgeotiff}/lib/libgeotiff${stdenv.hostPlatform.extensions.sharedLibrary}"
+      "-DBUILD_PYTHON_BINDINGS=OFF"
+    ]
+    ++ lib.optionals (!stdenv.isDarwin) [ "-DCMAKE_SKIP_BUILD_RPATH=ON" ]
+    ++ lib.optionals stdenv.isDarwin [ "-DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON" ];
 
   enableParallelBuilding = true;
 
@@ -63,7 +63,13 @@ stdenv.mkDerivation rec  {
     description = "Translator library for raster geospatial data formats (PostGIS-focused build)";
     homepage = "https://www.gdal.org/";
     license = licenses.mit;
-    maintainers = with maintainers; teams.geospatial.members ++ [ marcweber dotlambda ];
+    maintainers =
+      with maintainers;
+      teams.geospatial.members
+      ++ [
+        marcweber
+        dotlambda
+      ];
     platforms = platforms.unix;
   };
 }

@@ -11,11 +11,19 @@ and [prime.sql](../tests/prime.sql) (extensions may be enabled in either place.)
 ## pg\_regress tests
 
 pg\_regress tests are in [tests/sql](./../tests/sql/) with output in [tests/expected](./../tests/expected/).
-To create a new test, create a new SQL file in [tests/sql](./../tests/sql/) and then run:
+To create a new test, create a new SQL file in [tests/sql](./../tests/sql/)
+
+Next, for each current major version of postgres, we run a "flake check" build one at a time.
+
+Examples:
 
 ```
-nix flake check -L
+nix build .#checks.aarch64-darwin.psql_15 -L
+nix build .#checks.aarch64-darwin.psql_17 -L
+nix build .#checks.aarch64-darwin.psql_orioledb-17 -L
 ```
+
+(Note that the evaluation and nix build of the postgres packages "bundle" of each major version must succeed here, even though we run one version at a time. If you made changes to postgres or extensions, or wrappers those may rebuild here when you run this. Otherwise they will usually download the prebuilt version from the supabase nix binary cache)
 
 Next, review the logs to identify where the test output was written
 

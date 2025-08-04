@@ -26,6 +26,8 @@ b. packer build (`qemu-arm64-nix.pkr.hcl`)
   - performs the work that was performed as part of the "stage1" and "stage2" builds
   - this work is executed using `ebssurrogate/scripts/qemu-bootstrap-nix.sh`
 
+While the AMI build uses the EBS Surrogate Packer builder to create a minimal boot environment that it then adds things to, the QEMU build merely adds things to the Ubuntu Cloud Image. As such, it's likely possible to make something more minimal with a bit more work, but this was deemed unnecessary for now. Collapsing Stage1 and Stage2 was done in the interest of iteration speed, as executing them together is much faster than saving an artifact off stage1, booting another VM off it, and then executing stage2.
+
 ## Publish image for later use
 
 Following `make init alpine-image`, the generated VM image should be bundled as a container image with the name: `supabase-postgres-test` . Publish the built docker image to a registry of your choosing, and use the published image with e.g. KubeVirt.

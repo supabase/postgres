@@ -1,23 +1,20 @@
 name: Test Database
 on:
-  push:
-    branches:
-      - develop
-  pull_request:
   workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: large-linux-x86
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Clear Nix cache
-        run: |
-          sudo rm -rf /home/runner/.cache/nix
-
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
@@ -34,9 +31,9 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: ubuntu-22.04
+          - runner: large-linux-x86
             arch: amd64
-          - runner: ubuntu-22.04
+          - runner: large-linux-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
@@ -44,10 +41,8 @@ jobs:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
     steps:
-      - uses: actions/checkout@v4
-      - name: Clear Nix cache
-        run: |
-          sudo rm -rf /home/runner/.cache/nix
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
@@ -57,7 +52,7 @@ jobs:
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
       - name: Strip quotes from pg major and set env var
         run: |
-          stripped_version=$(echo ${{ matrix.postgres_version }} | sed 's/^"\(.*\)"$/\1/')
+          stripped_version=$(echo "${{ matrix.postgres_version }}" | sed 's/^"\(.*\)"$/\1/')
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
       - name: Generate common-nix.vars.pkr.hcl
         run: |

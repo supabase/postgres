@@ -8,13 +8,17 @@ on:
       - ".github/workflows/mirror-postgrest.yml"
       - "common.vars*"
 
+permissions:
+  contents: read
+
 jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
       postgrest_release: ${{ steps.args.outputs.result }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - id: args
         uses: mikefarah/yq@master
         with:

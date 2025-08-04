@@ -1,4 +1,9 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "hypopg";
@@ -24,7 +29,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Hypothetical Indexes for PostgreSQL";
     homepage = "https://github.com/HypoPG/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

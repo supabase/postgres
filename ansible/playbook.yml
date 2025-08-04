@@ -38,7 +38,7 @@
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
-      when: debpkg_mode or nixpkg_mode
+      when: debpkg_mode or nixpkg_mode or stage2_nix
 
     - name: Install Gotrue
       import_tasks: tasks/setup-gotrue.yml
@@ -78,11 +78,11 @@
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
 
-    - name: Fix IPv6 NDisc issues
-      import_tasks: tasks/fix_ipv6_ndisc.yml
+    - name: Fix IPv6 NDisc issues (disabled)
+      import_tasks: tasks/fix-ipv6-ndisc.yml
       tags:
         - install-supabase-internal
-      when: debpkg_mode or nixpkg_mode
+      when: (debpkg_mode or nixpkg_mode) and (qemu_mode is undefined)
 
     - name: Start Postgres Database without Systemd
       become: yes
@@ -198,7 +198,7 @@
         - collect-binaries
       when: debpkg_mode
 
-    - name: Install osquery from nixpkgs binary cache
+    - name: Purge snapd
       become: yes
       shell: |
         apt autoremove -y --purge snapd
@@ -213,7 +213,9 @@
     - name: Run osquery permission checks
       become: yes
       shell: |
+        systemctl start postgresql.service
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && /usr/bin/python3 /tmp/ansible-playbook/ansible/files/permission_check.py {{ '--qemu' if qemu_mode is defined else '' }}"
+        systemctl stop postgresql.service
       when: stage2_nix
 
     - name: Remove osquery    

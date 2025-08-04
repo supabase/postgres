@@ -1,10 +1,19 @@
-{ lib, stdenv, fetchFromGitHub, curl, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  curl,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pg_net";
   version = "0.14.0";
 
-  buildInputs = [ curl postgresql ];
+  buildInputs = [
+    curl
+    postgresql
+  ];
 
   src = fetchFromGitHub {
     owner = "supabase";
@@ -26,7 +35,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Async networking for Postgres";
     homepage = "https://github.com/supabase/pg_net";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

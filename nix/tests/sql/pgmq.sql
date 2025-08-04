@@ -35,7 +35,7 @@ select
   msg_id,
   read_ct,
   message
-from 
+from
   pgmq.pop('Foo');
 
 
@@ -84,7 +84,20 @@ select
 select pgmq.create('F--oo');
 select pgmq.create('F$oo');
 select pgmq.create($$F'oo$$);
+\echo
 
-
-
-
+-- pgmq schema functions with owners (ownership is modified on ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql)
+select
+  n.nspname as schema_name,
+  p.proname as function_name,
+  r.rolname as owner
+from
+  pg_proc p
+join
+  pg_namespace n on p.pronamespace = n.oid
+join
+  pg_roles r on p.proowner = r.oid
+where
+  n.nspname = 'pgmq'
+order by
+  p.proname;

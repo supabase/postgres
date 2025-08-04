@@ -1,10 +1,19 @@
-{ lib, stdenv, fetchFromGitHub, libsodium, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  libsodium,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pgsodium";
   version = "3.1.8";
 
-  buildInputs = [ libsodium postgresql ];
+  buildInputs = [
+    libsodium
+    postgresql
+  ];
 
   src = fetchFromGitHub {
     owner = "michelp";
@@ -24,7 +33,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Modern cryptography for PostgreSQL";
     homepage = "https://github.com/michelp/${pname}";
-    maintainers = with maintainers; [ samrose ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

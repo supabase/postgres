@@ -78,22 +78,34 @@ Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/deve
 
 ### Add a Migration
 
-First, start a local postgres server and apply the migrations
+First, start a local postgres server in another terminal window:
 
 ```shell
-# Start the database server
-nix run .#dbmate-tool -- --version 15 --flake-url "."
+# Start the database server in another window
+nix run .#start-server 15
+```
 
-# create a new migration
+Then, in your main terminal window, run:
+
+```shell
+
 nix develop
-dbmate new '<some message>'
+```
+in the root of `supabase/postgres`. 
+
+Next run: 
+``` shell
+# Create a new migration (make sure to specify the migrations directory)
+dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 ```
 
-Then, execute the migration at `./db/migrations/xxxxxxxxx_<some_message>` and make sure it runs sucessfully with
+Then, execute the migration at `./migrations/db/xxxxxxxxx_<some_message>` and make sure it runs successfully with:
 
 ```shell
-dbmate up
+dbmate --no-dump-schema --migrations-dir"migrations/db/migrations" up
 ```
+
+Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.
 
 ### Adding a migration with docker-compose
 
@@ -112,7 +124,32 @@ Then, populate the migration at `./db/migrations/xxxxxxxxx_<some_message>` and m
 ```shell
 docker-compose run --rm dbmate up
 ```
+### Updating schema.sql for each major version
+
+After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:
+
+```shell
+# First, stop any running PostgreSQL servers
+# Then from the root of supabase/postgres run:
+nix run .#dbmate-tool -- --version all
+```
+
+This will create automatically  schema.sql file for each major version of PostgreSQL and OrioleDB (the files are named like `schema-<ver>`, `schema-oriole-<ver>`). Commit these changes to your repository and push to your branch. The workflow in `.github/workflows/test.yml`  will re-run this command in CI, and perform a git diff to verify the idempotency of the migrations, and that the latest changes have been committed.
 
 ## Testing
 
-Migrations are tested in CI to ensure they do not raise an exception against previously released `supabase/postgres` docker images. The full version matrix is at [test.yml](./.github/workflows/test.yml) in the `supabase-version` variable.
+In addition to ci test mentioned above, you can test migrations locally by running the following test for each major version of postgres one at a time.
+
+Examples:
+
+```
+nix build .#checks.aarch64-darwin.psql_15 -L
+nix build .#checks.aarch64-darwin.psql_17 -L
+nix build .#checks.aarch64-darwin.psql_orioledb-17 -L
+```
+
+(Note that the evaluation and nix build of the postgres packages "bundle" of each major version must succeed here, even though we run one version at a time. If you made changes to postgres or extensions, or wrappers those may rebuild here when you run this. Otherwise they will usually download the prebuilt version from the supabase nix binary cache)
+
+At the end of these commands, you will see the output of both `pg_regress` tests, and migration tests
+
+see [Adding Tests](https://github.com/supabase/postgres/blob/develop/nix/docs/adding-tests.md) for more information.
