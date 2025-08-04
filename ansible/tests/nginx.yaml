@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Install dependencies
+    apt:
+      pkg:
+        - build-essential
+      update_cache: yes
+  - import_tasks: ../tasks/setup-nginx.yml
+  - name: Start Nginx service
+    service:
+      name: nginx
+      state: started
+      enabled: yes
