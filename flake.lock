@@ -247,6 +247,7 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
         "rust-overlay": "rust-overlay",
+        "system-manager": "system-manager",
         "treefmt-nix": "treefmt-nix"
       }
     },
@@ -267,6 +268,26 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "system-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1766013091,
+        "narHash": "sha256-qFKkS3kz8gzQ1hjFeXYINOOGNHeYSmsa5Nj1Xs4rAec=",
+        "owner": "numtide",
+        "repo": "system-manager",
+        "rev": "bd3e4193c2bde18329e314b896b8e0ac8e17debd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "system-manager",
         "type": "github"
       }
     },
