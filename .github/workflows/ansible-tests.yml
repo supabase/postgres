@@ -1,0 +1,98 @@
+name: Ansible Test Image CI
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-push:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'blacksmith-16vcpu-ubuntu-2404-arm' }}
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install Nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image with Nix
+        run: |
+          echo "Building ansible-test Docker image for ${{ matrix.arch }}..."
+          IMAGE_PATH=$(nix build .#docker-ansible-test --print-out-paths)
+          echo "IMAGE_PATH=$IMAGE_PATH" >> "$GITHUB_ENV"
+
+      - name: Load and push Docker image
+        run: |
+          echo "Loading Docker image..."
+          docker load < "$IMAGE_PATH"
+          docker tag supabase/ansible-test:latest supabase/ansible-test:latest-${{ matrix.arch }}
+          docker push supabase/ansible-test:latest-${{ matrix.arch }}
+
+  create-manifest:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: build-and-push
+    runs-on: 'blacksmith-4vcpu-ubuntu-2404'
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          docker manifest create supabase/ansible-test:latest \
+            supabase/ansible-test:latest-amd64 \
+            supabase/ansible-test:latest-arm64
+          docker manifest push supabase/ansible-test:latest
+
+  run-ansible-tests:
+    if: ${{ !failure() && !cancelled() }}
+    needs: create-manifest
+    runs-on: 'blacksmith-16vcpu-ubuntu-2404'
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install Nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Run Ansible tests
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+        run: |
+          docker pull supabase/ansible-test:latest &
+          nix run .#ansible-test

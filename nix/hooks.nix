@@ -2,6 +2,7 @@
 let
   ghWorkflows = builtins.attrNames (builtins.readDir ../.github/workflows);
   lintedWorkflows = [
+    "ansible-test.yml"
     "nix-eval.yml"
     "nix-build.yml"
     "testinfra-ami-build.yml"
