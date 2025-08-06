@@ -9,9 +9,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.5.1.013-orioledb"
-  postgres17: "17.4.1.070"
-  postgres15: "15.8.1.127"
+  postgresorioledb-17: "17.5.1.014-orioledb"
+  postgres17: "17.4.1.071"
+  postgres15: "15.8.1.128"
 
 # Non Postgres Extensions
 pgbouncer_release: "1.19.0"
@@ -24,8 +24,8 @@ postgrest_release: "13.0.4"
 postgrest_arm_release_checksum: sha256:2b400200fb15eb5849267e4375fbbc516dd727afadd8786815b48074ed8c03e1
 postgrest_x86_release_checksum: sha256:a0052c8d4726f52349e0298f98da51140ef4941855548590ee88331afa617811
 
-gotrue_release: 2.177.0
-gotrue_release_checksum: sha1:664a26237618c4bfb1e33e4f03a540c3cef3e3c8
+gotrue_release: 2.178.0
+gotrue_release_checksum: sha1:56c5cf913eebf701ab5805e529375483933a0476
 
 aws_cli_release: "2.23.11"
 
