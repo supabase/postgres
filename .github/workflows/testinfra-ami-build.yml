@@ -38,7 +38,7 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: arm-runner
+          - runner: large-linux-arm
             arch: arm64
             ubuntu_release: noble
             ubuntu_version: 24.04
@@ -54,20 +54,13 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: Remove existing DeterminateSystems Nix installation
-        run: |
-          # Use the built-in DeterminateSystems uninstaller
-          if [ -f /nix/nix-installer ]; then
-            echo "Found DeterminateSystems nix-installer, using built-in uninstaller"
-            sudo /nix/nix-installer uninstall --no-confirm || true
-          else
-            echo "No DeterminateSystems installer found to uninstall"
-          fi
-          
-          # Verify removal
-          echo "Verifying nix removal..."
-          which nix || echo "nix command no longer available"
-          ls -la /nix 2>/dev/null || echo "/nix directory removed"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
 
       - name: Install nix
         uses: cachix/install-nix-action@v27
@@ -77,8 +70,6 @@ jobs:
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-      - name: Fix nix permissions  
-        run: sudo chown -R $USER /nix/var/nix/profiles/per-user
 
       - id: args
         uses: mikefarah/yq@master
