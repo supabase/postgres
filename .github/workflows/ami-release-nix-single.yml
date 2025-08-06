@@ -53,25 +53,22 @@ jobs:
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
-      - name: Install Packer
-        run: nix profile install github:supabase/postgres/${{ steps.get_sha.outputs.sha }}#packer
-
       - name: Build AMI stage 1
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
-          packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
+          sudo nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
+          sudo nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
-          packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
+          sudo nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
           POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          packer build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          sudo nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version

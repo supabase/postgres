@@ -86,15 +86,12 @@ jobs:
           sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
           sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
 
-      - name: Install Packer
-        run: nix profile install github:supabase/postgres/${{github.sha}}#packer
-
       - name: Build QEMU artifact
         run: |
           make init
           GIT_SHA=${{github.sha}}
           export PACKER_LOG=1
-          packer build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
+          sudo nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
