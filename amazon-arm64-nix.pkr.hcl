@@ -114,7 +114,6 @@ source "amazon-ebssurrogate" "source" {
   region       = "${var.region}"
   #secret_key   = "${var.aws_secret_key}"
   force_deregister = var.force-deregister
-  skip_region_validation = true
 
   # Use latest official ubuntu noble ami owned by Canonical.
   source_ami_filter {
