@@ -294,6 +294,7 @@
             wal-g-2
             wal-g-3
             dbmate-tool
+            packer
             pg_regress
             ;
         }
