@@ -39,7 +39,7 @@ variable "packer-execution-id" {
 packer {
   required_plugins {
     amazon = {
-      source  = "github.com/hashicorp/amazon"
+      source  = "releases.hashicorp.com/packer-plugin-amazon"
       version = "~> 1"
     }
     qemu = {
