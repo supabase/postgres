@@ -64,6 +64,7 @@ source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
+  skip_region_validation = true
   source_ami_filter {
     filters = {
       name   = "${var.ami_name}-${var.postgres-version}-stage-1"
