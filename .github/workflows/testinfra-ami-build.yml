@@ -50,6 +50,15 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
+      - name: Debug AWS role secret
+        run: |
+          echo "Checking DEV_AWS_ROLE secret availability..."
+          if [ -z "${{ secrets.DEV_AWS_ROLE }}" ]; then
+            echo "❌ DEV_AWS_ROLE is empty or not available"
+          else
+            echo "✅ DEV_AWS_ROLE is available"
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
