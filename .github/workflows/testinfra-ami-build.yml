@@ -54,6 +54,43 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
+      - name: Diagnose existing Nix installation
+        run: |
+          echo "=== Nix installation diagnostics ==="
+          
+          # Check if nix command exists and where
+          which nix || echo "nix command not found in PATH"
+          ls -la /nix 2>/dev/null || echo "/nix directory does not exist"
+          
+          # Check installation method traces
+          echo "--- Checking for DeterminateSystems installer traces ---"
+          ls -la /nix/.nix-installer* 2>/dev/null || echo "No DeterminateSystems installer traces found"
+          cat /nix/.nix-installer* 2>/dev/null || echo "No installer receipt file"
+          
+          echo "--- Checking for cachix installer traces ---"
+          ls -la /etc/systemd/system/nix-daemon.service 2>/dev/null || echo "No systemd nix-daemon service"
+          systemctl status nix-daemon 2>/dev/null || echo "nix-daemon not running via systemd"
+          
+          echo "--- Checking for manual installation traces ---"
+          ls -la /etc/bash.bashrc | grep -C2 nix || echo "No nix in /etc/bash.bashrc"
+          ls -la /etc/profile | grep -C2 nix || echo "No nix in /etc/profile"
+          
+          echo "--- Checking nix store and configuration ---"
+          ls -la /nix/store 2>/dev/null | head -10 || echo "No /nix/store"
+          ls -la /etc/nix/ 2>/dev/null || echo "No /etc/nix directory"
+          cat /etc/nix/nix.conf 2>/dev/null || echo "No /etc/nix/nix.conf"
+          
+          echo "--- Checking user-level nix ---"
+          ls -la ~/.nix-* 2>/dev/null || echo "No user nix directories"
+          env | grep -i nix || echo "No nix environment variables"
+          
+          echo "--- Checking processes ---"
+          ps aux | grep -i nix || echo "No nix processes running"
+          
+          echo "--- Checking nix version and info ---"
+          nix --version 2>/dev/null || echo "Cannot get nix version"
+          nix show-config 2>/dev/null || echo "Cannot show nix config"
+
       - name: Install nix
         uses: cachix/install-nix-action@v27
         with:
