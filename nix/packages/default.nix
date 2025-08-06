@@ -1,4 +1,4 @@
-{ self, ... }:
+{ self, inputs, ... }:
 {
   imports = [ ./postgres.nix ];
   perSystem =
@@ -37,6 +37,7 @@
           supabase-groonga = pkgs.callPackage ./groonga { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
+          packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
