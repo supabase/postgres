@@ -45,10 +45,6 @@ jobs:
             mcpu: neoverse-n1
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
 
     steps:
       - name: Checkout Repo
