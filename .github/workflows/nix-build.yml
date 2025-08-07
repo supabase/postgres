@@ -118,6 +118,8 @@ jobs:
     needs: build-run-image
     if: ${{ success() }}
     uses: ./.github/workflows/testinfra-ami-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
     needs: build-run-image
