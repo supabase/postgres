@@ -42,6 +42,9 @@ let
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
+        # Create version-specific SQL file
+        cp ${pname}.sql $out/share/postgresql/extension/${pname}--${version}.sql
+
         # For the latest version, create default control file and symlink and copy SQL upgrade scripts
         if [[ "${version}" == "${latestVersion}" ]]; then
           {
