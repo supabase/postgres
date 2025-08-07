@@ -3,6 +3,10 @@ name: Testinfra Integration Tests Nix
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      DEV_AWS_ROLE:
+        description: 'AWS role for dev environment'
+        required: true
 
 permissions:
   contents: write
