@@ -21,7 +21,42 @@
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
     }
   },
-    "pg_net": {
+  "pg_cron": {
+    "1.3.1": {
+      "postgresql": [
+        "15"
+      ],
+      "rev": "v1.3.1",
+      "hash": "sha256-rXotNOtQNmA55ErNxGoNSKZ0pP1uxEVlDGITFHuqGG4=",
+      "patches": [
+        "pg_cron/pg_cron-1.3.1-pg15.patch"
+      ]
+    },
+    "1.4.2": {
+      "postgresql": [
+        "15"
+      ],
+      "rev": "v1.4.2",
+      "hash": "sha256-P0Fd10Q1p+KrExb35G6otHpc6pD61WnMll45H2jkevM="
+    },
+    "1.5.2": {
+      "postgresql": [
+        "15"
+      ],
+      "rev": "v1.5.2",
+      "hash": "sha256-+quVWbKJy6wXpL/zwTk5FF7sYwHA7I97WhWmPO/HSZ4="
+    },
+    "1.6.4": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "rev": "v1.6.4",
+      "hash": "sha256-t1DpFkPiSfdoGG2NgNT7g1lkvSooZoRoUrix6cBID40="
+    }
+  },
+  "pg_net": {
     "0.1": {
       "postgresql": [
         "15"
