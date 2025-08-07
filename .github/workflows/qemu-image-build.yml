@@ -26,12 +26,10 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: DeterminateSystems/nix-installer-action@main
-
       - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[1]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
@@ -55,7 +53,7 @@ jobs:
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(yq ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
@@ -153,7 +151,7 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
           SLACK_FOOTER: ''
-b
+
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
