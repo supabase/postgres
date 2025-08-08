@@ -348,10 +348,28 @@ function initiate_upgrade {
     locale-gen
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-        # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-        # excluding nvme0 since it is the root disk
+        # DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
         echo "5. Determining block device to mount"
-        BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
+        if command -v ebsnvme-id >/dev/null 2>&1 && dpkg -l | grep -q amazon-ec2-utils; then
+            for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
+                if [ -b "$nvme_dev" ]; then
+                    mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
+                    if [[ "$mapping" == "xvdp" || $mapping == "/dev/xvdp" ]]; then
+                        BLOCK_DEVICE="$nvme_dev"
+                        break
+                    fi
+                fi
+            done
+        fi
+
+        # Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
+        if [ -z "$BLOCK_DEVICE" ]; then
+            echo "No block device found using ebsnvme-id, falling back to lsblk"
+            # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+            # excluding nvme0 since it is the root disk
+            BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; exit }')  # exit ensures we grab the first only
+        fi
+
         echo "Block device found: $BLOCK_DEVICE"
 
         mkdir -p "$MOUNT_POINT"
