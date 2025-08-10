@@ -48,9 +48,32 @@ let
     "postgis_topology"
   ];
 
+<<<<<<< HEAD
   sqlExtensions = [
     "address_standardizer_data_us"
     "postgis_tiger_geocoder"
+=======
+  src = fetchurl {
+    url = "https://download.osgeo.org/postgis/source/postgis-${version}.tar.gz";
+    sha256 = "sha256-UHJKDd5JrcJT5Z4CTYsY/va+ToU0GUPG1eHhuXTkP84=";
+  };
+
+  buildInputs = [
+    libxml2
+    postgresql
+    geos
+    proj
+    gdal
+    json_c
+    protobufc
+    pcre2.dev
+    sfcgal
+  ]
+  ++ lib.optional stdenv.isDarwin libiconv;
+  nativeBuildInputs = [
+    perl
+    pkg-config
+>>>>>>> 4847adac (chore: update fmt)
   ];
 
   # Build function for individual versions
