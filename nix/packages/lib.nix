@@ -100,7 +100,8 @@
         PGBOUNCER_AUTH_SCHEMA_SQL = "${paths.pgbouncerAuthSchemaSql}";
         STAT_EXTENSION_SQL = "${paths.statExtensionSql}";
         CURRENT_SYSTEM = "${system}";
-      } // extraSubstitutions; # Merge in any extra substitutions
+      }
+      // extraSubstitutions; # Merge in any extra substitutions
     in
     pkgs.runCommand name
       {
