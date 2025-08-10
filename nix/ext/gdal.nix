@@ -47,15 +47,14 @@ stdenv.mkDerivation rec {
     zlib
   ];
 
-  cmakeFlags =
-    [
-      "-DGDAL_USE_INTERNAL_LIBS=OFF"
-      "-DGEOTIFF_INCLUDE_DIR=${lib.getDev libgeotiff}/include"
-      "-DGEOTIFF_LIBRARY_RELEASE=${lib.getLib libgeotiff}/lib/libgeotiff${stdenv.hostPlatform.extensions.sharedLibrary}"
-      "-DBUILD_PYTHON_BINDINGS=OFF"
-    ]
-    ++ lib.optionals (!stdenv.isDarwin) [ "-DCMAKE_SKIP_BUILD_RPATH=ON" ]
-    ++ lib.optionals stdenv.isDarwin [ "-DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON" ];
+  cmakeFlags = [
+    "-DGDAL_USE_INTERNAL_LIBS=OFF"
+    "-DGEOTIFF_INCLUDE_DIR=${lib.getDev libgeotiff}/include"
+    "-DGEOTIFF_LIBRARY_RELEASE=${lib.getLib libgeotiff}/lib/libgeotiff${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "-DBUILD_PYTHON_BINDINGS=OFF"
+  ]
+  ++ lib.optionals (!stdenv.isDarwin) [ "-DCMAKE_SKIP_BUILD_RPATH=ON" ]
+  ++ lib.optionals stdenv.isDarwin [ "-DCMAKE_BUILD_WITH_INSTALL_NAME_DIR=ON" ];
 
   enableParallelBuilding = true;
 

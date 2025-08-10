@@ -33,13 +33,14 @@ stdenv.mkDerivation rec {
     stdenv.isDarwin && lib.versionAtLeast postgresql.version "16"
   ) "-Wno-error=int-conversion -Wno-error=incompatible-pointer-types";
 
-  cmakeFlags =
-    [ "-DPOSTGRESQL_VERSION=${postgresql.version}" ]
-    ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
-      "-DCMAKE_MACOSX_RPATH=ON"
-      "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
-      "-DCMAKE_SHARED_LIBRARY_SUFFIX=.dylib"
-    ];
+  cmakeFlags = [
+    "-DPOSTGRESQL_VERSION=${postgresql.version}"
+  ]
+  ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
+    "-DCMAKE_MACOSX_RPATH=ON"
+    "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
+    "-DCMAKE_SHARED_LIBRARY_SUFFIX=.dylib"
+  ];
 
   preConfigure = lib.optionalString (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") ''
     export DLSUFFIX=.dylib
