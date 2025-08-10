@@ -37,38 +37,37 @@ stdenv.mkDerivation (finalAttrs: {
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
-  nativeBuildInputs =
-    [ perl ]
-    ++ lib.optionals stdenv.isDarwin [
-      clang
-      xcbuild
-    ];
+  nativeBuildInputs = [
+    perl
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    clang
+    xcbuild
+  ];
 
-  buildInputs =
-    [
-      v8
-      postgresql
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      darwin.apple_sdk.frameworks.CoreFoundation
-      darwin.apple_sdk.frameworks.Kerberos
-    ];
+  buildInputs = [
+    v8
+    postgresql
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    darwin.apple_sdk.frameworks.CoreFoundation
+    darwin.apple_sdk.frameworks.Kerberos
+  ];
 
   buildFlags = [ "all" ];
 
-  makeFlags =
-    [
-      # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
-      "USE_SYSTEM_V8=1"
-      "V8_OUTDIR=${v8}/lib"
-      "PG_CONFIG=${postgresql}/bin/pg_config"
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      "CC=${clang}/bin/clang"
-      "CXX=${clang}/bin/clang++"
-      "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-    ]
-    ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
+  makeFlags = [
+    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
+    "USE_SYSTEM_V8=1"
+    "V8_OUTDIR=${v8}/lib"
+    "PG_CONFIG=${postgresql}/bin/pg_config"
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    "CC=${clang}/bin/clang"
+    "CXX=${clang}/bin/clang++"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+  ]
+  ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
   NIX_LDFLAGS = (
     lib.optionals stdenv.isDarwin [
