@@ -45,7 +45,8 @@ stdenv.mkDerivation rec {
     protobufc
     pcre2.dev
     sfcgal
-  ] ++ lib.optional stdenv.isDarwin libiconv;
+  ]
+  ++ lib.optional stdenv.isDarwin libiconv;
   nativeBuildInputs = [
     perl
     pkg-config
