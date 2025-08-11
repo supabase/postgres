@@ -38,6 +38,7 @@
           ansible-test = pkgs.callPackage ./ansible-test.nix { };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          docker-image-ubuntu = pkgs.callPackage ./docker-ubuntu.nix { };
           docs = pkgs.callPackage ./docs.nix { };
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;

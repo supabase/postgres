@@ -92,7 +92,7 @@ def wait_for_target(host, target, timeout=60):
         result = host.run(f"systemctl is-active {target}")
         if result.rc == 0:
             return True
-        time.sleep(1)
+        time.sleep(0.2)
     return False
 
 
