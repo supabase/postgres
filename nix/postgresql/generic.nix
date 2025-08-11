@@ -147,6 +147,7 @@ let
       enableParallelBuilding = true;
 
       separateDebugInfo = true;
+      __structuredAttrs = true;
 
       buildFlags = [ "world-bin" ];
 
