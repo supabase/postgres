@@ -4,10 +4,41 @@ set -euo pipefail
 
 VOLUME_TYPE=${1:-data}
 
+# lsb release
+UBUNTU_VERSION=$(lsb_release -rs)
+
 if pgrep resizefs; then
     echo "resize2fs is already running"
     exit 1
 fi
+
+# install amazon disk utilities if not present on 24.04
+if [ "${UBUNTU_VERSION}" = "24.04" ] && ! dpkg -l | grep -q amazon-ec2-utils; then
+    apt-get update
+    apt-get install -y amazon-ec2-utils || true
+fi
+
+# We currently mount 3 possible disks
+# - /dev/xvda (root disk)
+# - /dev/xvdh (data disk)
+# - /dev/xvdp (upgrade data disk)
+# Initialize variables at 20.04 levels
+XVDA_DEVICE="/dev/nvme0n1"
+XVDH_DEVICE="/dev/nvme1n1"
+# Map AWS devices to NVMe for ubuntu 24.04 and later
+if [ "${UBUNTU_VERSION}" = "24.04" ] && dpkg -l | grep -q amazon-ec2-utils; then
+    for nvme_dev in $(lsblk -dprno name,type | grep disk | awk '{print $1}'); do
+        if [ -b "$nvme_dev" ]; then
+            mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
+            case "$mapping" in
+                "xvda"|"/dev/xvda") XVDA_DEVICE="$nvme_dev" ;;
+                "xvdh"|"/dev/xvdh") XVDH_DEVICE="$nvme_dev" ;;
+            esac
+        fi
+    done
+fi
+
+echo "Using devices - Root: $XVDA_DEVICE, Data: $XVDH_DEVICE"
 
 # Parses the output of lsblk to get the root partition number
 # Example output:
@@ -26,15 +57,15 @@ if ! [[ "$ROOT_PARTITION_NUMBER" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
-if [ -b /dev/nvme1n1 ] ; then
+if [ -b "${XVDH_DEVICE}" ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
-        resize2fs /dev/nvme1n1
+        resize2fs $XVDH_DEVICE
 
     elif [[ "${VOLUME_TYPE}" == "root" ]] ; then
         PLACEHOLDER_FL=/home/ubuntu/50M_PLACEHOLDER
         rm -f "${PLACEHOLDER_FL}" || true
-        growpart /dev/nvme0n1 "${ROOT_PARTITION_NUMBER}"
-        resize2fs "/dev/nvme0n1p${ROOT_PARTITION_NUMBER}"
+        growpart "${XVDA_DEVICE}" "${ROOT_PARTITION_NUMBER}"
+        resize2fs "${XVDA_DEVICE}p${ROOT_PARTITION_NUMBER}"
         if [[ ! -f "${PLACEHOLDER_FL}" ]] ; then
             fallocate -l50M "${PLACEHOLDER_FL}"
         fi
@@ -43,7 +74,7 @@ if [ -b /dev/nvme1n1 ] ; then
         exit 1
     fi
 else
-    growpart /dev/nvme0n1 "${ROOT_PARTITION_NUMBER}"
-    resize2fs "/dev/nvme0n1p${ROOT_PARTITION_NUMBER}"
+    growpart "${XVDA_DEVICE}" "${ROOT_PARTITION_NUMBER}"
+    resize2fs "${XVDA_DEVICE}p${ROOT_PARTITION_NUMBER}"
 fi
 echo "Done resizing disk"
