@@ -52,7 +52,7 @@ fi
 
 if [ -b "${XVDH_DEVICE}" ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
-        resize2fs $XVDH_DEVICE
+        resize2fs "${XVDH_DEVICE}"
 
     elif [[ "${VOLUME_TYPE}" == "root" ]] ; then
         PLACEHOLDER_FL=/home/ubuntu/50M_PLACEHOLDER
