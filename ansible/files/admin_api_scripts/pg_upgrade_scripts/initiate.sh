@@ -363,7 +363,7 @@ function initiate_upgrade {
         fi
 
         # Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
-        if [ -z "$BLOCK_DEVICE" ]; then
+        if [ -z "${BLOCK_DEVICE:-}" ]; then
             echo "No block device found using ebsnvme-id, falling back to lsblk"
             # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
             # excluding nvme0 since it is the root disk
