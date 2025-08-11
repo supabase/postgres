@@ -21,7 +21,7 @@ fi
 # We currently mount 3 possible disks
 # - /dev/xvda (root disk)
 # - /dev/xvdh (data disk)
-# - /dev/xvdp (upgrade data disk)
+# - /dev/xvdp (upgrade data disk), not used here
 # Initialize variables at 20.04 levels
 XVDA_DEVICE="/dev/nvme0n1"
 XVDH_DEVICE="/dev/nvme1n1"
@@ -40,17 +40,10 @@ fi
 
 echo "Using devices - Root: $XVDA_DEVICE, Data: $XVDH_DEVICE"
 
-# Parses the output of lsblk to get the root partition number
-# Example output:
-# NAME        MOUNTPOINT
-# nvme0n1
-# ├─nvme0n1p1 /boot
-# └─nvme0n1p3 /
-# nvme1n1     /data
-#
-# Resulting in:
-# └─nvme0n1p3 / -> nvme0n1p3 -> 3
-ROOT_PARTITION_NUMBER=$(lsblk -no NAME,MOUNTPOINT | grep ' /$' | awk '{print $1;}' | sed 's/.*nvme[0-9]n[0-9]p//g')
+# Get root partition using findmnt
+ROOT_DEVICE_FULL=$(findmnt -no SOURCE /)
+ROOT_DEVICE=$(lsblk -no PKNAME "$ROOT_DEVICE_FULL")
+ROOT_PARTITION_NUMBER=$(echo "$ROOT_DEVICE_FULL" | sed "s|.*${ROOT_DEVICE}p||")
 
 if ! [[ "$ROOT_PARTITION_NUMBER" =~ ^[0-9]+$ ]]; then
   echo "Error: ROOT_PARTITION_NUMBER is not a valid number: $ROOT_PARTITION_NUMBER"
