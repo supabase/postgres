@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  # required by testinfra-ami-build dependent workflows
+  # required by dependent workflows
   contents: write
   packages: write
 
@@ -118,13 +118,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-
-  run-testinfra:
-    needs: build-run-image
-    if: ${{ success() }}
-    uses: ./.github/workflows/testinfra-ami-build.yml
-    secrets:
-      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
     needs: build-run-image
