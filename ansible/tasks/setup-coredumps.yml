@@ -102,7 +102,7 @@
   when: 
     - stage2_nix
     - grub_d_files.stdout == ""
-  notify: update grub
+  register: grub_main_updated
 
 - name: Update GRUB configuration for coredump_filter in grub.d files
   become: yes
@@ -115,7 +115,14 @@
   when: 
     - stage2_nix
     - grub_d_files.stdout != ""
-  notify: update grub
+  register: grub_d_updated
+
+- name: Update GRUB after configuration changes
+  become: yes
+  command: update-grub
+  when: 
+    - stage2_nix
+    - grub_main_updated.changed or grub_d_updated.changed
 
 - name: Install gdb for debugging
   become: yes
@@ -209,11 +216,4 @@
     mode: '0644'
     owner: root
     group: root
-  when: stage2_nix
-
-# Handler for updating GRUB
-- name: Define update grub handler
-  become: yes
-  command: update-grub
-  listen: update grub
   when: stage2_nix
