@@ -1,4 +1,9 @@
-{ runCommand, dockerTools, xz, buildEnv }:
+{
+  runCommand,
+  dockerTools,
+  xz,
+  buildEnv,
+}:
 let
   ubuntu-cloudimg =
     let
