@@ -315,6 +315,9 @@
             inherit self;
             inherit pkgs;
           })
-        );
+        )
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux) {
+          inherit (self'.packages) ansible-test run-testinfra docker-image-ubuntu;
+        };
     };
 }
