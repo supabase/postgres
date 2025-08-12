@@ -38,6 +38,7 @@
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-ubuntu = pkgs.callPackage ./docker-ubuntu.nix { };
           docs = pkgs.callPackage ./docs.nix { };
+          envoy-bin = pkgs.callPackage ./envoy-bin.nix { };
           supabase-groonga = pkgs.callPackage ./groonga { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
