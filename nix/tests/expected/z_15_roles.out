@@ -29,7 +29,8 @@ order by
  postgres                | pg_signal_backend      | f
  postgres                | pgtle_admin            | f
  postgres                | service_role           | f
+ supabase_etl_admin      | pg_read_all_data       | f
  supabase_read_only_user | pg_read_all_data       | f
  supabase_storage_admin  | authenticator          | f
-(18 rows)
+(19 rows)
 
