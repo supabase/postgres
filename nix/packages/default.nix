@@ -80,6 +80,7 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
+          system-manager = inputs'.system-manager.packages.default;
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
