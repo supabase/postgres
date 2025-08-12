@@ -33,9 +33,9 @@
     {
       packages = (
         {
+          ansible-test = pkgs.callPackage ./ansible-test.nix { inherit self; };
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
-          ansible-test = pkgs.callPackage ./ansible-test.nix { inherit self; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-ansible-test = pkgs.callPackage ./docker-ansible-test.nix {
