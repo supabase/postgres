@@ -1,8 +1,16 @@
+import pytest
+import subprocess
+import testinfra
+from rich.console import Console
+
+console = Console()
+
+
 def pytest_addoption(parser):
     parser.addoption(
-        "--ansible-dir",
+        "--flake-dir",
         action="store",
-        help="Directory containing Ansible playbooks and roles",
+        help="Directory containing the current flake",
     )
 
     parser.addoption(
@@ -10,3 +18,59 @@ def pytest_addoption(parser):
         action="store",
         help="Docker image and tag to use for testing",
     )
+
+
+@pytest.fixture(scope="module")
+def host(request):
+    flake_dir = request.config.getoption("--flake-dir")
+    docker_id = (
+        subprocess.check_output(
+            [
+                "docker",
+                "run",
+                "--privileged",
+                "--cap-add",
+                "SYS_ADMIN",
+                "--security-opt",
+                "seccomp=unconfined",
+                "--cgroup-parent=docker.slice",
+                "--cgroupns",
+                "private",
+                "-v",
+                f"{flake_dir}:/flake",
+                "-d",
+                "ubuntu-cloudimg-with-tools:0.1",
+            ]
+        )
+        .decode()
+        .strip()
+    )
+    yield testinfra.get_host("docker://" + docker_id)
+    subprocess.check_call(["docker", "rm", "-f", docker_id], stdout=subprocess.DEVNULL)
+
+
+@pytest.fixture(scope="module")
+def run_ansible_playbook(host):
+    def _run_playbook(playbook_name, verbose=False):
+        cmd = [
+            "ANSIBLE_HOST_KEY_CHECKING=False",
+            "ansible-playbook",
+            "--connection=local",
+        ]
+        if verbose:
+            cmd.append("-vvv")
+        cmd.extend([
+            "-i",
+            "localhost,",
+            "--extra-vars",
+            "@/flake/ansible/vars.yml",
+            f"/flake/ansible/tests/{playbook_name}",
+        ])
+        result = host.run(" ".join(cmd))
+        if result.failed:
+            console.log(result.stdout)
+            console.log(result.stderr)
+            raise pytest.fail(
+                f"Ansible playbook {playbook_name} failed with return code {result.rc}"
+            )
+    return _run_playbook

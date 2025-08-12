@@ -1,0 +1,5 @@
+---
+- hosts: localhost
+  tasks:
+  - import_tasks: ../tasks/setup-nix.yml
+  - import_tasks: ../tasks/setup-system-manager.yml
