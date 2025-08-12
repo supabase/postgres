@@ -59,6 +59,7 @@
         nix/packages
         nix/overlays
         nix/systemModules
+        nix/systemConfigs.nix
       ];
     });
 }

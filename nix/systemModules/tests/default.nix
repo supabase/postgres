@@ -12,14 +12,7 @@
         check-system-manager =
           let
             lib = pkgs.lib;
-            systemManagerConfig = self.inputs.system-manager.lib.makeSystemConfig {
-              modules = [
-                ({
-                  services.nginx.enable = true;
-                  nixpkgs.hostPlatform = pkgs.system;
-                })
-              ];
-            };
+            systemManagerConfig = self.systemConfigs.${pkgs.system}.default;
 
             dockerImageUbuntuWithTools =
               let
