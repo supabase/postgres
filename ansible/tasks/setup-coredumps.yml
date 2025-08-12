@@ -1,0 +1,219 @@
+---
+# Setup coredump collection for debugging PostgreSQL crashes
+# This configuration is temporary and should be cleaned up after debugging
+
+- name: Create coredump directory
+  become: yes
+  file:
+    path: /pg_coredump_debug
+    state: directory
+    mode: '0777'
+    owner: root
+    group: root
+  when: stage2_nix
+
+- name: Configure kernel core pattern
+  become: yes
+  ansible.posix.sysctl:
+    name: kernel.core_pattern
+    value: '/pg_coredump_debug/core.%e.%p.%t'
+    state: present
+    sysctl_file: /etc/sysctl.d/99-coredump.conf
+    reload: yes
+  when: stage2_nix
+
+- name: Enable core dumps with PID
+  become: yes
+  ansible.posix.sysctl:
+    name: kernel.core_uses_pid
+    value: '1'
+    state: present
+    sysctl_file: /etc/sysctl.d/99-coredump.conf
+    reload: yes
+  when: stage2_nix
+
+- name: Enable SUID dumpable
+  become: yes
+  ansible.posix.sysctl:
+    name: fs.suid_dumpable
+    value: '1'
+    state: present
+    sysctl_file: /etc/sysctl.d/99-coredump.conf
+    reload: yes
+  when: stage2_nix
+
+- name: Create systemd system.conf.d directory
+  become: yes
+  file:
+    path: /etc/systemd/system.conf.d
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: stage2_nix
+
+- name: Configure systemd for coredumps
+  become: yes
+  copy:
+    content: |
+      # Temporary coredump configuration - remove after debugging
+      [Manager]
+      DefaultLimitCORE=infinity
+      DumpCore=yes
+    dest: /etc/systemd/system.conf.d/50-coredump.conf
+    mode: '0644'
+    owner: root
+    group: root
+  when: stage2_nix
+
+- name: Configure security limits for coredumps
+  become: yes
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      # Temporary coredump limits - remove after debugging
+      *                hard    core            50000
+      *                soft    core            50000
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - COREDUMP"
+    state: present
+  when: stage2_nix
+
+- name: Check current GRUB_CMDLINE_LINUX_DEFAULT
+  become: yes
+  shell: grep '^GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX_DEFAULT=""'
+  register: current_grub_cmdline
+  changed_when: false
+  when: stage2_nix
+
+- name: Check for GRUB_CMDLINE_LINUX_DEFAULT in grub.d files
+  become: yes
+  shell: grep -l '^GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub.d/* 2>/dev/null || true
+  register: grub_d_files
+  changed_when: false
+  when: stage2_nix
+
+- name: Update GRUB configuration for coredump_filter in main grub file
+  become: yes
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ current_grub_cmdline.stdout | regex_replace("^GRUB_CMDLINE_LINUX_DEFAULT=\"(.*)\"$", "\\1") | regex_replace("coredump_filter=[0-9]+", "") | trim }} coredump_filter=49"'
+    backrefs: no
+  when: 
+    - stage2_nix
+    - grub_d_files.stdout == ""
+  notify: update grub
+
+- name: Update GRUB configuration for coredump_filter in grub.d files
+  become: yes
+  lineinfile:
+    path: "{{ item }}"
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ lookup("pipe", "grep \"^GRUB_CMDLINE_LINUX_DEFAULT=\" " + item + " | sed \"s/^GRUB_CMDLINE_LINUX_DEFAULT=\\\"\\(.*\\)\\\"$/\\1/\" | sed \"s/coredump_filter=[0-9]*//g\"") | trim }} coredump_filter=49"'
+    backrefs: no
+  with_items: "{{ grub_d_files.stdout_lines }}"
+  when: 
+    - stage2_nix
+    - grub_d_files.stdout != ""
+  notify: update grub
+
+- name: Install gdb for debugging
+  become: yes
+  apt:
+    pkg:
+      - gdb
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  when: stage2_nix
+
+- name: Create root .gdbinit configuration
+  become: yes
+  copy:
+    content: |
+      # GDB configuration for PostgreSQL debugging
+      # Note: debug-file-directory and substitute-path need to be set manually
+      # after installing debug symbols and source files from nix
+      set auto-load safe-path /
+      # Example paths - will be set dynamically when debugging:
+      # set debug-file-directory /nix/store/<hash>-postgresql-<version>-debug/lib/debug/
+      # set substitute-path ./ /nix/store/<hash>-postgresql-<version>-src-<version>/
+    dest: /root/.gdbinit
+    mode: '0644'
+    owner: root
+    group: root
+  when: stage2_nix
+
+- name: Create postgres user .gdbinit configuration
+  become: yes
+  become_user: postgres
+  copy:
+    content: |
+      # GDB configuration for PostgreSQL debugging
+      # Note: debug-file-directory and substitute-path need to be set manually
+      # after installing debug symbols and source files from nix
+      set auto-load safe-path /
+      # Example paths - will be set dynamically when debugging:
+      # set debug-file-directory /nix/store/<hash>-postgresql-<version>-debug/lib/debug/
+      # set substitute-path ./ /nix/store/<hash>-postgresql-<version>-src-<version>/
+    dest: /var/lib/postgresql/.gdbinit
+    mode: '0644'
+    owner: postgres
+    group: postgres
+  when: stage2_nix
+
+- name: Create coredump setup documentation
+  become: yes
+  copy:
+    content: |
+      # PostgreSQL Coredump Configuration
+      
+      This AMI has been configured to collect PostgreSQL coredumps for debugging.
+      
+      ## Configuration Files Modified:
+      - /etc/sysctl.d/99-coredump.conf - Kernel coredump settings
+      - /etc/systemd/system.conf.d/50-coredump.conf - Systemd coredump settings
+      - /etc/security/limits.conf - User limits for coredump size
+      - /etc/default/grub - GRUB configuration for coredump_filter
+      
+      ## Coredump Location:
+      Coredumps are saved to: /pg_coredump_debug/
+      
+      ## Debug Symbols:
+      Debug symbols and source files are already installed via nix during the build.
+      To find the paths:
+      ```
+      sudo -u postgres nix profile list | grep postgresql_.*_debug
+      sudo -u postgres nix profile list | grep postgresql_.*_src
+      ```
+      
+      ## Using GDB:
+      To analyze a coredump:
+      ```
+      sudo gdb postmaster -c /pg_coredump_debug/<core_file>
+      ```
+      
+      Then in gdb, set the debug symbols path:
+      ```
+      symbol-file /nix/store/<hash>-postgresql-<version>-debug/lib/debug/postgres
+      ```
+      
+      ## Cleanup:
+      To disable coredump collection after debugging:
+      1. Remove /etc/sysctl.d/99-coredump.conf
+      2. Remove /etc/systemd/system.conf.d/50-coredump.conf
+      3. Remove coredump block from /etc/security/limits.conf
+      4. Delete coredumps from /pg_coredump_debug/
+      5. Run: sudo sysctl -p && sudo systemctl daemon-reload
+    dest: /pg_coredump_debug/README.md
+    mode: '0644'
+    owner: root
+    group: root
+  when: stage2_nix
+
+# Handler for updating GRUB
+- name: Define update grub handler
+  become: yes
+  command: update-grub
+  listen: update grub
+  when: stage2_nix

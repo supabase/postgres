@@ -175,6 +175,11 @@
   import_tasks: tasks/stage2-setup-postgres.yml
   when: stage2_nix
 
+# Setup coredump collection for debugging
+- name: Setup coredump collection
+  import_tasks: tasks/setup-coredumps.yml
+  when: stage2_nix
+
 # init DB
 - name: Create directory on data volume
   file:
