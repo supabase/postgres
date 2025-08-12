@@ -59,13 +59,15 @@ def run_ansible_playbook(host):
         ]
         if verbose:
             cmd.append("-vvv")
-        cmd.extend([
-            "-i",
-            "localhost,",
-            "--extra-vars",
-            "@/flake/ansible/vars.yml",
-            f"/flake/ansible/tests/{playbook_name}",
-        ])
+        cmd.extend(
+            [
+                "-i",
+                "localhost,",
+                "--extra-vars",
+                "@/flake/ansible/vars.yml",
+                f"/flake/ansible/tests/{playbook_name}",
+            ]
+        )
         result = host.run(" ".join(cmd))
         if result.failed:
             console.log(result.stdout)
@@ -73,4 +75,5 @@ def run_ansible_playbook(host):
             raise pytest.fail(
                 f"Ansible playbook {playbook_name} failed with return code {result.rc}"
             )
+
     return _run_playbook

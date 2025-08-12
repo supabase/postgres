@@ -407,6 +407,9 @@
               postgresql_orioledb-17_src
               postgresql_17_debug
               postgresql_17_src
+              ansible-test
+              run-testinfra
+              docker-image-ubuntu
               ;
           }
           // (import ./ext/tests {
