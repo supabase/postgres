@@ -190,10 +190,10 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# # Add upstream entrypoint script
+# # Add upstream entrypoint script pinned for now to last tested version
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/15/bullseye/docker-entrypoint.sh \
+    https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/15/bullseye/docker-entrypoint.sh \
     /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
