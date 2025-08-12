@@ -6,7 +6,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 - ✅ Postgres [postgresql-15.8](https://www.postgresql.org/docs/15/index.html)
 - ✅ Postgres [postgresql-17.4](https://www.postgresql.org/docs/17/index.html)
 - ✅ Postgres [orioledb-postgresql-17_6](https://github.com/orioledb/orioledb)
-- ✅ Ubuntu 20.04 (Focal Fossa).
+- ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
 ## Extensions 
@@ -115,7 +115,7 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.19.0](http://www.pgbouncer.org/changelog.html#pgbouncer-119x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v12.2.3](https://github.com/PostgREST/postgrest/releases/tag/v12.2.3) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/stable/) | [v13.0.4](https://github.com/PostgREST/postgrest/releases/tag/v13.0.4) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
 
 ## Install

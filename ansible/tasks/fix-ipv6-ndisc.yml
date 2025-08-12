@@ -25,9 +25,9 @@
 
 - name: fix Network - reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: false
 
-- name: fix Network - enable systemd timer
+- name: fix Network - ensure systemd timer is installed but disabled
   systemd:
     name: systemd-networkd-check-and-fix.timer
-    enabled: true
+    enabled: false

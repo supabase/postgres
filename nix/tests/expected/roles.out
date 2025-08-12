@@ -88,7 +88,7 @@ order by rolname;
  supabase_auth_admin        | {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
  supabase_etl_admin         | 
  supabase_functions_admin   | 
- supabase_read_only_user    | 
+ supabase_read_only_user    | {default_transaction_read_only=on}
  supabase_replication_admin | 
  supabase_storage_admin     | {search_path=storage,log_statement=none}
 (30 rows)
@@ -523,3 +523,8 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  vault              | USAGE          | supabase_admin           | supabase_admin
 (389 rows)
 
+-- postgres can alter API roles' timeout
+set role postgres;
+alter role anon set statement_timeout = '10min';
+alter role anon reset statement_timeout;
+reset role;

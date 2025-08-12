@@ -8,7 +8,7 @@
 
 - name: PostgREST - add Postgres PPA main
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: present
     filename: postgresql-pgdg
 
@@ -36,7 +36,7 @@
 
 - name: PostgREST - remove Postgres PPA
   apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: absent
 
 - name: postgis - ensure dependencies do not get autoremoved
@@ -48,7 +48,7 @@
 
 - name: PostgREST - download ubuntu binary archive (arm)
   get_url:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-20.04-aarch64.tar.xz"
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
     dest: /tmp/postgrest.tar.xz
     checksum: "{{ postgrest_arm_release_checksum }}"
     timeout: 60

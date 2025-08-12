@@ -266,6 +266,7 @@ function complete_pg_upgrade {
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
         retry 3 service postgrest restart
+        
     else
         retry 3 CI_stop_postgres || true
         retry 3 CI_start_postgres

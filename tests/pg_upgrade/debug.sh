@@ -24,7 +24,7 @@ if [ ! -f "$LATEST_VERSION_SCRIPTS" ]; then
 fi
 
 if [ ! -f "$LATEST_VERSION_BIN" ]; then
-  aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/20.04.tar.gz" "$LATEST_VERSION_BIN"
+  aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/24.04.tar.gz" "$LATEST_VERSION_BIN"
 fi
 
 rm -rf scripts/pg_upgrade_scripts

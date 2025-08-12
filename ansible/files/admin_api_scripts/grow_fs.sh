@@ -4,37 +4,61 @@ set -euo pipefail
 
 VOLUME_TYPE=${1:-data}
 
+# lsb release
+UBUNTU_VERSION=$(lsb_release -rs)
+
 if pgrep resizefs; then
     echo "resize2fs is already running"
     exit 1
 fi
 
-# Parses the output of lsblk to get the root partition number
-# Example output:
-# NAME        MOUNTPOINT
-# nvme0n1
-# ├─nvme0n1p1 /boot
-# └─nvme0n1p3 /
-# nvme1n1     /data
-#
-# Resulting in:
-# └─nvme0n1p3 / -> nvme0n1p3 -> 3
-ROOT_PARTITION_NUMBER=$(lsblk -no NAME,MOUNTPOINT | grep ' /$' | awk '{print $1;}' | sed 's/.*nvme[0-9]n[0-9]p//g')
+# install amazon disk utilities if not present on 24.04
+if [ "${UBUNTU_VERSION}" = "24.04" ] && ! dpkg -l | grep -q amazon-ec2-utils; then
+    apt-get update
+    apt-get install -y amazon-ec2-utils || true
+fi
+
+# We currently mount 3 possible disks
+# - /dev/xvda (root disk)
+# - /dev/xvdh (data disk)
+# - /dev/xvdp (upgrade data disk), not used here
+# Initialize variables at 20.04 levels
+XVDA_DEVICE="/dev/nvme0n1"
+XVDH_DEVICE="/dev/nvme1n1"
+# Map AWS devices to NVMe for ubuntu 24.04 and later
+if [ "${UBUNTU_VERSION}" = "24.04" ] && dpkg -l | grep -q amazon-ec2-utils; then
+    for nvme_dev in $(lsblk -dprno name,type | grep disk | awk '{print $1}'); do
+        if [ -b "$nvme_dev" ]; then
+            mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
+            case "$mapping" in
+                "xvda"|"/dev/xvda") XVDA_DEVICE="$nvme_dev" ;;
+                "xvdh"|"/dev/xvdh") XVDH_DEVICE="$nvme_dev" ;;
+            esac
+        fi
+    done
+fi
+
+echo "Using devices - Root: $XVDA_DEVICE, Data: $XVDH_DEVICE"
+
+# Get root partition using findmnt
+ROOT_DEVICE_FULL=$(findmnt -no SOURCE /)
+ROOT_DEVICE=$(lsblk -no PKNAME "$ROOT_DEVICE_FULL")
+ROOT_PARTITION_NUMBER=$(echo "$ROOT_DEVICE_FULL" | sed "s|.*${ROOT_DEVICE}p||")
 
 if ! [[ "$ROOT_PARTITION_NUMBER" =~ ^[0-9]+$ ]]; then
   echo "Error: ROOT_PARTITION_NUMBER is not a valid number: $ROOT_PARTITION_NUMBER"
   exit 1
 fi
 
-if [ -b /dev/nvme1n1 ] ; then
+if [ -b "${XVDH_DEVICE}" ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
-        resize2fs /dev/nvme1n1
+        resize2fs "${XVDH_DEVICE}"
 
     elif [[ "${VOLUME_TYPE}" == "root" ]] ; then
         PLACEHOLDER_FL=/home/ubuntu/50M_PLACEHOLDER
         rm -f "${PLACEHOLDER_FL}" || true
-        growpart /dev/nvme0n1 "${ROOT_PARTITION_NUMBER}"
-        resize2fs "/dev/nvme0n1p${ROOT_PARTITION_NUMBER}"
+        growpart "${XVDA_DEVICE}" "${ROOT_PARTITION_NUMBER}"
+        resize2fs "${XVDA_DEVICE}p${ROOT_PARTITION_NUMBER}"
         if [[ ! -f "${PLACEHOLDER_FL}" ]] ; then
             fallocate -l50M "${PLACEHOLDER_FL}"
         fi
@@ -43,7 +67,7 @@ if [ -b /dev/nvme1n1 ] ; then
         exit 1
     fi
 else
-    growpart /dev/nvme0n1 "${ROOT_PARTITION_NUMBER}"
-    resize2fs "/dev/nvme0n1p${ROOT_PARTITION_NUMBER}"
+    growpart "${XVDA_DEVICE}" "${ROOT_PARTITION_NUMBER}"
+    resize2fs "${XVDA_DEVICE}p${ROOT_PARTITION_NUMBER}"
 fi
 echo "Done resizing disk"

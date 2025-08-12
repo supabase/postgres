@@ -39,7 +39,7 @@ ARG index_advisor_release=0.2.0
 ARG supautils_release=2.2.0
 ARG wal_g_release=3.0.5
 
-FROM ubuntu:focal as base
+FROM ubuntu:noble as base
 
 RUN apt update -y && apt install -y \
     curl \

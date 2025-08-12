@@ -82,6 +82,7 @@ jobs:
       - name: Aggressive disk cleanup for DuckDB build
         if: matrix.runner == 'macos-latest-xlarge'
         run: |
+          nix --version
           echo "=== BEFORE CLEANUP ==="
           df -h
           # Remove major space consumers
@@ -117,6 +118,8 @@ jobs:
     needs: build-run-image
     if: ${{ success() }}
     uses: ./.github/workflows/testinfra-ami-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
     needs: build-run-image

@@ -17,7 +17,6 @@ let
     version: hash: rustVersion: pgrxVersion:
     let
       cargo = rust-bin.stable.${rustVersion}.default;
-      #previousVersions = lib.filter (v: v != version) versions; # FIXME
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
         inherit rustVersion pgrxVersion;
       };
@@ -129,20 +128,12 @@ let
         doCheck = false;
 
         postInstall = ''
-           create_control_files() {
-             sed -e "/^default_version =/d" \
-                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
-               $out/share/postgresql/extension/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
-             rm $out/share/postgresql/extension/${pname}.control
-
-             if [[ "${version}" == "${latestVersion}" ]]; then
-               {
-                 echo "default_version = '${latestVersion}'"
-                 cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
-               } > $out/share/postgresql/extension/${pname}.control
-               ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
-             fi
-           }
+          create_control_files() {
+            sed -e "/^default_version =/d" \
+                -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+              $out/share/postgresql/extension/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+            rm $out/share/postgresql/extension/${pname}.control
+          }
 
           create_control_files
         '';
@@ -165,6 +156,37 @@ let
         };
       }
     );
+  previouslyPackagedVersions = [
+    "0.5.0"
+    "0.4.6"
+    "0.4.5"
+    "0.4.4"
+    "0.4.3"
+    "0.4.2"
+    "0.4.1"
+    "0.4.0"
+    "0.3.1"
+    "0.3.0"
+    "0.2.0"
+    "0.1.19"
+    "0.1.18"
+    "0.1.17"
+    "0.1.16"
+    "0.1.15"
+    "0.1.14"
+    "0.1.12"
+    "0.1.11"
+    "0.1.10"
+    "0.1.9"
+    "0.1.8"
+    "0.1.7"
+    "0.1.6"
+    "0.1.5"
+    "0.1.4"
+    "0.1.1"
+    "0.1.0"
+  ];
+  numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
   supportedVersions = lib.filterAttrs (
     _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
@@ -184,29 +206,48 @@ buildEnv {
     "/share/postgresql/extension"
   ];
   postBuild = ''
-    # checks
-    (set -x
-       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
-       }"
-    )
-
-    create_sql_files() {
-      PREVIOUS_VERSION=""
-      while IFS= read -r i; do
-        FILENAME=$(basename "$i")
-        DIRNAME=$(dirname "$i")
-        VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
-        if [[ "$PREVIOUS_VERSION" != "" ]]; then
-          echo "Processing $i"
-          MIGRATION_FILENAME="$DIRNAME/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
-          cp "$i" "$MIGRATION_FILENAME"
-        fi
-        PREVIOUS_VERSION="$VERSION"
-      done < <(find $out -name '*.sql' | sort -V)
+    create_control_files() {
+      # Create main control file pointing to latest version
+      {
+        echo "default_version = '${latestVersion}'"
+        cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+      } > $out/share/postgresql/extension/${pname}.control
     }
 
-    create_sql_files
+    create_lib_files() {
+      # Create main library symlink to latest version
+      ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+      # Create symlinks for all previously packaged versions to main library
+      for v in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+        ln -sfn $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-$v${postgresql.dlSuffix}
+      done
+    }
+
+    create_migration_sql_files() {
+      # Create migration SQL files from previous versions to newer versions
+      for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+        for curr_version in ${lib.concatStringsSep " " versions}; do
+          if [[ "$(printf '%s\n%s' "$prev_version" "$curr_version" | sort -V | head -n1)" == "$prev_version" ]] && [[ "$prev_version" != "$curr_version" ]]; then
+            main_sql_file="$out/share/postgresql/extension/wrappers--$curr_version.sql"
+            if [ -f "$main_sql_file" ]; then
+              new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
+              cp "$main_sql_file" "$new_file"
+              sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
+            fi
+          fi
+        done
+      done
+    }
+
+    create_control_files
+    create_lib_files
+    create_migration_sql_files
+
+    # checks
+    (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+      toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
+    }")
   '';
   passthru = {
     inherit versions numberOfVersions;

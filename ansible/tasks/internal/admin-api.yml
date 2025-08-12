@@ -14,6 +14,8 @@
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
     - { file: "pg_egress_collect.pl" }
+    - { file: "mount-volume.sh" }
+    - { file: "unmount-volume.sh" }
 
 - name: give adminapi user permissions
   copy:

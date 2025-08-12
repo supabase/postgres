@@ -45,9 +45,7 @@
               shellcheck
               ansible
               ansible-lint
-              (packer.overrideAttrs (_oldAttrs: {
-                version = "1.7.8";
-              }))
+              self'.packages.packer
 
               self'.packages.start-server
               self'.packages.start-client
