@@ -80,7 +80,12 @@
 
 - name: Check current GRUB_CMDLINE_LINUX_DEFAULT
   become: yes
-  shell: grep '^GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub || echo 'GRUB_CMDLINE_LINUX_DEFAULT=""'
+  shell: |
+    if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub; then
+      grep '^GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub | sed 's/^GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"$/\1/'
+    else
+      echo ""
+    fi
   register: current_grub_cmdline
   changed_when: false
   when: stage2_nix
@@ -92,13 +97,18 @@
   changed_when: false
   when: stage2_nix
 
+- name: Prepare GRUB cmdline with coredump_filter
+  set_fact:
+    new_grub_cmdline: "{{ (current_grub_cmdline.stdout | regex_replace('coredump_filter=[0-9]+', '') | trim + ' coredump_filter=49') | trim }}"
+  when: stage2_nix
+
 - name: Update GRUB configuration for coredump_filter in main grub file
   become: yes
   lineinfile:
     path: /etc/default/grub
     regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
-    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ current_grub_cmdline.stdout | regex_replace("^GRUB_CMDLINE_LINUX_DEFAULT=\"(.*)\"$", "\\1") | regex_replace("coredump_filter=[0-9]+", "") | trim }} coredump_filter=49"'
-    backrefs: no
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ new_grub_cmdline }}"'
+    create: yes
   when: 
     - stage2_nix
     - grub_d_files.stdout == ""
@@ -106,12 +116,13 @@
 
 - name: Update GRUB configuration for coredump_filter in grub.d files
   become: yes
-  lineinfile:
-    path: "{{ item }}"
-    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
-    line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ lookup("pipe", "grep \"^GRUB_CMDLINE_LINUX_DEFAULT=\" " + item + " | sed \"s/^GRUB_CMDLINE_LINUX_DEFAULT=\\\"\\(.*\\)\\\"$/\\1/\" | sed \"s/coredump_filter=[0-9]*//g\"") | trim }} coredump_filter=49"'
-    backrefs: no
-  with_items: "{{ grub_d_files.stdout_lines }}"
+  shell: |
+    for file in {{ grub_d_files.stdout }}; do
+      current=$(grep '^GRUB_CMDLINE_LINUX_DEFAULT=' "$file" | sed 's/^GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"$/\1/')
+      new=$(echo "$current" | sed 's/coredump_filter=[0-9]*//g')
+      new="${new} coredump_filter=49"
+      sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=\"${new}\"/" "$file"
+    done
   when: 
     - stage2_nix
     - grub_d_files.stdout != ""
@@ -122,7 +133,7 @@
   command: update-grub
   when: 
     - stage2_nix
-    - grub_main_updated.changed or grub_d_updated.changed
+    - (grub_main_updated is defined and grub_main_updated.changed) or (grub_d_updated is defined and grub_d_updated.changed)
 
 - name: Install gdb for debugging
   become: yes
