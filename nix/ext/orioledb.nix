@@ -15,8 +15,8 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "beta12";
-    sha256 = "sha256-5dyVdKD1PzW+F5OPW3TR3OKBaJxxR3OhLbzK+o9Wf+Q=";
+    rev = "b21c75daef95326016407e59c5a46725c669fac4";
+    sha256 = "sha256-5KLt3YjIm2XSyItQKdsa7/b06CCzQJZJ+Nvcyt9Mcj4=";
   };
   version = "beta12";
   buildInputs = [
