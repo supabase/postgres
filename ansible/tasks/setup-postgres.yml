@@ -1,3 +1,7 @@
+- name: Setup coredump collection
+  import_tasks: tasks/setup-coredumps.yml
+  when: stage2_nix
+
 - name: Postgres - copy package
   copy:
     src: files/postgres/
@@ -170,14 +174,10 @@
   import_tasks: tasks/setup-docker.yml
   when: debpkg_mode or stage2_nix
 
+
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
   import_tasks: tasks/stage2-setup-postgres.yml
-  when: stage2_nix
-
-# Setup coredump collection for debugging
-- name: Setup coredump collection
-  import_tasks: tasks/setup-coredumps.yml
   when: stage2_nix
 
 # init DB
