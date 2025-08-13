@@ -201,8 +201,8 @@
       Debug symbols and source files are already installed via nix during the build.
       To find the paths:
       ```
-      sudo -u postgres nix profile list | grep postgresql_.*_debug
-      sudo -u postgres nix profile list | grep postgresql_.*_src
+      sudo -i -u postgres nix profile list | grep postgresql_.*_debug
+      sudo -i -u postgres nix profile list | grep postgresql_.*_src
       ```
       
       ## Using GDB:
