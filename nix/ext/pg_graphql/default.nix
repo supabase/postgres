@@ -7,8 +7,6 @@
   postgresql,
   rust-bin,
   rsync,
-  system,
-  rustPlatform,
 }:
 
 let
@@ -104,30 +102,6 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      //
-        lib.optionalAttrs
-          (
-            # Fix bindgen error on aarch64-linux for versions using pgrx with bindgen 0.68.1
-            # This affects pgrx 0.6.1 through 0.11.2 which have issues with ARM NEON vector ABI
-            # We apply the fix to all versions up to 1.5.1 (last version before 1.5.4 which uses 0.11.2)
-            builtins.compareVersions "1.5.4" version > 0
-          )
-          {
-            # Fix bindgen error on aarch64-linux by using an older version of clang
-            bindgenHook =
-              let
-                nixos2211 = (
-                  import (builtins.fetchTarball {
-                    url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
-                    sha256 = "1j7h75a9hwkkm97jicky5rhvzkdwxsv5v46473rl6agvq2sj97y1";
-                  }) { inherit system; }
-                );
-              in
-              rustPlatform.bindgenHook.overrideAttrs {
-                libclang = nixos2211.clang.cc.lib;
-                clang = nixos2211.clang;
-              };
-          }
       // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
         # Add missing Cargo.lock
         patches = [ ./0001-Add-missing-Cargo.lock-${version}.patch ];
