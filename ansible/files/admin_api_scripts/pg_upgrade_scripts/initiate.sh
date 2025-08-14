@@ -350,6 +350,13 @@ function initiate_upgrade {
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
         # DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
         echo "5. Determining block device to mount"
+        # lsb release
+        UBUNTU_VERSION=$(lsb_release -rs)
+        # install amazon disk utilities if not present on 24.04
+        if [ "${UBUNTU_VERSION}" = "24.04" ] && ! dpkg -l | grep -q amazon-ec2-utils; then
+            apt-get update
+            apt-get install -y amazon-ec2-utils || true
+        fi
         if command -v ebsnvme-id >/dev/null 2>&1 && dpkg -l | grep -q amazon-ec2-utils; then
             for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
                 if [ -b "$nvme_dev" ]; then
