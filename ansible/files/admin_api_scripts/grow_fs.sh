@@ -13,7 +13,7 @@ if pgrep resizefs; then
 fi
 
 # install amazon disk utilities if not present on 24.04
-if [ "${UBUNTU_VERSION}" = "24.04" ] && ! dpkg -l | grep -q amazon-ec2-utils; then
+if [ "${UBUNTU_VERSION}" = "24.04" ] && ! /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
     apt-get update
     apt-get install -y amazon-ec2-utils || true
 fi
@@ -26,7 +26,7 @@ fi
 XVDA_DEVICE="/dev/nvme0n1"
 XVDH_DEVICE="/dev/nvme1n1"
 # Map AWS devices to NVMe for ubuntu 24.04 and later
-if [ "${UBUNTU_VERSION}" = "24.04" ] && dpkg -l | grep -q amazon-ec2-utils; then
+if [ "${UBUNTU_VERSION}" = "24.04" ] && /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
     for nvme_dev in $(lsblk -dprno name,type | grep disk | awk '{print $1}'); do
         if [ -b "$nvme_dev" ]; then
             mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
