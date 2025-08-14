@@ -36,11 +36,11 @@ check_extensions_file() {
     local extensions_file="/etc/adminapi/pg-extensions.json"
     if [ ! -f "$extensions_file" ]; then
         log "extensions: No extensions file found, skipping extensions versions check"
-        return 1
+        return 0 #if file not found, skip
     fi
     if [ ! -r "$extensions_file" ]; then
         log "extensions: Cannot read extensions file"
-        return 1
+        return 1 #a true error, we should be able to read file
     fi
     return 0
 }
@@ -97,13 +97,7 @@ handle_extension_versions() {
             log "$extension_name: No version specified, skipping"
             continue
         fi
-        
-        # Basic version format validation (semantic versioning)
-        if ! [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
-            log "$extension_name: Invalid version format: $version, skipping"
-            continue
-        fi
-        
+                
         log "$extension_name: Found version $version in extensions file"
         
         # Don't fail if version switch fails - just log and continue
