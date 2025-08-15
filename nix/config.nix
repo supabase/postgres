@@ -43,11 +43,11 @@ in
         postgres = {
           "15" = {
             version = "15.14";
-            hash = "";
+            hash = "sha256-Bt110wXNOHDuYrOTLmYcYkVD6vmuK6N83sCk+O3QUdI=";
           };
           "17" = {
             version = "17.6";
-            hash = "";
+            hash = "sha256-4GMKNgCuonURcVVjJZ7CERzV9DU6SwQOC+gn+UzXqLA=";
           };
         };
         orioledb = {
