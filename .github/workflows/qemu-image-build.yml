@@ -65,7 +65,9 @@ jobs:
           sudo chmod 666 /dev/kvm
 
       - name: Set PostgreSQL version environment variable
-        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -155,9 +157,9 @@ jobs:
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids

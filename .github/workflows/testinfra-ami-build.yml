@@ -96,7 +96,9 @@ jobs:
         run: echo "random_string=$(openssl rand -hex 8)" >> $GITHUB_OUTPUT
 
       - name: Set PostgreSQL version environment variable
-        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -110,13 +112,13 @@ jobs:
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl
 
       - name: Run tests
         timeout-minutes: 10
@@ -130,12 +132,12 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
 
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
 
       - name: Cleanup AMIs
         if: always()

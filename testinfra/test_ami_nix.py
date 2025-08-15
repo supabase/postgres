@@ -11,9 +11,9 @@ from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 import paramiko
 
-# if GITHUB_RUN_ID is not set, use a default value that includes the user and hostname
+# if EXECUTION_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
-    "GITHUB_RUN_ID",
+    "EXECUTION_ID",
     "unknown-ci-run-"
     + os.environ.get("USER", "unknown-user")
     + "@"

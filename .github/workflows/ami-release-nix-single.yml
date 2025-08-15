@@ -49,7 +49,9 @@ jobs:
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Set PostgreSQL version environment variable
-        run: echo "POSTGRES_MAJOR_VERSION=${{ github.event.inputs.postgres_version }}" >> $GITHUB_ENV
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ github.event.inputs.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -65,7 +67,7 @@ jobs:
         run: |
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         env:
@@ -74,7 +76,7 @@ jobs:
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
           POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -153,10 +155,10 @@ jobs:
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids 
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids 
 
