@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.4
--- Dumped by pg_dump version 17.4
+\restrict wJhXZ3zzSxdOnzT40iWgcbF8W1OVaekHNId1sH6S7U0SApyR73uF8dYaLqibgGY
+
+-- Dumped from database version 17.6
+-- Dumped by pg_dump version 17.6
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -997,4 +999,6 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict wJhXZ3zzSxdOnzT40iWgcbF8W1OVaekHNId1sH6S7U0SApyR73uF8dYaLqibgGY
 
