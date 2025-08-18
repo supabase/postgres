@@ -36,6 +36,8 @@ let
       };
     in
     pkg;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = "pg_net";
@@ -61,7 +63,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+        package = psql_15;
         settings = {
           shared_preload_libraries = "pg_net";
         };
@@ -69,8 +71,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
+          package = lib.mkForce psql_17;
         };
+
+        environment.systemPackages = [ psql_17 ];
 
         systemd.services.postgresql-migrate = {
           serviceConfig = {
@@ -133,6 +137,23 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       check_upgrade_path()
 
+      with subtest("Test switch_pg_net_version"):
+        # Check that we are using the last version first
+        pg_net_version = server.succeed("readlink -f ${psql_15}/lib/pg_net.so").strip()
+        print(f"Current pg_net version: {pg_net_version}")
+        assert pg_net_version.endswith("pg_net-${latestVersion}.so"), f"Expected pg_net version ${latestVersion}, but found {pg_net_version}"
+
+        server.succeed(
+          "switch_pg_net_version ${firstVersion}"
+        )
+
+        pg_net_version = server.succeed("readlink -f ${psql_15}/lib/pg_net.so").strip()
+        assert pg_net_version.endswith("pg_net-${firstVersion}.so"), f"Expected pg_net version ${firstVersion}, but found {pg_net_version}"
+
+        server.succeed(
+          "switch_pg_net_version ${latestVersion}"
+        )
+
       with subtest("Check pg_net latest extension version"):
         server.succeed("sudo -u postgres psql -c 'DROP EXTENSION pg_net;'")
         server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION pg_net;'")
@@ -149,5 +170,6 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         assert "pg_net,${latestVersion}" in installed_extensions
 
       check_upgrade_path()
+
     '';
 }

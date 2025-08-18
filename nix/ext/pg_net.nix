@@ -7,15 +7,70 @@
   postgresql,
   libuv,
   writeShellApplication,
+  makeWrapper,
 }:
 
 let
+  enableOverlayOnPackage = writeShellApplication {
+    name = "enable_overlay_on_package";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      # This script enable overlayfs on a specific nix store path
+      set -euo pipefail
+
+      if [ $# -ne 1 ]; then
+        echo "Usage: $0 <path>"
+        exit 1
+      fi
+
+      PACKAGE_PATH="$1"
+      PACKAGE_NAME=$(basename "$1"|cut -c 34-)
+
+      # Nixos compatibility: use systemd mount unit
+      #shellcheck disable=SC1091
+      source /etc/os-release || true
+      if [[ "$ID" == "nixos" ]]; then
+        # This script is used in NixOS test only for the moment
+        SYSTEMD_DIR="/run/systemd/system"
+      else
+        SYSTEMD_DIR="/etc/systemd/system"
+      fi
+
+      # Create required directories for overlay
+      echo "$PACKAGE_NAME"
+      mkdir -p "/var/lib/overlay/$PACKAGE_NAME/"{upper,work}
+
+      PACKAGE_MOUNT_PATH=$(systemd-escape -p --suffix=mount "$PACKAGE_PATH")
+
+      cat > "$SYSTEMD_DIR/$PACKAGE_MOUNT_PATH" <<EOF
+      [Unit]
+      Description=Overlay mount for PostgreSQL extension $PACKAGE_NAME
+
+      [Mount]
+      What=overlay
+      Type=overlay
+      Options=lowerdir=$PACKAGE_PATH,upperdir=/var/lib/overlay/$PACKAGE_NAME/upper,workdir=/var/lib/overlay/$PACKAGE_NAME/work
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+
+      systemctl daemon-reload
+      systemctl start "$PACKAGE_MOUNT_PATH"
+    '';
+  };
   switchPgNetVersion = writeShellApplication {
     name = "switch_pg_net_version";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
       # Create version switcher script
-      set -e
+      set -euo pipefail
+
+      # Check if the required environment variables are set
+      if [ -z "''${EXT_WRAPPER:-}" ]; then
+        echo "Error: EXT_WRAPPER environment variable is not set."
+        exit 1
+      fi
 
       if [ $# -ne 1 ]; then
         echo "Usage: $0 <version>"
@@ -28,68 +83,32 @@ let
         exit 1
       fi
 
-      VERSION=$1
+      VERSION="$1"
+      echo "$VERSION"
 
-      # Set defaults, allow environment variable overrides
-      : "''${NIX_PROFILE:="/var/lib/postgresql/.nix-profile"}"
-      : "''${LIB_DIR:=""}"
-      : "''${EXTENSION_DIR:=""}"
-
-      # If LIB_DIR not explicitly set, auto-detect it
-      if [ -z "$LIB_DIR" ]; then
-        # Follow the complete chain of symlinks to find the multi-version directory
-        CURRENT_LINK="$NIX_PROFILE/lib/pg_net-$VERSION${postgresql.dlSuffix}"
-        echo "Starting with link: $CURRENT_LINK"
-
-        # Follow first two symlinks to get to the multi-version directory
-        for _ in 1 2; do
-            if [ -L "$CURRENT_LINK" ]; then
-                NEXT_LINK=$(readlink "$CURRENT_LINK")
-                echo "Following link: $NEXT_LINK"
-                if echo "$NEXT_LINK" | grep -q '^/'; then
-                    CURRENT_LINK="$NEXT_LINK"
-                else
-                    CURRENT_LINK="$(dirname "$CURRENT_LINK")/$NEXT_LINK"
-                fi
-                echo "Current link is now: $CURRENT_LINK"
-            fi
-        done
-
-        # The multi-version directory should be the parent of the current link
-        MULTI_VERSION_DIR=$(dirname "$CURRENT_LINK")
-        echo "Found multi-version directory: $MULTI_VERSION_DIR"
-        LIB_DIR="$MULTI_VERSION_DIR"
-      else
-        echo "Using provided LIB_DIR: $LIB_DIR"
-      fi
-
-      # If EXTENSION_DIR not explicitly set, use default
-      if [ -z "$EXTENSION_DIR" ]; then
-        EXTENSION_DIR="$NIX_PROFILE/share/postgresql/extension"
-      fi
-      echo "Using EXTENSION_DIR: $EXTENSION_DIR"
-
-      echo "Looking for file: $LIB_DIR/pg_net-$VERSION${postgresql.dlSuffix}"
-      ls -la "$LIB_DIR" || true
+      # Enable overlay on the wrapper package to be able to switch version
+      ${lib.getExe enableOverlayOnPackage} "$EXT_WRAPPER"
 
       # Check if version exists
-      if [ ! -f "$LIB_DIR/pg_net-$VERSION${postgresql.dlSuffix}" ]; then
-        echo "Error: Version $VERSION not found in $LIB_DIR"
+      EXT_WRAPPER_LIB="$EXT_WRAPPER/lib"
+      PG_NET_LIB_TO_USE="$EXT_WRAPPER_LIB/pg_net-$VERSION${postgresql.dlSuffix}"
+      if [ ! -f "$PG_NET_LIB_TO_USE" ]; then
+        echo "Error: Version $VERSION not found in $EXT_WRAPPER_LIB"
         echo "Available versions:"
         #shellcheck disable=SC2012
-        ls "$LIB_DIR"/pg_net-*${postgresql.dlSuffix} 2>/dev/null | sed 's/.*pg_net-/  /' | sed 's/${postgresql.dlSuffix}$//' || echo "  No versions found"
+        ls "$EXT_WRAPPER_LIB"/pg_net-*${postgresql.dlSuffix} 2>/dev/null | sed 's/.*pg_net-/  /' | sed 's/${postgresql.dlSuffix}$//' || echo "  No versions found"
         exit 1
       fi
 
       # Update library symlink
-      ln -sfnv "pg_net-$VERSION${postgresql.dlSuffix}" "$LIB_DIR/pg_net${postgresql.dlSuffix}"
+      ln -sfnv "$PG_NET_LIB_TO_USE" "$EXT_WRAPPER_LIB/pg_net${postgresql.dlSuffix}"
 
       # Update control file
-      echo "default_version = '$VERSION'" > "$EXTENSION_DIR/pg_net.control"
-      cat "$EXTENSION_DIR/pg_net--$VERSION.control" >> "$EXTENSION_DIR/pg_net.control"
+      EXT_WRAPPER_SHARE="$EXT_WRAPPER/share/postgresql/extension"
+      echo "default_version = '$VERSION'" > "$EXT_WRAPPER_SHARE/pg_net.control"
+      cat "$EXT_WRAPPER_SHARE/pg_net--$VERSION.control" >> "$EXT_WRAPPER_SHARE/pg_net.control"
 
       echo "Successfully switched pg_net to version $VERSION"
-      EOF
     '';
   };
   pname = "pg_net";
@@ -175,7 +194,8 @@ let
 in
 pkgs.buildEnv {
   name = pname;
-  paths = packages ++ [ switchPgNetVersion ];
+  paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   postBuild = ''
     {
       echo "default_version = '${latestVersion}'"
@@ -190,6 +210,9 @@ pkgs.buildEnv {
          toString (numberOfVersions + 1)
        }"
     )
+
+    makeWrapper ${lib.getExe switchPgNetVersion} $out/bin/switch_pg_net_version \
+      --prefix EXT_WRAPPER : "$out"
   '';
 
   passthru = {

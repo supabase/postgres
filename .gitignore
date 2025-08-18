@@ -19,7 +19,7 @@ result*
 .history
 .envrc
 .direnv
-
+.nixos-test-history
 
 #IDE
 .idea/
