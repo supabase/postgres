@@ -31,9 +31,9 @@ let
       VERSION=$1
 
       # Set defaults, allow environment variable overrides
-      : ''${NIX_PROFILE:="/var/lib/postgresql/.nix-profile"}
-      : ''${LIB_DIR:=""}
-      : ''${EXTENSION_DIR:=""}
+      : "''${NIX_PROFILE:="/var/lib/postgresql/.nix-profile"}"
+      : "''${LIB_DIR:=""}"
+      : "''${EXTENSION_DIR:=""}"
 
       # If LIB_DIR not explicitly set, auto-detect it
       if [ -z "$LIB_DIR" ]; then
@@ -42,7 +42,7 @@ let
         echo "Starting with link: $CURRENT_LINK"
 
         # Follow first two symlinks to get to the multi-version directory
-        for i in 1 2; do
+        for _ in 1 2; do
             if [ -L "$CURRENT_LINK" ]; then
                 NEXT_LINK=$(readlink "$CURRENT_LINK")
                 echo "Following link: $NEXT_LINK"
@@ -54,7 +54,7 @@ let
                 echo "Current link is now: $CURRENT_LINK"
             fi
         done
-        
+
         # The multi-version directory should be the parent of the current link
         MULTI_VERSION_DIR=$(dirname "$CURRENT_LINK")
         echo "Found multi-version directory: $MULTI_VERSION_DIR"
@@ -76,6 +76,7 @@ let
       if [ ! -f "$LIB_DIR/pg_net-$VERSION${postgresql.dlSuffix}" ]; then
         echo "Error: Version $VERSION not found in $LIB_DIR"
         echo "Available versions:"
+        #shellcheck disable=SC2012
         ls "$LIB_DIR"/pg_net-*${postgresql.dlSuffix} 2>/dev/null | sed 's/.*pg_net-/  /' | sed 's/${postgresql.dlSuffix}$//' || echo "  No versions found"
         exit 1
       fi
@@ -193,7 +194,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions;
+    inherit versions numberOfVersions switchPgNetVersion;
     pname = "${pname}-all";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
