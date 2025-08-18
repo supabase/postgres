@@ -13,7 +13,21 @@ declare
   _extversion text := @extversion@;
   _extcascade bool := @extcascade@;
   _r record;
+  _session_role text := session_user;
 begin
+  -- Check if VERSION is specified by non-superuser for any extension
+  if _extversion is not null then
+    -- Check if the session user (not current user) is not a superuser or supabase_admin
+    if not exists (
+      select 1 
+      from pg_roles 
+      where rolname = _session_role 
+      and (rolsuper = true or rolname = 'supabase_admin')
+    ) then
+      raise exception 'Only administrators can specify VERSION when creating extensions. Please use: CREATE EXTENSION % WITH SCHEMA %;', _extname, coalesce(_extschema, 'extensions');
+    end if;
+  end if;
+
   if not _extcascade then
     return;
   end if;
