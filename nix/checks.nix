@@ -309,6 +309,10 @@
             ;
         }
         // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          pg_net = import ./ext/tests/pg_net.nix {
+            inherit self;
+            inherit pkgs;
+          };
           wrappers = import ./ext/tests/wrappers.nix {
             inherit self;
             inherit pkgs;
