@@ -205,9 +205,9 @@ def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
             sleep(5)
 
 
-def run_ssh_command(ssh, command):
+def run_ssh_command(ssh, command, timeout=None):
     """Run a command over the established SSH connection."""
-    stdin, stdout, stderr = ssh.exec_command(command)
+    stdin, stdout, stderr = ssh.exec_command(command, timeout=timeout)
     exit_code = stdout.channel.recv_exit_status()
     return {
         'succeeded': exit_code == 0,
@@ -330,7 +330,7 @@ users:
     attempt = 0
     while attempt < max_attempts:
         try:
-            result = run_ssh_command(ssh, "test -f /var/lib/init-complete")
+            result = run_ssh_command(ssh, "test -f /var/lib/init-complete", timeout=5)
             if result['succeeded']:
                 logger.info("init.sh has completed")
                 break
