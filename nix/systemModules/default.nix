@@ -5,7 +5,7 @@
   imports = [ ./tests ];
   flake = {
     systemModules = {
-      envoy = ./envoy.nix;
+      envoy = ./envoy;
     };
   };
 }
