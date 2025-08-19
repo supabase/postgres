@@ -120,7 +120,8 @@ let
       buildInputs = [
         curl
         postgresql
-      ] ++ lib.optional (version == "0.6") libuv;
+      ]
+      ++ lib.optional (version == "0.6") libuv;
 
       src = fetchFromGitHub {
         owner = "supabase";
