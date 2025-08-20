@@ -9,6 +9,7 @@
   flake = {
     systemModules = {
       nginx = flake-parts-lib.importApply ./nginx.nix { inherit withSystem self; };
+      fail2ban = ./fail2ban.nix;
     };
   };
 }
