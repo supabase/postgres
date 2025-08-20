@@ -4,6 +4,8 @@
 {
   imports = [ ./tests ];
   flake = {
-    systemModules = { };
+    systemModules = {
+      fail2ban = ./fail2ban.nix;
+    };
   };
 }

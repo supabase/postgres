@@ -1,9 +1,11 @@
 { self, inputs, ... }:
 let
   mkModules = system: [
+    self.systemModules.fail2ban
     ({
       services.nginx.enable = true;
       nixpkgs.hostPlatform = system;
+      supabase.services.fail2ban.enable = true;
     })
   ];
 

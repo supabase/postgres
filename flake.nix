@@ -33,7 +33,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     system-manager = {
-      url = "github:numtide/system-manager";
+      # FIXME: remove custom branch when this PR is merged:
+      # https://github.com/numtide/system-manager/pull/266
+      url = "github:numtide/system-manager/users";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
