@@ -78,6 +78,11 @@ let
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
                 "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
               }
+            else if builtins.compareVersions "0.5.4" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
             else
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
@@ -157,6 +162,9 @@ let
       }
     );
   previouslyPackagedVersions = [
+    "0.5.3"
+    "0.5.2"
+    "0.5.1"
     "0.5.0"
     "0.4.6"
     "0.4.5"
