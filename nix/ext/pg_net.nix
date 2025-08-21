@@ -162,11 +162,10 @@ let
         # Install upgrade scripts
         find . -name '${pname}--*--*.sql' -exec install -Dm644 {} $out/share/postgresql/extension/ \;
 
-        # Create versioned control file with module_pathname
-        {
-          sed "/^default_version =/d" ${pname}.control
-          echo "module_pathname = '\$libdir/${pname}'"
-        } > $out/share/postgresql/extension/${pname}--${version}.control
+        # Create versioned control file with modified module path
+        sed -e "/^default_version =/d" \
+            -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
+          ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
       '';
 
       meta = with lib; {
