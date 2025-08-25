@@ -14,17 +14,20 @@
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
+    gatekeeper.url = "git+ssh://git@github.com/supabase/jit-db-gatekeeper?ref=dev";
   };
 
   outputs =
     { flake-utils, ... }@inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } (_: {
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } (args: let
       systems = with flake-utils.lib; [
         system.x86_64-linux
         system.aarch64-linux
         system.aarch64-darwin
       ];
+    in {
 
+      systems = systems;
       imports = [
         nix/apps.nix
         nix/checks.nix
@@ -37,5 +40,16 @@
         nix/packages
         nix/overlays
       ];
+
+      packages = builtins.listToAttrs (map (system:
+        let
+          pkgs = import inputs.nixpkgs { inherit system; };
+        in {
+          name = system;
+          value = {
+            pamModule = inputs.gatekeeper.packages.${system}.default;
+          };
+        }) systems );
+
     });
 }
