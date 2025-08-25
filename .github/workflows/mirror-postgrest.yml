@@ -6,7 +6,7 @@ on:
       - develop
     paths:
       - ".github/workflows/mirror-postgrest.yml"
-      - "common.vars*"
+      - "ansible/vars.yml"
 
 permissions:
   contents: read
