@@ -145,7 +145,7 @@ let
           rm sql/pg_net--0.5.1--0.6.sql
         '';
 
-      env.NIX_CFLAGS_COMPILE = "-Wno-error";
+      env.NIX_CFLAGS_COMPILE = lib.optionalString (lib.versionOlder version "0.19.1") "-Wno-error";
 
       installPhase = ''
         mkdir -p $out/{lib,share/postgresql/extension}
