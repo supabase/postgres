@@ -53,13 +53,23 @@
       #Where we import and build the orioledb extension, we add on our custom extensions
       # plus the orioledb option
       #we're not using timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase extensions
-      orioleFilteredExtensions = builtins.filter (
+      gte17FilteredExtensions = builtins.filter (
         x: x != ../ext/timescaledb.nix && x != ../ext/timescaledb-2.9.1.nix && x != ../ext/plv8.nix
       ) ourExtensions;
 
-      orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
-      dbExtensions17 = orioleFilteredExtensions;
-      getPostgresqlPackage = version: pkgs."postgresql_${version}";
+      orioledbExtensions = gte17FilteredExtensions ++ [ ../ext/orioledb.nix ];
+
+      getPostgresqlPackage =
+        version:
+        if version == "18" then
+          pkgs.callPackage ../postgresql/generic.nix {
+            version = "18beta3";
+            hash = "sha256-IdhuVe6hEwDDoiEmR9w9SL2ES4MBfPbOVoRjmtj5Ung=";
+            jitSupport = false;
+            self = pkgs;
+          }
+        else
+          pkgs."postgresql_${version}";
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -104,7 +114,34 @@
             if (builtins.elem version [ "orioledb-17" ]) then
               orioledbExtensions
             else if (builtins.elem version [ "17" ]) then
-              dbExtensions17
+              gte17FilteredExtensions
+            else if (builtins.elem version [ "18" ]) then
+              # For PG 18, filter out even more extensions that don't support it yet
+              builtins.filter (
+                x:
+                x != ../ext/timescaledb.nix
+                && x != ../ext/timescaledb-2.9.1.nix
+                && x != ../ext/plv8.nix
+                && x != ../ext/pgaudit.nix # pgaudit doesn't support 18 yet
+                && x != ../ext/index_advisor.nix
+                && x != ../ext/pg_net.nix
+                && x != ../ext/wrappers/default.nix
+                && x != ../ext/pg_cron.nix
+                && x != ../ext/pgroonga.nix
+                && x != ../ext/pg_stat_monitor.nix
+                && x != ../ext/hypopg.nix
+                && x != ../ext/pgsql-http.nix
+                && x != ../ext/pgsodium.nix
+                && x != ../ext/plpgsql-check.nix
+                && x != ../ext/rum.nix
+                && x != ../ext/pgvector.nix
+                && x != ../ext/pg_tle.nix
+                && x != ../ext/supautils.nix
+                && x != ../ext/pg_jsonschema.nix
+                && x != ../ext/pg_graphql.nix
+                && x != ../ext/postgis.nix
+                && x != ../ext/pgrouting.nix
+              ) ourExtensions
             else
               ourExtensions;
         in
@@ -167,6 +204,7 @@
       basePackages = {
         psql_15 = makePostgres "15";
         psql_17 = makePostgres "17";
+        psql_18 = makePostgres "18";
         psql_orioledb-17 = makePostgres "orioledb-17";
       };
     in
