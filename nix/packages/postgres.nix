@@ -32,7 +32,7 @@
         ../ext/postgis.nix
         ../ext/pgrouting.nix
         ../ext/pgtap.nix
-        ../ext/pg_cron.nix
+        ../ext/pg_cron
         ../ext/pgsql-http.nix
         ../ext/pg_plan_filter.nix
         ../ext/pg_net.nix

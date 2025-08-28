@@ -7,7 +7,7 @@
 
 let
   pname = "pg_cron";
-  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
+  allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).${pname};
   supportedVersions = lib.filterAttrs (
     _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
   ) allVersions;
