@@ -36,6 +36,8 @@ let
       };
     in
     pkg;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
@@ -55,16 +57,16 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+        package = psql_15;
         settings = {
           "cron.database_name" = "postgres";
-          shared_preload_libraries = "pg_cron";
+          shared_preload_libraries = pname;
         };
       };
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
+          package = lib.mkForce psql_17;
         };
 
         systemd.services.postgresql-migrate = {
@@ -78,8 +80,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              oldPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+              oldPostgresql = psql_15;
+              newPostgresql = psql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in
@@ -134,17 +136,40 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       check_upgrade_path("15")
 
+      with subtest("Test switch_${pname}_version"):
+        # Check that we are using the last version first
+        ext_version = server.succeed("readlink -f ${psql_15}/lib/${pname}.so").strip()
+        firstVersion = versions["15"][0]
+        latestVersion = versions["15"][-1]
+        assert ext_version.endswith(f"${pname}-{latestVersion}.so"), f"Expected ${pname} version {latestVersion}, but found {ext_version}"
+
+        server.succeed(
+          f"switch_${pname}_version {firstVersion}"
+        )
+
+        ext_version = server.succeed("readlink -f ${psql_15}/lib/${pname}.so").strip()
+        assert ext_version.endswith(f"${pname}-{firstVersion}.so"), f"Expected ${pname} version {firstVersion}, but found {ext_version}"
+
+        server.succeed(
+          f"switch_${pname}_version {latestVersion}"
+        )
+
       with subtest("Check ${pname} latest extension version"):
         server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
-        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
+        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname};'")
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
         latestVersion = versions["15"][-1]
         assert f"${pname},{latestVersion}" in installed_extensions
 
-      with subtest("switch to postgresql 17"):
+      with subtest("switch to multiple node configuration"):
         server.succeed(
           "${pg17-configuration}/bin/switch-to-configuration test >&2"
         )
+
+      with subtest("Check ${pname} latest extension version"):
+        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
+        latestVersion = versions["15"][-1]
+        assert f"${pname},{latestVersion}" in installed_extensions
 
       check_upgrade_path("17")
     '';

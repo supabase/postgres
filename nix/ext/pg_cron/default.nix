@@ -3,8 +3,10 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
+  buildEnv,
+  makeWrapper,
+  switch-ext-version,
 }:
-
 let
   pname = "pg_cron";
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).${pname};
@@ -32,14 +34,6 @@ let
 
       buildPhase = ''
         make PG_CONFIG=${postgresql}/bin/pg_config
-
-        # Create version-specific SQL file
-        cp pg_cron.sql pg_cron--${version}.sql
-
-        # Create versioned control file with modified module path
-        sed -e "/^default_version =/d" \
-            -e "s|^module_pathname = .*|module_pathname = '\$libdir/pg_cron'|" \
-            pg_cron.control > pg_cron--${version}.control
       '';
 
       installPhase = ''
@@ -48,21 +42,25 @@ let
         # Install versioned library
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
-        # Install version-specific files
-        install -Dm644 ${pname}--${version}.sql $out/share/postgresql/extension/
-        install -Dm644 ${pname}--${version}.control $out/share/postgresql/extension/
 
-        # Install upgrade scripts
-        find . -name 'pg_cron--*--*.sql' -exec install -Dm644 {} $out/share/postgresql/extension/ \;
-
-        # For the latest version, create default control file and symlink
         if [[ "${version}" == "${latestVersion}" ]]; then
-          {
-            echo "default_version = '${version}'"
-            cat $out/share/postgresql/extension/${pname}--${version}.control
-          } > $out/share/postgresql/extension/${pname}.control
-          ln -sfn ${pname}-${version}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+          cp ${pname}.sql $out/share/postgresql/extension/${pname}--1.0.0.sql
+          # Install upgrade scripts
+          find . -name 'pg_cron--*--*.sql' -exec install -Dm644 {} $out/share/postgresql/extension/ \;
+          mv $out/share/postgresql/extension/pg_cron--1.0--1.1.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.0.sql
+          mv $out/share/postgresql/extension/pg_cron--1.1--1.2.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.0.sql
+          mv $out/share/postgresql/extension/pg_cron--1.2--1.3.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.1.sql
+          mv $out/share/postgresql/extension/pg_cron--1.3--1.4.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.2.sql
+          mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
+          mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
+          mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
         fi
+
+        # Create versioned control file with modified module path
+        sed -e "/^default_version =/d" \
+            -e "/^schema =/d" \
+            -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
+          ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
       '';
 
       meta = with lib; {
@@ -75,110 +73,45 @@ let
     };
   packages = builtins.attrValues (lib.mapAttrs (name: value: build name value) supportedVersions);
 in
-stdenv.mkDerivation {
-  pname = "${pname}-all";
-  version =
-    "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+buildEnv {
+  name = pname;
+  paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
 
-  buildInputs = packages;
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
 
-  dontUnpack = true;
-  dontConfigure = true;
-  dontBuild = true;
+  postBuild = ''
+    {
+      echo "default_version = '${latestVersion}'"
+      cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+    } > $out/share/postgresql/extension/${pname}.control
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
-  installPhase = ''
-    mkdir -p $out/{lib,share/postgresql/extension,bin}
+    # checks
+    (set -x
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+         toString (numberOfVersions + 1)
+       }"
+    )
 
-    # Install all versions
-    for drv in ${lib.concatStringsSep " " packages}; do
-      ln -sv $drv/lib/* $out/lib/
-      cp -v --no-clobber $drv/share/postgresql/extension/* $out/share/postgresql/extension/ || true
-    done
-
-    # Find latest version
-    latest_control=$(ls -v $out/share/postgresql/extension/${pname}--*.control | tail -n1)
-    latest_version=$(basename "$latest_control" | sed -E 's/${pname}--([0-9.]+).control/\1/')
-
-    # Create main control file only if it doesn't exist
-    if [ ! -f "$out/share/postgresql/extension/${pname}.control" ]; then
-      # Create main control file with default_version
-      echo "default_version = '$latest_version'" > $out/share/postgresql/extension/${pname}.control
-      cat "$latest_control" >> $out/share/postgresql/extension/${pname}.control
-    fi
-
-    # Library symlink - only if it doesn't exist
-    if [ ! -f "$out/lib/${pname}${postgresql.dlSuffix}" ]; then
-      ln -sfnv ${pname}-$latest_version${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
-    fi
-
-    # Create version switcher script
-    cat > $out/bin/switch_pg_cron_version <<'EOF'
-    #!/bin/sh
-    set -e
-
-    if [ $# -ne 1 ]; then
-      echo "Usage: $0 <version>"
-      echo "Example: $0 1.4.2"
-      exit 1
-    fi
-
-    VERSION=$1
-    NIX_PROFILE="/var/lib/postgresql/.nix-profile"
-
-    # Follow the complete chain of symlinks to find the multi-version directory
-    CURRENT_LINK="$NIX_PROFILE/lib/pg_cron-$VERSION${postgresql.dlSuffix}"
-    echo "Starting with link: $CURRENT_LINK"
-
-    # Follow first two symlinks to get to the multi-version directory
-    for i in 1 2; do
-        if [ -L "$CURRENT_LINK" ]; then
-            NEXT_LINK=$(readlink "$CURRENT_LINK")
-            echo "Following link: $NEXT_LINK"
-            if echo "$NEXT_LINK" | grep -q '^/'; then
-                CURRENT_LINK="$NEXT_LINK"
-            else
-                CURRENT_LINK="$(dirname "$CURRENT_LINK")/$NEXT_LINK"
-            fi
-            echo "Current link is now: $CURRENT_LINK"
-        fi
-    done
-
-    # The multi-version directory should be the parent of the current link
-    MULTI_VERSION_DIR=$(dirname "$CURRENT_LINK")
-    echo "Found multi-version directory: $MULTI_VERSION_DIR"
-    LIB_DIR="$MULTI_VERSION_DIR"
-    EXTENSION_DIR="$NIX_PROFILE/share/postgresql/extension"
-
-    echo "Looking for file: $LIB_DIR/pg_cron-$VERSION${postgresql.dlSuffix}"
-    ls -la "$LIB_DIR" || true
-
-    # Check if version exists
-    if [ ! -f "$LIB_DIR/pg_cron-$VERSION${postgresql.dlSuffix}" ]; then
-      echo "Error: Version $VERSION not found"
-      exit 1
-    fi
-
-    # Update library symlink
-    ln -sfnv "pg_cron-$VERSION${postgresql.dlSuffix}" "$LIB_DIR/pg_cron${postgresql.dlSuffix}"
-
-    # Update control file
-    echo "default_version = '$VERSION'" > "$EXTENSION_DIR/pg_cron.control"
-    cat "$EXTENSION_DIR/pg_cron--$VERSION.control" >> "$EXTENSION_DIR/pg_cron.control"
-
-    echo "Successfully switched pg_cron to version $VERSION"
-    EOF
-
-    chmod +x $out/bin/switch_pg_cron_version
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_pg_cron_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
-
-  passthru = {
-    inherit versions numberOfVersions;
-  };
 
   meta = with lib; {
     description = "Run Cron jobs through PostgreSQL (multi-version compatible)";
     homepage = "https://github.com/citusdata/pg_cron";
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
+  };
+
+  passthru = {
+    inherit versions numberOfVersions switch-ext-version;
+    pname = "${pname}-all";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
