@@ -309,6 +309,10 @@
             ;
         }
         // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          pg_cron = import ./ext/tests/pg_cron.nix {
+            inherit self;
+            inherit pkgs;
+          };
           pg_net = import ./ext/tests/pg_net.nix {
             inherit self;
             inherit pkgs;
