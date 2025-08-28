@@ -1,17 +1,16 @@
 { self, pkgs }:
 let
+  pname = "pg_net";
   inherit (pkgs) lib;
   installedExtension =
-    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/pg_net-all";
-  versions = (installedExtension "17").versions;
-  firstVersion = lib.head versions;
-  latestVersion = lib.last versions;
+    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+  versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
       pkg = pkgs.buildEnv {
-        name = "postgresql-${majorVersion}-pg_net";
+        name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
@@ -40,7 +39,7 @@ let
   psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
-  name = "pg_net";
+  name = "${pname}";
   hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
@@ -65,7 +64,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         enable = true;
         package = psql_15;
         settings = {
-          shared_preload_libraries = "pg_net";
+          shared_preload_libraries = pname;
         };
       };
 
@@ -116,60 +115,68 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
     in
     ''
+      versions = {
+        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
+        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+      }
+
       def run_sql(query):
         return server.succeed(f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """).strip()
 
-      def check_upgrade_path():
-        with subtest("Check pg_net upgrade path"):
-          server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS pg_net;'")
-          run_sql(r"""CREATE EXTENSION pg_net WITH VERSION \"${firstVersion}\";""")
-          installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = 'pg_net';""")
-          assert installed_version == "${firstVersion}", f"Expected pg_net version ${firstVersion}, but found {installed_version}"
-          for version in [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}][1:]:
-            run_sql(f"""ALTER EXTENSION pg_net UPDATE TO '{version}';""")
-            installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = 'pg_net';""")
-            assert installed_version == version, f"Expected pg_net version {version}, but found {installed_version}"
+      def check_upgrade_path(pg_version):
+        with subtest("Check ${pname} upgrade path"):
+          firstVersion = versions[pg_version][0]
+          server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
+          run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{firstVersion}' CASCADE;""")
+          installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
+          assert installed_version == firstVersion, f"Expected ${pname} version {firstVersion}, but found {installed_version}"
+          for version in versions[pg_version][1:]:
+            run_sql(f"""ALTER EXTENSION ${pname} UPDATE TO '{version}';""")
+            installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
+            assert installed_version == version, f"Expected ${pname} version {version}, but found {installed_version}"
 
       start_all()
 
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      check_upgrade_path()
+      check_upgrade_path("15")
 
-      with subtest("Test switch_pg_net_version"):
+      with subtest("Test switch_${pname}_version"):
         # Check that we are using the last version first
-        pg_net_version = server.succeed("readlink -f ${psql_15}/lib/pg_net.so").strip()
-        print(f"Current pg_net version: {pg_net_version}")
-        assert pg_net_version.endswith("pg_net-${latestVersion}.so"), f"Expected pg_net version ${latestVersion}, but found {pg_net_version}"
+        ext_version = server.succeed("readlink -f ${psql_15}/lib/${pname}.so").strip()
+        firstVersion = versions["15"][0]
+        latestVersion = versions["15"][-1]
+        assert ext_version.endswith(f"${pname}-{latestVersion}.so"), f"Expected ${pname} version {latestVersion}, but found {ext_version}"
 
         server.succeed(
-          "switch_pg_net_version ${firstVersion}"
+          f"switch_${pname}_version {firstVersion}"
         )
 
-        pg_net_version = server.succeed("readlink -f ${psql_15}/lib/pg_net.so").strip()
-        assert pg_net_version.endswith("pg_net-${firstVersion}.so"), f"Expected pg_net version ${firstVersion}, but found {pg_net_version}"
+        ext_version = server.succeed("readlink -f ${psql_15}/lib/${pname}.so").strip()
+        assert ext_version.endswith(f"${pname}-{firstVersion}.so"), f"Expected ${pname} version {firstVersion}, but found {ext_version}"
 
         server.succeed(
-          "switch_pg_net_version ${latestVersion}"
+          f"switch_${pname}_version {latestVersion}"
         )
 
-      with subtest("Check pg_net latest extension version"):
-        server.succeed("sudo -u postgres psql -c 'DROP EXTENSION pg_net;'")
-        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION pg_net;'")
+      with subtest("Check ${pname} latest extension version"):
+        server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
+        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname};'")
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
-        assert "pg_net,${latestVersion}" in installed_extensions
+        latestVersion = versions["15"][-1]
+        assert f"${pname},{latestVersion}" in installed_extensions
 
       with subtest("switch to multiple node configuration"):
         server.succeed(
           "${pg17-configuration}/bin/switch-to-configuration test >&2"
         )
 
-      with subtest("Check pg_net latest extension version"):
+      with subtest("Check ${pname} latest extension version"):
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
-        assert "pg_net,${latestVersion}" in installed_extensions
+        latestVersion = versions["15"][-1]
+        assert f"${pname},{latestVersion}" in installed_extensions
 
-      check_upgrade_path()
-
+      check_upgrade_path("17")
     '';
 }
