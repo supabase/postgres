@@ -74,11 +74,8 @@ source "qemu" "cloudimg" {
   format         = "qcow2"
   headless       = true
   http_directory = "http"
-  # TODO (darora): switch to minimal images
-  # iso_checksum   = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
-  # iso_url        = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img"
-  iso_checksum   = "file:https://cloud-images.ubuntu.com/noble/current/SHA256SUMS"
-  iso_url        = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
+  iso_checksum   = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
+  iso_url        = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img"
   memory         = 40000
   qemu_img_args {
     convert = ["-o", "compression_type=zstd"]
