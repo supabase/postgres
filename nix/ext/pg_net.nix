@@ -118,6 +118,10 @@ pkgs.buildEnv {
   passthru = {
     inherit versions numberOfVersions;
     pname = "${pname}-all";
+    hasBackgroundWorker = true;
+    defaultSettings = {
+      shared_preload_libraries = [ "pg_net" ];
+    };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
