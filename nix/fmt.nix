@@ -4,9 +4,13 @@
   perSystem =
     { pkgs, ... }:
     {
-      treefmt.programs.deadnix.enable = true;
-
-      treefmt.programs.nixfmt.enable = true;
-      treefmt.programs.nixfmt.package = pkgs.nixfmt-rfc-style;
+      treefmt.programs = {
+        deadnix.enable = true;
+        nixfmt = {
+          enable = true;
+          package = pkgs.nixfmt-rfc-style;
+        };
+        ruff-format.enable = true;
+      };
     };
 }
