@@ -4,6 +4,7 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
+  callPackage,
 }:
 
 let
@@ -69,7 +70,8 @@ let
 in
 pkgs.buildEnv {
   name = pname;
-  paths = packages;
+  # Add dependency on hypopg for the extension to work
+  paths = packages ++ [ (callPackage ./hypopg.nix { inherit postgresql; }) ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
