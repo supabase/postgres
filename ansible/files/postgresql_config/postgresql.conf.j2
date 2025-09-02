@@ -776,5 +776,9 @@ include = '/etc/postgresql-custom/read-replica.conf'
 # Add settings for extensions here
 auto_explain.log_min_duration = 10s
 cron.database_name = 'postgres'
-pg_stat_monitor.pgsm_bucket_time = 300
-pg_stat_monitor.pgsm_max_buckets = 2016
+pg_stat_monitor.pgsm_max = 256
+pg_stat_monitor.pgsm_query_shared_buffer = 20
+pg_stat_monitor.pgsm_bucket_time = 3600
+pg_stat_monitor.pgsm_max_buckets = 12
+pg_stat_monitor.pgsm_enable_overflow = false
+pg_stat_monitor.pgsm_query_max_len = 1024
