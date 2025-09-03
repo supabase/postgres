@@ -42,12 +42,12 @@ in
       supportedPostgresVersions = {
         postgres = {
           "15" = {
-            version = "15.8";
-            hash = "sha256-RANRX5pp7rPv68mPMLjGlhIr/fiV6Ss7I/W452nty2o=";
+            version = "15.14";
+            hash = "sha256-Bt110wXNOHDuYrOTLmYcYkVD6vmuK6N83sCk+O3QUdI=";
           };
           "17" = {
-            version = "17.4";
-            hash = "sha256-xGBbc/6hGWNAZpn5Sblm5dFzp+4Myu+JON7AyoqZX+c=";
+            version = "17.6";
+            hash = "sha256-4GMKNgCuonURcVVjJZ7CERzV9DU6SwQOC+gn+UzXqLA=";
           };
         };
         orioledb = {
