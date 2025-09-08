@@ -188,9 +188,7 @@ RUN sed -i \
 
 # Ensure postgresql-platform-defaults.conf is included
 RUN echo "include = '/etc/postgresql-custom/postgresql-platform-defaults.conf'" >> /etc/postgresql/postgresql.conf && \
-    touch /etc/postgresql-custom/postgresql-platform-defaults.conf && \
-    chown postgres:postgres /etc/postgresql-custom/postgresql-platform-defaults.conf && \
-    chmod 644 /etc/postgresql-custom/postgresql-platform-defaults.conf
+    install -m 0644 -g postgres -o postgres /dev/null /etc/postgresql-custom/postgresql-platform-defaults.conf
 
 # # Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
