@@ -7,7 +7,7 @@
   pkg-config,
   postgresql,
   buildEnv,
-  darwin,
+  apple-sdk_11,
   rust-bin,
   git,
 }:
@@ -42,9 +42,7 @@ let
           postgresql
         ]
         ++ lib.optionals stdenv.isDarwin [
-          darwin.apple_sdk.frameworks.CoreFoundation
-          darwin.apple_sdk.frameworks.Security
-          darwin.apple_sdk.frameworks.SystemConfiguration
+          apple-sdk_11
         ];
 
         NIX_LDFLAGS = "-L${postgresql}/lib -lpq";

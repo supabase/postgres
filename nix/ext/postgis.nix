@@ -15,10 +15,14 @@
   pcre2,
   nixosTests,
   callPackage,
+  cgal_5,
 }:
 
 let
-  sfcgal = callPackage ./sfcgal/sfcgal.nix { };
+  sfcgal = callPackage ./sfcgal/sfcgal.nix {
+    # Use CGAL 5.x for compatibility with current sfcgal version
+    cgal = cgal_5;
+  };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
 in
 stdenv.mkDerivation rec {

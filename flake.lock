@@ -164,11 +164,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1754796037,
-        "narHash": "sha256-JGKmmJ5kW090+8lK2MNAmOsVZFZFg4hY9RFtr/v5Fy8=",
-        "rev": "85dbfc7aaf52ecb755f87e577ddbe6dbbdbc1054",
+        "lastModified": 1757419078,
+        "narHash": "sha256-cUwlZ3aSduI9dw5AbF3PzktsCztcvt+0GBClTeGaksI=",
+        "rev": "b599843bad24621dcaa5ab60dac98f9b0eb1cabe",
         "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable/nixos-25.11pre841808.85dbfc7aaf52/nixexprs.tar.xz"
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-25.11pre858212.b599843bad24/nixexprs.tar.xz"
       },
       "original": {
         "type": "tarball",
@@ -214,8 +214,8 @@
         "nix-editor": "nix-editor",
         "nix-fast-build": "nix-fast-build",
         "nix2container": "nix2container",
-        "nixpkgs-go124": "nixpkgs-go124",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-go124": "nixpkgs-go124",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix"
       }
