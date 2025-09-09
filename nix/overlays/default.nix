@@ -19,7 +19,7 @@
 
     cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
       inherit (final) lib;
-      inherit (final) darwin;
+      inherit (final) apple-sdk_11;
       inherit (final) fetchCrate;
       inherit (final) openssl;
       inherit (final) pkg-config;
