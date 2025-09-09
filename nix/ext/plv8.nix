@@ -9,7 +9,7 @@
   # to nixpkgs
   clang,
   xcbuild,
-  darwin,
+  apple-sdk_11,
   patchelf,
 }:
 let
@@ -50,8 +50,7 @@ stdenv.mkDerivation (finalAttrs: {
     postgresql
   ]
   ++ lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.CoreFoundation
-    darwin.apple_sdk.frameworks.Kerberos
+    apple-sdk_11
   ];
 
   buildFlags = [ "all" ];
@@ -77,10 +76,8 @@ stdenv.mkDerivation (finalAttrs: {
       "-lpq"
       "-lpgcommon"
       "-lpgport"
-      "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
       "-framework"
       "CoreFoundation"
-      "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
       "-framework"
       "Kerberos"
       "-undefined"
