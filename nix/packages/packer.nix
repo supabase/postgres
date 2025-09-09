@@ -33,8 +33,7 @@ buildGoModule rec {
   nativeBuildInputs = [ installShellFiles ];
 
   buildInputs = lib.optionals pkgs.stdenv.isDarwin [
-    pkgs.darwin.apple_sdk.frameworks.IOKit
-    pkgs.darwin.apple_sdk.frameworks.Security
+    pkgs.apple-sdk_11
   ];
 
   postInstall = ''
