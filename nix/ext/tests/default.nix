@@ -28,6 +28,9 @@ let
               inherit (postgresql) version psqlSchema;
               lib = pkg;
               withPackages = _: pkg;
+              withJIT = pkg;
+              withoutJIT = pkg;
+              installedExtensions = [ (installedExtension majorVersion) ];
             };
             nativeBuildInputs = [ pkgs.makeWrapper ];
             pathsToLink = [
