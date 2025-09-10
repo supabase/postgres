@@ -44,7 +44,7 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: blacksmith-32vcpu-ubuntu-2404-arm
+          - runner: blacksmith-2vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
 
