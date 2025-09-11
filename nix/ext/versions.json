@@ -126,6 +126,8 @@
         "17"
       ],
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
+    }
+  },
   "vector": {
     "0.4.0": {
       "postgresql": [
