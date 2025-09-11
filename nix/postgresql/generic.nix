@@ -190,21 +190,6 @@ let
           locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
         })
       ]
-      # tzdata patches temporarily removed due to conflicts with PostgreSQL 15.14
-      # ++ lib.optionals (olderThan "17") [
-      #   # back port changes related to tzdata release 2024b
-      #   (fetchpatch ({
-      #     url = "https://github.com/postgres/postgres/commit/b27622c90869aab63cfe22159a459c57768b0fa4.patch";
-      #     hash = "sha256-7G+BkJULhyx6nlMEjClcr2PJg6awgymZHr2JgGhXanA=";
-      #     excludes = [ "doc/*" ];
-      #   }))
-      #   # back port changes related to tzdata release 2025a
-      #   (fetchpatch ({
-      #     url = "https://github.com/postgres/postgres/commit/aac0384975ff1129557cd2158fab4656f933cdc8.patch";
-      #     hash = "sha256-4Aua4QJhCS9B0zegQ9I6Us5QfX7GuRUilnkmOpSTUUw=";
-      #     excludes = [ "doc/*" ];
-      #   }))
-      # ]
       ++ lib.optionals stdenv'.hostPlatform.isMusl (
         # Using fetchurl instead of fetchpatch on purpose: https://github.com/NixOS/nixpkgs/issues/240141
         map fetchurl (lib.attrValues muslPatches)
