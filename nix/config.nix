@@ -14,6 +14,74 @@ let
         type = lib.types.str;
         default = "supabase_admin";
       };
+      settings = lib.mkOption {
+        type = lib.types.attrs;
+        default = {
+          authentication_timeout = "1min";
+          "auto_explain.log_min_duration" = "10s";
+          checkpoint_completion_target = "0.5";
+          checkpoint_flush_after = "256kB";
+          cluster_name = "main";
+          "cron.database_name" = "postgres";
+          default_text_search_config = "pg_catalog.english";
+          effective_cache_size = "128MB";
+          extra_float_digits = "0";
+          include = "/etc/postgresql-custom/read-replica.conf";
+          jit = "off";
+          jit_provider = "llvmjit";
+          lc_messages = "en_US.UTF-8";
+          lc_monetary = "en_US.UTF-8";
+          lc_numeric = "en_US.UTF-8";
+          lc_time = "en_US.UTF-8";
+          listen_addresses = "*";
+          log_destination = "stderr";
+          log_line_prefix = "%h %m [%p] %q%u@%d ";
+          log_statement = "ddl";
+          log_timezone = "UTC";
+          max_replication_slots = "5";
+          max_slot_wal_keep_size = "4096";
+          max_wal_senders = "10";
+          password_encryption = "scram-sha-256";
+          port = 5432;
+          row_security = "on";
+          shared_buffers = "128MB";
+          ssl = "off";
+          ssl_ca_file = "";
+          ssl_cert_file = "";
+          ssl_ciphers = "HIGH:MEDIUM:+3DES:!aNULL";
+          ssl_crl_dir = "";
+          ssl_crl_file = "";
+          ssl_dh_params_file = "";
+          ssl_ecdh_curve = "prime256v1";
+          ssl_key_file = "";
+          ssl_max_protocol_version = "";
+          ssl_min_protocol_version = "TLSv1.2";
+          ssl_passphrase_command = "";
+          ssl_passphrase_command_supports_reload = "off";
+          ssl_prefer_server_ciphers = "on";
+          timezone = "UTC";
+          wal_level = "logical";
+        };
+      };
+      authentication = lib.mkOption {
+        type = lib.types.lines;
+        default = ''
+          # trust local connections
+          local all  supabase_admin     scram-sha-256
+          local all  all                peer map=supabase_map
+          host  all  all  127.0.0.1/32  trust
+          host  all  all  ::1/128       trust
+
+          # IPv4 external connections
+          host  all  all  10.0.0.0/8  scram-sha-256
+          host  all  all  172.16.0.0/12  scram-sha-256
+          host  all  all  192.168.0.0/16  scram-sha-256
+          host  all  all  0.0.0.0/0     scram-sha-256
+
+          # IPv6 external connections
+          host  all  all  ::0/0     scram-sha-256
+        '';
+      };
     };
   };
   postgresqlVersion = lib.types.submodule {
@@ -24,7 +92,7 @@ let
   };
   supabaseSubmodule = lib.types.submodule {
     options = {
-      defaults = lib.mkOption { type = postgresqlDefaults; };
+      postgres.defaults = lib.mkOption { type = postgresqlDefaults; };
       supportedPostgresVersions = lib.mkOption {
         type = lib.types.attrsOf (lib.types.attrsOf postgresqlVersion);
         default = { };
@@ -38,7 +106,7 @@ in
       supabase = lib.mkOption { type = supabaseSubmodule; };
     };
     config.supabase = {
-      defaults = { };
+      postgres.defaults = { };
       supportedPostgresVersions = {
         postgres = {
           "15" = {

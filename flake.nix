@@ -33,7 +33,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     system-manager = {
-      url = "github:numtide/system-manager";
+      url = "github:numtide/system-manager/users";
+      #url = "git+file:///home/jfroche/projects/numtide/system-manager/fix/return-tmpfile-error";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

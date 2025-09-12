@@ -24,7 +24,7 @@
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         pgroonga = self'.packages."psql_15/exts/pgroonga";
-        inherit (self.supabase) defaults;
+        inherit (self.supabase.postgres) defaults;
       };
     in
     {
@@ -35,7 +35,7 @@
             inherit (self'.packages) docker-image-ubuntu;
           };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
-          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase.postgres) defaults; };
           docker-image-ubuntu = pkgs.callPackage ./docker-ubuntu.nix { };
           docs = pkgs.callPackage ./docs.nix { };
           supabase-groonga = pkgs.callPackage ./groonga { };
@@ -46,13 +46,14 @@
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
+          pgsodium_getkey_readonly = pkgs.callPackage ./pgsodium_getkey_readonly.nix { };
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
             psql_17 = self'.packages."psql_17/bin";
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
-            inherit (self.supabase) defaults;
+            inherit (self.supabase.postgres) defaults;
           };
           start-replica = pkgs.callPackage ./start-replica.nix {
             psql_15 = self'.packages."psql_15/bin";

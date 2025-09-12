@@ -4,6 +4,8 @@
 {
   imports = [ ./tests ];
   flake = {
-    systemModules = { };
+    systemModules = {
+      postgres = ./postgres;
+    };
   };
 }
