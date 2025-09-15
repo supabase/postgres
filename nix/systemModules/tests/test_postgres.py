@@ -165,17 +165,25 @@ def test_postgres_configuration(host):
     # db_user_namespace doesn't exist in postgres >= 16
     assert not config_file.contains("db_user_namespace")
 
+
 def test_locales(host):
     installed_locales = host.run("localectl list-locales").stdout
     assert "C.UTF-8" in installed_locales, "C.UTF-8 locale should be installed"
     assert "en_US.UTF-8" in installed_locales, "en_US.UTF-8 locale should be installed"
 
+
 def test_postgres_service_running(host):
     assert host.service("postgresql.service").is_valid
-    assert host.service("postgresql.service").is_running
+    assert host.service("postgresql.service").is_running, (
+        "postgresql service should be running but failed: {}".format(
+            host.run(
+                "systemctl status postgresql.service; journalctl -n 100 -u postgresql.service"
+            ).stdout
+        )
+    )
 
     required_logs = [
-        "Using language tag \"en-US\" for ICU locale \"en_US.UTF-8\"",
+        'Using language tag "en-US" for ICU locale "en_US.UTF-8"',
         "locale provider:   icu",
         "default collation: en-US",
         "LC_COLLATE:  en_US.UTF-8",

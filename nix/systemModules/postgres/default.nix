@@ -28,9 +28,11 @@ let
   configFile = pkgs.writeText "postgresql.conf" (
     lib.concatStringsSep "\n" (
       lib.mapAttrsToList (n: v: "${n} = ${toStr v}") (
-        lib.filterAttrs (lib.const (x: x != null)) cfg.settings
+        lib.filterAttrs (n: v: n != "includes" && v != null) cfg.settings
       )
     )
+    + "\n"
+    + lib.concatStringsSep "\n" (lib.map (f: "include '${f}'") cfg.settings.includes)
   );
   pg_hba = pkgs.writeText "pg_hba.conf" (
     cfg.authentication + self.supabase.postgres.defaults.authentication
@@ -55,6 +57,7 @@ let
     # primary_conninfo = 'host=localhost port=6543 user=replication'
   '';
 
+  supautils-conf = ./supautils.conf;
 in
 {
   options = {
@@ -83,6 +86,17 @@ in
                 example = literalExpression ''[ "auto_explain" "anon" ]'';
                 description = ''
                   List of libraries to be preloaded.
+                '';
+              };
+
+              includes = lib.mkOption {
+                type = listOf str;
+                default = [
+                  "/etc/postgresql-custom/read-replica.conf"
+                  "/etc/postgresql-custom/supautils.conf"
+                ];
+                description = ''
+                  List of additional postgresql.conf files to be included.
                 '';
               };
             };
@@ -144,7 +158,7 @@ in
 
       superUser = lib.mkOption {
         type = lib.types.str;
-        default = "postgres";
+        default = "supabase_admin";
         internal = true;
         readOnly = true;
         description = ''
@@ -183,7 +197,7 @@ in
       uid = config.ids.uids.postgres;
       group = "postgres";
       home = "${cfg.dataDir}";
-      useDefaultShell = true;
+      shell = "/usr/bin/bash";
     };
 
     systemd.tmpfiles.rules = [
@@ -200,12 +214,14 @@ in
       "L+ /usr/lib/postgresql/bin - - - - ${cfg.package}/bin"
       "L+ /usr/lib/postgresql/share - - - - ${cfg.package}/share"
       "L+ /usr/lib/postgresql/lib - - - - ${cfg.package}/lib"
+      "L+ /etc/postgresql-custom/extension-custom-scripts - - - - ${./extension-custom-scripts}"
 
       # Copy configuration files
       "C /etc/postgresql/pg_hba.conf 0440 ${defaultUser} ${defaultGroup} - ${pg_hba}"
       "C /etc/postgresql/pg_ident.conf 0440 ${defaultUser} ${defaultGroup} - ${pg_ident}"
       "C /etc/postgresql/postgresql.conf 0440 ${defaultUser} ${defaultGroup} - ${configFile}"
       "C /etc/postgresql-custom/read-replica.conf 0664 ${defaultUser} ${defaultGroup} - ${read-replica-conf}"
+      "C /etc/postgresql-custom/supautils.conf 0664 ${defaultUser} ${defaultGroup} - ${supautils-conf}"
     ];
 
     environment = {
@@ -240,6 +256,7 @@ in
           "plpgsql"
           "plpgsql_check"
           "supabase_vault"
+          "supautils"
         ];
       }
       (lib.mkIf ((lib.toInt (lib.versions.major cfg.package.version)) < 16) {
@@ -368,11 +385,13 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          ExecStart = lib.getExe (pkgs.writeShellScriptBin "setup-locales" ''
-            PATH=/usr/sbin:/usr/bin
-            /usr/sbin/locale-gen
-            /usr/sbin/update-locale
-          '');
+          ExecStart = lib.getExe (
+            pkgs.writeShellScriptBin "setup-locales" ''
+              PATH=/usr/sbin:/usr/bin
+              /usr/sbin/locale-gen
+              /usr/sbin/update-locale
+            ''
+          );
         };
       };
     };

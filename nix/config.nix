@@ -26,7 +26,6 @@ let
           default_text_search_config = "pg_catalog.english";
           effective_cache_size = "128MB";
           extra_float_digits = "0";
-          include = "/etc/postgresql-custom/read-replica.conf";
           ident_file = "/etc/postgresql/pg_ident.conf";
           jit = "off";
           jit_provider = "llvmjit";

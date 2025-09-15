@@ -10,11 +10,6 @@
     - 'custom-overrides.conf'
   when: debpkg_mode or nixpkg_mode
 
-# Install extensions before init
-- name: Install Postgres extensions
-  import_tasks: tasks/setup-docker.yml
-  when: debpkg_mode or stage2_nix
-
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
   import_tasks: tasks/stage2-setup-postgres.yml
