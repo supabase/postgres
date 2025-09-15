@@ -33,8 +33,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     system-manager = {
+      # FIXME: remove custom branch when this PR is merged:
+      # https://github.com/numtide/system-manager/pull/266
       url = "github:numtide/system-manager/users";
-      #url = "git+file:///home/jfroche/projects/numtide/system-manager/fix/return-tmpfile-error";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    gotrue = {
+      # FIXME: remove custom fork when this PR is merged:
+      # https://github.com/supabase/auth/pull/2166
+      url = "github:yvan-sraka/auth";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

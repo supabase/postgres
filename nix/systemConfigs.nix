@@ -1,12 +1,19 @@
-{ self, inputs, ... }:
+{
+  self,
+  inputs,
+  ...
+}:
 let
   mkModules = system: [
+    self.systemModules.gotrue
     self.systemModules.postgres
+    inputs.gotrue.nixosModules.auth
     (
       { pkgs, ... }:
       {
         services.nginx.enable = true;
         nixpkgs.hostPlatform = system;
+        supabase.services.gotrue.enable = true;
         supabase.services.postgres = {
           enable = true;
           package = self.packages.${system}."psql_17/bin";

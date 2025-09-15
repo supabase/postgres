@@ -13,7 +13,7 @@
           dest: "00-schema.sql",
         }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
-    
+
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
@@ -40,13 +40,6 @@
       import_tasks: tasks/setup-wal-g.yml
       when: debpkg_mode or nixpkg_mode or stage2_nix
 
-    - name: Install Gotrue
-      import_tasks: tasks/setup-gotrue.yml
-      tags:
-        - install-gotrue
-        - install-supabase-internal
-      when: debpkg_mode or nixpkg_mode
-  
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
       tags:
@@ -96,7 +89,7 @@
         src: files/apt_periodic
         dest: /etc/apt/apt.conf.d/10periodic
       when: debpkg_mode or nixpkg_mode
-      
+
     - name: Transfer init SQL files
       copy:
         src: files/{{ item.source }}
@@ -131,13 +124,13 @@
       tags:
         - install-supabase-internal
       when: debpkg_mode or stage2_nix
-      
+
     - name: Finalize AMI
       import_tasks: tasks/finalize-ami.yml
       tags:
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
-      
+
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
       when: debpkg_mode or nixpkg_mode
@@ -218,7 +211,7 @@
         systemctl stop postgresql.service
       when: stage2_nix
 
-    - name: Remove osquery    
+    - name: Remove osquery
       become: yes
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove osquery"

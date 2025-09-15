@@ -6,6 +6,7 @@
   flake = {
     systemModules = {
       postgres = ./postgres;
+      gotrue = ./gotrue.nix;
     };
   };
 }
