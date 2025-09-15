@@ -27,6 +27,7 @@ let
           effective_cache_size = "128MB";
           extra_float_digits = "0";
           include = "/etc/postgresql-custom/read-replica.conf";
+          ident_file = "/etc/postgresql/pg_ident.conf";
           jit = "off";
           jit_provider = "llvmjit";
           lc_messages = "en_US.UTF-8";

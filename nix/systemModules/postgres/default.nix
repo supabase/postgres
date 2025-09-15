@@ -34,6 +34,17 @@ let
   pg_hba = pkgs.writeText "pg_hba.conf" (
     cfg.authentication + self.supabase.postgres.defaults.authentication
   );
+  pg_ident = pkgs.writeText "pg_ident.conf" ''
+    # MAPNAME       SYSTEM-USERNAME         PG-USERNAME
+    supabase_map  postgres   postgres
+    supabase_map  root       postgres
+    supabase_map  ubuntu     postgres
+
+    # supabase-specific users
+    supabase_map  gotrue     supabase_auth_admin
+    supabase_map  postgrest  authenticator
+    supabase_map  adminapi   postgres
+  '';
 
   read-replica-conf = pkgs.writeText "read-replica.conf" ''
     # hot_standby = on
@@ -189,6 +200,7 @@ in
 
       # Copy configuration files
       "C /etc/postgresql/pg_hba.conf 0440 ${defaultUser} ${defaultGroup} - ${pg_hba}"
+      "C /etc/postgresql/pg_ident.conf 0440 ${defaultUser} ${defaultGroup} - ${pg_ident}"
       "C /etc/postgresql/postgresql.conf 0440 ${defaultUser} ${defaultGroup} - ${configFile}"
       "C /etc/postgresql-custom/read-replica.conf 0440 ${defaultUser} ${defaultGroup} - ${read-replica-conf}"
     ];
