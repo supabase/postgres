@@ -165,14 +165,25 @@ def test_postgres_configuration(host):
     # db_user_namespace doesn't exist in postgres >= 16
     assert not config_file.contains("db_user_namespace")
 
+def test_locales(host):
+    installed_locales = host.run("localectl list-locales").stdout
+    assert "C.UTF-8" in installed_locales, "C.UTF-8 locale should be installed"
+    assert "en_US.UTF-8" in installed_locales, "en_US.UTF-8 locale should be installed"
 
 def test_postgres_service_running(host):
     assert host.service("postgresql.service").is_valid
     assert host.service("postgresql.service").is_running
 
     required_logs = [
-        'The default database encoding has accordingly been set to "UTF8"',
-        'The database cluster will be initialized with locale "C.UTF-8"',
+        "Using language tag \"en-US\" for ICU locale \"en_US.UTF-8\"",
+        "locale provider:   icu",
+        "default collation: en-US",
+        "LC_COLLATE:  en_US.UTF-8",
+        "LC_CTYPE:    en_US.UTF-8",
+        "LC_MESSAGES: en_US.UTF-8",
+        "LC_MONETARY: en_US.UTF-8",
+        "LC_NUMERIC:  en_US.UTF-8",
+        "vault primary server secret key loaded",
         "pg_cron scheduler started",
     ]
     logs = host.run("journalctl -u postgresql.service --no-pager").stdout

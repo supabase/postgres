@@ -11,6 +11,7 @@ let
   defaultGroup = "postgres";
 
   isOrioleDB = (builtins.match "[0-9][0-9]_.*" cfg.package.version) != null;
+  is17 = (builtins.substring 0 2 cfg.package.version) == "17";
 
   toStr =
     value:
@@ -122,6 +123,7 @@ in
           LANGUAGE = "en_US.UTF-8";
           LC_ALL = "en_US.UTF-8";
           LC_CTYPE = "en_US.UTF-8";
+          LOCALE_ARCHIVE = "/usr/lib/locale/locale-archive";
         };
         description = ''
           A set of environment variables to be exported in the global
@@ -157,11 +159,11 @@ in
           "--allow-group-access"
           "--username=${cfg.superUser}"
         ]
-        ++ lib.optional isOrioleDB [
+        ++ (lib.optionals (isOrioleDB || is17) [
           "--locale-provider=icu"
           "--encoding=UTF-8"
           "--icu-locale=en_US.UTF-8"
-        ];
+        ]);
         description = ''
           Additional arguments passed to `initdb` during data dir
           initialisation.
@@ -209,6 +211,10 @@ in
       systemPackages = [ cfg.package ];
 
       etc = {
+        "locale.gen".text = ''
+          C.UTF-8 UTF-8
+          en_US.UTF-8 UTF-8
+        '';
         "profile.d/postgresql.sh".text = builtins.concatStringsSep "\n" (
           lib.mapAttrsToList (key: value: ''export ${key}="${value}"'') (cfg.environmentVariables)
         );
@@ -251,99 +257,122 @@ in
       ];
     };
 
-    systemd.services.postgresql = {
-      description = "PostgreSQL Server";
+    systemd.services = {
+      postgresql = {
+        description = "PostgreSQL Server";
 
-      after = [ "network.target" ];
+        after = [ "network.target" ];
 
-      # To trigger the .target also on "systemctl start postgresql" as well as on
-      # restarts & stops.
-      # Please note that postgresql.service & postgresql.target binding to
-      # each other makes the Restart=always rule racy and results
-      # in sometimes the service not being restarted.
-      wants = [ "postgresql.target" ];
-      partOf = [ "postgresql.target" ];
-      wantedBy = [ "system-manager.target" ];
+        # To trigger the .target also on "systemctl start postgresql" as well as on
+        # restarts & stops.
+        # Please note that postgresql.service & postgresql.target binding to
+        # each other makes the Restart=always rule racy and results
+        # in sometimes the service not being restarted.
+        wants = [ "postgresql.target" ];
+        partOf = [ "postgresql.target" ];
+        wantedBy = [ "system-manager.target" ];
 
-      environment.PGDATA = cfg.dataDir;
+        environment = {
+          PGDATA = cfg.dataDir;
+        }
+        // cfg.environmentVariables;
 
-      path = [ cfg.package ];
+        path = [ cfg.package ];
 
-      preStart = ''
-        if ! test -e ${cfg.dataDir}/PG_VERSION; then
-          # Initialise the database.
-          initdb ${lib.escapeShellArgs cfg.initdbArgs}
-        fi
-        if [ ! -f /etc/postgresql-custom/pgsodium_root.key ]; then
-          umask 077
-          echo "0000000000000000000000000000000000000000000000000000000000000000" > /etc/postgresql-custom/pgsodium_root.key
-        fi
-      '';
+        preStart = ''
+          if ! test -e ${cfg.dataDir}/PG_VERSION; then
+            # Initialise the database.
+            initdb ${lib.escapeShellArgs cfg.initdbArgs}
+          fi
+          if [ ! -f /etc/postgresql-custom/pgsodium_root.key ]; then
+            umask 077
+            echo "0000000000000000000000000000000000000000000000000000000000000000" > /etc/postgresql-custom/pgsodium_root.key
+          fi
 
-      serviceConfig = {
-        ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
-        User = "postgres";
-        Group = "postgres";
-        RuntimeDirectory = "postgresql";
-        Type = "notify";
+          # TODO postgres_prestart.sh logic here
+        '';
 
-        # Shut down Postgres using SIGINT ("Fast Shutdown mode").  See
-        # https://www.postgresql.org/docs/current/server-shutdown.html
-        KillSignal = "SIGINT";
-        KillMode = "mixed";
+        serviceConfig = {
+          ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+          User = "postgres";
+          Group = "postgres";
+          RuntimeDirectory = "postgresql";
+          Type = "notify";
 
-        # Give Postgres a decent amount of time to clean up after
-        # receiving systemd's SIGINT.
-        TimeoutSec = 120;
+          # Shut down Postgres using SIGINT ("Fast Shutdown mode").  See
+          # https://www.postgresql.org/docs/current/server-shutdown.html
+          KillSignal = "SIGINT";
+          KillMode = "mixed";
 
-        ExecStart = "${cfg.package}/bin/postgres -c config_file=/etc/postgresql/postgresql.conf";
+          # Give Postgres a decent amount of time to clean up after
+          # receiving systemd's SIGINT.
+          TimeoutSec = 120;
 
-        Restart = "always";
+          ExecStart = "${cfg.package}/bin/postgres -c config_file=/etc/postgresql/postgresql.conf";
 
-        # Hardening
-        CapabilityBoundingSet = [ "" ];
-        DevicePolicy = "closed";
-        PrivateTmp = true;
-        ProtectHome = true;
-        ProtectSystem = "strict";
-        MemoryDenyWriteExecute = true; # might be a problem for plv8 ?
-        NoNewPrivileges = true;
-        LockPersonality = true;
-        PrivateDevices = true;
-        PrivateMounts = true;
-        ProcSubset = "pid";
-        ProtectClock = true;
-        ProtectControlGroups = true;
-        ProtectHostname = true;
-        ProtectKernelLogs = true;
-        ProtectKernelModules = true;
-        ProtectKernelTunables = true;
-        ProtectProc = "invisible";
-        RemoveIPC = true;
-        RestrictAddressFamilies = [
-          "AF_INET"
-          "AF_INET6"
-          "AF_NETLINK" # used for network interface enumeration
-          "AF_UNIX"
-        ];
-        RestrictNamespaces = true;
-        RestrictRealtime = true;
-        RestrictSUIDSGID = true;
-        SystemCallArchitectures = "native";
-        SystemCallFilter = [
-          "@system-service"
-          "~@privileged"
-          "~@resources"
-          "@pkey"
-        ];
-        UMask = "0077";
-        ReadWritePaths = [
-          cfg.dataDir
-          "/etc/postgresql-custom"
-        ];
-        ReadOnlyPaths = [
-          "/etc/postgresql"
-        ];
+          Restart = "always";
+
+          # Hardening
+          CapabilityBoundingSet = [ "" ];
+          DevicePolicy = "closed";
+          PrivateTmp = true;
+          ProtectHome = true;
+          ProtectSystem = "strict";
+          MemoryDenyWriteExecute = true; # might be a problem for plv8 ?
+          NoNewPrivileges = true;
+          LockPersonality = true;
+          PrivateDevices = true;
+          PrivateMounts = true;
+          ProcSubset = "pid";
+          ProtectClock = true;
+          ProtectControlGroups = true;
+          ProtectHostname = true;
+          ProtectKernelLogs = true;
+          ProtectKernelModules = true;
+          ProtectKernelTunables = true;
+          ProtectProc = "invisible";
+          RemoveIPC = true;
+          RestrictAddressFamilies = [
+            "AF_INET"
+            "AF_INET6"
+            "AF_NETLINK" # used for network interface enumeration
+            "AF_UNIX"
+          ];
+          RestrictNamespaces = true;
+          RestrictRealtime = true;
+          RestrictSUIDSGID = true;
+          SystemCallArchitectures = "native";
+          SystemCallFilter = [
+            "@system-service"
+            "~@privileged"
+            "~@resources"
+            "@pkey"
+          ];
+          UMask = "0077";
+          ReadWritePaths = [
+            cfg.dataDir
+            "/etc/postgresql-custom"
+          ];
+          ReadOnlyPaths = [
+            "/etc/postgresql"
+          ];
+        };
+      };
+      "setup-locales" = {
+        description = "Setup locales on the system";
+
+        before = [ "sysinit-reactivation.target" ];
+        wantedBy = [ "sysinit-reactivation.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = lib.getExe (pkgs.writeShellScriptBin "setup-locales" ''
+            PATH=/usr/sbin:/usr/bin
+            /usr/sbin/locale-gen
+            /usr/sbin/update-locale
+          '');
+        };
       };
     };
 
