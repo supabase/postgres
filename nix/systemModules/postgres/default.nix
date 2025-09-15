@@ -177,6 +177,7 @@ in
     services.userborn.enable = true;
 
     users.groups.postgres = { };
+    users.groups.ssl-cert = { };
     users.users.postgres = {
       isSystemUser = true;
       uid = config.ids.uids.postgres;
