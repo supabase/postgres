@@ -228,16 +228,16 @@ in
         "pgsodium.getkey_script" = lib.getExe self.packages.${pkgs.system}.pgsodium_getkey_readonly;
         "vault.getkey_script" = lib.getExe self.packages.${pkgs.system}.pgsodium_getkey_readonly;
         shared_preload_libraries = [
-          "pg_stat_statements"
-          "pgaudit"
-          "plpgsql"
-          "plpgsql_check"
+          "auto_explain"
           "pg_cron"
           "pg_net"
-          "pgsodium"
-          "auto_explain"
+          "pg_stat_statements"
           "pg_tle"
+          "pgaudit"
+          "pgsodium"
           "plan_filter"
+          "plpgsql"
+          "plpgsql_check"
           "supabase_vault"
         ];
       }
@@ -375,6 +375,5 @@ in
         };
       };
     };
-
   };
 }
