@@ -44,35 +44,54 @@ let
       '';
 
       installPhase = ''
-                mkdir -p $out/{lib,share/postgresql/extension}
+        mkdir -p $out/{lib,share/postgresql/extension}
 
-                # Install versioned library
-                install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        # Install versioned library
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
 
-                if [[ "${version}" == "${latestVersion}" ]]; then
-                  cp ${pname}.sql $out/share/postgresql/extension/${pname}--1.0.0.sql
-                  # Install upgrade scripts
-                  find . -name 'pg_cron--*--*.sql' -exec install -Dm644 {} $out/share/postgresql/extension/ \;
-                  mv $out/share/postgresql/extension/pg_cron--1.0--1.1.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.0.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.1--1.2.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.0.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.2--1.3.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.1.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.3--1.4.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.2.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
-                  mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
-                fi
-                  cat > $out/share/postgresql/extension/pg_cron--1.6--1.6.4.sql << 'EOF'
+        if [[ "${version}" == "${latestVersion}" ]]; then
+          cp ${pname}.sql $out/share/postgresql/extension/${pname}--1.0.0.sql
+          # Install upgrade scripts
+          find . -name 'pg_cron--*--*.sql' -exec install -Dm644 {} $out/share/postgresql/extension/ \;
+          mv $out/share/postgresql/extension/pg_cron--1.0--1.1.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.0.sql
+          mv $out/share/postgresql/extension/pg_cron--1.1--1.2.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.0.sql
+          mv $out/share/postgresql/extension/pg_cron--1.2--1.3.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.1.sql
+          mv $out/share/postgresql/extension/pg_cron--1.3--1.4.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.2.sql
+          mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
+          mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
+          mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
+          ln -s pg_cron--1.0.0--1.1.0.sql $out/share/postgresql/extension/pg_cron--1.0--1.1.sql
+          ln -s pg_cron--1.0.0--1.1.0.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1--1.2.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1--1.2.0.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2--1.3.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2--1.3.1.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3--1.4.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3--1.4.2.sql
+          ln -s pg_cron--1.4.0--1.4.1.sql $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4-1--1.5.2.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5--1.6.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5--1.6.4.sql
+          cat > $out/share/postgresql/extension/pg_cron--1.6--1.6.4.sql << 'EOF'
         -- Version alignment migration
         -- Both 1.6 and 1.6.4 are actually the same version (1.6.4)
         -- This file exists only to allow smooth transition from the old naming scheme
         EOF
+        fi
 
-                # Create versioned control file with modified module path
-                sed -e "/^default_version =/d" \
-                    -e "/^schema =/d" \
-                    -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
-                  ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+
+        # Create versioned control file with modified module path
+        sed -e "/^default_version =/d" \
+            -e "/^schema =/d" \
+            -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
+          ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
       '';
 
       meta = with lib; {
