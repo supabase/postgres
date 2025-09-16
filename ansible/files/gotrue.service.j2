@@ -1,53 +1,6 @@
 [Unit]
 Description=Gotrue
 
-# Avoid starting gotrue while cloud-init is running. It makes a lot of changes
-# and I would like to rule out side effects of it running concurrently along
-# side services.
-After=cloud-init.service
-Wants=cloud-init.target
-
-# I'm not certain waiting for this service will allow it to apply its changes
-# but I think it's prudent to do our best to let salt apply formula.
-After=supabase-admin-agent_salt.service
-
-# Given the fact that auth uses SO_REUSEADDR, I want to rule out capabilities
-# being modified between restarts early in boot. This plugs up the scenario that
-# EADDRINUSE errors originate from a previous gotrue process starting without
-# the SO_REUSEADDR flag (due to lacking capability at that point in boot proc)
-# so when the next gotrue starts it can't re-use a slow releasing socket.
-After=apparmor.service
-
-# We want sysctl's to be applied
-After=systemd-sysctl.service
-
-# UFW Is modified by cloud init, but started non-blocking, so configuration
-# could be in-flight while gotrue is starting. I want to ensure future rules
-# that are relied on for security posture are applied before gotrue runs.
-After=ufw.service
-
-# We need networking & resolution, auth uses the Go DNS resolver (not libc)
-# so it's possible `localhost` resolution could be unstable early in startup. We
-# care about this because SO_REUSEADDR eligibility checks the tuple
-# (proto, family, addr, port) meaning the AF_INET (ipv4, ipv6) could affect the
-# binding resulting in a second way for EADDRINUSE errors to surface.
-#
-# Note: We should consider removing localhost usage given `localhost` resolution
-# can often be racey early in boot, can be difficult to debug and offers no real
-# advantage in our infra. At the very least avoiding DNS resolved binding would
-# be a good idea.
-Wants=network-online.target systemd-resolved.service
-After=network-online.target systemd-resolved.service
-
-# Auth server can't start unless postgres is online, lets remove a lot of auth
-# server noise during slow starts by requiring it.
-Wants=postgresql.service
-After=postgresql.service
-
-# Lower start limit ival and burst to prevent the noisy flapping
-StartLimitIntervalSec=10
-StartLimitBurst=5
-
 [Service]
 Type=exec
 WorkingDirectory=/opt/gotrue
