@@ -7,3 +7,4 @@ SELECT has_schema('graphql');
 SELECT has_schema('graphql_public');
 SELECT has_schema('realtime');
 SELECT has_schema('storage');
+SELECT has_schema('supabase_subscription_mgmt');

@@ -20,6 +20,7 @@ reset role;
 
 -- Verify extensions schema privileges
 SELECT schema_privs_are('extensions', 'postgres', array['CREATE', 'USAGE']);
+SELECT schema_privs_are('supabase_subscription_mgmt', 'postgres', array['USAGE']);
 SELECT schema_privs_are('extensions', 'anon', array['USAGE']);
 SELECT schema_privs_are('extensions', 'authenticated', array['USAGE']);
 SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
