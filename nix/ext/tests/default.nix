@@ -182,6 +182,7 @@ builtins.listToAttrs (
       value = extTest extName;
     })
     [
+      "hypopg"
       "index_advisor"
       "pg_cron"
       "pg_net"

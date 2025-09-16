@@ -1,16 +1,4 @@
 {
-  "wrappers": {
-    "0.5.4": {
-      "postgresql": [
-        "15",
-        "17",
-        "orioledb-17"
-      ],
-      "hash": "sha256-W1RokXH4Vfj2FIuEzGEP5SzzWsv2Pbzfa816nXKnSoc=",
-      "pgrx": "0.14.3",
-      "rust": "1.87.0"
-    }
-  },
   "index_advisor": {
     "0.2.0": {
       "postgresql": [
@@ -19,6 +7,21 @@
         "orioledb-17"
       ],
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
+    }
+  },
+  "hypopg": {
+    "1.3.1": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-AIBXy+LxyHUo+1hd8gQTwaBdFiTEzKaCVc4cx5tZgME="
+    },
+    "1.4.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
     }
   },
   "pg_cron": {
@@ -176,6 +179,18 @@
         "17"
       ],
       "hash": "sha256-JsZV+I4eRMypXTjGmjCtMBXDVpqTIPHQa28ogXncE/Q="
+    }
+  },
+    "wrappers": {
+    "0.5.4": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-W1RokXH4Vfj2FIuEzGEP5SzzWsv2Pbzfa816nXKnSoc=",
+      "pgrx": "0.14.3",
+      "rust": "1.87.0"
     }
   }
 }

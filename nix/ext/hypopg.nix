@@ -1,35 +1,95 @@
 {
   lib,
   stdenv,
+  buildEnv,
   fetchFromGitHub,
   postgresql,
 }:
 
-stdenv.mkDerivation rec {
+let
   pname = "hypopg";
-  version = "1.4.1";
+  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
+  supportedVersions = lib.filterAttrs (
+    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
+  versions = lib.naturalSort (lib.attrNames supportedVersions);
+  latestVersion = lib.last versions;
+  numberOfVersions = builtins.length versions;
+  build =
+    version: hash:
+    stdenv.mkDerivation rec {
+      inherit pname version;
 
-  buildInputs = [ postgresql ];
+      buildInputs = [ postgresql ];
 
-  src = fetchFromGitHub {
-    owner = "HypoPG";
-    repo = pname;
-    rev = "refs/tags/${version}";
-    hash = "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM=";
-  };
+      src = fetchFromGitHub {
+        owner = "HypoPG";
+        repo = pname;
+        rev = "refs/tags/${version}";
+        inherit hash;
+      };
 
-  installPhase = ''
-    mkdir -p $out/{lib,share/postgresql/extension}
+      installPhase = ''
+        mkdir -p $out/{lib,share/postgresql/extension}
 
-    cp *${postgresql.dlSuffix}      $out/lib
-    cp *.sql     $out/share/postgresql/extension
-    cp *.control $out/share/postgresql/extension
+        mv ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+
+        create_sql_files() {
+          echo "Creating SQL files for previous versions..."
+          if [[ "${version}" == "${latestVersion}" ]]; then
+            cp *.sql $out/share/postgresql/extension
+          fi
+        }
+
+        create_control_files() {
+          sed -e "/^default_version =/d" \
+              -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
+            ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+
+          if [[ "${version}" == "${latestVersion}" ]]; then
+            {
+              echo "default_version = '${latestVersion}'"
+              cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+            } > $out/share/postgresql/extension/${pname}.control
+            ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+          fi
+        }
+
+        create_sql_files
+        create_control_files
+      '';
+
+      meta = with lib; {
+        description = "Hypothetical Indexes for PostgreSQL";
+        homepage = "https://github.com/HypoPG/${pname}";
+        license = licenses.postgresql;
+        inherit (postgresql.meta) platforms;
+      };
+    };
+  packages = builtins.attrValues (
+    lib.mapAttrs (name: value: build name value.hash) supportedVersions
+  );
+in
+buildEnv {
+  name = pname;
+  paths = packages;
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
+  postBuild = ''
+    # checks
+    (set -x
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+         toString (numberOfVersions + 1)
+       }"
+    )
   '';
 
-  meta = with lib; {
-    description = "Hypothetical Indexes for PostgreSQL";
-    homepage = "https://github.com/HypoPG/${pname}";
-    platforms = postgresql.meta.platforms;
-    license = licenses.postgresql;
+  passthru = {
+    inherit versions numberOfVersions;
+    pname = "${pname}-all";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
