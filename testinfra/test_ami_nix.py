@@ -376,11 +376,11 @@ users:
                 if not result["succeeded"]:
                     info_text = ""
                     info_command = (
-                        f"sudo journalctl -b -u {service} -n 10 -r --no-pager"
+                        f"sudo journalctl -b -u {service} -n 20 --no-pager"
                     )
                     info_result = run_ssh_command(ssh, info_command)
                     if info_result["succeeded"]:
-                        info_text = info_result["stdout"].strip()
+                        info_text = "\n" + info_result["stdout"].strip()
 
                     logger.warning(f"{service} not ready{info_text}")
                     return False
