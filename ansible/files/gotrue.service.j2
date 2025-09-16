@@ -51,11 +51,10 @@ StartLimitBurst=5
 [Service]
 Type=exec
 WorkingDirectory=/opt/gotrue
-{% if qemu_mode is defined and qemu_mode %}
-ExecStart=/opt/gotrue/gotrue
-{% else %}
+
+# Both v2 & v3 need a config-dir for reloading support.
 ExecStart=/opt/gotrue/gotrue --config-dir /etc/auth.d
-{% endif %}
+ExecReload=/bin/kill -10 $MAINPID
 
 User=gotrue
 Restart=always
@@ -64,9 +63,28 @@ RestartSec=3
 MemoryAccounting=true
 MemoryMax=50%
 
+# These are the historical location of env files. The /etc/auth.d dir will
+# override them when present.
 EnvironmentFile=-/etc/gotrue.generated.env
 EnvironmentFile=/etc/gotrue.env
 EnvironmentFile=-/etc/gotrue.overrides.env
+
+# Both v2 & v3 support reloading via signals, on linux this is SIGUSR1.
+Environment=GOTRUE_RELOADING_SIGNAL_ENABLED=true
+Environment=GOTRUE_RELOADING_SIGNAL_NUMBER=10
+
+# Both v2 & v3 disable the poller. While gotrue sets it to off by default we
+# defensively set it to false here.
+Environment=GOTRUE_RELOADING_POLLER_ENABLED=false
+
+# Determines how much idle time must pass before triggering a reload. This
+# ensures only 1 reload operation occurs during a burst of config updates.
+Environment=GOTRUE_RELOADING_GRACE_PERIOD_INTERVAL=2s
+
+# v3 does not use filesystem notifications for config reloads.
+{% if qemu_mode is defined and qemu_mode %}
+Environment=GOTRUE_RELOADING_NOTIFY_ENABLED=false
+{% endif %}
 
 Slice=services.slice
 
