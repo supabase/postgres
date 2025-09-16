@@ -353,47 +353,39 @@ users:
 
     def is_healthy(ssh) -> bool:
         health_checks = [
-            (
-                "postgres",
-                "sudo -u postgres /usr/bin/pg_isready -U postgres",
-                "journalctl -b -u postgres -n 10 -r --no-pager",
-            ),
+            ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
             (
                 "adminapi",
                 f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'",
-                "journalctl -b -u adminapi -n 10 -r --no-pager",
             ),
             (
                 "postgrest",
                 "curl -sf --connect-timeout 30 --max-time 60 http://localhost:3001/ready",
-                "journalctl -b -u postgrest -n 10 -r --no-pager",
             ),
             (
                 "gotrue",
                 "curl -sf --connect-timeout 30 --max-time 60 http://localhost:8081/health",
-                "journalctl -b -u gotrue -n 10 -r --no-pager",
             ),
-            ("kong", "sudo kong health", ""),
-            ("fail2ban", "sudo fail2ban-client status", ""),
+            ("kong", "sudo kong health"),
+            ("fail2ban", "sudo fail2ban-client status"),
         ]
 
-        for service, command, info_command in health_checks:
+        for service, command in health_checks:
             try:
                 result = run_ssh_command(ssh, command)
-                if result["succeeded"]:
-                    continue
-
-                info_text = ""
-                if info_command is not "":
+                if not result["succeeded"]:
+                    info_text = ""
+                    info_command = f"sudo journalctl -b -u {service} -n 10 -r --no-pager"
                     info_result = run_ssh_command(ssh, info_command)
                     if info_result["succeeded"]:
                         info_text=info_result["stdout"].strip()
-                logger.warning(f"{service} not ready{info_text}")
-                return False
+
+                    logger.warning(f"{service} not ready{info_text}")
+                    return False
+
             except Exception:
                 logger.warning(f"Connection failed during {service} check")
                 return False
-
         return True
 
     while True:
