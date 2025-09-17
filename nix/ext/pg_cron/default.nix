@@ -54,6 +54,14 @@ let
           mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
           mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
           mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
+          cat > $out/share/postgresql/extension/pg_cron--1.6--1.6.4.sql << 'EOF'
+        -- Version alignment migration
+        -- Both 1.6 and 1.6.4 are actually the same version (1.6.4)
+        -- This file exists only to allow smooth transition from the old naming scheme
+        EOF
+          cat >> $out/share/postgresql/extension/pg_cron--1.6.4--1.6.7.sql << 'EOF'
+        -- This migration file is empty because there are no changes between 1.6.4 and 1.6.7
+        EOF
         fi
 
         # Create versioned control file with modified module path
