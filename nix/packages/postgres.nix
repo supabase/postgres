@@ -122,6 +122,7 @@
                 x != ../ext/timescaledb.nix
                 && x != ../ext/timescaledb-2.9.1.nix
                 && x != ../ext/plv8.nix
+                && x != ../ext/pgjwt.nix
                 && x != ../ext/pgaudit.nix # pgaudit doesn't support 18 yet
                 && x != ../ext/index_advisor.nix
                 && x != ../ext/pg_net.nix
