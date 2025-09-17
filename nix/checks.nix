@@ -12,6 +12,7 @@
       pkgs-lib = pkgs.callPackage ./packages/lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
+        psql_18 = self'.packages."psql_18/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
@@ -87,6 +88,8 @@
                   "15"
                 else if builtins.match "17.*" name != null then
                   "17"
+                else if builtins.match "18.*" name != null then
+                  "18"
                 else if builtins.match "orioledb-17.*" name != null then
                   "orioledb-17"
                 else
@@ -107,6 +110,8 @@
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
+                          else if version == "18" then
+                            builtins.match "z_18_.*" name != null
                           else
                             builtins.match "z_15_.*" name != null
                         else
@@ -122,11 +127,14 @@
                   version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
                   isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
                   isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
+                  isEighteenMatch = builtins.match "^18[.][0-9]+$" version != null;
                   result =
                     if isOrioledbMatch then
                       "orioledb-17"
                     else if isSeventeenMatch then
                       "17"
+                    else if isEighteenMatch then
+                      "18"
                     else
                       "15";
                 in
@@ -140,6 +148,8 @@
                   "5535"
                 else if (majorVersion == "15") then
                   "5536"
+                else if (majorVersion == "18") then
+                  "5538"
                 else
                   "5537";
 
@@ -181,7 +191,7 @@
                 grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
                 # Remove timescaledb if running orioledb-17 check
                 echo "I AM ${pgpkg.version}===================================================="
-                if [[ "${pgpkg.version}" == *"17"* ]]; then
+                if [[ "${pgpkg.version}" == *"17"* ]] || [[ "${pgpkg.version}" == *"18"* ]]; then
                   perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
                 fi
                 #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
@@ -289,6 +299,7 @@
         {
           psql_15 = makeCheckHarness self'.packages."psql_15/bin";
           psql_17 = makeCheckHarness self'.packages."psql_17/bin";
+          psql_18 = makeCheckHarness self'.packages."psql_18/bin";
           psql_orioledb-17 = makeCheckHarness self'.packages."psql_orioledb-17/bin";
           inherit (self'.packages)
             wal-g-2

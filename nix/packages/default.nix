@@ -22,6 +22,7 @@
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
+        psql_18 = self'.packages."psql_18/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
@@ -47,6 +48,7 @@
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
             psql_17 = self'.packages."psql_17/bin";
+            psql_18 = self'.packages."psql_18/bin";
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
             inherit (self.supabase) defaults;
           };

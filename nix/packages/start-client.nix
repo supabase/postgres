@@ -2,6 +2,7 @@
   runCommand,
   psql_15,
   psql_17,
+  psql_18,
   psql_orioledb-17,
   defaults,
 }:
@@ -18,6 +19,7 @@ runCommand "start-postgres-client" { } ''
     --subst-var-by 'PGSQL_SUPERUSER' '${defaults.superuser}' \
     --subst-var-by 'PSQL15_BINDIR' '${psql_15}' \
     --subst-var-by 'PSQL17_BINDIR' '${psql_17}' \
+    --subst-var-by 'PSQL18_BINDIR' '${psql_18}' \
     --subst-var-by 'PSQLORIOLEDB17_BINDIR' '${psql_orioledb-17}' \
     --subst-var-by 'MIGRATIONS_DIR' '${migrationsDir}' \
     --subst-var-by 'POSTGRESQL_SCHEMA_SQL' '${postgresqlSchemaSql}' \

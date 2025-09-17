@@ -46,7 +46,7 @@
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
         ../ext/wrappers/default.nix
-        ../ext/supautils.nix
+        ../ext/supautils
         ../ext/plv8.nix
       ];
 
@@ -59,17 +59,7 @@
 
       orioledbExtensions = gte17FilteredExtensions ++ [ ../ext/orioledb.nix ];
 
-      getPostgresqlPackage =
-        version:
-        if version == "18" then
-          pkgs.callPackage ../postgresql/generic.nix {
-            version = "18beta3";
-            hash = "sha256-IdhuVe6hEwDDoiEmR9w9SL2ES4MBfPbOVoRjmtj5Ung=";
-            jitSupport = false;
-            self = pkgs;
-          }
-        else
-          pkgs."postgresql_${version}";
+      getPostgresqlPackage = version: pkgs."postgresql_${version}";
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -132,12 +122,10 @@
                 && x != ../ext/pg_stat_monitor.nix
                 && x != ../ext/hypopg.nix
                 && x != ../ext/pgsql-http.nix
-                && x != ../ext/pgsodium.nix
                 && x != ../ext/plpgsql-check.nix
                 && x != ../ext/rum.nix
                 && x != ../ext/pgvector.nix
                 && x != ../ext/pg_tle.nix
-                && x != ../ext/supautils.nix
                 && x != ../ext/pg_jsonschema.nix
                 && x != ../ext/pg_graphql.nix
                 && x != ../ext/postgis.nix

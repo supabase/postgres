@@ -9,6 +9,7 @@
     inherit (self.packages.${final.system})
       postgresql_15
       postgresql_17
+      postgresql_18
       postgresql_orioledb-17
       supabase-groonga
       switch-ext-version

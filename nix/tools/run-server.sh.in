@@ -20,7 +20,7 @@ print_help() {
     echo "  --getkey-script SCRIPT   Provide a custom path to the PGSODIUM_GETKEY_SCRIPT"
     echo "  -h, --help              Show this help message"
     echo
-    echo "VERSION must be one of: 15, orioledb-17"
+    echo "VERSION must be one of: 15, 17, 18, orioledb-17"
     echo "PORT is optional (default: @PGSQL_DEFAULT_PORT@)"
 }
 
@@ -149,12 +149,16 @@ elif [ "$VERSION" == "17" ]; then
     echo "Starting server for PSQL 17"
     PSQL17=@PSQL17_BINDIR@
     BINDIR="$PSQL17"
+elif [ "$VERSION" == "18" ]; then
+    echo "Starting server for PSQL 18"
+    PSQL18=@PSQL18_BINDIR@
+    BINDIR="$PSQL18"
 elif [ "$VERSION" == "orioledb-17" ]; then
     echo "Starting server for PSQL ORIOLEDB 17"
     PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
     BINDIR="$PSQLORIOLEDB17"
 else
-    echo "Please provide a valid Postgres version (15, 17, orioledb-17)"
+    echo "Please provide a valid Postgres version (15, 17, 18, orioledb-17)"
     exit 1
 fi
 
@@ -223,7 +227,9 @@ cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
 
 # Configure PostgreSQL
-sed -e "1i\\
+if [ "$VERSION" = "18" ]; then
+    # PG 18 configuration with pgsodium/vault support
+    sed -e "1i\\
 include = '$DATDIR/supautils.conf'" \
 -e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
@@ -237,6 +243,23 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
+else
+    # All other versions with supautils and pgsodium
+    sed -e "1i\\
+include = '$DATDIR/supautils.conf'" \
+-e "\$a\\
+pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
+-e "\$a\\
+vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
+-e "s|data_directory = '/var/lib/postgresql/data'|data_directory = '$DATDIR'|" \
+-e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
+-e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
+-e "s|include = '/etc/postgresql/logging.conf'|#&|" \
+-e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
+-e "\$a\\
+session_preload_libraries = 'supautils'" \
+"$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
+fi
 
 # Function to configure OrioleDB specific settings
 orioledb_config_items() {
@@ -273,6 +296,31 @@ orioledb_config_items() {
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
+    elif [[ "$VERSION" == "18" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
+        echo "non-macos pg 18 conf"
+        sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        # Remove all PG 18 unsupported extensions from shared_preload_libraries
+        sed -i 's/ pgaudit,//g; s/pgaudit, //g; s/, pgaudit//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ plpgsql_check,//g; s/plpgsql_check, //g; s/, plpgsql_check//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ pg_cron,//g; s/pg_cron, //g; s/, pg_cron//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ pg_net,//g; s/pg_net, //g; s/, pg_net//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g; s/timescaledb, //g; s/, timescaledb//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ pg_tle,//g; s/pg_tle, //g; s/, pg_tle//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g; s/ pgaudit,//g;' "$DATDIR/supautils.conf"
+    elif [[ "$VERSION" == "18" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+        echo "macOS pg 18 conf"
+        perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        # Remove all PG 18 unsupported extensions from shared_preload_libraries
+        perl -pi -e 's/ pgaudit,//g; s/pgaudit, //g; s/, pgaudit//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ plpgsql_check,//g; s/plpgsql_check, //g; s/, plpgsql_check//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ pg_cron,//g; s/pg_cron, //g; s/, pg_cron//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ pg_net,//g; s/pg_net, //g; s/, pg_net//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g; s/timescaledb, //g; s/, timescaledb//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ pg_tle,//g; s/pg_tle, //g; s/, pg_tle//g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ pgjwt,//g;' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ pgaudit,//g;' "$DATDIR/supautils.conf"
     fi
 }
 

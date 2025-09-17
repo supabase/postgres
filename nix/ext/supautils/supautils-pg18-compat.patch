@@ -1,0 +1,13 @@
+diff --git a/src/supautils.c b/src/supautils.c
+index 1234567..abcdefg 100644
+--- a/src/supautils.c
++++ b/src/supautils.c
+@@ -64,7 +64,7 @@ typedef struct EvictCacheState
+ } EvictCacheState;
+
+ /* GUC to control whether to log an event when an event trigger is skipped */
+-bool log_skipped_evtrigs = false;
++static bool log_skipped_evtrigs = false;
+
+ /* GUC to save the list of constrained extensions */
+ char *supabase_reserved_extensions = "";

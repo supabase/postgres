@@ -7,7 +7,7 @@
 
 stdenv.mkDerivation rec {
   pname = "supautils";
-  version = "2.9.4";
+  version = "2.10.0";
 
   buildInputs = [ postgresql ];
 
@@ -15,8 +15,13 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-qP9fOEWXw+wY49GopTizwxSBEGS0UoseJHVBtKS/BdI=";
+    hash = "sha256-jhTLC7aoodjHl98nnKxh6TuznrCg28/6b++6OM05WIs=";
   };
+
+  # Fix PostgreSQL 18 compatibility by making log_skipped_evtrigs static
+  postPatch = lib.optionalString (lib.versionAtLeast postgresql.version "18") ''
+    sed -i 's/^bool log_skipped_evtrigs = false;/static bool log_skipped_evtrigs = false;/' src/supautils.c
+  '';
 
   installPhase = ''
     mkdir -p $out/lib
