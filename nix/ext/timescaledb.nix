@@ -1,5 +1,4 @@
 {
-  pkgs,
   lib,
   stdenv,
   fetchFromGitHub,
@@ -7,6 +6,9 @@
   postgresql,
   openssl,
   libkrb5,
+  buildEnv,
+  makeWrapper,
+  switch-ext-version,
 }:
 
 let
@@ -53,12 +55,28 @@ let
         done
       '';
 
-      postInstall = ''
-        if [ -f $out/lib/timescaledb.so ]; then
-          mv $out/lib/timescaledb.so $out/lib/timescaledb-${version}.so
+      installPhase = ''
+        # Run cmake install first
+        cmake --install . --prefix=$out
+
+        # TimescaleDB has two libraries:
+        # 1. timescaledb.so (loader)
+        # 2. timescaledb-VERSION.so (actual extension)
+        # Both need to be handled for multi-version support
+
+        # Rename the loader to be version-specific
+        if [ -f $out/lib/timescaledb${postgresql.dlSuffix} ]; then
+          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-loader-${version}${postgresql.dlSuffix}
         fi
+
+        # The versioned library (timescaledb-VERSION.so) is already correctly named
+
+        # Create versioned control file with default_version removed and module_pathname pointing to symlink
         if [ -f $out/share/postgresql/extension/timescaledb.control ]; then
-          mv $out/share/postgresql/extension/timescaledb.control $out/share/postgresql/extension/timescaledb--${version}.control
+          sed -e "/^default_version =/d" \
+              -e "s|^module_pathname = .*|module_pathname = '\$libdir/timescaledb'|" \
+            $out/share/postgresql/extension/timescaledb.control > $out/share/postgresql/extension/timescaledb--${version}.control
+          rm $out/share/postgresql/extension/timescaledb.control
         fi
       '';
 
@@ -66,7 +84,7 @@ let
         description = "Scales PostgreSQL for time-series data via automatic partitioning across time and space";
         homepage = "https://www.timescale.com/";
         changelog = "https://github.com/timescale/timescaledb/blob/${version}/CHANGELOG.md";
-        license = licenses.postgresql;
+        license = licenses.asl20;
         inherit (postgresql.meta) platforms;
       };
     };
@@ -82,30 +100,40 @@ let
     lib.mapAttrs (name: value: build name value.hash (value.revision or name)) supportedVersions
   );
 in
-pkgs.buildEnv {
+buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   postBuild = ''
     {
       echo "default_version = '${latestVersion}'"
       cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
     } > $out/share/postgresql/extension/${pname}.control
-    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
-    # checks
+    # Create symlink for the loader
+    ln -sfn ${pname}-loader-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    # The versioned library symlink (timescaledb-VERSION.so files are already in place)
+
+    # checks - adjust count since we have both loader and versioned files
     (set -x
-       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
-       }"
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" -gt 0
     )
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_timescaledb_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
+
   '';
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
   ];
   passthru = {
-    inherit versions numberOfVersions;
+    inherit versions numberOfVersions switch-ext-version;
     pname = "${pname}-all";
+    hasBackgroundWorker = true;
+    defaultSettings = {
+      shared_preload_libraries = [ "timescaledb" ];
+    };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
