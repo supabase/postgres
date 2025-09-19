@@ -90,11 +90,11 @@ self.inputs.nixpkgs.lib.nixos.runTest {
                   installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = 'timescaledb';""")
                   assert installed_version == version, f"Expected timescaledb version {version}, but found {installed_version}"
 
-          start_all()
+      start_all()
 
-          server.wait_for_unit("multi-user.target")
-          server.wait_for_unit("postgresql.service")
+      server.wait_for_unit("multi-user.target")
+      server.wait_for_unit("postgresql.service")
 
-          check_upgrade_path()
+      check_upgrade_path()
     '';
 }

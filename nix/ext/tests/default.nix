@@ -186,7 +186,6 @@ builtins.listToAttrs (
       "index_advisor"
       "pg_cron"
       "pg_net"
-      "timescaledb"
       "vector"
       "wrappers"
     ]
