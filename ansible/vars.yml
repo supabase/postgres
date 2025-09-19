@@ -13,10 +13,6 @@ postgres_release:
   postgres17: "17.6.1.003-nixpkgs-4"
   postgres15: "15.14.1.003-nixpkgs-4"
 
-# Non Postgres Extensions
-pgbouncer_release: "1.19.0"
-pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e2ccef2ca59e3d8ce682
-
 # The checksum can be found under "Assets", in the GitHub release page for each version.
 # The binaries used are: ubuntu-aarch64 and linux-static.
 # https://github.com/PostgREST/postgrest/releases

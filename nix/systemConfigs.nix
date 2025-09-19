@@ -1,12 +1,14 @@
 { self, inputs, ... }:
 let
   mkModules = system: [
+    self.systemModules.pgbouncer
     self.systemModules.postgres
     (
       { pkgs, ... }:
       {
         services.nginx.enable = true;
         nixpkgs.hostPlatform = system;
+        supabase.services.pgbouncer.enable = true;
         supabase.services.postgres = {
           enable = true;
           package = self.packages.${system}."psql_17/bin";
