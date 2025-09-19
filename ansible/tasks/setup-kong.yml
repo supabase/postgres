@@ -1,28 +1,12 @@
 - name: Kong - system user
   user: name=kong
 
-# Kong installation steps from http://archive.vn/3HRQx
-- name: Kong - system dependencies
-  apt:
-    pkg:
-      - openssl
-      - libpcre3
-      - procps
-      - perl
-
-- name: Kong - download deb package
-  get_url:
-    url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/{{ kong_release_target }}/main/k/ko/kong_2.8.1/{{ kong_deb }}"
-    dest: /tmp/kong.deb
-    checksum: "{{ kong_deb_checksum }}"
-
-- name: Kong - deb installation
-  apt: deb=file:///tmp/kong.deb
-
-- name: Kong - ensure it is NOT autoremoved
+# Kong installation steps from https://developer.konghq.com/gateway/install/
+- name: Kong - package manager installation
   shell: |
-    set -e
-    apt-mark manual kong zlib1g*
+    curl -1sLf "https://packages.konghq.com/public/gateway-311/gpg.CF9CDA9D288571F9.key" |  gpg --dearmor | sudo tee /usr/share/keyrings/kong-gateway-311-archive-keyring.gpg > /dev/null
+    curl -1sLf "https://packages.konghq.com/public/gateway-311/config.deb.txt?distro=ubuntu&codename=noble" | sudo tee /etc/apt/sources.list.d/kong-gateway-311.list > /dev/null
+    sudo apt-get update && sudo apt-get install -y kong-enterprise-edition={{ kong_version }}
 
 - name: Kong - configuration
   template:
