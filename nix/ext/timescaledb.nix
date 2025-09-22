@@ -66,7 +66,7 @@ let
 
         # Rename the loader to be version-specific
         if [ -f $out/lib/timescaledb${postgresql.dlSuffix} ]; then
-          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-loader-${version}${postgresql.dlSuffix}
+          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-${version}${postgresql.dlSuffix}
         fi
 
         # The versioned library (timescaledb-VERSION.so) is already correctly named
@@ -111,7 +111,7 @@ buildEnv {
     } > $out/share/postgresql/extension/${pname}.control
 
     # Create symlink for the loader
-    ln -sfn ${pname}-loader-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
     # The versioned library symlink (timescaledb-VERSION.so files are already in place)
 
