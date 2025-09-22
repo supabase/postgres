@@ -59,14 +59,13 @@ let
         # Run cmake install first
         cmake --install . --prefix=$out
 
-        # TimescaleDB has two libraries:
-        # 1. timescaledb.so (loader)
-        # 2. timescaledb-VERSION.so (actual extension)
-        # Both need to be handled for multi-version support
+        # TimescaleDB creates two libraries:
+        # 1. timescaledb.so (loader) -> rename to timescaledb-<version>-loader.so
+        # 2. timescaledb-<version>.so (actual extension) -> keep as is
 
-        # Rename the loader to be version-specific
+        # Rename the loader library to be version-specific
         if [ -f $out/lib/timescaledb${postgresql.dlSuffix} ]; then
-          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-${version}${postgresql.dlSuffix}
+          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-${version}-loader${postgresql.dlSuffix}
         fi
 
         # The versioned library (timescaledb-VERSION.so) is already correctly named
@@ -110,12 +109,12 @@ buildEnv {
       cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
     } > $out/share/postgresql/extension/${pname}.control
 
-    # Create symlink for the loader
-    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+    # Create symlink from the latest versioned loader to timescaledb.so
+    ln -sfn ${pname}-${latestVersion}-loader${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
-    # The versioned library symlink (timescaledb-VERSION.so files are already in place)
+    # The versioned extension libraries (timescaledb-VERSION.so) are already in place
 
-    # checks - adjust count since we have both loader and versioned files
+    # checks - we should have loader files and versioned extension files
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" -gt 0
     )
