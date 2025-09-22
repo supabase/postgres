@@ -1,17 +1,16 @@
 { self, pkgs }:
 let
+  pname = "timescaledb";
   inherit (pkgs) lib;
   installedExtension =
-    postgresMajorVersion:
-    self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/timescaledb-all";
+    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
   versions = (installedExtension "15").versions;
-  firstVersion = lib.head versions;
   postgresqlWithExtension =
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
       pkg = pkgs.buildEnv {
-        name = "postgresql-${majorVersion}-timescaledb";
+        name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
@@ -36,6 +35,7 @@ let
       };
     in
     pkg;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = "timescaledb";
@@ -43,58 +43,36 @@ self.inputs.nixpkgs.lib.nixos.runTest {
   nodes.server =
     { ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
-      services.openssh = {
-        enable = true;
-      };
-      users.users.root.openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIArkmq6Th79Z4klW6Urgi4phN8yq769/l/10jlE00tU9"
-      ];
-
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+        package = (postgresqlWithExtension psql_15);
         settings = {
           shared_preload_libraries = "timescaledb";
-        };
-      };
-
-      specialisation.postgresql15.configuration = {
-        services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15);
         };
       };
     };
   testScript =
     { ... }:
     ''
-      def run_sql(query):
-          return server.succeed(f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """).strip()
-
-      def check_upgrade_path():
-          with subtest("Check timescaledb upgrade path"):
-              server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS timescaledb;'")
-              run_sql(r"""CREATE EXTENSION timescaledb WITH VERSION \"${firstVersion}\";""")
-              installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = 'timescaledb';""")
-              assert installed_version == "${firstVersion}", f"Expected timescaledb version ${firstVersion}, but found {installed_version}"
-              for version in [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}][1:]:
-                  run_sql(f"""ALTER EXTENSION timescaledb UPDATE TO '{version}';""")
-                  installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = 'timescaledb';""")
-                  assert installed_version == version, f"Expected timescaledb version {version}, but found {installed_version}"
+      ${builtins.readFile ./lib.py}
 
       start_all()
 
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      check_upgrade_path()
+      versions = {
+        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}],
+      }
+      extension_name = "${pname}"
+      support_upgrade = True
+
+      test = PostgresExtensionTest(server, extension_name, versions, support_upgrade)
+
+      with subtest("Check upgrade path with postgresql 15"):
+        test.check_upgrade_path("15")
+
+      with subtest("Test switch_${pname}_version"):
+        test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
     '';
 }
