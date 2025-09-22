@@ -54,6 +54,14 @@ writeShellApplication {
     # Update library symlink
     ln -sfnv "$EXT_LIB_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME${postgresql.dlSuffix}"
 
+    # Handle timescaledb-loader symlink (specific to timescaledb)
+    if [ "$EXT_NAME" = "timescaledb" ]; then
+      EXT_LOADER_TO_USE="$EXT_WRAPPER_LIB/$EXT_NAME-loader-$VERSION${postgresql.dlSuffix}"
+      if [ -f "$EXT_LOADER_TO_USE" ]; then
+        ln -sfnv "$EXT_LOADER_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME-loader${postgresql.dlSuffix}"
+      fi
+    fi
+
     # Update control file
     EXT_WRAPPER_SHARE="$EXT_WRAPPER/share/postgresql/extension"
     echo "default_version = '$VERSION'" > "$EXT_WRAPPER_SHARE/$EXT_NAME.control"
