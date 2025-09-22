@@ -315,6 +315,10 @@ in
             # Initialise the database.
             initdb ${lib.escapeShellArgs cfg.initdbArgs}
           fi
+
+          # See postgresql-setup
+          touch "${cfg.dataDir}/.first_startup"
+
           if [ ! -f /etc/postgresql-custom/pgsodium_root.key ]; then
             umask 077
             echo "0000000000000000000000000000000000000000000000000000000000000000" > /etc/postgresql-custom/pgsodium_root.key
