@@ -183,6 +183,19 @@ in
           initialisation.
         '';
       };
+
+      initialScript = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        example = lib.literalExpression ''
+          pkgs.writeText "init-sql-script" '''
+            alter user postgres with password 'myPassword';
+          ''';'';
+
+        description = ''
+          A file containing SQL statements to execute on first startup.
+        '';
+      };
     };
   };
 
@@ -375,6 +388,45 @@ in
             "/etc/postgresql"
           ];
         };
+      };
+      postgresql-setup = {
+        description = "PostgreSQL Setup Scripts";
+
+        requires = [ "postgresql.service" ];
+        after = [ "postgresql.service" ];
+
+        serviceConfig = {
+          User = "postgres";
+          Group = "postgres";
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+
+        path = [ cfg.package ];
+        environment.PGPORT = builtins.toString cfg.settings.port;
+
+        # Wait for PostgreSQL to be ready to accept connections.
+        script = ''
+          check-connection() {
+            psql -U ${cfg.superUser} -h localhost -d postgres -v ON_ERROR_STOP=1 <<-'  EOF'
+              SELECT pg_is_in_recovery() \gset
+              \if :pg_is_in_recovery
+              \i still-recovering
+              \endif
+            EOF
+          }
+          while ! check-connection 2> /dev/null; do
+              if ! systemctl is-active --quiet postgresql.service; then exit 1; fi
+              sleep 0.1
+          done
+
+          if test -e "${cfg.dataDir}/.first_startup"; then
+            ${lib.optionalString (cfg.initialScript != null) ''
+              psql -U ${cfg.superUser} -h localhost -f "${cfg.initialScript}" -d postgres
+            ''}
+            rm -f "${cfg.dataDir}/.first_startup"
+          fi
+        '';
       };
       "setup-locales" = {
         description = "Setup locales on the system";

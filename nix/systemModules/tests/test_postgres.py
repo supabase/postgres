@@ -197,3 +197,14 @@ def test_postgres_service_running(host):
     logs = host.run("journalctl -u postgresql.service --no-pager").stdout
     for log in required_logs:
         assert log in logs, f"Log '{log}' should be present in PostgreSQL logs"
+
+
+def test_postgres_setup_service_running(host):
+    assert host.service("postgresql-setup.service").is_valid
+    assert host.service("postgresql-setup.service").is_running, (
+        "postgresql-setup service should be running but failed: {}".format(
+            host.run(
+                "systemctl status postgresql-setup.service; journalctl -n 100 -u postgresql-setup.service"
+            ).stdout
+        )
+    )

@@ -2,14 +2,20 @@
 let
   mkModules = system: [
     self.systemModules.postgres
-    ({
-      services.nginx.enable = true;
-      nixpkgs.hostPlatform = system;
-      supabase.services.postgres = {
-        enable = true;
-        package = self.packages.${system}."psql_17/bin";
-      };
-    })
+    (
+      { pkgs, ... }:
+      {
+        services.nginx.enable = true;
+        nixpkgs.hostPlatform = system;
+        supabase.services.postgres = {
+          enable = true;
+          package = self.packages.${system}."psql_17/bin";
+          initialScript = pkgs.writeText "init-script.sql" ''
+            CREATE USER supabase_auth_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION PASSWORD 'secret';
+          '';
+        };
+      }
+    )
   ];
 
   systems = [
