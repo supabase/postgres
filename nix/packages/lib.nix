@@ -58,7 +58,7 @@
         };
         postgresqlExtensionCustomScriptsPath = builtins.path {
           name = "extension-custom-scripts";
-          path = ../../ansible/files/postgresql_extension_custom_scripts;
+          path = ../systemModules/postgres/extension-custom-scripts;
         };
         getkeyScript = builtins.path {
           name = "pgsodium_getkey.sh";
