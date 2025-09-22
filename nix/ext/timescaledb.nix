@@ -9,6 +9,8 @@
   buildEnv,
   makeWrapper,
   switch-ext-version,
+  coreutils,
+  writeShellApplication,
 }:
 
 let
@@ -65,7 +67,7 @@ let
 
         # Rename the loader library to be version-specific
         if [ -f $out/lib/timescaledb${postgresql.dlSuffix} ]; then
-          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-${version}-loader${postgresql.dlSuffix}
+          mv $out/lib/timescaledb${postgresql.dlSuffix} $out/lib/timescaledb-loader-${version}${postgresql.dlSuffix}
         fi
 
         # The versioned library (timescaledb-VERSION.so) is already correctly named
@@ -98,6 +100,16 @@ let
   packages = builtins.attrValues (
     lib.mapAttrs (name: value: build name value.hash (value.revision or name)) supportedVersions
   );
+  switch-timescaledb-loader = writeShellApplication {
+    name = "switch_timescaledb_loader";
+    runtimeInputs = [ coreutils ];
+    text = ''
+      EXT_LOADER_TO_USE="$EXT_WRAPPER_LIB/$EXT_NAME-loader-$VERSION${postgresql.dlSuffix}"
+      if [ -f "$EXT_LOADER_TO_USE" ]; then
+        ln -sfnv "$EXT_LOADER_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME-loader${postgresql.dlSuffix}"
+      fi
+    '';
+  };
 in
 buildEnv {
   name = pname;
@@ -110,7 +122,7 @@ buildEnv {
     } > $out/share/postgresql/extension/${pname}.control
 
     # Create symlink from the latest versioned loader to timescaledb.so
-    ln -sfn ${pname}-${latestVersion}-loader${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+    ln -sfn ${pname}-loader-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
     # The versioned extension libraries (timescaledb-VERSION.so) are already in place
 
@@ -119,13 +131,14 @@ buildEnv {
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" -gt 0
     )
     makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_timescaledb_version \
-      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
-
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}" --prefix EXTRA_STEPS : ${lib.getExe switch-timescaledb-loader}
   '';
+
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
   ];
+
   passthru = {
     inherit versions numberOfVersions switch-ext-version;
     pname = "${pname}-all";
