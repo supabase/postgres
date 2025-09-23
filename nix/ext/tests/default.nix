@@ -43,11 +43,8 @@ let
           };
         in
         pkg;
-<<<<<<< HEAD
       psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
       psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
-=======
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
     in
     self.inputs.nixpkgs.lib.nixos.runTest {
       name = pname;
@@ -70,11 +67,7 @@ let
 
           services.postgresql = {
             enable = true;
-<<<<<<< HEAD
             package = psql_15;
-=======
-            package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
             enableTCPIP = true;
             initialScript = pkgs.writeText "init-postgres-with-password" ''
               CREATE USER test WITH PASSWORD 'secret';
@@ -82,21 +75,14 @@ let
             authentication = ''
               host test postgres samenet scram-sha-256
             '';
-<<<<<<< HEAD
             settings = (installedExtension "15").defaultSettings or { };
-=======
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
           };
 
           networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
 
           specialisation.postgresql17.configuration = {
             services.postgresql = {
-<<<<<<< HEAD
               package = lib.mkForce psql_17;
-=======
-              package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
             };
 
             systemd.services.postgresql-migrate = {
@@ -110,13 +96,8 @@ let
               };
               script =
                 let
-<<<<<<< HEAD
                   oldPostgresql = psql_15;
                   newPostgresql = psql_17;
-=======
-                  oldPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-                  newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
                   oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
                   newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
                 in
@@ -151,12 +132,9 @@ let
           extension_name = "${pname}"
           support_upgrade = True
           pg17_configuration = "${pg17-configuration}"
-<<<<<<< HEAD
           ext_has_background_worker = ${
             if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
           }
-=======
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
 
           ${builtins.readFile ./lib.py}
 
@@ -174,13 +152,10 @@ let
           with subtest("Check the install of the last version of the extension"):
             last_version = test.check_install_last_version("15")
 
-<<<<<<< HEAD
           if ext_has_background_worker:
             with subtest("Test switch_${pname}_version"):
               test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
 
-=======
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
           with subtest("switch to postgresql 17"):
             server.succeed(
               f"{pg17_configuration}/bin/switch-to-configuration test >&2"
@@ -201,7 +176,6 @@ builtins.listToAttrs (
   }) nixFiles
 )
 // builtins.listToAttrs (
-<<<<<<< HEAD
   map
     (extName: {
       name = "ext-${extName}";
@@ -215,10 +189,4 @@ builtins.listToAttrs (
       "vector"
       "wrappers"
     ]
-=======
-  map (extName: {
-    name = "ext-${extName}";
-    value = extTest extName;
-  }) [ "rum" ]
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
 )

@@ -309,7 +309,6 @@
             ;
         }
         // pkgs.lib.optionalAttrs (system == "x86_64-linux") (
-<<<<<<< HEAD
           {
             devShell = self'.devShells.default;
           }
@@ -317,12 +316,6 @@
             inherit self;
             inherit pkgs;
           })
-=======
-          import ./ext/tests {
-            inherit self;
-            inherit pkgs;
-          }
->>>>>>> e93f70f1 (feat: support multiple versions of the rum extension)
         );
     };
 }
