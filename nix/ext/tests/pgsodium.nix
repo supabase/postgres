@@ -15,7 +15,7 @@ let
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          self.packages.${pkgs.system}."psql_${majorVersion}/exts/hypopg" # dependency
+          self.packages.${pkgs.system}."psql_${majorVersion}/exts/hypopg-all"
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
