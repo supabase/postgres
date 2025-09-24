@@ -163,10 +163,59 @@
                   which
                   getkey-script
                   supabase-groonga
+                  python3
+                  netcat
                 ];
               }
               ''
                 set -e
+
+                # Start HTTP mock server for http extension tests using portable locking
+                HTTP_MOCK_PORT=8889
+                PID_FILE="/tmp/http-mock-server-$HTTP_MOCK_PORT.pid"
+
+                # Function to start mock server with simple lock mechanism
+                start_mock_server() {
+                  # Try to acquire lock by creating PID file atomically
+                  if (set -C; echo $$ > "$PID_FILE") 2>/dev/null; then
+                    # We got the lock, start the server
+                    echo "Starting HTTP mock server on port $HTTP_MOCK_PORT for tests..."
+                    ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} $HTTP_MOCK_PORT &
+                    HTTP_MOCK_PID=$!
+                    echo $HTTP_MOCK_PID > "$PID_FILE"
+
+                    # Clean up on exit
+                    trap "kill $HTTP_MOCK_PID 2>/dev/null || true; rm -f '$PID_FILE'" EXIT
+
+                    # Wait for server to be ready
+                    sleep 2
+
+                    # Keep this process alive to maintain the lock
+                    wait $HTTP_MOCK_PID
+                    rm -f "$PID_FILE"
+                  else
+                    # Lock exists, check if process is still running
+                    if [ -f "$PID_FILE" ]; then
+                      existing_pid=$(cat "$PID_FILE" 2>/dev/null || echo "")
+                      if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+                        echo "HTTP mock server already running with PID $existing_pid, reusing it..."
+                        return 0
+                      else
+                        echo "Stale PID file found, removing and retrying..."
+                        rm -f "$PID_FILE"
+                        sleep 1
+                        start_mock_server  # Retry once
+                        return $?
+                      fi
+                    fi
+                  fi
+                }
+
+                # Start the server in background
+                start_mock_server &
+
+                # Give server time to start
+                sleep 3
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
