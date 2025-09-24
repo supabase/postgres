@@ -208,15 +208,52 @@ class MockHTTPHandler(BaseHTTPRequestHandler):
         pass
 
 
-def run_server(port=8080):
+def find_free_port(start_port=8880, end_port=8899):
+    """Find a free port within the given range"""
+    import socket
+
+    for port in range(start_port, end_port + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("0.0.0.0", port))
+                return port
+            except OSError:
+                continue
+
+    raise RuntimeError(f"No free port found in range {start_port}-{end_port}")
+
+
+def run_server(port=None):
     """Run the mock HTTP server"""
-    server = HTTPServer(("0.0.0.0", port), MockHTTPHandler)
-    print(f"Mock HTTP server running on port {port}")
-    server.serve_forever()
+    if port is None:
+        port = find_free_port()
+
+    try:
+        server = HTTPServer(("0.0.0.0", port), MockHTTPHandler)
+        print(f"Mock HTTP server running on port {port}")
+
+        # Write port to a file that can be read by the test environment
+        import os
+
+        port_file = os.environ.get("HTTP_MOCK_PORT_FILE", "/tmp/http-mock-port")
+        try:
+            with open(port_file, "w") as f:
+                f.write(str(port))
+        except:
+            pass  # Ignore if we can't write the port file
+
+        server.serve_forever()
+    except OSError as e:
+        if port is not None:
+            # If specific port was requested but failed, try to find a free one
+            print(f"Port {port} not available, finding free port...")
+            run_server(None)
+        else:
+            raise e
 
 
 if __name__ == "__main__":
     import sys
 
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else None
     run_server(port)

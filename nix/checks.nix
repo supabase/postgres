@@ -170,52 +170,35 @@
               ''
                 set -e
 
-                # Start HTTP mock server for http extension tests using portable locking
-                HTTP_MOCK_PORT=8889
-                PID_FILE="/tmp/http-mock-server-$HTTP_MOCK_PORT.pid"
+                # Start HTTP mock server for http extension tests
+                # Use a build-specific directory for coordination
+                BUILD_TMP=$(mktemp -d)
+                HTTP_MOCK_PORT_FILE="$BUILD_TMP/http-mock-port"
 
-                # Function to start mock server with simple lock mechanism
-                start_mock_server() {
-                  # Try to acquire lock by creating PID file atomically
-                  if (set -C; echo $$ > "$PID_FILE") 2>/dev/null; then
-                    # We got the lock, start the server
-                    echo "Starting HTTP mock server on port $HTTP_MOCK_PORT for tests..."
-                    ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} $HTTP_MOCK_PORT &
-                    HTTP_MOCK_PID=$!
-                    echo $HTTP_MOCK_PID > "$PID_FILE"
+                echo "Starting HTTP mock server (will find free port)..."
+                HTTP_MOCK_PORT_FILE="$HTTP_MOCK_PORT_FILE" ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
+                HTTP_MOCK_PID=$!
 
-                    # Clean up on exit
-                    trap "kill $HTTP_MOCK_PID 2>/dev/null || true; rm -f '$PID_FILE'" EXIT
+                # Clean up on exit
+                trap "kill $HTTP_MOCK_PID 2>/dev/null || true; rm -rf '$BUILD_TMP'" EXIT
 
-                    # Wait for server to be ready
-                    sleep 2
-
-                    # Keep this process alive to maintain the lock
-                    wait $HTTP_MOCK_PID
-                    rm -f "$PID_FILE"
-                  else
-                    # Lock exists, check if process is still running
-                    if [ -f "$PID_FILE" ]; then
-                      existing_pid=$(cat "$PID_FILE" 2>/dev/null || echo "")
-                      if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
-                        echo "HTTP mock server already running with PID $existing_pid, reusing it..."
-                        return 0
-                      else
-                        echo "Stale PID file found, removing and retrying..."
-                        rm -f "$PID_FILE"
-                        sleep 1
-                        start_mock_server  # Retry once
-                        return $?
-                      fi
-                    fi
+                # Wait for server to start and write port file
+                for i in {1..10}; do
+                  if [ -f "$HTTP_MOCK_PORT_FILE" ]; then
+                    HTTP_MOCK_PORT=$(cat "$HTTP_MOCK_PORT_FILE")
+                    echo "HTTP mock server started on port $HTTP_MOCK_PORT"
+                    break
                   fi
-                }
+                  sleep 1
+                done
 
-                # Start the server in background
-                start_mock_server &
+                if [ ! -f "$HTTP_MOCK_PORT_FILE" ]; then
+                  echo "Failed to start HTTP mock server"
+                  exit 1
+                fi
 
-                # Give server time to start
-                sleep 3
+                # Export the port for use in SQL tests
+                export HTTP_MOCK_PORT
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
@@ -277,6 +260,13 @@
                   pg_ctl -D "$PGTAP_CLUSTER" stop
                   exit 1
                 fi
+
+                # Create a table to store test configuration
+                psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -c "
+                  CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                "
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
                   psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
@@ -309,6 +299,13 @@
                   echo "Error executing SQL file"
                   exit 1
                 fi
+
+                # Create a table to store test configuration for pg_regress tests
+                psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -c "
+                  CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                "
 
                 mkdir -p $out/regression_output
                 if ! pg_regress \
