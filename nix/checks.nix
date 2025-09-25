@@ -27,7 +27,7 @@
             pgpkg:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-              pg_regress = self'.packages.pg_regress;
+              inherit (self'.packages) pg_regress;
               getkey-script = pkgs.stdenv.mkDerivation {
                 name = "pgsodium-getkey";
                 buildCommand = ''

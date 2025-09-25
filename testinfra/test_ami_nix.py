@@ -374,12 +374,18 @@ users:
             try:
                 result = run_ssh_command(ssh, command)
                 if not result["succeeded"]:
-                    logger.warning(f"{service} not ready")
+                    info_text = ""
+                    info_command = f"sudo journalctl -b -u {service} -n 20 --no-pager"
+                    info_result = run_ssh_command(ssh, info_command)
+                    if info_result["succeeded"]:
+                        info_text = "\n" + info_result["stdout"].strip()
+
+                    logger.warning(f"{service} not ready{info_text}")
                     return False
+
             except Exception:
                 logger.warning(f"Connection failed during {service} check")
                 return False
-
         return True
 
     while True:

@@ -29,7 +29,7 @@
   copy:
     src: files/supabase_admin_agent_config/supabase-admin-agent.sudoers.conf
     dest: /etc/sudoers.d/supabase-admin-agent
-    mode: "0644"
+    mode: "0440"
 
 - name: Setting arch (x86)
   set_fact:

@@ -20,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: large-linux-x86
+          - runner: blacksmith-32vcpu-ubuntu-2404	
             arch: amd64
-          - runner: large-linux-arm
+          - runner: blacksmith-32vcpu-ubuntu-2404-arm
             arch: arm64
           - runner: macos-latest-xlarge
             arch: arm64
