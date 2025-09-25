@@ -12,10 +12,10 @@ stdenv.mkDerivation rec {
   buildInputs = [ postgresql ];
 
   src = fetchFromGitHub {
-    owner = "percona";
+    owner = "olirice";
     repo = pname;
-    rev = "refs/tags/${version}";
-    hash = "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s=";
+    rev = "or/logs2";
+    hash = "sha256-9vCtDseZ783pVXo/Grvi4rygVxnDZXavw9+zuHXr+0A=";
   };
 
   makeFlags = [ "USE_PGXS=1" ];
