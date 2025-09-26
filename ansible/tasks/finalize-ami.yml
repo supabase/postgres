@@ -77,7 +77,7 @@
   community.general.ini_file:
     group: 'root'
     mode: '0644'
-    noextraspaces: true
+    no_extra_spaces: true
     option: 'OnCalendar'
     owner: 'root'
     path: '/etc/systemd/system/logrotate.timer.d/override.conf'
