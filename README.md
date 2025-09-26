@@ -43,11 +43,11 @@ Here's a comprehensive overview of the project's directory structure:
 | nix/postgresql/ | PostgreSQL version configurations, patches, and base package definitions |
 | nix/ext/ | Individual extension package definitions and build configurations |
 | nix/ext/wrappers/ | Wrapper scripts and utilities for extensions |
-| nix/ext/tests/ | Extension-specific test suites |
+| nix/ext/tests/ | Extension-specific integration test suites implemented using nixos-test|
 | nix/overlays/ | Nix overlays for customizing and overriding package definitions |
 | nix/tools/ | Build tools, utilities, and helper scripts |
 | nix/docker/ | Docker image build definitions using Nix |
-| nix/tests/ | Comprehensive integration test suites for validating builds |
+| nix/tests/ | postgres specific test suites for validating builds, including pg_regress tests |
 | nix/tests/smoke/ | Quick smoke tests for basic functionality |
 | nix/tests/migrations/ | Migration and upgrade test scenarios |
 | nix/tests/expected/ | Expected `pg_regress` test outputs for validation |
