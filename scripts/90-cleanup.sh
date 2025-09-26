@@ -24,10 +24,8 @@ elif [ -n "$(command -v apt-get)" ]; then
  	autoconf \
 	autotools-dev \
  	cmake-data \
-	cpp-8  \
 	cpp-9  \
 	cpp-10  \
-	gcc-8  \
 	gcc-9  \
 	gcc-10  \
 	git  \
@@ -36,14 +34,12 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libicu-dev \
 	libcgal-dev \
 	libgcc-9-dev \
-	libgcc-8-dev \
  	ansible
 
   add-apt-repository --yes --remove ppa:ansible/ansible
 
   source /etc/os-release
-  apt-get -y remove --purge linux-headers-5.11.0-1021-aws
-
+  
   apt-get -y update
   apt-get -y upgrade
   apt-get -y autoremove

@@ -1,0 +1,18 @@
+[Unit]
+Description=Configuration management via supabase-admin-agent salt
+After=network.target local-fs.target tmp.mount
+Wants=network-online.target
+Requires=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/supabase-admin-agent/supabase-admin-agent --config /opt/supabase-admin-agent/config.yaml salt --apply --store-result
+User=supabase-admin-agent
+Group=supabase-admin-agent
+StandardOutput=journal
+StandardError=journal
+StateDirectory=supabase-admin-agent
+CacheDirectory=supabase-admin-agent
+
+[Install]
+WantedBy=multi-user.target

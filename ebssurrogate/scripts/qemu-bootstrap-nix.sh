@@ -22,7 +22,7 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common -y
+  apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
 	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
@@ -155,6 +155,6 @@ execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
 mkdir -p /db/template
 mv /data/pgdata /db/template
+cloud-init clean --logs
 clean_legacy_things
 clean_system
-cloud-init clean --logs

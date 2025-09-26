@@ -16,13 +16,13 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       matrix_config: ${{ steps.set-matrix.outputs.matrix_config }}
     steps:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - name: Generate build matrix
         id: set-matrix
         run: |
@@ -49,11 +49,12 @@ jobs:
     needs: prepare
     strategy:
       matrix: ${{ fromJson(needs.prepare.outputs.matrix_config) }}
-    runs-on: ubuntu-latest
+    runs-on: large-linux-x86
     outputs:
       build_args: ${{ steps.args.outputs.result }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
@@ -74,10 +75,11 @@ jobs:
       matrix:
         postgres: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'arm-runner' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'large-linux-x86' || 'large-linux-arm' }}
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - run: docker context create builders
       - uses: docker/setup-buildx-action@v3
@@ -91,7 +93,7 @@ jobs:
         id: image
         run: |
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            pg_version=$(sudo nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let release_key = if ($version | str contains "orioledb") {
                 $"postgresorioledb-17"
@@ -130,9 +132,10 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
-    runs-on: ubuntu-latest
+    runs-on: large-linux-x86
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v2
@@ -173,9 +176,10 @@ jobs:
           ${{ steps.get_version.outputs.pg_version }}_arm64
   combine_results:
     needs: [prepare, merge_manifest]
-    runs-on: ubuntu-latest
+    runs-on: large-linux-x86
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Debug Input from Prepare

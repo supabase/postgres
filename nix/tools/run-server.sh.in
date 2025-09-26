@@ -220,7 +220,7 @@ mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
 # Configure supautils
-sed "s|supautils.privileged_extensions_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.privileged_extensions_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
+sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
 
 # Configure PostgreSQL
 sed -e "1i\\

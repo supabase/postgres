@@ -6,7 +6,7 @@ on:
       - develop
     paths:
       - ".github/workflows/mirror-postgrest.yml"
-      - "common.vars*"
+      - "ansible/vars.yml"
 
 permissions:
   contents: read
@@ -17,7 +17,8 @@ jobs:
     outputs:
       postgrest_release: ${{ steps.args.outputs.result }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - id: args
         uses: mikefarah/yq@master
         with:

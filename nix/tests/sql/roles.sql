@@ -28,22 +28,6 @@ from pg_roles r
 where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by rolname;
 
--- all role memberships
-select
-    r.rolname as member,
-    g.rolname as "member_of (can become)",
-    m.admin_option
-from
-    pg_roles r
-left join
-    pg_auth_members m on r.oid = m.member
-left join
-    pg_roles g on m.roleid = g.oid
-where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
-and g.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
-order by
-    r.rolname, g.rolname;
-
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
 from (
@@ -81,3 +65,10 @@ from (
         a.privilege_type in ('CREATE', 'USAGE')
 ) sub
 order by schema_order, schema_name, privilege_type, grantee, default_for;
+
+-- postgres can alter API roles' timeout
+set role postgres;
+alter role anon set statement_timeout = '10min';
+
+alter role anon reset statement_timeout;
+reset role;

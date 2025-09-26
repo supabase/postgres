@@ -1,29 +1,33 @@
 name: Testinfra Integration Tests Nix
 
 on:
-  pull_request:
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      DEV_AWS_ROLE:
+        description: 'AWS role for dev environment'
+        required: true
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
-      
-      - uses: DeterminateSystems/nix-installer-action@main
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: Clean Nix store before build
-        run: |
-          sudo nix-collect-garbage -d || true
-          sudo nix-store --optimize || true
-          df -h /  # Display available space
+      - name: Install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
+          extra_nix_config: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -38,21 +42,43 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: arm-runner
+          - runner: blacksmith-2vcpu-ubuntu-2404-arm
             arch: arm64
-            ubuntu_release: focal
-            ubuntu_version: 20.04
+            ubuntu_release: noble
+            ubuntu_version: 24.04
             mcpu: neoverse-n1
-    runs-on: ${{ matrix.runner }}    
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Debug AWS role secret
+        run: |
+          echo "Checking DEV_AWS_ROLE secret availability..."
+          if [ -z "${{ secrets.DEV_AWS_ROLE }}" ]; then
+            echo "❌ DEV_AWS_ROLE is empty or not available"
+          else
+            echo "✅ DEV_AWS_ROLE is available"
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
+          extra_nix_config: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
 
       - id: args
         uses: mikefarah/yq@master
@@ -70,42 +96,29 @@ jobs:
         run: echo "random_string=$(openssl rand -hex 8)" >> $GITHUB_OUTPUT
 
       - name: Set PostgreSQL version environment variable
-        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-      
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(sudo nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
-  
+
       - name: Build AMI stage 1
         run: |
-          packer init amazon-arm64-nix.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
-
-      - name: Clean up after AMI stage 1
-        if: always()  # Run even if previous steps fail
-        run: |
-          sudo nix-collect-garbage -d  # Delete old generations of all profiles
-          sudo rm -rf /tmp/*  # Clean temporary files
-          df -h /  # Display available space
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         run: |
-          packer init stage2-nix-psql.pkr.hcl
           GIT_SHA=${{github.sha}}
-          packer build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${GITHUB_RUN_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl 
-
-      - name: Clean up after AMI stage 2
-        if: always()  # Run even if previous steps fail
-        run: |
-          sudo nix-collect-garbage -d  # Delete old generations of all profiles
-          sudo rm -rf /tmp/*  # Clean temporary files
-          df -h /  # Display available space
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl
 
       - name: Run tests
         timeout-minutes: 10
@@ -114,17 +127,17 @@ jobs:
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
-          pytest -vv -s testinfra/test_ami_nix.py 
-      
+          pytest -vv -s testinfra/test_ami_nix.py
+
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
 
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
+          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
 
       - name: Cleanup AMIs
         if: always()
@@ -132,7 +145,7 @@ jobs:
           # Define AMI name patterns
           STAGE1_AMI_NAME="supabase-postgres-ci-ami-test-stage-1"
           STAGE2_AMI_NAME="${{ steps.random.outputs.random_string }}"
-          
+
           # Function to deregister AMIs by name pattern
           deregister_ami_by_name() {
             local ami_name_pattern=$1
@@ -142,7 +155,7 @@ jobs:
               aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id
             done
           }
-          
+
           # Deregister AMIs
           deregister_ami_by_name "$STAGE1_AMI_NAME"
           deregister_ami_by_name "$STAGE2_AMI_NAME"

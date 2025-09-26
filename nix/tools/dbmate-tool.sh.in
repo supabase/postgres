@@ -177,7 +177,21 @@ perform_dump() {
     while [ $attempt -le $max_attempts ]; do
         echo "Attempting pg_dump (attempt $attempt/$max_attempts)"
         
-        if "${PSQLBIN}/pg_dump" -h localhost -p "$PORTNO" -U "$PGSQL_SUPERUSER" -d postgres --schema-only --no-owner --no-privileges > "./db/schema.sql"; then
+        # Build the dump command
+        local dump_cmd="${PSQLBIN}/pg_dump -h localhost -p $PORTNO -U $PGSQL_SUPERUSER -d postgres --schema-only --no-owner --no-privileges"
+        
+        # Only use --restrict-key for standard PostgreSQL 15 and 17 versions
+        # OrioleDB doesn't support this flag yet
+        if [ "$PSQL_VERSION" = "15" ] || [ "$PSQL_VERSION" = "17" ]; then
+            # Use a fixed restrict key for reproducible test dumps
+            # This is safe in testing contexts but should not be used in production
+            dump_cmd="$dump_cmd --restrict-key=SupabaseTestDumpKey123"
+            echo "Using --restrict-key for reproducible dumps (PostgreSQL $PSQL_VERSION)"
+        else
+            echo "Skipping --restrict-key (version: $PSQL_VERSION)"
+        fi
+        
+        if $dump_cmd > "./db/schema.sql"; then
             return 0
         fi
         
@@ -257,7 +271,6 @@ EOSQL
 
     echo "CURRENT_SYSTEM: $CURRENT_SYSTEM"
     if [ -f "./db/schema.sql" ]; then
-        trim_schema
         cp "./db/schema.sql" "./migrations/schema-$PSQL_VERSION.sql"
         echo "Schema file moved to ./migrations/schema-$PSQL_VERSION.sql"
         echo "PSQLBIN is $PSQLBIN"

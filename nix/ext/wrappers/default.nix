@@ -1,173 +1,266 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, openssl
-, pkg-config
-, postgresql
-, buildPgrxExtension_0_12_9
-, cargo
-, darwin
-, jq
-, rust-bin
-, git
+{
+  lib,
+  stdenv,
+  callPackages,
+  fetchFromGitHub,
+  openssl,
+  pkg-config,
+  postgresql,
+  buildEnv,
+  darwin,
+  rust-bin,
+  git,
 }:
 let
-  rustVersion = "1.84.0";
-  cargo = rust-bin.stable.${rustVersion}.default;
+  pname = "wrappers";
+  build =
+    version: hash: rustVersion: pgrxVersion:
+    let
+      cargo = rust-bin.stable.${rustVersion}.default;
+      mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
+        inherit rustVersion pgrxVersion;
+      };
+    in
+    mkPgrxExtension (
+      rec {
+        inherit pname version postgresql;
+
+        src = fetchFromGitHub {
+          owner = "supabase";
+          repo = "wrappers";
+          rev = "v${version}";
+          inherit hash;
+        };
+
+        nativeBuildInputs = [
+          pkg-config
+          cargo
+          git
+        ];
+        buildInputs =
+          [
+            openssl
+            postgresql
+          ]
+          ++ lib.optionals stdenv.isDarwin [
+            darwin.apple_sdk.frameworks.CoreFoundation
+            darwin.apple_sdk.frameworks.Security
+            darwin.apple_sdk.frameworks.SystemConfiguration
+          ];
+
+        NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
+
+        # Set necessary environment variables for pgrx in darwin only
+        env = lib.optionalAttrs stdenv.isDarwin {
+          POSTGRES_LIB = "${postgresql}/lib";
+          RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
+        };
+
+        OPENSSL_NO_VENDOR = 1;
+        #need to set this to 2 to avoid cpu starvation
+        CARGO_BUILD_JOBS = "2";
+        CARGO = "${cargo}/bin/cargo";
+
+        cargoLock = {
+          lockFile = "${src}/Cargo.lock";
+          outputHashes =
+            if builtins.compareVersions "0.4.2" version >= 0 then
+              { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
+            else if builtins.compareVersions "0.5.0" version >= 0 then
+              { "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0="; }
+            else if builtins.compareVersions "0.5.2" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
+            else if builtins.compareVersions "0.5.3" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
+            else if builtins.compareVersions "0.5.4" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
+            else
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-0.5.0" = "sha256-dYPZdpP7kcp49UxsCZrZi3xMJ4rJiB8H65dMMR9Z1Yk=";
+              };
+        };
+
+        preConfigure = ''
+          cd wrappers
+
+          # update the clickhouse-rs dependency
+          # append the branch name to the git URL to help cargo locate the commit
+          # while maintaining the rev for reproducibility
+          awk -i inplace '
+          /\[dependencies.clickhouse-rs\]/ {
+            print
+            getline
+            if ($0 ~ /git =/) {
+              print "git = \"https://github.com/burmecia/clickhouse-rs/supabase-patch\""
+            } else {
+              print
+            }
+            while ($0 !~ /^\[/ && NF > 0) {
+              getline
+              if ($0 ~ /rev =/) print
+              if ($0 ~ /^\[/) print
+            }
+            next
+          }
+          { print }
+          ' Cargo.toml
+
+          # Verify the file is still valid TOML, break build with this erroru
+          # if it is not
+          if ! cargo verify-project 2>/dev/null; then
+            echo "Failed to maintain valid TOML syntax"
+            exit 1
+          fi
+
+          cd ..
+        '';
+
+        buildAndTestSubdir = "wrappers";
+        buildFeatures = [
+          "helloworld_fdw"
+          "all_fdws"
+        ];
+        doCheck = false;
+
+        postInstall = ''
+          create_control_files() {
+            sed -e "/^default_version =/d" \
+                -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+              $out/share/postgresql/extension/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+            rm $out/share/postgresql/extension/${pname}.control
+          }
+
+          create_control_files
+        '';
+
+        meta = with lib; {
+          description = "Various Foreign Data Wrappers (FDWs) for PostreSQL";
+          homepage = "https://github.com/supabase/wrappers";
+          license = licenses.postgresql;
+          inherit (postgresql.meta) platforms;
+        };
+      }
+      // lib.optionalAttrs (version == "0.3.0") {
+        patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
+
+        cargoLock = {
+          lockFile = ./Cargo.lock-0.3.0;
+          outputHashes = {
+            "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
+          };
+        };
+      }
+    );
+  previouslyPackagedVersions = [
+    "0.5.3"
+    "0.5.2"
+    "0.5.1"
+    "0.5.0"
+    "0.4.6"
+    "0.4.5"
+    "0.4.4"
+    "0.4.3"
+    "0.4.2"
+    "0.4.1"
+    "0.4.0"
+    "0.3.1"
+    "0.3.0"
+    "0.2.0"
+    "0.1.19"
+    "0.1.18"
+    "0.1.17"
+    "0.1.16"
+    "0.1.15"
+    "0.1.14"
+    "0.1.12"
+    "0.1.11"
+    "0.1.10"
+    "0.1.9"
+    "0.1.8"
+    "0.1.7"
+    "0.1.6"
+    "0.1.5"
+    "0.1.4"
+    "0.1.1"
+    "0.1.0"
+  ];
+  numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
+  allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
+  supportedVersions = lib.filterAttrs (
+    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
+  versions = lib.naturalSort (lib.attrNames supportedVersions);
+  latestVersion = lib.last versions;
+  numberOfVersions = builtins.length versions;
+  packages = builtins.attrValues (
+    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
+  );
 in
-buildPgrxExtension_0_12_9 rec {
-  pname = "supabase-wrappers";
-  version = "0.5.0";
-  # update the following array when the wrappers version is updated
-  # required to ensure that extensions update scripts from previous versions are generated
-  previousVersions = ["0.4.6" "0.4.5" "0.4.4" "0.4.3" "0.4.2" "0.4.1" "0.4.0" "0.3.1" "0.3.0" "0.2.0" "0.1.19" "0.1.18" "0.1.17" "0.1.16" "0.1.15" "0.1.14" "0.1.12" "0.1.11" "0.1.10" "0.1.9" "0.1.8" "0.1.7" "0.1.6" "0.1.5" "0.1.4" "0.1.1" "0.1.0"];
-  inherit postgresql;
-  src = fetchFromGitHub {
-    owner = "supabase";
-    repo = "wrappers";
-    rev = "v${version}";
-    hash = "sha256-FbRTUcpEHBa5DI6dutvBeahYM0RZVAXIzIAZWIaxvn0";
-  };
- 
-  nativeBuildInputs = [ pkg-config cargo git ];
-  buildInputs = [ openssl postgresql ] ++ lib.optionals (stdenv.isDarwin) [ 
-    darwin.apple_sdk.frameworks.CoreFoundation 
-    darwin.apple_sdk.frameworks.Security 
-    darwin.apple_sdk.frameworks.SystemConfiguration 
+buildEnv {
+  name = pname;
+  paths = packages;
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
   ];
-
-  NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
-
-  # Set necessary environment variables for pgrx in darwin only
-  env = lib.optionalAttrs stdenv.isDarwin {
-    POSTGRES_LIB = "${postgresql}/lib";
-    RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-    # Calculate unique port for each PostgreSQL version:
-    # - Check if version contains underscore (indicating OrioleDB)
-    # - Add 1 to port if it's OrioleDB
-    # - Add 2 for each major version above 15
-    # Examples:
-    # - PostgreSQL 15.8 → 5435 + 0 + (15-15)*2 = 5435
-    # - PostgreSQL 17_0 (OrioleDB) → 5435 + 1 + (17-15)*2 = 5440
-    # - PostgreSQL 17.4 → 5435 + 0 + (17-15)*2 = 5439
-    PGPORT = toString (5534 + 
-      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
-      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
-  };
-
-  OPENSSL_NO_VENDOR = 1;
-  #need to set this to 2 to avoid cpu starvation
-  CARGO_BUILD_JOBS = "2";
-  CARGO="${cargo}/bin/cargo";
-  
-  #CARGO_NET_GIT_FETCH_WITH_CLI = "true";
-  cargoLock = {
-    lockFile = "${src}/Cargo.lock";
-    allowBuiltinFetchGit = false;
-    outputHashes = {
-      "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0=";
-    };
-  };
-
- preConfigure = ''
-    cd wrappers
-    
-    # update the clickhouse-rs dependency
-    # append the branch name to the git URL to help cargo locate the commit
-    # while maintaining the rev for reproducibility
-    awk -i inplace '
-    /\[dependencies.clickhouse-rs\]/ {
-      print
-      getline
-      if ($0 ~ /git =/) {
-        print "git = \"https://github.com/suharev7/clickhouse-rs/async-await\""
-      } else {
-        print
-      }
-      while ($0 !~ /^\[/ && NF > 0) {
-        getline
-        if ($0 ~ /rev =/) print
-        if ($0 ~ /^\[/) print
-      }
-      next
+  postBuild = ''
+    create_control_files() {
+      # Create main control file pointing to latest version
+      {
+        echo "default_version = '${latestVersion}'"
+        cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+      } > $out/share/postgresql/extension/${pname}.control
     }
-    { print }
-    ' Cargo.toml
-    
-    # Verify the file is still valid TOML, break build with this error
-    # if it is not
-    if ! cargo verify-project 2>/dev/null; then
-      echo "Failed to maintain valid TOML syntax"
-      exit 1
-    fi
-    
-    cd ..
+
+    create_lib_files() {
+      # Create main library symlink to latest version
+      ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+      # Create symlinks for all previously packaged versions to main library
+      for v in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+        ln -sfn $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-$v${postgresql.dlSuffix}
+      done
+    }
+
+    create_migration_sql_files() {
+      # Create migration SQL files from previous versions to newer versions
+      for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+        for curr_version in ${lib.concatStringsSep " " versions}; do
+          if [[ "$(printf '%s\n%s' "$prev_version" "$curr_version" | sort -V | head -n1)" == "$prev_version" ]] && [[ "$prev_version" != "$curr_version" ]]; then
+            main_sql_file="$out/share/postgresql/extension/wrappers--$curr_version.sql"
+            if [ -f "$main_sql_file" ]; then
+              new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
+              cp "$main_sql_file" "$new_file"
+              sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
+            fi
+          fi
+        done
+      done
+    }
+
+    create_control_files
+    create_lib_files
+    create_migration_sql_files
+
+    # checks
+    (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+      toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
+    }")
   '';
-  
-  buildAndTestSubdir = "wrappers";
-  buildFeatures = [
-    "helloworld_fdw"
-    "all_fdws"
-  ];
-  doCheck = false;
-
-  preBuild = ''
-    echo "Processing git tags..."
-    echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
-  '';
-
- postInstall = ''
-   echo "Modifying main SQL file to use unversioned library name..."
-   current_version="${version}"
-   main_sql_file="$out/share/postgresql/extension/wrappers--$current_version.sql"
-   if [ -f "$main_sql_file" ]; then
-     sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$main_sql_file"
-     echo "Modified $main_sql_file"
-   else
-     echo "Warning: $main_sql_file not found"
-   fi
-   echo "Creating and modifying SQL files for previous versions..."
-   
-   if [ -f "$main_sql_file" ]; then
-     while read -r previous_version; do
-       if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
-         new_file="$out/share/postgresql/extension/wrappers--$previous_version--$current_version.sql"
-         echo "Creating $new_file"
-         cp "$main_sql_file" "$new_file"
-         sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
-         echo "Modified $new_file"
-       fi
-     done < git_tags.txt
-   else
-     echo "Warning: $main_sql_file not found"
-   fi
-   mv $out/lib/wrappers-${version}${postgresql.dlSuffix} $out/lib/wrappers${postgresql.dlSuffix}
-   ln -s $out/lib/wrappers${postgresql.dlSuffix} $out/lib/wrappers-${version}${postgresql.dlSuffix}
-
-  echo "Creating wrappers.so symlinks to support pg_upgrade..."
-  if [ -f "$out/lib/wrappers.so" ]; then
-    while read -r previous_version; do
-      if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
-        new_file="$out/lib/wrappers-$previous_version.so"
-        echo "Creating $new_file"
-        ln -s "$out/lib/wrappers.so" "$new_file"
-      fi
-    done < git_tags.txt
-  else
-    echo "Warning: $out/lib/wrappers.so not found"
-  fi
-
-   rm git_tags.txt
-   echo "Contents of updated wrappers.control:"
-   cat "$out/share/postgresql/extension/wrappers.control"
-   echo "List of generated SQL files:"
-   ls -l $out/share/postgresql/extension/wrappers--*.sql
- '';
-
-  meta = with lib; {
-    description = "Various Foreign Data Wrappers (FDWs) for PostreSQL";
-    homepage = "https://github.com/supabase/wrappers";
-    platforms = postgresql.meta.platforms;
-    license = licenses.postgresql;
+  passthru = {
+    inherit versions numberOfVersions;
+    pname = "${pname}-all";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

@@ -1,11 +1,23 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, flex, openssl, libkrb5 }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+  flex,
+  openssl,
+  libkrb5,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pg_tle";
   version = "1.4.0";
 
   nativeBuildInputs = [ flex ];
-  buildInputs = [ openssl postgresql libkrb5 ];
+  buildInputs = [
+    openssl
+    postgresql
+    libkrb5
+  ];
 
   src = fetchFromGitHub {
     owner = "aws";
@@ -14,10 +26,8 @@ stdenv.mkDerivation rec {
     hash = "sha256-crxj5R9jblIv0h8lpqddAoYe2UqgUlnvbOajKTzVces=";
   };
 
-  
   makeFlags = [ "FLEX=flex" ];
 
-  
   installPhase = ''
     mkdir -p $out/{lib,share/postgresql/extension}
 

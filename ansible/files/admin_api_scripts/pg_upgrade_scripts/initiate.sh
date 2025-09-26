@@ -41,10 +41,10 @@ LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
-OLD_PGVERSION=$(pg_config --version | sed 's/PostgreSQL \([0-9]*\.[0-9]*\).*/\1/')
+OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
-# Skip locale settings if both versions are PostgreSQL 17+
-if ! [[ "$OLD_PGVERSION" =~ ^17.* && "$PGVERSION" =~ ^17.* ]]; then
+# Skip locale settings if both versions are PostgreSQL 16+
+if ! [[ "${OLD_PGVERSION%%.*}" -ge 16 && "${PGVERSION%%.*}" -ge 16 ]]; then
     SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
     SERVER_LC_CTYPE=$(run_sql -A -t -c "SHOW lc_ctype;")
 fi
@@ -348,10 +348,35 @@ function initiate_upgrade {
     locale-gen
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-        # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-        # excluding nvme0 since it is the root disk
+        # DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
         echo "5. Determining block device to mount"
-        BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
+        # lsb release
+        UBUNTU_VERSION=$(lsb_release -rs)
+        # install amazon disk utilities if not present on 24.04
+        if [ "${UBUNTU_VERSION}" = "24.04" ] && ! /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y amazon-ec2-utils || true
+        fi
+        if command -v ebsnvme-id >/dev/null 2>&1 && /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
+            for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
+                if [ -b "$nvme_dev" ]; then
+                    mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
+                    if [[ "$mapping" == "xvdp" || $mapping == "/dev/xvdp" ]]; then
+                        BLOCK_DEVICE="$nvme_dev"
+                        break
+                    fi
+                fi
+            done
+        fi
+
+        # Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
+        if [ -z "${BLOCK_DEVICE:-}" ]; then
+            echo "No block device found using ebsnvme-id, falling back to lsblk"
+            # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+            # excluding nvme0 since it is the root disk
+            BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; exit }')  # exit ensures we grab the first only
+        fi
+
         echo "Block device found: $BLOCK_DEVICE"
 
         mkdir -p "$MOUNT_POINT"
@@ -403,7 +428,7 @@ function initiate_upgrade {
     rm -rf "${PGDATANEW:?}/"
 
     if [ "$IS_NIX_UPGRADE" = "true" ]; then
-        if [[ "$PGVERSION" =~ ^17.* ]]; then
+        if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
             LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
         else
             LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
@@ -430,8 +455,8 @@ $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
        # Add the setting if not found
     echo "max_slot_wal_keep_size = -1" >> "$TMP_CONFIG"
 
-    # Remove db_user_namespace if upgrading from PG15
-    if [[ "$OLD_PGVERSION" =~ ^15.* && "$PGVERSION" =~ ^17.* ]]; then
+    # Remove db_user_namespace if upgrading from PG15 or lower to PG16+
+    if [[ "${OLD_PGVERSION%%.*}" -le 15 && "${PGVERSION%%.*}" -ge 16 ]]; then
         sed -i '/^db_user_namespace/d' "$TMP_CONFIG"
     fi
 
@@ -457,7 +482,7 @@ EOF
         UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
     fi 
 
-    if [[ "$PGVERSION" =~ ^17.* ]]; then
+    if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
         GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
     else
         GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
@@ -479,7 +504,7 @@ EOF
     fi
 
     # Start the old PostgreSQL instance with version-specific options
-    if [[ "$PGVERSION" =~ ^17.* ]]; then
+    if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
         GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
     else
         GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres

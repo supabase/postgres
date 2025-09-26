@@ -1,4 +1,14 @@
-{ lib, stdenv, fetchFromGitLab, cgal, cmake, pkg-config, gmp, mpfr, boost }:
+{
+  lib,
+  stdenv,
+  fetchFromGitLab,
+  cgal,
+  cmake,
+  pkg-config,
+  gmp,
+  mpfr,
+  boost,
+}:
 
 stdenv.mkDerivation rec {
   pname = "sfcgal";
@@ -11,10 +21,19 @@ stdenv.mkDerivation rec {
     hash = "sha256-nKSqiFyMkZAYptIeShb1zFg9lYSny3kcGJfxdeTFqxw=";
   };
 
-  nativeBuildInputs = [ cmake pkg-config cgal gmp mpfr boost ];
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+    cgal
+    gmp
+    mpfr
+    boost
+  ];
 
-  cmakeFlags = [ "-DCGAL_DIR=${cgal}" "-DCMAKE_PREFIX_PATH=${cgal}" ];
-
+  cmakeFlags = [
+    "-DCGAL_DIR=${cgal}"
+    "-DCMAKE_PREFIX_PATH=${cgal}"
+  ];
 
   postPatch = ''
     substituteInPlace sfcgal.pc.in \
@@ -24,7 +43,10 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "A wrapper around CGAL that intents to implement 2D and 3D operations on OGC standards models";
     homepage = "https://sfcgal.gitlab.io/SFCGAL/";
-    license = with licenses; [ gpl3Plus lgpl3Plus];
+    license = with licenses; [
+      gpl3Plus
+      lgpl3Plus
+    ];
     platforms = platforms.all;
   };
 }

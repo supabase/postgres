@@ -10,6 +10,7 @@ on:
       - 'qemu-arm64-nix.pkr.hcl'
       - 'common-nix.vars.pkr.hcl'
       - 'ansible/vars.yml'
+      - 'scripts/*'
   workflow_dispatch:
 
 permissions:
@@ -23,14 +24,12 @@ jobs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
-
-      - uses: DeterminateSystems/nix-installer-action@main
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[2]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
@@ -47,14 +46,14 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - uses: DeterminateSystems/nix-installer-action@main
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          SUFFIX=$(sudo nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(yq ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
@@ -66,7 +65,9 @@ jobs:
           sudo chmod 666 /dev/kvm
 
       - name: Set PostgreSQL version environment variable
-        run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -143,12 +144,22 @@ jobs:
           docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
+      - name: Slack Notification on Failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          SLACK_USERNAME: 'gha-failures-notifier'
+          SLACK_COLOR: 'danger'
+          SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
+          SLACK_FOOTER: ''
+
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${GITHUB_RUN_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids

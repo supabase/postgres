@@ -146,6 +146,16 @@
     group: root
   when: debpkg_mode or nixpkg_mode
 
+- name: configure systemd's pager
+  copy:
+    content: |
+      export SYSTEMD_LESS=FRXMK
+    dest: /etc/profile.d/10-systemd-pager.sh
+    mode: 0644
+    owner: root
+    group: root
+  when: debpkg_mode or nixpkg_mode
+
 - name: set hosts file
   copy:
     content: |

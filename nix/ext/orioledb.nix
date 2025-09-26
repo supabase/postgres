@@ -1,4 +1,13 @@
-{ lib, stdenv, fetchFromGitHub, curl, libkrb5, postgresql, python3, openssl }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  curl,
+  libkrb5,
+  postgresql,
+  python3,
+  openssl,
+}:
 
 stdenv.mkDerivation rec {
   pname = "orioledb";
@@ -6,12 +15,18 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "beta10";
-    sha256 = "sha256-O4OTi8ickylVXE9FURm5R++A+l15Z22YLna7OVzVMjc=";
+    rev = "beta12";
+    sha256 = "sha256-5dyVdKD1PzW+F5OPW3TR3OKBaJxxR3OhLbzK+o9Wf+Q=";
   };
-  version = "beta10";
-  buildInputs = [ curl libkrb5 postgresql python3 openssl ];
-  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=6";
+  version = "beta12";
+  buildInputs = [
+    curl
+    libkrb5
+    postgresql
+    python3
+    openssl
+  ];
+  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=11";
   installPhase = ''
     runHook preInstall
 

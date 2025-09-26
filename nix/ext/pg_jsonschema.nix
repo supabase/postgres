@@ -1,4 +1,11 @@
-{ lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_12_6, cargo, rust-bin }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+  buildPgrxExtension_0_12_6,
+  rust-bin,
+}:
 let
   rustVersion = "1.80.0";
   cargo = rust-bin.stable.${rustVersion}.default;
@@ -20,23 +27,34 @@ buildPgrxExtension_0_12_6 rec {
   # update the following array when the pg_jsonschema version is updated
   # required to ensure that extensions update scripts from previous versions are generated
 
-  previousVersions = ["0.3.1" "0.3.0" "0.2.0" "0.1.4" "0.1.4" "0.1.2" "0.1.1" "0.1.0"];
-  CARGO="${cargo}/bin/cargo";
+  previousVersions = [
+    "0.3.1"
+    "0.3.0"
+    "0.2.0"
+    "0.1.4"
+    "0.1.4"
+    "0.1.2"
+    "0.1.1"
+    "0.1.0"
+  ];
+  CARGO = "${cargo}/bin/cargo";
   #darwin env needs PGPORT to be unique for build to not clash with other pgrx extensions
   env = lib.optionalAttrs stdenv.isDarwin {
     POSTGRES_LIB = "${postgresql}/lib";
     RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-    PGPORT = toString (5441 + 
-      (if builtins.match ".*_.*" postgresql.version != null then 1 else 0) +  # +1 for OrioleDB
-      ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2);  # +2 for each major version
-
+    PGPORT = toString (
+      5441
+      + (if builtins.match ".*_.*" postgresql.version != null then 1 else 0)
+      # +1 for OrioleDB
+      + ((builtins.fromJSON (builtins.substring 0 2 postgresql.version)) - 15) * 2
+    ); # +2 for each major version
   };
 
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
     allowBuiltinFetchGit = false;
   };
-  
+
   # FIXME (aseipp): testsuite tries to write files into /nix/store; we'll have
   # to fix this a bit later.
   doCheck = false;
@@ -50,7 +68,7 @@ buildPgrxExtension_0_12_6 rec {
     echo "Creating SQL files for previous versions..."
     current_version="${version}"
     sql_file="$out/share/postgresql/extension/pg_jsonschema--$current_version.sql"
-    
+
     if [ -f "$sql_file" ]; then
       while read -r previous_version; do
         if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
@@ -64,7 +82,6 @@ buildPgrxExtension_0_12_6 rec {
     fi
     rm git_tags.txt
   '';
-
 
   meta = with lib; {
     description = "JSON Schema Validation for PostgreSQL";

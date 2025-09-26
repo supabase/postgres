@@ -1,7 +1,7 @@
 [Unit]
 Description=AdminAPI
 Requires=network-online.target
-After=network-online.target pgbouncer.service
+After=network-online.target
 
 # Move this to the Service section if on systemd >=250
 StartLimitIntervalSec=60

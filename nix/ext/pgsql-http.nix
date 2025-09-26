@@ -1,10 +1,19 @@
-{ lib, stdenv, fetchFromGitHub, curl, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  curl,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "pgsql-http";
   version = "1.6.1";
 
-  buildInputs = [ curl postgresql ];
+  buildInputs = [
+    curl
+    postgresql
+  ];
 
   src = fetchFromGitHub {
     owner = "pramsey";

@@ -148,73 +148,6 @@ EOF
     # Patching pgmq ownership as it resets during upgrade
     HAS_PGMQ=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pgmq';")
     if [ "$HAS_PGMQ" = "t" ]; then
-        PATCH_PGMQ_QUERY=$(cat <<EOF
-        do \$\$
-        declare
-            tbl record;
-            seq_name text;
-            new_seq_name text;
-            archive_table_name text;
-        begin
-            -- Loop through each table in the pgmq schema starting with 'q_'
-            -- Rebuild the pkey column's default to avoid pg_dumpall segfaults
-            for tbl in
-                select c.relname as table_name
-                from pg_catalog.pg_attribute a
-                join pg_catalog.pg_class c on c.oid = a.attrelid
-                join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-                where n.nspname = 'pgmq'
-                    and c.relname like 'q_%'
-                    and a.attname = 'msg_id'
-                    and a.attidentity in ('a', 'd') -- 'a' for ALWAYS, 'd' for BY DEFAULT
-            loop
-                -- Check if msg_id is an IDENTITY column for idempotency
-                -- Define sequence names
-                seq_name := 'pgmq.' || format ('"%s_msg_id_seq"', tbl.table_name);
-                new_seq_name := 'pgmq.' || format ('"%s_msg_id_seq2"', tbl.table_name);
-                archive_table_name := regexp_replace(tbl.table_name, '^q_', 'a_');
-                -- Execute dynamic SQL to perform the required operations
-                execute format('
-                    create sequence %s;
-                    select setval(''%s'', nextval(''%s''));
-                    alter table %s."%s" alter column msg_id drop identity;
-                    alter table %s."%s" alter column msg_id set default nextval(''%s'');
-                    alter sequence %s rename to "%s";',
-                    -- Parameters for format placeholders
-                    new_seq_name,
-                    new_seq_name, seq_name,
-                    'pgmq', tbl.table_name,
-                    'pgmq', tbl.table_name,
-                    new_seq_name,
-                    -- alter seq
-                    new_seq_name, 
-                    tbl.table_name || '_msg_id_seq'
-                );
-            end loop;
-            -- No tables should be owned by the extension.
-            -- We want them to be included in logical backups
-            for tbl in
-                select c.relname as table_name
-                from pg_class c
-                join pg_depend d
-                    on c.oid = d.objid
-                join pg_extension e
-                    on d.refobjid = e.oid
-                where 
-                c.relkind in ('r', 'p', 'u')
-                and e.extname = 'pgmq'
-                and (c.relname like 'q_%' or c.relname like 'a_%')
-            loop
-            execute format('
-                alter extension pgmq drop table pgmq."%s";',
-                tbl.table_name
-            );
-            end loop;
-        end \$\$;
-EOF
-        )
-
-        run_sql -c "$PATCH_PGMQ_QUERY"
         run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';"
     fi
 
@@ -226,9 +159,14 @@ EOF
         AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
       THEN
         IF (SELECT extversion FROM pg_extension WHERE extname = 'supabase_vault') != '0.2.8' THEN
-          GRANT USAGE ON SCHEMA vault TO postgres WITH GRANT OPTION;
-          GRANT SELECT, DELETE ON vault.secrets, vault.decrypted_secrets TO postgres WITH GRANT OPTION;
-          GRANT EXECUTE ON FUNCTION vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt TO postgres WITH GRANT OPTION;
+          grant usage on schema vault to postgres with grant option;
+          grant select, delete, truncate, references on vault.secrets, vault.decrypted_secrets to postgres with grant option;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to postgres with grant option;
+
+          -- service_role used to be able to manage secrets in Vault <=0.2.8 because it had privileges to pgsodium functions
+          grant usage on schema vault to service_role;
+          grant select, delete on vault.secrets, vault.decrypted_secrets to service_role;
+          grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
         END IF;
         -- Do an explicit IF EXISTS check to avoid referencing pgsodium objects if the project already migrated away from using pgsodium.
         IF EXISTS (SELECT FROM vault.secrets WHERE key_id IS NOT NULL) THEN
@@ -263,6 +201,7 @@ EOF
       SELECT current_setting('server_version_num')::INT / 10000 INTO major_version;
       IF major_version >= 16 THEN
         GRANT pg_create_subscription TO postgres;
+        GRANT anon, authenticated, service_role, authenticator, pg_monitor, pg_read_all_data, pg_signal_backend TO postgres WITH ADMIN OPTION;
       END IF;
       GRANT pg_monitor, pg_read_all_data, pg_signal_backend TO postgres;
     END
@@ -327,6 +266,7 @@ function complete_pg_upgrade {
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
         retry 3 service postgrest restart
+        
     else
         retry 3 CI_stop_postgres || true
         retry 3 CI_start_postgres

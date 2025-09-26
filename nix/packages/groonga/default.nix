@@ -1,22 +1,59 @@
-{ lib, stdenv, cmake, fetchurl, kytea, msgpack-c, mecab, pkg-config, rapidjson
-, testers, xxHash, zstd, postgresqlPackages, makeWrapper, suggestSupport ? false
-, zeromq, libevent, openssl, lz4Support ? false, lz4, zlibSupport ? true, zlib
-, writeShellScriptBin, callPackage }:
-let mecab-naist-jdic = callPackage ./ext/mecab-naist-jdic { };
-in stdenv.mkDerivation (finalAttrs: {
+{
+  lib,
+  stdenv,
+  cmake,
+  fetchurl,
+  kytea,
+  msgpack-c,
+  mecab,
+  pkg-config,
+  rapidjson,
+  xxHash,
+  zstd,
+  makeWrapper,
+  suggestSupport ? false,
+  zeromq,
+  libevent,
+  lz4Support ? false,
+  lz4,
+  zlibSupport ? true,
+  zlib,
+  callPackage,
+}:
+let
+  mecab-naist-jdic = callPackage ../../ext/mecab-naist-jdic { };
+in
+stdenv.mkDerivation (finalAttrs: {
   pname = "supabase-groonga";
   version = "14.0.5";
   src = fetchurl {
-    url =
-      "https://packages.groonga.org/source/groonga/groonga-${finalAttrs.version}.tar.gz";
+    url = "https://packages.groonga.org/source/groonga/groonga-${finalAttrs.version}.tar.gz";
     hash = "sha256-y4UGnv8kK0z+br8wXpPf57NMXkdEJHcLCuTvYiubnIc=";
   };
-  patches =
-    [ ./fix-cmake-install-path.patch ./do-not-use-vendored-libraries.patch ];
-  nativeBuildInputs = [ cmake pkg-config makeWrapper ];
-  buildInputs = [ rapidjson xxHash zstd mecab kytea msgpack-c ]
-    ++ lib.optionals lz4Support [ lz4 ] ++ lib.optional zlibSupport [ zlib ]
-    ++ lib.optionals suggestSupport [ zeromq libevent ];
+  patches = [
+    ./fix-cmake-install-path.patch
+    ./do-not-use-vendored-libraries.patch
+  ];
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+    makeWrapper
+  ];
+  buildInputs =
+    [
+      rapidjson
+      xxHash
+      zstd
+      mecab
+      kytea
+      msgpack-c
+    ]
+    ++ lib.optionals lz4Support [ lz4 ]
+    ++ lib.optional zlibSupport [ zlib ]
+    ++ lib.optionals suggestSupport [
+      zeromq
+      libevent
+    ];
   cmakeFlags = [
     "-DWITH_MECAB=ON"
     "-DMECAB_DICDIR=${mecab-naist-jdic}/lib/mecab/dic/naist-jdic"
@@ -58,8 +95,7 @@ in stdenv.mkDerivation (finalAttrs: {
       --set GRN_PLUGINS_DIR $out/lib/groonga/plugins 
 
   '';
-  env.NIX_CFLAGS_COMPILE =
-    lib.optionalString zlibSupport "-I${zlib.dev}/include";
+  env.NIX_CFLAGS_COMPILE = lib.optionalString zlibSupport "-I${zlib.dev}/include";
 
   meta = with lib; {
     homepage = "https://groonga.org/";

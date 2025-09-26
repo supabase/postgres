@@ -9,22 +9,28 @@ Given the size of the image, the first VM using it on a node might take a while 
 The current AMI process involves a few steps:
 
 1. nix package is build and published using GHA (`.github/workflows/nix-build.yml`)
-  - this builds Postgres along with the PG extensions we use.
+
+- this builds Postgres along with the PG extensions we use.
+
 2. "stage1" build (`amazon-arm64-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
-  - uses an upstream Ubuntu image to initialize the AMI
-  - installs and configures the majority of the software that gets shipped as part of the AMI (e.g. gotrue, postgrest, ...)
+
+- uses an upstream Ubuntu image to initialize the AMI
+- installs and configures the majority of the software that gets shipped as part of the AMI (e.g. gotrue, postgrest, ...)
+
 3. "stage2" build (`stage2-nix-psql.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
-  - uses the image published from (2)
-  - installs and configures the software that is build and published using nix in (1)
-  - cleans up build dependencies etc
+
+- uses the image published from (2)
+- installs and configures the software that is build and published using nix in (1)
+- cleans up build dependencies etc
 
 The QEMU artifact process collapses (2) and (3):
 
 a. nix package is build and published using GHA (`.github/workflows/nix-build.yml`)
 b. packer build (`qemu-arm64-nix.pkr.hcl`)
-  - uses an upstream Ubuntu live image as the base
-  - performs the work that was performed as part of the "stage1" and "stage2" builds
-  - this work is executed using `ebssurrogate/scripts/qemu-bootstrap-nix.sh`
+
+- uses an upstream Ubuntu live image as the base
+- performs the work that was performed as part of the "stage1" and "stage2" builds
+- this work is executed using `ebssurrogate/scripts/qemu-bootstrap-nix.sh`
 
 While the AMI build uses the EBS Surrogate Packer builder to create a minimal boot environment that it then adds things to, the QEMU build merely adds things to the Ubuntu Cloud Image. As such, it's likely possible to make something more minimal with a bit more work, but this was deemed unnecessary for now. Collapsing Stage1 and Stage2 was done in the interest of iteration speed, as executing them together is much faster than saving an artifact off stage1, booting another VM off it, and then executing stage2.
 
@@ -35,6 +41,16 @@ Following `make init alpine-image`, the generated VM image should be bundled as 
 ## Iterating on image
 
 For faster iteration, it's more convenient to build the image on an ubuntu bare-metal node that's part of the EKS cluster you're using. Build the image in the `k8s.io` namespace in order for it to be available for immediate use on that node.
+
+list of packages installed on the EKS to build images:
+
+```
+    apt-get install -y git emacs ripgrep vim-tiny byobu build-essential
+    wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    apt-cache update
+    apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli packer=1.11.2-1
+```
 
 ### Dependencies note
 

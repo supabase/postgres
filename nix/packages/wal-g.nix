@@ -1,14 +1,20 @@
-{ lib
-, buildGoModule
-, fetchFromGitHub
-, brotli
-, libsodium
-, installShellFiles
-,
+{
+  lib,
+  buildGoModule,
+  fetchFromGitHub,
+  brotli,
+  libsodium,
+  installShellFiles,
 }:
 
 let
-  walGCommon = { version, vendorHash, sha256, majorVersion }:
+  walGCommon =
+    {
+      version,
+      vendorHash,
+      sha256,
+      majorVersion,
+    }:
     buildGoModule rec {
       pname = "wal-g-${majorVersion}";
       inherit version;
@@ -45,14 +51,14 @@ let
 
       postInstall = ''
         mv $out/bin/pg $out/bin/wal-g-${majorVersion}
-        
+
         # Create version-specific completions
         mkdir -p $out/share/bash-completion/completions
         $out/bin/wal-g-${majorVersion} completion bash > $out/share/bash-completion/completions/wal-g-${majorVersion}
-        
+
         mkdir -p $out/share/zsh/site-functions
         $out/bin/wal-g-${majorVersion} completion zsh > $out/share/zsh/site-functions/_wal-g-${majorVersion}
-        
+
       '';
 
       meta = with lib; {

@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Load postgres_release values
         id: load_postgres_release
