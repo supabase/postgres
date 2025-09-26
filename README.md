@@ -193,7 +193,8 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 ### PostgreSQL 15 Extensions
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
-| [hypopg](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | [1.4.1](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | Hypothetical Indexes for PostgreSQL |
+| [http]() | [1.6]() |  |
+| [hypopg]() | [1.4.1]() |  |
 | [index_advisor]() | [0.2.0]() |  |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
 | [pg_cron]() | [1.6.4]() | Run Cron jobs through PostgreSQL (multi-version compatible) |
@@ -210,15 +211,14 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [pgmq](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | [1.4.4](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | A lightweight message queue. Like AWS SQS and RSMQ but on Postgres. |
 | [pgroonga](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | [3.2.5](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | A PostgreSQL extension to use Groonga as the index |
 | [pgrouting](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | [3.4.1](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | A PostgreSQL/PostGIS extension that provides geospatial routing functionality |
-| [pgsodium](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | [3.1.8](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | Modern cryptography for PostgreSQL |
-| [pgsql-http](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | [1.6.1](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | HTTP client for Postgres |
+| [pgsodium]() | [3.1.8]() |  |
 | [pgtap](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | [1.2.0](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | A unit testing framework for PostgreSQL |
 | [plpgsql-check](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | [2.7.11](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | Linter tool for language PL/pgSQL |
 | [plv8](https://github.com/plv8/plv8/archive/v3.1.10.tar.gz) | [3.1.10](https://github.com/plv8/plv8/archive/v3.1.10.tar.gz) | V8 Engine Javascript Procedural Language add-on for PostgreSQL |
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
-| [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
+| [rum]() | [1.3]() |  |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | [2.9.4](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | PostgreSQL extension for enhanced security |
-| [timescaledb-apache](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | [2.16.1](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | Scales PostgreSQL for time-series data via automatic partitioning across time and space |
+| [timescaledb]() | [2.9.1]() |  |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [vector]() | [0.8.0]() |  |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
@@ -227,7 +227,8 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 ### PostgreSQL 17 Extensions
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
-| [hypopg](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | [1.4.1](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | Hypothetical Indexes for PostgreSQL |
+| [http]() | [1.6]() |  |
+| [hypopg]() | [1.4.1]() |  |
 | [index_advisor]() | [0.2.0]() |  |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
 | [pg_cron]() | [1.6.4]() | Run Cron jobs through PostgreSQL (multi-version compatible) |
@@ -244,12 +245,11 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [pgmq](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | [1.4.4](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | A lightweight message queue. Like AWS SQS and RSMQ but on Postgres. |
 | [pgroonga](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | [3.2.5](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | A PostgreSQL extension to use Groonga as the index |
 | [pgrouting](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | [3.4.1](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | A PostgreSQL/PostGIS extension that provides geospatial routing functionality |
-| [pgsodium](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | [3.1.8](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | Modern cryptography for PostgreSQL |
-| [pgsql-http](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | [1.6.1](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | HTTP client for Postgres |
+| [pgsodium]() | [3.1.8]() |  |
 | [pgtap](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | [1.2.0](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | A unit testing framework for PostgreSQL |
 | [plpgsql-check](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | [2.7.11](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | Linter tool for language PL/pgSQL |
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
-| [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
+| [rum]() | [1.3]() |  |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | [2.9.4](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | PostgreSQL extension for enhanced security |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [vector]() | [0.8.0]() |  |
@@ -259,7 +259,8 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 ### PostgreSQL orioledb-17 Extensions
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
-| [hypopg](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | [1.4.1](https://github.com/HypoPG/hypopg/archive/refs/tags/1.4.1.tar.gz) | Hypothetical Indexes for PostgreSQL |
+| [http]() | [1.6]() |  |
+| [hypopg]() | [1.4.1]() |  |
 | [index_advisor]() | [0.2.0]() |  |
 | [orioledb](https://github.com/orioledb/orioledb/archive/beta12.tar.gz) | [orioledb](https://github.com/orioledb/orioledb/archive/beta12.tar.gz) | orioledb |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
@@ -277,12 +278,11 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [pgmq](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | [1.4.4](https://github.com/tembo-io/pgmq/archive/v1.4.4.tar.gz) | A lightweight message queue. Like AWS SQS and RSMQ but on Postgres. |
 | [pgroonga](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | [3.2.5](https://packages.groonga.org/source/pgroonga/pgroonga-3.2.5.tar.gz) | A PostgreSQL extension to use Groonga as the index |
 | [pgrouting](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | [3.4.1](https://github.com/pgRouting/pgrouting/archive/v3.4.1.tar.gz) | A PostgreSQL/PostGIS extension that provides geospatial routing functionality |
-| [pgsodium](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | [3.1.8](https://github.com/michelp/pgsodium/archive/refs/tags/v3.1.8.tar.gz) | Modern cryptography for PostgreSQL |
-| [pgsql-http](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | [1.6.1](https://github.com/pramsey/pgsql-http/archive/refs/tags/v1.6.1.tar.gz) | HTTP client for Postgres |
+| [pgsodium]() | [3.1.8]() |  |
 | [pgtap](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | [1.2.0](https://github.com/theory/pgtap/archive/v1.2.0.tar.gz) | A unit testing framework for PostgreSQL |
 | [plpgsql-check](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | [2.7.11](https://github.com/okbob/plpgsql_check/archive/v2.7.11.tar.gz) | Linter tool for language PL/pgSQL |
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
-| [rum](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | [1.3.14](https://github.com/postgrespro/rum/archive/1.3.14.tar.gz) | Full text search index method for PostgreSQL |
+| [rum]() | [1.3]() |  |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | [2.9.4](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | PostgreSQL extension for enhanced security |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [vector]() | [0.8.0]() |  |
