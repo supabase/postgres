@@ -27,6 +27,7 @@ ARG pgsodium_release=3.1.6
 ARG pg_graphql_release=1.5.11
 ARG pg_stat_monitor_release=1.1.1
 ARG pg_jsonschema_release=0.1.4
+ARG pg_partman_release=5.2.4
 ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8

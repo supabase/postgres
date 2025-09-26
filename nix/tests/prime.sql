@@ -46,6 +46,7 @@ create extension if not exists pg_hashids;
 create extension if not exists pg_prewarm;
 create extension if not exists pgmq;
 create extension if not exists pg_jsonschema;
+create extension if not exists pg_partman;
 create extension if not exists pg_repack;
 create extension if not exists pg_stat_monitor;
 create extension if not exists pg_stat_statements;

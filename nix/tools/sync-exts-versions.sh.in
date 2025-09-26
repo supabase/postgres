@@ -175,6 +175,11 @@ for key in $keys; do
             package_name="pg-safeupdate"
             run_sync $varname $package_name
             ;;
+        "pg_partman_release")
+            varname="pg_partman_release"
+            package_name="pg_partman"
+            run_sync $varname $package_name
+            ;;
         "pgsodium_release")
             varname="pgsodium_release"
             package_name="pgsodium"
