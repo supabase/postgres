@@ -118,6 +118,10 @@ Unmodified Postgres with some useful plugins. Our goal with this repo is not to 
 | [PostgREST](https://postgrest.org/en/stable/) | [v13.0.4](https://github.com/PostgREST/postgrest/releases/tag/v13.0.4) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
 
+## Getting Started
+
+For a comprehensive guide to understanding and working with this project, see our [Getting Started Guide](GETTING_STARTED.md).
+
 ## Install
 
 See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
