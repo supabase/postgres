@@ -39,7 +39,8 @@ EOF
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
@@ -101,7 +102,8 @@ EOF
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
 }
 
 function clean_legacy_things {

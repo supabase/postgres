@@ -15,6 +15,7 @@
           - acl  # SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
           - fail2ban
           - htop
+          - less
           - linux-libc-dev
           - net-tools
           - nftables

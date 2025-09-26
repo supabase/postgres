@@ -1,12 +1,17 @@
 {
-  "index_advisor": {
-    "0.2.0": {
+  "http": {
+    "1.5": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-+N/CXm4arRgvhglanfvO0FNOBUWV5RL8mn/9FpNvcjY="
+    },
+    "1.6": {
       "postgresql": [
         "15",
-        "17",
-        "orioledb-17"
+        "17"
       ],
-      "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
+      "hash": "sha256-C8eqi0q1dnshUAZjIsZFwa5FTYc7vmATF3vv2CReWPM="
     }
   },
   "hypopg": {
@@ -22,6 +27,16 @@
         "17"
       ],
       "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
+    }
+  },
+  "index_advisor": {
+    "0.2.0": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
     }
   },
   "pg_cron": {

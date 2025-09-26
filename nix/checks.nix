@@ -163,10 +163,42 @@
                   which
                   getkey-script
                   supabase-groonga
+                  python3
+                  netcat
                 ];
               }
               ''
                 set -e
+
+                # Start HTTP mock server for http extension tests
+                # Use a build-specific directory for coordination
+                BUILD_TMP=$(mktemp -d)
+                HTTP_MOCK_PORT_FILE="$BUILD_TMP/http-mock-port"
+
+                echo "Starting HTTP mock server (will find free port)..."
+                HTTP_MOCK_PORT_FILE="$HTTP_MOCK_PORT_FILE" ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
+                HTTP_MOCK_PID=$!
+
+                # Clean up on exit
+                trap "kill $HTTP_MOCK_PID 2>/dev/null || true; rm -rf '$BUILD_TMP'" EXIT
+
+                # Wait for server to start and write port file
+                for i in {1..10}; do
+                  if [ -f "$HTTP_MOCK_PORT_FILE" ]; then
+                    HTTP_MOCK_PORT=$(cat "$HTTP_MOCK_PORT_FILE")
+                    echo "HTTP mock server started on port $HTTP_MOCK_PORT"
+                    break
+                  fi
+                  sleep 1
+                done
+
+                if [ ! -f "$HTTP_MOCK_PORT_FILE" ]; then
+                  echo "Failed to start HTTP mock server"
+                  exit 1
+                fi
+
+                # Export the port for use in SQL tests
+                export HTTP_MOCK_PORT
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
@@ -228,6 +260,13 @@
                   pg_ctl -D "$PGTAP_CLUSTER" stop
                   exit 1
                 fi
+
+                # Create a table to store test configuration
+                psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -c "
+                  CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                "
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
                   psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
@@ -260,6 +299,13 @@
                   echo "Error executing SQL file"
                   exit 1
                 fi
+
+                # Create a table to store test configuration for pg_regress tests
+                psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -c "
+                  CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                "
 
                 mkdir -p $out/regression_output
                 if ! pg_regress \
