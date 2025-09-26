@@ -4,18 +4,34 @@
     group: 'postgres'
     src: 'files/postgresql_config/postgresql-csvlog.conf'
 
-- name: UFW - Allow SSH/PostgreSQL/PgBouncer/HTTP/HTTPS connections
+- name: UFW - Allow SSH connections
   community.general.ufw:
-    name: "{{ port_item }}"
+    name: 'OpenSSH'
+    rule: 'allow'
+
+- name: UFW - Allow SSH/PostgreSQL connections
+  community.general.ufw:
+    port: '5432'
+    rule: 'allow'
+
+- name: UFW - Allow PgBouncer connections
+  community.general.ufw:
+    port: '6543'
+    rule: 'allow'
+  tags:
+    - install-pgbouncer
+
+- name: UFW - Allow HTTP/HTTPS connections
+  community.general.ufw:
+    port: "{{ port_item }}"
     rule: 'allow'
   loop:
-    - 'OpenSSH'
-    - '5432'
-    - '6543'
     - 'http'
     - 'https'
   loop_control:
     loop_var: 'port_item'
+  tags:
+    - install-supabase-internal
 
 - name: UFW - Deny all other incoming traffic by default
   community.general.ufw:
