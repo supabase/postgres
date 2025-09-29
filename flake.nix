@@ -28,8 +28,6 @@
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
     nixpkgs-pgbackrest.url = "github:nixos/nixpkgs/nixos-unstable-small";
-    nix-github-actions.url = "github:nix-community/nix-github-actions";
-    nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -51,7 +49,6 @@
         nix/nixpkgs.nix
         nix/packages
         nix/overlays
-        nix/github-actions.nix
       ];
     });
 }
