@@ -14,10 +14,6 @@ permissions:
   contents: write
   packages: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   nix-matrix:
     runs-on:
@@ -33,15 +29,12 @@ jobs:
         name: Generate Nix Matrix
         run: |
           set -Eeu
-          echo matrix="$(nix eval --json '.#githubActions.matrix')" >> "$GITHUB_OUTPUT"
+          echo matrix="$(python scripts/github-matrix.py)" >> "$GITHUB_OUTPUT"
 
   build-run-image:
     name: ${{ matrix.name }} (${{ matrix.system }})
     needs: nix-matrix
-    runs-on:
-      group: ${{ contains(matrix.os, 'blacksmith-32vcpu-ubuntu-2404') && '' || 'self-hosted-runners-nix' }}
-      labels:
-        - ${{ matrix.os }}
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     strategy:
       fail-fast: false
       matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
@@ -76,8 +69,14 @@ jobs:
       - name: Build psql bundle
         run: >
           nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
-      - name: nix-fast-build
-        run: nix build -L
+      - name: nix build
+        run: |
+           if ${{ matrix.already_cached }}; then
+             echo "${{ matrix.attr }} already cached, skipping build"
+             exit 0
+           fi
+           nix build -L .#${{ matrix.attr }}
+
   run-tests:
     needs: build-run-image
     if: ${{ success() }}
