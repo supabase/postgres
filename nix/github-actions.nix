@@ -1,9 +1,9 @@
 { inputs, ... }:
 let
   githubPlatforms = {
-    "x86_64-linux" = "large-linux-x86";
-    "aarch64-linux" = "large-linux-arm";
-    "aarch64-darwin" = "macos-latest-xlarge";
+    "aarch64-linux" = "aarch64-linux";
+    "aarch64-darwin" = "aarch64-darwin";
+    "x86_64-linux" = "blacksmith-32vcpu-ubuntu-2404";
   };
 in
 {
