@@ -102,7 +102,7 @@
 - name: install pgbouncer from supabase nix binary cache
   become: yes
   shell: |
-    sudo -u pgbouncer bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pgbouncer"
+    sudo -u pgbouncer bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile add github:supabase/postgres/{{ git_commit_sha }}#pgbouncer"
   when: stage2_nix
 
 - name: PgBouncer - reload systemd
