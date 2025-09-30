@@ -30,8 +30,6 @@ jobs:
         run: |
           set -Eeu
           echo matrix="$(python scripts/github-matrix.py extensions)" >> "$GITHUB_OUTPUT"
-          # XXX debugging
-          exit 1
 
   build-extensions-aarch64-linux:
     name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-linux)
