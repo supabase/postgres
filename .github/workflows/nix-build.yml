@@ -15,7 +15,7 @@ permissions:
   packages: write
 
 jobs:
-  nix-matrix:
+  extensions-matrix:
     runs-on:
       group: self-hosted-runners-nix
       labels:
@@ -29,15 +29,16 @@ jobs:
         name: Generate Nix Matrix
         run: |
           set -Eeu
-          echo matrix="$(python scripts/github-matrix.py)" >> "$GITHUB_OUTPUT"
+          echo matrix="$(python scripts/github-matrix.py extensions)" >> "$GITHUB_OUTPUT"
 
-  build-run-image:
-    name: ${{ matrix.name }} (${{ matrix.system }})
-    needs: nix-matrix
+  build-extensions:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (${{ matrix.system }})
+    needs: extensions-matrix
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     strategy:
       fail-fast: false
-      matrix: ${{fromJSON(needs.nix-matrix.outputs.matrix)}}
+      max-parallel: 3
+      matrix: ${{fromJSON(needs.extensions-matrix.outputs.matrix)}}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -56,7 +57,65 @@ jobs:
           role-session-name: gha-oidc-${{ github.run_id }}
           role-chaining: true
           role-skip-session-tagging: true
-          role-duration-seconds: 900 # TODO: switch to 18000 (5 hours)
+          role-duration-seconds: 3600
+      - name: Write creds files
+        run: |
+          umask 006
+          cat > /etc/nix/aws/nix-aws-credentials <<EOF
+          [ci-uploader]
+          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+          aws_session_token = ${AWS_SESSION_TOKEN}
+          EOF
+      - name: nix build
+        run: |
+           nix build -L .#${{ matrix.attr }}
+
+
+  checks-matrix:
+    needs: [build-extensions]
+    runs-on:
+      group: self-hosted-runners-nix
+      labels:
+        - aarch64-darwin
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - id: set-matrix
+        name: Generate Nix Matrix
+        run: |
+          set -Eeu
+          echo matrix="$(python scripts/github-matrix.py checks)" >> "$GITHUB_OUTPUT"
+
+
+  build-checks:
+    name: ${{ matrix.name }} (${{ matrix.system }})
+    needs: [checks-matrix, build-extensions]
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJSON(needs.checks-matrix.outputs.matrix)}}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: aws-oidc
+        uses: aws-actions/configure-aws-credentials@v4.3.1
+        with:
+          aws-region: us-east-2
+          role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
+          role-session-name: gha-oidc-${{ github.run_id }}
+      - name: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4.3.1
+        with:
+          disable-retry: true
+          aws-region: us-east-2
+          role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
+          role-session-name: gha-oidc-${{ github.run_id }}
+          role-chaining: true
+          role-skip-session-tagging: true
+          role-duration-seconds: 3600
       - name: Write creds files
         run: |
           umask 006
@@ -71,13 +130,9 @@ jobs:
           nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
       - name: nix build
         run: |
-           if ${{ matrix.already_cached }}; then
-             echo "${{ matrix.attr }} already cached, skipping build"
-             exit 0
-           fi
            nix build -L .#${{ matrix.attr }}
 
   run-tests:
-    needs: build-run-image
+    needs: build-checks
     if: ${{ success() }}
     uses: ./.github/workflows/test.yml

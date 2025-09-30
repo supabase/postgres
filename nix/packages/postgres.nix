@@ -1,7 +1,7 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     let
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
@@ -154,10 +154,9 @@
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
       #    package names.
-      makePostgres = version: {
+      makePostgres = version: lib.recurseIntoAttrs {
         bin = makePostgresBin version;
         exts = makeOurPostgresPkgsSet version;
-        recurseForDerivations = true;
       };
       basePackages = {
         psql_15 = makePostgres "15";
@@ -167,5 +166,6 @@
     in
     {
       packages = inputs.flake-utils.lib.flattenTree basePackages;
+      legacyPackages = basePackages;
     };
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import json
 import os
 import subprocess
@@ -47,6 +48,7 @@ class GitHubActionPackage(TypedDict):
     system: str
     already_cached: bool
     runs_on: RunsOnConfig
+    postgresql_version: NotRequired[str]
 
 
 BUILD_RUNNER_MAP: Dict[str, RunsOnConfig] = {
@@ -76,22 +78,23 @@ def get_worker_count() -> int:
         return 1
 
 
-def build_nix_eval_command(max_workers: int) -> List[str]:
+def build_nix_eval_command(max_workers: int, target: str) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
-    return [
+    nix_eval_cmd = [
         "nix-eval-jobs",
         "--flake",
-        ".#checks",
+        f".#{target}",
         "--check-cache-status",
         "--force-recurse",
         "--quiet",
         "--workers",
         str(max_workers),
     ]
+    return nix_eval_cmd
 
 
 def parse_nix_eval_line(
-    line: str, drv_paths: Set[str]
+    line: str, drv_paths: Set[str], target: str
 ) -> Optional[GitHubActionPackage]:
     """Parse a single line of nix-eval-jobs output"""
     if not line.strip():
@@ -102,12 +105,11 @@ def parse_nix_eval_line(
         if data["drvPath"] in drv_paths:
             return None
         drv_paths.add(data["drvPath"])
-        print(f"Processing package: {data}", file=sys.stderr)
 
         runs_on_config = BUILD_RUNNER_MAP[data["system"]]
 
         return {
-            "attr": "checks." + data["attr"],
+            "attr": f"{target}.{data['attr']}",
             "name": data["name"],
             "system": data["system"],
             "already_cached": data.get("cacheStatus") != "notBuilt",
@@ -118,7 +120,9 @@ def parse_nix_eval_line(
         return None
 
 
-def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, None]:
+def run_nix_eval_jobs(
+    cmd: List[str], target: str
+) -> Generator[GitHubActionPackage, None, None]:
     """Run nix-eval-jobs and yield parsed package data."""
     print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
 
@@ -128,8 +132,8 @@ def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, No
         drv_paths = set()
 
         for line in process.stdout:
-            package = parse_nix_eval_line(line, drv_paths)
-            if package:
+            package = parse_nix_eval_line(line, drv_paths, target)
+            if package and not package["already_cached"]:
                 yield package
 
         if process.returncode and process.returncode != 0:
@@ -138,11 +142,41 @@ def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, No
             sys.exit(process.returncode)
 
 
-def main() -> None:
-    max_workers = get_worker_count()
-    cmd = build_nix_eval_command(max_workers)
+def is_extension_pkg(pkg: GitHubActionPackage) -> bool:
+    """Check if the package is a postgresql extension package."""
+    attrs = pkg["attr"].split(".")
+    return attrs[-2] == "exts"
 
-    gh_action_packages = list(run_nix_eval_jobs(cmd))
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Generate GitHub Actions matrix for Nix builds"
+    )
+    parser.add_argument(
+        "target", choices=["checks", "extensions"], help="Type of matrix to generate"
+    )
+
+    args = parser.parse_args()
+
+    max_workers = get_worker_count()
+
+    if args.target == "checks":
+        flake_output = "checks"
+    else:
+        flake_output = "legacyPackages"
+
+    cmd = build_nix_eval_command(max_workers, flake_output)
+
+    gh_action_packages = list(run_nix_eval_jobs(cmd, flake_output))
+
+    if args.target == "extensions":
+        # filter to only include extension packages and add postgresql_version field
+        gh_action_packages = [
+            {**pkg, "postgresql_version": pkg["attr"].split(".")[-3]}
+            for pkg in gh_action_packages
+            if is_extension_pkg(pkg)
+        ]
+
     gh_output = {"include": gh_action_packages}
     print(json.dumps(gh_output))
 
