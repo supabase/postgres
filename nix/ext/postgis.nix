@@ -90,7 +90,7 @@ let
 
       preConfigure = ''
         sed -i 's@/usr/bin/file@${file}/bin/file@' configure
-        configureFlags="--datadir=$out/share/postgresql --datarootdir=$out/share/postgresql --bindir=$out/bin --docdir=$doc/share/doc/${pname} --with-gdalconfig=${gdal}/bin/gdal-config --with-jsondir=${json_c.dev} --with-sfcgal --with-library-minor-version"
+        configureFlags="--datadir=$out/share/postgresql --datarootdir=$out/share/postgresql --bindir=$out/bin --docdir=$doc/share/doc/${pname} --with-gdalconfig=${gdal}/bin/gdal-config --with-jsondir=${json_c.dev} --with-sfcgal"
 
         makeFlags="PERL=${perl}/bin/perl datadir=$out/share/postgresql pkglibdir=$out/lib bindir=$out/bin docdir=$doc/share/doc/${pname}"
       '';
@@ -111,13 +111,19 @@ let
         MIN_MAJ_VERSION=${lib.concatStringsSep "." (lib.take 2 (builtins.splitVersion version))}
         rm $out/bin/postgres
 
-        # move control files
+        # Rename C extension libraries with full version suffix
+        for ext in ${lib.concatStringsSep " " cExtensions}; do
+          if [ -f "$out/lib/$ext-3${postgresql.dlSuffix}" ]; then
+            mv $out/lib/$ext-3${postgresql.dlSuffix} $out/lib/$ext-${version}${postgresql.dlSuffix}
+          fi
+        done
+
+        # Create version-specific control files (without default_version, pointing to unversioned library)
         for ext in ${lib.concatStringsSep " " (cExtensions ++ sqlExtensions)}; do
           sed -e "/^default_version =/d" \
-              -e "s|^module_pathname = .*|module_pathname = '\$libdir/$ext-$MIN_MAJ_VERSION'|" \
-            $out/share/postgresql/extension/$ext.control > $out/share/postgresql/extension/$ext--$MIN_MAJ_VERSION.control
+              -e "s|^module_pathname = .*|module_pathname = '\$libdir/$ext-3'|" \
+            $out/share/postgresql/extension/$ext.control > $out/share/postgresql/extension/$ext--${version}.control
           rm $out/share/postgresql/extension/$ext.control
-          ln -s $out/share/postgresql/extension/$ext--${version}.sql $out/share/postgresql/extension/$ext--$MIN_MAJ_VERSION.sql
         done
 
         # Add function definition and usage to tiger geocoder files
@@ -129,23 +135,32 @@ let
           sed -i "/SELECT topology.AddToSearchPath('topology');/i SELECT topology.AddToSearchPath('extensions');" "$file"
         done
 
-        # For the latest version, create default control file and symlink and copy SQL upgrade scripts
+        # For the latest version, create default control file and library symlinks
         if [[ "${version}" == "${latestVersion}" ]]; then
+          # Copy all SQL upgrade scripts only for latest version
+          cp $out/share/postgresql/extension/*.sql $out/share/postgresql/extension/ 2>/dev/null || true
+
           for ext in ${lib.concatStringsSep " " (cExtensions ++ sqlExtensions)}; do
             {
-              echo "default_version = '$MIN_MAJ_VERSION'"
-              cat $out/share/postgresql/extension/$ext--$MIN_MAJ_VERSION.control
+              echo "default_version = '${version}'"
+              cat $out/share/postgresql/extension/$ext--${version}.control
             } > $out/share/postgresql/extension/$ext.control
           done
+
+          # Create symlinks for C extension libraries (latest version becomes the default)
+          for ext in ${lib.concatStringsSep " " cExtensions}; do
+            ln -sfn $ext-${version}${postgresql.dlSuffix} $out/lib/$ext-3${postgresql.dlSuffix}
+          done
+
           for prog in $out/bin/*; do # */
-            ln -s $prog $prog-$MIN_MAJ_VERSION
+            ln -s $prog $prog-${version}
           done
         else
           # remove migration scripts for non-latest version
           find $out/share/postgresql/extension -regex '.*--.*--.*\.sql' -delete
 
           for prog in $out/bin/*; do # */
-            mv $prog $prog-$MIN_MAJ_VERSION
+            mv $prog $prog-${version}
           done
         fi
 
@@ -174,13 +189,16 @@ buildEnv {
   ];
   postBuild = ''
     # Verify all expected library files are present
-    expectedFiles=${toString (numberOfVersions * builtins.length cExtensions)}
+    # We expect: (numberOfVersions * cExtensions) versioned libraries + cExtensions symlinks
+    expectedFiles=${
+      toString ((numberOfVersions * builtins.length cExtensions) + builtins.length cExtensions)
+    }
     actualFiles=$(ls -A $out/lib/*${postgresql.dlSuffix} | wc -l)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
       echo "Error: Expected $expectedFiles library files, found $actualFiles"
       echo "Files found:"
-      ls -la $out/lib/${pname}*${postgresql.dlSuffix} || true
+      ls -la $out/lib/*${postgresql.dlSuffix} || true
       exit 1
     fi
   '';
