@@ -207,6 +207,16 @@ def main() -> None:
         list(run_nix_eval_jobs(cmd, flake_output))
     )
 
+    def clean_package_for_output(pkg: GitHubActionPackage) -> dict:
+        """Remove debug fields from package for final output"""
+        return {
+            "attr": pkg["attr"],
+            "name": pkg["name"],
+            "system": pkg["system"],
+            "runs_on": pkg["runs_on"],
+            **({  "postgresql_version": pkg["postgresql_version"]} if "postgresql_version" in pkg else {})
+        }
+
     if args.target == "extensions":
         # filter to only include extension packages and add postgresql_version field
         gh_action_packages = [
@@ -218,14 +228,15 @@ def main() -> None:
         # Group packages by system
         grouped_by_system = defaultdict(list)
         for pkg in gh_action_packages:
-            grouped_by_system[pkg["system"]].append(pkg)
+            grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
 
         # Create output with system-specific matrices
         gh_output = {}
         for system, packages in grouped_by_system.items():
             gh_output[system.replace("-", "_")] = {"include": packages}
     else:
-        gh_output = {"include": gh_action_packages}
+        cleaned_packages = [clean_package_for_output(pkg) for pkg in gh_action_packages]
+        gh_output = {"include": cleaned_packages}
 
     print(json.dumps(gh_output))
 
