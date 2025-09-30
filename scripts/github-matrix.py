@@ -46,7 +46,7 @@ class GitHubActionPackage(TypedDict):
     attr: str
     name: str
     system: str
-    already_cached: bool
+    is_cached: bool
     runs_on: RunsOnConfig
     postgresql_version: NotRequired[str]
 
@@ -103,8 +103,10 @@ def parse_nix_eval_line(
     try:
         data: NixEvalJobsOutput = json.loads(line)
         if data["drvPath"] in drv_paths:
-            return None
-        drv_paths.add(data["drvPath"])
+            print(f"Skipping duplicate drvPath: {data['drvPath']}", file=sys.stderr)
+            data["cacheStatus"] = "cached"
+        else:
+            drv_paths.add(data["drvPath"])
 
         runs_on_config = BUILD_RUNNER_MAP[data["system"]]
 
@@ -112,8 +114,10 @@ def parse_nix_eval_line(
             "attr": f"{target}.{data['attr']}",
             "name": data["name"],
             "system": data["system"],
-            "already_cached": data.get("cacheStatus") != "notBuilt",
+            "is_cached": data.get("cacheStatus") != "notBuilt",
             "runs_on": runs_on_config,
+            "drvPath": data["drvPath"],  # For debugging purposes
+            "outputs": data.get("outputs", {}),  # For debugging purposes
         }
     except json.JSONDecodeError:
         print(f"Skipping invalid JSON line: {line}", file=sys.stderr)
@@ -133,8 +137,7 @@ def run_nix_eval_jobs(
 
         for line in process.stdout:
             package = parse_nix_eval_line(line, drv_paths, target)
-            if package and not package["already_cached"]:
-                print(f"Found package: {package['attr']}", file=sys.stderr)
+            if package:
                 yield package
 
         if process.returncode and process.returncode != 0:
@@ -185,6 +188,9 @@ def main() -> None:
             if system not in grouped_by_system:
                 grouped_by_system[system] = []
             grouped_by_system[system].append(pkg)
+
+        print("Grouped packages by system:", file=sys.stderr)
+        print(json.dumps(grouped_by_system, indent=2), file=sys.stderr)
 
         # Create output with system-specific matrices
         gh_output = {}
