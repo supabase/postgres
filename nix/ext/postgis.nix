@@ -114,7 +114,7 @@ let
         # move control files
         for ext in ${lib.concatStringsSep " " (cExtensions ++ sqlExtensions)}; do
           sed -e "/^default_version =/d" \
-              -e "s|^module_pathname = .*|module_pathname = '\$libdir/$ext'|" \
+              -e "s|^module_pathname = .*|module_pathname = '\$libdir/$ext-$MIN_MAJ_VERSION'|" \
             $out/share/postgresql/extension/$ext.control > $out/share/postgresql/extension/$ext--$MIN_MAJ_VERSION.control
           rm $out/share/postgresql/extension/$ext.control
           ln -s $out/share/postgresql/extension/$ext--${version}.sql $out/share/postgresql/extension/$ext--$MIN_MAJ_VERSION.sql
