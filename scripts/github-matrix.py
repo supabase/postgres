@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+from collections import defaultdict
+import graphlib
 import json
 import os
 import subprocess
@@ -48,6 +50,9 @@ class GitHubActionPackage(TypedDict):
     system: str
     already_cached: bool
     runs_on: RunsOnConfig
+    drvPath: str
+    neededSubstitutes: List[str]
+    neededBuilds: List[str]
     postgresql_version: NotRequired[str]
 
 
@@ -114,6 +119,9 @@ def parse_nix_eval_line(
             "system": data["system"],
             "already_cached": data.get("cacheStatus") != "notBuilt",
             "runs_on": runs_on_config,
+            "drvPath": data["drvPath"],
+            "neededSubstitutes": data.get("neededSubstitutes", []),
+            "neededBuilds": data.get("neededBuilds", []),
         }
     except json.JSONDecodeError:
         print(f"Skipping invalid JSON line: {line}", file=sys.stderr)
@@ -133,8 +141,7 @@ def run_nix_eval_jobs(
 
         for line in process.stdout:
             package = parse_nix_eval_line(line, drv_paths, target)
-            if package and not package["already_cached"]:
-                print(f"Found package: {package['attr']}", file=sys.stderr)
+            if package:
                 yield package
 
         if process.returncode and process.returncode != 0:
@@ -147,6 +154,34 @@ def is_extension_pkg(pkg: GitHubActionPackage) -> bool:
     """Check if the package is a postgresql extension package."""
     attrs = pkg["attr"].split(".")
     return attrs[-2] == "exts"
+
+
+# thank you buildbot-nix https://github.com/nix-community/buildbot-nix/blob/985d069a2a45cf4a571a4346107671adc2bd2a16/buildbot_nix/buildbot_nix/build_trigger.py#L297
+def sort_pkgs_by_closures(jobs: list[GitHubActionPackage]) -> list[GitHubActionPackage]:
+    sorted_jobs = []
+
+    # Prepare job dependencies
+    job_set = {job["drvPath"] for job in jobs}
+    job_closures = {
+        k["drvPath"]: set(k["neededSubstitutes"])
+        .union(set(k["neededBuilds"]))
+        .intersection(job_set)
+        .difference({k["drvPath"]})
+        for k in jobs
+    }
+
+    sorter = graphlib.TopologicalSorter(job_closures)
+
+    for item in sorter.static_order():
+        i = 0
+        while i < len(jobs):
+            if item == jobs[i]["drvPath"]:
+                sorted_jobs.append(jobs[i])
+                del jobs[i]
+            else:
+                i += 1
+
+    return sorted_jobs
 
 
 def main() -> None:
@@ -168,23 +203,22 @@ def main() -> None:
 
     cmd = build_nix_eval_command(max_workers, flake_output)
 
-    gh_action_packages = list(run_nix_eval_jobs(cmd, flake_output))
+    gh_action_packages = sort_pkgs_by_closures(
+        list(run_nix_eval_jobs(cmd, flake_output))
+    )
 
     if args.target == "extensions":
         # filter to only include extension packages and add postgresql_version field
         gh_action_packages = [
             {**pkg, "postgresql_version": pkg["attr"].split(".")[-3]}
             for pkg in gh_action_packages
-            if is_extension_pkg(pkg)
+            if is_extension_pkg(pkg) and not pkg["already_cached"]
         ]
 
         # Group packages by system
-        grouped_by_system = {}
+        grouped_by_system = defaultdict(list)
         for pkg in gh_action_packages:
-            system = pkg["system"]
-            if system not in grouped_by_system:
-                grouped_by_system[system] = []
-            grouped_by_system[system].append(pkg)
+            grouped_by_system[pkg["system"]].append(pkg)
 
         # Create output with system-specific matrices
         gh_output = {}
