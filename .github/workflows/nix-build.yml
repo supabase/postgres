@@ -86,6 +86,10 @@ jobs:
 
   checks-matrix:
     needs: [build-extensions-aarch64-linux, build-extensions-aarch64-darwin] #, build-extensions-x86_64-linux]
+    if: |
+      always() && 
+      (needs.build-extensions-aarch64-linux.result == 'skipped' || needs.build-extensions-aarch64-linux.result == 'success') &&
+      (needs.build-extensions-aarch64-darwin.result == 'skipped' || needs.build-extensions-aarch64-darwin.result == 'success')
     runs-on:
       group: self-hosted-runners-nix
       labels:
