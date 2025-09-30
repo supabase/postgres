@@ -154,10 +154,12 @@
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
       #    package names.
-      makePostgres = version: lib.recurseIntoAttrs {
-        bin = makePostgresBin version;
-        exts = makeOurPostgresPkgsSet version;
-      };
+      makePostgres =
+        version:
+        lib.recurseIntoAttrs {
+          bin = makePostgresBin version;
+          exts = makeOurPostgresPkgsSet version;
+        };
       basePackages = {
         psql_15 = makePostgres "15";
         psql_17 = makePostgres "17";

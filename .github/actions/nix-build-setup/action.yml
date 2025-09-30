@@ -8,17 +8,23 @@ inputs:
     description: 'AWS role session duration in seconds'
     required: false
     default: '3600'
+  cached:
+    description: 'Whether to use cached builds'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
   steps:
     - name: aws-oidc
+      if: ${{ inputs.cached == 'false' }}
       uses: aws-actions/configure-aws-credentials@v4.3.1
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
         role-session-name: gha-oidc-${{ github.run_id }}
     - name: aws-creds
+      if: ${{ inputs.cached == 'false' }}
       uses: aws-actions/configure-aws-credentials@v4.3.1
       with:
         disable-retry: true
@@ -29,6 +35,7 @@ runs:
         role-skip-session-tagging: true
         role-duration-seconds: ${{ inputs.aws-role-duration }}
     - name: Write creds files
+      if: ${{ inputs.cached == 'false' }}
       shell: bash
       run: |
         umask 006
@@ -42,5 +49,10 @@ runs:
       run: >
         nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
     - name: nix build
+      if: ${{ inputs.cached == 'false' }}
       shell: bash
       run: nix build -L .#${{ inputs.attr }}
+    - name: nix build
+      if: ${{ inputs.cached == 'true' }}
+      shell: bash
+      run: echo "Skipping build of ${{ inputs.attr }} as it's marked cached"
