@@ -30,6 +30,8 @@ jobs:
         run: |
           set -Eeu
           echo matrix="$(python scripts/github-matrix.py extensions)" >> "$GITHUB_OUTPUT"
+          # XXX debugging
+          exit 1
 
   build-extensions-aarch64-linux:
     name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-linux)
@@ -47,7 +49,6 @@ jobs:
         uses: ./.github/actions/nix-build-setup
         with:
           attr: ${{ matrix.attr }}
-          cached: ${{ matrix.is_cached }}
 
   build-extensions-aarch64-darwin:
     name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
@@ -65,7 +66,6 @@ jobs:
         uses: ./.github/actions/nix-build-setup
         with:
           attr: ${{ matrix.attr }}
-          cached: ${{ matrix.is_cached }}
 
   build-extensions-x86_64-linux:
     name: ${{matrix.postgresql_version}}.${{ matrix.name }} (x86_64-linux)
@@ -83,7 +83,6 @@ jobs:
         uses: ./.github/actions/nix-build-setup
         with:
           attr: ${{ matrix.attr }}
-          cached: ${{ matrix.is_cached }}
 
 
   checks-matrix:
@@ -118,7 +117,6 @@ jobs:
         uses: ./.github/actions/nix-build-setup
         with:
           attr: ${{ matrix.attr }}
-          cached: ${{ matrix.is_cached }}
 
   run-tests:
     needs: build-checks
