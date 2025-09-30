@@ -1,20 +1,30 @@
-{ lib, stdenv, fetchFromGitHub, libkrb5, openssl, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  libkrb5,
+  openssl,
+  postgresql,
+}:
 #adapted from https://github.com/NixOS/nixpkgs/blob/master/pkgs/servers/sql/postgresql/ext/pgaudit.nix
 let
-  source = {
-    "17" = {
-      version = "17.0";
-      hash = "sha256-3ksq09wiudQPuBQI3dhEQi8IkXKLVIsPFgBnwLiicro=";
-    };
-    "16" = {
-      version = "16.0";
-      hash = "sha256-8+tGOl1U5y9Zgu+9O5UDDE4bec4B0JC/BQ6GLhHzQzc=";
-    };
-    "15" = {
-      version = "1.7.0";
-      hash = "sha256-8pShPr4HJaJQPjW1iPJIpj3CutTx8Tgr+rOqoXtgCcw=";
-    };
-  }.${lib.versions.major postgresql.version} or (throw "Source for pgaudit is not available for ${postgresql.version}");
+  source =
+    {
+      "17" = {
+        version = "17.0";
+        hash = "sha256-3ksq09wiudQPuBQI3dhEQi8IkXKLVIsPFgBnwLiicro=";
+      };
+      "16" = {
+        version = "16.0";
+        hash = "sha256-8+tGOl1U5y9Zgu+9O5UDDE4bec4B0JC/BQ6GLhHzQzc=";
+      };
+      "15" = {
+        version = "1.7.0";
+        hash = "sha256-8pShPr4HJaJQPjW1iPJIpj3CutTx8Tgr+rOqoXtgCcw=";
+      };
+    }
+    .${lib.versions.major postgresql.version}
+    or (throw "Source for pgaudit is not available for ${postgresql.version}");
 in
 stdenv.mkDerivation {
   pname = "pgaudit";
@@ -27,7 +37,11 @@ stdenv.mkDerivation {
     hash = source.hash;
   };
 
-  buildInputs = [ libkrb5 openssl postgresql ];
+  buildInputs = [
+    libkrb5
+    openssl
+    postgresql
+  ];
 
   makeFlags = [ "USE_PGXS=1" ];
 

@@ -1,10 +1,19 @@
-{ lib, stdenv, fetchFromGitHub, libsodium, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  libsodium,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "vault";
   version = "0.3.1";
 
-  buildInputs = [ libsodium postgresql ];
+  buildInputs = [
+    libsodium
+    postgresql
+  ];
 
   src = fetchFromGitHub {
     owner = "supabase";

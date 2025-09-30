@@ -32,8 +32,8 @@ for layer in /tmp/extensions/*/layer.tar; do
   tar xvf "$layer" -C ansible/files/extensions --strip-components 1
 done
 docker buildx build \
-  --build-arg ubuntu_release=focal \
-  --build-arg ubuntu_release_no=20.04 \
+  --build-arg ubuntu_release=noble \
+  --build-arg ubuntu_release_no=24.04 \
   --build-arg postgresql_major=15 \
   --build-arg postgresql_release=15.1 \
   --build-arg CPPFLAGS=-mcpu=neoverse-n1 \

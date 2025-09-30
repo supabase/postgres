@@ -32,6 +32,30 @@ group by
 order by
   c.relname;
 
+-- storage schema objects with roles privileges
+select
+  ns.nspname    as schema_name,
+  c.relname     as table_name,
+  r.rolname     as role_name,
+  a.privilege_type,
+  a.is_grantable
+from
+  pg_class      c
+join
+  pg_namespace  ns  on c.relnamespace = ns.oid
+cross join lateral
+  aclexplode(c.relacl) as a
+join
+  pg_roles      r   on a.grantee = r.oid
+where
+  ns.nspname = 'storage'
+  and c.relkind in ('r', 'v', 'm')
+  and a.privilege_type <> 'MAINTAIN'
+order by
+  c.relname,
+  r.rolname,
+  a.privilege_type;
+
 -- storage indexes with owners
 select
   ns.nspname as table_schema,
@@ -71,3 +95,22 @@ order by
 
 -- storage service migrations
 select * from storage.migrations ;
+
+-- postgres can grant storage privileges to custom roles
+create role r;
+grant r to postgres with admin option;
+
+set role r;
+select * from storage.buckets;
+
+set role postgres;
+grant usage on schema storage to r;
+grant select on storage.buckets to r;
+
+set role r;
+select * from storage.buckets;
+
+set role postgres;
+drop owned by r cascade;
+drop role r;
+reset role;

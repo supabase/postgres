@@ -58,7 +58,7 @@ function update_install_packages {
 	apt-get upgrade -y
 
 	# Install OpenSSH and other packages
-	sudo add-apt-repository universe
+	sudo add-apt-repository --yes universe
 	apt-get update
 	apt-get install -y --no-install-recommends \
 		openssh-server \
@@ -157,10 +157,21 @@ function disable_fsck {
 
 # Don't request hostname during boot but set hostname
 function setup_hostname {
-	sed -i 's/gethostname()/ubuntu /g' /etc/dhcp/dhclient.conf
-	sed -i 's/host-name,//g' /etc/dhcp/dhclient.conf
+	# Set the static hostname
 	echo "ubuntu" > /etc/hostname
 	chmod 644 /etc/hostname
+	# Update netplan configuration to not send hostname
+	cat << EOF > /etc/netplan/01-hostname.yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp4-overrides:
+        send-hostname: false
+EOF
+	# Set proper permissions for netplan security
+	chmod 600 /etc/netplan/01-hostname.yaml
 }
 
 # Set options for the default interface
@@ -172,6 +183,8 @@ network:
     eth0:
       dhcp4: true
 EOF
+	# Set proper permissions for netplan security
+	chmod 600 /etc/netplan/eth0.yaml
 }
 
 function disable_sshd_passwd_auth {

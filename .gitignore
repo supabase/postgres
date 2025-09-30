@@ -17,10 +17,17 @@ __pycache__/
 result*
 .env-local
 .history
-
+.envrc
+.direnv
+.nixos-test-history
 
 #IDE
 .idea/
 .vscode/
 
 db/schema.sql
+common-nix.vars.pkr.hcl
+
+# pre-commit config is managed in nix
+.pre-commit-config.yaml
+nixos.qcow2

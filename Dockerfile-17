@@ -31,7 +31,7 @@ ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.4.6
+ARG wrappers_release=0.5.4
 ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.3.2
@@ -39,7 +39,7 @@ ARG index_advisor_release=0.2.0
 ARG supautils_release=2.2.0
 ARG wal_g_release=3.0.5
 
-FROM ubuntu:focal as base
+FROM ubuntu:noble as base
 
 RUN apt update -y && apt install -y \
     curl \
@@ -198,11 +198,11 @@ COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
-# # Add upstream entrypoint script
+# # Add upstream entrypoint script pinned for now to last tested version
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/master/17/bullseye/docker-entrypoint.sh \
-    /usr/local/bin/
+    https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/17/bullseye/docker-entrypoint.sh \
+    /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 
@@ -225,8 +225,6 @@ RUN echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/l
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-ENV LC_CTYPE=C.UTF-8
-ENV LC_COLLATE=C.UTF-8
 ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
 RUN mkdir -p /usr/share/postgresql/extension/ && \
     ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \

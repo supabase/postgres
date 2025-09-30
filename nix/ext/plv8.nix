@@ -1,19 +1,17 @@
-{ stdenv
-, lib
-, fetchFromGitHub
-, v8
-, perl
-, postgresql
-# For passthru test on various systems, and local development on macos
-# not we are not currently using passthru tests but retaining for possible contrib
-# to nixpkgs 
-, runCommand
-, coreutils
-, gnugrep
-, clang
-, xcbuild
-, darwin
-, patchelf
+{
+  stdenv,
+  lib,
+  fetchFromGitHub,
+  v8,
+  perl,
+  postgresql,
+  # For passthru test on various systems, and local development on macos
+  # not we are not currently using passthru tests but retaining for possible contrib
+  # to nixpkgs 
+  clang,
+  xcbuild,
+  darwin,
+  patchelf,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -33,50 +31,58 @@ stdenv.mkDerivation (finalAttrs: {
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
-  nativeBuildInputs = [
-    perl
-  ] ++ lib.optionals stdenv.isDarwin [
-    clang
-    xcbuild
-  ];
+  nativeBuildInputs =
+    [ perl ]
+    ++ lib.optionals stdenv.isDarwin [
+      clang
+      xcbuild
+    ];
 
-  buildInputs = [
-    v8
-    postgresql
-  ] ++ lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.CoreFoundation
-    darwin.apple_sdk.frameworks.Kerberos
-  ];
+  buildInputs =
+    [
+      v8
+      postgresql
+    ]
+    ++ lib.optionals stdenv.isDarwin [
+      darwin.apple_sdk.frameworks.CoreFoundation
+      darwin.apple_sdk.frameworks.Kerberos
+    ];
 
   buildFlags = [ "all" ];
 
-  makeFlags = [
-    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
-    "USE_SYSTEM_V8=1"
-    "V8_OUTDIR=${v8}/lib"
-     "PG_CONFIG=${postgresql}/bin/pg_config"
-  ] ++ lib.optionals stdenv.isDarwin [
-    "CC=${clang}/bin/clang"
-    "CXX=${clang}/bin/clang++"
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-  ] ++ lib.optionals (!stdenv.isDarwin) [
-    "SHLIB_LINK=-lv8"
-  ];
+  makeFlags =
+    [
+      # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
+      "USE_SYSTEM_V8=1"
+      "V8_OUTDIR=${v8}/lib"
+      "PG_CONFIG=${postgresql}/bin/pg_config"
+    ]
+    ++ lib.optionals stdenv.isDarwin [
+      "CC=${clang}/bin/clang"
+      "CXX=${clang}/bin/clang++"
+      "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+    ]
+    ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
-  NIX_LDFLAGS = (lib.optionals stdenv.isDarwin [
-    "-L${postgresql}/lib"
-    "-L${v8}/lib"
-    "-lv8_monolith"
-    "-lpq"
-    "-lpgcommon"
-    "-lpgport"
-    "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
-    "-framework" "CoreFoundation"
-    "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
-    "-framework" "Kerberos"
-    "-undefined" "dynamic_lookup"
-    "-flat_namespace"
-  ]); 
+  NIX_LDFLAGS = (
+    lib.optionals stdenv.isDarwin [
+      "-L${postgresql}/lib"
+      "-L${v8}/lib"
+      "-lv8_monolith"
+      "-lpq"
+      "-lpgcommon"
+      "-lpgport"
+      "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
+      "-framework"
+      "CoreFoundation"
+      "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
+      "-framework"
+      "Kerberos"
+      "-undefined"
+      "dynamic_lookup"
+      "-flat_namespace"
+    ]
+  );
 
   installFlags = [
     # PGXS only supports installing to postgresql prefix so we need to redirect this
@@ -97,7 +103,7 @@ stdenv.mkDerivation (finalAttrs: {
     ''}
   '';
 
- postInstall = ''
+  postInstall = ''
     # Move the redirected to proper directory.
     # There appear to be no references to the install directories
     # so changing them does not cause issues.
@@ -119,9 +125,11 @@ stdenv.mkDerivation (finalAttrs: {
         install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8.so
       ''}
 
-      ${lib.optionalString (!stdenv.isDarwin) ''
-        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
-      ''}
+      ${
+        lib.optionalString (!stdenv.isDarwin) ''
+          ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
+        ''
+      }
     else
       ${lib.optionalString stdenv.isDarwin ''
         install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
@@ -130,16 +138,23 @@ stdenv.mkDerivation (finalAttrs: {
         install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
       ''}
 
-      ${lib.optionalString (!stdenv.isDarwin) ''
-        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
-      ''}
+      ${
+        lib.optionalString (!stdenv.isDarwin) ''
+          ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+        ''
+      }
     fi
   '';
 
   meta = with lib; {
     description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
     homepage = "https://plv8.github.io/";
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "aarch64-darwin"
+      "x86_64-darwin"
+    ];
     license = licenses.postgresql;
   };
 })

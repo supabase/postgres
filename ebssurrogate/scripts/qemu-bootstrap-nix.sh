@@ -22,7 +22,7 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common -y
+  apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
 	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
@@ -39,7 +39,8 @@ EOF
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
@@ -101,7 +102,8 @@ EOF
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
 }
 
 function clean_legacy_things {
@@ -155,6 +157,6 @@ execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
 mkdir -p /db/template
 mv /data/pgdata /db/template
+cloud-init clean --logs
 clean_legacy_things
 clean_system
-cloud-init clean --logs

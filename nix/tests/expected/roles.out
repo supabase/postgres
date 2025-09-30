@@ -1,3 +1,9 @@
+-- Some predefined roles don't exist in earlier versions of Postgres, so we
+-- exclude them in this test file. They're tested in version-specific test files
+-- (z_<ver>_roles.sql).
+--
+-- Currently those roles are:
+-- pg_create_subscription, pg_maintain, pg_use_reserved_connections
 -- all roles and attributes
 select
   rolname,
@@ -11,7 +17,6 @@ select
   rolbypassrls   ,
   rolvaliduntil
 from pg_roles r
--- TODO: this exclusion is to maintain compat with pg17, we should cover it
 where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by rolname;
           rolname           | rolcreaterole | rolcanlogin | rolsuper | rolinherit | rolcreatedb | rolreplication | rolconnlimit | rolbypassrls | rolvaliduntil 
@@ -41,17 +46,17 @@ order by rolname;
  service_role               | f             | f           | f        | t          | f           | f              |           -1 | t            | 
  supabase_admin             | t             | t           | t        | t          | t           | t              |           -1 | t            | 
  supabase_auth_admin        | t             | t           | f        | f          | f           | f              |           -1 | f            | 
+ supabase_etl_admin         | f             | t           | f        | t          | f           | t              |           -1 | f            | 
  supabase_functions_admin   | t             | t           | f        | f          | f           | f              |           -1 | f            | 
  supabase_read_only_user    | f             | t           | f        | t          | f           | f              |           -1 | t            | 
  supabase_replication_admin | f             | t           | f        | t          | f           | t              |           -1 | f            | 
  supabase_storage_admin     | t             | t           | f        | f          | f           | f              |           -1 | f            | 
-(29 rows)
+(30 rows)
 
 select
   rolname,
   rolconfig
 from pg_roles r
--- TODO: this exclusion is to maintain compat with pg17, we should cover it
 where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by rolname;
           rolname           |                                    rolconfig                                    
@@ -81,72 +86,12 @@ order by rolname;
  service_role               | 
  supabase_admin             | {"search_path=\"$user\", public, auth, extensions",log_statement=none}
  supabase_auth_admin        | {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
+ supabase_etl_admin         | 
  supabase_functions_admin   | 
- supabase_read_only_user    | 
+ supabase_read_only_user    | {default_transaction_read_only=on}
  supabase_replication_admin | 
  supabase_storage_admin     | {search_path=storage,log_statement=none}
-(29 rows)
-
--- all role memberships
-select
-    r.rolname as member,
-    g.rolname as "member_of (can become)",
-    m.admin_option
-from
-    pg_roles r
-left join
-    pg_auth_members m on r.oid = m.member
-left join
-    pg_roles g on m.roleid = g.oid
--- TODO: this exclusion is to maintain compat with pg17, we should cover it
-where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
-order by
-    r.rolname, g.rolname;
-           member           | member_of (can become) | admin_option 
-----------------------------+------------------------+--------------
- anon                       |                        | 
- authenticated              |                        | 
- authenticator              | anon                   | f
- authenticator              | authenticated          | f
- authenticator              | service_role           | f
- dashboard_user             |                        | 
- pg_checkpoint              |                        | 
- pg_database_owner          |                        | 
- pg_execute_server_program  |                        | 
- pg_monitor                 | pg_read_all_settings   | f
- pg_monitor                 | pg_read_all_stats      | f
- pg_monitor                 | pg_stat_scan_tables    | f
- pg_read_all_data           |                        | 
- pg_read_all_settings       |                        | 
- pg_read_all_stats          |                        | 
- pg_read_server_files       |                        | 
- pg_signal_backend          |                        | 
- pg_stat_scan_tables        |                        | 
- pg_write_all_data          |                        | 
- pg_write_server_files      |                        | 
- pgbouncer                  |                        | 
- pgsodium_keyholder         | pgsodium_keyiduser     | f
- pgsodium_keyiduser         |                        | 
- pgsodium_keymaker          | pgsodium_keyholder     | f
- pgsodium_keymaker          | pgsodium_keyiduser     | f
- pgtle_admin                |                        | 
- postgres                   | anon                   | f
- postgres                   | authenticated          | f
- postgres                   | pg_monitor             | f
- postgres                   | pg_read_all_data       | f
- postgres                   | pg_signal_backend      | f
- postgres                   | pgtle_admin            | f
- postgres                   | service_role           | f
- postgres                   | supabase_auth_admin    | f
- postgres                   | supabase_storage_admin | f
- service_role               |                        | 
- supabase_admin             |                        | 
- supabase_auth_admin        |                        | 
- supabase_functions_admin   |                        | 
- supabase_read_only_user    | pg_read_all_data       | f
- supabase_replication_admin |                        | 
- supabase_storage_admin     | authenticator          | f
-(42 rows)
+(30 rows)
 
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
@@ -166,7 +111,8 @@ from (
     join
         pg_roles r on a.grantee = r.oid
     where
-        a.privilege_type != 'MAINTAIN' -- TODO: this is to maintain compat with pg17, we should cover it
+        -- PG17+, handled in version-specific test files
+        a.privilege_type != 'MAINTAIN'
     union all
     -- explicit grant usage and create on the schemas
     select
@@ -281,7 +227,6 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  public             | USAGE          | service_role             | pg_database_owner
  public             | USAGE          | service_role             | postgres
  auth               | CREATE         | dashboard_user           | supabase_admin
- auth               | CREATE         | postgres                 | supabase_admin
  auth               | CREATE         | supabase_admin           | supabase_admin
  auth               | CREATE         | supabase_auth_admin      | supabase_admin
  auth               | DELETE         | dashboard_user           | supabase_auth_admin
@@ -517,7 +462,6 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  repack             | USAGE          | postgres                 | supabase_admin
  repack             | USAGE          | supabase_admin           | supabase_admin
  storage            | CREATE         | dashboard_user           | supabase_admin
- storage            | CREATE         | postgres                 | supabase_admin
  storage            | CREATE         | supabase_admin           | supabase_admin
  storage            | CREATE         | supabase_storage_admin   | supabase_admin
  storage            | DELETE         | anon                     | postgres
@@ -577,5 +521,10 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  vault              | USAGE          | postgres                 | supabase_admin
  vault              | USAGE          | service_role             | supabase_admin
  vault              | USAGE          | supabase_admin           | supabase_admin
-(391 rows)
+(389 rows)
 
+-- postgres can alter API roles' timeout
+set role postgres;
+alter role anon set statement_timeout = '10min';
+alter role anon reset statement_timeout;
+reset role;

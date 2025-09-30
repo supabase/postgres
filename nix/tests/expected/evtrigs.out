@@ -12,14 +12,14 @@ join pg_namespace n_func
 where p.prorettype = 'event_trigger'::regtype;
                 evtname                 |    evtowner    | evtfunction_schema |            evtfunction             | function_owner 
 ----------------------------------------+----------------+--------------------+------------------------------------+----------------
- issue_pg_net_access                    | postgres       | extensions         | grant_pg_net_access                | postgres
  issue_pg_graphql_access                | supabase_admin | extensions         | grant_pg_graphql_access            | supabase_admin
  issue_graphql_placeholder              | supabase_admin | extensions         | set_graphql_placeholder            | supabase_admin
  pgrst_ddl_watch                        | supabase_admin | extensions         | pgrst_ddl_watch                    | supabase_admin
  pgrst_drop_watch                       | supabase_admin | extensions         | pgrst_drop_watch                   | supabase_admin
  graphql_watch_ddl                      | supabase_admin | graphql            | graphql.increment_schema_version   | supabase_admin
  graphql_watch_drop                     | supabase_admin | graphql            | graphql.increment_schema_version   | supabase_admin
- issue_pg_cron_access                   | supabase_admin | extensions         | grant_pg_cron_access               | postgres
+ issue_pg_cron_access                   | supabase_admin | extensions         | grant_pg_cron_access               | supabase_admin
+ issue_pg_net_access                    | supabase_admin | extensions         | grant_pg_net_access                | supabase_admin
  pg_tle_event_trigger_for_drop_function | supabase_admin | pgtle              | pgtle.pg_tle_feature_info_sql_drop | supabase_admin
  pgaudit_ddl_command_end                | supabase_admin | public             | pgaudit_ddl_command_end            | supabase_admin
  pgaudit_sql_drop                       | supabase_admin | public             | pgaudit_sql_drop                   | supabase_admin

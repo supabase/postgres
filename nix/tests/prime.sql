@@ -57,16 +57,6 @@ create extension if not exists pg_walinspect;
 create extension if not exists pgaudit;
 create extension if not exists pgcrypto;
 create extension if not exists pgtap;
-do $$ 
-begin 
-    if exists (select 1 from pg_available_extensions where name = 'pgjwt') then
-        if not exists (select 1 from pg_extension where extname = 'pgjwt') then
-            if current_setting('server_version_num')::int / 10000 = 15 then
-                create extension if not exists pgjwt;
-            end if;
-        end if;
-    end if;
-end $$;
 create extension if not exists pgroonga;
 create extension if not exists pgroonga_database;
 create extension if not exists pgsodium;

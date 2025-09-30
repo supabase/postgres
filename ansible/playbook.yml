@@ -78,8 +78,8 @@
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
 
-    - name: Fix IPv6 NDisc issues
-      import_tasks: tasks/fix_ipv6_ndisc.yml
+    - name: Fix IPv6 NDisc issues (disabled)
+      import_tasks: tasks/fix-ipv6-ndisc.yml
       tags:
         - install-supabase-internal
       when: (debpkg_mode or nixpkg_mode) and (qemu_mode is undefined)
@@ -198,7 +198,7 @@
         - collect-binaries
       when: debpkg_mode
 
-    - name: Install osquery from nixpkgs binary cache
+    - name: Purge snapd
       become: yes
       shell: |
         apt autoremove -y --purge snapd
