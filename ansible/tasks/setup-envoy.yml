@@ -43,7 +43,7 @@
     dest: '/etc/envoy/'
     directory_mode: '0775'
     group: 'envoy'
-    mode: '0644'
+    mode: '0664'
     owner: 'envoy'
     src: 'files/envoy_config/'
 
