@@ -38,7 +38,7 @@ jobs:
     if: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
@@ -55,7 +55,7 @@ jobs:
     if: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_darwin }}
     steps:
       - name: Checkout Repo

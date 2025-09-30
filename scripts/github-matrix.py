@@ -238,6 +238,7 @@ def main() -> None:
         cleaned_packages = [clean_package_for_output(pkg) for pkg in gh_action_packages]
         gh_output = {"include": cleaned_packages}
 
+    print(f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}", file=sys.stderr)
     print(json.dumps(gh_output))
 
 
