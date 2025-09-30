@@ -1,0 +1,46 @@
+name: 'Nix Build Setup'
+description: 'Sets up AWS credentials and builds a Nix package'
+inputs:
+  attr:
+    description: 'The Nix attribute to build'
+    required: true
+  aws-role-duration:
+    description: 'AWS role session duration in seconds'
+    required: false
+    default: '3600'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: aws-oidc
+      uses: aws-actions/configure-aws-credentials@v4.3.1
+      with:
+        aws-region: us-east-2
+        role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
+        role-session-name: gha-oidc-${{ github.run_id }}
+    - name: aws-creds
+      uses: aws-actions/configure-aws-credentials@v4.3.1
+      with:
+        disable-retry: true
+        aws-region: us-east-2
+        role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
+        role-session-name: gha-oidc-${{ github.run_id }}
+        role-chaining: true
+        role-skip-session-tagging: true
+        role-duration-seconds: ${{ inputs.aws-role-duration }}
+    - name: Write creds files
+      shell: bash
+      run: |
+        umask 006
+        cat > /etc/nix/aws/nix-aws-credentials <<EOF
+        [ci-uploader]
+        aws_access_key_id = ${AWS_ACCESS_KEY_ID}
+        aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
+        aws_session_token = ${AWS_SESSION_TOKEN}
+        EOF
+    - name: Build psql bundle
+      run: >
+        nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
+    - name: nix build
+      shell: bash
+      run: nix build -L .#${{ inputs.attr }}
