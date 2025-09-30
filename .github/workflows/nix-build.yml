@@ -30,50 +30,63 @@ jobs:
         run: |
           set -Eeu
           echo matrix="$(python scripts/github-matrix.py extensions)" >> "$GITHUB_OUTPUT"
+          # XXX debugging
+          exit 1
 
-  build-extensions:
-    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (${{ matrix.system }})
+  build-extensions-aarch64-linux:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-linux)
     needs: extensions-matrix
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 3
-      matrix: ${{fromJSON(needs.extensions-matrix.outputs.matrix)}}
+      matrix: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: aws-oidc
-        uses: aws-actions/configure-aws-credentials@v4.3.1
+      - name: Build Nix Package
+        uses: ./.github/actions/nix-build-setup
         with:
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
-          role-session-name: gha-oidc-${{ github.run_id }}
-      - name: aws-creds
-        uses: aws-actions/configure-aws-credentials@v4.3.1
+          attr: ${{ matrix.attr }}
+
+  build-extensions-aarch64-darwin:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
+    needs: extensions-matrix
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_darwin != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).aarch64_darwin }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Build Nix Package
+        uses: ./.github/actions/nix-build-setup
         with:
-          disable-retry: true
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
-          role-session-name: gha-oidc-${{ github.run_id }}
-          role-chaining: true
-          role-skip-session-tagging: true
-          role-duration-seconds: 3600
-      - name: Write creds files
-        run: |
-          umask 006
-          cat > /etc/nix/aws/nix-aws-credentials <<EOF
-          [ci-uploader]
-          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-          aws_session_token = ${AWS_SESSION_TOKEN}
-          EOF
-      - name: nix build
-        run: |
-           nix build -L .#${{ matrix.attr }}
+          attr: ${{ matrix.attr }}
+
+  build-extensions-x86_64-linux:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (x86_64-linux)
+    needs: extensions-matrix
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).x86_64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.extensions-matrix.outputs.matrix).x86_64_linux }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Build Nix Package
+        uses: ./.github/actions/nix-build-setup
+        with:
+          attr: ${{ matrix.attr }}
 
 
   checks-matrix:
-    needs: [build-extensions]
+    needs: [build-extensions-aarch64-linux, build-extensions-aarch64-darwin, build-extensions-x86_64-linux]
     runs-on:
       group: self-hosted-runners-nix
       labels:
@@ -92,7 +105,7 @@ jobs:
 
   build-checks:
     name: ${{ matrix.name }} (${{ matrix.system }})
-    needs: [checks-matrix, build-extensions]
+    needs: [checks-matrix]
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     strategy:
       fail-fast: false
@@ -100,37 +113,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: aws-oidc
-        uses: aws-actions/configure-aws-credentials@v4.3.1
+      - name: Build Nix Package
+        uses: ./.github/actions/nix-build-setup
         with:
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
-          role-session-name: gha-oidc-${{ github.run_id }}
-      - name: aws-creds
-        uses: aws-actions/configure-aws-credentials@v4.3.1
-        with:
-          disable-retry: true
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
-          role-session-name: gha-oidc-${{ github.run_id }}
-          role-chaining: true
-          role-skip-session-tagging: true
-          role-duration-seconds: 3600
-      - name: Write creds files
-        run: |
-          umask 006
-          cat > /etc/nix/aws/nix-aws-credentials <<EOF
-          [ci-uploader]
-          aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-          aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-          aws_session_token = ${AWS_SESSION_TOKEN}
-          EOF
-      - name: Build psql bundle
-        run: >
-          nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
-      - name: nix build
-        run: |
-           nix build -L .#${{ matrix.attr }}
+          attr: ${{ matrix.attr }}
 
   run-tests:
     needs: build-checks

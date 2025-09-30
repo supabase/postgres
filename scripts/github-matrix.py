@@ -134,6 +134,7 @@ def run_nix_eval_jobs(
         for line in process.stdout:
             package = parse_nix_eval_line(line, drv_paths, target)
             if package and not package["already_cached"]:
+                print(f"Found package: {package['attr']}", file=sys.stderr)
                 yield package
 
         if process.returncode and process.returncode != 0:
@@ -177,7 +178,21 @@ def main() -> None:
             if is_extension_pkg(pkg)
         ]
 
-    gh_output = {"include": gh_action_packages}
+        # Group packages by system
+        grouped_by_system = {}
+        for pkg in gh_action_packages:
+            system = pkg["system"]
+            if system not in grouped_by_system:
+                grouped_by_system[system] = []
+            grouped_by_system[system].append(pkg)
+
+        # Create output with system-specific matrices
+        gh_output = {}
+        for system, packages in grouped_by_system.items():
+            gh_output[system.replace("-", "_")] = {"include": packages}
+    else:
+        gh_output = {"include": gh_action_packages}
+
     print(json.dumps(gh_output))
 
 
