@@ -53,6 +53,13 @@
     update_cache: yes
   when: debpkg_mode or nixpkg_mode
 
+- name: Install other useful tools
+  apt:
+    pkg:
+      - less
+    update_cache: yes
+  when: qemu_mode is defined
+
 - name: Configure sysstat
   copy:
     src: files/sysstat.sysstat

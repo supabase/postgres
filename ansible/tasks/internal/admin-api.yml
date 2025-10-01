@@ -21,7 +21,7 @@
   copy:
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
-    mode: "0644"
+    mode: "0440"
 
 - name: perms for adminapi
   shell: |

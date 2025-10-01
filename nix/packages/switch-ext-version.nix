@@ -54,6 +54,12 @@ writeShellApplication {
     # Update library symlink
     ln -sfnv "$EXT_LIB_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME${postgresql.dlSuffix}"
 
+    # Handle extension specific steps
+    if [ -x "''${EXTRA_STEPS:-}" ]; then
+      #shellcheck disable=SC1090
+      source "''${EXTRA_STEPS}"
+    fi
+
     # Update control file
     EXT_WRAPPER_SHARE="$EXT_WRAPPER/share/postgresql/extension"
     echo "default_version = '$VERSION'" > "$EXT_WRAPPER_SHARE/$EXT_NAME.control"
