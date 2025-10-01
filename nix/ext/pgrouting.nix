@@ -55,9 +55,7 @@ let
       ) "-Wno-error=int-conversion -Wno-error=incompatible-pointer-types";
 
       cmakeFlags =
-        [
-          "-DPOSTGRESQL_VERSION=${postgresql.version}"
-        ]
+        [ "-DPOSTGRESQL_VERSION=${postgresql.version}" ]
         ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
           "-DCMAKE_MACOSX_RPATH=ON"
           "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
