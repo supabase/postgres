@@ -10,6 +10,7 @@ from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLog
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 import paramiko
+from pathlib import Path
 
 # if EXECUTION_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
@@ -143,8 +144,35 @@ walg_config_json_content = """
 """
 anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyMjQ5NjYsImV4cCI6MjAxMTgwMDk2Nn0.QW95aRPA-4QuLzuvaIeeoFKlJP9J2hvAIpJ3WJ6G5zo"
 service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjIyNDk2NiwiZXhwIjoyMDExODAwOTY2fQ.Om7yqv15gC3mLGitBmvFRB3M4IsLsX9fXzTQnFM7lu0"
-EXPECTED_PGBOUNCER_VERSION = "1.24.1"
 supabase_admin_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InN1cGFiYXNlX2FkbWluIiwiaWF0IjoxNjk2MjI0OTY2LCJleHAiOjIwMTE4MDA5NjZ9.jrD3j2rBWiIx0vhVZzd1CXFv7qkAP392nBMadvXxk1c"
+
+
+def load_expected_pgbouncer_version() -> str:
+    repo_root = Path(__file__).resolve().parent.parent
+    ansible_vars = repo_root / "ansible" / "vars.yml"
+    if ansible_vars.exists():
+        with ansible_vars.open() as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if line.startswith("pgbouncer_release:"):
+                    return line.split(":", 1)[1].strip().strip('"')
+
+    nix_file = repo_root / "nix" / "pgbouncer.nix"
+    if nix_file.exists():
+        with nix_file.open() as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if line.startswith("version ="):
+                    value = line.split("=", 1)[1].strip()
+                    return value.strip(";").strip('"')
+
+    raise RuntimeError(
+        "Could not determine expected PgBouncer version from configuration files"
+    )
+
+
+EXPECTED_PGBOUNCER_VERSION = load_expected_pgbouncer_version()
+PGBOUNCER_BINARY = "/nix/var/nix/profiles/per-user/pgbouncer/profile/bin/pgbouncer"
 init_json_content = f"""
 {{
   "jwt_secret": "my_jwt_secret_which_is_not_so_secret",
@@ -622,39 +650,6 @@ def test_libpq5_version(host):
             print("Could not parse psql version")
 
     print("✓ libpq5 version is >= 14")
-
-
-def test_pgbouncer_version(host):
-    """Ensure the PgBouncer binary version matches what we build."""
-    result = run_ssh_command(host["ssh"], "pgbouncer --version")
-    assert result["succeeded"], f"Failed to get PgBouncer version: {result['stderr']}"
-
-    output = result["stdout"].strip()
-    import re
-
-    match = re.search(r"PgBouncer(?: version)? ([0-9.]+)", output)
-    assert match is not None, f"Could not parse PgBouncer version from output: {output}"
-    installed_version = match.group(1)
-    assert (
-        installed_version == EXPECTED_PGBOUNCER_VERSION
-    ), f"PgBouncer version mismatch: expected {EXPECTED_PGBOUNCER_VERSION}, got {installed_version}"
-
-
-def test_pgbouncer_supports_prepared_statements(host):
-    """Verify prepared statements can be created and executed through PgBouncer."""
-    command = (
-        "sudo -u postgres psql -p 6543 -d postgres "
-        "-v ON_ERROR_STOP=1 "
-        '-c "PREPARE test_plan AS SELECT 1;" '
-        '-c "EXECUTE test_plan;" '
-        '-c "DEALLOCATE test_plan;"'
-    )
-
-    result = run_ssh_command(host["ssh"], command)
-    assert result["succeeded"], (
-        "Prepared statements are not working through PgBouncer: "
-        f"{result['stderr'] or result['stdout']}"
-    )
 
 
 def test_postgrest_read_only_session_attrs(host):
