@@ -11,12 +11,15 @@ let
       majorVersion = lib.versions.major postgresql.version;
       pkg = pkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (installedExtension majorVersion)
-          self.packages.${pkgs.system}."psql_${majorVersion}/exts/postgis"
-        ];
+        paths =
+          [
+            postgresql
+            postgresql.lib
+            (installedExtension majorVersion)
+            self.packages.${pkgs.system}."psql_${majorVersion}/exts/postgis"
+          ]
+          ++ lib.optional (postgresql.isOrioleDB
+          ) self.packages.${pkgs.system}."psql_orioledb-17/exts/orioledb";
         passthru = {
           inherit (postgresql) version psqlSchema;
           lib = pkg;
@@ -106,16 +109,62 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         };
       };
 
+      specialisation.orioledb17.configuration = {
+        services.postgresql = {
+          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+          settings = {
+            shared_preload_libraries = "orioledb";
+            default_table_access_method = "orioledb";
+          };
+          initdbArgs = [
+            "--allow-group-access"
+            "--locale-provider=icu"
+            "--encoding=UTF-8"
+            "--icu-locale=en_US.UTF-8"
+          ];
+          initialScript = pkgs.writeText "init-postgres-with-orioledb" ''
+            CREATE EXTENSION orioledb CASCADE;
+          '';
+        };
+
+        systemd.services.postgresql-migrate = {
+          # we don't support migrating from postgresql 17 to orioledb-17 so we just reinit the datadir
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            User = "postgres";
+            Group = "postgres";
+            StateDirectory = "postgresql";
+            WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
+          };
+          script =
+            let
+              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+            in
+            ''
+              set -x
+              systemctl cat postgresql.service
+              rm -rf ${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}
+            '';
+        };
+
+        systemd.services.postgresql = {
+          after = [ "postgresql-migrate.service" ];
+          requires = [ "postgresql-migrate.service" ];
+        };
+      };
     };
   testScript =
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+        "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "orioledb-17"))}],
       }
 
       def run_sql(query):
@@ -166,5 +215,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         assert f"${pname},{latestVersion}" in installed_extensions
 
       check_upgrade_path("17")
+
+      with subtest("switch to orioledb 17"):
+        server.succeed(
+          "${orioledb17-configuration}/bin/switch-to-configuration test >&2"
+        )
+        installed_extensions=run_sql(r"""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
+        assert "orioledb" in installed_extensions
+
+      check_upgrade_path("orioledb-17")
     '';
 }
