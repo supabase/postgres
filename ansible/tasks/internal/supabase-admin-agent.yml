@@ -29,7 +29,7 @@
   copy:
     src: files/supabase_admin_agent_config/supabase-admin-agent.sudoers.conf
     dest: /etc/sudoers.d/supabase-admin-agent
-    mode: "0644"
+    mode: "0440"
 
 - name: Setting arch (x86)
   set_fact:
@@ -40,6 +40,13 @@
   set_fact:
     arch: "arm64"
   when: platform == "arm64"
+
+- name: install gpg explicitly for qemu artifacts
+  become: yes
+  apt:
+    pkg:
+      - gpg
+  when: qemu_mode is defined
 
 - name: Download supabase-admin-agent archive
   get_url:
@@ -71,8 +78,8 @@
     dest: /etc/systemd/system/supabase-admin-agent_salt.timer
 
 - name: supabase-admin-agent - create salt service file
-  copy:
-    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.service
+  template:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_salt.service.j2
     dest: /etc/systemd/system/supabase-admin-agent_salt.service
 
 - name: supabase-admin-agent - reload systemd

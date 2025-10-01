@@ -45,11 +45,9 @@ For faster iteration, it's more convenient to build the image on an ubuntu bare-
 list of packages installed on the EKS to build images:
 
 ```
-    apt-get install -y git emacs ripgrep vim-tiny byobu build-essential
-    wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-    apt-cache update
-    apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils awscli packer=1.11.2-1
+    apt-get install -y git emacs ripgrep vim-tiny byobu build-essential unzip
+    curl -L "https://releases.hashicorp.com/packer/1.14.1/packer_1.14.1_linux_$(dpkg --print-architecture).zip" -o packer.zip && unzip packer.zip  && rm -f packer.zip  && sudo mv packer /usr/local/bin/
+    apt-get install -y qemu-system qemu-system-arm qemu-utils qemu-efi-aarch64 libvirt-clients libvirt-daemon libqcow-utils software-properties-common git make libnbd-bin nbdkit fuse2fs cloud-image-utils
 ```
 
 ### Dependencies note

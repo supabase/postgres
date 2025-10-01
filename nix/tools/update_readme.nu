@@ -57,6 +57,55 @@ def get_src_url [pkg_attr] {
     }
 }
 
+def get_latest_version_for_pg [ext_name, pg_info] {
+    # Load versions.json to get the latest version for multi-version extensions
+    let versions_file = ([$env.PWD "nix/ext/versions.json"] | path join)
+    
+    if not ($versions_file | path exists) {
+        return null
+    }
+    
+    let versions_data = (open $versions_file)
+    
+    # Extract the base extension name (remove -all suffix)
+    let base_name = if ($ext_name | str ends-with "-all") {
+        $ext_name | str replace "-all" ""
+    } else {
+        $ext_name
+    }
+    
+    # Check if this extension exists in versions.json
+    if not ($versions_data | columns | any {|col| $col == $base_name}) {
+        return null
+    }
+    
+    let ext_versions = ($versions_data | get $base_name)
+    let pg_major = $pg_info.version
+    
+    # For orioledb, use "17" as the PostgreSQL version for lookups
+    let pg_type = if $pg_info.is_orioledb {
+        "17"  # Use regular PG 17 for orioledb multi-version lookups
+    } else {
+        $pg_major
+    }
+    
+    # Find versions that support this PostgreSQL version
+    let supported_versions = ($ext_versions 
+        | transpose version info
+        | where {|row| 
+            $row.info.postgresql | any {|pg| $pg == $pg_type}
+        }
+        | get version
+    )
+    
+    if ($supported_versions | is-empty) {
+        return null
+    }
+    
+    # Return the latest version (last in the sorted list)
+    $supported_versions | sort | last
+}
+
 def get_extension_info [flake_json, pg_info] {
     let major_version = ($pg_info.version | split row "." | first)
     let version_prefix = if $pg_info.is_orioledb {
@@ -76,19 +125,45 @@ def get_extension_info [flake_json, pg_info] {
     
     let all_exts = ($ext_names | each {|ext_name| 
         let ext_info = ($sys_packages | get $ext_name)
-        let name = ($ext_name | str replace $version_prefix "")
-        let version = if $name == "orioledb" {
+        let raw_name = ($ext_name | str replace $version_prefix "")
+        
+        # Remove -all suffix from the display name
+        let display_name = if ($raw_name | str ends-with "-all") {
+            $raw_name | str replace "-all" ""
+        } else {
+            $raw_name
+        }
+        
+        # Check if this is a multi-version extension
+        let version = if ($raw_name | str ends-with "-all") {
+            let latest_ver = (get_latest_version_for_pg $raw_name $pg_info)
+            if $latest_ver != null {
+                $latest_ver
+            } else if $raw_name == "orioledb" {
+                $ext_info.name  # Use name directly for orioledb
+            } else if ($ext_info.name | str contains "-") {
+                $ext_info.name | split row "-" | last
+            } else {
+                $ext_info.name
+            }
+        } else if $raw_name == "orioledb" {
             $ext_info.name  # Use name directly for orioledb
         } else if ($ext_info.name | str contains "-") {
             $ext_info.name | split row "-" | last
         } else {
             $ext_info.name
         }
+        
         let src_url = (get_src_url $ext_name)
+        let description = if ($ext_info | columns | any {|col| $col == "description"}) {
+            $ext_info.description
+        } else {
+            ""  # Default to empty string if description field doesn't exist
+        }
         {
-            name: $name,
+            name: $display_name,  # Use the cleaned name without -all suffix
             version: $version,
-            description: $ext_info.description,
+            description: $description,
             url: $src_url
         }
     })

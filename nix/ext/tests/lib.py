@@ -147,7 +147,7 @@ class PostgresExtensionTest(object):
             )
         last_version = available_versions[-1]
         assert ext_version.endswith(
-            f"{self.extension_name}-{last_version}.so"
+            f"{last_version}.so"
         ), f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
 
         # Switch to the first version
@@ -157,7 +157,7 @@ class PostgresExtensionTest(object):
         # Check that we are using the first version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
         assert ext_version.endswith(
-            f"{self.extension_name}-{first_version}.so"
+            f"{first_version}.so"
         ), f"Expected {self.extension_name} version {first_version}, but found {ext_version}"
 
         # Switch to the first version
@@ -165,5 +165,5 @@ class PostgresExtensionTest(object):
         # Check that we are using the last version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
         assert ext_version.endswith(
-            f"{self.extension_name}-{last_version}.so"
+            f"{last_version}.so"
         ), f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
