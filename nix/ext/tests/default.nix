@@ -125,6 +125,7 @@ let
           pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
         in
         ''
+          from pathlib import Path
           versions = {
             "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
@@ -135,6 +136,8 @@ let
           ext_has_background_worker = ${
             if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
           }
+          sql_test_directory = Path("${../../tests}")
+          pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
 
           ${builtins.readFile ./lib.py}
 
@@ -143,10 +146,13 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, support_upgrade)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
           with subtest("Check upgrade path with postgresql 15"):
             test.check_upgrade_path("15")
+
+          with subtest("Check pg_regress with postgresql 15"):
+            test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
           last_version = None
           with subtest("Check the install of the last version of the extension"):
@@ -166,6 +172,9 @@ let
 
           with subtest("Check upgrade path with postgresql 17"):
             test.check_upgrade_path("17")
+
+          with subtest("Check pg_regress with postgresql 17"):
+            test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
         '';
     };
 in
