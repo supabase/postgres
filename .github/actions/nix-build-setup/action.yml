@@ -12,12 +12,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: aws-oidc
-      uses: aws-actions/configure-aws-credentials@v4.3.1
-      with:
-        aws-region: us-east-2
-        role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role # Shared Services
-        role-session-name: gha-oidc-${{ github.run_id }}
     - name: aws-creds
       uses: aws-actions/configure-aws-credentials@v4.3.1
       with:
@@ -25,9 +19,8 @@ runs:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
         role-session-name: gha-oidc-${{ github.run_id }}
-        role-chaining: true
-        role-skip-session-tagging: true
-        role-duration-seconds: ${{ inputs.aws-role-duration }}
+        role-duration-seconds: 18000
+
     - name: Write creds files
       shell: bash
       run: |
