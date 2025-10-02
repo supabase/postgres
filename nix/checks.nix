@@ -149,7 +149,7 @@
               ) filteredSqlTests;
               sortedTestList = builtins.sort (a: b: a < b) testList;
             in
-            pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
+            pkgs.runCommand "postgres-${pgpkg.version}-ch"
               {
                 nativeBuildInputs = with pkgs; [
                   coreutils

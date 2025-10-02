@@ -30,6 +30,8 @@ let
     version: hash:
     stdenv.mkDerivation rec {
       inherit pname version;
+      # Use major.minor version for filenames (e.g., 1.5 instead of 1.5.0)
+      fileVersion = lib.versions.majorMinor version;
 
       buildInputs = [
         curl
@@ -49,22 +51,22 @@ let
         mkdir -p $out/{lib,share/postgresql/extension}
 
         # Install versioned library
-        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}--${version}${postgresql.dlSuffix}
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}--${fileVersion}${postgresql.dlSuffix}
 
-        cp ${pname}--${version}.sql $out/share/postgresql/extension/${pname}--${version}.sql
+        cp ${pname}--${fileVersion}.sql $out/share/postgresql/extension/${pname}--${fileVersion}.sql
 
         # Create versioned control file with modified module path
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
-          ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+          ${pname}.control > $out/share/postgresql/extension/${pname}--${fileVersion}.control
 
         # For the latest version, create default control file and symlink and copy SQL upgrade scripts
         if [[ "${version}" == "${latestVersion}" ]]; then
           {
-            echo "default_version = '${version}'"
-            cat $out/share/postgresql/extension/${pname}--${version}.control
+            echo "default_version = '${fileVersion}'"
+            cat $out/share/postgresql/extension/${pname}--${fileVersion}.control
           } > $out/share/postgresql/extension/${pname}.control
-          ln -sfn ${pname}--${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+          ln -sfn ${pname}--${fileVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
           cp *.sql $out/share/postgresql/extension
         fi
 
