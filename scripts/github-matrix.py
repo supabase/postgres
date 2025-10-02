@@ -92,6 +92,12 @@ def build_nix_eval_command(max_workers: int, target: str) -> List[str]:
         "--check-cache-status",
         "--force-recurse",
         "--quiet",
+        "--option",
+        "eval-cache",
+        "false",
+        "--option",
+        "accept-flake-config",
+        "true",
         "--workers",
         str(max_workers),
     ]
@@ -214,7 +220,11 @@ def main() -> None:
             "name": pkg["name"],
             "system": pkg["system"],
             "runs_on": pkg["runs_on"],
-            **({  "postgresql_version": pkg["postgresql_version"]} if "postgresql_version" in pkg else {})
+            **(
+                {"postgresql_version": pkg["postgresql_version"]}
+                if "postgresql_version" in pkg
+                else {}
+            ),
         }
 
     if args.target == "extensions":
@@ -238,7 +248,10 @@ def main() -> None:
         cleaned_packages = [clean_package_for_output(pkg) for pkg in gh_action_packages]
         gh_output = {"include": cleaned_packages}
 
-    print(f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}", file=sys.stderr)
+    print(
+        f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}",
+        file=sys.stderr,
+    )
     print(json.dumps(gh_output))
 
 
