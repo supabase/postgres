@@ -6,7 +6,7 @@
       ],
       "hash": "sha256-+N/CXm4arRgvhglanfvO0FNOBUWV5RL8mn/9FpNvcjY="
     },
-    "1.6": {
+    "1.6.1": {
       "postgresql": [
         "15",
         "17"
