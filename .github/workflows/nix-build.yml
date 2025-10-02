@@ -87,7 +87,7 @@ jobs:
   checks-matrix:
     needs: [build-extensions-aarch64-linux, build-extensions-aarch64-darwin] #, build-extensions-x86_64-linux]
     if: |
-      !cancelled() && 
+      !cancelled() &&
       (needs.build-extensions-aarch64-linux.result == 'skipped' || needs.build-extensions-aarch64-linux.result == 'success') &&
       (needs.build-extensions-aarch64-darwin.result == 'skipped' || needs.build-extensions-aarch64-darwin.result == 'success')
     runs-on:
@@ -105,17 +105,19 @@ jobs:
           set -Eeu
           echo matrix="$(python scripts/github-matrix.py checks)" >> "$GITHUB_OUTPUT"
 
-
-  build-checks:
-    name: ${{ matrix.name }} (${{ matrix.system }})
-    needs: [checks-matrix]
+  build-checks-aarch64-linux:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
+    needs: checks-matrix
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: |
       !cancelled() && 
-      (needs.checks-matrix.result == 'skipped' || needs.checks-matrix.result == 'success')
+      ${{ fromJSON(needs.checks-matrix.outputs.matrix).aarch64_linux != null }} &&
+      (needs.build-extensions-aarch64-linux.result == 'skipped' || needs.build-extensions-aarch64-linux.result == 'success') &&
+      (needs.build-extensions-aarch64-darwin.result == 'skipped' || needs.build-extensions-aarch64-darwin.result == 'success')
     strategy:
       fail-fast: false
-      matrix: ${{fromJSON(needs.checks-matrix.outputs.matrix)}}
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.checks-matrix.outputs.matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -124,9 +126,49 @@ jobs:
         with:
           attr: ${{ matrix.attr }}
 
-  run-tests:
-    needs: build-checks
+  build-checks-aarch64-darwin:
+    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
+    needs: checks-matrix
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: |
       !cancelled() && 
-      (needs.build-checks.result == 'skipped' || needs.build-checks.result == 'success')
+      ${{ fromJSON(needs.checks-matrix.outputs.matrix).aarch64_darwin != null }} &&
+      (needs.build-extensions-aarch64-linux.result == 'skipped' || needs.build-extensions-aarch64-linux.result == 'success') &&
+      (needs.build-extensions-aarch64-darwin.result == 'skipped' || needs.build-extensions-aarch64-darwin.result == 'success')
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.checks-matrix.outputs.matrix).aarch64_darwin }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Build Nix Package
+        uses: ./.github/actions/nix-build-setup
+        with:
+          attr: ${{ matrix.attr }}
+
+  # TODO
+  # build-checks-x86_64-linux:
+  #   name: ${{matrix.postgresql_version}}.${{ matrix.name }} (x86_64-linux)
+  #   needs: checks-matrix
+  #   runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+  #   if: ${{ fromJSON(needs.checks-matrix.outputs.matrix).x86_64_linux != null }}
+  #   strategy:
+  #     fail-fast: false
+  #     max-parallel: 5
+  #     matrix: ${{ fromJSON(needs.checks-matrix.outputs.matrix).x86_64_linux }}
+  #   steps:
+  #     - name: Checkout Repo
+  #       uses: actions/checkout@v4
+  #     - name: Build Nix Package
+  #       uses: ./.github/actions/nix-build-setup
+  #       with:
+  #         attr: ${{ matrix.attr }}
+
+  run-tests:
+    needs: [build-checks-aarch64-linux, build-checks-aarch64-darwin] #, build-checks-x86_64-linux]
+    if: |
+      !cancelled() && 
+      (needs.build-checks-aarch64-linux.result == 'skipped' || needs.build-checks-aarch64-linux.result == 'success') &&
+      (needs.build-checks-aarch64-darwin.result == 'skipped' || needs.build-checks-aarch64-darwin.result == 'success')
     uses: ./.github/workflows/test.yml
