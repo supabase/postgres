@@ -32,7 +32,7 @@
     state: 'directory'
   loop:
     - '/etc/auth.d'
-    - 'opt/gotrue'
+    - '/opt/gotrue'
   loop_control:
     loop_var: 'gotrue_dir_item'
 
