@@ -87,7 +87,7 @@ jobs:
   checks-matrix:
     needs: [build-extensions-aarch64-linux, build-extensions-aarch64-darwin] #, build-extensions-x86_64-linux]
     if: |
-      always() && 
+      !cancelled() && 
       (needs.build-extensions-aarch64-linux.result == 'skipped' || needs.build-extensions-aarch64-linux.result == 'success') &&
       (needs.build-extensions-aarch64-darwin.result == 'skipped' || needs.build-extensions-aarch64-darwin.result == 'success')
     runs-on:
@@ -110,6 +110,9 @@ jobs:
     name: ${{ matrix.name }} (${{ matrix.system }})
     needs: [checks-matrix]
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: |
+      !cancelled() && 
+      (needs.checks-matrix.result == 'skipped' || needs.checks-matrix.result == 'success')
     strategy:
       fail-fast: false
       matrix: ${{fromJSON(needs.checks-matrix.outputs.matrix)}}
@@ -123,5 +126,7 @@ jobs:
 
   run-tests:
     needs: build-checks
-    if: ${{ success() }}
+    if: |
+      !cancelled() && 
+      (needs.build-checks.result == 'skipped' || needs.build-checks.result == 'success')
     uses: ./.github/workflows/test.yml
