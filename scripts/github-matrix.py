@@ -144,7 +144,6 @@ def run_nix_eval_jobs(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     ) as process:
         drv_paths = set()
-
         for line in process.stdout:
             package = parse_nix_eval_line(line, drv_paths, target)
             if package:
@@ -235,18 +234,15 @@ def main() -> None:
             if is_extension_pkg(pkg) and not pkg["already_cached"]
         ]
 
-        # Group packages by system
-        grouped_by_system = defaultdict(list)
-        for pkg in gh_action_packages:
-            grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
+    # Group packages by system
+    grouped_by_system = defaultdict(list)
+    for pkg in gh_action_packages:
+        grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
 
-        # Create output with system-specific matrices
-        gh_output = {}
-        for system, packages in grouped_by_system.items():
-            gh_output[system.replace("-", "_")] = {"include": packages}
-    else:
-        cleaned_packages = [clean_package_for_output(pkg) for pkg in gh_action_packages]
-        gh_output = {"include": cleaned_packages}
+    # Create output with system-specific matrices
+    gh_output = {}
+    for system, packages in grouped_by_system.items():
+        gh_output[system.replace("-", "_")] = {"include": packages}
 
     print(
         f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}",
