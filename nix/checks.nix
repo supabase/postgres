@@ -397,24 +397,22 @@
             pg_regress
             ;
         }
-        // pkgs.lib.optionalAttrs (system == "aarch64-linux") {
-          inherit (self'.packages)
-            postgresql_15_debug
-            postgresql_15_src
-            postgresql_orioledb-17_debug
-            postgresql_orioledb-17_src
-            postgresql_17_debug
-            postgresql_17_src
-            ;
-        }
-        // pkgs.lib.optionalAttrs (system == "x86_64-linux") (
+        // pkgs.lib.optionalAttrs (system == "aarch64-linux") (
           {
-            devShell = self'.devShells.default;
+            inherit (self'.packages)
+              postgresql_15_debug
+              postgresql_15_src
+              postgresql_orioledb-17_debug
+              postgresql_orioledb-17_src
+              postgresql_17_debug
+              postgresql_17_src
+              ;
           }
           // (import ./ext/tests {
             inherit self;
             inherit pkgs;
           })
+          // pkgs.lib.optionalAttrs (system == "x86_64-linux") { devShell = self'.devShells.default; }
         );
     };
 }
