@@ -160,11 +160,21 @@ buildEnv {
         VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
         if [[ "$PREVIOUS_VERSION" != "" ]]; then
           echo "Processing $i"
+          sed -i 's/CREATE[[:space:]]*FUNCTION/CREATE OR REPLACE FUNCTION/Ig' "$i"
+          {
+            echo "DROP EVENT TRIGGER IF EXISTS graphql_watch_ddl CASCADE;"
+            echo "DROP EVENT TRIGGER IF EXISTS graphql_watch_drop CASCADE;"
+            cat "$i"
+          } > "$i.tmp" && mv "$i.tmp" "$i"
           MIGRATION_FILENAME="$DIRNAME/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
           cp "$i" "$MIGRATION_FILENAME"
         fi
         PREVIOUS_VERSION="$VERSION"
       done < <(find $out -name '*.sql' | sort -V)
+      # handle special case of mergeless upgrade from 1.5.1-mergeless to 1.5.4
+      if [[ -f $out/share/postgresql/extension/pg_graphql--1.5.1--1.5.4.sql ]]; then
+        cp $out/share/postgresql/extension/pg_graphql--1.5.1--1.5.4.sql $out/share/postgresql/extension/pg_graphql--1.5.1-mergeless--1.5.4.sql
+      fi
     }
 
     create_sql_files
