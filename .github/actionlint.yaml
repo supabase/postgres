@@ -2,3 +2,4 @@ self-hosted-runner:
   labels:
     - aarch64-darwin
     - aarch64-linux
+    - blacksmith-32vcpu-ubuntu-2404

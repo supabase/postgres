@@ -36,4 +36,4 @@ runs:
         nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
     - name: nix build
       shell: bash
-      run: nix build -L .#${{ inputs.attr }}
+      run: nix build --accept-flake-config -L .#${{ inputs.attr }}
