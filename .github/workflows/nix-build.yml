@@ -106,7 +106,7 @@ jobs:
           echo matrix="$(python scripts/github-matrix.py checks)" >> "$GITHUB_OUTPUT"
 
   build-checks-aarch64-linux:
-    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
+    name: ${{ matrix.name }} (aarch64-linux)
     needs: checks-matrix
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: |
@@ -127,7 +127,7 @@ jobs:
           attr: ${{ matrix.attr }}
 
   build-checks-aarch64-darwin:
-    name: ${{matrix.postgresql_version}}.${{ matrix.name }} (aarch64-darwin)
+    name: ${{ matrix.name }} (aarch64-darwin)
     needs: checks-matrix
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: |
