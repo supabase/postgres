@@ -146,7 +146,7 @@ let
 
       export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
       export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
-      ${lib.optionalString true ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
+      ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
       cargo ${pgrxBinaryName} package \
         --pg-config ${lib.getDev postgresql}/bin/pg_config \
         ${maybeDebugFlag} \
