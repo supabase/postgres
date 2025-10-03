@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  # required by dependent workflows
+  # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
 
@@ -82,6 +82,16 @@ jobs:
   #       uses: ./.github/actions/nix-build-setup
   #       with:
   #         attr: ${{ matrix.attr }}
+
+  run-testinfra:
+    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
+    if: |
+      !cancelled() && 
+      (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
+      (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success')
+    uses: ./.github/workflows/testinfra-ami-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
     needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
