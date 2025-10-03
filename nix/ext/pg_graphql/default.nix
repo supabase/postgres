@@ -99,7 +99,7 @@ let
             # Fix bindgen error on aarch64-linux for versions using pgrx with bindgen 0.68.1
             # This affects pgrx 0.6.1 through 0.11.2 which have issues with ARM NEON vector ABI
             # We apply the fix to all versions up to 1.5.1 (last version before 1.5.4 which uses 0.11.2)
-            builtins.compareVersions "1.5.4" version >= 0
+            builtins.compareVersions "1.5.4" version > 0
           )
           {
             # Fix bindgen error on aarch64-linux by using an older version of clang
