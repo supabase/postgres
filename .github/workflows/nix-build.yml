@@ -16,20 +16,21 @@ permissions:
 
 jobs:
   nix-eval:
-    runs-on:
-      group: self-hosted-runners-nix
-      labels:
-        - aarch64-darwin
+    runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.31.2/install
       - id: set-matrix
         name: Generate Nix Matrix
         run: |
           set -Eeu
-          echo matrix="$(python scripts/github-matrix.py checks legacyPackages)" >> "$GITHUB_OUTPUT"
+          echo matrix="$(nix shell nixpkgs/405fc615369e0ea1b9c284c107ca4c3e1bc15774#nix-eval-jobs --command scripts/github-matrix.py checks legacyPackages)" >> "$GITHUB_OUTPUT"
 
   nix-build-aarch64-linux:
     name: ${{ matrix.name }} (aarch64-linux)
@@ -44,7 +45,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Build Nix Package
-        uses: ./.github/actions/nix-build-setup
+        uses: ./.github/actions/nix-build-self-hosted
         with:
           attr: ${{ matrix.attr }}
 
@@ -61,7 +62,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Build Nix Package
-        uses: ./.github/actions/nix-build-setup
+        uses: ./.github/actions/nix-build-self-hosted
         with:
           attr: ${{ matrix.attr }}
 
@@ -79,14 +80,14 @@ jobs:
   #     - name: Checkout Repo
   #       uses: actions/checkout@v4
   #     - name: Build Nix Package
-  #       uses: ./.github/actions/nix-build-setup
+  #       uses: ./.github/actions/nix-build-self-hosted
   #       with:
   #         attr: ${{ matrix.attr }}
 
   run-testinfra:
     needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
     if: |
-      !cancelled() && 
+      !cancelled() &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
       (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success')
     uses: ./.github/workflows/testinfra-ami-build.yml
@@ -96,7 +97,7 @@ jobs:
   run-tests:
     needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
     if: |
-      !cancelled() && 
+      !cancelled() &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
       (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success')
     uses: ./.github/workflows/test.yml
