@@ -231,13 +231,14 @@ def main() -> None:
         gh_action_packages = [
             {**pkg, "postgresql_version": pkg["attr"].split(".")[-3]}
             for pkg in gh_action_packages
-            if is_extension_pkg(pkg) and not pkg["already_cached"]
+            if is_extension_pkg(pkg)
         ]
 
     # Group packages by system
     grouped_by_system = defaultdict(list)
     for pkg in gh_action_packages:
-        grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
+        if not pkg["already_cached"]:
+            grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
 
     # Create output with system-specific matrices
     gh_output = {}
