@@ -50,9 +50,10 @@ let
         env = lib.optionalAttrs stdenv.isDarwin {
           POSTGRES_LIB = "${postgresql}/lib";
           RUSTFLAGS = "-C link-arg=-undefined -C link-arg=dynamic_lookup";
-          NIX_BUILD_CORES = "4"; # Limit parallel jobs
-          CARGO_BUILD_JOBS = "4"; # Limit cargo parallelism
+          NIX_BUILD_CORES = "4";
+          CARGO_BUILD_JOBS = "4";
         };
+
         CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG = true;
 
         postInstall = ''
@@ -92,22 +93,30 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      // lib.optionalAttrs (builtins.compareVersions "1.4.4" version >= 0) {
-        # Fix bindgen error on aarch64-linux by using an older version of clang
-        bindgenHook =
-          let
-            nixos2211 = (
-              import (builtins.fetchTarball {
-                url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
-                sha256 = "1j7h75a9hwkkm97jicky5rhvzkdwxsv5v46473rl6agvq2sj97y1";
-              }) { inherit system; }
-            );
-          in
-          rustPlatform.bindgenHook.overrideAttrs {
-            libclang = nixos2211.clang.cc.lib;
-            clang = nixos2211.clang;
-          };
-      }
+      //
+        lib.optionalAttrs
+          (
+            # Fix bindgen error on aarch64-linux for versions using pgrx with bindgen 0.68.1
+            # This affects pgrx 0.6.1 through 0.11.3 which have issues with ARM NEON vector ABI
+            # We apply the fix to all versions up to and including 1.5.7 (last version before 1.5.9 which uses 0.12.6)
+            builtins.compareVersions "1.5.7" version >= 0
+          )
+          {
+            # Fix bindgen error on aarch64-linux by using an older version of clang
+            bindgenHook =
+              let
+                nixos2211 = (
+                  import (builtins.fetchTarball {
+                    url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
+                    sha256 = "1j7h75a9hwkkm97jicky5rhvzkdwxsv5v46473rl6agvq2sj97y1";
+                  }) { inherit system; }
+                );
+              in
+              rustPlatform.bindgenHook.overrideAttrs {
+                libclang = nixos2211.clang.cc.lib;
+                clang = nixos2211.clang;
+              };
+          }
       // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
         # Add missing Cargo.lock
         patches = [ ./0001-Add-missing-Cargo.lock-${version}.patch ];
