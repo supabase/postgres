@@ -77,14 +77,25 @@ let
           create_control_files
         '';
 
+        pgrxBinaryName = if builtins.compareVersions "0.7.4" pgrxVersion >= 0 then "pgx" else "pgrx";
+
         preCheck = ''
-          export PGRX_HOME=$(mktemp -d)
-          export NIX_PGLIBDIR=$PGRX_HOME/${lib.versions.major postgresql.version}/lib
-          ${lib.getExe rsync} --chmod=ugo+w -a ${postgresql}/ ${postgresql.lib}/ $PGRX_HOME/${lib.versions.major postgresql.version}/
-          cargo pgrx init --pg${lib.versions.major postgresql.version} $PGRX_HOME/${lib.versions.major postgresql.version}/bin/pg_config
+          export PGRX_HOME="$(mktemp -d)"
+          export PG_VERSION="${lib.versions.major postgresql.version}"
+          export NIX_PGLIBDIR="$PGRX_HOME/$PG_VERSION/lib"
+          export PATH="$PGRX_HOME/$PG_VERSION/bin:$PATH"
+          ${lib.getExe rsync} --chmod=ugo+w -a ${postgresql}/ ${postgresql.lib}/ "$PGRX_HOME/$PG_VERSION/"
+          cargo ${pgrxBinaryName} init "--pg$PG_VERSION" "$PGRX_HOME/$PG_VERSION/bin/pg_config"
+          cargo ${pgrxBinaryName} install --release --features "pg$PG_VERSION"
         '';
 
-        doCheck = false;
+        doCheck = true;
+
+        checkPhase = ''
+          runHook preCheck
+          bash -x ./bin/installcheck
+          runHook postCheck
+        '';
 
         meta = with lib; {
           description = "GraphQL support for PostreSQL";
