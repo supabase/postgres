@@ -16,7 +16,7 @@ let
             postgresql
             postgresql.lib
             (installedExtension majorVersion)
-            self.packages.${pkgs.system}."psql_${majorVersion}/exts/postgis"
+            self.packages.${pkgs.system}."psql_${majorVersion}/exts/postgis-all"
           ]
           ++ lib.optional (postgresql.isOrioleDB
           ) self.packages.${pkgs.system}."psql_orioledb-17/exts/orioledb";
