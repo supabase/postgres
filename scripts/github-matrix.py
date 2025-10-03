@@ -71,24 +71,12 @@ BUILD_RUNNER_MAP: Dict[str, RunsOnConfig] = {
 }
 
 
-def get_worker_count() -> int:
-    """Get optimal worker count based on CPU cores."""
-    try:
-        return max(1, int(os.cpu_count()))
-    except (OSError, AttributeError):
-        print(
-            "Warning: Unable to get CPU count, using default max_workers=1",
-            file=sys.stderr,
-        )
-        return 1
-
-
-def build_nix_eval_command(max_workers: int, target: str) -> List[str]:
+def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
     nix_eval_cmd = [
         "nix-eval-jobs",
         "--flake",
-        f".#{target}",
+        ".",
         "--check-cache-status",
         "--force-recurse",
         "--quiet",
@@ -100,12 +88,14 @@ def build_nix_eval_command(max_workers: int, target: str) -> List[str]:
         "true",
         "--workers",
         str(max_workers),
+        "--select",
+        f"outputs: {{ inherit (outputs) {' '.join(flake_outputs)}; }}",
     ]
     return nix_eval_cmd
 
 
 def parse_nix_eval_line(
-    line: str, drv_paths: Set[str], target: str
+    line: str, drv_paths: Set[str]
 ) -> Optional[GitHubActionPackage]:
     """Parse a single line of nix-eval-jobs output"""
     if not line.strip():
@@ -120,7 +110,7 @@ def parse_nix_eval_line(
         runs_on_config = BUILD_RUNNER_MAP[data["system"]]
 
         return {
-            "attr": f"{target}.{data['attr']}",
+            "attr": f"{data['attr']}",
             "name": data["name"],
             "system": data["system"],
             "already_cached": data.get("cacheStatus") != "notBuilt",
@@ -134,22 +124,23 @@ def parse_nix_eval_line(
         return None
 
 
-def run_nix_eval_jobs(
-    cmd: List[str], target: str
-) -> Generator[GitHubActionPackage, None, None]:
+def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, None]:
     """Run nix-eval-jobs and yield parsed package data."""
     print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
 
     with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     ) as process:
-        drv_paths = set()
+        drv_paths: Set[str] = set()
+        assert process.stdout is not None  # for mypy
+        assert process.stderr is not None  # for mypy
         for line in process.stdout:
-            package = parse_nix_eval_line(line, drv_paths, target)
+            package = parse_nix_eval_line(line, drv_paths)
             if package:
                 yield package
 
-        if process.returncode and process.returncode != 0:
+        process.wait()
+        if process.returncode != 0:
             print("Error: Evaluation failed", file=sys.stderr)
             sys.stderr.write(process.stderr.read())
             sys.exit(process.returncode)
@@ -162,7 +153,7 @@ def is_extension_pkg(pkg: GitHubActionPackage) -> bool:
 
 
 # thank you buildbot-nix https://github.com/nix-community/buildbot-nix/blob/985d069a2a45cf4a571a4346107671adc2bd2a16/buildbot_nix/buildbot_nix/build_trigger.py#L297
-def sort_pkgs_by_closures(jobs: list[GitHubActionPackage]) -> list[GitHubActionPackage]:
+def sort_pkgs_by_closures(jobs: List[GitHubActionPackage]) -> List[GitHubActionPackage]:
     sorted_jobs = []
 
     # Prepare job dependencies
@@ -194,23 +185,16 @@ def main() -> None:
         description="Generate GitHub Actions matrix for Nix builds"
     )
     parser.add_argument(
-        "target", choices=["checks", "extensions"], help="Type of matrix to generate"
+        "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
     args = parser.parse_args()
 
-    max_workers = get_worker_count()
+    max_workers: int = os.cpu_count() or 1
 
-    if args.target == "checks":
-        flake_output = "checks"
-    else:
-        flake_output = "legacyPackages"
+    cmd = build_nix_eval_command(max_workers, args.flake_outputs)
 
-    cmd = build_nix_eval_command(max_workers, flake_output)
-
-    gh_action_packages = sort_pkgs_by_closures(
-        list(run_nix_eval_jobs(cmd, flake_output))
-    )
+    gh_action_packages = sort_pkgs_by_closures(list(run_nix_eval_jobs(cmd)))
 
     def clean_package_for_output(pkg: GitHubActionPackage) -> dict:
         """Remove debug fields from package for final output"""
@@ -225,14 +209,6 @@ def main() -> None:
                 else {}
             ),
         }
-
-    if args.target == "extensions":
-        # filter to only include extension packages and add postgresql_version field
-        gh_action_packages = [
-            {**pkg, "postgresql_version": pkg["attr"].split(".")[-3]}
-            for pkg in gh_action_packages
-            if is_extension_pkg(pkg)
-        ]
 
     # Group packages by system
     grouped_by_system = defaultdict(list)
