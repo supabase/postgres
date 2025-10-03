@@ -16,19 +16,10 @@ permissions:
 
 jobs:
   nix-eval:
-    runs-on: blacksmith-32vcpu-ubuntu-2404
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
-      - id: set-matrix
-        name: Generate Nix Matrix
-        run: |
-          set -Eeu
-          echo matrix="$(nix shell github:nix-community/nix-eval-jobs --command scripts/github-matrix.py checks legacyPackages)" >> "$GITHUB_OUTPUT"
+    uses: ./.github/workflows/nix-eval.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   nix-build-aarch64-linux:
     name: ${{ matrix.name }} (aarch64-linux)
