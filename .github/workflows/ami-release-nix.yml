@@ -36,7 +36,7 @@ jobs:
         id: set-versions
         run: |
           VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
-          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -69,8 +69,8 @@ jobs:
 
       - name: Set PostgreSQL version environment variable
         run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -81,7 +81,7 @@ jobs:
              PG_VERSION="${PG_VERSION}-${SUFFIX}"
              echo "Added branch suffix to version: $SUFFIX"
           fi
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
@@ -106,8 +106,8 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "::notice title=AMI Published::Postgres AMI version: $VERSION"
 
       - name: Create nix flake revision tarball
