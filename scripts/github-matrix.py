@@ -33,6 +33,7 @@ class NixEvalJobsOutput(TypedDict):
     neededBuilds: NotRequired[List[Any]]
     neededSubstitutes: NotRequired[List[Any]]
     outputs: NotRequired[Dict[str, str]]
+    error: NotRequired[str]
 
 
 class RunsOnConfig(TypedDict):
@@ -96,6 +97,10 @@ def parse_nix_eval_line(line: str, drv_paths: Set[str]) -> Optional[NixEvalJobsO
 
     try:
         data: NixEvalJobsOutput = json.loads(line)
+        if "error" in data:
+            raise ValueError(
+                f"Error in nix-eval-jobs output for {data['attr']}: {data['error']}"
+            )
         if data["drvPath"] in drv_paths:
             return None
         drv_paths.add(data["drvPath"])
@@ -149,14 +154,10 @@ def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutp
 
     sorter = graphlib.TopologicalSorter(job_closures)
 
+    job_by_drv = {job["drvPath"]: job for job in jobs}
     for item in sorter.static_order():
-        i = 0
-        while i < len(jobs):
-            if item == jobs[i]["drvPath"]:
-                sorted_jobs.append(jobs[i])
-                del jobs[i]
-            else:
-                i += 1
+        if item in job_by_drv:
+            sorted_jobs.append(job_by_drv[item])
 
     return sorted_jobs
 
