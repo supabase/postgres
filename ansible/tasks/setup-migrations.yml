@@ -1,13 +1,17 @@
-- name: Run migrate.sh script
-  shell: ./migrate.sh
-  register: retval
-  when: debpkg_mode or stage2_nix
-  args:
-    chdir: /tmp/migrations/db
-  failed_when: retval.rc != 0
+- name: run debpkg_mode or stage2_nix tasks
+  when:
+    - (debpkg_mode or stage2_nix)
+  block:
+    - name: Run migrate.sh script
+      ansible.builtin.command:
+        cmd: './migrate.sh'
+      args:
+        chdir: '/tmp/migrations/db'
+      failed_when:
+        - retval['rc'] != 0
+      register: 'retval'
 
-- name: Create /root/MIGRATION-AMI file
-  file:
-    path: "/root/MIGRATION-AMI"
-    state: touch
-  when: debpkg_mode or stage2_nix
+    - name: Create /root/MIGRATION-AMI file
+      ansible.builtin.file:
+        path: '/root/MIGRATION-AMI'
+        state: 'touch'
