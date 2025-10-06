@@ -1,7 +1,7 @@
 - name: PG logging conf
   template:
     src: files/postgresql_config/postgresql-csvlog.conf
-    dest: /etc/postgresql/logging.conf
+    dest: /etc/postgresql-custom/logging.conf
     group: postgres
 
 - name: UFW - Allow SSH connections

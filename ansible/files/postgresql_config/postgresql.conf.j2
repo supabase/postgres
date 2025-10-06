@@ -428,8 +428,6 @@ effective_cache_size = 128MB
 # REPORTING AND LOGGING
 #------------------------------------------------------------------------------
 
-include = '/etc/postgresql/logging.conf'
-
 # These are relevant when logging to syslog:
 #syslog_facility = 'LOCAL0'
 #syslog_ident = 'postgres'
@@ -750,7 +748,7 @@ jit_provider = 'llvmjit'		# JIT library to use
 # default postgresql.conf.  Note that these are directives, not variable
 # assignments, so they can usefully be given more than once.
 
-#include_dir = '...'			# include files ending in '.conf' from
+include_dir = '/etc/postgresql-custom'			# include files ending in '.conf' from
 					# a directory, e.g., 'conf.d'
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
