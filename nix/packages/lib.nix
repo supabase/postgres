@@ -50,7 +50,7 @@
         };
         pgcronConfigFile = builtins.path {
           name = "pg_cron.conf";
-          path = ../../ansible/files/postgresql_config/pg_cron.conf;
+          path = ../../ansible/files/postgresql_config/pgcron.conf;
         };
         readReplicaConfigFile = builtins.path {
           name = "readreplica.conf";
