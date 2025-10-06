@@ -54,15 +54,14 @@ class GitHubActionPackage(TypedDict):
 
 BUILD_RUNNER_MAP: Dict[str, RunsOnConfig] = {
     "aarch64-linux": {
-        "group": "self-hosted-runners-nix",
-        "labels": ["aarch64-linux"],
+        "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
     },
     "aarch64-darwin": {
         "group": "self-hosted-runners-nix",
         "labels": ["aarch64-darwin"],
     },
     "x86_64-linux": {
-        "labels": ["blacksmith-32vcpu-ubuntu-2404"],
+        "labels": ["blacksmith-8vcpu-ubuntu-2404"],
     },
 }
 
@@ -162,6 +161,30 @@ def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutp
     return sorted_jobs
 
 
+def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
+    """Determine if a package is considered large based on its attribute path."""
+    RUST_EXTENSIONS = ["exts.wrappers", "exts.pg_jsonschema", "exts.pg_graphql"]
+    LARGE_C_EXTENSION = ["exts.postgis"]
+    return any(
+        indicator in pkg["attr"] for indicator in RUST_EXTENSIONS + LARGE_C_EXTENSION
+    )
+
+
+def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig:
+    """Determine the appropriate GitHub Actions runner for a package."""
+    system = pkg["system"]
+    if is_large_pkg(pkg):
+        # Use larger runners for large packages for x86_64-linux and aarch64-linux
+        if system == "x86_64-linux":
+            return {"labels": ["blacksmith-32vcpu-ubuntu-2404"]}
+        elif system == "aarch64-linux":
+            return {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]}
+    if system in BUILD_RUNNER_MAP:
+        return BUILD_RUNNER_MAP[system]
+    else:
+        raise ValueError(f"No runner configuration for system: {system}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate GitHub Actions matrix for Nix builds"
@@ -184,6 +207,7 @@ def main() -> None:
             "attr": pkg["attr"],
             "name": pkg["name"],
             "system": pkg["system"],
+            "runs_on": get_runner_for_package(pkg),
         }
         if is_extension_pkg(pkg):
             # Extract PostgreSQL version from attribute path
