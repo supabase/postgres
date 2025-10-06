@@ -4,6 +4,7 @@
   perSystem =
     { pkgs, ... }:
     {
+      treefmt.flakeCheck = false;
       treefmt.programs = {
         deadnix.enable = true;
         nixfmt = {
