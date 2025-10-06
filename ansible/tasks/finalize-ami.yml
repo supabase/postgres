@@ -4,6 +4,17 @@
     dest: /etc/postgresql-custom/00-logging.conf
     group: postgres
 
+- name: auto_explain and pg_cron confs
+  ansible.builtin.template:
+    dest: "/etc/postgresql-custom/{{ ext_item }}.conf"
+    group: 'postgres'
+    src: "files/postgresql_config/{{ ext_item | split('_') | join('') }}.conf"
+  loop:
+    - auto_explain
+    - pg_cron
+  loop_control:
+    loop_var: 'ext_item'
+
 - name: UFW - Allow SSH connections
   ufw:
     rule: allow
