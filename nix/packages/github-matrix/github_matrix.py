@@ -19,6 +19,9 @@ from typing import (
     TypedDict,
 )
 
+System = Literal["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
+RunnerType = Literal["ephemeral", "self-hosted"]
+
 
 class NixEvalJobsOutput(TypedDict):
     """Raw output from nix-eval-jobs command."""
@@ -27,9 +30,8 @@ class NixEvalJobsOutput(TypedDict):
     attrPath: List[str]
     cacheStatus: Literal["notBuilt", "cached", "local"]
     drvPath: str
-    isCached: bool
     name: str
-    system: str
+    system: System
     neededBuilds: NotRequired[List[Any]]
     neededSubstitutes: NotRequired[List[Any]]
     outputs: NotRequired[Dict[str, str]]
@@ -48,21 +50,29 @@ class GitHubActionPackage(TypedDict):
 
     attr: str
     name: str
-    system: str
+    system: System
     runs_on: RunsOnConfig
     postgresql_version: NotRequired[str]
 
 
-BUILD_RUNNER_MAP: Dict[str, RunsOnConfig] = {
-    "aarch64-linux": {
-        "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
+BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
+    "ephemeral": {
+        "aarch64-linux": {
+            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
+        },
+        "x86_64-linux": {
+            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
+        },
     },
-    "aarch64-darwin": {
-        "group": "self-hosted-runners-nix",
-        "labels": ["aarch64-darwin"],
-    },
-    "x86_64-linux": {
-        "labels": ["blacksmith-8vcpu-ubuntu-2404"],
+    "self-hosted": {
+        "aarch64-darwin": {
+            "group": "self-hosted-runners-nix",
+            "labels": ["aarch64-darwin"],
+        },
+        "aarch64-linux": {
+            "group": "self-hosted-runners-nix",
+            "labels": ["aarch64-linux"],
+        },
     },
 }
 
@@ -76,6 +86,7 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
         "--check-cache-status",
         "--force-recurse",
         "--quiet",
+        "--show-required-system-features",
         "--option",
         "eval-cache",
         "false",
@@ -171,19 +182,33 @@ def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     )
 
 
-def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig:
-    """Determine the appropriate GitHub Actions runner for a package."""
+def is_kvm_pkg(pkg: NixEvalJobsOutput) -> bool:
+    """Determine if a package requires KVM"""
+    return "kvm" in pkg.get("requiredSystemFeatures", [])
+
+
+def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
+    """Determine the appropriate GitHub Actions runner for a package.
+
+    Priority order:
+    1. KVM packages → self-hosted runners
+    2. Large packages on Linux → 32vcpu ephemeral runners
+    3. Darwin packages → self-hosted runners
+    4. Default → ephemeral runners
+    """
     system = pkg["system"]
-    if is_large_pkg(pkg):
-        # Use larger runners for large packages for x86_64-linux and aarch64-linux
-        if system == "x86_64-linux":
-            return {"labels": ["blacksmith-32vcpu-ubuntu-2404"]}
-        elif system == "aarch64-linux":
-            return {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]}
-    if system in BUILD_RUNNER_MAP:
-        return BUILD_RUNNER_MAP[system]
-    else:
-        raise ValueError(f"No runner configuration for system: {system}")
+
+    if is_kvm_pkg(pkg):
+        return BUILD_RUNNER_MAP["self-hosted"].get(system)
+
+    if is_large_pkg(pkg) and system in ("x86_64-linux", "aarch64-linux"):
+        suffix = "-arm" if system == "aarch64-linux" else ""
+        return {"labels": [f"blacksmith-32vcpu-ubuntu-2404{suffix}"]}
+
+    if system == "aarch64-darwin":
+        return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+
+    return BUILD_RUNNER_MAP["ephemeral"].get(system)
 
 
 def main() -> None:
@@ -204,11 +229,14 @@ def main() -> None:
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
         """Convert nix-eval-jobs output to GitHub Actions matrix package"""
+        runner = get_runner_for_package(pkg)
+        if runner is None:
+            raise ValueError(f"No runner configuration for system: {pkg['system']}")
         returned_pkg: GitHubActionPackage = {
             "attr": pkg["attr"],
             "name": pkg["name"],
             "system": pkg["system"],
-            "runs_on": get_runner_for_package(pkg),
+            "runs_on": runner,
         }
         if is_extension_pkg(pkg):
             # Extract PostgreSQL version from attribute path
