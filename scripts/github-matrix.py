@@ -43,16 +43,12 @@ class RunsOnConfig(TypedDict):
 
 
 class GitHubActionPackage(TypedDict):
-    """Processed package for GitHub Actions matrix."""
+    """Final package output for GitHub Actions matrix."""
 
     attr: str
     name: str
     system: str
-    already_cached: bool
     runs_on: RunsOnConfig
-    drvPath: str
-    neededSubstitutes: List[str]
-    neededBuilds: List[str]
     postgresql_version: NotRequired[str]
 
 
@@ -94,9 +90,7 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
     return nix_eval_cmd
 
 
-def parse_nix_eval_line(
-    line: str, drv_paths: Set[str]
-) -> Optional[GitHubActionPackage]:
+def parse_nix_eval_line(line: str, drv_paths: Set[str]) -> Optional[NixEvalJobsOutput]:
     """Parse a single line of nix-eval-jobs output"""
     if not line.strip():
         return None
@@ -106,25 +100,13 @@ def parse_nix_eval_line(
         if data["drvPath"] in drv_paths:
             return None
         drv_paths.add(data["drvPath"])
-
-        runs_on_config = BUILD_RUNNER_MAP[data["system"]]
-
-        return {
-            "attr": f"{data['attr']}",
-            "name": data["name"],
-            "system": data["system"],
-            "already_cached": data.get("cacheStatus") != "notBuilt",
-            "runs_on": runs_on_config,
-            "drvPath": data["drvPath"],
-            "neededSubstitutes": data.get("neededSubstitutes", []),
-            "neededBuilds": data.get("neededBuilds", []),
-        }
+        return data
     except json.JSONDecodeError:
         print(f"Skipping invalid JSON line: {line}", file=sys.stderr)
         return None
 
 
-def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, None]:
+def run_nix_eval_jobs(cmd: List[str]) -> Generator[NixEvalJobsOutput, None, None]:
     """Run nix-eval-jobs and yield parsed package data."""
     print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
 
@@ -146,21 +128,21 @@ def run_nix_eval_jobs(cmd: List[str]) -> Generator[GitHubActionPackage, None, No
             sys.exit(process.returncode)
 
 
-def is_extension_pkg(pkg: GitHubActionPackage) -> bool:
+def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Check if the package is a postgresql extension package."""
     attrs = pkg["attr"].split(".")
     return attrs[-2] == "exts"
 
 
 # thank you buildbot-nix https://github.com/nix-community/buildbot-nix/blob/985d069a2a45cf4a571a4346107671adc2bd2a16/buildbot_nix/buildbot_nix/build_trigger.py#L297
-def sort_pkgs_by_closures(jobs: List[GitHubActionPackage]) -> List[GitHubActionPackage]:
+def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutput]:
     sorted_jobs = []
 
     # Prepare job dependencies
     job_set = {job["drvPath"] for job in jobs}
     job_closures = {
-        k["drvPath"]: set(k["neededSubstitutes"])
-        .union(set(k["neededBuilds"]))
+        k["drvPath"]: set(k.get("neededSubstitutes", []))
+        .union(set(k.get("neededBuilds", [])))
         .intersection(job_set)
         .difference({k["drvPath"]})
         for k in jobs
@@ -196,13 +178,12 @@ def main() -> None:
 
     gh_action_packages = sort_pkgs_by_closures(list(run_nix_eval_jobs(cmd)))
 
-    def clean_package_for_output(pkg: GitHubActionPackage) -> dict:
-        """Remove debug fields from package for final output"""
-        returned_pkg = {
+    def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
+        """Convert nix-eval-jobs output to GitHub Actions matrix package"""
+        returned_pkg: GitHubActionPackage = {
             "attr": pkg["attr"],
             "name": pkg["name"],
             "system": pkg["system"],
-            "runs_on": pkg["runs_on"],
         }
         if is_extension_pkg(pkg):
             # Extract PostgreSQL version from attribute path
@@ -213,7 +194,7 @@ def main() -> None:
     # Group packages by system
     grouped_by_system = defaultdict(list)
     for pkg in gh_action_packages:
-        if not pkg["already_cached"]:
+        if pkg.get("cacheStatus") == "notBuilt":
             grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
 
     # Create output with system-specific matrices
