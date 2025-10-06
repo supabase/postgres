@@ -41,6 +41,7 @@
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
+          pgctld = pkgs.callPackage ./pgctld.nix { inherit inputs; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };

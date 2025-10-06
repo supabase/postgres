@@ -224,6 +224,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-go125": {
+      "locked": {
+        "lastModified": 1757773867,
+        "narHash": "sha256-pGZxBz8IVhLU/hwEazUHgmA1msTCpHpv6lP4FrlAkXg=",
+        "owner": "Nixos",
+        "repo": "nixpkgs",
+        "rev": "68fcc594571bf702353cb199e78fc8e9c6d7e94a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Nixos",
+        "repo": "nixpkgs",
+        "rev": "68fcc594571bf702353cb199e78fc8e9c6d7e94a",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1750555020,
@@ -312,6 +328,7 @@
         "nix2container": "nix2container",
         "nixpkgs": "nixpkgs_4",
         "nixpkgs-go124": "nixpkgs-go124",
+        "nixpkgs-go125": "nixpkgs-go125",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix_2"
       }

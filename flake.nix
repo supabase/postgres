@@ -14,6 +14,7 @@
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
+    nixpkgs-go125.url = "github:Nixos/nixpkgs/68fcc594571bf702353cb199e78fc8e9c6d7e94a";
   };
 
   outputs =
