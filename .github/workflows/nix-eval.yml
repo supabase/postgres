@@ -29,4 +29,4 @@ jobs:
         name: Generate Nix Matrix
         run: |
           set -Eeu
-          echo matrix="$(nix run .\#github-matrix checks legacyPackages)" >> "$GITHUB_OUTPUT"
+          echo matrix="$(nix run --accept-flake-config .\#github-matrix checks legacyPackages)" >> "$GITHUB_OUTPUT"
