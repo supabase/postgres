@@ -1,13 +1,10 @@
-name: 'Nix Build Setup'
-description: 'Sets up AWS credentials and builds a Nix package'
+name: 'Configure Nix on self hosted runners'
+description: 'Sets up AWS credentials to push to the Nix binary cache'
 inputs:
-  attr:
-    description: 'The Nix attribute to build'
-    required: true
   aws-role-duration:
     description: 'AWS role session duration in seconds'
     required: false
-    default: '3600'
+    default: '18000'
 
 runs:
   using: 'composite'
@@ -19,7 +16,7 @@ runs:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::436098097459:role/nix-artifacts-deploy-role # supabase-dev
         role-session-name: gha-oidc-${{ github.run_id }}
-        role-duration-seconds: 18000
+        role-duration-seconds: ${{ inputs.aws-role-duration }}
 
     - name: Write creds files
       shell: bash
@@ -31,9 +28,3 @@ runs:
         aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
         aws_session_token = ${AWS_SESSION_TOKEN}
         EOF
-    - name: Build psql bundle
-      run: >
-        nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
-    - name: nix build
-      shell: bash
-      run: nix build --accept-flake-config -L .#${{ inputs.attr }}
