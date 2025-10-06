@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: large-linux-x86
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       matrix_config: ${{ steps.set-matrix.outputs.matrix_config }}
     steps:

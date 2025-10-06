@@ -90,10 +90,6 @@ RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/s
 RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/
 RUN chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/
 RUN chown -R postgres:postgres /usr/share/postgresql/ 
-# Create symbolic links for contrib directory
-RUN mkdir -p /usr/lib/postgresql/share/postgresql/contrib \
-    && find /nix/var/nix/profiles/default/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-    && chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/contrib/
 
 RUN chown -R postgres:postgres /usr/lib/postgresql
 

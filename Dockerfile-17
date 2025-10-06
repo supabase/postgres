@@ -91,7 +91,7 @@ RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/s
 RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/
 RUN chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/
 RUN chown -R postgres:postgres /usr/share/postgresql/ 
-# Create symbolic links for contrib directory
+
 RUN tree /nix > /tmp/tree.txt && cat /tmp/tree.txt && cat /tmp/tree.txt >&2
 
 RUN chown -R postgres:postgres /usr/lib/postgresql

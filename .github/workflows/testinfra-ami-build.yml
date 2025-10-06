@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: large-linux-x86
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
@@ -42,7 +42,7 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: large-linux-arm
+          - runner: blacksmith-2vcpu-ubuntu-2404-arm
             arch: arm64
             ubuntu_release: noble
             ubuntu_version: 24.04

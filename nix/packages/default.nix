@@ -35,6 +35,7 @@
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docs = pkgs.callPackage ./docs.nix { };
           supabase-groonga = pkgs.callPackage ./groonga { };
+          http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };

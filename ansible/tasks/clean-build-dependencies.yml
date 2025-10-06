@@ -1,5 +1,6 @@
 - name: Remove build dependencies
-  apt:
+  ansible.builtin.apt:
+    autoremove: true
     pkg:
       - bison
       - build-essential
@@ -17,5 +18,4 @@
       - ninja-build
       - patch
       - python2
-    state: absent
-    autoremove: yes
+    state: 'absent'
