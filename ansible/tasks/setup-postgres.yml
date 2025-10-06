@@ -126,8 +126,8 @@
     group: postgres
     mode: 0664
   with_items:
-    - 'generated-optimizations.conf'
-    - 'custom-overrides.conf'
+    - '01-generated-optimizations.conf'
+    - '02-custom-overrides.conf'
   when: debpkg_mode or nixpkg_mode
 
 # Move Postgres configuration files into /etc/postgresql
@@ -156,10 +156,10 @@
   when: debpkg_mode or nixpkg_mode
 
 # Add custom config for read replicas set up
-- name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
+- name: Move custom read-replica.conf file to /etc/postgresql-custom/04-read-replica.conf
   template:
     src: "files/postgresql_config/custom_read_replica.conf.j2"
-    dest: /etc/postgresql-custom/read-replica.conf
+    dest: /etc/postgresql-custom/04-read-replica.conf
     mode: 0664
     owner: postgres
     group: postgres
@@ -212,7 +212,7 @@
     group: postgres
   when: nixpkg_mode
 
-- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+- name: Check psql_version and modify 05-supautils.conf and postgresql.conf if necessary
   block:
     - name: Check if psql_version is psql_orioledb
       set_fact:

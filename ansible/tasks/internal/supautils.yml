@@ -39,10 +39,10 @@
     regexp: "#session_preload_libraries = ''"
     replace: session_preload_libraries = 'supautils'
 
-- name: supautils - write custom supautils.conf
+- name: supautils - write custom 05-supautils.conf
   template:
     src: "files/postgresql_config/supautils.conf.j2"
-    dest: /etc/postgresql-custom/supautils.conf
+    dest: /etc/postgresql-custom/05-supautils.conf
     mode: 0664
     owner: postgres
     group: postgres
@@ -61,13 +61,6 @@
     path: /etc/postgresql-custom/extension-custom-scripts
     recurse: yes
   become: yes
-
-- name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
-    replace: "include = '/etc/postgresql-custom/supautils.conf'"
 
 - name: supautils - remove build dependencies
   apt:

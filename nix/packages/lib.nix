@@ -41,7 +41,7 @@
           path = ../../ansible/files/postgresql_config/supautils.conf.j2;
         };
         loggingConfigFile = builtins.path {
-          name = "logging.conf";
+          name = "00-logging.conf";
           path = ../../ansible/files/postgresql_config/postgresql-csvlog.conf;
         };
         readReplicaConfigFile = builtins.path {
@@ -110,19 +110,16 @@
         mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
 
         # Copy config files with error handling
-        cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
+        cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/05-supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
         cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
-        cp ${paths.loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
-        cp ${paths.readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
+        cp ${paths.loggingConfigFile} $out/etc/postgresql-custom/00-logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
+        cp ${paths.readReplicaConfigFile} $out/etc/postgresql-custom/04-read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
         cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
         cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
         cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
 
         echo "Copy operation completed"
-        chmod 644 $out/etc/postgresql-custom/supautils.conf
-        chmod 644 $out/etc/postgresql/postgresql.conf
-        chmod 644 $out/etc/postgresql-custom/logging.conf
-        chmod 644 $out/etc/postgresql/pg_hba.conf
+        chmod 644 $out/etc/postgresql-custom/05-supautils.conf $out/etc/postgresql/postgresql.conf $out/etc/postgresql-custom/00-logging.conf $out/etc/postgresql/pg_hba.conf
 
         substitute ${../tools/run-server.sh.in} $out/bin/start-postgres-server \
           ${
