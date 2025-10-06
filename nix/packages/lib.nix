@@ -91,6 +91,8 @@
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
         READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
         LOGGING_CONF_FILE = "${paths.loggingConfigFile}";
+        AUTOEXPLAIN_CONF_FILE = "${paths.autoexplainConfigFile}";
+        PGCRON_CONF_FILE = "${paths.pgcronConfigFile}";
         SUPAUTILS_CONF_FILE = "${paths.supautilsConfigFile}";
         PG_HBA = "${paths.pgHbaConfigFile}";
         PG_IDENT = "${paths.pgIdentConfigFile}";
