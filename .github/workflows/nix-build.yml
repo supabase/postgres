@@ -22,7 +22,9 @@ jobs:
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   nix-build-aarch64-linux:
-    name: ${{ matrix.name }} (aarch64-linux)
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-linux)
     needs: nix-eval
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.nix-eval.outputs.matrix).aarch64_linux != null }}
@@ -40,7 +42,9 @@ jobs:
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   nix-build-aarch64-darwin:
-    name: ${{ matrix.name }} (aarch64-darwin)
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-darwin)
     needs: nix-eval
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.nix-eval.outputs.matrix).aarch64_darwin != null }}
@@ -58,7 +62,9 @@ jobs:
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   nix-build-x86_64-linux:
-    name: ${{ matrix.name }} (x86_64-linux)
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (x86_64-linux)
     needs: nix-eval
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux != null }}
