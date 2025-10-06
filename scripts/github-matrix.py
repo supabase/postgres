@@ -198,17 +198,17 @@ def main() -> None:
 
     def clean_package_for_output(pkg: GitHubActionPackage) -> dict:
         """Remove debug fields from package for final output"""
-        return {
+        returned_pkg = {
             "attr": pkg["attr"],
             "name": pkg["name"],
             "system": pkg["system"],
             "runs_on": pkg["runs_on"],
-            **(
-                {"postgresql_version": pkg["postgresql_version"]}
-                if "postgresql_version" in pkg
-                else {}
-            ),
         }
+        if is_extension_pkg(pkg):
+            # Extract PostgreSQL version from attribute path
+            attrs = pkg["attr"].split(".")
+            returned_pkg["postgresql_version"] = attrs[-3].split("_")[-1]
+        return returned_pkg
 
     # Group packages by system
     grouped_by_system = defaultdict(list)
