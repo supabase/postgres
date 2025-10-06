@@ -29,4 +29,4 @@ jobs:
         name: Generate Nix Matrix
         run: |
           set -Eeu
-          echo matrix="$(nix shell github:nix-community/nix-eval-jobs/v2.31.0 --command scripts/github-matrix.py checks legacyPackages)" >> "$GITHUB_OUTPUT"
+          echo matrix="$(nix run .\#github-matrix checks legacyPackages)" >> "$GITHUB_OUTPUT"
