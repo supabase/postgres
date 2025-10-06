@@ -34,9 +34,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Build Nix Package
-        uses: ./.github/actions/nix-build-self-hosted
-        with:
-          attr: ${{ matrix.attr }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   nix-build-aarch64-darwin:
     name: ${{ matrix.name }} (aarch64-darwin)
@@ -51,30 +52,37 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Build Nix Package
-        uses: ./.github/actions/nix-build-self-hosted
-        with:
-          attr: ${{ matrix.attr }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
-  # TODO
-  # nix-build-x86_64-linux:
-  #   name: ${{matrix.postgresql_version}}.${{ matrix.name }} (x86_64-linux)
-  #   needs: nix-eval
-  #   runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-  #   if: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux != null }}
-  #   strategy:
-  #     fail-fast: false
-  #     max-parallel: 3
-  #     matrix: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux }}
-  #   steps:
-  #     - name: Checkout Repo
-  #       uses: actions/checkout@v4
-  #     - name: Build Nix Package
-  #       uses: ./.github/actions/nix-build-self-hosted
-  #       with:
-  #         attr: ${{ matrix.attr }}
+  nix-build-x86_64-linux:
+    name: ${{ matrix.name }} (x86_64-linux)
+    needs: nix-eval
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Build psql bundle
+        run: >
+          nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
+      - name: nix build
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   run-testinfra:
-    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
+    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
     if: |
       !cancelled() &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
@@ -84,7 +92,7 @@ jobs:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
-    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin] #, nix-build-x86_64-linux]
+    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
     if: |
       !cancelled() && 
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
