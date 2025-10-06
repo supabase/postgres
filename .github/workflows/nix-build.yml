@@ -35,7 +35,14 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: Build Nix Package
+      - name: Install nix (ephemeral)
+        if: ${{ matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Install nix (self-hosted)
+        if: ${{ matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         shell: bash
@@ -55,7 +62,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: Build Nix Package
+      - name: Install nix
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         shell: bash
