@@ -27,11 +27,11 @@
 - name: nginx - configure
   ansible.builtin.command:
     argv:
-      - ./configure \
-      - --prefix=/usr/local/nginx \
-      - --conf-path=/etc/nginx/nginx.conf \
-      - --with-http_ssl_module \
-      - --with-http_realip_module \
+      - ./configure 
+      - --prefix=/usr/local/nginx 
+      - --conf-path=/etc/nginx/nginx.conf 
+      - --with-http_ssl_module 
+      - --with-http_realip_module 
       - --with-threads
   args:
     chdir: "/tmp/nginx-{{ nginx_release }}"
