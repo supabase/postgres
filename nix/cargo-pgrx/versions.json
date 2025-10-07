@@ -1,4 +1,44 @@
 {
+  "0.6.1": {
+    "hash": "sha256-O4eHVbJBudybsPab+zr2eXnfheREMqLAHAKm2GDbfrs=",
+    "rust": {
+      "1.82.0": {
+        "cargoHash": "sha256-MucGrA3qXgJOcT2LMNmoNOhQi8QA3LuqgZEHKycLCCo="
+      }
+    }
+  },
+  "0.7.1": {
+    "hash": "sha256-t/gdlrBeP6KFkBFJiZUa8KKVJVYMf6753vQGKJdytss=",
+    "rust": {
+      "1.82.0": {
+        "cargoHash": "sha256-muce9wT4LAJmfNLWWEShARnpZgglXe/KrfxlitmGgXk="
+      }
+    }
+  },
+  "0.9.5": {
+    "hash": "sha256-GpXQUOBuojAqPXyRR+k8AVW2XzBbn6V0+2dhP4w4Vs8=",
+    "rust": {
+      "1.70.0": {
+        "cargoHash": "sha256-YbwGh3tbt8W9/VOu11fTWO9fRMUlrwJnG4wxUHuyX10="
+      }
+    }
+  },
+  "0.9.7": {
+    "hash": "sha256-uDBq7tUZ9f8h5nlRFR1mv4+Ty1OFtAk5P7OTNQPI1gI=",
+    "rust": {
+      "1.70.0": {
+        "cargoHash": "sha256-YTkjqMNF+cz5XtELh7+l8KwvRoVKQP7t98nkJwkW218="
+      }
+    }
+  },
+  "0.10.2": {
+    "hash": "sha256-FqjfbJmSy5UCpPPPk4bkEyvQCnaH9zYtkI7txgIn+ls=",
+    "rust": {
+      "1.70.0": {
+        "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
+      }
+    }
+  },
   "0.11.2": {
     "hash": "sha256-8NlpMDFaltTIA8G4JioYm8LaPJ2RGKH5o6sd6lBHmmM=",
     "rust": {
@@ -57,5 +97,4 @@
       }
     }
   }
-
 }

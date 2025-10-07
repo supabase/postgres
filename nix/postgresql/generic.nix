@@ -64,6 +64,8 @@ let
       # detection of crypt fails when using llvm stdenv, so we add it manually
       # for <13 (where it got removed: https://github.com/postgres/postgres/commit/c45643d618e35ec2fe91438df15abd4f3c0d85ca)
       libxcrypt,
+
+      isOrioleDB ? false,
     }@args:
     let
       atLeast = lib.versionAtLeast version;
@@ -288,6 +290,7 @@ let
           withoutJIT = if jitSupport then jitToggle else this;
 
           dlSuffix = if olderThan "16" then ".so" else stdenv.hostPlatform.extensions.sharedLibrary;
+          inherit isOrioleDB;
 
           pkgs =
             let
@@ -347,6 +350,7 @@ let
           "libpq"
         ];
         platforms = platforms.unix;
+        inherit isOrioleDB;
 
         # JIT support doesn't work with cross-compilation. It is attempted to build LLVM-bytecode
         # (`%.bc` is the corresponding `make(1)`-rule) for each sub-directory in `backend/` for
@@ -399,8 +403,9 @@ let
         wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
       '';
 
-      passthru.version = postgresql.version;
-      passthru.psqlSchema = postgresql.psqlSchema;
+      passthru = {
+        inherit (postgresql) version psqlSchema isOrioleDB;
+      };
     };
 in
 generic

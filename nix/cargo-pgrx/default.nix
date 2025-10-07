@@ -20,13 +20,16 @@ let
       hash,
       cargoHash,
     }:
+    let
+      pname = if builtins.compareVersions "0.7.4" version >= 0 then "cargo-pgx" else "cargo-pgrx";
+    in
     rustPlatform.buildRustPackage rec {
       # rust-overlay uses 'cargo-auditable' wrapper for 'cargo' command, but it
       # is using older version 0.18.1 of 'cargo_metadata' which doesn't support
       # rust edition 2024, so we disable the 'cargo-auditable' just for now.
       # ref: https://github.com/oxalica/rust-overlay/issues/153
       auditable = false;
-      pname = "cargo-pgrx";
+      inherit pname;
       inherit version;
       src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
