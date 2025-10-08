@@ -151,7 +151,7 @@ let
           with subtest("Check upgrade path with postgresql 15"):
             test.check_upgrade_path("15")
 
-          with subtest("Check pg_regress with postgresql 15"):
+          with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
             test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
           last_version = None
@@ -162,18 +162,27 @@ let
             with subtest("Test switch_${pname}_version"):
               test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
 
+          with subtest("Check pg_regress with postgresql 15 after installing the last version"):
+            test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
+
           with subtest("switch to postgresql 17"):
             server.succeed(
               f"{pg17_configuration}/bin/switch-to-configuration test >&2"
             )
 
-          with subtest("Check last version of the extension after upgrade"):
+          with subtest("Check last version of the extension after postgresql upgrade"):
             test.assert_version_matches(last_version)
 
           with subtest("Check upgrade path with postgresql 17"):
             test.check_upgrade_path("17")
 
-          with subtest("Check pg_regress with postgresql 17"):
+          with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
+            test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+
+          with subtest("Check the install of the last version of the extension"):
+            test.check_install_last_version("17")
+
+          with subtest("Check pg_regress with postgresql 17 after installing the last version"):
             test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
         '';
     };
