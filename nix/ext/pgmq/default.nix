@@ -9,7 +9,7 @@ let
   pname = "pgmq";
 
   # Load version configuration from external file
-  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
+  allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).${pname};
 
   # Filter versions compatible with current PostgreSQL version
   supportedVersions = lib.filterAttrs (
@@ -36,6 +36,10 @@ let
         rev = "v${version}";
         inherit hash;
       };
+
+      patches = lib.optionals (version == latestVersion) [
+        ./0001-fix-replace-drop_queue-function-if-exists.patch
+      ];
 
       buildPhase = ''
         cd pgmq-extension

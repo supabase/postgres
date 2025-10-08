@@ -22,7 +22,7 @@
         ../ext/pgroonga.nix
         ../ext/index_advisor.nix
         ../ext/wal2json.nix
-        ../ext/pgmq.nix
+        ../ext/pgmq
         ../ext/pg_repack.nix
         ../ext/pg-safeupdate.nix
         ../ext/plpgsql-check.nix
