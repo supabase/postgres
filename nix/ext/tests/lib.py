@@ -41,6 +41,11 @@ class PostgresExtensionTest(object):
             f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """
         ).strip()
 
+    def run_sql_file(self, file: str) -> str:
+        return self.vm.succeed(
+            f"""sudo -u postgres psql -v ON_ERROR_STOP=1 -f \"{file}\""""
+        ).strip()
+
     def drop_extension(self):
         self.run_sql(f"DROP EXTENSION IF EXISTS {self.extension_name};")
 
