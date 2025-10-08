@@ -160,6 +160,7 @@ order by
 -------------+-------------------------------+----------
  pgmq        | _belongs_to_pgmq              | postgres
  pgmq        | _ensure_pg_partman_installed  | postgres
+ pgmq        | _extension_exists             | postgres
  pgmq        | _get_partition_col            | postgres
  pgmq        | _get_pg_partman_major_version | postgres
  pgmq        | _get_pg_partman_schema        | postgres
@@ -174,6 +175,7 @@ order by
  pgmq        | delete                        | postgres
  pgmq        | detach_archive                | postgres
  pgmq        | drop_queue                    | postgres
+ pgmq        | drop_queue                    | postgres
  pgmq        | format_table_name             | postgres
  pgmq        | list_queues                   | postgres
  pgmq        | metrics                       | postgres
@@ -183,8 +185,18 @@ order by
  pgmq        | read                          | postgres
  pgmq        | read_with_poll                | postgres
  pgmq        | send                          | postgres
+ pgmq        | send                          | postgres
+ pgmq        | send                          | postgres
+ pgmq        | send                          | postgres
+ pgmq        | send                          | postgres
+ pgmq        | send                          | postgres
+ pgmq        | send_batch                    | postgres
+ pgmq        | send_batch                    | postgres
+ pgmq        | send_batch                    | postgres
+ pgmq        | send_batch                    | postgres
+ pgmq        | send_batch                    | postgres
  pgmq        | send_batch                    | postgres
  pgmq        | set_vt                        | postgres
  pgmq        | validate_queue_name           | postgres
-(28 rows)
+(40 rows)
 

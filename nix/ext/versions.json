@@ -278,6 +278,21 @@
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     }
   },
+    "pgmq": {
+    "1.4.4": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-z+8/BqIlHwlMnuIzMz6eylmYbSmhtsNt7TJf/CxbdVw="
+    },
+    "1.5.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-IU+i6ONPwtgsFKdzya6E+222ualR66gkbb0lDr+7Rb8="
+    }
+  },
   "pgrouting": {
     "3.4.1": {
       "postgresql": [
@@ -412,7 +427,7 @@
       "hash": "sha256-JsZV+I4eRMypXTjGmjCtMBXDVpqTIPHQa28ogXncE/Q="
     }
   },
-    "wrappers": {
+  "wrappers": {
     "0.5.4": {
       "postgresql": [
         "15",
