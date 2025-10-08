@@ -60,6 +60,19 @@ let
             echo "default_version = '${version}'"
             cat $out/share/postgresql/extension/${pname}--${version}.control
           } > $out/share/postgresql/extension/${pname}.control
+          cat >> sql/pgmq--1.5.0--1.5.1.sql <<EOF
+
+        CREATE FUNCTION pgmq._extension_exists(extension_name TEXT)
+        RETURNS BOOLEAN
+        LANGUAGE SQL
+        AS \$\$
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_extension
+            WHERE extname = extension_name
+        )
+        \$\$;
+        EOF
           cp sql/*.sql $out/share/postgresql/extension
         fi
 
