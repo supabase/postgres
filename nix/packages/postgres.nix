@@ -26,6 +26,7 @@
         ../ext/pg_repack.nix
         ../ext/pg-safeupdate.nix
         ../ext/plpgsql-check.nix
+        ../ext/pldebugger.nix
         ../ext/pgjwt.nix
         ../ext/pgaudit.nix
         ../ext/postgis.nix
