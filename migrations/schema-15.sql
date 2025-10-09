@@ -847,63 +847,63 @@ ALTER TABLE ONLY storage.objects
 -- Name: audit_logs_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (instance_id);
 
 
 --
 -- Name: refresh_tokens_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX refresh_tokens_instance_id_idx ON auth.refresh_tokens USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_instance_id_idx ON auth.refresh_tokens USING btree (instance_id);
 
 
 --
 -- Name: refresh_tokens_instance_id_user_id_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX refresh_tokens_instance_id_user_id_idx ON auth.refresh_tokens USING btree (instance_id, user_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_instance_id_user_id_idx ON auth.refresh_tokens USING btree (instance_id, user_id);
 
 
 --
 -- Name: refresh_tokens_token_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX refresh_tokens_token_idx ON auth.refresh_tokens USING btree (token);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_token_idx ON auth.refresh_tokens USING btree (token);
 
 
 --
 -- Name: users_instance_id_email_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX users_instance_id_email_idx ON auth.users USING btree (instance_id, email);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_instance_id_email_idx ON auth.users USING btree (instance_id, email);
 
 
 --
 -- Name: users_instance_id_idx; Type: INDEX; Schema: auth; Owner: -
 --
 
-CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_instance_id_idx ON auth.users USING btree (instance_id);
 
 
 --
 -- Name: bname; Type: INDEX; Schema: storage; Owner: -
 --
 
-CREATE UNIQUE INDEX bname ON storage.buckets USING btree (name);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS bname ON storage.buckets USING btree (name);
 
 
 --
 -- Name: bucketid_objname; Type: INDEX; Schema: storage; Owner: -
 --
 
-CREATE UNIQUE INDEX bucketid_objname ON storage.objects USING btree (bucket_id, name);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS bucketid_objname ON storage.objects USING btree (bucket_id, name);
 
 
 --
 -- Name: name_prefix_search; Type: INDEX; Schema: storage; Owner: -
 --
 
-CREATE INDEX name_prefix_search ON storage.objects USING btree (name text_pattern_ops);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS name_prefix_search ON storage.objects USING btree (name text_pattern_ops);
 
 
 --

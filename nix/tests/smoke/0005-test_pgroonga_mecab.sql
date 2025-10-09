@@ -19,7 +19,7 @@ begin;
     -- Test 2: Check if the table was created
     SELECT has_table('public', 'notes', 'The notes table should exist.');    
     -- Create the PGroonga index
-    CREATE INDEX pgroonga_content_index
+    CREATE INDEX CONCURRENTLY IF NOT EXISTS pgroonga_content_index
             ON notes
          USING pgroonga (content)
           WITH (tokenizer='TokenMecab');

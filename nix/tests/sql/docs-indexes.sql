@@ -13,11 +13,11 @@ insert into persons (age, height, weight, name, deceased) values (32, 180, 70, '
 
 select name from persons where age = 32;
 
-create index idx_persons_age on persons (age);
+create index concurrently if not exists idx_persons_age on persons (age);
 
-create index idx_living_persons_age on persons (age) where deceased is false;
+create index concurrently if not exists idx_living_persons_age on persons (age) where deceased is false;
 
-create index idx_persons_age_desc on persons (age desc nulls last);
+create index concurrently if not exists idx_persons_age_desc on persons (age desc nulls last);
 
 reindex index concurrently idx_persons_age;
 

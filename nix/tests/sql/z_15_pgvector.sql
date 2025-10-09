@@ -9,27 +9,27 @@ create table v.items(
 );
 
 -- vector ops
-create index on v.items using hnsw (embedding vector_l2_ops);
-create index on v.items using hnsw (embedding vector_cosine_ops);
-create index on v.items using hnsw (embedding vector_l1_ops);
-create index on v.items using ivfflat (embedding vector_l2_ops);
-create index on v.items using ivfflat (embedding vector_cosine_ops);
+create index concurrently if not exists on v.items using hnsw (embedding vector_l2_ops);
+create index concurrently if not exists on v.items using hnsw (embedding vector_cosine_ops);
+create index concurrently if not exists on v.items using hnsw (embedding vector_l1_ops);
+create index concurrently if not exists on v.items using ivfflat (embedding vector_l2_ops);
+create index concurrently if not exists on v.items using ivfflat (embedding vector_cosine_ops);
 
 -- halfvec ops
-create index on v.items using hnsw (half_embedding halfvec_l2_ops);
-create index on v.items using hnsw (half_embedding halfvec_cosine_ops);
-create index on v.items using hnsw (half_embedding halfvec_l1_ops);
-create index on v.items using ivfflat (half_embedding halfvec_l2_ops);
-create index on v.items using ivfflat (half_embedding halfvec_cosine_ops);
+create index concurrently if not exists on v.items using hnsw (half_embedding halfvec_l2_ops);
+create index concurrently if not exists on v.items using hnsw (half_embedding halfvec_cosine_ops);
+create index concurrently if not exists on v.items using hnsw (half_embedding halfvec_l1_ops);
+create index concurrently if not exists on v.items using ivfflat (half_embedding halfvec_l2_ops);
+create index concurrently if not exists on v.items using ivfflat (half_embedding halfvec_cosine_ops);
 
 -- sparsevec
-create index on v.items using hnsw (sparse_embedding sparsevec_l2_ops);
-create index on v.items using hnsw (sparse_embedding sparsevec_cosine_ops);
-create index on v.items using hnsw (sparse_embedding sparsevec_l1_ops);
+create index concurrently if not exists on v.items using hnsw (sparse_embedding sparsevec_l2_ops);
+create index concurrently if not exists on v.items using hnsw (sparse_embedding sparsevec_cosine_ops);
+create index concurrently if not exists on v.items using hnsw (sparse_embedding sparsevec_l1_ops);
 
 -- bit ops
-create index on v.items using hnsw (bit_embedding bit_hamming_ops);
-create index on v.items using ivfflat (bit_embedding bit_hamming_ops);
+create index concurrently if not exists on v.items using hnsw (bit_embedding bit_hamming_ops);
+create index concurrently if not exists on v.items using ivfflat (bit_embedding bit_hamming_ops);
 
 -- Populate some records
 insert into v.items(

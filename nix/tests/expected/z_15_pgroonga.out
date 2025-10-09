@@ -51,9 +51,9 @@ values
   ('This is a full-text search test'),
   ('PGroonga supports various languages');
 -- Create default index
-create index pgroonga_index on v.roon using pgroonga (content);
+create index concurrently if not exists pgroonga_index on v.roon using pgroonga (content);
 -- Create mecab tokenizer index since we had a bug with this one once
-create index pgroonga_index_mecab on v.roon using pgroonga (content) with (tokenizer='TokenMecab');
+create index concurrently if not exists pgroonga_index_mecab on v.roon using pgroonga (content) with (tokenizer='TokenMecab');
 -- Run some queries to test the index
 select * from v.roon where content &@~ 'Hello';
  id |   content   

@@ -3,7 +3,7 @@ create table v.samp(
   id int
 );
 select 1 from hypopg_create_index($$
-  create index on v.samp(id)
+  create index concurrently if not exists on v.samp(id)
 $$);
  ?column? 
 ----------

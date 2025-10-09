@@ -28,8 +28,8 @@ CREATE TABLE auth.users (
     updated_at timestamptz NULL,
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
-CREATE INDEX users_instance_id_email_idx ON auth.users USING btree (instance_id, email);
-CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_instance_id_email_idx ON auth.users USING btree (instance_id, email);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS users_instance_id_idx ON auth.users USING btree (instance_id);
 comment on table auth.users is 'Auth: Stores user login data within a secure schema.';
 
 -- auth.refresh_tokens definition
@@ -44,9 +44,9 @@ CREATE TABLE auth.refresh_tokens (
     updated_at timestamptz NULL,
     CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id)
 );
-CREATE INDEX refresh_tokens_instance_id_idx ON auth.refresh_tokens USING btree (instance_id);
-CREATE INDEX refresh_tokens_instance_id_user_id_idx ON auth.refresh_tokens USING btree (instance_id, user_id);
-CREATE INDEX refresh_tokens_token_idx ON auth.refresh_tokens USING btree (token);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_instance_id_idx ON auth.refresh_tokens USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_instance_id_user_id_idx ON auth.refresh_tokens USING btree (instance_id, user_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refresh_tokens_token_idx ON auth.refresh_tokens USING btree (token);
 comment on table auth.refresh_tokens is 'Auth: Store of tokens used to refresh JWT tokens once they expire.';
 
 -- auth.instances definition
@@ -70,7 +70,7 @@ CREATE TABLE auth.audit_log_entries (
     created_at timestamptz NULL,
     CONSTRAINT audit_log_entries_pkey PRIMARY KEY (id)
 );
-CREATE INDEX audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (instance_id);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS audit_logs_instance_id_idx ON auth.audit_log_entries USING btree (instance_id);
 comment on table auth.audit_log_entries is 'Auth: Audit trail for user actions.';
 
 -- auth.schema_migrations definition

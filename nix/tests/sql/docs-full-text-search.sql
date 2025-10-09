@@ -102,7 +102,7 @@ alter table
 add column
   fts tsvector generated always as (to_tsvector('english', description || ' ' || title)) stored;
 
-create index books_fts on books using gin (fts);
+create index concurrently if not exists books_fts on books using gin (fts);
 
 select id, fts
 from books;

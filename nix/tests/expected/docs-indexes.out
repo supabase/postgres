@@ -14,9 +14,9 @@ select name from persons where age = 32;
  John Doe
 (1 row)
 
-create index idx_persons_age on persons (age);
-create index idx_living_persons_age on persons (age) where deceased is false;
-create index idx_persons_age_desc on persons (age desc nulls last);
+create index concurrently if not exists idx_persons_age on persons (age);
+create index concurrently if not exists idx_living_persons_age on persons (age) where deceased is false;
+create index concurrently if not exists idx_persons_age_desc on persons (age desc nulls last);
 reindex index concurrently idx_persons_age;
 reindex table concurrently persons;
 drop table persons cascade;

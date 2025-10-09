@@ -16,7 +16,7 @@ CREATE TABLE "storage"."buckets" (
     CONSTRAINT "buckets_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX "bname" ON "storage"."buckets" USING BTREE ("name");
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "bname" ON "storage"."buckets" USING BTREE ("name");
 
 CREATE TABLE "storage"."objects" (
     "id" uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
@@ -31,8 +31,8 @@ CREATE TABLE "storage"."objects" (
     CONSTRAINT "objects_owner_fkey" FOREIGN KEY ("owner") REFERENCES "auth"."users"("id"),
     PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX "bucketid_objname" ON "storage"."objects" USING BTREE ("bucket_id","name");
-CREATE INDEX name_prefix_search ON storage.objects(name text_pattern_ops);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "bucketid_objname" ON "storage"."objects" USING BTREE ("bucket_id","name");
+CREATE INDEX CONCURRENTLY IF NOT EXISTS name_prefix_search ON storage.objects(name text_pattern_ops);
 
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 

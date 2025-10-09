@@ -24,7 +24,7 @@ values
   ('it is a beautiful'),
   ('it looks like a beautiful place');
 
-create index rumidx on v.test_rum using rum (a rum_tsvector_ops);
+create index concurrently if not exists rumidx on v.test_rum using rum (a rum_tsvector_ops);
 
 select
   t,

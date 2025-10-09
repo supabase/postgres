@@ -9,7 +9,7 @@ from
   index_advisor('select id from v.book where title = $1');
                 index_statements                | errors 
 ------------------------------------------------+--------
- {"CREATE INDEX ON v.book USING btree (title)"} | {}
+ {"CREATE INDEX CONCURRENTLY IF NOT EXISTS ON v.book USING btree (title)"} | {}
 (1 row)
 
 drop schema v cascade;

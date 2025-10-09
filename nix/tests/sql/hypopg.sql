@@ -5,7 +5,7 @@ create table v.samp(
 );
 
 select 1 from hypopg_create_index($$
-  create index on v.samp(id)
+  create index concurrently if not exists on v.samp(id)
 $$);
 
 drop schema v cascade;
