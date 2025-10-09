@@ -134,7 +134,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
    ca-certificates \
    && rm -rf /var/lib/apt/lists/*
 # Download binary
-ARG GOSU_VERSION=1.16
+ARG GOSU_VERSION=1.19
 ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
 ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
     /usr/local/bin/gosu
