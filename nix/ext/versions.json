@@ -471,6 +471,23 @@
     }
   },
   "wrappers": {
+    "0.4.3": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    },
+    "0.4.4": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-QoGFJpq8PuvMM8SS+VZd7MlNl56uFivRjs1tCtwX+oE=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    },
     "0.4.5": {
       "postgresql": [
         "15",
@@ -506,6 +523,16 @@
       ],
       "hash": "sha256-W1RokXH4Vfj2FIuEzGEP5SzzWsv2Pbzfa816nXKnSoc=",
       "pgrx": "0.14.3",
+      "rust": "1.87.0"
+    },
+    "0.5.5": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-tWa1XewJbbqarwWkJPfvCIev7Fn0hLJRzYiz0vuebyA=",
+      "pgrx": "0.16.0",
       "rust": "1.87.0"
     }
   }
