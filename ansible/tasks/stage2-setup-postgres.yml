@@ -217,19 +217,8 @@
     recurse: yes
   when: stage2_nix
 
-- name: Check psql_version and run postgis linking if not oriole-xx
-  block:
-    - name: Check if psql_version is psql_orioledb-17
-      set_fact:
-        is_psql_oriole: "{{ psql_version == 'psql_orioledb-17' }}"
-
-    - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
-      shell: >
-        sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
-        sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-        && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
-      become: yes
-      when: stage2_nix and not is_psql_oriole
+# PostGIS contrib linking removed - PostGIS doesn't install to contrib directory
+# It installs extensions to /share/postgresql/extension/ which is already linked above
 
 - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
   shell: >-

@@ -66,8 +66,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       }
       extension_name = "${pname}"
       support_upgrade = True
+      sql_test_directory = Path("${../../tests}")
 
-      test = PostgresExtensionTest(server, extension_name, versions, support_upgrade)
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")

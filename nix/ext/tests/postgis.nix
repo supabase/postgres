@@ -1,6 +1,6 @@
 { self, pkgs }:
 let
-  pname = "http";
+  pname = "postgis";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
@@ -103,13 +103,11 @@ self.inputs.nixpkgs.lib.nixos.runTest {
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
-      # Convert versions to major.minor format (e.g., "1.5.0" -> "1.5")
-      toMajorMinor = map (v: lib.versions.majorMinor v);
     in
     ''
       versions = {
-        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (toMajorMinor (versions "15")))}],
-        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (toMajorMinor (versions "17")))}],
+        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
+        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
       }
 
       def run_sql(query):
@@ -137,9 +135,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       with subtest("Check ${pname} latest extension version"):
         server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
         server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
-        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
+        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension where extname = '${pname}';""")
         latestVersion = versions["15"][-1]
-        assert f"${pname},{latestVersion}" in installed_extensions
+        majMinVersion = ".".join(latestVersion.split('.')[:1])
+        assert f"${pname},{majMinVersion}" in installed_extensions, f"Expected ${pname} version {latestVersion}, but found {installed_extensions}"
 
       with subtest("switch to postgresql 17"):
         server.succeed(
@@ -149,7 +148,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       with subtest("Check ${pname} latest extension version after upgrade"):
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
         latestVersion = versions["17"][-1]
-        assert f"${pname},{latestVersion}" in installed_extensions
+        majMinVersion = ".".join(latestVersion.split('.')[:1])
+        assert f"${pname},{majMinVersion}" in installed_extensions
 
       check_upgrade_path("17")
     '';

@@ -60,16 +60,18 @@ order by
  postgres                | anon                   | t
  postgres                | authenticated          | t
  postgres                | authenticator          | t
- postgres                | pg_create_subscription | f
+ postgres                | pg_create_subscription | t
  postgres                | pg_monitor             | t
  postgres                | pg_read_all_data       | t
  postgres                | pg_signal_backend      | t
  postgres                | pgtle_admin            | f
  postgres                | service_role           | t
+ supabase_etl_admin      | pg_monitor             | f
  supabase_etl_admin      | pg_read_all_data       | f
+ supabase_read_only_user | pg_monitor             | f
  supabase_read_only_user | pg_read_all_data       | f
  supabase_storage_admin  | authenticator          | f
-(21 rows)
+(23 rows)
 
 -- Check version-specific privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
@@ -158,8 +160,10 @@ order by
  postgres                | pg_signal_backend      | t
  postgres                | pgtle_admin            | f
  postgres                | service_role           | t
+ supabase_etl_admin      | pg_monitor             | f
  supabase_etl_admin      | pg_read_all_data       | f
+ supabase_read_only_user | pg_monitor             | f
  supabase_read_only_user | pg_read_all_data       | f
  supabase_storage_admin  | authenticator          | f
-(20 rows)
+(22 rows)
 

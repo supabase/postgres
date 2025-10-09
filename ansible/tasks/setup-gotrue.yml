@@ -1,48 +1,47 @@
 - name: UFW - Allow connections to GoTrue metrics exporter
-  ufw:
-    rule: allow
-    port: "9122"
+  community.general.ufw:
+    port: '9122'
+    rule: 'allow'
     
 # use this user for the Gotrue build and for running the service
 - name: Gotrue - system user
-  user: name=gotrue
+  ansible.builtin.user:
+    name: 'gotrue'
+    state: 'present'
 
-- name: Setting arch (x86)
-  set_fact:
-    arch: "x86"
-  when: platform == "amd64"
-
-- name: Setting arch (arm)
-  set_fact:
-    arch: "arm64"
-  when: platform == "arm64"
+- name: Setting arch as a fact
+  ansible.builtin.set_fact:
+    arch: >-
+      {%- if platform == 'amd64' -%}
+        x86
+      {%- elif platform == 'arm64' -%}
+        arm64
+      {%- endif -%}
 
 - name: gotrue - download commit archive
-  get_url:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
-    dest: /tmp/gotrue.tar.gz
+  ansible.builtin.get_url:
     checksum: "{{ gotrue_release_checksum }}"
+    dest: '/tmp/gotrue.tar.gz'
+    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
 
-- name: gotrue - create /opt/gotrue
-  file:
-    path: /opt/gotrue
-    state: directory
-    owner: gotrue
-    mode: 0775
-
-- name: gotrue - create /etc/auth.d
-  file:
-    path: /etc/auth.d
-    state: directory
-    owner: gotrue
-    mode: 0775
+- name: gotrue - create /opt/gotrue and /etc/auth.d
+  ansible.builtin.file:
+    mode: '0775'
+    owner: 'gotrue'
+    path: "{{ gotrue_dir_item }}"
+    state: 'directory'
+  loop:
+    - '/etc/auth.d'
+    - '/opt/gotrue'
+  loop_control:
+    loop_var: 'gotrue_dir_item'
 
 - name: gotrue - unpack archive in /opt/gotrue
-  unarchive:
-    remote_src: yes
-    src: /tmp/gotrue.tar.gz
-    dest: /opt/gotrue
-    owner: gotrue
+  ansible.builtin.unarchive:
+    dest: '/opt/gotrue'
+    owner: 'gotrue'
+    remote_src: true
+    src: '/tmp/gotrue.tar.gz'
 
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
@@ -52,15 +51,15 @@
 #       - libpq-dev
 
 - name: gotrue - create service file
-  template:
-    src: files/gotrue.service.j2
-    dest: /etc/systemd/system/gotrue.service
+  ansible.builtin.template:
+    dest: '/etc/systemd/system/gotrue.service'
+    src: 'files/gotrue.service.j2'
 
 - name: gotrue - create optimizations file
-  template:
-    src: files/gotrue-optimizations.service.j2
-    dest: /etc/systemd/system/gotrue-optimizations.service
+  ansible.builtin.template:
+    dest: '/etc/systemd/system/gotrue-optimizations.service'
+    src: 'files/gotrue-optimizations.service.j2'
 
 - name: gotrue - reload systemd
-  systemd:
-    daemon_reload: yes
+  ansible.builtin.systemd_service:
+    daemon_reload: true

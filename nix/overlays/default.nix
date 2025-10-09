@@ -37,6 +37,10 @@
       inherit (final) writeShellScriptBin;
     };
 
+    buildPgrxExtension_0_11_2 = prev.buildPgrxExtension.override {
+      cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_2;
+    };
+
     buildPgrxExtension_0_11_3 = prev.buildPgrxExtension.override {
       cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_11_3;
     };

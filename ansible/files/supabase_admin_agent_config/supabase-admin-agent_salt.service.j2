@@ -19,6 +19,8 @@ StandardOutput=journal
 StandardError=journal
 StateDirectory=supabase-admin-agent
 CacheDirectory=supabase-admin-agent
+# set tempdir on permanent disk
+Environment="TMPDIR=/var/tmp"
 
 [Install]
 WantedBy=multi-user.target
