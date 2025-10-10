@@ -1,0 +1,236 @@
+name: PR AMI Integration Test Trigger
+
+on:
+  pull_request:
+    branches:
+      - develop
+    types: [labeled, synchronize]
+
+permissions:
+  contents: read
+  id-token: write
+  statuses: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-label:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Check if test-ami label is present
+        id: check
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'test-ami') }}" == "true" ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+  prepare:
+    needs: check-label
+    if: needs.check-label.outputs.should_run == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    outputs:
+      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
+          extra_nix_config: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+      - name: Set PostgreSQL versions
+        id: set-versions
+        run: |
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq --  -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+
+  build-ami-and-trigger-tests:
+    needs: [check-label, prepare]
+    if: needs.check-label.outputs.should_run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
+        include:
+          - runner: blacksmith-2vcpu-ubuntu-2404-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+          output-credentials: true
+          role-duration-seconds: 7200
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
+          extra_nix_config: |
+            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+      - name: Generate test AMI suffix
+        id: random
+        run: echo "random_string=$(openssl rand -hex 8)" >> $GITHUB_OUTPUT
+
+      - name: Set environment variables
+        run: |
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
+
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')
+          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          echo "" >> common-nix.vars.pkr.hcl
+          echo "Full postgres version: $PG_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "PG_FULL_VERSION=$PG_VERSION" >> $GITHUB_ENV
+
+      - name: Build AMI stage 1
+        run: |
+          GIT_SHA=${{github.sha}}
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build \
+            -var "git-head-version=${GIT_SHA}" \
+            -var "packer-execution-id=${EXECUTION_ID}" \
+            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="common-nix.vars.pkr.hcl" \
+            -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" \
+            -var "postgres-version=pr-${{ github.event.pull_request.number }}-${{ steps.random.outputs.random_string }}" \
+            -var "region=us-east-1" \
+            -var 'ami_regions=["us-east-1"]' \
+            -var "force-deregister=true" \
+            amazon-arm64-nix.pkr.hcl
+
+      - name: Build AMI stage 2
+        run: |
+          GIT_SHA=${{github.sha}}
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build \
+            -var "git-head-version=${GIT_SHA}" \
+            -var "packer-execution-id=${EXECUTION_ID}" \
+            -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" \
+            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="common-nix.vars.pkr.hcl" \
+            -var "postgres-version=pr-${{ github.event.pull_request.number }}-${{ steps.random.outputs.random_string }}" \
+            -var "region=us-east-1" \
+            -var 'ami_regions=["us-east-1"]' \
+            -var "force-deregister=true" \
+            -var "git_sha=${GITHUB_SHA}" \
+            stage2-nix-psql.pkr.hcl
+
+      - name: Get AMI details
+        id: get-ami
+        run: |
+          AMI_NAME="supabase-postgres-pr-${{ github.event.pull_request.number }}-${{ steps.random.outputs.random_string }}"
+          AMI_ID=$(aws ec2 describe-images \
+            --region us-east-1 \
+            --owners self \
+            --filters "Name=name,Values=${AMI_NAME}" \
+            --query 'Images[0].ImageId' \
+            --output text)
+          echo "ami_id=${AMI_ID}" >> $GITHUB_OUTPUT
+          echo "ami_name=${AMI_NAME}" >> $GITHUB_OUTPUT
+          echo "AMI Built: ${AMI_ID} (${AMI_NAME})" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create pending status check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: '${{ github.event.pull_request.head.sha }}',
+              state: 'pending',
+              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+              description: 'Integration tests pending for PG${{ matrix.postgres_version }}',
+              context: 'ami-integration-tests/pg${{ matrix.postgres_version }}'
+            });
+
+      - name: Trigger tests in private repo
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.TESTS_REPO_DISPATCH_PAT }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'supabase',
+              repo: 'tests',
+              event_type: 'postgres-ami-pr-test',
+              client_payload: {
+                ami_id: '${{ steps.get-ami.outputs.ami_id }}',
+                ami_name: '${{ steps.get-ami.outputs.ami_name }}',
+                postgres_version: '${{ env.PG_FULL_VERSION }}',
+                postgres_major: '${{ matrix.postgres_version }}',
+                pr_number: ${{ github.event.pull_request.number }},
+                commit_sha: '${{ github.event.pull_request.head.sha }}',
+                source_repo: '${{ github.repository }}',
+                source_run_id: '${{ github.run_id }}',
+                source_run_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              }
+            });
+            console.log('Dispatched test trigger to supabase/tests');
+
+      - name: Add comment to PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }},
+              body: `🚀 AMI Integration tests triggered for PostgreSQL ${{ matrix.postgres_version }}
+
+**AMI Details:**
+- AMI ID: \`${{ steps.get-ami.outputs.ami_id }}\`
+- AMI Name: \`${{ steps.get-ami.outputs.ami_name }}\`
+- Postgres Version: \`${{ env.PG_FULL_VERSION }}\`
+
+Tests are running in the [private tests repository](https://github.com/supabase/tests/actions).
+Status will be updated on this PR when tests complete.`
+            });
+
+      - name: Cleanup AMIs on failure
+        if: failure()
+        run: |
+          AMI_NAME="${{ steps.get-ami.outputs.ami_name }}"
+          if [[ -n "$AMI_NAME" ]]; then
+            AMI_IDS=$(aws ec2 describe-images \
+              --region us-east-1 \
+              --owners self \
+              --filters "Name=name,Values=${AMI_NAME}*" \
+              --query 'Images[*].ImageId' \
+              --output text)
+
+            for ami_id in $AMI_IDS; do
+              echo "Deregistering AMI: $ami_id"
+              aws ec2 deregister-image --region us-east-1 --image-id $ami_id || true
+            done
+          fi
+
+      - name: Cleanup EC2 instances
+        if: always()
+        run: |
+          aws ec2 describe-instances \
+            --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text | xargs -r aws ec2 terminate-instances --instance-ids || true
