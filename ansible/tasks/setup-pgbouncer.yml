@@ -34,11 +34,13 @@
 - name: PgBouncer - build and install
   community.general.make:
     chdir: "/tmp/pgbouncer-{{ pgbouncer_release }}"
-    target: "{{ pgbouncer_mak_item }}"
+    target: "{{ pgbouncer_make_item }}"
   become: true
   loop:
     - 'all'
     - 'install'
+  loop_control:
+    loop_var: 'pgbouncer_make_item'
 
 - name: Create pgbouncer user
   ansible.builtin.user:
