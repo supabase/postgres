@@ -165,8 +165,6 @@ PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PORTNO="${PORTNO:-@PGSQL_DEFAULT_PORT@}"
 SUPAUTILS_CONFIG_FILE=@SUPAUTILS_CONF_FILE@
 LOGGING_CONFIG_FILE=@LOGGING_CONF_FILE@
-AUTOEXPLAIN_CONFIG_FILE=@AUTOEXPLAIN_CONF_FILE@
-PGCRON_CONFIG_FILE=@PGCRON_CONF_FILE@
 READREPL_CONFIG_FILE=@READREPL_CONF_FILE@
 PG_HBA_FILE=@PG_HBA@
 PG_IDENT_FILE=@PG_IDENT@
@@ -217,29 +215,25 @@ fi
 echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
-mkdir -p "$DATDIR/postgresql-custom"
-mkdir -p "$DATDIR/pg_log"
-cp "$READREPL_CONFIG_FILE" "$DATDIR/postgresql-custom/04-read-replica.conf"
-cp "$AUTOEXPLAIN_CONFIG_FILE" "$DATDIR/postgresql-custom/auto_explain.conf"
-cp "$PGCRON_CONFIG_FILE" "$DATDIR/postgresql-custom/pg_cron.conf"
+cp "$READREPL_CONFIG_FILE" "$DATDIR/read-replica.conf"
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
-# Configure logging with correct log directory
-sed "s|log_directory = '/var/log/postgresql'|log_directory = '$DATDIR/pg_log'|" "$LOGGING_CONFIG_FILE" > "$DATDIR/postgresql-custom/00-logging.conf"
-
 # Configure supautils
-sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/postgresql-custom/05-supautils.conf"
+sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
 
 # Configure PostgreSQL
-sed -e "\$a\\
+sed -e "1i\\
+include = '$DATDIR/supautils.conf'" \
+-e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|data_directory = '/var/lib/postgresql/data'|data_directory = '$DATDIR'|" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
--e "s|include_dir = '/etc/postgresql-custom'|include_dir = '$DATDIR/postgresql-custom'|" \
+-e "s|include = '/etc/postgresql/logging.conf'|#&|" \
+-e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
@@ -251,34 +245,34 @@ orioledb_config_items() {
         echo "non-macos oriole conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/postgresql-custom/05-supautils.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/supautils.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
         ls -la "$DATDIR"
-
+        
         # Use perl instead of sed for macOS
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g' "$DATDIR/postgresql.conf"
-
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql-custom/05-supautils.conf"
-        perl -pi -e 's/ plv8,//g' "$DATDIR/postgresql-custom/05-supautils.conf"
-        perl -pi -e 's/ pgjwt,//g' "$DATDIR/postgresql-custom/05-supautils.conf"
+        
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ pgjwt,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
-
+        
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         echo "non-macos pg 17 conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/postgresql-custom/05-supautils.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/supautils.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql-custom/05-supautils.conf"
-        perl -pi -e 's/ plv8,//g;' "$DATDIR/postgresql-custom/05-supautils.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
     fi
 }
 

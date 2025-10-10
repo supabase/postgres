@@ -4,7 +4,7 @@
 #     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
 # It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
 
-- name: Check psql_version and modify 05-supautils.conf and postgresql.conf if necessary
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
     - name: Check if psql_version is psql_orioledb-17
       set_fact:
@@ -26,11 +26,11 @@
       when: is_psql_oriole or is_psql_17 and stage2_nix 
       become: yes
 
-    - name: Remove specified extensions from 05-supautils.conf if orioledb-17 or 17 build
+    - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
       ansible.builtin.command:
         cmd: >
           sed -i 's/ timescaledb,//g; s/ plv8,//g' 
-          /etc/postgresql-custom/05-supautils.conf
+          /etc/postgresql-custom/supautils.conf
       when: is_psql_oriole or is_psql_17 and stage2_nix
       become: yes
 

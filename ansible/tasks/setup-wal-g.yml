@@ -60,10 +60,10 @@
     mode: '0664'
   when: stage2_nix
 
-- name: Move custom wal-g.conf file to /etc/postgresql-custom/03-wal-g.conf
+- name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
   template:
     src: "files/postgresql_config/custom_walg.conf.j2"
-    dest: /etc/postgresql-custom/03-wal-g.conf
+    dest: /etc/postgresql-custom/wal-g.conf
     mode: 0664
     owner: postgres
     group: postgres
@@ -84,4 +84,12 @@
     dest: /root/wal_change_ownership.sh
     mode: 0700
     owner: root
+  when: stage2_nix
+
+- name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
+  become: yes
+  replace:
+    path: /etc/postgresql/postgresql.conf
+    regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
+    replace: "include = '/etc/postgresql-custom/wal-g.conf'"
   when: stage2_nix

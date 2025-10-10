@@ -1,19 +1,8 @@
 - name: PG logging conf
   ansible.builtin.template:
-    dest: '/etc/postgresql-custom/00-logging.conf'
+    dest: '/etc/postgresql/logging.conf'
     group: 'postgres'
     src: 'files/postgresql_config/postgresql-csvlog.conf'
-
-- name: auto_explain and pg_cron confs
-  ansible.builtin.template:
-    dest: "/etc/postgresql-custom/{{ ext_item }}.conf"
-    group: 'postgres'
-    src: "files/postgresql_config/{{ ext_item | split('_') | join('') }}.conf"
-  loop:
-    - auto_explain
-    - pg_cron
-  loop_control:
-    loop_var: 'ext_item'
 
 - name: UFW - Allow SSH connections
   community.general.ufw:

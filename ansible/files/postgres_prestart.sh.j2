@@ -15,7 +15,7 @@ check_orioledb_enabled() {
 }
 
 get_shared_buffers() {
-    local opt_conf="/etc/postgresql-custom/01-generated-optimizations.conf"
+    local opt_conf="/etc/postgresql-custom/generated-optimizations.conf"
     if [ ! -f "$opt_conf" ]; then
         return 0
     fi

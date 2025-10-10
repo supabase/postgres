@@ -51,7 +51,7 @@
 
     - name: supautils - write custom supautils.conf
       ansible.builtin.template:
-        dest: '/etc/postgresql-custom/05-supautils.conf'
+        dest: '/etc/postgresql-custom/supautils.conf'
         mode: '0664'
         group: 'postgres'
         owner: 'postgres'
@@ -70,6 +70,13 @@
         owner: 'postgres'
         path: '/etc/postgresql-custom/extension-custom-scripts'
         recurse: true
+      become: true
+
+    - name: supautils - include /etc/postgresql-custom/supautils.conf in postgresql.conf
+      ansible.builtin.replace:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: "#include = '/etc/postgresql-custom/supautils.conf'"
+        replace: "include = '/etc/postgresql-custom/supautils.conf'"
       become: true
 
 - name: Cleanup - extension packages
