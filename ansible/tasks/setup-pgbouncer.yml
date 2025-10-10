@@ -49,7 +49,7 @@
     state: 'present'
 
 - name: PgBouncer - create a directory if it does not exist
-  ansible.builtin,file:
+  ansible.builtin.file:
     group: 'pgbouncer'
     mode: "{{ pgbouncer_dir_item['mode'] }}"
     owner: 'pgbouncer'
