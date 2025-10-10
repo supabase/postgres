@@ -19,6 +19,7 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Use direnv](./use-direnv.md)** - Development environment with direnv
 - **[Pre-commit Hooks](./pre-commit-hooks.md)** - Automatic formatting and code checks before commits
 - **[Nix Formatter](./nix-formatter.md)** - Code formatting with treefmt
+- **[Nix Cache](./nix-cache.md)** - Understanding and using the Nix binary cache system
 
 ## Package Management
 

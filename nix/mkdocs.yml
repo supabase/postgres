@@ -19,6 +19,7 @@ nav:
     - Use direnv: use-direnv.md
     - Code Formatter: nix-formatter.md
     - Pre-commit Hooks: pre-commit-hooks.md
+    - Nix Cache: nix-cache.md
     - Documentation: documentation.md
   - Package Management:
     - Adding New Packages: adding-new-package.md
