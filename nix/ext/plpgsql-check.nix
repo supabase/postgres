@@ -55,11 +55,6 @@ let
 
         # For the latest version, create default control file and symlink and copy SQL upgrade scripts
         if [[ "${version}" == "${latestVersion}" ]]; then
-          {
-            echo "default_version = '${version}'"
-            cat $out/share/postgresql/extension/${pname}--${version}.control
-          } > $out/share/postgresql/extension/${pname}.control
-          ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
           cp *.sql $out/share/postgresql/extension
         else
           mv ./${pname}--${version}.sql $out/share/postgresql/extension/${pname}--${version}.sql
@@ -103,6 +98,12 @@ buildEnv {
   ];
 
   postBuild = ''
+    {
+      echo "default_version = '${latestVersion}'"
+      cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+    } > $out/share/postgresql/extension/${pname}.control
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
     # Verify all expected library files are present
     expectedFiles=${toString (numberOfVersions + 1)}
     actualFiles=$(ls -l $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)
@@ -131,6 +132,13 @@ buildEnv {
   passthru = {
     inherit versions numberOfVersions switch-ext-version;
     pname = "${pname}-all";
+    hasBackgroundWorker = true;
+    defaultSettings = {
+      shared_preload_libraries = [
+        "plpgsql"
+        "plpgsql_check"
+      ];
+    };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
