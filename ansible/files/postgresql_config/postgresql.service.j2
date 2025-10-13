@@ -22,7 +22,9 @@ OOMScoreAdjust=-1000
 EnvironmentFile=-/etc/environment.d/postgresql.env
 LimitNOFILE=16384
 {% if supabase_internal is defined %}
+ProtectHome=yes
 ReadOnlyPaths=/etc
+InaccessiblePaths=-/var/lib/supabase -/var/lib/supabase-admin-agent -/var/lib/cloud
 {% endif %}
 [Install]
 WantedBy=multi-user.target
