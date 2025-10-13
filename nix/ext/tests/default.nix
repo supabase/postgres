@@ -206,6 +206,7 @@ builtins.listToAttrs (
       "pg_graphql"
       "pg_jsonschema"
       "pg_net"
+      "plpgsql_check"
       "vector"
       "wrappers"
     ]
