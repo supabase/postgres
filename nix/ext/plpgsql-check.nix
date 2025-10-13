@@ -5,6 +5,8 @@
   postgresql,
   postgresqlTestHook,
   buildEnv,
+  makeWrapper,
+  switch-ext-version,
 }:
 let
   pname = "plpgsql_check";
@@ -93,6 +95,7 @@ in
 buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
 
   pathsToLink = [
     "/lib"
@@ -120,10 +123,13 @@ buildEnv {
       fi
       previous_version=$ver
     done
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_plpgsql_check_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {
-    inherit versions numberOfVersions;
+    inherit versions numberOfVersions switch-ext-version;
     pname = "${pname}-all";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
