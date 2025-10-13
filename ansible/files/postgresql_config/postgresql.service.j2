@@ -23,8 +23,8 @@ EnvironmentFile=-/etc/environment.d/postgresql.env
 LimitNOFILE=16384
 {% if supabase_internal is defined %}
 ProtectHome=yes
-ReadOnlyPaths=/etc
-InaccessiblePaths=-/var/lib/supabase -/var/lib/supabase-admin-agent -/var/lib/cloud -/var/cache/supabase-admin-agent
+ReadOnlyPaths=/etc /opt
+InaccessiblePaths=-/var/lib/supabase -/var/lib/supabase-admin-agent -/var/lib/cloud -/var/cache/supabase-admin-agent -/opt/saltstack -/etc/salt
 {% endif %}
 [Install]
 WantedBy=multi-user.target
