@@ -10,6 +10,7 @@ begin
 
   -- Need to be superuser to own FDWs, so we temporarily make postgres superuser.
   if not is_super then
+    set session_replication_role = replica;
     alter role postgres superuser;
   end if;
 
@@ -17,5 +18,6 @@ begin
 
   if not is_super then
     alter role postgres nosuperuser;
+    reset session_replication_role;
   end if;
 end $$;
