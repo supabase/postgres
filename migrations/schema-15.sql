@@ -87,6 +87,9 @@ CREATE EXTENSION IF NOT EXISTS pg_graphql WITH SCHEMA graphql;
 
 COMMENT ON EXTENSION pg_graphql IS 'pg_graphql: GraphQL support';
 
+CREATE SCHEMA partman;
+CREATE EXTENSION IF NOT EXISTS pg_partman WITH SCHEMA partman;
+
 
 --
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
