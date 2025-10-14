@@ -18,50 +18,10 @@ permissions:
   id-token: write
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
-    steps:
-      - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-
-      - name: Set PostgreSQL versions - only builds pg17 atm
-        id: set-versions
-        run: |
-          VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
-          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
-
-  check-existing-image:
-    needs: prepare
-    runs-on: ubuntu-latest
-    outputs:
-      image_exists: ${{ steps.check-image.outputs.image_exists }}
-    steps:
-      - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-
-      - name: Check if image already exists in ECR
-        id: check-image
-        env:
-          AWS_REGION: us-east-1
-          REPOSITORY: postgres-vm-image
-        run: |
-          VERSION=$(yq '.postgres_release["postgres'${{ fromJson(needs.prepare.outputs.postgres_versions) }}'"]' ansible/vars.yml | tr -d '"')
-          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$VERSION" --region "$AWS_REGION" 2>/dev/null; then
-            echo "::notice title=Qemu image::Image with tag $VERSION already exists. Skipping build. Please update the version in ansible/vars.yml if you want to upload a new image."
-            echo "image_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Image with tag $VERSION does not exist. Proceeding with build."
-            echo "image_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
   build:
-    needs: [prepare, check-existing-image]
-    if: ${{ needs.check-existing-image.outputs.image_exists == 'false' }}
     strategy:
       matrix:
-        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
+        postgres_version: [17]
     runs-on: arm-native-runner
     timeout-minutes: 150
     permissions:
@@ -73,10 +33,32 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
+      - name: Configure AWS credentials for image check
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Check if image already exists in ECR
+        id: check-image
+        env:
+          AWS_REGION: us-east-1
+          REPOSITORY: postgres-vm-image
+        run: |
+          VERSION=$(yq '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml | tr -d '"')
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$VERSION" --region "$AWS_REGION" 2>/dev/null; then
+            echo "::notice title=Qemu image::Image with tag $VERSION already exists. Skipping build. Please update the version in ansible/vars.yml if you want to upload a new image."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Image with tag $VERSION does not exist. Proceeding with build."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: DeterminateSystems/nix-installer-action@main
+        if: steps.check-image.outputs.skip == 'false'
 
       - name: Run checks if triggered manually
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.check-image.outputs.skip == 'false' }}
         run: |
           SUFFIX=$(yq ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
@@ -85,16 +67,19 @@ jobs:
           fi
 
       - name: enable KVM support
+        if: steps.check-image.outputs.skip == 'false'
         run: |
           sudo chown runner /dev/kvm
           sudo chmod 666 /dev/kvm
 
       - name: Set PostgreSQL version environment variable
+        if: steps.check-image.outputs.skip == 'false'
         run: |
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
           echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
 
       - name: Generate common-nix.vars.pkr.hcl
+        if: steps.check-image.outputs.skip == 'false'
         run: |
           curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
           PG_VERSION=$(./yq '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml)
@@ -106,12 +91,14 @@ jobs:
 
       # TODO (darora): not quite sure why I'm having to uninstall and re-install these deps, but the build fails w/o this
       - name: Install dependencies
+        if: steps.check-image.outputs.skip == 'false'
         run: |
           sudo apt-get update
           sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
           sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
 
       - name: Build QEMU artifact
+        if: steps.check-image.outputs.skip == 'false'
         run: |
           make init
           GIT_SHA=${{github.sha}}
@@ -119,28 +106,26 @@ jobs:
           packer build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
 
       - name: Grab release version
+        if: steps.check-image.outputs.skip == 'false'
         id: process_release_version
         run: |
           VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
-          aws-region: "us-east-1"
-
       - name: Login to Amazon ECR
+        if: steps.check-image.outputs.skip == 'false'
         id: login-ecr-private-dev
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build image
+        if: steps.check-image.outputs.skip == 'false'
         env:
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
           docker build -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" .
 
       - name: Push docker image to Amazon ECR
+        if: steps.check-image.outputs.skip == 'false'
         env:
           REGISTRY: 812073016711.dkr.ecr.us-east-1.amazonaws.com
           REPOSITORY: postgres-vm-image
@@ -151,16 +136,19 @@ jobs:
 
       # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
       - name: configure aws credentials - prod
+        if: steps.check-image.outputs.skip == 'false'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
           aws-region: "us-east-1"
 
       - name: Login to Amazon ECR
+        if: steps.check-image.outputs.skip == 'false'
         id: login-ecr-private-prod
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Push docker image to Amazon ECR
+        if: steps.check-image.outputs.skip == 'false'
         env:
           REGISTRY: 156470330064.dkr.ecr.us-east-1.amazonaws.com
           REPOSITORY: postgres-vm-image
