@@ -123,6 +123,8 @@ jobs:
         if: steps.process_release_version.outputs.is_release == 'true'
         run: |
           nix run nixpkgs#git-cliff -- --tag-pattern "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]{3}(-orioledb)?$" --unreleased --tag "${{ steps.process_release_version.outputs.version }}" --prepend CHANGELOG.md
+          # Remove the changelog commit itself from the changelog
+          sed -i '/- Changelog after release/d' CHANGELOG.md
 
       - name: Commit and push changelog
         if: steps.process_release_version.outputs.is_release == 'true'
