@@ -106,7 +106,7 @@
         cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
 
         echo "Copy operation completed"
-        chmod 644 $out/etc/postgresql-custom/05-supautils.conf $out/etc/postgresql/postgresql.conf $out/etc/postgresql-custom/00-logging.conf $out/etc/postgresql/pg_hba.conf
+        chmod 644 $out/etc/postgresql-custom/conf.d/05-supautils.conf $out/etc/postgresql/postgresql.conf $out/etc/postgresql-custom/00-logging.conf $out/etc/postgresql/pg_hba.conf
 
         substitute ${../tools/run-server.sh.in} $out/bin/start-postgres-server \
           ${
