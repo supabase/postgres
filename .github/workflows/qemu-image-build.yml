@@ -32,8 +32,33 @@ jobs:
           VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
-  build:
+  check-existing-image:
     needs: prepare
+    runs-on: ubuntu-latest
+    outputs:
+      image_exists: ${{ steps.check-image.outputs.image_exists }}
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Check if image already exists in ECR
+        id: check-image
+        env:
+          AWS_REGION: us-east-1
+          REPOSITORY: postgres-vm-image
+        run: |
+          VERSION=$(yq '.postgres_release["postgres'${{ fromJson(needs.prepare.outputs.postgres_versions) }}'"]' ansible/vars.yml | tr -d '"')
+          if aws ecr describe-images --repository-name $REPOSITORY --image-ids imageTag=$VERSION --region $AWS_REGION 2>/dev/null; then
+            echo "::notice title=Qemu image::Image with tag $VERSION already exists. Skipping build. Please update the version in ansible/vars.yml if you want to upload a new image."
+            echo "image_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image with tag $VERSION does not exist. Proceeding with build."
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: [prepare, check-existing-image]
+    if: ${{ needs.check-existing-image.outputs.image_exists == 'false' }}
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
