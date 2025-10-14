@@ -73,9 +73,6 @@
         PSQL_CONF_FILE = "${paths.pgconfigFile}";
         PSQLORIOLEDB17_BINDIR = "${psql_orioledb-17}";
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
-        READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
-        LOGGING_CONF_FILE = "${paths.loggingConfigFile}";
-        SUPAUTILS_CONF_FILE = "${paths.supautilsConfigFile}";
         PG_HBA = "${paths.pgHbaConfigFile}";
         PG_IDENT = "${paths.pgIdentConfigFile}";
         LOCALES = "${localeArchive}";
