@@ -50,7 +50,7 @@
     shell: '/usr/sbin/nolign'
     state: 'present'
 
-- name: Create PgBouncer directories if they does not exist
+- name: Create PgBouncer directories if they do not exist
   ansible.builtin.file:
     group: 'pgbouncer'
     mode: "{{ pgbouncer_dir_item['mode'] }}"
@@ -60,8 +60,8 @@
   loop_control:
     loop_var: 'pgbouncer_dir_item'
   with_items:
-    - "{ mode: '0700', dir: '/etc/pgbouncer' }"
-    - "{ mode: '0775', dir: '/etc/pgbouncer-custom' }"
+    - { mode: '0700', dir: '/etc/pgbouncer' }
+    - { mode: '0775', dir: '/etc/pgbouncer-custom' }
 
 - name: create PgBouncer placeholder config files
   ansible.builtin.file:
