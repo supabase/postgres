@@ -43,12 +43,12 @@
   block:
     # supautils
     - name: supautils - write custom supautils.conf
-      ansible.builtin.template:
-        dest: '/etc/postgresql-custom/05-supautils.conf'
+      ansible.builtin.copy:
+        dest: '/etc/postgresql-custom/conf.d/05-supautils.conf'
         mode: '0664'
         group: 'postgres'
         owner: 'postgres'
-        src: 'files/postgresql_config/supautils.conf.j2'
+        src: 'files/postgresql_config/conf.d/supautils.conf'
 
     - name: supautils - copy extension custom scripts
       ansible.builtin.copy:

@@ -30,7 +30,7 @@
       ansible.builtin.command:
         cmd: >
           sed -i 's/ timescaledb,//g; s/ plv8,//g' 
-          /etc/postgresql-custom/05-supautils.conf
+          /etc/postgresql-custom/conf.d/05-supautils.conf
       when: is_psql_oriole or is_psql_17 and stage2_nix
       become: yes
 
