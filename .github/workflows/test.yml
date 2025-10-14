@@ -19,7 +19,7 @@ jobs:
         with:
           extra-conf: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
@@ -47,7 +47,7 @@ jobs:
         with:
           extra-conf: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
       - name: Strip quotes from pg major and set env var

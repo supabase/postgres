@@ -1,15 +1,15 @@
 {
-  pkgs,
   lib,
   stdenv,
   fetchFromGitHub,
   postgresql,
+  buildEnv,
 }:
 let
-  pname = "vector";
+  pname = "pgmq";
 
   # Load version configuration from external file
-  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
+  allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).${pname};
 
   # Filter versions compatible with current PostgreSQL version
   supportedVersions = lib.filterAttrs (
@@ -29,65 +29,79 @@ let
     version: hash:
     stdenv.mkDerivation rec {
       inherit pname version;
-
       buildInputs = [ postgresql ];
-
       src = fetchFromGitHub {
-        owner = "pgvector";
-        repo = "pgvector";
-        rev = "refs/tags/v${version}";
+        owner = "tembo-io";
+        repo = pname;
+        rev = "v${version}";
         inherit hash;
       };
 
+      patches = lib.optionals (version == latestVersion) [
+        ./0001-fix-replace-drop_queue-function-if-exists.patch
+      ];
+
+      buildPhase = ''
+        cd pgmq-extension
+      '';
+
       installPhase = ''
-        mkdir -p $out/{lib,share/postgresql/extension}
+        runHook preInstall
 
-        # Install shared library with version suffix
-        mv ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        mkdir -p $out/share/postgresql/extension
 
-        # Create version-specific control file
+        # Create versioned sql install script
+        cp sql/${pname}.sql $out/share/postgresql/extension/${pname}--${version}.sql
+
+        # Create versioned control file with modified module path
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
-        # Copy SQL file to install the specific version
-        cp sql/${pname}.sql $out/share/postgresql/extension/${pname}--${version}.sql
-
-        # For the latest version, copy sql upgrade script, default control file and symlink
+        # For the latest version, create default control file and symlink and copy SQL upgrade scripts
         if [[ "${version}" == "${latestVersion}" ]]; then
-          cp sql/*.sql $out/share/postgresql/extension
           {
-            echo "default_version = '${latestVersion}'"
-            cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+            echo "default_version = '${version}'"
+            cat $out/share/postgresql/extension/${pname}--${version}.control
           } > $out/share/postgresql/extension/${pname}.control
-          ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+          cat >> sql/pgmq--1.5.0--1.5.1.sql <<EOF
+
+        CREATE FUNCTION pgmq._extension_exists(extension_name TEXT)
+        RETURNS BOOLEAN
+        LANGUAGE SQL
+        AS \$\$
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_extension
+            WHERE extname = extension_name
+        )
+        \$\$;
+        EOF
+          cp sql/*.sql $out/share/postgresql/extension
         fi
 
         runHook postInstall
       '';
 
       meta = with lib; {
-        description = "Open-source vector similarity search for Postgres";
-        homepage = "https://github.com/${src.owner}/${src.repo}";
+        description = "A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.";
+        homepage = "https://github.com/tembo-io/pgmq";
         maintainers = with maintainers; [ olirice ];
-        platforms = postgresql.meta.platforms;
+        inherit (postgresql.meta) platforms;
         license = licenses.postgresql;
       };
     };
 in
-pkgs.buildEnv {
+buildEnv {
   name = pname;
   paths = packages;
-  pathsToLink = [
-    "/lib"
-    "/share/postgresql/extension"
-  ];
+
+  pathsToLink = [ "/share/postgresql/extension" ];
 
   passthru = {
     inherit versions numberOfVersions;
     pname = "${pname}-all";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
-    pgRegressTestName = "pgvector";
   };
 }
