@@ -215,16 +215,17 @@ fi
 echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
-cp "$READREPL_CONFIG_FILE" "$DATDIR/04-read-replica.conf"
+mkdir -p "$DATDIR/conf.d"
+cp "$READREPL_CONFIG_FILE" "$DATDIR/conf.d/04-read-replica.conf"
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
 # Configure supautils
-sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/05-supautils.conf"
+sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/conf.d/05-supautils.conf"
 
 # Configure PostgreSQL
 sed -e "1i\\
-include = '$DATDIR/05-supautils.conf'" \
+include = '$DATDIR/conf.d/05-supautils.conf'" \
 -e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
@@ -232,7 +233,7 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|data_directory = '/var/lib/postgresql/data'|data_directory = '$DATDIR'|" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
--e "\$a\\
+-e "s|include_dir = '/etc/postgresql-custom'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
 # Function to configure OrioleDB specific settings
@@ -242,34 +243,34 @@ orioledb_config_items() {
         echo "non-macos oriole conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/05-supautils.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/conf.d/05-supautils.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
         ls -la "$DATDIR"
-        
+
         # Use perl instead of sed for macOS
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g' "$DATDIR/postgresql.conf"
-        
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/05-supautils.conf"
-        perl -pi -e 's/ plv8,//g' "$DATDIR/05-supautils.conf"
-        perl -pi -e 's/ pgjwt,//g' "$DATDIR/05-supautils.conf"
+
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/conf.d/05-supautils.conf"
+        perl -pi -e 's/ plv8,//g' "$DATDIR/conf.d/05-supautils.conf"
+        perl -pi -e 's/ pgjwt,//g' "$DATDIR/conf.d/05-supautils.conf"
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
-        
+
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         echo "non-macos pg 17 conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/05-supautils.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/conf.d/05-supautils.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/05-supautils.conf"
-        perl -pi -e 's/ plv8,//g;' "$DATDIR/05-supautils.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/conf.d/05-supautils.conf"
+        perl -pi -e 's/ plv8,//g;' "$DATDIR/conf.d/05-supautils.conf"
     fi
 }
 
