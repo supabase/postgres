@@ -86,7 +86,6 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
         "--check-cache-status",
         "--force-recurse",
         "--quiet",
-        "--show-required-system-features",
         "--option",
         "eval-cache",
         "false",
