@@ -42,13 +42,6 @@
     - (debpkg_mode or stage2_nix)
   block:
     # supautils
-    - name: supautils - add supautils to session_preload_libraries
-      ansible.builtin.replace:
-        path: '/etc/postgresql/postgresql.conf'
-        regexp: "#session_preload_libraries = ''"
-        replace: "session_preload_libraries = 'supautils'"
-      become: true
-
     - name: supautils - write custom supautils.conf
       ansible.builtin.template:
         dest: '/etc/postgresql-custom/05-supautils.conf'

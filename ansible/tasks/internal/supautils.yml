@@ -32,13 +32,6 @@
     target: install
   become: yes
 
-- name: supautils - add supautils to session_preload_libraries
-  become: yes
-  replace:
-    path: /etc/postgresql/postgresql.conf
-    regexp: "#session_preload_libraries = ''"
-    replace: session_preload_libraries = 'supautils'
-
 - name: supautils - write custom 05-supautils.conf
   template:
     src: "files/postgresql_config/supautils.conf.j2"
