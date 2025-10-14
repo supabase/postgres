@@ -30,7 +30,7 @@ jobs:
         id: set-versions
         run: |
           VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
-          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   check-existing-image:
     needs: prepare
@@ -48,12 +48,12 @@ jobs:
           REPOSITORY: postgres-vm-image
         run: |
           VERSION=$(yq '.postgres_release["postgres'${{ fromJson(needs.prepare.outputs.postgres_versions) }}'"]' ansible/vars.yml | tr -d '"')
-          if aws ecr describe-images --repository-name $REPOSITORY --image-ids imageTag=$VERSION --region $AWS_REGION 2>/dev/null; then
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$VERSION" --region "$AWS_REGION" 2>/dev/null; then
             echo "::notice title=Qemu image::Image with tag $VERSION already exists. Skipping build. Please update the version in ansible/vars.yml if you want to upload a new image."
-            echo "image_exists=true" >> $GITHUB_OUTPUT
+            echo "image_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "Image with tag $VERSION does not exist. Proceeding with build."
-            echo "image_exists=false" >> $GITHUB_OUTPUT
+            echo "image_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
   build:
@@ -91,16 +91,16 @@ jobs:
 
       - name: Set PostgreSQL version environment variable
         run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
-          PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(./yq '.postgres_release["postgres${{ matrix.postgres_version }}"]' ansible/vars.yml)
           PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          echo 'postgres-major-version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
+          echo "postgres-version = \"${PG_VERSION}\"" > common-nix.vars.pkr.hcl
+          echo "postgres-major-version = \"${POSTGRES_MAJOR_VERSION}\"" >> common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
@@ -121,8 +121,8 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: configure aws credentials - staging
         uses: aws-actions/configure-aws-credentials@v4
