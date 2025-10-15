@@ -1,0 +1,47 @@
+/*
+
+Test to verify supautils (v3.0.0+) allows non-superuser postgres role to own FDWs.
+
+This test ensures that the supautils extension properly handles FDW ownership
+for the privileged postgres role without requiring temporary superuser privileges.
+
+This verifies the fix that eliminated the need for:
+ansible/files/postgresql_extension_custom_scripts/postgres_fdw/after-create.sql (removed)
+
+*/
+
+BEGIN;
+
+-- Switch to the postgres role (non-superuser) to test supautils behavior
+SET ROLE postgres;
+
+-- Test 1: Create a custom FDW directly (this is what supautils v3.0.0 fixes)
+-- Before v3.0.0, this would fail because only superusers can create FDWs
+-- With v3.0.0, supautils allows postgres (privileged role) to create and own FDWs
+CREATE FOREIGN DATA WRAPPER test_fdw_postgres_owned;
+
+-- Reset to original role for queries because the tests run under a superuser context
+RESET ROLE;
+
+-- Verify that the custom FDW is owned by postgres (non-superuser)
+SELECT
+  fdw.fdwname as fdw_name,
+  owner.rolname as owner_name,
+  owner.rolsuper as owner_is_superuser
+FROM
+  pg_foreign_data_wrapper fdw
+  JOIN pg_roles owner ON fdw.fdwowner = owner.oid
+WHERE
+  fdw.fdwname = 'test_fdw_postgres_owned';
+
+-- Verify the postgres role's superuser status
+-- The key test: postgres should NOT be a superuser, yet can own the FDW
+SELECT
+  rolname,
+  rolsuper as is_superuser
+FROM
+  pg_roles
+WHERE
+  rolname = 'postgres';
+
+ROLLBACK;
