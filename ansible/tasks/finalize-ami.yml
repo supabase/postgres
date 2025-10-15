@@ -1,6 +1,6 @@
 - name: PG logging conf
   ansible.builtin.copy:
-    dest: '/etc/postgresql-custom/conf.d/00-logging.conf'
+    dest: '/etc/postgresql-custom/conf.d/logging.conf'
     group: 'postgres'
     src: 'files/postgresql_config/postgresql-csvlog.conf'
 
