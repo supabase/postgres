@@ -156,7 +156,7 @@
   when: debpkg_mode or nixpkg_mode
 
 # Add custom config for read replicas set up
-- name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
+- name: Move custom read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
   copy:
     src: "files/postgresql_config/conf.d/read-replica.conf"
     dest: /etc/postgresql-custom/conf.d/read-replica.conf

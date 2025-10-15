@@ -233,7 +233,7 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|data_directory = '/var/lib/postgresql/data'|data_directory = '$DATDIR'|" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
--e "s|include_dir = '/etc/postgresql-custom'|include_dir = '$DATDIR/conf.d'|" \
+-e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
 # Function to configure OrioleDB specific settings
