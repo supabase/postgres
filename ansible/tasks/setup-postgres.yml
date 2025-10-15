@@ -127,7 +127,7 @@
     mode: 0664
   with_items:
     - 'generated-optimizations.conf'
-    - '02-custom-overrides.conf'
+    - 'custom-overrides.conf'
   when: debpkg_mode or nixpkg_mode
 
 # Move Postgres configuration files into /etc/postgresql
