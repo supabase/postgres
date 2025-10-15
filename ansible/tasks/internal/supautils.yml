@@ -32,10 +32,10 @@
     target: install
   become: yes
 
-- name: supautils - write custom 05-supautils.conf
+- name: supautils - write custom supautils.conf
   copy:
-    src: "files/postgresql_config/conf.d/05-supautils.conf"
-    dest: /etc/postgresql-custom/conf.d/05-supautils.conf
+    src: "files/postgresql_config/conf.d/supautils.conf"
+    dest: /etc/postgresql-custom/conf.d/supautils.conf
     mode: 0664
     owner: postgres
     group: postgres

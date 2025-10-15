@@ -44,7 +44,7 @@
     # supautils
     - name: supautils - write custom supautils.conf
       ansible.builtin.copy:
-        dest: '/etc/postgresql-custom/conf.d/05-supautils.conf'
+        dest: '/etc/postgresql-custom/conf.d/supautils.conf'
         mode: '0664'
         group: 'postgres'
         owner: 'postgres'

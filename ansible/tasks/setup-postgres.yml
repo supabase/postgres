@@ -212,7 +212,7 @@
     group: postgres
   when: nixpkg_mode
 
-- name: Check psql_version and modify 05-supautils.conf and postgresql.conf if necessary
+- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
     - name: Check if psql_version is psql_orioledb
       set_fact:
