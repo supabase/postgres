@@ -216,7 +216,7 @@ echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
 mkdir -p "$DATDIR/conf.d"
-cp "$READREPL_CONFIG_FILE" "$DATDIR/conf.d/04-read-replica.conf"
+cp "$READREPL_CONFIG_FILE" "$DATDIR/conf.d/read-replica.conf"
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
