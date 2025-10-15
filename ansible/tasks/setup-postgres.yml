@@ -126,7 +126,7 @@
     group: postgres
     mode: 0664
   with_items:
-    - '01-generated-optimizations.conf'
+    - 'generated-optimizations.conf'
     - '02-custom-overrides.conf'
   when: debpkg_mode or nixpkg_mode
 
