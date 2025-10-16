@@ -1,6 +1,6 @@
 [postgresql]
 enabled = true
-port    = 5432
+port    = 5432,6543 # ban both pgbouncer and postgresql
 protocol = tcp
 filter = postgresql
 logpath = /var/log/postgresql/auth-failures.csv

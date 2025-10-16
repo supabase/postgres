@@ -1,6 +1,6 @@
 [pgbouncer]
 enabled = true
-port    = 6543
+port    = 6543,5432 # ban both pgbouncer and postgresql
 protocol = tcp
 filter = pgbouncer
 backend = systemd[journalflags=1]
