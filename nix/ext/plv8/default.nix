@@ -13,7 +13,7 @@
   darwin,
   patchelf,
   buildEnv,
-  nodejs_20
+  nodejs_20,
 }:
 
 let
@@ -49,19 +49,19 @@ let
         inherit hash;
       };
 
-      patches = [
-        # Allow building with system v8.
-        # https://github.com/plv8/plv8/pull/505 (rejected)
-        ./0001-build-Allow-using-V8-from-system-${version}.patch
-      ] ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
-        # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
-        ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
-      ];
+      patches =
+        [
+          # Allow building with system v8.
+          # https://github.com/plv8/plv8/pull/505 (rejected)
+          ./0001-build-Allow-using-V8-from-system-${version}.patch
+        ]
+        ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
+          # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
+          ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
+        ];
 
       nativeBuildInputs =
-        [
-          perl
-        ]
+        [ perl ]
         ++ lib.optionals stdenv.isDarwin [
           clang
           xcbuild
@@ -91,9 +91,7 @@ let
           "CXX=${clang}/bin/clang++"
           "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
         ]
-        ++ lib.optionals (!stdenv.isDarwin) [
-          "SHLIB_LINK=-lv8"
-        ];
+        ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
       NIX_LDFLAGS = lib.optionals stdenv.isDarwin [
         "-L${postgresql}/lib"
@@ -145,9 +143,11 @@ let
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
-          ${lib.optionalString (!stdenv.isDarwin) ''
-            ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
-          ''}
+          ${
+            lib.optionalString (!stdenv.isDarwin) ''
+              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+            ''
+          }
         else
           ${lib.optionalString stdenv.isDarwin ''
             install_name_tool -add_rpath "${v8}/lib" $out/lib/$LIB_NAME
@@ -156,13 +156,17 @@ let
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
-          ${lib.optionalString (!stdenv.isDarwin) ''
-            ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
-          ''}
+          ${
+            lib.optionalString (!stdenv.isDarwin) ''
+              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+            ''
+          }
         fi
 
         # plv8 3.2.x removed support for coffeejs and livescript
-        EXTENSIONS=(${if (builtins.compareVersions "3.1.10" version >= 0) then "plv8 plcoffee plls" else "plv8"})
+        EXTENSIONS=(${
+          if (builtins.compareVersions "3.1.10" version >= 0) then "plv8 plcoffee plls" else "plv8"
+        })
         for ext in "''${EXTENSIONS[@]}" ; do
           cp $ext--${version}.sql $out/share/postgresql/extension
           install -Dm644 $ext.control $out/share/postgresql/extension/$ext--${version}.control
