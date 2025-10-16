@@ -1,3 +1,4 @@
+# we don't use the default nixos test because we don't support plv8 with pg 17
 { self, pkgs }:
 let
   pname = "plv8";
@@ -35,12 +36,13 @@ let
       };
     in
     pkg;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
   hostPkgs = pkgs;
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
       virtualisation = {
         forwardPorts = [
@@ -59,98 +61,46 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         enable = true;
         package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
       };
-
-      specialisation.postgresql17.configuration = {
-        services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
-        };
-
-        systemd.services.postgresql-migrate = {
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = "postgres";
-            Group = "postgres";
-            StateDirectory = "postgresql";
-            WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
-          };
-          script =
-            let
-              oldPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
-              oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
-              newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
-            in
-            ''
-              if [[ ! -d ${newDataDir} ]]; then
-                install -d -m 0700 -o postgres -g postgres "${newDataDir}"
-                ${newPostgresql}/bin/initdb -D "${newDataDir}"
-                ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                  --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
-              else
-                echo "${newDataDir} already exists"
-              fi
-            '';
-        };
-
-        systemd.services.postgresql = {
-          after = [ "postgresql-migrate.service" ];
-          requires = [ "postgresql-migrate.service" ];
-        };
-      };
-
     };
   testScript =
-    { nodes, ... }:
-    let
-      pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
-    in
+    { ... }:
     ''
+      from pathlib import Path
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
-        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
       }
+      extension_name = "${pname}"
+      support_upgrade = False
+      ext_has_background_worker = ${
+        if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
+      }
+      sql_test_directory = Path("${../../tests}")
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
 
-      def run_sql(query):
-        return server.succeed(f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """).strip()
-
-      def check_upgrade_path(pg_version):
-        with subtest("Check ${pname} upgrade path"):
-          firstVersion = versions[pg_version][0]
-          server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
-          run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{firstVersion}' CASCADE;""")
-          installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
-          assert installed_version == firstVersion, f"Expected ${pname} version {firstVersion}, but found {installed_version}"
-          for version in versions[pg_version][1:]:
-            server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
-            run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{version}' CASCADE;""")
-            installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
-            assert installed_version == version, f"Expected ${pname} version {version}, but found {installed_version}"
+      ${builtins.readFile ./lib.py}
 
       start_all()
 
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      check_upgrade_path("15")
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
-      with subtest("Check ${pname} latest extension version"):
-        server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
-        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
-        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
-        latestVersion = versions["15"][-1]
-        assert f"${pname},{latestVersion}" in installed_extensions
+      with subtest("Check upgrade path with postgresql 15"):
+        test.check_upgrade_path("15")
 
-      with subtest("switch to postgresql 17"):
-        server.succeed(
-          "${pg17-configuration}/bin/switch-to-configuration test >&2"
-        )
+      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
+        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
-      with subtest("Check ${pname} latest extension version after upgrade"):
-        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
-        latestVersion = versions["17"][-1]
-        assert f"${pname},{latestVersion}" in installed_extensions
+      last_version = None
+      with subtest("Check the install of the last version of the extension"):
+        last_version = test.check_install_last_version("15")
 
-      check_upgrade_path("17")
+      if ext_has_background_worker:
+        with subtest("Test switch_${pname}_version"):
+          test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+
+      with subtest("Check pg_regress with postgresql 15 after installing the last version"):
+        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
     '';
 }
