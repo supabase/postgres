@@ -24,10 +24,9 @@ order by
 ------------------------
  pg_cron
  pgjwt
- plv8
  postgis_tiger_geocoder
  tsm_system_time
-(5 rows)
+(4 rows)
 
 /*
 
