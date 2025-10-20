@@ -5,11 +5,12 @@
   pkg-config,
   postgresql,
   msgpack-c,
-  callPackage,
   mecab,
   makeWrapper,
   xxHash,
   buildEnv,
+  supabase-groonga,
+  mecab-naist-jdic,
 }:
 let
   pname = "pgroonga";
@@ -39,10 +40,6 @@ let
   # Build function for individual versions
   build =
     version: hash:
-    let
-      supabase-groonga = callPackage ./supabase-groonga-14.0.5.nix { };
-      mecab-naist-jdic = callPackage ../mecab-naist-jdic { };
-    in
     stdenv.mkDerivation rec {
       inherit pname version;
 

@@ -30,7 +30,6 @@
         nix/checks.nix
         nix/config.nix
         nix/devShells.nix
-        nix/ext
         nix/fmt.nix
         nix/hooks.nix
         nix/nixpkgs.nix

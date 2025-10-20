@@ -18,11 +18,8 @@
   lz4,
   zlibSupport ? true,
   zlib,
-  callPackage,
+  mecab-naist-jdic,
 }:
-let
-  mecab-naist-jdic = callPackage ../../ext/mecab-naist-jdic { };
-in
 stdenv.mkDerivation (finalAttrs: {
   pname = "supabase-groonga";
   version = "14.0.5";

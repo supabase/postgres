@@ -12,6 +12,7 @@
       postgresql_orioledb-17
       supabase-groonga
       switch-ext-version
+      mecab-naist-jdic
       ;
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";

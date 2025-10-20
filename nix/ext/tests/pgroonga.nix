@@ -62,7 +62,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         package = psql_15;
       };
       systemd.services.postgresql.environment.MECAB_DICDIR = "${
-        self.packages.${pkgs.system}.mecab_naist_jdic
+        self.packages.${pkgs.system}.mecab-naist-jdic
       }/lib/mecab/dic/naist-jdic";
       systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.mecab}/bin/mecab-config";
       systemd.services.postgresql.environment.GRN_PLUGINS_DIR = "${
