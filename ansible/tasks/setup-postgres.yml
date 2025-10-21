@@ -204,7 +204,7 @@
   become: true
   become_user: 'postgres'
   ansible.builtin.command:
-    cmd: /var/lib/postgresql/.nix-profile/bin/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin"
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
   vars:
     ansible_command_timeout: 60
   when:
@@ -232,7 +232,7 @@
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /var/lib/postgresql/.nix-profile/bin/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -249,7 +249,7 @@
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /var/lib/postgresql/.nix-profile/bin/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=icu" -o "--encoding=UTF-8" -o "--icu-locale=en_US.UTF-8"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
