@@ -185,11 +185,13 @@
     - (debpkg_mode or nixpkg_mode)
   block:
     - name: Create symlink to /usr/lib/postgresql/bin
-      ansible.builtin.file:
-        force: true
-        path: '/usr/lib/postgresql/bin'
-        src: "/usr/lib/postgresql/{{ postgresql_major }}/bin"
-        state: 'link'
+      ansible.builtin.command:
+        cmd: ln -sf /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
+      # ansible.builtin.file:
+      #   force: true
+      #   path: '/usr/lib/postgresql/bin'
+      #   src: "/usr/lib/postgresql/{{ postgresql_major }}/bin"
+      #   state: 'link'
 
     - name: Create directory on data volume
       ansible.builtin.file:
