@@ -36,13 +36,6 @@
         path: '/tmp/build'
         state: 'absent'
 
-    - name: Create symlink to /usr/lib/postgresql/bin
-      ansible.builtin.file:
-        force: true
-        path: '/usr/lib/postgresql/bin'
-        src: "/usr/lib/postgresql/{{ postgresql_major }}/bin"
-        state: 'link'
-
 - name: execute stage2_nix tasks
   when:
     - stage2_nix
@@ -187,9 +180,9 @@
     - stage2_nix
 
 # init DB
-- name: init the db when (debpkg_mode or nixpkg_mode or stage2_nix)
+- name: init the db when (debpkg_mode or nixpkg_mode)
   when:
-    - (debpkg_mode or nixpkg_mode or stage2_nix)
+    - (debpkg_mode or nixpkg_mode)
   block:
     - name: Create symlink to /usr/lib/postgresql/bin
       ansible.builtin.file:
