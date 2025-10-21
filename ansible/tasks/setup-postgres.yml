@@ -184,15 +184,6 @@
   when:
     - (debpkg_mode or nixpkg_mode)
   block:
-    - name: Create symlink to /usr/lib/postgresql/bin
-      ansible.builtin.command:
-        cmd: ln -sf /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
-      # ansible.builtin.file:
-      #   force: true
-      #   path: '/usr/lib/postgresql/bin'
-      #   src: "/usr/lib/postgresql/{{ postgresql_major }}/bin"
-      #   state: 'link'
-
     - name: Create directory on data volume
       ansible.builtin.file:
         group: 'postgres'
@@ -213,7 +204,7 @@
   become: true
   become_user: 'postgres'
   ansible.builtin.command:
-    cmd: /usr/lib/postgresql/bin/initdb -D /var/lib/postgresql/data initdb --allow-group-access --username=supabase_admin"
+    cmd: /usr/lib/postgresql/{{ postgresql_major }}/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin"
   vars:
     ansible_command_timeout: 60
   when:
@@ -241,7 +232,7 @@
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin
+        cmd: /usr/lib/postgresql/{{ postgresql_major }}/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -258,7 +249,7 @@
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8
+        cmd: /usr/lib/postgresql/{{ postgresql_major }}/bin/initdb -D /var/lib/postgresql/data --allow-group-access --username=supabase_admin --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
