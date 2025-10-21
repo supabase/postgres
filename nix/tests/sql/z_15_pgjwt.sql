@@ -1,3 +1,11 @@
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+
+-- pgjwt depends on pgcrypto for hmac functions
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 -- Install pgjwt in extensions schema
 CREATE EXTENSION IF NOT EXISTS pgjwt WITH SCHEMA extensions;
 
@@ -17,3 +25,5 @@ select
     secret    := 'secret',
     algorithm := 'HS256'
   );
+
+ROLLBACK;

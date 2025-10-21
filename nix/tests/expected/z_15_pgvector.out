@@ -1,3 +1,7 @@
+BEGIN;
+set client_min_messages = warning;
+create schema if not exists extensions;
+create extension if not exists vector with schema extensions;
 create schema v;
 create table v.items(
   id serial primary key,
@@ -11,25 +15,13 @@ create index on v.items using hnsw (embedding vector_l2_ops);
 create index on v.items using hnsw (embedding vector_cosine_ops);
 create index on v.items using hnsw (embedding vector_l1_ops);
 create index on v.items using ivfflat (embedding vector_l2_ops);
-NOTICE:  ivfflat index created with little data
-DETAIL:  This will cause low recall.
-HINT:  Drop the index until the table has more data.
 create index on v.items using ivfflat (embedding vector_cosine_ops);
-NOTICE:  ivfflat index created with little data
-DETAIL:  This will cause low recall.
-HINT:  Drop the index until the table has more data.
 -- halfvec ops
 create index on v.items using hnsw (half_embedding halfvec_l2_ops);
 create index on v.items using hnsw (half_embedding halfvec_cosine_ops);
 create index on v.items using hnsw (half_embedding halfvec_l1_ops);
 create index on v.items using ivfflat (half_embedding halfvec_l2_ops);
-NOTICE:  ivfflat index created with little data
-DETAIL:  This will cause low recall.
-HINT:  Drop the index until the table has more data.
 create index on v.items using ivfflat (half_embedding halfvec_cosine_ops);
-NOTICE:  ivfflat index created with little data
-DETAIL:  This will cause low recall.
-HINT:  Drop the index until the table has more data.
 -- sparsevec
 create index on v.items using hnsw (sparse_embedding sparsevec_l2_ops);
 create index on v.items using hnsw (sparse_embedding sparsevec_cosine_ops);
@@ -37,9 +29,6 @@ create index on v.items using hnsw (sparse_embedding sparsevec_l1_ops);
 -- bit ops
 create index on v.items using hnsw (bit_embedding bit_hamming_ops);
 create index on v.items using ivfflat (bit_embedding bit_hamming_ops);
-NOTICE:  ivfflat index created with little data
-DETAIL:  This will cause low recall.
-HINT:  Drop the index until the table has more data.
 -- Populate some records
 insert into v.items(
     embedding,
@@ -87,4 +76,4 @@ from
 
 -- Cleanup
 drop schema v cascade;
-NOTICE:  drop cascades to table v.items
+ROLLBACK;

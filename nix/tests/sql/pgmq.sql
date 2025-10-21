@@ -1,3 +1,8 @@
+BEGIN;
+
+set client_min_messages = warning;
+create extension if not exists pgmq; -- pgmq is non-relocatable (schema = 'pgmq')
+
 -- Test the standard flow
 select
   pgmq.create('Foo');
@@ -81,9 +86,18 @@ select
 
 
 -- Make sure SQLI enabling characters are blocked
+-- Use savepoints to test error conditions without aborting the transaction
+SAVEPOINT test_invalid_names;
 select pgmq.create('F--oo');
+ROLLBACK TO SAVEPOINT test_invalid_names;
+
+SAVEPOINT test_invalid_names;
 select pgmq.create('F$oo');
+ROLLBACK TO SAVEPOINT test_invalid_names;
+
+SAVEPOINT test_invalid_names;
 select pgmq.create($$F'oo$$);
+ROLLBACK TO SAVEPOINT test_invalid_names;
 \echo
 
 -- pgmq schema functions with owners (ownership is modified on ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql)
@@ -101,3 +115,4 @@ where
   n.nspname = 'pgmq'
 order by
   p.proname;
+ROLLBACK;

@@ -64,6 +64,11 @@
         else
           "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
+      postgresqlConfigBaseDir = builtins.path {
+        name = "postgresql_config";
+        path = ../../ansible/files/postgresql_config;
+      };
+
       substitutions = {
         SHELL_PATH = "${pkgs.bash}/bin/bash";
         PGSQL_DEFAULT_PORT = "${defaults.port}";
@@ -71,6 +76,7 @@
         PSQL15_BINDIR = "${psql_15}";
         PSQL17_BINDIR = "${psql_17}";
         PSQL_CONF_FILE = "${paths.pgconfigFile}";
+        POSTGRESQL_CONFIG_DIR = "${postgresqlConfigBaseDir}";
         PSQLORIOLEDB17_BINDIR = "${psql_orioledb-17}";
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
         PG_HBA = "${paths.pgHbaConfigFile}";
@@ -96,17 +102,7 @@
           ;
       }
       ''
-        mkdir -p $out/bin $out/etc/postgresql-custom $out/etc/postgresql $out/extension-custom-scripts
-
-        # Copy config files with error handling
-        cp -r ${paths.configConfDir} $out/etc/postgresql-custom/|| { echo "Failed to copy conf.d"; exit 1; }
-        cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
-        cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
-        cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
-        cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }
-
-        echo "Copy operation completed"
-        chmod 644 $out/etc/postgresql-custom/conf.d/supautils.conf $out/etc/postgresql/postgresql.conf $out/etc/postgresql-custom/conf.d/logging.conf $out/etc/postgresql/pg_hba.conf
+        mkdir -p $out/bin
 
         substitute ${../tools/run-server.sh.in} $out/bin/start-postgres-server \
           ${

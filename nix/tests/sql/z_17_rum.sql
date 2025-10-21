@@ -1,6 +1,12 @@
 /*
 This extension is excluded from oriole-17 because it uses an unsupported index type
 */
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+create extension if not exists rum with schema extensions;
+
 create schema v;
 
 create table v.test_rum(
@@ -38,3 +44,5 @@ order by
 
 
 drop schema v cascade;
+
+ROLLBACK;

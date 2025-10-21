@@ -1,3 +1,12 @@
+-- Create pg_tle to ensure pgtle_admin role exists
+-- This matches production where users can create pg_tle extension
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+-- pg_tle is non-relocatable and automatically creates the pgtle schema
+create extension if not exists pg_tle;
+
 -- version-specific roles and attributes
 select
   rolname,
@@ -72,3 +81,6 @@ where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserve
 and g.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by
     r.rolname, g.rolname;
+
+-- Rollback to clean up pg_tle extension
+ROLLBACK;

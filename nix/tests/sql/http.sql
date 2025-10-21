@@ -1,6 +1,11 @@
 -- Test for http extension
 -- Basic HTTP functionality tests
 
+BEGIN;
+
+set client_min_messages = warning;
+create extension if not exists http with schema extensions;
+
 -- Test basic HTTP GET request
 SELECT status FROM http_get('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/get');
 
@@ -63,3 +68,5 @@ SELECT status FROM http((
 
 -- Test URL encoding
 SELECT status FROM http_get('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/anything?param=value%20with%20spaces&another=123');
+
+ROLLBACK;

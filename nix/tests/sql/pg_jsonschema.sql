@@ -1,5 +1,8 @@
 begin;
 
+set client_min_messages = warning;
+create extension if not exists pg_jsonschema with schema extensions;
+
 -- Test json_matches_schema
 create table customer(
     id serial primary key,
