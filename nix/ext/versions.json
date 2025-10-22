@@ -321,6 +321,16 @@
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     }
   },
+  "pg_partman": {
+    "5.2.4": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-i/o+JZEXnJRO17kfdTw87aca28+I8pvuFZsPMA/kf+w="
+    }
+  },
     "pgmq": {
     "1.4.4": {
       "postgresql": [
