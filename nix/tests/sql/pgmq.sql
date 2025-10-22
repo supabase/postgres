@@ -87,17 +87,17 @@ select
 
 -- Make sure SQLI enabling characters are blocked
 -- Use savepoints to test error conditions without aborting the transaction
-SAVEPOINT test_invalid_names;
+SAVEPOINT test_invalid_names_1;
 select pgmq.create('F--oo');
-ROLLBACK TO SAVEPOINT test_invalid_names;
+ROLLBACK TO SAVEPOINT test_invalid_names_1;
 
-SAVEPOINT test_invalid_names;
+SAVEPOINT test_invalid_names_2;
 select pgmq.create('F$oo');
-ROLLBACK TO SAVEPOINT test_invalid_names;
+ROLLBACK TO SAVEPOINT test_invalid_names_2;
 
-SAVEPOINT test_invalid_names;
+SAVEPOINT test_invalid_names_3;
 select pgmq.create($$F'oo$$);
-ROLLBACK TO SAVEPOINT test_invalid_names;
+ROLLBACK TO SAVEPOINT test_invalid_names_3;
 \echo
 
 -- pgmq schema functions with owners (ownership is modified on ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql)
