@@ -27,7 +27,7 @@
 
 - name: Show installed libpq5 version
   ansible.builtin.debug:
-    msg: "Installed libpq5 version: {{ ansible_facts['packages']['libpq5']['version'] }}"
+    msg: "Installed libpq5 version: {{ ansible_facts['packages']['libpq5'][0]['version'] }}"
 
 - name: PostgREST - remove Postgres PPA gpg key
   ansible.builtin.apt_key:
