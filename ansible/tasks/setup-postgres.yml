@@ -116,6 +116,7 @@
   with_items:
     - '/etc/postgresql'
     - '/etc/postgresql-custom'
+    - '/etc/postgresql-custom/conf.d'
   when: debpkg_mode or nixpkg_mode
 
 - name: create placeholder config files

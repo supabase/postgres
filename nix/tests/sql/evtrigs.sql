@@ -1,3 +1,7 @@
+BEGIN;
+
+set client_min_messages = warning;
+
 select
   e.evtname,
   e.evtowner::regrole as evtowner,
@@ -10,3 +14,4 @@ join pg_proc p
 join pg_namespace n_func
   on p.pronamespace = n_func.oid
 where p.prorettype = 'event_trigger'::regtype;
+ROLLBACK;

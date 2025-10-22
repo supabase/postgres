@@ -1,3 +1,10 @@
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+create extension if not exists pgroonga with schema extensions;
+create extension if not exists pgroonga_database with schema extensions;
+
 create schema v;
 
 create table v.roon(
@@ -46,3 +53,5 @@ select * from v.roon where content &@~ 'supports';
 
 
 drop schema v cascade;
+
+ROLLBACK;

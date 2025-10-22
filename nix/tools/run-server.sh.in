@@ -163,9 +163,6 @@ export PATH=$BINDIR/bin:$PATH
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PORTNO="${PORTNO:-@PGSQL_DEFAULT_PORT@}"
-SUPAUTILS_CONFIG_FILE=@SUPAUTILS_CONF_FILE@
-LOGGING_CONFIG_FILE=@LOGGING_CONF_FILE@
-READREPL_CONFIG_FILE=@READREPL_CONF_FILE@
 PG_HBA_FILE=@PG_HBA@
 PG_IDENT_FILE=@PG_IDENT@
 EXTENSION_CUSTOM_SCRIPTS=@EXTENSION_CUSTOM_SCRIPTS_DIR@
@@ -215,18 +212,36 @@ fi
 echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
-mkdir -p "$DATDIR/conf.d"
-cp "$READREPL_CONFIG_FILE" "$DATDIR/conf.d/read-replica.conf"
+
+# Copy entire conf.d directory from postgresql_config
+POSTGRESQL_CONFIG_DIR="@POSTGRESQL_CONFIG_DIR@"
+cp -r "$POSTGRESQL_CONFIG_DIR/conf.d" "$DATDIR/"
+
+# Make conf.d files writable (they're read-only from Nix store)
+chmod -R u+w "$DATDIR/conf.d"
+
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
-# Configure supautils
-sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/conf.d/supautils.conf"
+# Update the supautils.conf to point to the correct extension custom scripts path
+# AND temporarily comment out reserved_roles to allow role creation during migrations
+if [[ "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+    # macOS requires a backup extension for -i
+    sed -i.bak \
+        -e "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" \
+        -e "s|^supautils.reserved_roles|#supautils.reserved_roles|" \
+        "$DATDIR/conf.d/supautils.conf"
+    rm -f "$DATDIR/conf.d/supautils.conf.bak"
+else
+    # Linux doesn't require a backup extension
+    sed -i \
+        -e "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" \
+        -e "s|^supautils.reserved_roles|#supautils.reserved_roles|" \
+        "$DATDIR/conf.d/supautils.conf"
+fi
 
 # Configure PostgreSQL
-sed -e "1i\\
-include = '$DATDIR/conf.d/supautils.conf'" \
--e "\$a\\
+sed -e "\$a\\
 pgsodium.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "\$a\\
 vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
@@ -354,6 +369,27 @@ EOSQL
         fi
     fi
 fi
+
+# Restore full supautils configuration now that migrations are complete
+# Uncomment reserved_roles that was disabled during migrations
+echo "Restoring full supautils configuration after migrations"
+if [[ "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+    # macOS requires a backup extension for -i
+    sed -i.bak "s|^#supautils.reserved_roles|supautils.reserved_roles|" "$DATDIR/conf.d/supautils.conf"
+    rm -f "$DATDIR/conf.d/supautils.conf.bak"
+else
+    # Linux doesn't require a backup extension
+    sed -i "s|^#supautils.reserved_roles|supautils.reserved_roles|" "$DATDIR/conf.d/supautils.conf"
+fi
+
+# Run after-create scripts for extensions that are not managed by supautils privileged_extensions
+# pgmq is not in the privileged_extensions list, so we need to run its after-create script manually
+echo "Running after-create scripts for non-privileged extensions"
+if psql -v ON_ERROR_STOP=0 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres -c "SELECT 1 FROM pg_extension WHERE extname = 'pgmq'" | grep -q 1; then
+    echo "Running pgmq after-create script"
+    psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -d postgres -f "$DATDIR/extension-custom-scripts/pgmq/after-create.sql"
+fi
+
 echo "Shutting down PostgreSQL..."
 
 stop_postgres
@@ -361,6 +397,6 @@ stop_postgres
 # Step 4: Restart PostgreSQL in the foreground (with log output visible) or as a daemon
 if [ "$DAEMONIZE" = true ]; then
     start_postgres "daemon"
-else 
+else
     start_postgres "foreground"
 fi

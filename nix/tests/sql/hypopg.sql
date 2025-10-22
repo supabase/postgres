@@ -1,3 +1,8 @@
+BEGIN;
+
+set client_min_messages = warning;
+create extension if not exists hypopg with schema extensions;
+
 create schema v;
 
 create table v.samp(
@@ -9,5 +14,7 @@ select 1 from hypopg_create_index($$
 $$);
 
 drop schema v cascade;
+
+ROLLBACK;
 
 

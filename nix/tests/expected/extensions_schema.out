@@ -1,3 +1,5 @@
+BEGIN;
+set client_min_messages = warning;
 -- all default extensions are installed in a schema "extensions"
 -- we don't include the version as that will break often, we only care about
 -- ensuring these extensions are present
@@ -15,8 +17,13 @@ order by
     e.extname;
    extension_name   | schema_name | extension_owner 
 --------------------+-------------+-----------------
+ dblink             | extensions  | supabase_admin
+ pg_repack          | extensions  | supabase_admin
  pg_stat_statements | extensions  | supabase_admin
+ pgaudit            | extensions  | supabase_admin
  pgcrypto           | extensions  | supabase_admin
+ postgis            | extensions  | supabase_admin
  uuid-ossp          | extensions  | supabase_admin
-(3 rows)
+(7 rows)
 
+ROLLBACK;

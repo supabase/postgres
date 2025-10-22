@@ -1,3 +1,6 @@
+BEGIN;
+set client_min_messages = warning;
+create extension if not exists hypopg with schema extensions;
 create schema v;
 create table v.samp(
   id int
@@ -11,4 +14,4 @@ $$);
 (1 row)
 
 drop schema v cascade;
-NOTICE:  drop cascades to table v.samp
+ROLLBACK;

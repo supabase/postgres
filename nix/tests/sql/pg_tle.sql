@@ -1,4 +1,8 @@
+BEGIN;
+
 set client_min_messages = warning;
+create schema if not exists pgtle;
+create extension if not exists pg_tle with schema pgtle;
 
 select
   pgtle.install_extension(
@@ -67,7 +71,4 @@ drop extension pg_distance;
 select
   pgtle.uninstall_extension('pg_distance');
 
--- Restore original state if any of the above fails
-drop extension pg_tle cascade;
-
-create extension pg_tle;
+ROLLBACK;

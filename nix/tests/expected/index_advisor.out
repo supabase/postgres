@@ -1,3 +1,7 @@
+BEGIN;
+set client_min_messages = warning;
+create extension if not exists hypopg with schema extensions;
+create extension if not exists index_advisor with schema extensions;
 create schema v;
 create table v.book(
   id int primary key,
@@ -13,4 +17,4 @@ from
 (1 row)
 
 drop schema v cascade;
-NOTICE:  drop cascades to table v.book
+ROLLBACK;
