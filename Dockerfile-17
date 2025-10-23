@@ -127,6 +127,20 @@ RUN nix profile install .#wal-g-3 && \
 RUN nix store gc
 
 WORKDIR /
+####################
+# setup-groonga
+####################
+FROM base as groonga
+
+WORKDIR /nixpg
+
+RUN nix profile install .#supabase-groonga && \
+    mkdir -p /tmp/groonga-plugins && \
+    cp -r /nix/var/nix/profiles/default/lib/groonga/plugins /tmp/groonga-plugins/
+
+RUN nix store gc
+
+WORKDIR /
 # ####################
 # # Download gosu for easy step-down from root
 # ####################
@@ -157,6 +171,7 @@ FROM gosu as production
 RUN id postgres || (echo "postgres user does not exist" && exit 1)
 # # Setup extensions
 COPY --from=walg /tmp/wal-g /usr/local/bin/
+COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 
 # # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
@@ -229,4 +244,7 @@ ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
 RUN mkdir -p /usr/share/postgresql/extension/ && \
     ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \
     chmod +x /usr/lib/postgresql/bin/pgsodium_getkey.sh
+
+ENV GRN_PLUGINS_DIR=/usr/lib/groonga/plugins
+
 CMD ["postgres", "-D", "/etc/postgresql"]
