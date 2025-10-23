@@ -31,7 +31,6 @@ let
     version: hash:
     stdenv.mkDerivation (finalAttrs: {
       inherit pname version;
-      #version = "1.5.2";
 
       buildInputs = postgresql.buildInputs ++ [ postgresql ];
 
