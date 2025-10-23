@@ -1,12 +1,8 @@
-{ self, inputs, ... }:
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, ... }:
     let
-      gitRev = "vcs=${self.shortRev or "dirty"}+${
-        builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")
-      }";
-
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
       # easier and more expedient, or because they may not be suitable, or are
@@ -80,7 +76,6 @@
           name = "receipt";
           destination = "/receipt.json";
           text = builtins.toJSON {
-            revision = gitRev;
             psql-version = pgbin.version;
             nixpkgs = {
               revision = inputs.nixpkgs.rev;

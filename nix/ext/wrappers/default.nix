@@ -83,6 +83,16 @@ let
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
                 "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
               }
+            else if builtins.compareVersions "0.5.4" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.5.1" = "sha256-1JkB2JExukABlbW1lZPolNQCYb9URi8xNYY3APmiGq0=";
+              }
+            else if builtins.compareVersions "0.5.5" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.6.0" = "sha256-AUK7B0wMqQZwJho91woLs8uOC4k1RdUEEN5Khw2OoqQ=";
+              }
             else
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
@@ -162,19 +172,6 @@ let
       }
     );
   previouslyPackagedVersions = [
-    "0.5.3"
-    "0.5.2"
-    "0.5.1"
-    "0.5.0"
-    "0.4.6"
-    "0.4.5"
-    "0.4.4"
-    "0.4.3"
-    "0.4.2"
-    "0.4.1"
-    "0.4.0"
-    "0.3.1"
-    "0.3.0"
     "0.2.0"
     "0.1.19"
     "0.1.18"
@@ -214,6 +211,7 @@ buildEnv {
     "/share/postgresql/extension"
   ];
   postBuild = ''
+
     create_control_files() {
       # Create main control file pointing to latest version
       {
@@ -233,6 +231,19 @@ buildEnv {
     }
 
     create_migration_sql_files() {
+      PREVIOUS_VERSION=""
+      while IFS= read -r i; do
+        FILENAME=$(basename "$i")
+        DIRNAME=$(dirname "$i")
+        VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
+        if [[ "$PREVIOUS_VERSION" != "" ]]; then
+          echo "Processing $i"
+          MIGRATION_FILENAME="$DIRNAME/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
+          cp "$i" "$MIGRATION_FILENAME"
+        fi
+        PREVIOUS_VERSION="$VERSION"
+      done < <(find $out -name '*.sql' | sort -V)
+
       # Create migration SQL files from previous versions to newer versions
       for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
         for curr_version in ${lib.concatStringsSep " " versions}; do
@@ -252,7 +263,6 @@ buildEnv {
     create_lib_files
     create_migration_sql_files
 
-    # checks
     (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
       toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
     }")
