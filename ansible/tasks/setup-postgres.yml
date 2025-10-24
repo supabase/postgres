@@ -157,7 +157,6 @@
       loop_control:
         loop_var: 'pg_config_item'
 
-<<<<<<< HEAD
 - name: Allow adminapi to write custom config
   file:
     path: '{{ item }}'
