@@ -23,7 +23,6 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
-        pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
       };
     in
@@ -60,6 +59,7 @@
           start-server = pkgs-lib.makePostgresDevSetup {
             inherit pkgs;
             name = "start-postgres-server";
+            pgroonga = self'.packages."psql_${activeVersion}/exts/pgroonga-all";
           };
           switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;
