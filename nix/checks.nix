@@ -13,7 +13,6 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
-        pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
       };
     in
@@ -68,9 +67,36 @@
                 '';
               };
 
+              # Get the major version for filtering
+              majorVersion =
+                let
+                  version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
+                  isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
+                  isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
+                  result =
+                    if isOrioledbMatch then
+                      "orioledb-17"
+                    else if isSeventeenMatch then
+                      "17"
+                    else
+                      "15";
+                in
+                builtins.trace "Major version result: ${result}" result;
+
+              # Select the appropriate pgroonga package for this PostgreSQL version
+              pgroonga = self'.packages."psql_${majorVersion}/exts/pgroonga-all";
+
+              pgPort =
+                if (majorVersion == "17") then
+                  "5535"
+                else if (majorVersion == "15") then
+                  "5536"
+                else
+                  "5537";
+
               # Use the shared setup but with a test-specific name
               start-postgres-server-bin = pkgs-lib.makePostgresDevSetup {
-                inherit pkgs;
+                inherit pkgs pgroonga;
                 name = "start-postgres-server-test";
                 extraSubstitutions = {
                   PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
@@ -116,32 +142,8 @@
                 in
                 pkgs.lib.filterAttrs (name: _: isValidFile name) files;
 
-              # Get the major version for filtering
-              majorVersion =
-                let
-                  version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
-                  isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
-                  isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
-                  result =
-                    if isOrioledbMatch then
-                      "orioledb-17"
-                    else if isSeventeenMatch then
-                      "17"
-                    else
-                      "15";
-                in
-                builtins.trace "Major version result: ${result}" result; # Trace the result                                             # For "15.8"
-
               # Filter SQL test files
               filteredSqlTests = filterTestFiles majorVersion ./tests/sql;
-
-              pgPort =
-                if (majorVersion == "17") then
-                  "5535"
-                else if (majorVersion == "15") then
-                  "5536"
-                else
-                  "5537";
 
               # Convert filtered tests to a sorted list of basenames (without extension)
               testList = pkgs.lib.mapAttrsToList (
