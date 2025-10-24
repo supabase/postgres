@@ -12,6 +12,9 @@ https://github.com/supabase/postgres/blob/a638c6fce0baf90b654e762eddcdac1bc8df01
 
 begin;
 
+-- Create the extension within the test (matches production pattern)
+create extension if not exists postgres_fdw with schema extensions;
+
 -- Switch to the postgres role (non-superuser) to test supautils behavior
 set role postgres;
 
