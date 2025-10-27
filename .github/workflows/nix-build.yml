@@ -38,6 +38,8 @@ jobs:
       - name: Install nix (ephemeral)
         if: ${{ matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -84,6 +86,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
