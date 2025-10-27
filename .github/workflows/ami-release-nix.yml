@@ -93,7 +93,7 @@ jobs:
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
           AWS_STS_REGIONAL_ENDPOINTS: regional
-          AWS_MAX_ATTEMPTS: 15
+          AWS_MAX_ATTEMPTS: 50
           AWS_RETRY_MODE: standard
           AWS_POLL_DELAY_SECONDS: 15
           AWS_METADATA_SERVICE_NUM_ATTEMPTS: 10
@@ -108,7 +108,7 @@ jobs:
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
           AWS_STS_REGIONAL_ENDPOINTS: regional
-          AWS_MAX_ATTEMPTS: 15
+          AWS_MAX_ATTEMPTS: 50
           AWS_RETRY_MODE: standard
           AWS_POLL_DELAY_SECONDS: 15
           AWS_METADATA_SERVICE_NUM_ATTEMPTS: 10
