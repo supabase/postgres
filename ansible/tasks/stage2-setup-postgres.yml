@@ -176,7 +176,7 @@
         - timezonesets
         - tsearch_data
       loop_control:
-        loop_var ' share_item'
+        loop_var: 'share_item'
       register: "{{ share_item }}_links"
 
     - name: Find all files in /var/lib/postgresql/.nix-profile/share/{postgresql,extension, timezonesets, tsearch_data}
