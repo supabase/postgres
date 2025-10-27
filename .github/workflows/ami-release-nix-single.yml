@@ -64,6 +64,12 @@ jobs:
       - name: Build AMI stage 1
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
+          AWS_STS_REGIONAL_ENDPOINTS: regional
+          AWS_MAX_ATTEMPTS: 15
+          AWS_RETRY_MODE: standard
+          AWS_POLL_DELAY_SECONDS: 15
+          AWS_METADATA_SERVICE_NUM_ATTEMPTS: 10
+          AWS_METADATA_SERVICE_TIMEOUT: 5
         run: |
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
@@ -72,6 +78,12 @@ jobs:
       - name: Build AMI stage 2
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
+          AWS_STS_REGIONAL_ENDPOINTS: regional
+          AWS_MAX_ATTEMPTS: 15
+          AWS_RETRY_MODE: standard
+          AWS_POLL_DELAY_SECONDS: 15
+          AWS_METADATA_SERVICE_NUM_ATTEMPTS: 10
+          AWS_METADATA_SERVICE_TIMEOUT: 5
         run: |
           GIT_SHA=${{ steps.get_sha.outputs.sha }}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
