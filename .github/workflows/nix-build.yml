@@ -103,7 +103,8 @@ jobs:
     if: |
       !cancelled() &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
-      (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success')
+      (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-x86_64-linux.result == 'skipped' || needs.nix-build-x86_64-linux.result == 'success')
     uses: ./.github/workflows/testinfra-ami-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
@@ -113,5 +114,6 @@ jobs:
     if: |
       !cancelled() && 
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
-      (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success')
+      (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-x86_64-linux.result == 'skipped' || needs.nix-build-x86_64-linux.result == 'success')
     uses: ./.github/workflows/test.yml
