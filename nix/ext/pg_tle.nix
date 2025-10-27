@@ -102,6 +102,9 @@ buildEnv {
   passthru = {
     inherit versions numberOfVersions;
     pname = "${pname}-all";
+    defaultSettings = {
+      shared_preload_libraries = [ "pg_tle" ];
+    };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
