@@ -409,7 +409,6 @@
       "hash": "sha256-QC77AnPGpPQGEWi6JtJdiNsB2su5+aV2pKg5ImR2B0k="
     }
   },
-
   "pgsodium": {
     "3.0.4": {
       "postgresql": [

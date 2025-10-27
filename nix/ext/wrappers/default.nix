@@ -55,10 +55,22 @@ let
         CARGO_BUILD_JOBS = "2";
         CARGO = "${cargo}/bin/cargo";
 
+        # this workaround the fact that "${src}/Cargo.lock" mismatch a patched Cargo.lock
+        postPatch =
+          if builtins.pathExists ./v${version}/Cargo.lock then
+            "cp ${./v${version}/Cargo.lock} ./Cargo.lock"
+          else
+            "";
+
         cargoLock = {
-          lockFile = "${src}/Cargo.lock";
+          lockFile =
+            if builtins.pathExists ./v${version} then ./v${version}/Cargo.lock else "${src}/Cargo.lock";
           outputHashes =
-            if builtins.compareVersions "0.4.2" version >= 0 then
+            if builtins.compareVersions "0.1.11" version >= 0 then
+              { "clickhouse-rs-1.0.0-alpha.1" = "sha256-EDMgIpDdkyW3ZG+8LSC4pis8DbHnPIabHRxuc23DPJU="; }
+            else if builtins.compareVersions "0.3.0" version >= 0 then
+              { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
+            else if builtins.compareVersions "0.4.2" version >= 0 then
               { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
             else if builtins.compareVersions "0.5.0" version >= 0 then
               { "clickhouse-rs-1.1.0-alpha.1" = "sha256-G+v4lNP5eK2U45D1fL90Dq24pUSlpIysNCxuZ17eac0="; }
@@ -103,6 +115,8 @@ let
                 "iceberg-0.5.0" = "sha256-dYPZdpP7kcp49UxsCZrZi3xMJ4rJiB8H65dMMR9Z1Yk=";
               };
         };
+
+        pgrxBinaryName = if builtins.compareVersions "0.7.4" pgrxVersion >= 0 then "pgx" else "pgrx";
 
         preConfigure = ''
           cd wrappers
@@ -165,23 +179,18 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
-      // lib.optionalAttrs (version == "0.3.0") {
-        patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
-
-        cargoLock = {
-          lockFile = ./Cargo.lock-0.3.0;
-          outputHashes = {
-            "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw=";
-          };
-        };
+      # TODO: there is an inference error on crate `time` caused by an API change in Rust 1.80.0;
+      # so we should patch `Cargo.toml` with `time >= 0.3.35`, to use a more recent Rust version!
+      // lib.optionalAttrs (version == "0.3.0") { patches = [ ./v0.3.0/0001-bump-pgrx-to-0.11.3.patch ]; }
+      // lib.optionalAttrs (version == "0.2.0") { patches = [ ./v0.2.0/0001-bump-pgrx-to-0.11.3.patch ]; }
+      // lib.optionalAttrs (version == "0.1.10") {
+        patches = [ ./v0.1.10/0001-bump-aws-config-to-0.55.3.patch ];
       }
     );
   # All versions that were previously packaged (historical list)
   allPreviouslyPackagedVersions = [
-    "0.4.3"
-    "0.4.2"
-    "0.4.1"
-    "0.3.0"
+    "0.5.2"
+    "0.5.1"
     "0.2.0"
     "0.1.19"
     "0.1.18"
@@ -197,6 +206,9 @@ let
     "0.1.7"
     "0.1.6"
     "0.1.5"
+    # Versions of wrapper extension prior to 0.1.5 are using pgx 0.5.6 that doesn't support PostgreSQL 14+
+    # Bumping to pgx 0.6.1 requires signicant code changes, described e.g. in the patch:
+    # nix/ext/wrappers/v0.1.4/0002-bump-pgrx-to-0.6.1.patch
     "0.1.4"
     "0.1.1"
     "0.1.0"
