@@ -129,7 +129,7 @@ let
     lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
   );
 in
-buildEnv {
+(buildEnv {
   name = pname;
   paths = packages;
   pathsToLink = [
@@ -177,4 +177,7 @@ buildEnv {
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
-}
+}).overrideAttrs
+  (_: {
+    requiredSystemFeatures = [ "big-parallel" ];
+  })

@@ -56,6 +56,7 @@ class TestIsLargePkg:
             "drvPath": f"/nix/store/{attr}.drv",
             "name": attr.split(".")[-1],
             "system": "x86_64-linux",
+            "requiredSystemFeatures": ["big-parallel"] if expected else [],
         }
         assert is_large_pkg(pkg) is expected
 
@@ -96,8 +97,11 @@ class TestGetRunnerForPackage:
             "system": "x86_64-linux",
             "requiredSystemFeatures": ["kvm"],
         }
-        result = get_runner_for_package(pkg)
-        assert result is None  # x86_64-linux not in self-hosted map
+        with pytest.raises(
+            ValueError,
+            match=r"No self-hosted with kvm support available for system: x86_64-linux",
+        ):
+            get_runner_for_package(pkg)
 
     def test_kvm_package_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
@@ -123,6 +127,7 @@ class TestGetRunnerForPackage:
             "drvPath": "/nix/store/test.drv",
             "name": "postgis",
             "system": "x86_64-linux",
+            "requiredSystemFeatures": ["big-parallel"],
         }
         result = get_runner_for_package(pkg)
         assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404"]}
@@ -135,6 +140,7 @@ class TestGetRunnerForPackage:
             "drvPath": "/nix/store/test.drv",
             "name": "pg_graphql",
             "system": "aarch64-linux",
+            "requiredSystemFeatures": ["big-parallel"],
         }
         result = get_runner_for_package(pkg)
         assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]}
