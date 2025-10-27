@@ -26,7 +26,7 @@ stdenv.mkDerivation rec {
     python3
     openssl
   ];
-  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=11";
+  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=11 IS_DEV=1";
   installPhase = ''
     runHook preInstall
 
