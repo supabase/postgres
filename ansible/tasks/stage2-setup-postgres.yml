@@ -177,7 +177,9 @@
         - tsearch_data
       loop_control:
         loop_var: 'share_item'
-      register: "_{{ share_item }}_links"
+      register: "{{ reg_var }}"
+      vars:
+        reg_var: "{{ share_item }}_links"
 
     - name: Find all files in /var/lib/postgresql/.nix-profile/share/{postgresql,extension, timezonesets, tsearch_data}
       ansible.builtin.find:
@@ -191,7 +193,9 @@
         - tsearch_data
       loop_control:
         loop_var ' share_item'
-      register: _"{{ share_item }}_files"
+      register: "{{ reg_var }}"
+      vars:
+        reg_var: "{{ share_item }}_files"
 
     - name: Create symlinks for PG share links into /usr/lib/postgresql/share/postgresql
       ansible.builtin.file:
@@ -200,7 +204,7 @@
         path: "/usr/lib/postgresql/share/postgresql/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
         state: 'link'
-      loop: "_{{ postgresql_links['files'] }}"
+      loop: "{{ postgresql_links['files'] }}"
       loop_control:
         loop_var: 'link_item'
 
@@ -211,7 +215,7 @@
         path: "/usr/lib/postgresql/share/postgresql/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
         state: 'link'
-      loop: "_{{ postgresql_files['files'] }}"
+      loop: "{{ postgresql_files['files'] }}"
       loop_control:
         loop_var: 'file_item'
 
@@ -222,7 +226,7 @@
         path: "/usr/share/postgresql/share/extension/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
         state: 'link'
-      loop: "_{{ extension_links['files'] }}"
+      loop: "{{ extension_links['files'] }}"
       loop_control:
         loop_var: 'link_item'
 
@@ -233,7 +237,7 @@
         path: "/usr/lib/postgresql/share/extension/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
         state: 'link'
-      loop: "_{{ extension_files['files'] }}"
+      loop: "{{ extension_files['files'] }}"
       loop_control:
         loop_var: 'file_item'
 
@@ -244,7 +248,7 @@
         path: "/usr/lib/postgresql/share/timezonesets/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
         state: 'link'
-      loop: "_{{ timezonesets_links['files'] }}"
+      loop: "{{ timezonesets_links['files'] }}"
       loop_control:
         loop_var: 'link_item'
 
@@ -255,7 +259,7 @@
         path: "/usr/lib/postgresql/share/timezonesets/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
         state: 'link'
-      loop: "_{{ timezonesets_files['files'] }}"
+      loop: "{{ timezonesets_files['files'] }}"
       loop_control:
         loop_var: 'file_item'
 
@@ -266,7 +270,7 @@
         path: "/usr/lib/postgresql/share/tsearch_data/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
         state: 'link'
-      loop: "_{{ tsearch_data_links['files'] }}"
+      loop: "{{ tsearch_data_links['files'] }}"
       loop_control:
         loop_var: 'link_item'
 
@@ -277,7 +281,7 @@
         path: "/usr/lib/postgresql/share/tsearch_data/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
         state: 'link'
-      loop: "_{{ tsearch_data_files['files'] }}"
+      loop: "{{ tsearch_data_files['files'] }}"
       loop_control:
         loop_var: 'file_item'
 
