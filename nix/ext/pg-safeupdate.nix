@@ -1,33 +1,86 @@
 {
+  pkgs,
   lib,
   stdenv,
   fetchFromGitHub,
   postgresql,
+  makeWrapper,
 }:
 
-stdenv.mkDerivation rec {
-  pname = "pg-safeupdate";
-  version = "1.4";
+let
+  pname = "safeupdate";
+  build =
+    version: hash:
+    stdenv.mkDerivation rec {
+      inherit pname version;
 
-  buildInputs = [ postgresql ];
+      buildInputs = [ postgresql ];
 
-  src = fetchFromGitHub {
-    owner = "eradman";
-    repo = pname;
-    rev = version;
-    hash = "sha256-1cyvVEC9MQGMr7Tg6EUbsVBrMc8ahdFS3+CmDkmAq4Y=";
-  };
+      src = fetchFromGitHub {
+        owner = "eradman";
+        repo = pname;
+        rev = version;
+        inherit hash;
+      };
 
-  installPhase = ''
-    install -D safeupdate${postgresql.dlSuffix} -t $out/lib
+      installPhase = ''
+        runHook preInstall
+
+        mkdir -p $out/share/postgresql/extension
+
+        # Install versioned library
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+
+        runHook postInstall
+      '';
+
+      meta = with lib; {
+        description = "A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE";
+        homepage = "https://github.com/eradman/pg-safeupdate";
+        changelog = "https://github.com/eradman/pg-safeupdate/raw/${src.rev}/NEWS";
+        platforms = postgresql.meta.platforms;
+        license = licenses.postgresql;
+        broken = versionOlder postgresql.version "14";
+      };
+    };
+  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).safeupdate;
+  supportedVersions = lib.filterAttrs (
+    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
+  versions = lib.naturalSort (lib.attrNames supportedVersions);
+  latestVersion = lib.last versions;
+  numberOfVersions = builtins.length versions;
+  packages = builtins.attrValues (
+    lib.mapAttrs (name: value: build name value.hash) supportedVersions
+  );
+in
+pkgs.buildEnv {
+  name = pname;
+  paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
+  postBuild = ''
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    # checks
+    (set -x
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+         toString (numberOfVersions + 1)
+       }"
+    )
   '';
 
-  meta = with lib; {
-    description = "A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE";
-    homepage = "https://github.com/eradman/pg-safeupdate";
-    changelog = "https://github.com/eradman/pg-safeupdate/raw/${src.rev}/NEWS";
-    platforms = postgresql.meta.platforms;
-    license = licenses.postgresql;
-    broken = versionOlder postgresql.version "14";
+  passthru = {
+    inherit versions numberOfVersions;
+    pname = "${pname}-all";
+    defaultSettings = {
+      shared_preload_libraries = [ "safeupdate" ];
+    };
+    pgRegressTestName = "pg-safeupdate";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
