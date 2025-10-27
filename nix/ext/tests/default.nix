@@ -202,6 +202,7 @@ builtins.listToAttrs (
       "hypopg"
       "index_advisor"
       "pg_cron"
+      "pg_hashids"
       "pg_graphql"
       "pg_jsonschema"
       "pg_net"
