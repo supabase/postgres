@@ -1,34 +1,87 @@
 {
+  pkgs,
   lib,
   stdenv,
   fetchFromGitHub,
   postgresql,
+  makeWrapper,
 }:
 
-stdenv.mkDerivation rec {
-  pname = "pg_plan_filter";
-  version = "5081a7b5cb890876e67d8e7486b6a64c38c9a492";
+let
+  pname = "plan_filter";
+  build =
+    version: rev: hash:
+    stdenv.mkDerivation rec {
+      inherit pname version;
 
-  buildInputs = [ postgresql ];
+      buildInputs = [ postgresql ];
 
-  src = fetchFromGitHub {
-    owner = "pgexperts";
-    repo = pname;
-    rev = "${version}";
-    hash = "sha256-YNeIfmccT/DtOrwDmpYFCuV2/P6k3Zj23VWBDkOh6sw=";
-  };
+      src = fetchFromGitHub {
+        owner = "pgexperts";
+        repo = pname;
+        inherit rev hash;
+      };
 
-  installPhase = ''
-    mkdir -p $out/{lib,share/postgresql/extension}
+      installPhase = ''
+        runHook preInstall
 
-    cp *${postgresql.dlSuffix}      $out/lib
-    cp *.sql     $out/share/postgresql/extension
+        mkdir -p $out/share/postgresql/extension
+
+        # Install versioned library
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+
+        if [[ "${version}" == "${latestVersion}" ]]; then
+          cp *.sql $out/share/postgresql/extension/
+        fi
+
+        runHook postInstall
+      '';
+
+      meta = with lib; {
+        description = "Filter PostgreSQL statements by execution plans";
+        homepage = "https://github.com/pgexperts/${pname}";
+        platforms = postgresql.meta.platforms;
+        license = licenses.postgresql;
+      };
+    };
+  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).pg_plan_filter;
+  supportedVersions = lib.filterAttrs (
+    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
+  versions = lib.naturalSort (lib.attrNames supportedVersions);
+  latestVersion = lib.last versions;
+  numberOfVersions = builtins.length versions;
+  packages = builtins.attrValues (
+    lib.mapAttrs (name: value: build name value.rev value.hash) supportedVersions
+  );
+in
+pkgs.buildEnv {
+  name = pname;
+  paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
+  postBuild = ''
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    # checks
+    (set -x
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+         toString (numberOfVersions + 1)
+       }"
+    )
   '';
 
-  meta = with lib; {
-    description = "Filter PostgreSQL statements by execution plans";
-    homepage = "https://github.com/pgexperts/${pname}";
-    platforms = postgresql.meta.platforms;
-    license = licenses.postgresql;
+  passthru = {
+    inherit versions numberOfVersions;
+    pname = "${pname}-all";
+    defaultSettings = {
+      shared_preload_libraries = [ "plan_filter" ];
+    };
+    pgRegressTestName = "pg_plan_filter";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
