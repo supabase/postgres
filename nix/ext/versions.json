@@ -768,6 +768,15 @@
       "hash": "sha256-crxj5R9jblIv0h8lpqddAoYe2UqgUlnvbOajKTzVces="
     }
   },
+  "safeupdate": {
+    "1.4": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-1cyvVEC9MQGMr7Tg6EUbsVBrMc8ahdFS3+CmDkmAq4Y="
+    }
+  },
   "wal2json": {
     "2.6": {
       "postgresql": [
