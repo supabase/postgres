@@ -36,6 +36,7 @@ class NixEvalJobsOutput(TypedDict):
     neededSubstitutes: NotRequired[List[Any]]
     outputs: NotRequired[Dict[str, str]]
     error: NotRequired[str]
+    requiredSystemFeatures: NotRequired[List[str]]
 
 
 class RunsOnConfig(TypedDict):
@@ -174,11 +175,7 @@ def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutp
 
 def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Determine if a package is considered large based on its attribute path."""
-    RUST_EXTENSIONS = ["exts.wrappers", "exts.pg_jsonschema", "exts.pg_graphql"]
-    LARGE_C_EXTENSION = ["exts.postgis"]
-    return any(
-        indicator in pkg["attr"] for indicator in RUST_EXTENSIONS + LARGE_C_EXTENSION
-    )
+    return "big-parallel" in pkg.get("requiredSystemFeatures", [])
 
 
 def is_kvm_pkg(pkg: NixEvalJobsOutput) -> bool:
@@ -198,7 +195,12 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     system = pkg["system"]
 
     if is_kvm_pkg(pkg):
-        return BUILD_RUNNER_MAP["self-hosted"].get(system)
+        runConfig = BUILD_RUNNER_MAP["self-hosted"].get(system)
+        if runConfig is None:
+            raise ValueError(
+                f"No self-hosted with kvm support available for system: {system}"
+            )
+        return runConfig
 
     if is_large_pkg(pkg) and system in ("x86_64-linux", "aarch64-linux"):
         suffix = "-arm" if system == "aarch64-linux" else ""
