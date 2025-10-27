@@ -128,7 +128,7 @@ let
           { print }
           ' Cargo.toml
 
-          # Verify the file is still valid TOML, break build with this erroru
+          # Verify the file is still valid TOML, break build with this error
           # if it is not
           if ! cargo verify-project 2>/dev/null; then
             echo "Failed to maintain valid TOML syntax"
@@ -202,7 +202,9 @@ let
   ];
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
   supportedVersions = lib.filterAttrs (
-    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+    _: value:
+    (!value ? ignore || value.ignore != true)
+    && builtins.elem (lib.versions.major postgresql.version) value.postgresql
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
