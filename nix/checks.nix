@@ -15,6 +15,10 @@
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         inherit (self.supabase) defaults;
       };
+      bashlog = builtins.fetchurl {
+        url = "https://raw.githubusercontent.com/Zordrak/bashlog/master/log.sh";
+        sha256 = "1vrjcbzls0ba2qkg7ffddz2gxqn2rlj3wyvril2gz0mfi89y9vk9";
+      };
     in
     {
       checks =
@@ -151,51 +155,102 @@
               ) filteredSqlTests;
               sortedTestList = builtins.sort (a: b: a < b) testList;
             in
-            pkgs.runCommand "postgres-${pgpkg.version}-check-harness"
-              {
-                nativeBuildInputs = with pkgs; [
-                  coreutils
-                  bash
-                  perl
-                  pgpkg
-                  pg_prove
-                  pg_regress
-                  procps
-                  start-postgres-server-bin
-                  which
-                  getkey-script
-                  supabase-groonga
-                  python3
-                  netcat
-                ];
-              }
-              ''
-                set -e
+            pkgs.writeShellApplication rec {
+              name = "postgres-${pgpkg.version}-check-harness";
+              bashOptions = [
+                "nounset"
+                "pipefail"
+              ];
+              runtimeInputs = with pkgs; [
+                coreutils
+                bash
+                perl
+                pgpkg
+                pg_prove
+                pg_regress
+                procps
+                start-postgres-server-bin
+                which
+                getkey-script
+                supabase-groonga
+                python3
+                netcat
+              ];
 
-                # Start HTTP mock server for http extension tests
+              text = ''
+
+                #shellcheck disable=SC1091
+                source ${bashlog}
+                #shellcheck disable=SC1091
+                source ${pkgs.stdenv}/setup
+                export PATH="${lib.makeBinPath runtimeInputs}:$PATH"
+
+                export BASHLOG_FILE=1
+                export BASHLOG_FILE_PATH=debug.log
                 # Use a build-specific directory for coordination
                 BUILD_TMP=$(mktemp -d)
+
+                # Function to log command execution with stdout and stderr
+                function log_cmd {
+                  local cmd_name="$1"
+                  shift
+                  log debug "Executing: $cmd_name $*"
+                  local exit_code=0
+                  echo "\$ $cmd_name $*" >> debug.log
+
+                  "$cmd_name" "$@" >> debug.log 2>&1 || exit_code=$?
+                  log debug "Exit code: $exit_code"
+                  return $exit_code
+                }
+
+                function on_exit {
+                  local exit_code=$?
+                  kill $HTTP_MOCK_PID 2>/dev/null || true
+                  rm -rf "$BUILD_TMP"
+                  if [ $exit_code -ne 0 ]; then
+                    log error "An error occurred. Exit code: $exit_code"
+                    log error "Debug logs:"
+                    cat debug.log || log error "No debug.log file found"
+                  fi
+                }
+                trap on_exit EXIT
+                trap "" DEBUG
+
+                function check_postgres_ready {
+                  for i in {1..60}; do
+                      if log_cmd pg_isready -h localhost -p ${pgPort} -U supabase_admin -q; then
+                          log info "PostgreSQL is ready"
+                          break
+                      fi
+                      sleep 1
+                      if [ "$i" -eq 60 ]; then
+                          log error "PostgreSQL failed to start"
+                          exit 1
+                      fi
+                  done
+                }
+
+                # Start HTTP mock server for http extension tests
                 HTTP_MOCK_PORT_FILE="$BUILD_TMP/http-mock-port"
 
-                echo "Starting HTTP mock server (will find free port)..."
-                HTTP_MOCK_PORT_FILE="$HTTP_MOCK_PORT_FILE" ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
+                log info "Starting HTTP mock server (will find free port)..."
+                HTTP_MOCK_PORT_FILE="$HTTP_MOCK_PORT_FILE" log_cmd ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
                 HTTP_MOCK_PID=$!
 
                 # Clean up on exit
-                trap "kill $HTTP_MOCK_PID 2>/dev/null || true; rm -rf '$BUILD_TMP'" EXIT
 
                 # Wait for server to start and write port file
                 for i in {1..10}; do
                   if [ -f "$HTTP_MOCK_PORT_FILE" ]; then
                     HTTP_MOCK_PORT=$(cat "$HTTP_MOCK_PORT_FILE")
-                    echo "HTTP mock server started on port $HTTP_MOCK_PORT"
+                    log info "HTTP mock server started on port $HTTP_MOCK_PORT"
                     break
                   fi
                   sleep 1
                 done
 
                 if [ ! -f "$HTTP_MOCK_PORT_FILE" ]; then
-                  echo "Failed to start HTTP mock server"
+                  log error "Failed to start HTTP mock server"
                   exit 1
                 fi
 
@@ -205,139 +260,135 @@
                 #First we need to create a generic pg cluster for pgtap tests and run those
                 export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
-                initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+                log info "Creating temporary PostgreSQL cluster at $PGTAP_CLUSTER"
+                log_cmd initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
-                echo "listen_addresses = '*'" >> "$PGTAP_CLUSTER"/postgresql.conf
+                echo "listen_addresses = '127.0.0.1'" >> "$PGTAP_CLUSTER"/postgresql.conf
                 echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
-                echo "host all all 127.0.0.1/32 trust" >> $PGTAP_CLUSTER/pg_hba.conf
-                echo "Checking shared_preload_libraries setting:"
-                grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf
+                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
+                log info "Checking shared_preload_libraries setting:"
+                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
                 # Remove timescaledb if running orioledb-17 check
-                echo "I AM ${pgpkg.version}===================================================="
+                log info "pgpkg.version is: ${pgpkg.version}"
+                #shellcheck disable=SC2193
                 if [[ "${pgpkg.version}" == *"17"* ]]; then
                   perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
                 fi
                 #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
-                echo "PGTAP_CLUSTER directory contents:"
-                ls -la "$PGTAP_CLUSTER"
 
                 # Check if postgresql.conf exists
                 if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-                    echo "postgresql.conf is missing!"
+                    log error "postgresql.conf is missing!"
                     exit 1
                 fi
 
                 # PostgreSQL startup
                 if [[ "$(uname)" == "Darwin" ]]; then
-                pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k "$PGTAP_CLUSTER" -p ${pgPort} -d 5" start 2>&1
+                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
                 else
                 mkdir -p "$PGTAP_CLUSTER/sockets"
-                pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER"/postgresql.log -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start 2>&1
+                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
                 fi || {
-                echo "pg_ctl failed to start PostgreSQL"
-                echo "Contents of postgresql.log:"
+                log error "pg_ctl failed to start PostgreSQL"
+                log error "Contents of postgresql.log:"
                 cat "$PGTAP_CLUSTER"/postgresql.log
                 exit 1
                 }
-                for i in {1..60}; do
-                  if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort}; then
-                    echo "PostgreSQL is ready"
-                    break
-                  fi
-                  sleep 1
-                  if [ $i -eq 60 ]; then
-                    echo "PostgreSQL is not ready after 60 seconds"
-                    echo "PostgreSQL status:"
-                    pg_ctl -D "$PGTAP_CLUSTER" status
-                    echo "PostgreSQL log content:"
-                    cat "$PGTAP_CLUSTER"/postgresql.log
-                    exit 1
-                  fi
-                done
-                createdb -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin testing
-                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
-                  echo "Error executing SQL file. PostgreSQL log content:"
+
+                log info "Waiting for PostgreSQL to be ready..."
+                check_postgres_ready
+
+                log info "Creating test database"
+                log_cmd createdb -p ${pgPort} -h localhost --username=supabase_admin testing
+
+                log info "Loading prime SQL file"
+                if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                  log error "Error executing SQL file. PostgreSQL log content:"
                   cat "$PGTAP_CLUSTER"/postgresql.log
                   pg_ctl -D "$PGTAP_CLUSTER" stop
                   exit 1
                 fi
 
                 # Create a table to store test configuration
-                psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -c "
+                log info "Creating test_config table"
+                log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -c "
                   CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
                   INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
                   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
                 "
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
-                  psql -p ${pgPort} -h ${self.supabase.defaults.host} --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql" || true
+                  log info "Running pgtap test: $t.sql"
+                  #XXX enable ON_ERROR_STOP ?
+                  log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -f "${./tests/sql}/$t.sql"
                 done
                 rm -rf "$SORTED_DIR"
-                pg_ctl -D "$PGTAP_CLUSTER" stop
-                rm -rf $PGTAP_CLUSTER
+                log_cmd pg_ctl -D "$PGTAP_CLUSTER" stop
+                rm -rf "$PGTAP_CLUSTER"
 
                 # End of pgtap tests
                 # from here on out we are running pg_regress tests, we use a different cluster for this
                 # which is start by the start-postgres-server-bin script
                 # start-postgres-server-bin script closely matches our AMI setup, configurations and migrations
 
+                log info "Starting PostgreSQL server for pg_regress tests"
                 unset GRN_PLUGINS_DIR
-                ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize
+                if ! log_cmd ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize; then
+                  log error "Failed to start PostgreSQL server for pg_regress tests"
+                  exit 1
+                fi
 
-                for i in {1..60}; do
-                    if pg_isready -h ${self.supabase.defaults.host} -p ${pgPort} -U supabase_admin -q; then
-                        echo "PostgreSQL is ready"
-                        break
-                    fi
-                    sleep 1
-                    if [ $i -eq 60 ]; then
-                        echo "PostgreSQL failed to start"
-                        exit 1
-                    fi
-                done
+                check_postgres_ready
 
-                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
-                  echo "Error executing SQL file"
+                log info "Loading prime SQL file"
+                if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
+                  log error "Error executing SQL file"
                   exit 1
                 fi
 
                 # Create a table to store test configuration for pg_regress tests
-                psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -c "
+                log info "Creating test_config table for pg_regress tests"
+                log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "
                   CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
                   INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
                   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
                 "
 
-                mkdir -p $out/regression_output
-                if ! pg_regress \
+                #shellcheck disable=SC2154
+                mkdir -p "$out/regression_output"
+                log info "Running pg_regress tests"
+                if ! log_cmd pg_regress \
                   --use-existing \
                   --dbname=postgres \
                   --inputdir=${./tests} \
-                  --outputdir=$out/regression_output \
-                  --host=${self.supabase.defaults.host} \
+                  --outputdir="$out/regression_output" \
+                  --host=localhost \
                   --port=${pgPort} \
                   --user=supabase_admin \
-                  ${builtins.concatStringsSep " " sortedTestList}; then
-                  echo "pg_regress tests failed"
-                  cat $out/regression_output/regression.diffs
+                  ${builtins.concatStringsSep " " sortedTestList} 2>&1; then
+                  log error "pg_regress tests failed"
+                  cat "$out/regression_output/regression.diffs"
                   exit 1
                 fi
+                log info "pg_regress tests completed successfully"
 
-                echo "Running migrations tests"
-                pg_prove -p ${pgPort} -U supabase_admin -h ${self.supabase.defaults.host} -d postgres -v ${../migrations/tests}/test.sql
-
-                # Copy logs to output
-                for logfile in $(find /tmp -name postgresql.log -type f); do
-                  cp "$logfile" $out/postgresql.log
-                done
-                exit 0
+                log info "Running migrations tests"
+                log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
+                log info "Migrations tests completed successfully"
               '';
+            };
         in
         {
-          psql_15 = makeCheckHarness self'.packages."psql_15/bin";
-          psql_17 = makeCheckHarness self'.packages."psql_17/bin";
-          psql_orioledb-17 = makeCheckHarness self'.packages."psql_orioledb-17/bin";
+          psql_15 = pkgs.runCommand "run-check-harness-psql-15" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_15/bin")
+          );
+          psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_17/bin")
+          );
+          psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin")
+          );
           inherit (self'.packages)
             wal-g-2
             wal-g-3
