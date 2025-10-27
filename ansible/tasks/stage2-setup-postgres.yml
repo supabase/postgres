@@ -165,37 +165,61 @@
         src: '/var/lib/postgresql/.nix-profile/bin/pg_config'
         state: 'link'
 
-    - name: Find all links in /var/lib/postgresql/.nix-profile/share/{postgresql,extension, timezonesets, tsearch_data}
+    - name: Find all links in /var/lib/postgresql/.nix-profile/share/postgresql
       ansible.builtin.find:
         depth: 1
         file_type: 'link'
-        path: "/var/lib/postgresql/.nix-profile/share/{{ share_item }}"
-      loop:
-        - postgresql
-        - extension
-        - timezonesets
-        - tsearch_data
-      loop_control:
-        loop_var: 'share_item'
-      register: "{{ reg_var }}"
-      vars:
-        reg_var: "{{ share_item }}_links"
+        path: '/var/lib/postgresql/.nix-profile/share/postgresql'
+      register: 'postgresql_links'
 
-    - name: Find all files in /var/lib/postgresql/.nix-profile/share/{postgresql,extension, timezonesets, tsearch_data}
+    - name: Find all links in /var/lib/postgresql/.nix-profile/share/extension
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'link'
+        path: '/var/lib/postgresql/.nix-profile/share/extension'
+      register: 'extension_links'
+
+    - name: Find all links in /var/lib/postgresql/.nix-profile/share/timezonesets
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'link'
+        path: '/var/lib/postgresql/.nix-profile/share/timezonesets'
+      register: 'timezonesets_links'
+
+    - name: Find all links in /var/lib/postgresql/.nix-profile/share/tsearch_data
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'link'
+        path: '/var/lib/postgresql/.nix-profile/share/tsearch_data'
+      register: 'tsearch_data_links'
+
+    - name: Find all files in /var/lib/postgresql/.nix-profile/share/postgresql
       ansible.builtin.find:
         depth: 1
         file_type: 'file'
-        path: "/var/lib/postgresql/.nix-profile/share/{{ share_item }}"
-      loop:
-        - postgresql
-        - extension
-        - timezonesets
-        - tsearch_data
-      loop_control:
-        loop_var ' share_item'
-      register: "{{ reg_var }}"
-      vars:
-        reg_var: "{{ share_item }}_files"
+        path: '/var/lib/postgresql/.nix-profile/share/postgresql'
+      register: 'postgresql_files'
+
+    - name: Find all files in /var/lib/postgresql/.nix-profile/share/extension
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'file'
+        path: '/var/lib/postgresql/.nix-profile/share/extension'
+      register: 'extension_files'
+
+    - name: Find all files in /var/lib/postgresql/.nix-profile/share/timezonesets
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'file'
+        path: '/var/lib/postgresql/.nix-profile/share/timezonesets'
+      register: 'timezonesets_files'
+
+    - name: Find all files in /var/lib/postgresql/.nix-profile/share/tsearch_data
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'file'
+        path: '/var/lib/postgresql/.nix-profile/share/tsearch_data'
+      register: 'tsearch_data_files'
 
     - name: Create symlinks for PG share links into /usr/lib/postgresql/share/postgresql
       ansible.builtin.file:
