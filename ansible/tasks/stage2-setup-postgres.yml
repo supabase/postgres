@@ -82,10 +82,10 @@
       when: is_psql_oriole and stage2_nix
       become: yes
 
-    - name: Set OrioleDB rewind buffers
+    - name: Set OrioleDB rewind buffers (1280 buffers = 10MB)
       ansible.builtin.lineinfile:
         path: /etc/postgresql/postgresql.conf
-        line: "orioledb.rewind_buffers = 13"
+        line: "orioledb.rewind_buffers = 1280"
         state: present
       when: is_psql_oriole and stage2_nix
       become: yes

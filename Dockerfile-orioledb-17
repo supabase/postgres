@@ -195,10 +195,11 @@ RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgres
 
 # OrioleDB rewind configuration
 # Enables time-based rewind capability for up to 20 minutes (1200 seconds)
+# Buffer size: 1280 buffers * 8KB = 10MB for transaction retention
 RUN echo "orioledb.enable_rewind = true" >> "/etc/postgresql/postgresql.conf" && \
     echo "orioledb.rewind_max_time = 1200" >> "/etc/postgresql/postgresql.conf" && \
     echo "orioledb.rewind_max_transactions = 100000" >> "/etc/postgresql/postgresql.conf" && \
-    echo "orioledb.rewind_buffers = 13" >> "/etc/postgresql/postgresql.conf" 
+    echo "orioledb.rewind_buffers = 1280" >> "/etc/postgresql/postgresql.conf" 
 
 
 
