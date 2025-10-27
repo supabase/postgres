@@ -412,7 +412,7 @@
             inherit self;
             inherit pkgs;
           })
-          // pkgs.lib.optionalAttrs (system == "x86_64-linux") { devShell = self'.devShells.default; }
-        );
+        )
+        // pkgs.lib.optionalAttrs (system == "x86_64-linux") ({ devShell = self'.devShells.default; });
     };
 }
