@@ -699,6 +699,16 @@
       "hash": "sha256-Nmb7XLqQflYZfqj0yrewfb1Hl5YgEB5wfjBunPwIuOU="
     }
   },
+  "pg_plan_filter": {
+    "0.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "rev": "5081a7b5cb890876e67d8e7486b6a64c38c9a492",
+      "hash": "sha256-YNeIfmccT/DtOrwDmpYFCuV2/P6k3Zj23VWBDkOh6sw="
+    }
+  },
   "pg_repack": {
     "1.4.8": {
       "postgresql": [
