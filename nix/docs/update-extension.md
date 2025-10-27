@@ -1,4 +1,3 @@
-
 # Update an existing nix extension
 
 ## Overview
@@ -226,3 +225,21 @@ The `nix flake check -L` command is your primary local testing tool:
 ```bash
 nix flake check -L 2>&1 | tee build.log
 ```
+
+---
+
+### Automating updates with `nix/ext/scripts/update_versions_json.py`
+
+A helper script is at `nix/ext/scripts/update_versions_json.py`. It updates `nix/ext/versions.json` for a given extension by fetching all git tags from the provided repository, keeping only tags that parse as valid version numbers, and computing SRI hashes for each version (the part this mainly aims to automate).
+
+Example usage, Step 1: add tags as ignored placeholders (fast, no hash computation):
+```bash
+./nix/ext/scripts/update_versions_json.py pg_graphql https://github.com/supabase/pg_graphql --ignore
+```
+
+Step 2: remove the versions of interest from the generated list, then re-run the script without `--ignore` to this time compute hashes (this indeed requires `nix`, network access, and may take some time):
+```bash
+./nix/ext/scripts/update_versions_json.py pg_graphql https://github.com/supabase/pg_graphql
+```
+
+After running the script, run the usual verification steps (e.g., `nix build .#psql_15/exts/<extension>-all` and `nix flake check -L`) to validate the new versions.
