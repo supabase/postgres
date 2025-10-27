@@ -336,6 +336,21 @@
       "hash": "sha256-IU+i6ONPwtgsFKdzya6E+222ualR66gkbb0lDr+7Rb8="
     }
   },
+  "pgroonga": {
+    "3.0.7": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-iF/zh4zDDpAw5fxW1WG8i2bfPt4VYsnYArwOoE/lwgM="
+    },
+    "3.2.5": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-GM9EOQty72hdE4Ecq8jpDudhZLiH3pP9ODLxs8DXcSY="
+    }
+  },
   "pgrouting": {
     "3.4.1": {
       "postgresql": [
@@ -345,6 +360,7 @@
       "hash": "sha256-QC77AnPGpPQGEWi6JtJdiNsB2su5+aV2pKg5ImR2B0k="
     }
   },
+
   "pgsodium": {
     "3.0.4": {
       "postgresql": [

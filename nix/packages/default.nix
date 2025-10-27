@@ -23,7 +23,6 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
-        pgroonga = self'.packages."psql_15/exts/pgroonga";
         inherit (self.supabase) defaults;
       };
     in
@@ -37,6 +36,7 @@
           supabase-groonga = pkgs.callPackage ./groonga { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
+          mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
@@ -44,6 +44,7 @@
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
+          sfcgal = pkgs.callPackage ./sfcgal.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
@@ -58,6 +59,7 @@
           start-server = pkgs-lib.makePostgresDevSetup {
             inherit pkgs;
             name = "start-postgres-server";
+            pgroonga = self'.packages."psql_${activeVersion}/exts/pgroonga-all";
           };
           switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;

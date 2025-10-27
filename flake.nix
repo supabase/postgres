@@ -1,6 +1,11 @@
 {
   description = "Prototype tooling for deploying PostgreSQL";
-
+  nixConfig = {
+    extra-substituters = [ "https://nix-postgres-artifacts.s3.amazonaws.com" ];
+    extra-trusted-public-keys = [
+      "nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI="
+    ];
+  };
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -30,7 +35,6 @@
         nix/checks.nix
         nix/config.nix
         nix/devShells.nix
-        nix/ext
         nix/fmt.nix
         nix/hooks.nix
         nix/nixpkgs.nix

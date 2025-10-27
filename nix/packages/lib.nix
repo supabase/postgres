@@ -5,13 +5,13 @@
   defaults,
   supabase-groonga,
   system,
-  pgroonga,
 }:
 {
   makePostgresDevSetup =
     {
       pkgs,
       name,
+      pgroonga,
       extraSubstitutions ? { },
     }:
     let
