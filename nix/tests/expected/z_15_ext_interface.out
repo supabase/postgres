@@ -32,7 +32,8 @@ order by
  pg_cron
  pgjwt
  tsm_system_time
-(3 rows)
+ wal2json
+(4 rows)
 
 /*
 
