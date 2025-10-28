@@ -44,7 +44,7 @@
           ansible.builtin.replace:
             path: '/etc/postgresql/postgresql.conf'
             regexp: "(shared_preload_libraries).*(\\'.*)\\'"
-            replace: "\\1 = \\2, orioledb\\'"
+            replace: "\\1 = \\2, orioledb'"
 
         - name: Add default_table_access_method setting
           ansible.builtin.lineinfile:
