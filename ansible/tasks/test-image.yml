@@ -33,11 +33,6 @@
   failed_when: verify_result.rc != 0
   when: debpkg_mode or stage2_nix
 
-- command: cat /etc/postgresql/postgresql.conf
-  register: pgconf
-- debug:
-    msg: "{{ pgconf.stdout }}"
-
 - name: Start Postgres Database to load all extensions.
   become: yes
   become_user: postgres
