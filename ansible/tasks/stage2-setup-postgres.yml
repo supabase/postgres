@@ -90,6 +90,8 @@
         - { path: '/usr/lib/postgresql/share/postgresql/timezonesets' }
         - { path: '/usr/lib/postgresql/share/postgresql/tsearch_data' }
         - { path: '/usr/lib/postgresql/share/postgresql/extension' }
+      loop_control:
+        loop_var: 'file_item'
 
     - name: import pgsodium_getkey script
       ansible.builtin.template:
