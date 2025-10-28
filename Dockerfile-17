@@ -58,7 +58,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/
 --init none \
 --no-confirm \
 --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
---extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 
@@ -91,7 +91,7 @@ RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/s
 RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/
 RUN chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/
 RUN chown -R postgres:postgres /usr/share/postgresql/ 
-# Create symbolic links for contrib directory
+
 RUN tree /nix > /tmp/tree.txt && cat /tmp/tree.txt && cat /tmp/tree.txt >&2
 
 RUN chown -R postgres:postgres /usr/lib/postgresql
@@ -127,6 +127,20 @@ RUN nix profile install .#wal-g-3 && \
 RUN nix store gc
 
 WORKDIR /
+####################
+# setup-groonga
+####################
+FROM base as groonga
+
+WORKDIR /nixpg
+
+RUN nix profile install .#supabase-groonga && \
+    mkdir -p /tmp/groonga-plugins && \
+    cp -r /nix/var/nix/profiles/default/lib/groonga/plugins /tmp/groonga-plugins/
+
+RUN nix store gc
+
+WORKDIR /
 # ####################
 # # Download gosu for easy step-down from root
 # ####################
@@ -157,6 +171,7 @@ FROM gosu as production
 RUN id postgres || (echo "postgres user does not exist" && exit 1)
 # # Setup extensions
 COPY --from=walg /tmp/wal-g /usr/local/bin/
+COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 
 # # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
@@ -229,4 +244,7 @@ ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
 RUN mkdir -p /usr/share/postgresql/extension/ && \
     ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \
     chmod +x /usr/lib/postgresql/bin/pgsodium_getkey.sh
+
+ENV GRN_PLUGINS_DIR=/usr/lib/groonga/plugins
+
 CMD ["postgres", "-D", "/etc/postgresql"]

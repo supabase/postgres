@@ -1,230 +1,238 @@
-- name: Postgres - copy package
-  copy:
-    src: files/postgres/
-    dest: /tmp/build/
-  when: debpkg_mode
+- name: Postgres - execute debpkg_mode tasks
+  when:
+    - debpkg_mode
+  block:
+    - name: Postgres - copy package
+      ansible.builtin.copy:
+        dest: '/tmp/build/'
+        src: 'files/postgres/'
 
-- name: Postgres - add PPA
-  apt_repository:
-    repo: "deb [ trusted=yes ] file:///tmp/build ./"
-    state: present
-  when: debpkg_mode
+    - name: Postgres - add PPA
+      ansible.builtin.apt_repository:
+        repo: 'deb [ trusted=yes ] file:///tmp/build ./'
+        state: 'present'
 
-- name: Postgres - install commons
-  apt:
-    name: postgresql-common
-    install_recommends: no
-  when: debpkg_mode
+    - name: Postgres - install commons
+      ansible.builtin.apt:
+        install_recommends: false
+        name: 'postgresql-common'
 
-- name: Do not create main cluster
-  shell:
-    cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
-  when: debpkg_mode
+    - name: Do not create main cluster
+      ansible.builtin.command:
+        cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
 
-- name: Postgres - install server
-  apt:
-    name: postgresql-{{ postgresql_major }}={{ postgresql_release }}-1.pgdg24.04+1
-    install_recommends: no
-  when: debpkg_mode
+    - name: Postgres - install server
+      ansible.builtin.apt:
+        install_recommends: false
+        name: "postgresql-{{ postgresql_major_version }}={{ postgresql_release }}-1.pgdg24.04+1"
 
-- name: Postgres - remove PPA
-  apt_repository:
-    repo: "deb [ trusted=yes ] file:///tmp/build ./"
-    state: absent
-  when: debpkg_mode
+    - name: Postgres - remove PPA
+      ansible.builtin.apt_repository:
+        repo: 'deb [ trusted=yes ] file:///tmp/build ./'
+        state: 'absent'
 
-- name: Postgres - cleanup package
-  file:
-    path: /tmp/build
-    state: absent
-  when: debpkg_mode
+    - name: Postgres - cleanup package
+      ansible.builtin.file:
+        path: '/tmp/build'
+        state: 'absent'
 
-- name: install locales
-  apt:
-    name: locales
-    state: present
-  become: yes
-  when: stage2_nix
+- name: execute stage2_nix tasks
+  when:
+    - stage2_nix
+  block:
+    - name: install locales
+      ansible.builtin.apt:
+        name: 'locales'
+        state: 'present'
+      become: true
 
-- name: configure locales
-  command: echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-  become: yes
-  when: stage2_nix
+    - name: configure locales
+      ansible.builtin.lineinfile:
+        create: true
+        line: "{{ locale_item }}.UTF-8 UTF-8"
+        path: '/etc/locale.gen'
+        state: 'present'
+      become: true
+      loop:
+        - 'C'
+        - 'en_US'
+      loop_control:
+        loop_var: 'locale_item'
 
-- name: locale-gen
-  command: sudo locale-gen
-  when: stage2_nix
+    - name: locale-gen
+      ansible.builtin.command:
+        cmd: 'locale-gen'
+      become: true
 
-- name: update-locale
-  command: sudo update-locale
-  when: stage2_nix
+    - name: update-locale
+      ansible.builtin.command:
+        cmd: 'update-locale'
+      become: true
 
-- name: Create symlink to /usr/lib/postgresql/bin
-  shell:
-    cmd: ln -s /usr/lib/postgresql/{{ postgresql_major }}/bin /usr/lib/postgresql/bin
-  when: debpkg_mode
+- name: execute nixpkg_mode tasks
+  when:
+    - nixpkg_mode
+  block:
+    # the old method of installing from debian creates this group, but we must create it explicitly
+    # for the nix built version
+    - name: create ssl-cert and postgres groups
+      ansible.builtin.group:
+        name: "{{ group_item }}"
+        state: 'present'
+      loop:
+        - 'ssl-cert'
+        - 'postgres'
+      loop_control:
+        loop_var: 'group_item'
 
-- name: create ssl-cert group
-  group:
-    name: ssl-cert
-    state: present
-  when: nixpkg_mode
-# the old method of installing from debian creates this group, but we must create it explicitly
-# for the nix built version
+    - name: create postgres user
+      ansible.builtin.user:
+        comment: 'PostgreSQL administrator'
+        create_home: false
+        group: 'postgres'
+        groups: 'ssl-cert'
+        home: '/var/lib/postgresql'
+        name: 'postgres'
+        shell: '/bin/bash'
+        state: 'present'
+        system: true
+      become: yes
 
-- name: create postgres group
-  group:
-    name: postgres
-    state: present
-  when: nixpkg_mode
+- name: execute (debpkg_mode or nixpkg_mode) tasks
+  when:
+    - (debpkg_mode or nixpkg_mode)
+  block:
+    - name: Create relevant directories
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0750'
+        owner: 'postgres'
+        path: "{{ pg_dir_item }}"
+        recurse: true
+        state: 'directory'
+      loop:
+        - '/data/pgdata'
+        - '/home/postgres'
+        - '/var/lib/postgresql/data'
+        - '/var/log/postgresql'
+      loop_control:
+        loop_var: 'pg_dir_item'
 
-- name: create postgres user
-  shell: adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
-  args:
-    executable: /bin/bash
-  become: yes
-  when: nixpkg_mode
+    - name: Allow adminapi to write custom config
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0775'
+        owner: 'postgres'
+        path: "{{ pg_config_dir_item }}"
+        recurse: true
+        state: 'directory'
+      loop:
+        - '/etc/postgresql'
+        - '/etc/postgresql-custom'
+      loop_control:
+        loop_var: 'pg_config_dir_item'
 
-- name: add postgres user to postgres group
-  shell: usermod -a -G ssl-cert postgres
-  args:
-    executable: /bin/bash
-  become: yes
-  when: nixpkg_mode
+    - name: create placeholder config files
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0664'
+        owner: 'postgres'
+        path: "/etc/postgresql-custom/{{ pg_config_item }}"
+        state: 'touch'
+      loop:
+        - 'custom-overrides.conf'
+        - 'generated-optimizations.conf'
+      loop_control:
+        loop_var: 'pg_config_item'
 
-- name: Create relevant directories
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-  with_items:
-    - '/home/postgres'
-    - '/var/log/postgresql'
-    - '/var/lib/postgresql'
-  when: debpkg_mode or nixpkg_mode
+    - name: import postgresql.conf, pg_hba.conf, and pg_ident.conf
+      ansible.builtin.template:
+        dest: '/etc/postgresql/{{ pg_config_item }}'
+        group: 'postgres'
+        src: 'files/postgresql_config/{{ pg_config_item }}.j2'
+      loop:
+        - 'postgresql.conf'
+        - 'pg_hba.conf'
+        - 'pg_ident.conf'
+      loop_control:
+        loop_var: 'pg_config_item'
 
-- name: Allow adminapi to write custom config
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: 0775
-  with_items:
-    - '/etc/postgresql'
-    - '/etc/postgresql-custom'
-  when: debpkg_mode or nixpkg_mode
-
-- name: create placeholder config files
-  file:
-    path: '/etc/postgresql-custom/{{ item }}'
-    state: touch
-    owner: postgres
-    group: postgres
-    mode: 0664
-  with_items:
-    - 'generated-optimizations.conf'
-    - 'custom-overrides.conf'
-  when: debpkg_mode or nixpkg_mode
-
-# Move Postgres configuration files into /etc/postgresql
-# Add postgresql.conf
-- name: import postgresql.conf
-  template:
-    src: files/postgresql_config/postgresql.conf.j2
-    dest: /etc/postgresql/postgresql.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
-
-# Add pg_hba.conf
-- name: import pg_hba.conf
-  template:
-    src: files/postgresql_config/pg_hba.conf.j2
-    dest: /etc/postgresql/pg_hba.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
-
-# Add pg_ident.conf
-- name: import pg_ident.conf
-  template:
-    src: files/postgresql_config/pg_ident.conf.j2
-    dest: /etc/postgresql/pg_ident.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
-
-# Add custom config for read replicas set up
-- name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
-  template:
-    src: "files/postgresql_config/custom_read_replica.conf.j2"
-    dest: /etc/postgresql-custom/read-replica.conf
-    mode: 0664
-    owner: postgres
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
+    - name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
+      ansible.builtin.template:
+        dest: '/etc/postgresql-custom/read-replica.conf'
+        mode: '0664'
+        owner: 'postgres'
+        group: 'postgres'
+        src: 'files/postgresql_config/custom_read_replica.conf.j2'
 
 # Install extensions before init
 - name: Install Postgres extensions
-  import_tasks: tasks/setup-docker.yml
-  when: debpkg_mode or stage2_nix
+  ansible.builtin.import_tasks:
+    file: 'tasks/setup-docker.yml'
+  when:
+    - (debpkg_mode or stage2_nix)
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
-  import_tasks: tasks/stage2-setup-postgres.yml
-  when: stage2_nix
+  ansible.builtin.import_tasks:
+    file: 'tasks/stage2-setup-postgres.yml'
+  when:
+    - stage2_nix
 
 # init DB
-- name: Create directory on data volume
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: 0750
-  with_items:
-    - "/data/pgdata"
-  when: debpkg_mode or nixpkg_mode
+- name: init the db when (debpkg_mode or nixpkg_mode)
+  when:
+    - (debpkg_mode or nixpkg_mode)
+  block:
+    - name: Create directory on data volume
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0750'
+        owner: 'postgres'
+        path: '/data/pgdata'
+        recurse: true
+        state: 'directory'
 
-- name: Link database data_dir to data volume directory
-  file:
-    src: "/data/pgdata"
-    path: "/var/lib/postgresql/data"
-    state: link
-    force: yes
-  when: debpkg_mode or nixpkg_mode
+    - name: Link database data_dir to data volume directory
+      ansible.builtin.file:
+        force: true
+        path: '/var/lib/postgresql/data'
+        src: '/data/pgdata'
+        state: 'link'
 
 - name: Initialize the database
-  become: yes
-  become_user: postgres
-  shell: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
+  become: true
+  become_user: 'postgres'
+  ansible.builtin.command:
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
   vars:
     ansible_command_timeout: 60
-  when: debpkg_mode
+  when:
+    - debpkg_mode
 
 - name: Make sure .bashrc exists
-  file:
-    path: /var/lib/postgresql/.bashrc
-    state: touch
-    owner: postgres
-    group: postgres
-  when: nixpkg_mode
+  ansible.builtin.file:
+    group: 'postgres'
+    owner: 'postgres'
+    path: '/var/lib/postgresql/.bashrc'
+    state: 'touch'
+  when:
+    - nixpkg_mode
 
 - name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+  when:
+    - stage2_nix
   block:
     - name: Check if psql_version is psql_orioledb
-      set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
+      ansible.builtin.set_fact:
         is_psql_17: "{{ psql_version in ['psql_17'] }}"
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
 
     - name: Initialize the database stage2_nix (non-orioledb)
-      become: yes
-      become_user: postgres
-      shell: source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
-      args:
-        executable: /bin/bash
+      become: true
+      become_user: 'postgres'
+      ansible.builtin.command:
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -233,20 +241,15 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: stage2_nix and not is_psql_oriole and not is_psql_17
+      when:
+        - not is_psql_oriole
+        - not is_psql_17
 
     - name: Initialize the database stage2_nix (orioledb)
-      become: yes
-      become_user: postgres
-      shell: >
-        source /var/lib/postgresql/.bashrc && /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb
-        -o "--allow-group-access"
-        -o "--username=supabase_admin"
-        -o "--locale-provider=icu"
-        -o "--encoding=UTF-8"
-        -o "--icu-locale=en_US.UTF-8"
-      args:
-        executable: /bin/bash
+      become: true
+      become_user: 'postgres'
+      ansible.builtin.command:
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=icu" -o "--encoding=UTF-8" -o "--icu-locale=en_US.UTF-8"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -255,68 +258,71 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: stage2_nix and (is_psql_oriole or is_psql_17)
+      when:
+        - (is_psql_oriole or is_psql_17)
 
-- name: copy PG systemd unit
-  template:
-    src: files/postgresql_config/postgresql.service.j2
-    dest: /etc/systemd/system/postgresql.service
-  when: debpkg_mode or stage2_nix
-
-- name: copy optimizations systemd unit
-  template:
-    src: files/database-optimizations.service.j2
-    dest: /etc/systemd/system/database-optimizations.service
-  when: debpkg_mode or stage2_nix
+- name: copy PG and optimizations systemd units
+  ansible.builtin.template:
+    dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
+    src: "files/{{ systemd_svc_item }}.j2"
+  loop:
+    - 'database-optimizations.service'
+    - 'postgresql_config/postgresql.service'
+  loop_control:
+    loop_var: 'systemd_svc_item'
+  when:
+    - (debpkg_mode or stage2_nix)
 
 - name: initialize pg required state
-  become: yes
-  shell: |
-    mkdir -p /run/postgresql
-    chown -R postgres:postgres /run/postgresql
-  when: stage2_nix and qemu_mode is defined
+  become: true
+  ansible.builtin.file:
+    group: 'postgres'
+    owner: 'postgres'
+    path: '/run/postgresql'
+    state: 'directory'
+  when:
+    - stage2_nix
+    - qemu_mode is defined
 
 - name: Restart Postgres Database without Systemd
-  become: yes
-  become_user: postgres
-  shell: |
-    source /var/lib/postgresql/.bashrc
-    /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start
+  become: true
+  become_user: 'postgres'
+  ansible.builtin.command:
+    cmd: '/usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start'
   environment:
     LANG: en_US.UTF-8
     LANGUAGE: en_US.UTF-8
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  when: stage2_nix
+  when:
+    - stage2_nix
 
 
 # Reload
 - name: System - systemd reload
-  systemd:
-    enabled: yes
-    name: postgresql
-    daemon_reload: yes
-  when: debpkg_mode or stage2_nix
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    enabled: true
+    name: 'postgresql'
+  when:
+    - (debpkg_mode or stage2_nix)
 
 
-- name: Add LOCALE_ARCHIVE to .bashrc
-  lineinfile:
-    dest: "/var/lib/postgresql/.bashrc"
-    line: 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
-    create: yes
-  become: yes
-  when: nixpkg_mode
-
-- name: Add LANG items to .bashrc
-  lineinfile:
-    dest: "/var/lib/postgresql/.bashrc"
-    line: "{{ item }}"
+- name: Add lang and locale items to .bashrc
+  ansible.builtin.lineinfile:
+    create: true
+    dest: '/var/lib/postgresql/.bashrc'
+    line: "{{ lang_item }}"
+  become: true
   loop: 
+    - 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
     - 'export LANG="en_US.UTF-8"'
     - 'export LANGUAGE="en_US.UTF-8"'
     - 'export LC_ALL="en_US.UTF-8"'
     - 'export LANG="en_US.UTF-8"'
     - 'export LC_CTYPE="en_US.UTF-8"'
-  become: yes
-  when: nixpkg_mode
+  loop_control:
+    loop_var: 'lang_item'
+  when:
+    - nixpkg_mode

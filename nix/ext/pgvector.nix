@@ -88,5 +88,6 @@ pkgs.buildEnv {
     pname = "${pname}-all";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    pgRegressTestName = "pgvector";
   };
 }

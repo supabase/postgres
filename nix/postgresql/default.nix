@@ -10,6 +10,7 @@ let
       namePrefix,
       jitSupport,
       supportedVersions,
+      isOrioleDB,
     }:
     pkgs.lib.mapAttrs' (
       version: config:
@@ -18,6 +19,7 @@ let
       in
       pkgs.lib.nameValuePair "${namePrefix}${versionSuffix}" (
         pkgs.callPackage ./generic.nix {
+          inherit isOrioleDB;
           inherit (config) version hash;
           jitSupport = jitSupport;
           self = pkgs;
@@ -30,10 +32,12 @@ let
     {
       namePrefix = "postgresql_";
       versions = supportedPostgresVersions.postgres;
+      isOrioleDB = false;
     }
     {
       namePrefix = "postgresql_orioledb-";
       versions = supportedPostgresVersions.orioledb;
+      isOrioleDB = true;
     }
   ];
 
@@ -44,7 +48,7 @@ let
       acc: flavor:
       acc
       // (mkPostgresqlPackages {
-        inherit (flavor) namePrefix;
+        inherit (flavor) namePrefix isOrioleDB;
         inherit jitSupport;
         supportedVersions = flavor.versions;
       })

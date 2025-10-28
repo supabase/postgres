@@ -30,7 +30,7 @@ jobs:
           install_url: https://releases.nixos.org/nix/nix-2.29.1/install
           extra_nix_config: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -65,7 +65,7 @@ jobs:
           install_url: https://releases.nixos.org/nix/nix-2.29.1/install
           extra_nix_config: |
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}

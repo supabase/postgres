@@ -1,12 +1,8 @@
-{ self, inputs, ... }:
+{ inputs, ... }:
 {
   perSystem =
     { pkgs, ... }:
     let
-      gitRev = "vcs=${self.shortRev or "dirty"}+${
-        builtins.substring 0 8 (self.lastModifiedDate or self.lastModified or "19700101")
-      }";
-
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
       # easier and more expedient, or because they may not be suitable, or are
@@ -19,10 +15,10 @@
       ourExtensions = [
         ../ext/rum.nix
         ../ext/timescaledb.nix
-        ../ext/pgroonga.nix
+        ../ext/pgroonga
         ../ext/index_advisor.nix
         ../ext/wal2json.nix
-        ../ext/pgmq.nix
+        ../ext/pgmq
         ../ext/pg_repack.nix
         ../ext/pg-safeupdate.nix
         ../ext/plpgsql-check.nix
@@ -37,9 +33,9 @@
         ../ext/pg_net.nix
         ../ext/pg_hashids.nix
         ../ext/pgsodium.nix
-        ../ext/pg_graphql.nix
+        ../ext/pg_graphql
         ../ext/pg_stat_monitor.nix
-        ../ext/pg_jsonschema.nix
+        ../ext/pg_jsonschema
         ../ext/pgvector.nix
         ../ext/vault.nix
         ../ext/hypopg.nix
@@ -80,7 +76,6 @@
           name = "receipt";
           destination = "/receipt.json";
           text = builtins.toJSON {
-            revision = gitRev;
             psql-version = pgbin.version;
             nixpkgs = {
               revision = inputs.nixpkgs.rev;

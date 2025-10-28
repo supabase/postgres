@@ -34,6 +34,7 @@
   stdenv,
   darwin,
   writeShellScriptBin,
+  defaultBindgenHook,
 }:
 
 # The idea behind: Use it mostly like rustPlatform.buildRustPackage and so
@@ -53,6 +54,10 @@
   buildFeatures ? [ ],
   cargoBuildFlags ? [ ],
   postgresql,
+  # enable override to generate bindings using bindgenHook.
+  # Some older versions of cargo-pgrx use a bindgenHook that is not compatible with the
+  # current clang version present in stdenv
+  bindgenHook ? defaultBindgenHook,
   # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
   # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
   # if you include the generated code in the output via postInstall.
@@ -87,12 +92,14 @@ let
     pushd "${buildAndTestSubdir}"
   '';
   maybeLeaveBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) "popd";
+  pgrxBinaryName = if builtins.compareVersions "0.7.4" cargo-pgrx.version >= 0 then "pgx" else "pgrx";
 
   pgrxPostgresMajor = lib.versions.major postgresql.version;
   preBuildAndTest = ''
     export PGRX_HOME=$(mktemp -d)
+    export PGX_HOME=$PGRX_HOME
     export PGDATA="$PGRX_HOME/data-${pgrxPostgresMajor}/"
-    cargo-pgrx pgrx init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
+    cargo-${pgrxBinaryName} ${pgrxBinaryName} init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
 
     # unix sockets work in sandbox, too.
     export PGHOST="$(mktemp -d)"
@@ -127,7 +134,7 @@ let
         cargo-pgrx
         postgresql
         pkg-config
-        rustPlatform.bindgenHook
+        bindgenHook
       ]
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
@@ -138,9 +145,10 @@ let
       ${preBuildAndTest}
       ${maybeEnterBuildAndTestSubdir}
 
-      PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}" \
+      export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
+      export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
       ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
-      cargo pgrx package \
+      cargo ${pgrxBinaryName} package \
         --pg-config ${lib.getDev postgresql}/bin/pg_config \
         ${maybeDebugFlag} \
         --features "${builtins.concatStringsSep " " buildFeatures}" \
@@ -160,7 +168,7 @@ let
 
       ${maybeEnterBuildAndTestSubdir}
 
-      cargo-pgrx pgrx stop all
+      cargo-${pgrxBinaryName} ${pgrxBinaryName} stop all
 
       mv $out/${postgresql}/* $out
       mv $out/${postgresql.lib}/* $out
