@@ -241,13 +241,6 @@ buildEnv {
     }
 
     create_migration_sql_files() {
-      # buildEnv creates symlinks in $out/share/postgresql/extension
-      # But we need to write new migration files there
-      # The Nix store is immutable at the path level, so we need to:
-      # 1. Save all the symlinked files to a temporary location
-      # 2. Remove the entire symlinked share/postgresql/extension tree
-      # 3. Recreate it as real directories with actual files (not symlinks)
-      # 4. Then we can add our migration files
 
       TEMP_DIR=$(mktemp -d)
 
