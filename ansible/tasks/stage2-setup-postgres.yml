@@ -167,9 +167,13 @@
         src: '/var/lib/postgresql/.nix-profile/bin/pg_config'
         state: 'link'
 
+    - name: Nuke /usr/lib/postgresql/share so we can recreate it as a symlink
+      ansible.builtin.file:
+        path: '/usr/lib/postgresql/share'
+        state: 'absent'
+
     - name: Create symlinks for PG share links into /usr/lib/postgresql/share
       ansible.builtin.file:
-        force: true
         group: 'postgres'
         owner: 'postgres'
         path: '/usr/lib/postgresql/share'
