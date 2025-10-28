@@ -171,7 +171,12 @@ let
         };
       }
     );
-  previouslyPackagedVersions = [
+  # All versions that were previously packaged (historical list)
+  allPreviouslyPackagedVersions = [
+    "0.4.3"
+    "0.4.2"
+    "0.4.1"
+    "0.3.0"
     "0.2.0"
     "0.1.19"
     "0.1.18"
@@ -191,7 +196,6 @@ let
     "0.1.1"
     "0.1.0"
   ];
-  numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).wrappers;
   supportedVersions = lib.filterAttrs (
     _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
@@ -199,6 +203,12 @@ let
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
   numberOfVersions = builtins.length versions;
+  # Filter out previously packaged versions that are actually built for this PG version
+  # This prevents double-counting when a version appears in both lists
+  previouslyPackagedVersions = builtins.filter (
+    v: !(builtins.elem v versions)
+  ) allPreviouslyPackagedVersions;
+  numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
   packages = builtins.attrValues (
     lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
   );
@@ -231,26 +241,64 @@ buildEnv {
     }
 
     create_migration_sql_files() {
+      # buildEnv creates symlinks in $out/share/postgresql/extension
+      # But we need to write new migration files there
+      # The Nix store is immutable at the path level, so we need to:
+      # 1. Save all the symlinked files to a temporary location
+      # 2. Remove the entire symlinked share/postgresql/extension tree
+      # 3. Recreate it as real directories with actual files (not symlinks)
+      # 4. Then we can add our migration files
+
+      TEMP_DIR=$(mktemp -d)
+
+      # Copy all existing SQL and control files, dereferencing symlinks
+      if [ -d "$out/share/postgresql/extension" ]; then
+        cp -rL $out/share/postgresql/extension/* $TEMP_DIR/ 2>/dev/null || true
+        # Need to remove from parent and recreate to avoid immutable symlinked structure
+        chmod -R u+w $out/share/postgresql 2>/dev/null || true
+        rm -rf $out/share/postgresql/extension
+      fi
+
+      # Recreate the entire path as real directories
+      mkdir -p $out/share/postgresql/extension
+
+      # Copy everything back
+      if [ "$(ls -A $TEMP_DIR 2>/dev/null)" ]; then
+        cp -r $TEMP_DIR/* $out/share/postgresql/extension/
+      fi
+
       PREVIOUS_VERSION=""
       while IFS= read -r i; do
         FILENAME=$(basename "$i")
-        DIRNAME=$(dirname "$i")
         VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
         if [[ "$PREVIOUS_VERSION" != "" ]]; then
-          echo "Processing $i"
-          MIGRATION_FILENAME="$DIRNAME/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
-          cp "$i" "$MIGRATION_FILENAME"
+          # Always write to $out/share/postgresql/extension, not $DIRNAME
+          # because $DIRNAME might be a symlinked read-only path from the Nix store
+          # We use -L with cp to dereference symlinks (copy the actual file content, not the symlink)
+          MIGRATION_FILENAME="$out/share/postgresql/extension/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
+          cp -L "$i" "$MIGRATION_FILENAME"
         fi
         PREVIOUS_VERSION="$VERSION"
       done < <(find $out -name '*.sql' | sort -V)
 
+      # Create empty SQL files for previously packaged versions that don't exist
+      # This compensates for versions that failed to produce SQL files in the past
+      for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+        sql_file="$out/share/postgresql/extension/wrappers--$prev_version.sql"
+        if [ ! -f "$sql_file" ]; then
+          echo "-- Empty migration file for previously packaged version $prev_version" > "$sql_file"
+        fi
+      done
+
       # Create migration SQL files from previous versions to newer versions
+      # Skip if the migration file already exists (to avoid conflicts with the first loop)
       for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
         for curr_version in ${lib.concatStringsSep " " versions}; do
           if [[ "$(printf '%s\n%s' "$prev_version" "$curr_version" | sort -V | head -n1)" == "$prev_version" ]] && [[ "$prev_version" != "$curr_version" ]]; then
             main_sql_file="$out/share/postgresql/extension/wrappers--$curr_version.sql"
-            if [ -f "$main_sql_file" ]; then
-              new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
+            new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
+            # Only create if it doesn't already exist (first loop may have created it)
+            if [ -f "$main_sql_file" ] && [ ! -f "$new_file" ]; then
               cp "$main_sql_file" "$new_file"
               sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
             fi
@@ -263,6 +311,7 @@ buildEnv {
     create_lib_files
     create_migration_sql_files
 
+    # Verify library count matches expected
     (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
       toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
     }")
