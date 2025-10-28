@@ -18,3 +18,5 @@ SELECT partman.create_parent(
     , p_interval := '1 day'
     , p_template_table := 'partman_test.time_taptest_table_template'
 );
+
+DROP SCHEMA partman_test CASCADE;

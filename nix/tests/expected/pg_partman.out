@@ -18,3 +18,7 @@ SELECT partman.create_parent(
  t
 (1 row)
 
+DROP SCHEMA partman_test CASCADE;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to table partman_test.time_taptest_table
+drop cascades to table partman_test.time_taptest_table_template

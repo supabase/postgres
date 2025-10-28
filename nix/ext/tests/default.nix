@@ -146,12 +146,14 @@ let
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
           }
           extension_name = "${pname}"
+          support_upgrade = True
           pg17_configuration = "${pg17-configuration}"
           ext_has_background_worker = ${
             if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
           }
           sql_test_directory = Path("${../../tests}")
           pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+          ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
 
           ${builtins.readFile ./lib.py}
 
@@ -160,7 +162,8 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema)
+          test.create_schema()
 
           with subtest("Check upgrade path with postgresql 15"):
             test.check_upgrade_path("15")
@@ -224,6 +227,7 @@ builtins.listToAttrs (
       "pg_stat_monitor"
       "pg_tle"
       "pgaudit"
+      "pg_partman"
       "vector"
       "wal2json"
       "wrappers"

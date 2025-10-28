@@ -97,8 +97,9 @@ pkgs.buildEnv {
     inherit versions numberOfVersions switch-ext-version;
     pname = "${pname}-all";
     hasBackgroundWorker = true;
+    defaultSchema = "partman";
     defaultSettings = {
-      shared_preload_libraries = [ "pg_partman_bgw" ];
+      shared_preload_libraries = [ "pg_partman" ];
     };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
