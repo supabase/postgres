@@ -242,23 +242,6 @@ buildEnv {
 
     create_migration_sql_files() {
 
-      TEMP_DIR=$(mktemp -d)
-
-      # Copy all existing SQL and control files, dereferencing symlinks
-      if [ -d "$out/share/postgresql/extension" ]; then
-        cp -rL $out/share/postgresql/extension/* $TEMP_DIR/ 2>/dev/null || true
-        # Need to remove from parent and recreate to avoid immutable symlinked structure
-        chmod -R u+w $out/share/postgresql 2>/dev/null || true
-        rm -rf $out/share/postgresql/extension
-      fi
-
-      # Recreate the entire path as real directories
-      mkdir -p $out/share/postgresql/extension
-
-      # Copy everything back
-      if [ "$(ls -A $TEMP_DIR 2>/dev/null)" ]; then
-        cp -r $TEMP_DIR/* $out/share/postgresql/extension/
-      fi
 
       PREVIOUS_VERSION=""
       while IFS= read -r i; do
