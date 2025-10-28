@@ -30,7 +30,7 @@
 
         - name: Remove db_user_namespace from postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '//etc/pdev/resql/post'
+            path: '/etc/postgresql/postgresql.conf'
             regexp: 'db_user_namespace\ =\ off'
             replace: '#db_user_namespace\ =\ off'
 
