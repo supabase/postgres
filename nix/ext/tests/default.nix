@@ -224,6 +224,7 @@ builtins.listToAttrs (
       "pgaudit"
       "pg_tle"
       "vector"
+      "wal2json"
       "wrappers"
     ]
 )

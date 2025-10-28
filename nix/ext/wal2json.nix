@@ -1,35 +1,106 @@
 {
+  pkgs,
   lib,
   stdenv,
   fetchFromGitHub,
   postgresql,
+  makeWrapper,
 }:
 
-stdenv.mkDerivation rec {
+let
   pname = "wal2json";
-  version = "2_6";
+  build =
+    version: rev: hash:
+    stdenv.mkDerivation rec {
+      inherit version pname;
 
-  src = fetchFromGitHub {
-    owner = "eulerto";
-    repo = "wal2json";
-    rev = "wal2json_${builtins.replaceStrings [ "." ] [ "_" ] version}";
-    hash = "sha256-+QoACPCKiFfuT2lJfSUmgfzC5MXf75KpSoc2PzPxKyM=";
-  };
+      src = fetchFromGitHub {
+        owner = "eulerto";
+        repo = "wal2json";
+        rev = "wal2json_${builtins.replaceStrings [ "." ] [ "_" ] version}";
+        inherit hash;
+      };
 
-  buildInputs = [ postgresql ];
+      buildInputs = [ postgresql ];
 
-  makeFlags = [ "USE_PGXS=1" ];
+      makeFlags = [ "USE_PGXS=1" ];
 
-  installPhase = ''
-    install -D -t $out/lib *${postgresql.dlSuffix}
-    install -D -t $out/share/postgresql/extension sql/*.sql
+      installPhase = ''
+        runHook preInstall
+
+        mkdir -p $out/share/postgresql/extension
+
+        # Install versioned library
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        if [[ "${version}" == "${latestVersion}" ]]; then
+          cp sql/*.sql $out/share/postgresql/extension/
+        fi
+
+        touch $out/share/postgresql/extension/${pname}--${version}.control
+        touch $out/share/postgresql/extension/${pname}--${version}.sql
+
+        runHook postInstall
+      '';
+
+      meta = with lib; {
+        description = "PostgreSQL JSON output plugin for changeset extraction";
+        homepage = "https://github.com/eulerto/wal2json";
+        changelog = "https://github.com/eulerto/wal2json/releases/";
+        platforms = postgresql.meta.platforms;
+        license = licenses.bsd3;
+      };
+    };
+  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).wal2json;
+  supportedVersions = lib.filterAttrs (
+    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+  ) allVersions;
+  versions = lib.naturalSort (lib.attrNames supportedVersions);
+  latestVersion = lib.last versions;
+  numberOfVersions = builtins.length versions;
+  packages = builtins.attrValues (
+    lib.mapAttrs (name: value: build name value.rev value.hash) supportedVersions
+  );
+in
+pkgs.buildEnv {
+  name = pname;
+  paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
+  postBuild = ''
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    {
+      echo "default_version = '${latestVersion}'"
+    } > $out/share/postgresql/extension/${pname}.control
+
+    # Create empty upgrade files between consecutive versions
+    # plpgsql_check ships without upgrade scripts - extensions are backward-compatible
+    previous_version=""
+    for ver in ${lib.concatStringsSep " " versions}; do
+      if [[ -n "$previous_version" ]]; then
+        touch $out/share/postgresql/extension/${pname}--''${previous_version}--''${ver}.sql
+      fi
+      previous_version=$ver
+    done
+
+    # checks
+    (set -x
+       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+         toString (numberOfVersions + 1)
+       }"
+    )
   '';
 
-  meta = with lib; {
-    description = "PostgreSQL JSON output plugin for changeset extraction";
-    homepage = "https://github.com/eulerto/wal2json";
-    changelog = "https://github.com/eulerto/wal2json/releases/tag/wal2json_${version}";
-    platforms = postgresql.meta.platforms;
-    license = licenses.bsd3;
+  passthru = {
+    inherit versions numberOfVersions;
+    pname = "${pname}-all";
+    version =
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    defaultSettings = {
+      wal_level = "logical";
+    };
   };
 }
