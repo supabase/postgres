@@ -10,7 +10,7 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.5.1.055-orioledb-rewind"
+  postgresorioledb-17: "17.5.1.056-orioledb-rewind"
   postgres17: "17.6.1.028"
   postgres15: "15.14.1.028"
 
