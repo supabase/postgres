@@ -70,6 +70,6 @@
 
 - name: Sticky bit the pgBackRest binary
   file:
-  path: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
+    path: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
     mode: '4755'
   become: true
