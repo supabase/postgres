@@ -42,7 +42,7 @@
   file:
     path: /etc/pgbackrest/pgbackrest.conf
     src: /etc/pgbackrest.conf
-    type: link
+    state: link
     force: true
 
 - name: Move pgBackRest files to /etc/pgbackrest
@@ -66,7 +66,7 @@
   file:
     path: /usr/bin/pgbackrest
     src: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
-    type: link
+    state: link
 
 - name: Sticky bit the pgBackRest binary
   file:
