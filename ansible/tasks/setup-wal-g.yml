@@ -62,14 +62,6 @@
         path: '/etc/wal-g/config.json'
         state: 'touch'
 
-    - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
-      ansible.builtin.template:
-        dest: '/etc/postgresql-custom/wal-g.conf'
-        group: 'postgres'
-        mode: '0664'
-        owner: 'postgres'
-        src: 'files/postgresql_config/custom_walg.conf.j2'
-
     - name: Add script to be run for restore_command
       ansible.builtin.template:
         dest: '/home/postgres/wal_fetch.sh'
