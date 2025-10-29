@@ -16,7 +16,8 @@
   when: nixpkg_mode
 
 - name: Install pgBackRest
-  become: yes
+  become: true
+  become_user: pgbackrest
   shell: |
     sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
   when: stage2_nix
@@ -28,12 +29,12 @@
     owner: pgbackrest
     group: postgres
     mode: '0770'
-  loop: 
+  loop:
     - /etc/pgbackrest/conf.d
     - /var/lib/pgbackrest
     - /var/spool/pgbackrest
     - /var/log/pgbackrest
-  loop_control: 
+  loop_control:
     loop_var: backrest_dir
   when: nixpkg_mode
 
@@ -45,7 +46,7 @@
     force: true
 
 - name: Move pgBackRest files to /etc/pgbackrest
-  copy: 
+  copy:
     dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
     group: postgres
     mode: '0644'
@@ -62,13 +63,13 @@
   when: stage2_nix
 
 - name: Symlink pgBackRest binary
-  file: 
+  file:
     path: /usr/bin/pgbackrest
-    src: /var/lib/postgresql/.nix.profile/bin/pgbackrest
+    src: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
     type: link
 
 - name: Sticky bit the pgBackRest binary
-  file: 
-    path: /var/lib/postgresql/nix.profile/bin/pgbackrest
+  file:
+  path: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
     mode: '4755'
   become: true
