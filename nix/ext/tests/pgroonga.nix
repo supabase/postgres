@@ -60,6 +60,21 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       services.postgresql = {
         enable = true;
         package = psql_15;
+        enableTCPIP = true;
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
       };
       systemd.services.postgresql.environment.MECAB_DICDIR = "${
         self.packages.${pkgs.system}.mecab-naist-jdic
@@ -120,7 +135,6 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
       }
       extension_name = "${pname}"
-      support_upgrade = False
       pg17_configuration = "${pg17-configuration}"
       ext_has_background_worker = ${
         if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
@@ -135,7 +149,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory)
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
