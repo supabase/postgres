@@ -1,0 +1,74 @@
+- name: Create pgBackRest group
+  group:
+    name: pgbackrest
+    state: present
+  when: nixpkg_mode
+
+- name: Create pgBackRest user
+  user:
+    name: pgbackrest
+    comment: pgBackRest user
+    group: pgbackrest
+    groups: pgbackrest, postgres
+    shell: /sbin/nologin
+    system: true
+    home: /var/lib/pgbackrest
+  when: nixpkg_mode
+
+- name: Install pgBackRest
+  become: yes
+  shell: |
+    sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
+  when: stage2_nix
+
+- name: Create needed directories for pgBackRest
+  file:
+    path: "{{ backrest_dir }}"
+    state: directory
+    owner: pgbackrest
+    group: postgres
+    mode: '0770'
+  loop: 
+    - /etc/pgbackrest/conf.d
+    - /var/lib/pgbackrest
+    - /var/spool/pgbackrest
+    - /var/log/pgbackrest
+  loop_control: 
+    loop_var: backrest_dir
+  when: nixpkg_mode
+
+- name: Symlink pgbackrest.conf
+  file:
+    path: /etc/pgbackrest/pgbackrest.conf
+    src: /etc/pgbackrest.conf
+    type: link
+    force: true
+
+- name: Move pgBackRest files to /etc/pgbackrest
+  copy: 
+    dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
+    group: postgres
+    mode: '0644'
+    owner: pgbackrest
+    src: "files/pgbackrest_config/{{ conf_item['name'] }}"
+  loop:
+    - {name: computed_globals.conf, path: conf.d}
+    - {name: pgbackrest.conf, path: ''}
+    - {name: repo1_async.conf, path: conf.d}
+    - {name: repo1_encrypted.conf, path: conf.d}
+    - {name: repo1.conf, path: conf.d}
+  loop_control:
+    loop_var: conf_item
+  when: stage2_nix
+
+- name: Symlink pgBackRest binary
+  file: 
+    path: /usr/bin/pgbackrest
+    src: /var/lib/postgresql/.nix.profile/bin/pgbackrest
+    type: link
+
+- name: Sticky bit the pgBackRest binary
+  file: 
+    path: /var/lib/postgresql/nix.profile/bin/pgbackrest
+    mode: '4755'
+  become: true
