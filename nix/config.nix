@@ -20,6 +20,10 @@ let
     options = {
       version = lib.mkOption { type = lib.types.str; };
       hash = lib.mkOption { type = lib.types.str; };
+      revision = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+      };
     };
   };
   supabaseSubmodule = lib.types.submodule {
@@ -53,7 +57,8 @@ in
         orioledb = {
           "17" = {
             version = "17_11";
-            hash = "sha256-RZYU955PmGZExfX2JKw1dIQMMuuswtAXpXjZ9CLbOsw=";
+            hash = "sha256-+YJxHrkd+q2zWbXYeUWdA2OuJRFB7HRb8SDvx9lyuZk=";
+            revision = "00aff1ddc299330310c57ddc087e83b1f819e191";
           };
         };
       };

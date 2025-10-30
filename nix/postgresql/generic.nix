@@ -46,6 +46,7 @@ let
       # source specification
       version,
       hash,
+      revision ? null,
       muslPatches ? { },
 
       # for tests
@@ -88,11 +89,17 @@ let
       pname = pname + lib.optionalString jitSupport "-jit";
 
       src =
-        if (builtins.match "[0-9][0-9]_.*" version != null) then
-          fetchurl {
-            url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
-            inherit hash;
-          }
+        if isOrioleDB then
+          if revision != null then
+            fetchurl {
+              url = "https://github.com/orioledb/postgres/archive/${revision}.tar.gz";
+              inherit hash;
+            }
+          else
+            fetchurl {
+              url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
+              inherit hash;
+            }
         else
           fetchurl {
             url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
@@ -126,7 +133,7 @@ let
         ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
         ++
           lib.optionals
-            ((builtins.match "[0-9][0-9]_.*" version != null) || (lib.versionAtLeast version "17"))
+            (isOrioleDB || (lib.versionAtLeast version "17"))
             [
               perl
               bison
