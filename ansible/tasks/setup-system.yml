@@ -1,195 +1,189 @@
-- name: System - apt update and apt upgrade
-  apt: update_cache=yes upgrade=yes
-  when: debpkg_mode or nixpkg_mode
-  # SEE http://archive.vn/DKJjs#parameter-upgrade
+- name: Execute tasks when (debpkg_mode or nixpkg_mode)
+  when:
+    - (debpkg_mode or nixpkg_mode)
+  block:
+    - name: System - apt update and apt upgrade
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
+      # SEE http://archive.vn/DKJjs#parameter-upgrade
 
-- name: Install required security updates
-  apt:
-    pkg:
-      - tzdata
-      - linux-libc-dev
-  when: debpkg_mode or nixpkg_mode
-# SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
-# Without this, a similar error is faced
-- name: Install Ansible dependencies
-  apt:
-    pkg:
-      - acl
-  when: debpkg_mode or nixpkg_mode
+    - name: Install required security updates Ansible dependencies, security tools, and other useful things
+      ansible.builtin.apt:
+        cache_valid_time: 3600
+        pkg:
+          - acl
+          - bwm-ng
+          - fail2ban
+          - htop
+          - linux-libc-dev
+          - net-tools
+          - nftables
+          - ngrep
+          - sysstat
+          - tzdata
+          - vim
+        update_cache: true
+    # SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
+    # Without this, a similar error is faced
 
-- name: Install security tools
-  apt:
-    pkg:
-      - nftables
-      - fail2ban
-    update_cache: yes
-    cache_valid_time: 3600
-  when: debpkg_mode or nixpkg_mode
+    - name: Use nftables backend
+      community.general.alternatives:
+        name: "{{ alternatives['name'] }}"
+        path: "{{ alternatives['path'] }}"
+      loop:
+        - { name: 'iptables', path: '/usr/sbin/iptables-nft' }
+        - { name: 'ip6tables', path: '/usr/sbin/ip6tables-nft' }
+        - { name: 'arptables', path: '/usr/sbin/arptables-nft' }
+        - { name: 'ebtables', path: '/usr/sbin/ebtables-nft' }
+      loop_control:
+        loop_var: 'alternatives'
 
-- name: Use nftables backend
-  shell: |
-    update-alternatives --set iptables /usr/sbin/iptables-nft
-    update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
-    update-alternatives --set arptables /usr/sbin/arptables-nft
-    update-alternatives --set ebtables /usr/sbin/ebtables-nft
-    systemctl restart ufw
-  when: debpkg_mode or nixpkg_mode
+    - name: restart ufw
+      ansible.builtin.systemd_service:
+        name: 'ufw'
+        state: 'restarted'
 
-- name: Create Sysstat log directory
-  file:
-    path: /var/log/sysstat
-    state: directory
-  when: debpkg_mode or nixpkg_mode
-    
+    - name: Create Sysstat log directory
+      ansible.builtin.file:
+        path: '/var/log/sysstat'
+        state: 'directory'
+
+    - name: Configure sysstat
+      ansible.builtin.copy:
+        dest: "/etc/{{ sysstat_item }}/sysstat"
+        src: "files/{{ sysstat_item }}.sysstat"
+      loop:
+        - default
+        - sysstat
+      loop_control:
+        loop_var: 'sysstat_item'
+
+    - name: Adjust APT update intervals
+      ansible.builtin.copy:
+        dest: '/etc/apt/apt.conf.d/10periodic'
+        src: 'files/apt_periodic'
+
 - name: Install other useful tools
-  apt:
-    pkg:
-      - bwm-ng
-      - htop
-      - net-tools
-      - ngrep
-      - sysstat
-      - vim-tiny
-    update_cache: yes
-  when: debpkg_mode or nixpkg_mode
-
-- name: Install other useful tools
-  apt:
+  ansible.builtin.apt:
     pkg:
       - less
-    update_cache: yes
-  when: qemu_mode is defined
+    update_cache: true
+  when:
+    - qemu_mode is defined
 
-- name: Configure sysstat
-  copy:
-    src: files/sysstat.sysstat
-    dest: /etc/sysstat/sysstat
-  when: debpkg_mode or nixpkg_mode
-
-- name: Configure default sysstat
-  copy:
-    src: files/default.sysstat
-    dest: /etc/default/sysstat
-  when: debpkg_mode or nixpkg_mode
-
-
-- name: Adjust APT update intervals
-  copy:
-    src: files/apt_periodic
-    dest: /etc/apt/apt.conf.d/10periodic
-  when: debpkg_mode or nixpkg_mode
-
-# Find platform architecture and set as a variable
-- name: finding platform architecture
-  shell: if [ $(uname -m) = "aarch64" ]; then echo "arm64";  else echo "amd64"; fi
-  register: platform_output
+- name: Set the platform arch as a fact
+  ansible.builtin.set_fact:
+    platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
   tags:
     - update
     - update-only
-- set_fact:
-    platform: "{{ platform_output.stdout }}"
-  tags:
-    - update
-    - update-only
-  when: debpkg_mode or nixpkg_mode or stage2_nix
+  when:
+    - (debpkg_mode or nixpkg_mode or stage2_nix)
 
-- name: create overrides dir
-  file:
-    state: directory
-    owner: root
-    group: root
-    path: /etc/systemd/system/systemd-resolved.service.d
-    mode: '0700'
-  when: debpkg_mode or nixpkg_mode
+- name: Execute more tasks when (debpkg_mode or nixpkg_mode)
+  when:
+    - (debpkg_mode or nixpkg_mode)
+  block:
+    - name: Custom systemd overrides for resolved
+      ansible.builtin.copy:
+        dest: '/etc/systemd/system/systemd-resolved.service.d/'
+        directory_mode: '0700'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/systemd-resolved.conf'
 
-- name: Custom systemd overrides for resolved
-  copy:
-    src: files/systemd-resolved.conf
-    dest: /etc/systemd/system/systemd-resolved.service.d/override.conf
-  when: debpkg_mode or nixpkg_mode
+    - name: System - Create services.slice
+      ansible.builtin.template:
+        dest: '/etc/systemd/system/services.slice'
+        src: 'files/services.slice.j2'
 
-- name: System - Create services.slice
-  template:
-    src: files/services.slice.j2
-    dest: /etc/systemd/system/services.slice
-  when: debpkg_mode or nixpkg_mode
+    - name: System - systemd reload
+      ansible.builtin.systemd_service:
+        daemon_reload: true
 
+    - name: Configure journald and logind
+      ansible.builtin.copy:
+        dest: "/etc/systemd/{{ config_item }}.conf"
+        src: "files/{{ config_item }}.conf"
+      loop:
+        - journald
+        - logind
+      loop_control:
+        loop_var: 'config_item'
 
-- name: System - systemd reload
-  systemd: daemon_reload=yes
-  when: debpkg_mode or nixpkg_mode
+    - name: reload systemd-journald
+      ansible.builtin.systemd_service:
+       name: "systemd-{{ config_item }}"
+       state: 'restarted'
+      loop:
+        - journald
+        - logind
+      loop_control:
+        loop_var: 'config_item'
 
-- name: Configure journald
-  copy:
-    src: files/journald.conf
-    dest: /etc/systemd/journald.conf
-  when: debpkg_mode or nixpkg_mode
+    - name: enable timestamps for shell history
+      ansible.builtin.copy:
+        content: |
+          export HISTTIMEFORMAT='%d/%m/%y %T '
+        dest: /etc/profile.d/09-history-timestamps.sh
+        mode: '0644'
+        owner: 'root'
+        group: 'root'
 
-- name: reload systemd-journald
-  systemd:
-   name: systemd-journald
-   state: restarted
-  when: debpkg_mode or nixpkg_mode
+    - name: configure systemd's pager
+      ansible.builtin.copy:
+        content: |
+          export SYSTEMD_LESS=FRXMK
+        dest: /etc/profile.d/10-systemd-pager.sh
+        mode: '0644'
+        owner: 'root'
+        group: 'root'
 
-- name: Configure logind
-  copy:
-    src: files/logind.conf
-    dest: /etc/systemd/logind.conf
-  when: debpkg_mode or nixpkg_mode
+    # Set Sysctl params specific to keepalives
+    - name: Set net.ipv4.tcp_keepalive_time=1800
+      ansible.builtin.sysctl:
+        name: 'net.ipv4.tcp_keepalive_time'
+        value: 1800
+        state: 'present'
 
-- name: reload systemd-logind
-  systemd:
-   name: systemd-logind
-   state: restarted
-  when: debpkg_mode or nixpkg_mode
+    - name: Set net.ipv4.tcp_keepalive_intvl=60
+      ansible.builtin.sysctl:
+        name: 'net.ipv4.tcp_keepalive_intvl'
+        value: 60
+        state: 'present'
 
-- name: enable timestamps for shell history
-  copy:
-    content: |
-      export HISTTIMEFORMAT='%d/%m/%y %T '
-    dest: /etc/profile.d/09-history-timestamps.sh
-    mode: 0644
-    owner: root
-    group: root
-  when: debpkg_mode or nixpkg_mode
+- name: Execute tasks when (debpkg_mode or nixpkg_mode)
+  when:
+    - (debpkg_mode or nixpkg_mode)
+  block:
+    # Set Sysctl params for restarting the OS on OOM after 10
+    - name: Set vm.panic_on_oom=1
+      ansible.builtin.sysctl:
+        name: 'vm.panic_on_oom'
+        reload: true
+        state: 'present'
+        value: '1'
 
-- name: configure systemd's pager
-  copy:
-    content: |
-      export SYSTEMD_LESS=FRXMK
-    dest: /etc/profile.d/10-systemd-pager.sh
-    mode: 0644
-    owner: root
-    group: root
-  when: debpkg_mode or nixpkg_mode
+    - name: Set kernel.panic=10
+      ansible.builtin.sysctl:
+        name: 'kernel.panic'
+        reload: true
+        state: 'present'
+        value: '10'
 
 - name: set hosts file
-  copy:
+  ansible.builtin.copy:
     content: |
       127.0.0.1   localhost
       ::1         localhost
-    dest: /etc/hosts
-    mode: 0644
-    owner: root
-    group: root
-  when: debpkg_mode or stage2_nix
-
-#Set Sysctl params for restarting the OS on oom after 10
-- name: Set vm.panic_on_oom=1
-  ansible.builtin.sysctl:
-    name: vm.panic_on_oom
-    value: '1'
-    state: present
-    reload: yes
-  when: debpkg_mode or nixpkg_mode
-
-- name: Set kernel.panic=10
-  ansible.builtin.sysctl:
-    name: kernel.panic
-    value: '10'
-    state: present
-    reload: yes
-  when: debpkg_mode or nixpkg_mode
+    dest: '/etc/hosts'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+  when:
+    - (debpkg_mode or stage2_nix)
 
 - name: configure system
   ansible.posix.sysctl:
@@ -200,17 +194,3 @@
   ansible.posix.sysctl:
     name: 'net.ipv4.ip_local_port_range'
     value: '1025 65000'
-
-#Set Sysctl params specific to keepalives
-- name: Set net.ipv4.tcp_keepalive_time=1800
-  ansible.builtin.sysctl:
-    name: net.ipv4.tcp_keepalive_time
-    value: 1800
-    state: present
-  when: debpkg_mode or nixpkg_mode
-- name: Set net.ipv4.tcp_keepalive_intvl=60
-  ansible.builtin.sysctl:
-    name: net.ipv4.tcp_keepalive_intvl
-    value: 60
-    state: present
-  when: debpkg_mode or nixpkg_mode
