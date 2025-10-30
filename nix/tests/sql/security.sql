@@ -7,3 +7,6 @@ from pg_catalog.pg_proc p
 where p.proowner = (select oid from pg_catalog.pg_roles where rolname = 'supabase_admin')
         and p.prosecdef = true
 order by 1,2;
+
+-- supautils disables copy ... program
+copy (select '') to program 'id';
