@@ -15,8 +15,8 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "beta12";
-    sha256 = "sha256-5dyVdKD1PzW+F5OPW3TR3OKBaJxxR3OhLbzK+o9Wf+Q=";
+    rev = "f147bf21fea29965c18e4f3bb9d1e57e713376b2";
+    sha256 = "sha256-W3AquOCeTYv9jLsh0VV+wW9w8mGZnpLVZDWaxmVIiX8=";
   };
   version = "beta12";
   buildInputs = [
@@ -26,7 +26,9 @@ stdenv.mkDerivation rec {
     python3
     openssl
   ];
-  buildPhase = "make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=11";
+  buildPhase = ''
+    make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=${postgresql.patchset} all
+  '';
   installPhase = ''
     runHook preInstall
 
