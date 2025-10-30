@@ -131,18 +131,15 @@ let
         ++ lib.optionals gssSupport [ libkrb5 ]
         ++ lib.optionals stdenv'.isLinux [ linux-pam ]
         ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
-        ++
-          lib.optionals
-            (isOrioleDB || (lib.versionAtLeast version "17"))
-            [
-              perl
-              bison
-              flex
-              docbook_xsl
-              docbook_xml_dtd_45
-              docbook_xsl_ns
-              libxslt
-            ];
+        ++ lib.optionals (isOrioleDB || (lib.versionAtLeast version "17")) [
+          perl
+          bison
+          flex
+          docbook_xsl
+          docbook_xml_dtd_45
+          docbook_xsl_ns
+          libxslt
+        ];
 
       nativeBuildInputs =
         [
@@ -292,12 +289,19 @@ let
         in
         {
           psqlSchema = lib.versions.major version;
+          inherit revision;
 
           withJIT = if jitSupport then this else jitToggle;
           withoutJIT = if jitSupport then jitToggle else this;
 
           dlSuffix = if olderThan "16" then ".so" else stdenv.hostPlatform.extensions.sharedLibrary;
           inherit isOrioleDB;
+
+          patchset =
+            if isOrioleDB then
+              if revision != null then revision else builtins.elemAt (builtins.split "_" version) 2
+            else
+              null;
 
           pkgs =
             let
@@ -411,7 +415,13 @@ let
       '';
 
       passthru = {
-        inherit (postgresql) version psqlSchema isOrioleDB;
+        inherit (postgresql)
+          version
+          revision
+          patchset
+          psqlSchema
+          isOrioleDB
+          ;
       };
     };
 in
