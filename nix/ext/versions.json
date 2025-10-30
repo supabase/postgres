@@ -415,6 +415,32 @@
       "revision": "2.7.11"
     }
   },
+  "plv8": {
+    "3.1.4": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-GoPP2nAeDItBt3Lug49s+brD0gIy3iDlJpbyHRuMcZ4="
+    },
+    "3.1.5": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-LodC2eQJSm5fLckrjm2RuejZhmOyQMJTv9b0iPCnzKQ="
+    },
+    "3.1.10": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-g1A/XPC0dX2360Gzvmo9/FSQnM6Wt2K4eR0pH0p9fz4="
+    },
+    "3.2.3": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-ivQZJSNn5giWF351fqZ7mBZoJkGtby5T7beK45g3Zqs="
+    }
+  },
   "postgis": {
     "3.3.2": {
       "postgresql": [
@@ -601,6 +627,16 @@
       "hash": "sha256-tWa1XewJbbqarwWkJPfvCIev7Fn0hLJRzYiz0vuebyA=",
       "pgrx": "0.16.0",
       "rust": "1.87.0"
+    },
+    "0.5.6": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-WanKlNY65KORzyCSV5hsYCVjQp/s23IUfzHMdpMhn1M=",
+      "pgrx": "0.16.0",
+      "rust": "1.87.0"
     }
   },
   "pg_repack": {
@@ -631,6 +667,24 @@
         "17"
       ],
       "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
+    }
+  },
+  "pg_hashids": {
+    "1.2.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "v1.2.1",
+      "hash": "sha256-2yQ0JrhwZF9dGEIydOviDpQ+3ZhJ8T16dQt6KIirAJ0="
+    },
+    "1.3.0-cd0e1b31d52b394a0df64079406a14a4f7387cd6": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "cd0e1b31d52b394a0df64079406a14a4f7387cd6",
+      "hash": "sha256-Nmb7XLqQflYZfqj0yrewfb1Hl5YgEB5wfjBunPwIuOU="
     }
   }
 }

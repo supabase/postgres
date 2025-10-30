@@ -110,6 +110,13 @@ If a new entry shows up in this list, that means a new extension has been
 added and you should create extension above
 
 */
+create extension if not exists adminpack;
+create extension if not exists plv8 with version '3.1.10';
+create extension if not exists plcoffee;
+create extension if not exists plls;
+create extension if not exists old_snapshot;
+create extension if not exists timescaledb;
+create extension if not exists postgis_tiger_geocoder;
 
 
 select

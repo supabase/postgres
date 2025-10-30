@@ -93,6 +93,11 @@ let
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
                 "iceberg-catalog-s3tables-0.6.0" = "sha256-AUK7B0wMqQZwJho91woLs8uOC4k1RdUEEN5Khw2OoqQ=";
               }
+            else if builtins.compareVersions "0.5.6" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.6.0" = "sha256-AUK7B0wMqQZwJho91woLs8uOC4k1RdUEEN5Khw2OoqQ=";
+              }
             else
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
