@@ -1,34 +1,35 @@
 - name: Create pgBackRest group
-  group:
+  ansible.builtin.group:
     name: pgbackrest
     state: present
   when: nixpkg_mode
 
 - name: Create pgBackRest user
-  user:
-    name: pgbackrest
+  ansible.builtin.user:
     comment: pgBackRest user
     group: pgbackrest
     groups: pgbackrest, postgres
+    home: /var/lib/pgbackrest
+    name: pgbackrest
     shell: /sbin/nologin
     system: true
-    home: /var/lib/pgbackrest
   when: nixpkg_mode
 
 - name: Install pgBackRest
   become: true
   become_user: pgbackrest
-  shell: |
+  ansible.builtin.shell: |
     sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
+  changed_when: true
   when: stage2_nix
 
 - name: Create needed directories for pgBackRest
-  file:
-    path: "{{ backrest_dir }}"
-    state: directory
-    owner: pgbackrest
+  ansible.legacy.file:
     group: postgres
     mode: '0770'
+    owner: pgbackrest
+    path: "{{ backrest_dir }}"
+    state: directory
   loop:
     - /etc/pgbackrest/conf.d
     - /var/lib/pgbackrest
@@ -39,16 +40,16 @@
   when: nixpkg_mode
 
 - name: Symlink pgbackrest.conf
-  file:
+  ansible.legacy.file:
+    force: true
     path: /etc/pgbackrest/pgbackrest.conf
     src: /etc/pgbackrest.conf
     state: link
-    force: true
 
 - name: Move pgBackRest files to /etc/pgbackrest
-  copy:
-    dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
+  ansible.legacy.copy:
     group: postgres
+    dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
     mode: '0644'
     owner: pgbackrest
     src: "files/pgbackrest_config/{{ conf_item['name'] }}"
@@ -63,13 +64,13 @@
   when: stage2_nix
 
 - name: Symlink pgBackRest binary
-  file:
+  ansible.legacy.file:
     path: /usr/bin/pgbackrest
     src: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
     state: link
 
 - name: Sticky bit the pgBackRest binary
-  file:
-    path: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
+  ansible.legacy.file:
     mode: '4755'
+    path: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest
   become: true
