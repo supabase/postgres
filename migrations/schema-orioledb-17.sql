@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 79HEbdwsnuTV5jafm4MHQLh2GGsZxFHgQRnGVoam7VcgeYtlp1T7eor8SQzYLHe
+\restrict SupabaseTestDumpKey123
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -1014,5 +1014,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 79HEbdwsnuTV5jafm4MHQLh2GGsZxFHgQRnGVoam7VcgeYtlp1T7eor8SQzYLHe
+\unrestrict SupabaseTestDumpKey123
 
