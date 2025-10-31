@@ -1,9 +1,7 @@
 name: Release Migrations - Staging
 
 on:
-  push:
-    branches:
-      - develop
+  merge_group:
   workflow_dispatch:
 
 jobs:
