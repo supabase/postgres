@@ -40,7 +40,7 @@
       register: 'pgconf'
 
 - name: Start Postgres Database to load all extensions.
-  ansinle.builtin.command:
+  ansible.builtin.command:
     cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data start "-o -c config_file=/etc/postgresql/postgresql.conf"
   become: true
   become_user: 'postgres'
