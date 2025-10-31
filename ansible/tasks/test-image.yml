@@ -34,7 +34,6 @@
       loop:
         - "^shared_preload_libraries = '.*pgsodium.*'"
         - "^shared_preload_libraries = '.*supabase_vault.*'"
-        - "^shared_preload_libraries = '.**supabase_vault.*'"
         - '^pgsodium\.getkey_script='
       loop_control:
         loop_var: 'regx'
