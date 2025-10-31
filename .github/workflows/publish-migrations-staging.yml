@@ -1,13 +1,11 @@
 name: Release Migrations - Staging
 
 on:
-  push:
-    branches:
-      - develop
+  merge_group:
   workflow_dispatch:
 
 jobs:
-  build:
+  release-migrations-staging:
     runs-on: blacksmith-2vcpu-ubuntu-2404-arm
     timeout-minutes: 15
     permissions:
