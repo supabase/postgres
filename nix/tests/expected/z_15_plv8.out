@@ -5,9 +5,7 @@ with the Supabase PG17 image
 BEGIN;
 set client_min_messages = warning;
 create extension if not exists plv8;
-ERROR:  could not load library "/nix/store/3jfxgxa5rms47ba9nzjjdxn4cwmrsfnn-postgresql-and-plugins-15.14/lib/plv8-3.2.3.so": dlopen(/nix/store/3jfxgxa5rms47ba9nzjjdxn4cwmrsfnn-postgresql-and-plugins-15.14/lib/plv8-3.2.3.so, 0x000A): symbol not found in flat namespace '__ZN2v87Isolate18SetOOMErrorHandlerEPFvPKcRKNS_10OOMDetailsEE'
 create schema v;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 -- create a function to perform some JavaScript operations
 create function v.multiply_numbers(a integer, b integer)
   returns integer
@@ -15,10 +13,12 @@ create function v.multiply_numbers(a integer, b integer)
 as $$
   return a * b;
 $$;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 select
   v.multiply_numbers(3, 4);
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ multiply_numbers 
+------------------
+               12
+(1 row)
+
 drop schema v cascade;
-ERROR:  current transaction is aborted, commands ignored until end of transaction block
 ROLLBACK;
