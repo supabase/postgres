@@ -92,6 +92,6 @@
 
     - name: Restart Postgres Database in stage 2 to load all extensions
       ansible.builtin.command:
-        cmd: "/usr/lib/postgresql/bin/pg_ctl --pgdata /var/lib/postgresql/data --mode fast --options '-c config_file=/etc/postgresql/postgresql.conf' stop
+        cmd: /usr/lib/postgresql/bin/pg_ctl --pgdata /var/lib/postgresql/data --mode fast --options '-c config_file=/etc/postgresql/postgresql.conf' stop
       become: true
       become_user: 'postgres'
