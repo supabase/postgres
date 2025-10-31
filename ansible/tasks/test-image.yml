@@ -27,7 +27,7 @@
       ansible.builtin.lineinfile:
         path: '/etc/postgresql/postgresql.conf'
         regexp: "{{ regx }}"
-        state: 'present'
+        state: 'absent'
       check_mode: true
       failed_when:
         - (pgconf is changed) or (pgconf is failed)
