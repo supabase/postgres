@@ -25,6 +25,7 @@
 
     - name: Make sure we disabled all the things
       ansible.builtin.lineinfile:
+        path: '/etc/postgresql/postgresql.conf'
         regexp: "{{ regx }}"
         state: 'present'
       check_mode: true
