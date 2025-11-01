@@ -85,6 +85,12 @@
         update_cache: true
       become: true
 
+    - name: Restart Postgres Database in stage 2 to load all extensions
+      ansible.builtin.command:
+        cmd: /usr/lib/postgresql/bin/pg_ctl --pgdata /var/lib/postgresql/data --mode fast --options '-c config_file=/etc/postgresql/postgresql.conf' stop
+      become: true
+      become_user: 'postgres'
+
     - name: Reset db stats
       community.postgresql.postgresql_query:
         login_db: 'postgres'
@@ -96,9 +102,3 @@
         - 'SELECT pg_stat_reset()'
       loop_control:
         loop_var: 'stat_item'
-
-    - name: Restart Postgres Database in stage 2 to load all extensions
-      ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl --pgdata /var/lib/postgresql/data --mode fast --options '-c config_file=/etc/postgresql/postgresql.conf' stop
-      become: true
-      become_user: 'postgres'
