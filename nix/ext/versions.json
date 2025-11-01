@@ -433,12 +433,6 @@
         "15"
       ],
       "hash": "sha256-g1A/XPC0dX2360Gzvmo9/FSQnM6Wt2K4eR0pH0p9fz4="
-    },
-    "3.2.3": {
-      "postgresql": [
-        "15"
-      ],
-      "hash": "sha256-ivQZJSNn5giWF351fqZ7mBZoJkGtby5T7beK45g3Zqs="
     }
   },
   "postgis": {
