@@ -78,6 +78,13 @@
       become: true
       become_user: 'postgres'
 
+    - name: Install psycopg2
+      ansible.builtin.apt:
+        name: 'python3-psycopg2'
+        state: 'present'
+        update_cache: true
+      become: true
+
     - name: Reset db stats
       community.postgresql.postgresql_query:
         login_db: 'postgres'
