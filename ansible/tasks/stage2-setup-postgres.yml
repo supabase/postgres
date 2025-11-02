@@ -20,7 +20,7 @@
 
         - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '/etc/postgresql-custom/supautils.conf'
+            path: '/etc/postgresql-custom/conf.d/supautils.conf'
             regexp: "{{ regex_item }}"
           loop:
             - '\ timescaledb,'
