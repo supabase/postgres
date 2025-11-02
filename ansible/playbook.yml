@@ -218,6 +218,14 @@
         systemctl stop postgresql.service
       when: stage2_nix
 
+    - name: Run fail2ban configuration checks
+      become: yes
+      shell: |
+        systemctl start fail2ban.service
+        /usr/bin/python3 /tmp/ansible-playbook/ansible/files/fail2ban_check.py
+        systemctl stop fail2ban.service
+      when: stage2_nix
+
     - name: Remove osquery    
       become: yes
       shell: |
