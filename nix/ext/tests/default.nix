@@ -23,14 +23,17 @@ let
       postgresqlWithExtension =
         postgresql:
         let
-          majorVersion = lib.versions.major postgresql.version;
+          majorVersion =
+            if postgresql.isOrioleDB then "orioledb-17" else lib.versions.major postgresql.version;
           pkg = pkgs.buildEnv {
             name = "postgresql-${majorVersion}-${pname}";
             paths = [
               postgresql
               postgresql.lib
               (installedExtension majorVersion)
-            ];
+            ]
+            ++ lib.optional (postgresql.isOrioleDB
+            ) self.legacyPackages.${pkgs.system}.psql_orioledb-17.exts.orioledb;
             passthru = {
               inherit (postgresql) version psqlSchema;
               lib = pkg;
@@ -54,7 +57,10 @@ let
         in
         pkg;
       psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      orioledb_17 =
+        postgresqlWithExtension
+          self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
     in
     self.inputs.nixpkgs.lib.nixos.runTest {
       name = pname;
@@ -143,17 +149,71 @@ let
               requires = [ "postgresql-migrate.service" ];
             };
           };
+
+          specialisation.orioledb17.configuration = {
+            services.postgresql = {
+              package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+              settings = lib.mkForce (
+                ((installedExtension "17").defaultSettings or { })
+                // {
+                  jit = "off";
+                  shared_preload_libraries = [
+                    "orioledb"
+                  ]
+                  ++ (lib.toList ((installedExtension "17").defaultSettings.shared_preload_libraries or [ ]));
+                  default_table_access_method = "orioledb";
+                }
+              );
+              initdbArgs = [
+                "--allow-group-access"
+                "--locale-provider=icu"
+                "--encoding=UTF-8"
+                "--icu-locale=en_US.UTF-8"
+              ];
+              initialScript = pkgs.writeText "init-postgres-with-orioledb" ''
+                CREATE EXTENSION orioledb CASCADE;
+              '';
+            };
+
+            systemd.services.postgresql-migrate = {
+              # we don't support migrating from postgresql 17 to orioledb-17 so we just reinit the datadir
+              serviceConfig = {
+                Type = "oneshot";
+                RemainAfterExit = true;
+                User = "postgres";
+                Group = "postgres";
+                StateDirectory = "postgresql";
+                WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
+              };
+              script =
+                let
+                  newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+                in
+                ''
+                  set -x
+                  systemctl cat postgresql.service
+                  rm -rf ${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}
+                '';
+            };
+
+            systemd.services.postgresql = {
+              after = [ "postgresql-migrate.service" ];
+              requires = [ "postgresql-migrate.service" ];
+            };
+          };
         };
       testScript =
         { nodes, ... }:
         let
           pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+          orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
         in
         ''
           from pathlib import Path
           versions = {
             "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+            "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "orioledb-17"))}],
           }
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
@@ -217,7 +277,7 @@ let
 
           with subtest("switch to postgresql 17"):
             server.succeed(
-              f"{pg17_configuration}/bin/switch-to-configuration test >&2"
+              "${pg17-configuration}/bin/switch-to-configuration test >&2"
             )
 
           with subtest("Check last version of the extension after postgresql upgrade"):
@@ -244,6 +304,19 @@ let
 
                 with subtest("Check pg_regress with postgresql 17 after installing the last version"):
                   test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+
+                with subtest("switch to orioledb 17"):
+                  server.succeed(
+                    "${orioledb17-configuration}/bin/switch-to-configuration test >&2"
+                  )
+                  installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
+                  assert "orioledb" in installed_extensions
+
+                with subtest("Check upgrade path with orioledb 17"):
+                  test.check_upgrade_path("orioledb-17")
+
+                with subtest("Check pg_regress with orioledb 17 after installing the last version"):
+                  test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
               ''
             else
               ""
@@ -265,7 +338,6 @@ builtins.listToAttrs (
     })
     [
       "hypopg"
-      "index_advisor"
       "pg_cron"
       "pg_graphql"
       "pg_hashids"

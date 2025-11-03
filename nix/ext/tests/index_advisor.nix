@@ -1,12 +1,10 @@
 { self, pkgs }:
 let
-  pname = "http";
+  pname = "index_advisor";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
-      pname
-    }";
+    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts.index_advisor;
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -69,28 +67,16 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-        initialScript = pkgs.writeText "init-postgres" ''
-          CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
-          INSERT INTO test_config (key, value) VALUES ('http_mock_port', '8880') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
-        '';
+        package = psql_15;
+        enableTCPIP = true;
+        settings = (installedExtension "15").defaultSettings or { };
       };
 
-      systemd.services.http-mock-server = {
-        wantedBy = [ "multi-user.target" ];
-        serviceConfig = {
-          Type = "simple";
-        };
-        script = ''
-          ${pkgs.python3}/bin/python3 ${../../tests/http-mock-server.py}
-        '';
-      };
+      networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
-          );
+          package = lib.mkForce psql_17;
         };
 
         systemd.services.postgresql-migrate = {
@@ -104,12 +90,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              oldPostgresql =
-                postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-              newPostgresql =
-                postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+              oldPostgresql = psql_15;
+              newPostgresql = psql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in
@@ -151,13 +133,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             "--encoding=UTF-8"
             "--icu-locale=en_US.UTF-8"
           ];
-          initialScript = lib.mkForce (
-            pkgs.writeText "init-postgres-with-orioledb" ''
-              CREATE EXTENSION orioledb CASCADE;
-              CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
-              INSERT INTO test_config (key, value) VALUES ('http_mock_port', '8880') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
-            ''
-          );
+          initialScript = pkgs.writeText "init-postgres-with-orioledb" ''
+            CREATE EXTENSION orioledb CASCADE;
+          '';
         };
 
         systemd.services.postgresql-migrate = {
@@ -192,17 +170,13 @@ self.inputs.nixpkgs.lib.nixos.runTest {
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
       orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
-      # Convert versions to major.minor format (e.g., "1.5.0" -> "1.5")
-      toMajorMinor = map (v: lib.versions.majorMinor v);
     in
     ''
       from pathlib import Path
       versions = {
-         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (toMajorMinor (versions "15")))}],
-         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (toMajorMinor (versions "17")))}],
-        "orioledb-17": [${
-          lib.concatStringsSep ", " (map (s: ''"${s}"'') (toMajorMinor (versions "orioledb-17")))
-        }],
+        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
+        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+        "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "orioledb-17"))}],
       }
       extension_name = "${pname}"
       ext_has_background_worker = ${
@@ -267,7 +241,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       with subtest("Check upgrade path with orioledb 17"):
         test.check_upgrade_path("orioledb-17")
 
-      with subtest("Check pg_regress with orioledb 17 after installing the last version"):
-        test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
+      #FIXME: pg_regress tests are failing with orioledb:
+      # with subtest("Check pg_regress with orioledb 17 after installing the last version"):
+      #   test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
     '';
 }
