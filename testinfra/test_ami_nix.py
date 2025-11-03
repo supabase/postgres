@@ -351,6 +351,16 @@ users:
         instance.terminate()
         raise TimeoutError("init.sh failed to complete within the timeout period")
 
+    # Create auth-failures.csv file if it doesn't exist (required for fail2ban to start)
+    # This matches what setup_fail2ban() does in the init script
+    logger.info("Ensuring PostgreSQL auth-failures.csv exists...")
+    result = run_ssh_command(
+        ssh,
+        "sudo mkdir -p /var/log/postgresql && sudo chown -R postgres:postgres /var/log/postgresql && sudo chmod 1775 /var/log/postgresql && sudo -u postgres touch /var/log/postgresql/auth-failures.csv && sudo chmod 0664 /var/log/postgresql/auth-failures.csv",
+    )
+    if not result["succeeded"]:
+        logger.warning(f"Failed to create auth-failures.csv: {result['stderr']}")
+
     # Start fail2ban service before health checks
     logger.info("Starting fail2ban service...")
     result = run_ssh_command(ssh, "sudo systemctl start fail2ban.service")
