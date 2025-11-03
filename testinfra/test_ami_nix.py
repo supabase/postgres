@@ -351,6 +351,20 @@ users:
         instance.terminate()
         raise TimeoutError("init.sh failed to complete within the timeout period")
 
+    # Start fail2ban service before health checks
+    logger.info("Starting fail2ban service...")
+    result = run_ssh_command(ssh, "sudo systemctl start fail2ban.service")
+    if not result["succeeded"]:
+        logger.warning(f"Failed to start fail2ban: {result['stderr']}")
+        # Check fail2ban logs for more details
+        log_result = run_ssh_command(
+            ssh, "sudo journalctl -u fail2ban -n 20 --no-pager"
+        )
+        if log_result["succeeded"]:
+            logger.warning(f"fail2ban logs:\n{log_result['stdout']}")
+    else:
+        logger.info("fail2ban service started successfully")
+
     def is_healthy(ssh) -> bool:
         health_checks = [
             ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
