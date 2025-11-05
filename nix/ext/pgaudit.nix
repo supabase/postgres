@@ -110,7 +110,7 @@ let
 
         # Create version-specific control file pointing to versioned library
         sed -e "/^default_version =/d" \
-            -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+            -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
         runHook postInstall
