@@ -99,6 +99,11 @@ let
 
         mkdir -p $out/{lib,share/postgresql/extension}
 
+        # Extract the actual default_version from the control file
+        # This is what PostgreSQL will record in pg_extension, not necessarily the git tag
+        controlVersion=$(grep "^default_version" ${pname}.control | sed "s/default_version = '\(.*\)'/\1/")
+        echo "$controlVersion" > $out/control_version
+
         # Install shared library with version suffix
         mv ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
@@ -169,6 +174,49 @@ buildEnv {
         fi
       fi
     '') bridgeMigrations}
+
+    # Read actual control file versions from each built package
+    # This handles cases where git tag differs from control file default_version
+    # (e.g., git tag 1.7.0 but control file says default_version = '1.7')
+    ${lib.concatMapStringsSep "\n" (pkg: ''
+      if [[ -f "${pkg}/control_version" ]]; then
+        controlVer=$(cat "${pkg}/control_version")
+        echo "Found control version: $controlVer from package ${pkg}"
+
+        # Create migrations from control version to all supported versions on this PG major
+        ${
+          lib.concatMapStringsSep "\n" (targetVer: ''
+            # Skip if control version equals target version
+            if [[ "$controlVer" != "${targetVer}" ]]; then
+              # Skip if migration already exists
+              if [[ ! -f "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql" ]]; then
+                # Create symlink to migration if target SQL exists
+                if [[ -f "$out/share/postgresql/extension/${pname}--${targetVer}.sql" ]]; then
+                  echo "Creating migration symlink from control version $controlVer to ${targetVer}"
+                  ln -s "$out/share/postgresql/extension/${pname}--${targetVer}.sql" \
+                        "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql"
+                fi
+              fi
+            fi
+          '') versions
+        }
+      fi
+    '') packages}
+
+    # Special cross-major-version handling for pgaudit 1.7
+    # Upstream pgaudit git tag 1.7.0 has control file with default_version = '1.7'
+    # Users upgrading from PG 15 to PG 17 will have version 1.7 installed
+    # We can't read the control file from PG 15 packages when building PG 17,
+    # so we hardcode this known mismatch
+    ${lib.concatMapStringsSep "\n" (targetVer: ''
+      if [[ ! -f "$out/share/postgresql/extension/${pname}--1.7--${targetVer}.sql" ]]; then
+        if [[ -f "$out/share/postgresql/extension/${pname}--${targetVer}.sql" ]]; then
+          echo "Creating cross-major migration symlink from pgaudit 1.7 to ${targetVer}"
+          ln -s "$out/share/postgresql/extension/${pname}--${targetVer}.sql" \
+                "$out/share/postgresql/extension/${pname}--1.7--${targetVer}.sql"
+        fi
+      fi
+    '') versions}
 
     # Verify all expected library files are present (one per version + symlink)
     expectedFiles=${toString (numberOfVersions + 1)}
