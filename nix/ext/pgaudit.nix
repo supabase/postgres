@@ -188,7 +188,7 @@ buildEnv {
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     defaultSettings = {
-      shared_preload_libraries = [ pname ];
+      shared_preload_libraries = [ (lib.removeSuffix "-all" "${pname}-all") ];
     };
   };
 }
