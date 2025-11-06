@@ -102,7 +102,12 @@ dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 Then, execute the migration at `./migrations/db/xxxxxxxxx_<some_message>` and make sure it runs successfully with:
 
 ```shell
-dbmate --no-dump-schema --migrations-dir"migrations/db/migrations" up
+# Make sure DATABASE_URL is set, or use the -u flag to specify the database connection
+# Example with DATABASE_URL:
+dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" up
+
+# Or with -u flag:
+dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" -u "postgres://supabase_admin:postgres@localhost:5435/postgres?sslmode=disable" up
 ```
 
 Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.
