@@ -69,12 +69,20 @@ let
             enable = true;
             package = psql_15;
             enableTCPIP = true;
-            initialScript = pkgs.writeText "init-postgres-with-password" ''
-              CREATE USER test WITH PASSWORD 'secret';
-            '';
             authentication = ''
-              host test postgres samenet scram-sha-256
+              local all postgres peer map=postgres
+              local all all peer map=root
             '';
+            identMap = ''
+              root root supabase_admin
+              postgres postgres postgres
+            '';
+            ensureUsers = [
+              {
+                name = "supabase_admin";
+                ensureClauses.superuser = true;
+              }
+            ];
             settings = (installedExtension "15").defaultSettings or { };
           };
 
@@ -83,6 +91,7 @@ let
           specialisation.postgresql17.configuration = {
             services.postgresql = {
               package = lib.mkForce psql_17;
+              settings = (installedExtension "17").defaultSettings or { };
             };
 
             systemd.services.postgresql-migrate = {
@@ -106,7 +115,13 @@ let
                     install -d -m 0700 -o postgres -g postgres "${newDataDir}"
                     ${newPostgresql}/bin/initdb -D "${newDataDir}"
                     ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                      --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
+                      --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin" \
+                      ${
+                        if config.services.postgresql.settings.shared_preload_libraries != null then
+                          " --old-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}' --new-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}'"
+                        else
+                          ""
+                      }
                   else
                     echo "${newDataDir} already exists"
                   fi
@@ -206,6 +221,7 @@ builtins.listToAttrs (
       "pg_graphql"
       "pg_jsonschema"
       "pg_net"
+      "pgaudit"
       "vector"
       "wrappers"
     ]

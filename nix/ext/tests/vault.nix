@@ -1,6 +1,6 @@
 { self, pkgs }:
 let
-  pname = "plpgsql_check";
+  pname = "supabase_vault";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
@@ -15,6 +15,7 @@ let
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
+          self.packages.${pkgs.system}."psql_${majorVersion}/exts/pgsodium-all" # dependency
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
@@ -35,6 +36,11 @@ let
       };
     in
     pkg;
+  vaultGetKey = lib.getExe (
+    pkgs.writeShellScriptBin "vault-getkey" ''
+      echo 0000000000000000000000000000000000000000000000000000000000000000
+    ''
+  );
   psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
   psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
 in
@@ -53,14 +59,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           }
         ];
       };
-      services.openssh = {
-        enable = true;
-      };
 
       services.postgresql = {
         enable = true;
         package = psql_15;
-        enableTCPIP = true;
         authentication = ''
           local all postgres peer map=postgres
           local all all peer map=root
@@ -69,16 +71,22 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           root root supabase_admin
           postgres postgres postgres
         '';
+        initialScript = pkgs.writeText "vault-init.sql" ''
+          CREATE SCHEMA vault;
+        '';
         ensureUsers = [
           {
             name = "supabase_admin";
             ensureClauses.superuser = true;
           }
+          { name = "service_role"; }
         ];
-        settings = (installedExtension "15").defaultSettings or { };
+        settings = {
+          "shared_preload_libraries" = "${pname},pgsodium";
+          "pgsodium.getkey_script" = vaultGetKey;
+          "vault.getkey_script" = vaultGetKey;
+        };
       };
-
-      networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
@@ -105,6 +113,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
               if [[ ! -d ${newDataDir} ]]; then
                 install -d -m 0700 -o postgres -g postgres "${newDataDir}"
                 ${newPostgresql}/bin/initdb -D "${newDataDir}"
+                echo "shared_preload_libraries = '${pname},pgsodium'" >> "${newDataDir}/postgresql.conf"
+                echo "vault.getkey_script = '${vaultGetKey}'" >> "${newDataDir}/postgresql.conf";
+                echo "pgsodium.getkey_script = '${vaultGetKey}'" >> "${newDataDir}/postgresql.conf";
                 ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
                   --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
               else
@@ -148,11 +159,20 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
-      if ext_has_background_worker:
-        with subtest("Test switch_${pname}_version"):
-          test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+
+      with subtest("Check upgrade path with postgresql 15"):
+        test.check_upgrade_path("15")
+
+      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
+        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/supabase_vault/after-create.sql}")
+        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
+
+      last_version = None
+      with subtest("Check the install of the last version of the extension"):
+        last_version = test.check_install_last_version("15")
 
       with subtest("Check pg_regress with postgresql 15 after installing the last version"):
+        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/supabase_vault/after-create.sql}")
         test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
       with subtest("switch to postgresql 17"):
@@ -160,24 +180,21 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
 
-      if ext_has_background_worker:
-        with subtest("Test switch_${pname}_version"):
-          test.check_switch_extension_with_background_worker(Path("${psql_17}/lib/${pname}.so"), "17")
+      with subtest("Check last version of the extension after postgresql upgrade"):
+        test.assert_version_matches(last_version)
 
       with subtest("Check upgrade path with postgresql 17"):
         test.check_upgrade_path("17")
 
-      last_version = versions["17"][-1]
-      with subtest("Check last version of the extension after postgresql upgrade"):
-        test.assert_version_matches(last_version)
-
       with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
+        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/supabase_vault/after-create.sql}")
         test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("Check the install of the last version of the extension"):
         test.check_install_last_version("17")
 
       with subtest("Check pg_regress with postgresql 17 after installing the last version"):
+        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/supabase_vault/after-create.sql}")
         test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
     '';
 }
