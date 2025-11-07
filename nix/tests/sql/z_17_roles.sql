@@ -96,3 +96,4 @@ order by object_name, grantee, privilege_type;
 
 -- Rollback to clean up pg_tle extension
 ROLLBACK;
+
