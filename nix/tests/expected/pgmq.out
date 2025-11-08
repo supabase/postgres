@@ -200,3 +200,10 @@ order by
  pgmq        | validate_queue_name           | postgres
 (40 rows)
 
+-- assert search_path is preserved after after-create script is run
+show search_path;
+            search_path            
+-----------------------------------
+ "$user", public, auth, extensions
+(1 row)
+

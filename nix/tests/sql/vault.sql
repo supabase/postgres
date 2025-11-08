@@ -51,3 +51,6 @@ WHERE
 ORDER BY
     t.relname,
     i.relname;
+
+-- assert search_path is preserved after after-create script is run
+show search_path;
