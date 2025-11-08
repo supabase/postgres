@@ -128,8 +128,8 @@
 
     - name: Create symlinks for Nix files into /usr/bin
       ansible.builtin.file:
-        group: 'postgres'
-        owner: 'postgres'
+        group: 'root'
+        owner: 'root'
         path: "/usr/bin/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
         state: 'link'
@@ -150,8 +150,8 @@
 
     - name: Create symlinks for Nix files into /usr/bin
       ansible.builtin.file:
-        group: 'postgres'
-        owner: 'postgres'
+        group: 'root'
+        owner: 'root'
         path: "/usr/bin/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
         state: 'link'
