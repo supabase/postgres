@@ -222,6 +222,7 @@ builtins.listToAttrs (
       "pg_jsonschema"
       "pg_net"
       "pgaudit"
+      "pg_tle"
       "vector"
       "wrappers"
     ]
