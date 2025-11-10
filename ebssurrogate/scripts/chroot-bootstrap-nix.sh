@@ -24,7 +24,7 @@ fi
 # Mirror fallback function for resilient apt-get update
 function apt_update_with_fallback {
 	local sources_file="/etc/apt/sources.list"
-	local max_attempts=3
+	local max_attempts=2
 	local attempt=1
 
 	# Detect the current region from sources.list (it's already been substituted)
@@ -35,7 +35,6 @@ function apt_update_with_fallback {
 	local -a mirror_tiers=(
 		"${current_region}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN (as set in sources.list)
 		"ports.ubuntu.com"                             # Tier 2: Global pool
-		"mirror.aarnet.edu.au"                        # Tier 3: Australia mirror (close to ap-southeast-1)
 	)
 
 	# If we couldn't detect current region, skip tier 1
