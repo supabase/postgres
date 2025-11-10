@@ -77,7 +77,7 @@ jobs:
           PG_VERSION="$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
           BRANCH_NAME="$(echo "${{ github.ref }}" | sed 's|refs/heads/||')"
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH_NAME" != "develop" && "$BRANCH_NAME" != release/* ]]; then
-             SUFFIX="${BRANCH_NAME//[^a-zA-Z0-9._-]/-}"
+             SUFFIX="${BRANCH_NAME//[^a-zA-Z0-9._-]/-}-${{ github.run_id }}"
              PG_VERSION="${PG_VERSION}-${SUFFIX}"
              echo "Added branch suffix to version: $SUFFIX"
           fi
