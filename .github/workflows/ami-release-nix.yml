@@ -108,6 +108,7 @@ jobs:
         run: |
           VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "::notice title=AMI Published::Postgres AMI version: $VERSION"
 
       - name: Create nix flake revision tarball
         run: |
