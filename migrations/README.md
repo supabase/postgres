@@ -112,23 +112,6 @@ dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" -u "postgres
 
 Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.
 
-### Adding a migration with docker-compose
-
-dbmate can optionally be run locally using docker:
-
-```shell
-# Start the database server
-docker-compose up
-
-# create a new migration
-docker-compose run --rm dbmate new '<some message>'
-```
-
-Then, populate the migration at `./db/migrations/xxxxxxxxx_<some_message>` and make sure it execute sucessfully with
-
-```shell
-docker-compose run --rm dbmate up
-```
 ### Updating schema.sql for each major version
 
 After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:

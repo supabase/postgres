@@ -14,21 +14,94 @@ export APT_OPTIONS="-oAPT::Install-Recommends=false \
 		  -oAPT::Install-Suggests=false \
 		    -oAcquire::Languages=none"
 
-if [ $(dpkg --print-architecture) = "amd64" ]; 
-then 
+if [ $(dpkg --print-architecture) = "amd64" ];
+then
 	ARCH="amd64";
 else
 	ARCH="arm64";
 fi
+
+# Mirror fallback function for resilient apt-get update
+function apt_update_with_fallback {
+	local sources_file="/etc/apt/sources.list"
+	local max_attempts=2
+	local attempt=1
+
+	# Detect the current region from sources.list (it's already been substituted)
+	# Extract the region from existing sources.list entries
+	local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
+
+	# Define mirror tiers (in priority order)
+	local -a mirror_tiers=(
+		"${current_region}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN (as set in sources.list)
+		"ports.ubuntu.com"                             # Tier 2: Global pool
+	)
+
+	# If we couldn't detect current region, skip tier 1
+	if [ -z "${current_region}" ]; then
+		echo "Warning: Could not determine region from sources.list, skipping regional CDN"
+		mirror_tiers=("${mirror_tiers[@]:1}")  # Remove first element
+	fi
+
+	for mirror in "${mirror_tiers[@]}"; do
+		echo "========================================="
+		echo "Attempting apt-get update with mirror: ${mirror}"
+		echo "Attempt ${attempt} of ${max_attempts}"
+		echo "========================================="
+
+		# Update sources.list to use current mirror
+		sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
+
+		# Show what we're using
+		echo "Current sources.list configuration:"
+		grep -E '^deb ' "${sources_file}" | head -3
+
+		# Attempt update with timeout (5 minutes)
+		if timeout 300 apt-get $APT_OPTIONS update 2>&1; then
+			echo "========================================="
+			echo "✓ Successfully updated apt cache using mirror: ${mirror}"
+			echo "========================================="
+			return 0
+		else
+			local exit_code=$?
+			echo "========================================="
+			echo "✗ Failed to update using mirror: ${mirror}"
+			echo "Exit code: ${exit_code}"
+			echo "========================================="
+
+			# Clean partial downloads
+			apt-get clean
+			rm -rf /var/lib/apt/lists/*
+
+			# Exponential backoff before next attempt
+			if [ ${attempt} -lt ${max_attempts} ]; then
+				local sleep_time=$((attempt * 5))
+				echo "Waiting ${sleep_time} seconds before trying next mirror..."
+				sleep ${sleep_time}
+			fi
+		fi
+
+		attempt=$((attempt + 1))
+	done
+
+	echo "========================================="
+	echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"
+	echo "========================================="
+	return 1
+}
 
 
 
 function update_install_packages {
 	source /etc/os-release
 
-	# Update APT with new sources
+	# Update APT with new sources (using fallback mechanism)
 	cat /etc/apt/sources.list
-	apt-get $APT_OPTIONS update && apt-get $APT_OPTIONS --yes dist-upgrade
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists with any mirror tier"
+		exit 1
+	fi
+	apt-get $APT_OPTIONS --yes dist-upgrade
 
 	# Do not configure grub during package install
 	if [ "${ARCH}" = "amd64" ]; then
@@ -59,7 +132,10 @@ function update_install_packages {
 
 	# Install OpenSSH and other packages
 	sudo add-apt-repository --yes universe
-	apt-get update
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists after adding universe repository"
+		exit 1
+	fi
 	apt-get install -y --no-install-recommends \
 		openssh-server \
 		git \

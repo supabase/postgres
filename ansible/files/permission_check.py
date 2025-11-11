@@ -2,6 +2,8 @@ import subprocess
 import json
 import sys
 import argparse
+import os
+import stat
 
 
 # Expected groups for each user
@@ -103,6 +105,59 @@ expected_results = {
 # postgresql.service is expected to mount /etc as read-only
 expected_mount = "/etc ro"
 
+# Expected directory permissions for security-critical paths
+# Format: path -> (expected_mode, expected_owner, expected_group, description)
+expected_directory_permissions = {
+    "/var/lib/postgresql": (
+        "0755",
+        "postgres",
+        "postgres",
+        "PostgreSQL home - must be traversable for nix-profile symlinks",
+    ),
+    "/var/lib/postgresql/data": (
+        "0750",
+        "postgres",
+        "postgres",
+        "PostgreSQL data directory symlink - secure, postgres only",
+    ),
+    "/data/pgdata": (
+        "0750",
+        "postgres",
+        "postgres",
+        "Actual PostgreSQL data directory - secure, postgres only",
+    ),
+    "/etc/postgresql": (
+        "0775",
+        "postgres",
+        "postgres",
+        "PostgreSQL configuration directory - adminapi writable",
+    ),
+    "/etc/postgresql-custom": (
+        "0775",
+        "postgres",
+        "postgres",
+        "PostgreSQL custom configuration - adminapi writable",
+    ),
+    "/etc/ssl/private": (
+        "0750",
+        "root",
+        "ssl-cert",
+        "SSL private keys directory - secure, ssl-cert group only",
+    ),
+    "/home/postgres": (
+        "0750",
+        "postgres",
+        "postgres",
+        "postgres user home directory - secure, postgres only",
+    ),
+    "/var/log/postgresql": (
+        "0750",
+        "postgres",
+        "postgres",
+        "PostgreSQL logs directory - secure, postgres only",
+    ),
+}
+
 
 # This program depends on osquery being installed on the system
 # Function to run osquery
@@ -189,6 +244,75 @@ def check_postgresql_mount():
     print("postgresql.service mounts /etc as read-only.")
 
 
+def check_directory_permissions():
+    """Check that security-critical directories have the correct permissions."""
+    errors = []
+
+    for path, (
+        expected_mode,
+        expected_owner,
+        expected_group,
+        description,
+    ) in expected_directory_permissions.items():
+        # Skip if path doesn't exist (might be a symlink or not created yet)
+        if not os.path.exists(path):
+            print(f"Warning: {path} does not exist, skipping permission check")
+            continue
+
+        # Get actual permissions
+        try:
+            stat_info = os.stat(path)
+            actual_mode = oct(stat.S_IMODE(stat_info.st_mode))[2:]  # Remove '0o' prefix
+
+            # Get owner and group names
+            import pwd
+            import grp
+
+            actual_owner = pwd.getpwuid(stat_info.st_uid).pw_name
+            actual_group = grp.getgrgid(stat_info.st_gid).gr_name
+
+            # Check permissions
+            if actual_mode != expected_mode:
+                errors.append(
+                    f"ERROR: {path} has mode {actual_mode}, expected {expected_mode}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chmod {expected_mode} {path}"
+                )
+
+            # Check ownership
+            if actual_owner != expected_owner:
+                errors.append(
+                    f"ERROR: {path} has owner {actual_owner}, expected {expected_owner}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chown {expected_owner}:{actual_group} {path}"
+                )
+
+            # Check group
+            if actual_group != expected_group:
+                errors.append(
+                    f"ERROR: {path} has group {actual_group}, expected {expected_group}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chown {actual_owner}:{expected_group} {path}"
+                )
+
+            if not errors or not any(path in err for err in errors):
+                print(f"✓ {path}: {actual_mode} {actual_owner}:{actual_group} - OK")
+
+        except Exception as e:
+            errors.append(f"ERROR: Failed to check {path}: {str(e)}")
+
+    if errors:
+        print("\n" + "=" * 80)
+        print("DIRECTORY PERMISSION ERRORS DETECTED:")
+        print("=" * 80)
+        for error in errors:
+            print(error)
+        print("=" * 80)
+        sys.exit(1)
+
+    print("\nAll directory permissions are correct.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="Supabase Postgres Artifact Permissions Checker",
@@ -257,6 +381,9 @@ def main():
 
     # Check if postgresql.service is using a read-only mount for /etc
     check_postgresql_mount()
+
+    # Check directory permissions for security-critical paths
+    check_directory_permissions()
 
 
 if __name__ == "__main__":

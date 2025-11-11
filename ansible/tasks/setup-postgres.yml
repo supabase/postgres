@@ -118,6 +118,14 @@
       loop_control:
         loop_var: 'pg_dir_item'
 
+    - name: Set /var/lib/postgresql to 0755 for nix-profile symlink traversal
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0755'
+        owner: 'postgres'
+        path: '/var/lib/postgresql'
+        state: 'directory'
+
     - name: Allow adminapi to write custom config
       ansible.builtin.file:
         group: 'postgres'
