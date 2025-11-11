@@ -18,7 +18,7 @@ postgres_release:
 pgbouncer_release: 1.25.1
 pgbouncer_release_checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
 
-# The checksum can be found under "Assets", in the GitHub release page for each version.  
+# The checksum can be found under "Assets", in the GitHub release page for each version.
 # The binaries used are: ubuntu-aarch64 and linux-static.
 # https://github.com/PostgREST/postgrest/releases
 postgrest_release: 14.5
