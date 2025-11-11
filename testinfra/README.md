@@ -56,8 +56,8 @@ AWS_PROFILE=supabase-dev packer build \
   -var-file=common.vars.pkr.hcl \
   -var "ansible_arguments=" \
   -var "postgres-version=ci-ami-test" \
-  -var "region=us-east-1" \
-  -var 'ami_regions=["us-east-1"]' \
+  -var "region=ap-southeast-1" \
+  -var 'ami_regions=["ap-southeast-1"]' \
   -var "force-deregister=true" \
   amazon-arm64.pkr.hcl
 

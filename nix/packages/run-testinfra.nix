@@ -93,19 +93,19 @@ runCommand "run-testinfra"
     fi
 
     # Set environment variables
-    export AWS_REGION="us-east-1"
-    export AWS_DEFAULT_REGION="us-east-1"
+    export AWS_REGION="ap-southeast-1"
+    export AWS_DEFAULT_REGION="ap-southeast-1"
     export AMI_NAME="$AMI_NAME"  # Export AMI_NAME for pytest
     export RUN_ID="local-$(date +%s)"  # Generate a unique RUN_ID
 
     # Function to terminate EC2 instances
     terminate_instances() {
       echo "Terminating EC2 instances with tag testinfra-run-id=$RUN_ID..."
-      aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 --region us-east-1 describe-instances \
+      aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 --region ap-southeast-1 describe-instances \
         --filters "Name=tag:testinfra-run-id,Values=$RUN_ID" \
         --query "Reservations[].Instances[].InstanceId" \
         --output text | xargs -r aws-vault exec $AWS_VAULT_PROFILE -- aws ec2 terminate-instances \
-        --region us-east-1 --instance-ids || true
+        --region ap-southeast-1 --instance-ids || true
     }
 
     # Set up traps for various signals to ensure cleanup

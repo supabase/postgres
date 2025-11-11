@@ -110,7 +110,7 @@ This will:
 
 The following environment variables are used:
 - `AWS_VAULT`: AWS Vault profile name (default: staging)
-- `AWS_REGION`: AWS region (default: us-east-1)
+- `AWS_REGION`: AWS region (default: ap-southeast-1)
 - `AMI_NAME`: Name of the AMI to test
 
 ## Best Practices
