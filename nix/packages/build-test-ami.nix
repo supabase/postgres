@@ -84,7 +84,7 @@ runCommand "build-test-ami"
     fi
 
     # Set values
-    REGION="ap-southeast-1"
+    REGION="us-east-1"
     POSTGRES_VERSION="$1"
     RANDOM_STRING=$(openssl rand -hex 8)
     GIT_SHA=$(git rev-parse HEAD)

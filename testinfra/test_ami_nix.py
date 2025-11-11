@@ -132,7 +132,7 @@ GOTRUE_JWT_SECRET=my_jwt_secret_which_is_not_so_secret
 """
 walg_config_json_content = """
 {
-  "AWS_REGION": "ap-southeast-1",
+  "AWS_REGION": "us-east-1",
   "WALG_S3_PREFIX": "",
   "PGDATABASE": "postgres",
   "PGUSER": "supabase_admin",
@@ -158,7 +158,7 @@ init_json_content = f"""
   "service_key": "{service_role_key}",
   "supabase_admin_key": "{supabase_admin_key}",
   "common_name": "db.aaaaaaaaaaaaaaaaaaaa.supabase.red",
-  "region": "ap-southeast-1",
+  "region": "us-east-1",
   "init_database_only": false
 }}
 """
@@ -223,7 +223,7 @@ def run_ssh_command(ssh, command, timeout=None):
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
 def host():
-    ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
+    ec2 = boto3.resource("ec2", region_name="us-east-1")
     images = list(
         ec2.images.filter(
             Filters=[{"Name": "name", "Values": [AMI_NAME]}],
@@ -256,7 +256,7 @@ def host():
                 "HttpTokens": "required",
                 "HttpEndpoint": "enabled",
             },
-            IamInstanceProfile={"Name": "pg-ap-southeast-1"},
+            IamInstanceProfile={"Name": "pg-us-east-1"},
             InstanceType="t4g.micro",
             MinCount=1,
             MaxCount=1,
@@ -281,7 +281,7 @@ write_files:
     - {{path: /tmp/init.json, content: {gzip_then_base64_encode(init_json_content)}, permissions: '0600', encoding: gz+b64}}
 runcmd:
     - 'sudo echo \"pgbouncer\" \"postgres\" >> /etc/pgbouncer/userlist.txt'
-    - 'cd /tmp && aws s3 cp --region ap-southeast-1 s3://init-scripts-staging/project/init.sh .'
+    - 'cd /tmp && aws s3 cp --region us-east-1 s3://init-scripts-staging/project/init.sh .'
     - 'bash init.sh "staging"'
     - 'touch /var/lib/init-complete'
     - 'rm -rf /tmp/*'

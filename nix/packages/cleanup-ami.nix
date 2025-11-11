@@ -45,7 +45,7 @@ runCommand "cleanup-ami"
     fi
 
     AMI_NAME="$1"
-    REGION="ap-southeast-1"
+    REGION="us-east-1"
 
     # Deregister AMIs
     for AMI_PATTERN in "supabase-postgres-ci-ami-test-stage-1" "$AMI_NAME"; do
