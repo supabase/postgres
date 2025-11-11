@@ -28,7 +28,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: ap-southeast-1
+          aws-region: us-east-1
       - uses: docker/login-action@v2
         with:
           registry: public.ecr.aws
