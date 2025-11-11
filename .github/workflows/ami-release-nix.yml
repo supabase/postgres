@@ -36,7 +36,7 @@ jobs:
         id: set-versions
         run: |
           VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
-          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -67,25 +67,21 @@ jobs:
             substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
             trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-      - name: Run checks if triggered manually
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
-          if [[ -z "$SUFFIX" ]] ; then
-            echo "Version must include non-numeric characters if built manually."
-            exit 1
-          fi
-
       - name: Set PostgreSQL version environment variable
         run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          PG_VERSION="$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
+          BRANCH_NAME="$(echo "${{ github.ref }}" | sed 's|refs/heads/||')"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH_NAME" != "develop" && "$BRANCH_NAME" != release/* ]]; then
+             SUFFIX="${BRANCH_NAME//[^a-zA-Z0-9._-]/-}-${{ github.run_id }}"
+             PG_VERSION="${PG_VERSION}-${SUFFIX}"
+             echo "Added branch suffix to version: $SUFFIX"
+          fi
+          echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
 
@@ -110,8 +106,9 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "::notice title=AMI Published::Postgres AMI version: $VERSION"
 
       - name: Create nix flake revision tarball
         run: |
