@@ -58,7 +58,7 @@
       {%- if platform == "arm64" -%}
         ubuntu-aarch64
       {%- elif platform == "amd64" -%}
-        inux-static-x86-64
+        linux-static-x86-64
       {%- endif -%}
 
 - name: PostgREST - unpack archive in /opt
