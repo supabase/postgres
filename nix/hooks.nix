@@ -25,6 +25,15 @@ in
               verbose = true;
             };
 
+            ansible-lint = {
+              enable = true;
+              verbose = true;
+              settings = {
+                configPath = "${../.ansible-lint.yml}";
+                subdir = "ansible/tests";
+              };
+            };
+
             treefmt = {
               enable = true;
               package = config.treefmt.build.wrapper;
