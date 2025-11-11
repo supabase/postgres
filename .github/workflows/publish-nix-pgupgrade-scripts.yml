@@ -67,7 +67,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "ap-southeast-1"
+          aws-region: "us-east-1-1"
 
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
@@ -118,7 +118,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: "ap-southeast-1"
+          aws-region: "us-east-1-1"
   
       - name: Upload pg_upgrade scripts to s3 prod
         run: |

@@ -103,7 +103,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
-          aws-region: "ap-southeast-1"
+          aws-region: "us-east-1-1"
 
       - name: Login to Amazon ECR
         id: login-ecr-private-dev
@@ -117,7 +117,7 @@ jobs:
 
       - name: Push docker image to Amazon ECR
         env:
-          REGISTRY: 812073016711.dkr.ecr.ap-southeast-1.amazonaws.com
+          REGISTRY: 812073016711.dkr.ecr.us-east-1-1.amazonaws.com
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
@@ -129,7 +129,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
-          aws-region: "ap-southeast-1"
+          aws-region: "us-east-1-1"
 
       - name: Login to Amazon ECR
         id: login-ecr-private-prod
@@ -137,7 +137,7 @@ jobs:
 
       - name: Push docker image to Amazon ECR
         env:
-          REGISTRY: 156470330064.dkr.ecr.ap-southeast-1.amazonaws.com
+          REGISTRY: 156470330064.dkr.ecr.us-east-1-1.amazonaws.com
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
