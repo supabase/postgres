@@ -588,6 +588,23 @@
     }
   },
   "wrappers": {
+    "0.4.3": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-CkoNMoh40zbQL4V49ZNYgv3JjoNWjODtTpHn+L8DdZA=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    },
+    "0.4.4": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-QoGFJpq8PuvMM8SS+VZd7MlNl56uFivRjs1tCtwX+oE=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    },
     "0.4.5": {
       "postgresql": [
         "15",
