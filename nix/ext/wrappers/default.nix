@@ -188,8 +188,6 @@ let
     );
   # All versions that were previously packaged (historical list)
   allPreviouslyPackagedVersions = [
-    "0.1.15"
-    "0.1.14"
     "0.1.12"
     "0.1.11"
     "0.1.10"
