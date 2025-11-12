@@ -84,6 +84,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         settings = {
           "shared_preload_libraries" = "${pname},pgsodium";
           "pgsodium.getkey_script" = vaultGetKey;
+          "search_path" = "\"$user\", public, auth, extensions";
           "vault.getkey_script" = vaultGetKey;
         };
       };
