@@ -361,6 +361,14 @@
         "orioledb-17"
       ],
       "hash": "sha256-i/o+JZEXnJRO17kfdTw87aca28+I8pvuFZsPMA/kf+w="
+    },
+    "5.3.1": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-LK+z/0puUuNLz2ah/SDaxxyLS/On/cmCBhKNwTLa7Pk="
     }
   },
     "pgmq": {
