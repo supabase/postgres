@@ -115,4 +115,8 @@ where
   n.nspname = 'pgmq'
 order by
   p.proname;
+
+-- assert search_path is preserved after after-create script is run
+show search_path;
+
 ROLLBACK;

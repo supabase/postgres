@@ -35,54 +35,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - name: aws-creds
-        uses: aws-actions/configure-aws-credentials@v4
-        if: ${{ github.secret_source == 'Actions' }}
+      - uses: ./.github/actions/nix-install-ephemeral
         with:
-          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
-          output-credentials: true
-          role-duration-seconds: 7200
-      - name: Setup AWS credentials for Nix
-        if: ${{ github.secret_source == 'Actions' }}
-        run: |
-          sudo -H aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          sudo -H aws configure set aws_session_token $AWS_SESSION_TOKEN
-      - name: write secret key
-        # use python so we don't interpolate the secret into the workflow logs, in case of bugs
-        run: |
-          sudo mkdir -p /etc/nix
-          sudo -E python -c "import os; file = open('/etc/nix/nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
+          push-to-cache: ${{ github.secret_source == 'Actions' && 'true' || 'false' }}
         env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-      - name: Setup cache script
-        if: ${{ github.secret_source == 'Actions' }}
-        run: |
-          cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
-          #!/usr/bin/env bash
-          set -euf
-          export IFS=' '
-          /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
-          EOF
-          sudo chmod +x /etc/nix/upload-to-cache.sh
-      - name: Install nix
-        uses: cachix/install-nix-action@v27
-        if: ${{ github.secret_source == 'Actions' }}
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
-          extra_nix_config: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-            post-build-hook = /etc/nix/upload-to-cache.sh
-      - name: Install nix
-        uses: cachix/install-nix-action@v27
-        if: ${{ github.secret_source == 'None' }}
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
-          extra_nix_config: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Aggressive disk cleanup for DuckDB build
         if: matrix.runner == 'macos-latest-xlarge'
         run: |
@@ -108,7 +66,8 @@ jobs:
           sudo rm -rf /tmp/* 2>/dev/null || true
           echo "=== AFTER CLEANUP ==="
           df -h
-      - name: Build psql bundle
+      - 
+        name: Build psql bundle
         run: >
           nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
           -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }}

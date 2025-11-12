@@ -67,7 +67,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
+          aws-region: "ap-southeast-1"
           output-credentials: true
           role-duration-seconds: 7200
 
