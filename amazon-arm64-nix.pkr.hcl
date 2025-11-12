@@ -15,7 +15,7 @@ variable "ami_name" {
 
 variable "ami_regions" {
   type    = list(string)
-  default = ["ap-southeast-2"]
+  default = ["ap-southeast-1"]
 }
 
 variable "ansible_arguments" {

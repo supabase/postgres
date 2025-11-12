@@ -15,7 +15,7 @@ added and you should `create extension ...` to enable it in ./nix/tests/prime
 
 */
 create extension if not exists adminpack;
-create extension if not exists plv8;
+create extension if not exists plv8 with version '3.1.10';
 create extension if not exists plcoffee;
 create extension if not exists plls;
 create extension if not exists old_snapshot;

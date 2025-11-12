@@ -19,7 +19,7 @@
 }:
 
 let
-  sfcgal = callPackage ./sfcgal/sfcgal.nix { };
+  sfcgal = callPackage ../packages/sfcgal.nix { };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
   pname = "postgis";
 

@@ -100,6 +100,9 @@ buildEnv {
 
   passthru = {
     inherit versions numberOfVersions;
+    defaultSettings = {
+      search_path = "\"$user\", public, auth, extensions";
+    };
     pname = "${pname}-all";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);

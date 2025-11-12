@@ -289,10 +289,11 @@ function initiate_upgrade {
                         --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
                     else
                         echo "1.1.1. Installing Nix using the official installer"
-
-                        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
-                        --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
-                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+                        sh <(curl -L https://releases.nixos.org/nix/nix-2.32.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+EXTRA_NIX_CONF
                     fi
                 else 
                     echo "1.1. Nix is installed; moving on."

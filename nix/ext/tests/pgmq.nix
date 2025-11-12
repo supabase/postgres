@@ -47,6 +47,20 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       services.postgresql = {
         enable = true;
         package = (postgresqlWithExtension psql_15);
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
         settings = (installedExtension "15").defaultSettings or { };
       };
 
