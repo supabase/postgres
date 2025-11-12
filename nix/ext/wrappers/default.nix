@@ -188,8 +188,6 @@ let
     );
   # All versions that were previously packaged (historical list)
   allPreviouslyPackagedVersions = [
-    "0.1.8"
-    "0.1.7"
     "0.1.6"
     "0.1.5"
     # Versions of wrapper extension prior to 0.1.5 are using pgx 0.5.6 that doesn't support PostgreSQL 14+
