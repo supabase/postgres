@@ -75,7 +75,9 @@
   ansible.builtin.copy:
     content: |
       #!/bin/bash
-      exec sudo -u pgbackrest /var/lib/pgbackrest/.nix-profile/bin/pgbackrest "$@"
+      _raw_args="$@"
+      _sanitized_args=$(echo $_raw_args | sed -e 's/--cmd=[^ ]*//g; s/--repo-host-cmd=[^ ]*//g; s/--config=[^ ]*//g' )
+      exec sudo -u pgbackrest /var/lib/pgbackrest/.nix-profile/bin/pgbackrest "$_sanitized_args"
     dest: '/usr/bin/pgbackrest'
     group: 'root'
     mode: '0755'
