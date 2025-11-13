@@ -244,6 +244,96 @@ def check_postgresql_mount():
     print("postgresql.service mounts /etc as read-only.")
 
 
+def check_copy_program_blocked():
+    """Check that COPY ... PROGRAM is blocked by AppArmor."""
+    import psycopg2
+    from psycopg2 import sql
+
+    errors = []
+
+    try:
+        # Connect to PostgreSQL as the postgres superuser
+        conn = psycopg2.connect(
+            host="/var/run/postgresql", database="postgres", user="postgres"
+        )
+        cursor = conn.cursor()
+
+        # Test 1: COPY TO PROGRAM should be blocked
+        try:
+            cursor.execute(
+                "COPY (SELECT 'test') TO PROGRAM 'cat > /tmp/apparmor_copy_test.txt'"
+            )
+            errors.append(
+                "ERROR: COPY TO PROGRAM was not blocked by AppArmor!\n"
+                "  This is a security vulnerability - postgres should not be able to execute arbitrary programs."
+            )
+        except psycopg2.Error as e:
+            # Expected to fail - check if it's a permission denied error
+            error_msg = str(e).lower()
+            if (
+                "permission denied" in error_msg
+                or "cannot execute" in error_msg
+                or "could not execute" in error_msg
+            ):
+                print("✓ COPY TO PROGRAM correctly blocked by AppArmor")
+            else:
+                errors.append(
+                    f"ERROR: COPY TO PROGRAM failed but with unexpected error:\n"
+                    f"  {str(e)}\n"
+                    f"  Expected permission denied error from AppArmor"
+                )
+
+        # Test 2: COPY FROM PROGRAM should be blocked
+        try:
+            cursor.execute("CREATE TEMP TABLE apparmor_test (data text)")
+            cursor.execute("COPY apparmor_test FROM PROGRAM 'echo test'")
+            errors.append(
+                "ERROR: COPY FROM PROGRAM was not blocked by AppArmor!\n"
+                "  This is a security vulnerability - postgres should not be able to execute arbitrary programs."
+            )
+        except psycopg2.Error as e:
+            error_msg = str(e).lower()
+            if (
+                "permission denied" in error_msg
+                or "cannot execute" in error_msg
+                or "could not execute" in error_msg
+            ):
+                print("✓ COPY FROM PROGRAM correctly blocked by AppArmor")
+            else:
+                errors.append(
+                    f"ERROR: COPY FROM PROGRAM failed but with unexpected error:\n"
+                    f"  {str(e)}\n"
+                    f"  Expected permission denied error from AppArmor"
+                )
+
+        # Verify no test files were created
+        import os
+
+        if os.path.exists("/tmp/apparmor_copy_test.txt"):
+            errors.append(
+                "ERROR: Test file /tmp/apparmor_copy_test.txt was created!\n"
+                "  AppArmor did not successfully block COPY TO PROGRAM"
+            )
+            os.remove("/tmp/apparmor_copy_test.txt")
+
+        cursor.close()
+        conn.close()
+
+    except Exception as e:
+        errors.append(f"ERROR: Failed to test COPY PROGRAM blocking: {str(e)}")
+
+    if errors:
+        print("\n" + "=" * 80)
+        print("COPY PROGRAM BLOCKING ERRORS DETECTED:")
+        print("=" * 80)
+        for error in errors:
+            print(error)
+        print("=" * 80)
+        sys.exit(1)
+
+    print("\nCOPY ... PROGRAM is correctly blocked by AppArmor.")
+
+
 def check_directory_permissions():
     """Check that security-critical directories have the correct permissions."""
     errors = []
@@ -384,6 +474,9 @@ def main():
 
     # Check directory permissions for security-critical paths
     check_directory_permissions()
+
+    # Check that COPY ... PROGRAM is blocked by AppArmor
+    check_copy_program_blocked()
 
 
 if __name__ == "__main__":
