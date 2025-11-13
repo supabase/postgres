@@ -202,10 +202,9 @@ RUN sed -i \
     chown postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf
-RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
     #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
-RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" 
-RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' "/etc/postgresql-custom/supautils.conf" 
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf"
+RUN sed -i 's/ plv8,//g' "/etc/postgresql-custom/supautils.conf" 
 
 
 

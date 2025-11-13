@@ -519,6 +519,13 @@
         "15"
       ],
       "hash": "sha256-sLxWdBmih9mgiO51zLLxn9uwJVYc5JVHJjSWoADoJ+w="
+    },
+    "2.23.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-f965840ef9ba969b874c5825ca9a1e8cca667783d7c8bab623ffacb8d95b2d68"
     }
   },
   "vector": {

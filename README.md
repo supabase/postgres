@@ -218,7 +218,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
 | [rum]() | [1.3]() |  |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | [2.9.4](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | PostgreSQL extension for enhanced security |
-| [timescaledb]() | [2.9.1]() |  |
+| [timescaledb](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | [2.16.1](https://github.com/timescale/timescaledb/archive/2.16.1.tar.gz) | Scales PostgreSQL for time-series data via automatic partitioning across time and space |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [vector]() | [0.8.0]() |  |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
@@ -251,6 +251,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [postgis](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | [3.3.7](https://download.osgeo.org/postgis/source/postgis-3.3.7.tar.gz) | Geographic Objects for PostgreSQL |
 | [rum]() | [1.3]() |  |
 | [supautils](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | [2.9.4](https://github.com/supabase/supautils/archive/refs/tags/v2.9.4.tar.gz) | PostgreSQL extension for enhanced security |
+| [timescaledb](https://github.com/timescale/timescaledb/archive/2.23.0.tar.gz) | [2.23.0](https://github.com/timescale/timescaledb/archive/2.23.0.tar.gz) | Scales PostgreSQL for time-series data via automatic partitioning across time and space |
 | [vault](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | [0.3.1](https://github.com/supabase/vault/archive/refs/tags/v0.3.1.tar.gz) | Store encrypted secrets in PostgreSQL |
 | [vector]() | [0.8.0]() |  |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |

@@ -47,13 +47,14 @@
 
       #Where we import and build the orioledb extension, we add on our custom extensions
       # plus the orioledb option
-      #we're not using timescaledb or plv8 in the orioledb-17 version or pg 17 of supabase extensions
+      #we're not using timescaledb or plv8 in the orioledb-17 version
       orioleFilteredExtensions = builtins.filter (
         x: x != ../ext/timescaledb.nix && x != ../ext/timescaledb-2.9.1.nix && x != ../ext/plv8
       ) ourExtensions;
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
-      dbExtensions17 = orioleFilteredExtensions;
+      # pg 17 of supabase extensions - only filter out plv8
+      dbExtensions17 = builtins.filter (x: x != ../ext/plv8) ourExtensions;
       getPostgresqlPackage = version: pkgs."postgresql_${version}";
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
