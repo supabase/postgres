@@ -36,7 +36,19 @@ runs:
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
+    - name: Check runner type
+      id: check-runner
+      shell: bash
+      run: |
+        if [[ "${{ runner.name }}" == *"GitHub Actions"* ]] || [[ "$RUNNER_ENVIRONMENT" == "github-hosted" ]]; then
+          echo "is_self_hosted=false" >> $GITHUB_OUTPUT
+          echo "Running on GitHub-hosted runner, will install Nix"
+        else
+          echo "is_self_hosted=true" >> $GITHUB_OUTPUT
+          echo "Running on self-hosted runner, skipping Nix installation (should be pre-installed)"
+        fi
     - name: Install nix
+      if: steps.check-runner.outputs.is_self_hosted != 'true'
       uses: cachix/install-nix-action@v31
       with:
         install_url: https://releases.nixos.org/nix/nix-2.32.2/install
