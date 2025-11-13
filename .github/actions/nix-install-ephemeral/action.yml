@@ -36,17 +36,6 @@ runs:
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
-    - name: Check runner type
-      id: check-runner
-      shell: bash
-      run: |
-        if [[ "${{ runner.name }}" == "arm-native-runner" ]]; then
-          echo "skip_nix_install=true" >> $GITHUB_OUTPUT
-          echo "Running on arm-native-runner, skipping Nix installation (pre-installed)"
-        else
-          echo "skip_nix_install=false" >> $GITHUB_OUTPUT
-          echo "Will install Nix"
-        fi
     - name: Install nix
       if: steps.check-runner.outputs.skip_nix_install != 'true'
       uses: cachix/install-nix-action@v31
