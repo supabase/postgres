@@ -121,7 +121,8 @@ order by
 -----------------
  pg_cron
  tsm_system_time
-(2 rows)
+ wal2json
+(3 rows)
 
 /*
 

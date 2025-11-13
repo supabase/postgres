@@ -20,9 +20,9 @@ jobs:
     outputs:
       matrix_config: ${{ steps.set-matrix.outputs.matrix_config }}
     steps:
-      - uses: ./.github/actions/nix-install-ephemeral
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+      - uses: ./.github/actions/nix-install-ephemeral
       - name: Generate build matrix
         id: set-matrix
         run: |
