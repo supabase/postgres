@@ -37,7 +37,6 @@ runs:
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
     - name: Install nix
-      if: steps.check-runner.outputs.skip_nix_install != 'true'
       uses: cachix/install-nix-action@v31
       with:
         install_url: https://releases.nixos.org/nix/nix-2.32.2/install
