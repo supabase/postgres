@@ -40,15 +40,15 @@ runs:
       id: check-runner
       shell: bash
       run: |
-        if [[ "${{ runner.name }}" == *"GitHub Actions"* ]] || [[ "$RUNNER_ENVIRONMENT" == "github-hosted" ]]; then
-          echo "is_self_hosted=false" >> $GITHUB_OUTPUT
-          echo "Running on GitHub-hosted runner, will install Nix"
+        if [[ "${{ runner.name }}" == "arm-native-runner" ]]; then
+          echo "skip_nix_install=true" >> $GITHUB_OUTPUT
+          echo "Running on arm-native-runner, skipping Nix installation (pre-installed)"
         else
-          echo "is_self_hosted=true" >> $GITHUB_OUTPUT
-          echo "Running on self-hosted runner, skipping Nix installation (should be pre-installed)"
+          echo "skip_nix_install=false" >> $GITHUB_OUTPUT
+          echo "Will install Nix"
         fi
     - name: Install nix
-      if: steps.check-runner.outputs.is_self_hosted != 'true'
+      if: steps.check-runner.outputs.skip_nix_install != 'true'
       uses: cachix/install-nix-action@v31
       with:
         install_url: https://releases.nixos.org/nix/nix-2.32.2/install
