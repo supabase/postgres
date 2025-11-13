@@ -1,28 +1,21 @@
 name: Test Database
 on:
-  push:
-    branches:
-      - develop
-  pull_request:
   workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Clear Nix cache
-        run: |
-          sudo rm -rf /home/runner/.cache/nix
-
-      - uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+      - uses: ./.github/actions/nix-install-ephemeral
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
@@ -34,9 +27,9 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         include:
-          - runner: ubuntu-22.04
+          - runner: large-linux-x86
             arch: amd64
-          - runner: ubuntu-22.04
+          - runner: large-linux-arm
             arch: arm64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
@@ -44,20 +37,14 @@ jobs:
       POSTGRES_PORT: 5478
       POSTGRES_PASSWORD: password
     steps:
-      - uses: actions/checkout@v4
-      - name: Clear Nix cache
-        run: |
-          sudo rm -rf /home/runner/.cache/nix
-      - uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+      - uses: ./.github/actions/nix-install-ephemeral
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
       - name: Strip quotes from pg major and set env var
         run: |
-          stripped_version=$(echo ${{ matrix.postgres_version }} | sed 's/^"\(.*\)"$/\1/')
+          stripped_version=$(echo "${{ matrix.postgres_version }}" | sed 's/^"\(.*\)"$/\1/')
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
       - name: Generate common-nix.vars.pkr.hcl
         run: |

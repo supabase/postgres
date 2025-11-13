@@ -26,14 +26,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-{ lib
-, cargo-pgrx
-, pkg-config
-, rustPlatform
-, stdenv
-, Security
-, writeShellScriptBin
+{
+  lib,
+  cargo-pgrx,
+  pkg-config,
+  rustPlatform,
+  stdenv,
+  darwin,
+  writeShellScriptBin,
+  defaultBindgenHook,
 }:
 
 # The idea behind: Use it mostly like rustPlatform.buildRustPackage and so
@@ -47,26 +48,35 @@
 #                      unnecessary and heavy dependency. If you set this to true, you also
 #                      have to add `rustfmt` to `nativeBuildInputs`.
 
-{ buildAndTestSubdir ? null
-, buildType ? "release"
-, buildFeatures ? [ ]
-, cargoBuildFlags ? [ ]
-, postgresql
-# cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
-# dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
-# if you include the generated code in the output via postInstall.
-, useFakeRustfmt ? true
-, usePgTestCheckFeature ? true
-, ...
-} @ args:
+{
+  buildAndTestSubdir ? null,
+  buildType ? "release",
+  buildFeatures ? [ ],
+  cargoBuildFlags ? [ ],
+  postgresql,
+  # enable override to generate bindings using bindgenHook.
+  # Some older versions of cargo-pgrx use a bindgenHook that is not compatible with the
+  # current clang version present in stdenv
+  bindgenHook ? defaultBindgenHook,
+  # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
+  # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
+  # if you include the generated code in the output via postInstall.
+  useFakeRustfmt ? true,
+  usePgTestCheckFeature ? true,
+  ...
+}@args:
 let
-  rustfmtInNativeBuildInputs = lib.lists.any (dep: lib.getName dep == "rustfmt") (args.nativeBuildInputs or []);
+  rustfmtInNativeBuildInputs = lib.lists.any (dep: lib.getName dep == "rustfmt") (
+    args.nativeBuildInputs or [ ]
+  );
 in
 
-assert lib.asserts.assertMsg ((args.installPhase or "") == "")
-  "buildPgrxExtensions overwrites the installPhase, so providing one does nothing";
-assert lib.asserts.assertMsg ((args.buildPhase or "") == "")
-  "buildPgrxExtensions overwrites the buildPhase, so providing one does nothing";
+assert lib.asserts.assertMsg (
+  (args.installPhase or "") == ""
+) "buildPgrxExtensions overwrites the installPhase, so providing one does nothing";
+assert lib.asserts.assertMsg (
+  (args.buildPhase or "") == ""
+) "buildPgrxExtensions overwrites the buildPhase, so providing one does nothing";
 assert lib.asserts.assertMsg (useFakeRustfmt -> !rustfmtInNativeBuildInputs)
   "The parameter useFakeRustfmt is set to true, but rustfmt is included in nativeBuildInputs. Either set useFakeRustfmt to false or remove rustfmt from nativeBuildInputs.";
 assert lib.asserts.assertMsg (!useFakeRustfmt -> rustfmtInNativeBuildInputs)
@@ -75,20 +85,28 @@ assert lib.asserts.assertMsg (!useFakeRustfmt -> rustfmtInNativeBuildInputs)
 let
   fakeRustfmt = writeShellScriptBin "rustfmt" ''
     exit 0
-    '';
+  '';
   maybeDebugFlag = lib.optionalString (buildType != "release") "--debug";
   maybeEnterBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) ''
     export CARGO_TARGET_DIR="$(pwd)/target"
     pushd "${buildAndTestSubdir}"
   '';
   maybeLeaveBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) "popd";
+  pgrxBinaryName = if builtins.compareVersions "0.7.4" cargo-pgrx.version >= 0 then "pgx" else "pgrx";
 
   pgrxPostgresMajor = lib.versions.major postgresql.version;
   preBuildAndTest = ''
     export PGRX_HOME=$(mktemp -d)
+    export PGX_HOME=$PGRX_HOME
     export PGDATA="$PGRX_HOME/data-${pgrxPostgresMajor}/"
-    cargo-pgrx pgrx init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
-    echo "unix_socket_directories = '$(mktemp -d)'" > "$PGDATA/postgresql.conf"
+    cargo-${pgrxBinaryName} ${pgrxBinaryName} init "--pg${pgrxPostgresMajor}" ${lib.getDev postgresql}/bin/pg_config
+
+    # unix sockets work in sandbox, too.
+    export PGHOST="$(mktemp -d)"
+    cat > "$PGDATA/postgresql.conf" <<EOF
+    listen_addresses = '''
+    unix_socket_directories = '$PGHOST'
+    EOF
 
     # This is primarily for Mac or other Nix systems that don't use the nixbld user.
     export USER="$(whoami)"
@@ -97,19 +115,28 @@ let
     pg_ctl stop
   '';
 
-  argsForBuildRustPackage = builtins.removeAttrs args [ "postgresql" "useFakeRustfmt" "usePgTestCheckFeature" ];
+  argsForBuildRustPackage = builtins.removeAttrs args [
+    "postgresql"
+    "useFakeRustfmt"
+    "usePgTestCheckFeature"
+  ];
 
   # so we don't accidentally `(rustPlatform.buildRustPackage argsForBuildRustPackage) // { ... }` because
   # we forgot parentheses
   finalArgs = argsForBuildRustPackage // {
-    buildInputs = (args.buildInputs or [ ]) ++ lib.optionals stdenv.hostPlatform.isDarwin [ Security ];
+    buildInputs =
+      (args.buildInputs or [ ])
+      ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
 
-    nativeBuildInputs = (args.nativeBuildInputs or [ ]) ++ [
-      cargo-pgrx
-      postgresql
-      pkg-config
-      rustPlatform.bindgenHook
-    ] ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
+    nativeBuildInputs =
+      (args.nativeBuildInputs or [ ])
+      ++ [
+        cargo-pgrx
+        postgresql
+        pkg-config
+        bindgenHook
+      ]
+      ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
     buildPhase = ''
       runHook preBuild
@@ -118,9 +145,10 @@ let
       ${preBuildAndTest}
       ${maybeEnterBuildAndTestSubdir}
 
-      PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}" \
+      export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
+      export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
       ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
-      cargo pgrx package \
+      cargo ${pgrxBinaryName} package \
         --pg-config ${lib.getDev postgresql}/bin/pg_config \
         ${maybeDebugFlag} \
         --features "${builtins.concatStringsSep " " buildFeatures}" \
@@ -140,9 +168,10 @@ let
 
       ${maybeEnterBuildAndTestSubdir}
 
-      cargo-pgrx pgrx stop all
+      cargo-${pgrxBinaryName} ${pgrxBinaryName} stop all
 
       mv $out/${postgresql}/* $out
+      mv $out/${postgresql.lib}/* $out
       rm -rf $out/nix
 
       ${maybeLeaveBuildAndTestSubdir}
@@ -155,7 +184,10 @@ let
     RUST_BACKTRACE = "full";
 
     checkNoDefaultFeatures = true;
-    checkFeatures = (args.checkFeatures or [ ]) ++ (lib.optionals usePgTestCheckFeature [ "pg_test" ]) ++ [ "pg${pgrxPostgresMajor}" ];
+    checkFeatures =
+      (args.checkFeatures or [ ])
+      ++ (lib.optionals usePgTestCheckFeature [ "pg_test" ])
+      ++ [ "pg${pgrxPostgresMajor}" ];
   };
 in
 rustPlatform.buildRustPackage finalArgs

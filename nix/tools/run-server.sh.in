@@ -145,12 +145,16 @@ if [ "$VERSION" == "15" ]; then
     echo "Starting server for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
+elif [ "$VERSION" == "17" ]; then
+    echo "Starting server for PSQL 17"
+    PSQL17=@PSQL17_BINDIR@
+    BINDIR="$PSQL17"
 elif [ "$VERSION" == "orioledb-17" ]; then
     echo "Starting server for PSQL ORIOLEDB 17"
     PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
     BINDIR="$PSQLORIOLEDB17"
 else
-    echo "Please provide a valid Postgres version (15, orioledb-17)"
+    echo "Please provide a valid Postgres version (15, 17, orioledb-17)"
     exit 1
 fi
 
@@ -216,7 +220,7 @@ mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
 
 # Configure supautils
-sed "s|supautils.privileged_extensions_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.privileged_extensions_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
+sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '$DATDIR/extension-custom-scripts'|" "$SUPAUTILS_CONFIG_FILE" > "$DATDIR/supautils.conf"
 
 # Configure PostgreSQL
 sed -e "1i\\
@@ -241,7 +245,7 @@ orioledb_config_items() {
         echo "non-macos oriole conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "$DATDIR/supautils.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/supautils.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
@@ -255,12 +259,20 @@ orioledb_config_items() {
         
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ plv8,//g' "$DATDIR/supautils.conf"
-        perl -pi -e 's/ postgis,//g' "$DATDIR/supautils.conf"
-        perl -pi -e 's/ pgrouting,//g' "$DATDIR/supautils.conf"
-        
+        perl -pi -e 's/ pgjwt,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
         
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
+    elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
+        echo "non-macos pg 17 conf"
+        sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
+        sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/supautils.conf"
+    elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+        perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
     fi
 }
 

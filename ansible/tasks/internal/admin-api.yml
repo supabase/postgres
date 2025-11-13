@@ -1,7 +1,7 @@
 - name: adminapi - system user
   user:
     name: adminapi
-    groups: root,admin,envoy,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
+    groups: root,admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
     append: yes
 
 - name: Move shell scripts to /root dir
@@ -14,12 +14,14 @@
     - { file: "grow_fs.sh" }
     - { file: "manage_readonly_mode.sh" }
     - { file: "pg_egress_collect.pl" }
+    - { file: "mount-volume.sh" }
+    - { file: "unmount-volume.sh" }
 
 - name: give adminapi user permissions
   copy:
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
-    mode: "0644"
+    mode: "0440"
 
 - name: perms for adminapi
   shell: |

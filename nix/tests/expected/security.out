@@ -31,3 +31,7 @@ order by 1,2;
  vault     | update_secret
 (20 rows)
 
+-- supautils disables copy ... program
+copy (select '') to program 'id';
+ERROR:  COPY TO/FROM PROGRAM not allowed
+DETAIL:  The copy to/from program utility statement is disabled

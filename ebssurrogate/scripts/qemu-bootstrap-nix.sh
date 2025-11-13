@@ -22,7 +22,7 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common -y
+  apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
 	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
@@ -35,11 +35,12 @@ callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false}' \
+	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false, "qemu_mode": true}' \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
@@ -81,11 +82,13 @@ execute_playbook
 ####################
 
 function install_nix() {
-	sudo su -c "curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
-    --extra-conf \"substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com\" \
-    --extra-conf \"trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=\" " -s /bin/bash root
-	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-
+    sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.32.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+EXTRA_NIX_CONF" -s /bin/bash root
+    #shellcheck disable=SC1091
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 }
 
 function execute_stage2_playbook {
@@ -101,7 +104,15 @@ EOF
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}"
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+                --extra-vars @./ansible/qemu-vars.yaml
+}
+
+function clean_legacy_things {
+    # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
+    apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+    apt-get -y purge kong
+    apt-get autoremove -y
 }
 
 function clean_system {
@@ -128,7 +139,9 @@ function clean_system {
 	mkdir /var/log/sysstat
 
 	chown -R postgres:postgres /var/log/wal-g
-	chmod -R 0300 /var/log/wal-g
+	# moving up fixes from init scripts
+	chmod -R 0310 /var/log/wal-g
+	chmod 0340 /var/log/wal-g/pitr.log
 
 	# # audit logs directory for apparmor
 	mkdir /var/log/audit
@@ -144,6 +157,8 @@ function clean_system {
 install_nix
 execute_stage2_playbook
 # we do not want to ship an initialized DB as this is performed as needed
-rm -rf /data/pgdata
-clean_system
+mkdir -p /db/template
+mv /data/pgdata /db/template
 cloud-init clean --logs
+clean_legacy_things
+clean_system

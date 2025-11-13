@@ -10,9 +10,12 @@ BEGIN
 
     -- for some reason extension custom scripts aren't run during AMI build, so
     -- we manually run it here
-    GRANT USAGE ON SCHEMA vault TO postgres WITH GRANT OPTION;
-    GRANT SELECT, DELETE ON vault.secrets, vault.decrypted_secrets TO postgres WITH GRANT OPTION;
-    GRANT EXECUTE ON FUNCTION vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt TO postgres WITH GRANT OPTION;
+    grant usage on schema vault to postgres with grant option;
+    grant select, delete, truncate, references on vault.secrets, vault.decrypted_secrets to postgres with grant option;
+    grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to postgres with grant option;
+    grant usage on schema vault to service_role;
+    grant select, delete on vault.secrets, vault.decrypted_secrets to service_role;
+    grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
   ELSE
     pgsodium_exists = (
       select count(*) = 1 

@@ -43,8 +43,12 @@ POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
 OLD_PGVERSION=$(run_sql -A -t -c "SHOW server_version;")
 
-SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
-SERVER_LC_CTYPE=$(run_sql -A -t -c "SHOW lc_ctype;")
+# Skip locale settings if both versions are PostgreSQL 16+
+if ! [[ "${OLD_PGVERSION%%.*}" -ge 16 && "${PGVERSION%%.*}" -ge 16 ]]; then
+    SERVER_LC_COLLATE=$(run_sql -A -t -c "SHOW lc_collate;")
+    SERVER_LC_CTYPE=$(run_sql -A -t -c "SHOW lc_ctype;")
+fi
+
 SERVER_ENCODING=$(run_sql -A -t -c "SHOW server_encoding;")
 
 POSTGRES_CONFIG_PATH="/etc/postgresql/postgresql.conf"
@@ -214,6 +218,12 @@ function initiate_upgrade {
     if [[ "$OLD_PGVERSION" =~ 14* ]]; then
         SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/wrappers//" | xargs)
     fi
+
+    # Timescale is no longer supported for PG17+ upgrades
+    if [[ "$PGVERSION" != "15" ]]; then
+        SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/timescaledb//" | xargs)
+    fi
+    
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_cron//" | xargs)
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/pg_net//" | xargs)
     SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/check_role_membership//" | xargs)
@@ -245,7 +255,12 @@ function initiate_upgrade {
     if [ -n "$IS_LOCAL_UPGRADE" ]; then
         mkdir -p "$PG_UPGRADE_BIN_DIR"
         mkdir -p /tmp/persistent/
-        echo "a7189a68ed4ea78c1e73991b5f271043636cf074" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
+	if [ -n "$NIX_FLAKE_VERSION" ]; then
+            echo "$NIX_FLAKE_VERSION" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
+        else
+            echo "a7189a68ed4ea78c1e73991b5f271043636cf074" > "$PG_UPGRADE_BIN_DIR/nix_flake_version"
+        fi
+
         tar -czf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin" .
         rm -rf /tmp/pg_upgrade_bin/
     fi
@@ -271,13 +286,14 @@ function initiate_upgrade {
                         chmod +x "$NIX_INSTALLER_PATH"
                         "$NIX_INSTALLER_PATH" install --no-confirm \
                         --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
-                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
                     else
                         echo "1.1.1. Installing Nix using the official installer"
-
-                        curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm \
-                        --extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
-                        --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+                        sh <(curl -L https://releases.nixos.org/nix/nix-2.32.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+EXTRA_NIX_CONF
                     fi
                 else 
                     echo "1.1. Nix is installed; moving on."
@@ -289,7 +305,7 @@ function initiate_upgrade {
         # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         nix-collect-garbage -d > /tmp/pg_upgrade-nix-gc.log 2>&1 || true
-        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_15/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
+        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_${PGVERSION}/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
         PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
     fi
 
@@ -333,10 +349,35 @@ function initiate_upgrade {
     locale-gen
 
     if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-        # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-        # excluding nvme0 since it is the root disk
+        # DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
         echo "5. Determining block device to mount"
-        BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; }')
+        # lsb release
+        UBUNTU_VERSION=$(lsb_release -rs)
+        # install amazon disk utilities if not present on 24.04
+        if [ "${UBUNTU_VERSION}" = "24.04" ] && ! /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y amazon-ec2-utils || true
+        fi
+        if command -v ebsnvme-id >/dev/null 2>&1 && /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
+            for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
+                if [ -b "$nvme_dev" ]; then
+                    mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
+                    if [[ "$mapping" == "xvdp" || $mapping == "/dev/xvdp" ]]; then
+                        BLOCK_DEVICE="$nvme_dev"
+                        break
+                    fi
+                fi
+            done
+        fi
+
+        # Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
+        if [ -z "${BLOCK_DEVICE:-}" ]; then
+            echo "No block device found using ebsnvme-id, falling back to lsblk"
+            # awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
+            # excluding nvme0 since it is the root disk
+            BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; exit }')  # exit ensures we grab the first only
+        fi
+
         echo "Block device found: $BLOCK_DEVICE"
 
         mkdir -p "$MOUNT_POINT"
@@ -388,9 +429,14 @@ function initiate_upgrade {
     rm -rf "${PGDATANEW:?}/"
 
     if [ "$IS_NIX_UPGRADE" = "true" ]; then
-        LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+        if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
+            LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+        else
+            LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+        fi
     else
         su -c "$PGBINNEW/initdb -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+
     fi
 
     # This line avoids the need to supply the supabase_admin password on the old
@@ -403,6 +449,20 @@ $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
         run_sql -c "select pg_reload_conf();"
     fi
 
+    TMP_CONFIG="/tmp/pg_upgrade/postgresql.conf"
+    cp "$POSTGRES_CONFIG_PATH" "$TMP_CONFIG"
+ 
+    # Check if max_slot_wal_keep_size exists in the config
+       # Add the setting if not found
+    echo "max_slot_wal_keep_size = -1" >> "$TMP_CONFIG"
+
+    # Remove db_user_namespace if upgrading from PG15 or lower to PG16+
+    if [[ "${OLD_PGVERSION%%.*}" -le 15 && "${PGVERSION%%.*}" -ge 16 ]]; then
+        sed -i '/^db_user_namespace/d' "$TMP_CONFIG"
+    fi
+
+    chown postgres:postgres "$TMP_CONFIG"
+ 
     UPGRADE_COMMAND=$(cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
     --old-bindir="${PGBINOLD}" \
@@ -411,9 +471,10 @@ $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
     --new-datadir=${PGDATANEW} \
     --username=supabase_admin \
     --jobs="${WORKERS}" -r \
-    --old-options='-c config_file=${POSTGRES_CONFIG_PATH}' \
+    --old-options="-c config_file=$TMP_CONFIG" \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
+    --new-options="-c config_file=$TMP_CONFIG" \
     --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
 EOF
     )
@@ -421,7 +482,12 @@ EOF
     if [ "$IS_NIX_BASED_SYSTEM" = "true" ]; then
         UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
     fi 
-    GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+
+    if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
+        GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+    else
+        GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+    fi
 
     echo "10. Stopping postgres; running pg_upgrade"
     # Extra work to ensure postgres is actually stopped
@@ -433,11 +499,17 @@ EOF
 
         sleep 3
         systemctl stop postgresql
+        
     else
         CI_stop_postgres
     fi
 
-    GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    # Start the old PostgreSQL instance with version-specific options
+    if [[ "${PGVERSION%%.*}" -ge 16 ]]; then
+        GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    else
+        GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+    fi
 
     # copying custom configurations
     echo "11. Copying custom configurations"

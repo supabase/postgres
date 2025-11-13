@@ -1,282 +1,210 @@
-# - name: Install openjdk11 for pljava from nix binary cache
-#   become: yes
-#   shell: |
-#     sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install nixpkgs#openjdk11"
-# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
-
 - name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
-    - name: Check if psql_version is psql_orioledb-16
-      set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-16', 'psql_orioledb-17'] }}"
-
-    - name: Remove specified extensions from postgresql.conf if oriole-16 build
-      ansible.builtin.command:
-        cmd: >
-          sed -i 's/ timescaledb,//g' 
-          /etc/postgresql/postgresql.conf
-      when: is_psql_oriole and stage2_nix
-      become: yes
-
-    - name: Remove specified extensions from supautils.conf if oriole-16 build
-      ansible.builtin.command:
-        cmd: >
-          sed -i 's/ timescaledb,//g; s/ vector,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' 
-          /etc/postgresql-custom/supautils.conf
-      when: is_psql_oriole and stage2_nix
-      become: yes
-
-    - name: Remove db_user_namespace from postgresql.conf if oriole-xx build
-      ansible.builtin.command:
-        cmd: >
-          sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' 
-          /etc/postgresql/postgresql.conf
-      when: is_psql_oriole and stage2_nix
-      become: yes
-
-    - name: Append orioledb to shared_preload_libraries append within closing quote
-      ansible.builtin.command:
-        cmd: >
-          sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/'
-          /etc/postgresql/postgresql.conf
-      when: is_psql_oriole and stage2_nix
-      become: yes
-
-    - name: Add default_table_access_method setting
-      ansible.builtin.lineinfile:
-        path: /etc/postgresql/postgresql.conf
-        line: "default_table_access_method = 'orioledb'"
-        state: present
-      when: is_psql_oriole and stage2_nix
-      become: yes
+    - name: Check if psql_version is psql_orioledb-17 and if psql_version is psql_15 or psql_17
+      ansible.builtin.set_fact:
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
+        is_psql_17: "{{ psql_version in ['psql_17'] }}"
+        is_psql_15: "{{ psql_version in ['psql_15'] }}"
     
-    - name: Add ORIOLEDB_ENABLED environment variable
-      ansible.builtin.lineinfile:
-        path: /etc/environment
-        line: 'ORIOLEDB_ENABLED=true'
-      when: is_psql_oriole and stage2_nix
-      become: yes
+    - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2_nix
+      become: true
+      when:
+        - (is_psql_oriole or is_psql_17)
+        - stage2_nix
+      block:
+        - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
+          ansible.builtin.replace:
+            path: '/etc/postgresql/postgresql.conf'
+            regexp: '\ timescaledb,'
+            replace: ''
 
-- name: Install Postgres from nix binary cache
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{psql_version}}/bin"
-  when: stage2_nix
+        - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
+          ansible.builtin.replace:
+            path: '/etc/postgresql-custom/supautils.conf'
+            regexp: "{{ regex_item }}"
+          loop:
+            - '\ timescaledb,'
+            - '\ plv8,'
+          loop_control:
+            loop_var: 'regex_item'
 
-- name: Install pg_prove from nix binary cache
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg_prove"
-  when: stage2_nix
+        - name: Remove db_user_namespace from postgresql.conf if orioledb-17 or 17 build
+          ansible.builtin.replace:
+            path: '/etc/postgresql/postgresql.conf'
+            regexp: 'db_user_namespace\ =\ off'
+            replace: '#db_user_namespace\ =\ off'
 
-- name: Install supabase-groonga from nix binary cache
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supabase-groonga"
-  when: stage2_nix
+    - name: Execute things when is_psql_oriole and stage2_nix
+      become: true
+      when:
+        - is_psql_oriole
+        - stage2_nix
+      block:
+        - name: Append orioledb to shared_preload_libraries append within closing quote
+          ansible.builtin.replace:
+            path: '/etc/postgresql/postgresql.conf'
+            regexp: "(shared_preload_libraries).*(\\'.*)\\'"
+            replace: "\\1 = \\2, orioledb'"
 
-- name: Install debug symbols for postgres version
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_debug"
-  when: stage2_nix
+        - name: Add default_table_access_method setting
+          ansible.builtin.lineinfile:
+            line: "default_table_access_method = 'orioledb'"
+            path: '/etc/postgresql/postgresql.conf'
+            state: 'present'
+    
+        - name: Add ORIOLEDB_ENABLED environment variable
+          ansible.builtin.lineinfile:
+            line: 'ORIOLEDB_ENABLED=true'
+            path: '/etc/environment'
 
-- name: Install source files for postgresql version
-  become: yes
-  shell: |
-    sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{postgresql_version}}_src"
-  when: stage2_nix
-  
-- name: Set ownership and permissions for /etc/ssl/private
-  become: yes
-  file:
-    path: /etc/ssl/private
-    owner: root
-    group: postgres
-    mode: '0750'
-  when: stage2_nix
-
-- name: Set permissions for postgresql.env
-  become: yes
-  file:
-    path: /etc/environment.d/postgresql.env
-    owner: postgres
-    group: postgres
-    mode: '0644'
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/bin directory exists
-  file:
-    path: /usr/lib/postgresql/bin
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/share directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/share/contrib directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql/contrib
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/share/timezonesets directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql/timezonesets
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/share/tsearch_data directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql/tsearch_data
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-- name: Ensure /usr/lib/postgresql/share/extension directory exists
-  file:
-    path: /usr/lib/postgresql/share/postgresql/extension
-    state: directory
-    owner: postgres
-    group: postgres
-  when: stage2_nix
-
-# - name: Ensure /usr/lib/postgresql/share/postgresql/pljava directory exists
-#   file:
-#     path: /usr/lib/postgresql/share/postgresql/pljava
-#     state: directory
-#     owner: postgres
-#     group: postgres
-#   when: stage2_nix
-# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
-
-- name: import pgsodium_getkey script
-  template:
-    src: files/pgsodium_getkey_readonly.sh.j2
-    dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
-    owner: postgres
-    group: postgres
-    mode: 0700
-  when: stage2_nix
-
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/bin to /usr/lib/postgresql/bin
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/bin/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "{{ item }}/$(basename $0)"' {} \;
-  loop:
-    - /usr/lib/postgresql/bin
-    - /usr/bin
-  become: yes
-  when: stage2_nix
-
-- name: Check if /usr/bin/pg_config exists
-  stat:
-    path: /usr/bin/pg_config
-  register: pg_config_stat
-  when: stage2_nix
-
-- name: Remove existing /usr/bin/pg_config if it is not a symlink
-  file:
-    path: /usr/bin/pg_config
-    state: absent
-  when: pg_config_stat.stat.exists and not pg_config_stat.stat.islnk and stage2_nix
-  become: yes
-
-- name: Ensure postgres user has ownership of symlink
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/bin/ -maxdepth 1 -type f,l -exec chown postgres:postgres "/usr/bin/$(basename {})" \;
-  become: yes
-  when: stage2_nix
-
-# - name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/pljava to /usr/lib/postgresql/share/postgresql/pljava
-#   file:
-#     src: "{{ item }}"
-#     dest: "/usr/lib/postgresql/share/postgresql/pljava/{{ item | basename }}"
-#     state: link
-#   with_fileglob:
-#     - "/var/lib/postgresql/.nix-profile/share/pljava/*"
-#   become: yes
-# It was decided to leave pljava disabled at https://github.com/supabase/postgres/pull/690 therefore removing this task
-
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql to /usr/lib/postgresql/share/postgresql
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/share/postgresql/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/$(basename $0)"' {} \;
-  become: yes
-  when: stage2_nix
-
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/extension to /usr/lib/postgresql/share/postgresql/extension
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/share/postgresql/extension/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/extension/$(basename $0)"' {} \;
-  become: yes
-  when: stage2_nix
-
-- name: create destination directory
-  file:
-    path: /usr/lib/postgresql/share/postgresql/contrib/
-    state: directory
-    recurse: yes
-  when: stage2_nix
-
-- name: Check psql_version and run postgis linking if not oriole-xx
+- name: Execute things when stage2_nix
+  become: true
+  when:
+    - stage2_nix
   block:
-    - name: Check if psql_version is psql_orioledb-17
-      set_fact:
-        is_psql_oriole: "{{ psql_version == 'psql_orioledb-17' }}"
+    - name: Install packages from nix binary cache
+      ansible.builtin.shell: |
+        sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{ nix_item }}"
+      loop:
+        - "{{ psql_version }}/bin"
+        - pg_prove
+        - supabase-groonga
+        - "{{ postgresql_version }}_debug"
+        - "{{ postgresql_version }}_src"
+      loop_control:
+        loop_var: 'nix_item'
 
-    - name: Recursively create symbolic links and set permissions for the contrib/postgis-* dir
-      shell: >
-        sudo mkdir -p /usr/lib/postgresql/share/postgresql/contrib && \
-        sudo find /var/lib/postgresql/.nix-profile/share/postgresql/contrib/ -mindepth 1 -type d -exec sh -c 'for dir do sudo ln -s "$dir" "/usr/lib/postgresql/share/postgresql/contrib/$(basename "$dir")"; done' sh {} + \
-        && chown -R postgres:postgres "/usr/lib/postgresql/share/postgresql/contrib/"
-      become: yes
-      when: stage2_nix and not is_psql_oriole
+    - name: Set ownership and permissions for file and dirs
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: "{{ file_item['mode'] | default('0755', true) }}"
+        owner: "{{ file_item['owner'] | default('postgres', true) }}"
+        path: "{{ file_item['path'] }}"
+        state: "{{ file_item['state'] | default('directory', true) }}"
+      loop:
+        - { mode: '0750', path: '/etc/ssl/private', owner: 'root' }
+        - { mode: '0644', path: '/etc/environment.d/postgresql.env' , state: 'file'}
+        - { path: '/usr/lib/postgresql/bin' }
+        - { path: '/usr/lib/postgresql/share/postgresql' }
+        - { path: '/usr/lib/postgresql/share/postgresql/contrib' }
+        - { path: '/usr/lib/postgresql/share/postgresql/timezonesets' }
+        - { path: '/usr/lib/postgresql/share/postgresql/tsearch_data' }
+        - { path: '/usr/lib/postgresql/share/postgresql/extension' }
+      loop_control:
+        loop_var: 'file_item'
 
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets to /usr/lib/postgresql/share/postgresql/timeszonesets
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/share/postgresql/timezonesets/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/timezonesets/$(basename $0)"' {} \;
-  become: yes
-  when: stage2_nix
+    - name: import pgsodium_getkey script
+      ansible.builtin.template:
+        dest: '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
+        group: 'postgres'
+        mode: '0700'
+        owner: 'postgres'
+        src: 'files/pgsodium_getkey_readonly.sh.j2'
 
-- name: Create symbolic links from /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data to /usr/lib/postgresql/share/postgresql/tsearch_data
-  shell: >-
-    find /var/lib/postgresql/.nix-profile/share/postgresql/tsearch_data/ -maxdepth 1 -type f,l -exec sh -c 'ln -s "$0" "/usr/lib/postgresql/share/postgresql/tsearch_data/$(basename $0)"' {} \;
-  become: yes
-  when: stage2_nix
+    - name: Find all files in /var/lib/postgresql/.nix-profile/bin/
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'file'
+        path: '/var/lib/postgresql/.nix-profile/bin/'
+      register: 'nix_files'
 
-- set_fact:
-    pg_bindir: "/usr/lib/postgresql/bin"
-  when: stage2_nix
+    - name: Find all the symlinks in /var/lib/postgresql/.nix-profile/bin/
+      ansible.builtin.find:
+        depth: 1
+        file_type: 'link'
+        path: '/var/lib/postgresql/.nix-profile/bin/'
+      register: 'nix_links'
 
-- name: pgsodium - set pgsodium.getkey_script
-  become: yes
-  lineinfile:
-    path: /etc/postgresql/postgresql.conf
-    state: present
+    - name: Create symlinks for Nix files into /usr/lib/postgresql/bin
+      ansible.builtin.file:
+        group: 'postgres'
+        owner: 'postgres'
+        path: "/usr/lib/postgresql/bin/{{ file_item['path'] | basename }}"
+        src: "{{ file_item['path'] }}"
+        state: 'link'
+      loop: "{{ nix_files['files'] }}"
+      loop_control:
+        loop_var: 'file_item'
+
+    - name: Create symlinks for Nix files into /usr/bin
+      ansible.builtin.file:
+        group: 'root'
+        owner: 'root'
+        path: "/usr/bin/{{ file_item['path'] | basename }}"
+        src: "{{ file_item['path'] }}"
+        state: 'link'
+      loop: "{{ nix_files['files'] }}"
+      loop_control:
+        loop_var: 'file_item'
+
+    - name: Create symlinks for Nix symlinks into /usr/lib/postgresql/bin
+      ansible.builtin.file:
+        group: 'postgres'
+        owner: 'postgres'
+        path: "/usr/lib/postgresql/bin/{{ link_item['path'] | basename }}"
+        src: "{{ link_item['path'] }}"
+        state: 'link'
+      loop: "{{ nix_links['files'] }}"
+      loop_control:
+        loop_var: 'link_item'
+
+    - name: Create symlinks for Nix files into /usr/bin
+      ansible.builtin.file:
+        group: 'root'
+        owner: 'root'
+        path: "/usr/bin/{{ link_item['path'] | basename }}"
+        src: "{{ link_item['path'] }}"
+        state: 'link'
+      loop: "{{ nix_links['files'] }}"
+      loop_control:
+        loop_var: 'link_item'
+
+    # this task should be redundant, no?
+    - name: Force /usr/bin/pg_config to be a symlink
+      ansible.builtin.file:
+        force: true
+        path: '/usr/bin/pg_config'
+        src: '/var/lib/postgresql/.nix-profile/bin/pg_config'
+        state: 'link'
+
+    - name: Nuke /usr/lib/postgresql/share so we can recreate it as a symlink
+      ansible.builtin.file:
+        path: '/usr/lib/postgresql/share'
+        state: 'absent'
+
+    - name: Create symlinks for PG share links into /usr/lib/postgresql/share
+      ansible.builtin.file:
+        group: 'postgres'
+        owner: 'postgres'
+        path: '/usr/lib/postgresql/share'
+        src: '/var/lib/postgresql/.nix-profile/share'
+        state: 'link'
+
+    - name: create destination directory
+      ansible.builtin.file:
+        path: '/usr/lib/postgresql/share/postgresql/contrib/'
+        recurse: true
+        state: 'directory'
+
+    - name: Set the PG bin dir as a fact
+      ansible.builtin.set_fact:
+        pg_bindir: '/usr/lib/postgresql/bin'
+
     # script is expected to be placed by finalization tasks for different target platforms
-    line: pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'
-  when: stage2_nix
+    - name: pgsodium - set pgsodium.getkey_script
+      ansible.builtin.lineinfile:
+        line: "pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'"
+        path: '/etc/postgresql/postgresql.conf'
+        state: 'present'
 
-- name: Create symbolic link for pgsodium_getkey script
-  file:
-    src: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
-    dest: "/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey"
-    state: link
-  become: yes
-  when: stage2_nix
+    - name: Create symbolic link for pgsodium_getkey script
+      ansible.builtin.file:
+        dest: '/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey'
+        src: '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
+        state: 'link'
 
 - name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
   ansible.builtin.lineinfile:
-    path: /etc/environment.d/postgresql.env
     line: 'GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins'
-  become: yes
+    path: '/etc/environment.d/postgresql.env'
+  become: true

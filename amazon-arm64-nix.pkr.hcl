@@ -1,6 +1,6 @@
 variable "ami" {
   type    = string
-  default = "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*"
+  default = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"
 }
 
 variable "profile" {
@@ -15,7 +15,7 @@ variable "ami_name" {
 
 variable "ami_regions" {
   type    = list(string)
-  default = ["ap-southeast-2"]
+  default = ["ap-southeast-1"]
 }
 
 variable "ansible_arguments" {
@@ -115,7 +115,7 @@ source "amazon-ebssurrogate" "source" {
   #secret_key   = "${var.aws_secret_key}"
   force_deregister = var.force-deregister
 
-  # Use latest official ubuntu focal ami owned by Canonical.
+  # Use latest official ubuntu noble ami owned by Canonical.
   source_ami_filter {
     filters = {
       virtualization-type = "hvm"

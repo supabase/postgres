@@ -285,6 +285,12 @@ resources:
                           cluster: gotrue
                           prefix_rewrite: /
                           timeout: 35s
+                          retry_policy:
+                            retry_on: "connect-failure,refused-stream,gateway-error"
+                            num_retries: 3
+                            retry_back_off:
+                              base_interval: 1s
+                              max_interval: 3s
                       - match:
                           prefix: /rest/v1/
                           query_parameters:

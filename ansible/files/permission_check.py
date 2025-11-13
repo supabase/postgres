@@ -2,6 +2,8 @@ import subprocess
 import json
 import sys
 import argparse
+import os
+import stat
 
 
 # Expected groups for each user
@@ -40,7 +42,6 @@ expected_results = {
     "backup": [{"groupname": "backup", "username": "backup"}],
     "list": [{"groupname": "list", "username": "list"}],
     "irc": [{"groupname": "irc", "username": "irc"}],
-    "gnats": [{"groupname": "gnats", "username": "gnats"}],
     "nobody": [{"groupname": "nogroup", "username": "nobody"}],
     "systemd-network": [
         {"groupname": "systemd-network", "username": "systemd-network"}
@@ -79,6 +80,7 @@ expected_results = {
         {"groupname": "admin", "username": "adminapi"},
         {"groupname": "adminapi", "username": "adminapi"},
         {"groupname": "envoy", "username": "adminapi"},
+        {"groupname": "gotrue", "username": "adminapi"},
         {"groupname": "kong", "username": "adminapi"},
         {"groupname": "pgbouncer", "username": "adminapi"},
         {"groupname": "postgres", "username": "adminapi"},
@@ -93,6 +95,67 @@ expected_results = {
     "systemd-coredump": [
         {"groupname": "systemd-coredump", "username": "systemd-coredump"}
     ],
+    "supabase-admin-agent": [
+        {"groupname": "supabase-admin-agent", "username": "supabase-admin-agent"},
+        {"groupname": "admin", "username": "supabase-admin-agent"},
+        {"groupname": "salt", "username": "supabase-admin-agent"},
+    ],
+}
+
+# postgresql.service is expected to mount /etc as read-only
+expected_mount = "/etc ro"
+
+# Expected directory permissions for security-critical paths
+# Format: path -> (expected_mode, expected_owner, expected_group, description)
+expected_directory_permissions = {
+    "/var/lib/postgresql": (
+        "0755",
+        "postgres",
+        "postgres",
+        "PostgreSQL home - must be traversable for nix-profile symlinks",
+    ),
+    "/var/lib/postgresql/data": (
+        "0750",
+        "postgres",
+        "postgres",
+        "PostgreSQL data directory symlink - secure, postgres only",
+    ),
+    "/data/pgdata": (
+        "0750",
+        "postgres",
+        "postgres",
+        "Actual PostgreSQL data directory - secure, postgres only",
+    ),
+    "/etc/postgresql": (
+        "0775",
+        "postgres",
+        "postgres",
+        "PostgreSQL configuration directory - adminapi writable",
+    ),
+    "/etc/postgresql-custom": (
+        "0775",
+        "postgres",
+        "postgres",
+        "PostgreSQL custom configuration - adminapi writable",
+    ),
+    "/etc/ssl/private": (
+        "0750",
+        "root",
+        "ssl-cert",
+        "SSL private keys directory - secure, ssl-cert group only",
+    ),
+    "/home/postgres": (
+        "0750",
+        "postgres",
+        "postgres",
+        "postgres user home directory - secure, postgres only",
+    ),
+    "/var/log/postgresql": (
+        "0750",
+        "postgres",
+        "postgres",
+        "PostgreSQL logs directory - secure, postgres only",
+    ),
 }
 
 
@@ -152,6 +215,104 @@ def check_nixbld_users():
     print("All nixbld users are in the 'nixbld' group.")
 
 
+def check_postgresql_mount():
+    # processes table has the nix .postgres-wrapped path as the
+    # binary path, rather than /usr/lib/postgresql/bin/postgres which
+    # is a symlink to /var/lib/postgresql/.nix-profile/bin/postgres, a script
+    # that ultimately calls /nix/store/...-postgresql-and-plugins-15.8/bin/.postgres-wrapped
+    query = """
+    SELECT pid
+    FROM processes
+    WHERE path LIKE '%.postgres-wrapped%'
+    AND cmdline LIKE '%-D /etc/postgresql%';
+    """
+    query_result = run_osquery(query)
+    parsed_result = parse_json(query_result)
+
+    pid = parsed_result[0].get("pid")
+
+    # get the mounts for the process
+    with open(f"/proc/{pid}/mounts", "r") as o:
+        lines = [line for line in o if "/etc" in line and "ro," in line]
+        if len(lines) == 0:
+            print(f"Expected exactly 1 match, got 0")
+            sys.exit(1)
+        if len(lines) != 1:
+            print(f"Expected exactly 1 match, got {len(lines)}: {';'.join(lines)}")
+            sys.exit(1)
+
+    print("postgresql.service mounts /etc as read-only.")
+
+
+def check_directory_permissions():
+    """Check that security-critical directories have the correct permissions."""
+    errors = []
+
+    for path, (
+        expected_mode,
+        expected_owner,
+        expected_group,
+        description,
+    ) in expected_directory_permissions.items():
+        # Skip if path doesn't exist (might be a symlink or not created yet)
+        if not os.path.exists(path):
+            print(f"Warning: {path} does not exist, skipping permission check")
+            continue
+
+        # Get actual permissions
+        try:
+            stat_info = os.stat(path)
+            actual_mode = oct(stat.S_IMODE(stat_info.st_mode))[2:]  # Remove '0o' prefix
+
+            # Get owner and group names
+            import pwd
+            import grp
+
+            actual_owner = pwd.getpwuid(stat_info.st_uid).pw_name
+            actual_group = grp.getgrgid(stat_info.st_gid).gr_name
+
+            # Check permissions
+            if actual_mode != expected_mode:
+                errors.append(
+                    f"ERROR: {path} has mode {actual_mode}, expected {expected_mode}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chmod {expected_mode} {path}"
+                )
+
+            # Check ownership
+            if actual_owner != expected_owner:
+                errors.append(
+                    f"ERROR: {path} has owner {actual_owner}, expected {expected_owner}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chown {expected_owner}:{actual_group} {path}"
+                )
+
+            # Check group
+            if actual_group != expected_group:
+                errors.append(
+                    f"ERROR: {path} has group {actual_group}, expected {expected_group}\n"
+                    f"  Description: {description}\n"
+                    f"  Fix: sudo chown {actual_owner}:{expected_group} {path}"
+                )
+
+            if not errors or not any(path in err for err in errors):
+                print(f"✓ {path}: {actual_mode} {actual_owner}:{actual_group} - OK")
+
+        except Exception as e:
+            errors.append(f"ERROR: Failed to check {path}: {str(e)}")
+
+    if errors:
+        print("\n" + "=" * 80)
+        print("DIRECTORY PERMISSION ERRORS DETECTED:")
+        print("=" * 80)
+        for error in errors:
+            print(error)
+        print("=" * 80)
+        sys.exit(1)
+
+    print("\nAll directory permissions are correct.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="Supabase Postgres Artifact Permissions Checker",
@@ -186,7 +347,6 @@ def main():
         "backup",
         "list",
         "irc",
-        "gnats",
         "nobody",
         "systemd-network",
         "systemd-resolve",
@@ -204,6 +364,7 @@ def main():
         "postgrest",
         "tcpdump",
         "systemd-coredump",
+        "supabase-admin-agent",
     ]
     if not qemu_artifact:
         usernames.append("ec2-instance-connect")
@@ -217,6 +378,12 @@ def main():
 
     # Check if all nixbld users are in the nixbld group
     check_nixbld_users()
+
+    # Check if postgresql.service is using a read-only mount for /etc
+    check_postgresql_mount()
+
+    # Check directory permissions for security-critical paths
+    check_directory_permissions()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 -- disable notice messages becuase they differ between 15 and 17
 set client_min_messages = warning;
-
+-- CREATE ROLE anon;
+-- CREATE ROLE authenticated;
+-- CREATE ROLE service_role;
 create extension if not exists address_standardizer;
 create extension if not exists address_standardizer_data_us;
 create extension if not exists amcheck;
@@ -55,7 +57,6 @@ create extension if not exists pg_walinspect;
 create extension if not exists pgaudit;
 create extension if not exists pgcrypto;
 create extension if not exists pgtap;
-create extension if not exists pgjwt;
 create extension if not exists pgroonga;
 create extension if not exists pgroonga_database;
 create extension if not exists pgsodium;

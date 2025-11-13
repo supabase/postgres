@@ -1,79 +1,78 @@
 - name: nginx - system user
-  user: name=nginx
+  ansible.builtin.user:
+    name: 'nginx'
+    state: 'present'
 
 # Kong installation steps from http://archive.vn/3HRQx
 - name: nginx - system dependencies
-  apt:
+  ansible.builtin.apt:
     pkg:
-      - openssl
       - libpcre3-dev
       - libssl-dev
+      - openssl
       - zlib1g-dev
 
 - name: nginx - download source
-  get_url:
-    url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
-    dest: /tmp/nginx-{{ nginx_release }}.tar.gz
+  ansible.builtin.get_url:
     checksum: "{{ nginx_release_checksum }}"
+    dest: '/tmp/nginx-{{ nginx_release }}.tar.gz'
+    url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
 
 - name: nginx - unpack archive
-  unarchive:
-    remote_src: yes
-    src: /tmp/nginx-{{ nginx_release }}.tar.gz
-    dest: /tmp
+  ansible.builtin.unarchive:
+    dest: '/tmp'
+    remote_src: true
+    src: "/tmp/nginx-{{ nginx_release }}.tar.gz"
 
 - name: nginx - configure
-  shell:
-    chdir: /tmp/nginx-{{ nginx_release }}
-    cmd: |
-      set -e
+  ansible.builtin.command:
+    argv:
+      - ./configure 
+      - --prefix=/usr/local/nginx 
+      - --conf-path=/etc/nginx/nginx.conf 
+      - --with-http_ssl_module 
+      - --with-http_realip_module 
+      - --with-threads
+  args:
+    chdir: "/tmp/nginx-{{ nginx_release }}"
+  become: true
 
-      ./configure \
-      --prefix=/usr/local/nginx \
-      --conf-path=/etc/nginx/nginx.conf \
-      --with-http_ssl_module \
-      --with-http_realip_module \
-      --with-threads
-  become: yes
-
-- name: nginx - build
+- name: nginx - build and install
   community.general.make:
-    target: build
-    chdir: /tmp/nginx-{{ nginx_release }}
+    chdir: "/tmp/nginx-{{ nginx_release }}"
     jobs: "{{ parallel_jobs | default(omit) }}"
-  become: yes
+    target: "{{ make_target }}"
+  become: true
+  loop:
+    - 'build'
+    - 'install'
+  loop_control:
+    loop_var: 'make_target'
 
-- name: nginx - install
-  make:
-    chdir: /tmp/nginx-{{ nginx_release }}
-    target: install
-  become: yes
-
-- name: nginx - hand over ownership of /usr/local/nginx to user nginx
-  file:
-    path: /usr/local/nginx
-    recurse: yes
-    owner: nginx
-
-- name: nginx - hand over ownership of /etc/nginx to user nginx
-  file:
-    path: /etc/nginx
-    recurse: yes
-    owner: nginx
+- name: nginx - hand over ownership of /etc/nginx and /usr/local/nginx to user nginx
+  ansible.builtin.file:
+    owner: 'nginx'
+    path: "{{ nginx_dir_item }}"
+    recurse: true
+  loop:
+    - /etc/nginx
+    - /usr/local/nginx
+  loop_control:
+    loop_var: 'nginx_dir_item'
 
 # [warn] ulimit is currently set to "1024". For better performance set it to at least
 # "4096" using "ulimit -n"
 - name: nginx - bump up ulimit
-  pam_limits:
-    limit_item: nofile
-    limit_type: soft
-    domain: nginx
-    value: "4096"
+  community.general.pam_limits:
+    domain: 'nginx'
+    limit_item: 'nofile'
+    limit_type: 'soft'
+    value: '4096'
 
 - name: nginx - create service file
-  template:
-    src: files/nginx.service.j2
-    dest: /etc/systemd/system/nginx.service
+  ansible.builtin.template:
+    dest: '/etc/systemd/system/nginx.service'
+    src: 'files/nginx.service.j2'
 
 # Keep it dormant for the timebeing
 

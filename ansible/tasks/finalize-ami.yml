@@ -1,81 +1,104 @@
 - name: PG logging conf
-  template:
-    src: files/postgresql_config/postgresql-csvlog.conf
-    dest: /etc/postgresql/logging.conf
-    group: postgres
+  ansible.builtin.template:
+    dest: '/etc/postgresql/logging.conf'
+    group: 'postgres'
+    src: 'files/postgresql_config/postgresql-csvlog.conf'
 
 - name: UFW - Allow SSH connections
-  ufw:
-    rule: allow
-    name: OpenSSH
+  community.general.ufw:
+    name: 'OpenSSH'
+    rule: 'allow'
 
-- name: UFW - Allow connections to postgreSQL (5432)
-  ufw:
-    rule: allow
-    port: "5432"
+- name: UFW - Allow SSH/PostgreSQL connections
+  community.general.ufw:
+    port: '5432'
+    rule: 'allow'
 
-- name: UFW - Allow connections to postgreSQL (6543)
-  ufw:
-    rule: allow
-    port: "6543"
+- name: UFW - Allow PgBouncer connections
+  community.general.ufw:
+    port: '6543'
+    rule: 'allow'
   tags:
     - install-pgbouncer
 
-- name: UFW - Allow connections to http (80)
-  ufw:
-    rule: allow
-    port: http
+- name: UFW - Allow HTTP/HTTPS connections
+  community.general.ufw:
+    port: "{{ port_item }}"
+    rule: 'allow'
+  loop:
+    - 'http'
+    - 'https'
+  loop_control:
+    loop_var: 'port_item'
   tags:
-  - install-supabase-internal 
-
-- name: UFW - Allow connections to https (443)
-  ufw:
-    rule: allow
-    port: https
-  tags:
-  - install-supabase-internal 
+    - install-supabase-internal
 
 - name: UFW - Deny all other incoming traffic by default
-  ufw:
-    state: enabled
-    policy: deny
-    direction: incoming
+  community.general.ufw:
+    direction: 'incoming'
+    policy: 'deny'
+    state: 'enabled'
 
 - name: Move logrotate files to /etc/logrotate.d/
-  copy:
-    src: "files/logrotate_config/{{ item.file }}"
-    dest: "/etc/logrotate.d/{{ item.file }}"
-    mode: "0700"
-    owner: root
+  ansible.builtin.copy:
+    dest: "/etc/logrotate.d/{{ logrotate_item['file'] }}"
+    mode: '0700'
+    owner: 'root'
+    src: "files/logrotate_config/{{ logrotate_item['file'] }}"
   loop:
-    - { file: "logrotate-postgres-csv.conf" }
-    - { file: "logrotate-postgres.conf" }
-    - { file: "logrotate-walg.conf" }
-    - { file: "logrotate-postgres-auth.conf" }
+    - { file: 'logrotate-postgres.conf' }
+    - { file: 'logrotate-postgres-auth.conf' }
+    - { file: 'logrotate-postgres-csv.conf' }
+    - { file: 'logrotate-walg.conf' }
+  loop_control:
+    loop_var: 'logrotate_item'
 
-- name: Ensure default Postgres logrotate config is removed
-  file:
-    path: /etc/logrotate.d/postgresql-common
-    state: absent
+- name: Ensure default PostgreSQL logrotate config is removed
+  ansible.builtin.file:
+    path: '/etc/logrotate.d/postgresql-common'
+    state: 'absent'
 
 - name: Disable cron access
   copy:
-    src: files/cron.deny
-    dest: /etc/cron.deny
+    dest: '/etc/cron.deny'
+    src: 'files/cron.deny'
 
-- name: Configure logrotation to run every hour
-  shell:
-    cmd: |
-        cp  /usr/lib/systemd/system/logrotate.timer /etc/systemd/system/logrotate.timer
-        sed -i -e 's;daily;*:0/5;' /etc/systemd/system/logrotate.timer
-        systemctl reenable logrotate.timer
-  become: yes
+- name: Create logrotate.timer.d overrides dir
+  become: true
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0755'
+    owner: 'root'
+    path: '/etc/systemd/system/logrotate.timer.d'
+    state: 'directory'
+
+- name: Configure logrotate.timer.d overrides
+  become: true
+  community.general.ini_file:
+    group: 'root'
+    mode: '0644'
+    no_extra_spaces: true
+    option: 'OnCalendar'
+    owner: 'root'
+    path: '/etc/systemd/system/logrotate.timer.d/override.conf'
+    section: 'Timer'
+    state: 'present'
+    value: '*:0/5'
+
+- name: Reload systemd and start logrotate timer
+  become: true
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    enabled: true
+    name: 'logrotate.timer'
+    state: 'restarted'
 
 - name: import pgsodium_getkey script
-  template:
-    src: files/pgsodium_getkey_readonly.sh.j2
+  ansible.builtin.template:
     dest: "{{ pg_bindir }}/pgsodium_getkey.sh"
-    owner: postgres
-    group: postgres
-    mode: 0700
-  when: debpkg_mode or stage2_nix
+    group: 'postgres'
+    mode: '0700'
+    owner: 'postgres'
+    src: 'files/pgsodium_getkey_readonly.sh.j2'
+  when:
+    - (debpkg_mode or stage2_nix)

@@ -85,16 +85,16 @@ if [ "$PSQL_VERSION" == "15" ]; then
     echo "Starting client for PSQL 15"
     PSQL15=@PSQL15_BINDIR@
     BINDIR="$PSQL15"
-elif [ "$PSQL_VERSION" == "16" ]; then
-    echo "Starting client for PSQL 16"
-    PSQL16=@PSQL16_BINDIR@
-    BINDIR="$PSQL16"
+elif [ "$PSQL_VERSION" == "17" ]; then
+    echo "Starting client for PSQL 17"
+    PSQL17=@PSQL17_BINDIR@
+    BINDIR="$PSQL17"
 elif [ "$PSQL_VERSION" == "orioledb-17" ]; then
     echo "Starting client for PSQL ORIOLEDB 17"
-    PSQLORIOLEDB16=@PSQLORIOLEDB17_BINDIR@
-    BINDIR="$PSQLORIOLEDB16"
+    PSQLORIOLEDB17=@PSQLORIOLEDB17_BINDIR@
+    BINDIR="$PSQLORIOLEDB17"
 else
-    echo "Please provide a valid Postgres version (15, 16, or orioledb-16)"
+    echo "Please provide a valid Postgres version (15, 17, or orioledb-17)"
     exit 1
 fi
 

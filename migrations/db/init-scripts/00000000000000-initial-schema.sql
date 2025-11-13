@@ -10,6 +10,11 @@ alter user  supabase_admin with superuser createdb createrole replication bypass
 -- Supabase replication user
 create user supabase_replication_admin with login replication;
 
+-- Supabase etl user
+create user supabase_etl_admin with login replication;
+grant pg_read_all_data to supabase_etl_admin;
+grant create on database postgres to supabase_etl_admin;
+
 -- Supabase read-only user
 create role supabase_read_only_user with login bypassrls;
 grant pg_read_all_data to supabase_read_only_user;
@@ -18,7 +23,7 @@ grant pg_read_all_data to supabase_read_only_user;
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp"      with schema extensions;
 create extension if not exists pgcrypto         with schema extensions;
-create extension if not exists pgjwt            with schema extensions;
+
 
 -- Set up auth roles for the developer
 create role anon                nologin noinherit;

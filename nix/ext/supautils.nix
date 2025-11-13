@@ -1,8 +1,13 @@
-{ lib, stdenv, fetchFromGitHub, postgresql }:
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  postgresql,
+}:
 
 stdenv.mkDerivation rec {
   pname = "supautils";
-  version = "2.6.0";
+  version = "3.0.2";
 
   buildInputs = [ postgresql ];
 
@@ -10,7 +15,7 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-QNfUpQjqHNzbNqBvjb5a3GtNH9hjbBMDUK19xUU3LpI=";
+    hash = "sha256-WTLZShBFVgb18vVi15TSZvtJrNUFgQa6mBkavvRSoUE=";
   };
 
   installPhase = ''
