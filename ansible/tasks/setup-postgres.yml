@@ -322,6 +322,17 @@
       when:
         - (is_psql_oriole or is_psql_17)
 
+- name: Remove extraneous configuration files
+  ansible.builtin.file:
+    path: /var/lib/postgresql/data/{{ conf_item }}
+    state: absent
+  loop:
+    - pg_hba.conf
+    - pg_ident.conf
+    - postgresql.conf
+  loop_control:
+    loop_var: conf_item
+
 - name: copy PG and optimizations systemd units
   ansible.builtin.template:
     dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
