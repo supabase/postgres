@@ -26,7 +26,8 @@ order by
  pgjwt
  postgis_tiger_geocoder
  tsm_system_time
-(4 rows)
+ wal2json
+(5 rows)
 
 /*
 
