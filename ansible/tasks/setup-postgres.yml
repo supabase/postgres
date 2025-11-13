@@ -322,10 +322,12 @@
       when:
         - (is_psql_oriole or is_psql_17)
 
-- name: Remove extraneous configuration files
+- name: Symlink the conf files in PGDATA to the actually-in-use conf files
   ansible.builtin.file:
+    force: true
     path: /var/lib/postgresql/data/{{ conf_item }}
-    state: absent
+    src: /etc/postgresql/{{ conf_item }}
+    state: link
   loop:
     - pg_hba.conf
     - pg_ident.conf
