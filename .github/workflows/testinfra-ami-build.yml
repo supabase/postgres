@@ -109,12 +109,18 @@ jobs:
           echo "" >> common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1
+        env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
           nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
+        env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
