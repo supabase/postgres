@@ -255,6 +255,7 @@
       - /var/lib/postgresql/.nix-profile/bin/initdb
       - -D /var/lib/postgresql/data
       - --allow-group-access
+      - --data-checksums
       - --username=supabase_admin
       - -D /data/pgdata
   args:
@@ -290,6 +291,7 @@
           - /var/lib/postgresql/.nix-profile/bin/initdb
           - -D /var/lib/postgresql/data
           - --allow-group-access
+          - --data-checksums
           - --username=supabase_admin
           - -D /data/pgdata
       args:
@@ -314,6 +316,7 @@
           - /var/lib/postgresql/.nix-profile/bin/initdb
           - -D /var/lib/postgresql/data
           - --allow-group-access
+          - --data-checksums
           - --username=supabase_admin
           - --locale-provider=icu
           - --encoding=UTF-8
