@@ -57,16 +57,35 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       services.postgresql = {
         enable = true;
         package = psql_15;
+        enableTCPIP = true;
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
         # pg_regress test for pgjwt rely on the "extensions" schema to be present
         initialScript = pkgs.writeText "init-postgres-with-schema" ''
           CREATE SCHEMA IF NOT EXISTS extensions;
           CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
         '';
+        settings = (installedExtension "15").defaultSettings or { };
       };
+
+      networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce psql_17;
+          settings = (installedExtension "17").defaultSettings or { };
         };
 
         systemd.services.postgresql-migrate = {
