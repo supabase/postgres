@@ -165,73 +165,59 @@
       loop_control:
         loop_var: 'pg_config_item'
 
-- name: Allow adminapi to write custom config
-  file:
-    path: '{{ item }}'
-    recurse: yes
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: 0775
-  with_items:
-    - '/etc/postgresql'
-    - '/etc/postgresql-custom'
-    - '/etc/postgresql-custom/conf.d'
-  when: debpkg_mode or nixpkg_mode
+    - name: Allow adminapi to write custom config
+      ansible.builtin.file:
+        group: postgres
+        mode: 0775
+        owner: postgres
+        path: '{{ item }}'
+        recurse: yes
+        state: directory
+      with_items:
+        - '/etc/postgresql'
+        - '/etc/postgresql-custom'
+        - '/etc/postgresql-custom/conf.d'
 
-- name: create placeholder config files
-  file:
-    path: '/etc/postgresql-custom/{{ item }}'
-    state: touch
-    owner: postgres
-    group: postgres
-    mode: 0664
-  with_items:
-    - 'generated-optimizations.conf'
-    - 'custom-overrides.conf'
-  when: debpkg_mode or nixpkg_mode
+    - name: create placeholder config files
+      ansible.builtin.file:
+        group: postgres
+        mode: 0664
+        owner: postgres
+        path: '/etc/postgresql-custom/{{ item }}'
+        state: touch
+      with_items:
+        - 'generated-optimizations.conf'
+        - 'custom-overrides.conf'
 
-# Move Postgres configuration files into /etc/postgresql
-# Add postgresql.conf
-- name: import postgresql.conf
-  template:
-    src: files/postgresql_config/postgresql.conf.j2
-    dest: /etc/postgresql/postgresql.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
+    - name: import postgresql.conf
+      ansible.builtin.template:
+        dest: /etc/postgresql/postgresql.conf
+        group: postgres
+        src: files/postgresql_config/postgresql.conf.j2
 
-# Add pg_hba.conf
-- name: import pg_hba.conf
-  template:
-    src: files/postgresql_config/pg_hba.conf.j2
-    dest: /etc/postgresql/pg_hba.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
+    - name: import pg_hba.conf
+      ansible.builtin.template:
+        dest: /etc/postgresql/pg_hba.conf
+        group: postgres
+        src: files/postgresql_config/pg_hba.conf.j2
 
-# Add pg_ident.conf
-- name: import pg_ident.conf
-  template:
-    src: files/postgresql_config/pg_ident.conf.j2
-    dest: /etc/postgresql/pg_ident.conf
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
+    - name: import pg_ident.conf
+      ansible.builtin.template:
+        dest: /etc/postgresql/pg_ident.conf
+        group: postgres
+        src: files/postgresql_config/pg_ident.conf.j2
 
-# Add custom config for read replicas set up
-- name: Move custom read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
-  ansible.builtin.copy:
-    src: "files/postgresql_config/conf.d/read-replica.conf"
-    dest: /etc/postgresql-custom/conf.d/read-replica.conf
-    mode: 0664
-    owner: postgres
-    group: postgres
-  when: debpkg_mode or nixpkg_mode
+    - name: Move custom read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
+      ansible.builtin.copy:
+        dest: /etc/postgresql-custom/conf.d/read-replica.conf
+        group: postgres
+        mode: 0664
+        owner: postgres
+        src: "files/postgresql_config/conf.d/read-replica.conf"
 
-# Install extensions before init
-- name: Install Postgres extensions
-  ansible.builtin.import_tasks:
-    file: 'tasks/setup-docker.yml'
-  when:
-    - (debpkg_mode or stage2_nix)
+    - name: Install Postgres extensions
+      ansible.builtin.import_tasks:
+        file: 'tasks/setup-docker.yml'
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
@@ -271,9 +257,9 @@
       - initdb
       - -o "--allow-group-access"
       - -o "--username=supabase_admin"
-      - -o "-D /var/lib/postgresql/data"
+      - -o "-D /data/pgdata"
   args:
-    creates: /var/lib/postgresql/data/PG_VERSION
+    creates: /data/pgdata/PG_VERSION
   vars:
     ansible_command_timeout: 60
   when:
@@ -307,9 +293,9 @@
           - initdb
           - -o "--allow-group-access"
           - -o "--username=supabase_admin"
-          - -o "-D /var/lib/postgresql/data"
+          - -o "-D /data/pgdata"
       args:
-        creates: /var/lib/postgresql/data/PG_VERSION
+        creates: /data/pgdata/PG_VERSION
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -335,9 +321,9 @@
           - -o "--locale-provider=icu"
           - -o "--encoding=UTF-8"
           - -o "--icu-locale=en_US.UTF-8"
-          - -o "-D /var/lib/postgresql/data"
+          - -o "-D /data/pgdata"
       args:
-        creates: /var/lib/postgresql/data/PG_VERSION
+        creates: /data/pgdata/PG_VERSION
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
