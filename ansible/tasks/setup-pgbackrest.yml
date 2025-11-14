@@ -17,22 +17,18 @@
   when:
     - nixpkg_mode
 
-- name: Allow postgres to run pgBackRest commands as pgbackrest
-  ansible.builtin.lineinfile:
-    create: yes
-    line: 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/pgbackrest'
-    dest: /etc/sudoers.d/pgbackrest
-    mode: '0440'
-    path: '/etc/sudoers.d/pgbackrest'
-    validate: 'visudo -cf %s'
-
 - name: Configure sudoers for pgBackRest
   ansible.builtin.lineinfile:
     create: yes
-    line: 'postgres ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
+    line: "{{ item }}"
     mode: '0440'
     path: '/etc/sudoers.d/pgbackrest'
     validate: 'visudo -cf %s'
+  loop:
+    - 'postgres ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
+    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/pgbackrest'
+    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
+    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/nix'
 
 - name: Install pgBackRest
   ansible.builtin.shell: |
