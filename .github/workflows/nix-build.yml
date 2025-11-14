@@ -91,9 +91,6 @@ jobs:
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-      - name: Build psql bundle
-        run: >
-          nix build ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
       - name: nix build
         shell: bash
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
