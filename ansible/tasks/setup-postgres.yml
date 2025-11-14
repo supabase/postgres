@@ -252,14 +252,13 @@
   become_user: 'postgres'
   ansible.builtin.command:
     argv:
-      - /usr/lib/postgresql/bin/pg_ctl
+      - /var/lib/postgresql/.nix-profile/bin/initdb
       - -D /var/lib/postgresql/data
-      - initdb
-      - -o "--allow-group-access"
-      - -o "--username=supabase_admin"
-      - -o "-D /data/pgdata"
+      - --allow-group-access
+      - --username=supabase_admin
+      - -D /data/pgdata
   args:
-    creates: /data/pgdata/PG_VERSION
+    creates: /var/lib/postgresql/data/PG_VERSION
   vars:
     ansible_command_timeout: 60
   when:
@@ -288,14 +287,13 @@
       become_user: 'postgres'
       ansible.builtin.command:
         argv:
-          - /usr/lib/postgresql/bin/pg_ctl
+          - /var/lib/postgresql/.nix-profile/bin/initdb
           - -D /var/lib/postgresql/data
-          - initdb
-          - -o "--allow-group-access"
-          - -o "--username=supabase_admin"
-          - -o "-D /data/pgdata"
+          - --allow-group-access
+          - --username=supabase_admin
+          - -D /data/pgdata
       args:
-        creates: /data/pgdata/PG_VERSION
+        creates: /var/lib/postgresql/data/PG_VERSION
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -313,17 +311,15 @@
       become_user: 'postgres'
       ansible.builtin.command:
         argv:
-          - /usr/lib/postgresql/bin/pg_ctl
+          - /var/lib/postgresql/.nix-profile/bin/initdb
           - -D /var/lib/postgresql/data
-          - initdb
-          - -o "--allow-group-access"
-          - -o "--username=supabase_admin"
-          - -o "--locale-provider=icu"
-          - -o "--encoding=UTF-8"
-          - -o "--icu-locale=en_US.UTF-8"
-          - -o "-D /data/pgdata"
+          - --allow-group-access
+          - --username=supabase_admin
+          - --locale-provider=icu
+          - --encoding=UTF-8
+          - --icu-locale=en_US.UTF-8
       args:
-        creates: /data/pgdata/PG_VERSION
+        creates: /var/lib/postgresql/data/PG_VERSION
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
