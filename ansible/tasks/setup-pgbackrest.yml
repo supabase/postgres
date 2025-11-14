@@ -15,6 +15,15 @@
     system: true
   when: nixpkg_mode
 
+- name: Allow pgBackRest to run commands
+  copy:
+    dest: /etc/sudoers.d/pgbackrest
+    owner: root
+    group: root
+    mode: '0440'
+    content: |
+      pgbackrest ALL=(ALL) NOPASSWD: /usr/bin/pgbackrest
+
 - name: Install pgBackRest
   become: true
   become_user: pgbackrest
