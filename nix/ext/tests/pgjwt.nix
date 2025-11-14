@@ -132,13 +132,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
-      with subtest("Check upgrade path with postgresql 15"):
-        test.check_upgrade_path("15")
+      if support_upgrade:
+        with subtest("Check upgrade path with postgresql 15"):
+          test.check_upgrade_path("15")
 
-      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
-        # We need to uninstall the extension before running pg_regress
-        test.drop_extension()
-        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
+        with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
+          # We need to uninstall the extension before running pg_regress
+          test.drop_extension()
+          test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
       last_version = None
       with subtest("Check the install of the last version of the extension"):
@@ -161,13 +162,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       with subtest("Check last version of the extension after postgresql upgrade"):
         test.assert_version_matches(last_version)
 
-      with subtest("Check upgrade path with postgresql 17"):
-        test.check_upgrade_path("17")
+      if support_upgrade:
+        with subtest("Check upgrade path with postgresql 17"):
+          test.check_upgrade_path("17")
 
-      with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-        # We need to uninstall the extension before running pg_regress
-        test.drop_extension()
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+        with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
+          # We need to uninstall the extension before running pg_regress
+          test.drop_extension()
+          test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("Check the install of the last version of the extension"):
         test.check_install_last_version("17")
