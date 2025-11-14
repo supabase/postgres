@@ -14,6 +14,17 @@ capability dac_read_search,
 
 deny @{HOME}/** rwx,
 
+# Explicitly deny shell execution to block COPY ... PROGRAM
+# This prevents arbitrary command execution via postgres
+deny /bin/sh x,
+deny /bin/bash x,
+deny /bin/dash x,
+deny /usr/bin/sh x,
+deny /usr/bin/bash x,
+deny /usr/bin/dash x,
+deny /usr/bin/cat x,
+deny /usr/bin/mknod x,
+
 /data/pgdata/** r,
 /dev/shm rw,
 /etc/java-11-openjdk/logging.properties r,
@@ -26,11 +37,10 @@ deny @{HOME}/** rwx,
 /etc/timezone r,
 /etc/wal-g/config.json r,
 /run/systemd/notify rw,
-/usr/bin/cat rix,
-/usr/bin/dash rix,
-/usr/bin/mknod rix,
+# admin-mgr: unrestricted for WAL operations (archive_command/restore_command)
 /usr/bin/admin-mgr Ux,
 /usr/lib/postgresql/bin/* mrix,
+# wal-g: allowed for backup operations
 /usr/local/bin/wal-g rix,
 /usr/local/lib/groonga/plugins/tokenizers/mecab.so mr,
 /usr/local/lib/libSFCGAL.so.* mr,
