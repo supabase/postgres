@@ -212,7 +212,7 @@
   become: true
   become_user: 'postgres'
   ansible.builtin.command:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--data-checksums" -o "--username=supabase_admin"
   vars:
     ansible_command_timeout: 60
   when:
