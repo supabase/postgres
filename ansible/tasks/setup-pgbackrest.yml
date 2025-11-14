@@ -2,7 +2,8 @@
   ansible.builtin.group:
     name: pgbackrest
     state: present
-  when: nixpkg_mode
+  when:
+    - nixpkg_mode
 
 - name: Create pgBackRest user
   ansible.builtin.user:
@@ -13,10 +14,11 @@
     name: pgbackrest
     shell: /sbin/nologin
     system: true
-  when: nixpkg_mode
+  when:
+    - nixpkg_mode
 
 - name: Allow pgBackRest to run commands
-  copy:
+  ansible.builtin.copy:
     dest: /etc/sudoers.d/pgbackrest
     owner: root
     group: root
@@ -25,12 +27,13 @@
       pgbackrest ALL=(ALL) NOPASSWD: /usr/bin/pgbackrest
 
 - name: Install pgBackRest
-  become: true
-  become_user: pgbackrest
   ansible.builtin.shell: |
     sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
+  become: true
+  become_user: pgbackrest
   changed_when: true
-  when: stage2_nix
+  when:
+    - stage2_nix
 
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
@@ -46,7 +49,8 @@
     - /var/log/pgbackrest
   loop_control:
     loop_var: backrest_dir
-  when: nixpkg_mode
+  when:
+    - nixpkg_mode
 
 - name: Symlink pgbackrest.conf
   ansible.legacy.file:
@@ -70,7 +74,8 @@
     - {name: repo1.conf, path: conf.d}
   loop_control:
     loop_var: conf_item
-  when: stage2_nix
+  when:
+    - stage2_nix
 
 - name: Configure sudoers for pgBackRest
   ansible.builtin.lineinfile:
