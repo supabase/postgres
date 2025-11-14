@@ -25,9 +25,10 @@ order by
  pg_cron
  pgjwt
  postgis_tiger_geocoder
+ supautils
  tsm_system_time
  wal2json
-(5 rows)
+(6 rows)
 
 /*
 

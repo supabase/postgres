@@ -517,6 +517,15 @@
       "hash": "sha256-MC87bqgtynnDhmNZAu96jvfCpsGDCPB0g5TZfRQHd30="
     }
   },
+  "supautils": {
+    "3.0.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-j0iASDzmcZRLbHaS9ZNRWwzii7mcC+8wYHM0/mOLkbs="
+    }
+  },
   "timescaledb": {
     "2.9.1": {
       "postgresql": [
