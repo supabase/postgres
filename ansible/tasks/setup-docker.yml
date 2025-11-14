@@ -38,8 +38,9 @@
       become: true
 
 - name: debpkg_mode or stage2_nix actions
+  become: true
   when:
-    - (debpkg_mode or stage2_nix)
+    - (debpkg_mode or stage2_nix or nixpkg_mode)
   block:
     # supautils
     - name: supautils - write custom supautils.conf
@@ -54,7 +55,6 @@
       ansible.builtin.copy:
         dest: '/etc/postgresql-custom/extension-custom-scripts'
         src: 'files/postgresql_extension_custom_scripts/'
-      become: true
 
     - name: supautils - chown extension custom scripts
       ansible.builtin.file:
@@ -63,7 +63,6 @@
         owner: 'postgres'
         path: '/etc/postgresql-custom/extension-custom-scripts'
         recurse: true
-      become: true
 
 - name: Cleanup - extension packages
   ansible.builtin.file:
