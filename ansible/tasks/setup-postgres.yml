@@ -299,7 +299,7 @@
           - initdb
           - -o "--allow-group-access"
           - -o "--username=supabase_admin"
-          - -o "--pgdata /var/lib/postgresql/data"
+          - -o "-D /var/lib/postgresql/data"
       args:
         creates: /var/lib/postgresql/data/PG_VERSION
       environment:
