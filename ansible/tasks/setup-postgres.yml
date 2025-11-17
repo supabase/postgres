@@ -183,29 +183,23 @@
         group: postgres
         mode: 0664
         owner: postgres
-        path: '/etc/postgresql-custom/{{ item }}'
+        path: '/etc/postgresql-custom/conf.d/{{ item }}'
         state: touch
       with_items:
         - 'generated-optimizations.conf'
         - 'custom-overrides.conf'
 
-    - name: import postgresql.conf
+    - name: import postgresql.conf, pg_hba.conf, and pg_ident.conf
       ansible.builtin.template:
-        dest: /etc/postgresql/postgresql.conf
+        dest: /etc/postgresql/{{ conf_item }}
         group: postgres
-        src: files/postgresql_config/postgresql.conf.j2
-
-    - name: import pg_hba.conf
-      ansible.builtin.template:
-        dest: /etc/postgresql/pg_hba.conf
-        group: postgres
-        src: files/postgresql_config/pg_hba.conf.j2
-
-    - name: import pg_ident.conf
-      ansible.builtin.template:
-        dest: /etc/postgresql/pg_ident.conf
-        group: postgres
-        src: files/postgresql_config/pg_ident.conf.j2
+        src: files/postgresql_config/{{ conf_item }}.j2
+      loop:
+        - postgresql.conf
+        - pg_hba.conf
+        - pg_ident.conf
+      loop_control:
+        loop_var: conf_item
 
     - name: Move custom read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
       ansible.builtin.copy:
@@ -247,6 +241,10 @@
         src: '/data/pgdata'
         state: 'link'
 
+    - command: ls -ld /var/lib/postgresql/data
+      register: pgdata
+    - debug:
+        msg: "{{ pgdata.stdout }}"
 - name: Initialize the database
   become: true
   become_user: 'postgres'
@@ -257,7 +255,6 @@
       - --allow-group-access
       - --data-checksums
       - --username=supabase_admin
-      - -D /data/pgdata
   args:
     creates: /var/lib/postgresql/data/PG_VERSION
   vars:
@@ -274,7 +271,7 @@
   when:
     - nixpkg_mode
 
-- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+- name: Check psql_version and call initdb appropriately
   when:
     - stage2_nix
   block:
@@ -283,6 +280,10 @@
         is_psql_17: "{{ psql_version in ['psql_17'] }}"
         is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
 
+    - command: ls -ld /var/lib/postgresql/data
+      register: pgdata
+    - debug:
+        msg: "{{ pgdata.stdout }}"
     - name: Initialize the database stage2_nix (non-orioledb)
       become: true
       become_user: 'postgres'
@@ -293,7 +294,6 @@
           - --allow-group-access
           - --data-checksums
           - --username=supabase_admin
-          - -D /data/pgdata
       args:
         creates: /var/lib/postgresql/data/PG_VERSION
       environment:
