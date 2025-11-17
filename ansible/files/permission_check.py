@@ -161,13 +161,13 @@ expected_directory_permissions = {
 
 # This program depends on osquery being installed on the system
 # Function to run osquery
-def run_osquery(query):
-    process = subprocess.Popen(
-        ["osqueryi", "--json", query], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    output, error = process.communicate()
-    return output.decode("utf-8")
-
+#def run_osquery(query):
+#    process = subprocess.Popen(
+#        ["osqueryi", "--json", query], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+#    )
+#    output, error = process.communicate()
+#    return output.decode("utf-8")
+#
 
 def parse_json(json_str):
     try:
