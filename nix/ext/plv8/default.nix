@@ -14,6 +14,7 @@
   patchelf,
   buildEnv,
   nodejs_20,
+  libcxx,
 }:
 
 let
@@ -139,26 +140,26 @@ let
           ${lib.optionalString stdenv.isDarwin ''
             install_name_tool -add_rpath "${v8}/lib" $out/lib/$LIB_NAME
             install_name_tool -add_rpath "${postgresql}/lib" $out/lib/$LIB_NAME
-            install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+            install_name_tool -add_rpath "${libcxx}/lib" $out/lib/$LIB_NAME
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
           ${
             lib.optionalString (!stdenv.isDarwin) ''
-              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
             ''
           }
         else
           ${lib.optionalString stdenv.isDarwin ''
             install_name_tool -add_rpath "${v8}/lib" $out/lib/$LIB_NAME
             install_name_tool -add_rpath "${postgresql}/lib" $out/lib/$LIB_NAME
-            install_name_tool -add_rpath "${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+            install_name_tool -add_rpath "${libcxx}/lib" $out/lib/$LIB_NAME
             install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/$LIB_NAME
           ''}
 
           ${
             lib.optionalString (!stdenv.isDarwin) ''
-              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/$LIB_NAME
+              ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${libcxx}/lib" $out/lib/$LIB_NAME
             ''
           }
         fi
