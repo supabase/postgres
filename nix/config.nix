@@ -46,8 +46,8 @@ in
             hash = "sha256-Bt110wXNOHDuYrOTLmYcYkVD6vmuK6N83sCk+O3QUdI=";
           };
           "17" = {
-            version = "17.6";
-            hash = "sha256-4GMKNgCuonURcVVjJZ7CERzV9DU6SwQOC+gn+UzXqLA=";
+            version = "17.7";
+            hash = "sha256-7540MwLszTMRLxsvAke+STy1doMTretViwLeh5ei6bU";
           };
         };
         orioledb = {
