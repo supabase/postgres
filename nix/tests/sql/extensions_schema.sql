@@ -1,3 +1,7 @@
+BEGIN;
+
+set client_min_messages = warning;
+
 -- all default extensions are installed in a schema "extensions"
 -- we don't include the version as that will break often, we only care about
 -- ensuring these extensions are present
@@ -13,3 +17,4 @@ where
     n.nspname = 'extensions' and e.extname != 'pgjwt'
 order by
     e.extname;
+ROLLBACK;

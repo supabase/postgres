@@ -1,3 +1,9 @@
+BEGIN;
+
+set client_min_messages = warning;
+create extension if not exists pgrouting with schema extensions;
+create extension if not exists postgis with schema extensions;
+
 create schema v;
 
 -- create the roads table
@@ -24,4 +30,4 @@ select * from pgr_dijkstra(
 );
 
 drop schema v cascade;
-
+ROLLBACK;

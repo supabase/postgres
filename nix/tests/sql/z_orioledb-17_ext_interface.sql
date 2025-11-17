@@ -6,12 +6,97 @@ that emerge as versions change.
 
 */
 
+-- Create all extensions within a transaction
+-- This matches production behavior where users create extensions as needed
+-- Supautils will automatically enforce schema rules and run after-create scripts
+
+BEGIN;
+
+-- disable notice messages because they differ between 15 and 17
+set client_min_messages = warning;
+
+-- Create required schemas for relocatable extensions
+-- Non-relocatable extensions (pg_tle, pgsodium, supabase_vault, pg_graphql)
+-- automatically create their own schemas
+create schema if not exists extensions;
+create schema if not exists topology;
+
+-- Privileged extensions -> extensions schema (enforced by supautils)
+create extension if not exists address_standardizer with schema extensions;
+create extension if not exists address_standardizer_data_us with schema extensions;
+create extension if not exists autoinc with schema extensions;
+create extension if not exists bloom with schema extensions;
+create extension if not exists btree_gin with schema extensions;
+create extension if not exists btree_gist with schema extensions;
+create extension if not exists citext with schema extensions;
+create extension if not exists cube with schema extensions;
+create extension if not exists dblink with schema extensions;
+create extension if not exists dict_int with schema extensions;
+create extension if not exists dict_xsyn with schema extensions;
+create extension if not exists earthdistance with schema extensions;
+create extension if not exists fuzzystrmatch with schema extensions;
+create extension if not exists http with schema extensions;
+create extension if not exists hstore with schema extensions;
+create extension if not exists hypopg with schema extensions;
+create extension if not exists index_advisor with schema extensions;
+create extension if not exists insert_username with schema extensions;
+create extension if not exists intarray with schema extensions;
+create extension if not exists isn with schema extensions;
+create extension if not exists ltree with schema extensions;
+create extension if not exists moddatetime with schema extensions;
+create extension if not exists pg_buffercache with schema extensions;
+create extension if not exists pg_net with schema extensions;
+create extension if not exists pg_hashids with schema extensions;
+create extension if not exists pg_prewarm with schema extensions;
+create extension if not exists pg_jsonschema with schema extensions;
+create extension if not exists pg_repack with schema extensions;
+create extension if not exists pg_stat_monitor with schema extensions;
+create extension if not exists pg_tle;
+create extension if not exists pg_trgm with schema extensions;
+create extension if not exists pg_walinspect with schema extensions;
+create extension if not exists pgaudit with schema extensions;
+create extension if not exists pgtap with schema extensions;
+create extension if not exists pgroonga with schema extensions;
+create extension if not exists pgroonga_database with schema extensions;
+create extension if not exists pgsodium;
+create extension if not exists pgrowlocks with schema extensions;
+create extension if not exists pgstattuple with schema extensions;
+create extension if not exists plpgsql_check with schema extensions;
+create extension if not exists postgis with schema extensions;
+create extension if not exists postgis_raster with schema extensions;
+create extension if not exists postgis_sfcgal with schema extensions;
+create extension if not exists postgis_topology with schema topology;
+create extension if not exists pgrouting with schema extensions;
+create extension if not exists postgres_fdw with schema extensions;
+create extension if not exists rum with schema extensions;
+create extension if not exists refint with schema extensions;
+create extension if not exists seg with schema extensions;
+create extension if not exists sslinfo with schema extensions;
+create extension if not exists supabase_vault;
+create extension if not exists tablefunc with schema extensions;
+create extension if not exists tcn with schema extensions;
+create extension if not exists tsm_system_rows with schema extensions;
+create extension if not exists unaccent with schema extensions;
+create extension if not exists vector with schema extensions;
+create extension if not exists wrappers with schema extensions;
+
+-- Non-privileged extensions (use their natural default schemas)
+create extension if not exists amcheck;
+create extension if not exists file_fdw;
+create extension if not exists intagg;
+create extension if not exists lo;
+create extension if not exists pageinspect;
+create extension if not exists pg_freespacemap;
+create extension if not exists pgmq;
+create extension if not exists pg_surgery with schema pg_catalog; -- non-relocatable
+create extension if not exists pg_visibility;
+create extension if not exists xml2;
 
 /*
 
 List all extensions that are not enabled
 If a new entry shows up in this list, that means a new extension has been
-added and you should `create extension ...` to enable it in ./nix/tests/prime
+added and you should create extension above
 
 */
 
@@ -112,3 +197,6 @@ order by
   n.nspname,
   pc.relname,
   pa.attname;
+
+-- Rollback to clean up all extensions created in this test
+ROLLBACK;

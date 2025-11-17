@@ -2,6 +2,9 @@
 This test is excluded from the Postgres 17 suite because it does not ship
 with the Supabase PG17 image
 */
+BEGIN;
+
+set client_min_messages = warning;
 create extension if not exists timescaledb;
 
 -- Confirm we're running the apache version
@@ -36,4 +39,6 @@ from
 
 -- Drop schema v and all its entities
 drop schema v cascade;
+
+ROLLBACK;
 

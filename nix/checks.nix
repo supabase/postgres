@@ -341,9 +341,8 @@
 
                 check_postgres_ready
 
-                log info "Loading prime SQL file"
-                if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
-                  log error "Error executing SQL file"
+                if ! psql -p ${pgPort} -h ${self.supabase.defaults.host} --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime-production.sql}; then
+                  echo "Error executing SQL file"
                   exit 1
                 fi
 

@@ -1,3 +1,8 @@
+BEGIN;
+
+set client_min_messages = warning;
+create extension if not exists plpgsql_check with schema extensions;
+
 create schema v;
 
 create table v.t1(
@@ -24,3 +29,4 @@ select * from v.f1();
 select * from plpgsql_check_function('v.f1()');
 
 drop schema v cascade;
+ROLLBACK;

@@ -1,3 +1,9 @@
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+create extension if not exists vector with schema extensions;
+
 create schema v;
 
 create table v.items(
@@ -70,3 +76,5 @@ from
 
 -- Cleanup
 drop schema v cascade;
+
+ROLLBACK;

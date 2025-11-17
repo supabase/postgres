@@ -1,3 +1,12 @@
+-- Create pg_tle to ensure pgtle_admin role exists
+-- This matches production where users can create pg_tle extension
+BEGIN;
+
+set client_min_messages = warning;
+create schema if not exists extensions;
+-- pg_tle is non-relocatable and automatically creates the pgtle schema
+create extension if not exists pg_tle;
+
 -- version-specific roles and attributes
 select
   rolname,
@@ -84,3 +93,7 @@ cross join lateral pg_catalog.aclexplode(p.proacl) as acl
 where p.pronamespace::regnamespace::text = 'pg_catalog'
   and acl.grantee::regrole::text != 'supabase_admin'
 order by object_name, grantee, privilege_type;
+
+-- Rollback to clean up pg_tle extension
+ROLLBACK;
+

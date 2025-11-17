@@ -1,3 +1,6 @@
+BEGIN;
+set client_min_messages = warning;
+create extension if not exists pg_net with schema extensions;
 -- This is a very basic test because you can't get the value returned
 -- by a pg_net request in the same transaction that created it;
 select
@@ -9,3 +12,4 @@ select
           1
 (1 row)
 
+ROLLBACK;

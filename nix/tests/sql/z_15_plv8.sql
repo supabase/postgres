@@ -2,6 +2,9 @@
 This test is excluded from the Postgres 17 suite because it does not ship
 with the Supabase PG17 image
 */
+BEGIN;
+
+set client_min_messages = warning;
 create extension if not exists plv8;
 
 create schema v;
@@ -18,3 +21,5 @@ select
   v.multiply_numbers(3, 4);
 
 drop schema v cascade;
+
+ROLLBACK;

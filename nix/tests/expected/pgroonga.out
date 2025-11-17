@@ -1,3 +1,8 @@
+BEGIN;
+set client_min_messages = warning;
+create schema if not exists extensions;
+create extension if not exists pgroonga with schema extensions;
+create extension if not exists pgroonga_database with schema extensions;
 create schema v;
 create table v.roon(
   id serial primary key,
@@ -73,4 +78,4 @@ select * from v.roon where content &@~ 'supports';
 (1 row)
 
 drop schema v cascade;
-NOTICE:  drop cascades to table v.roon
+ROLLBACK;

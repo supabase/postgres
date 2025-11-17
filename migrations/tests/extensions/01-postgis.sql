@@ -2,6 +2,10 @@ begin;
 do $_$
 begin
   if not exists (select 1 from pg_extension where extname = 'orioledb') then
+    -- create address_standardizer and dependencies first to ensure correct schema placement
+    create extension if not exists address_standardizer with schema extensions;
+    create extension if not exists address_standardizer_data_us with schema extensions;
+
     -- create postgis tiger as supabase_admin
     create extension if not exists postgis_tiger_geocoder cascade;
 

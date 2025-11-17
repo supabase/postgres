@@ -1,3 +1,6 @@
+BEGIN;
+set client_min_messages = warning;
+create extension if not exists pgmq; -- pgmq is non-relocatable (schema = 'pgmq')
 -- Test the standard flow
 select
   pgmq.create('Foo');
@@ -121,24 +124,33 @@ select
 );
 */
 -- Make sure SQLI enabling characters are blocked
+-- Use savepoints to test error conditions without aborting the transaction
+SAVEPOINT test_invalid_names_1;
 select pgmq.create('F--oo');
 ERROR:  queue name contains invalid characters: $, ;, --, or \'
 CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
 PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
 SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
 PL/pgSQL function pgmq."create"(text) line 3 at PERFORM
+ROLLBACK TO SAVEPOINT test_invalid_names_1;
+SAVEPOINT test_invalid_names_2;
 select pgmq.create('F$oo');
 ERROR:  queue name contains invalid characters: $, ;, --, or \'
 CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
+SQL expression "pgmq.format_table_name(queue_name, 'q')"
 PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
 SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
 PL/pgSQL function pgmq."create"(text) line 3 at PERFORM
+ROLLBACK TO SAVEPOINT test_invalid_names_2;
+SAVEPOINT test_invalid_names_3;
 select pgmq.create($$F'oo$$);
 ERROR:  queue name contains invalid characters: $, ;, --, or \'
 CONTEXT:  PL/pgSQL function pgmq.format_table_name(text,text) line 5 at RAISE
+SQL expression "pgmq.format_table_name(queue_name, 'q')"
 PL/pgSQL function pgmq.create_non_partitioned(text) line 3 during statement block local variable initialization
 SQL statement "SELECT pgmq.create_non_partitioned(queue_name)"
 PL/pgSQL function pgmq."create"(text) line 3 at PERFORM
+ROLLBACK TO SAVEPOINT test_invalid_names_3;
 \echo
 
 -- pgmq schema functions with owners (ownership is modified on ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql)
@@ -207,3 +219,4 @@ show search_path;
  "$user", public, auth, extensions
 (1 row)
 
+ROLLBACK;

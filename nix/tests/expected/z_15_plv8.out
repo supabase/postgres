@@ -2,8 +2,9 @@
 This test is excluded from the Postgres 17 suite because it does not ship
 with the Supabase PG17 image
 */
+BEGIN;
+set client_min_messages = warning;
 create extension if not exists plv8;
-NOTICE:  extension "plv8" already exists, skipping
 create schema v;
 -- create a function to perform some JavaScript operations
 create function v.multiply_numbers(a integer, b integer)
@@ -20,4 +21,4 @@ select
 (1 row)
 
 drop schema v cascade;
-NOTICE:  drop cascades to function v.multiply_numbers(integer,integer)
+ROLLBACK;

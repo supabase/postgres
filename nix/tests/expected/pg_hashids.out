@@ -1,3 +1,6 @@
+BEGIN;
+set client_min_messages = warning;
+create extension if not exists pg_hashids with schema extensions;
 select id_encode(1001); -- Result: jNl
  id_encode 
 -----------
@@ -34,3 +37,4 @@ select id_decode('3GJ956J9B9', 'This is my salt', 10, 'abcdefghijABCDxFGHIJ12345
  {1234567}
 (1 row)
 
+ROLLBACK;

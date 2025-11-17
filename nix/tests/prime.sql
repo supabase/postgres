@@ -1,4 +1,4 @@
--- disable notice messages becuase they differ between 15 and 17
+-- disable notice messages because they differ between 15 and 17
 set client_min_messages = warning;
 -- CREATE ROLE anon;
 -- CREATE ROLE authenticated;
