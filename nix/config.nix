@@ -46,8 +46,8 @@ in
       supportedPostgresVersions = {
         postgres = {
           "15" = {
-            version = "15.14";
-            hash = "sha256-Bt110wXNOHDuYrOTLmYcYkVD6vmuK6N83sCk+O3QUdI=";
+            version = "15.15";
+            hash = "sha256-V1Oq64sJy/YQFveKppv1y98BtDJj8BDL8WjIKJYhOqo";
           };
           "17" = {
             version = "17.6";
