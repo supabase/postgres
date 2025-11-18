@@ -24,6 +24,7 @@
         update-readme = mkApp "update-readme" "update-readme";
         show-commands = mkApp "show-commands" "show-commands";
         build-test-ami = mkApp "build-test-ami" "build-test-ami";
+        pg-ami-builder = mkApp "pg-ami-builder" "pg-ami-builder";
         run-testinfra = mkApp "run-testinfra" "run-testinfra";
         cleanup-ami = mkApp "cleanup-ami" "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";

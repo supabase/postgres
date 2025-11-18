@@ -47,6 +47,16 @@
               ansible-lint
               self'.packages.packer
 
+              # Go development tools
+              go
+              gopls
+              gotools
+              go-tools
+              delve
+
+              # AWS tools
+              awscli2
+
               self'.packages.start-server
               self'.packages.start-client
               self'.packages.start-replica
@@ -55,6 +65,7 @@
               self'.packages.build-test-ami
               self'.packages.run-testinfra
               self'.packages.cleanup-ami
+              self'.packages.pg-ami-builder
               dbmate
               nushell
               pythonEnv

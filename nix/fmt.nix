@@ -11,6 +11,10 @@
           package = pkgs.nixfmt-rfc-style;
         };
         ruff-format.enable = true;
+        gofumpt = {
+          enable = true;
+          package = pkgs.gofumpt;
+        };
       };
     };
 }

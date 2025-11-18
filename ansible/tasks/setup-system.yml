@@ -12,7 +12,7 @@
       ansible.builtin.apt:
         cache_valid_time: 3600
         pkg:
-          - acl
+          - acll
           - bwm-ng
           - fail2ban
           - htop

@@ -51,6 +51,11 @@ variable "postgres_major_version" {
   default = ""
 }
 
+variable "source-ami" {
+  type    = string
+  default = ""
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -64,14 +69,21 @@ source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
-  source_ami_filter {
-    filters = {
-      name   = "${var.ami_name}-${var.postgres-version}-stage-1"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
+
+  # Use source-ami variable if provided, otherwise use filter
+  source_ami = var.source-ami != "" ? var.source-ami : null
+
+  dynamic "source_ami_filter" {
+    for_each = var.source-ami == "" ? [1] : []
+    content {
+      filters = {
+        name   = "${var.ami_name}-${var.postgres-version}-stage-1"
+        root-device-type    = "ebs"
+        virtualization-type = "hvm"
+      }
+      most_recent = true
+      owners      = ["amazon", "self"]
     }
-    most_recent = true
-    owners      = ["amazon", "self"]
   }
 
   communicator = "ssh"
