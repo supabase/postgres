@@ -215,6 +215,13 @@ fi
 echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
+# Copy entire conf.d directory from postgresql_config
+POSTGRESQL_CONFIG_DIR="@POSTGRESQL_CONFIG_DIR@"
+cp -r "$POSTGRESQL_CONFIG_DIR/conf.d" "$DATDIR/"
+
+# Make conf.d files writable (they're read-only from Nix store)
+chmod -R u+w "$DATDIR/conf.d"
+
 cp "$READREPL_CONFIG_FILE" "$DATDIR/read-replica.conf"
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
@@ -236,6 +243,7 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
+-e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
 # Function to configure OrioleDB specific settings

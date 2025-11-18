@@ -178,6 +178,7 @@ COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
@@ -198,8 +199,8 @@ RUN sed -i \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
-    mkdir -p /etc/postgresql-custom && \
-    chown postgres:postgres /etc/postgresql-custom
+    mkdir -p /etc/postgresql-custom/conf.d && \
+    chown -R postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
