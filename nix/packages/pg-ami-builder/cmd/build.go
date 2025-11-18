@@ -118,54 +118,67 @@ func runBuildPhase1(cmd *cobra.Command, args []string) error {
 	if packerErr != nil {
 		fmt.Printf("\n✗ Packer build failed: %v\n", packerErr)
 
-		// Try to find the packer instance by tag
-		ec2Client, err := aws.NewEC2Client(ctx, region)
-		if err != nil {
-			fmt.Printf("⚠ Could not create EC2 client to find instance: %v\n", err)
-			return fmt.Errorf("packer build failed: %w", packerErr)
-		}
-
-		fmt.Println("\n✓ Looking for packer instance...")
-		instanceID, err := ec2Client.FindInstanceByTag(ctx, "packerExecutionId", executionID)
-		if err != nil {
-			fmt.Printf("⚠ Could not find packer instance: %v\n", err)
-			fmt.Println("\nPacker may have cleaned up the instance already.")
-			return fmt.Errorf("packer build failed: %w", packerErr)
-		}
-
-		fmt.Printf("✓ Found packer instance: %s\n", instanceID)
-
-		// Save state for debugging
+		// Get state file path first
 		stateFilePath := stateFile
 		if stateFilePath == "" {
+			var err error
 			stateFilePath, err = state.GetDefaultStateFile()
 			if err != nil {
-				return fmt.Errorf("failed to get default state file: %w", err)
+				fmt.Printf("⚠ Could not get state file path: %v\n", err)
+				return fmt.Errorf("packer build failed: %w", packerErr)
 			}
 		}
 
-		buildState := &state.State{
-			Region:          region,
-			PostgresVersion: postgresVersion,
-			GitSHA:          sha,
+		// Load existing state or create new
+		buildState, err := state.LoadState(stateFilePath)
+		if err != nil {
+			// Create new state if none exists
+			buildState = &state.State{
+				Region:          region,
+				PostgresVersion: postgresVersion,
+				GitSHA:          sha,
+			}
 		}
+
+		// Try to find the packer instance by tag
+		var instanceID string
+		ec2Client, err := aws.NewEC2Client(ctx, region)
+		if err != nil {
+			fmt.Printf("⚠ Could not create EC2 client to find instance: %v\n", err)
+		} else {
+			fmt.Println("\n✓ Looking for packer instance...")
+			instanceID, err = ec2Client.FindInstanceByTag(ctx, "packerExecutionId", executionID)
+			if err != nil {
+				fmt.Printf("⚠ Could not find packer instance: %v\n", err)
+				fmt.Println("  Packer may have cleaned up the instance already.")
+			} else {
+				fmt.Printf("✓ Found packer instance: %s\n", instanceID)
+			}
+		}
+
+		// Save state with execution ID (and instance ID if found)
 		buildState.SetPhaseState("phase1", &state.PhaseState{
-			InstanceID:  instanceID,
+			InstanceID:  instanceID, // Will be empty string if not found
 			ExecutionID: executionID,
 			Timestamp:   time.Now().Format(time.RFC3339),
 		})
 
 		if err := state.SaveState(stateFilePath, buildState); err != nil {
-			return fmt.Errorf("failed to save state: %w", err)
+			fmt.Printf("⚠ Could not save state: %v\n", err)
+		} else {
+			fmt.Printf("\n✓ State saved to: %s\n", stateFilePath)
+			fmt.Printf("  Execution ID: %s\n", executionID)
+			if instanceID != "" {
+				fmt.Printf("  Instance ID: %s\n", instanceID)
+				fmt.Printf("\nNext steps:\n")
+				fmt.Printf("  - SSH into instance: pg-ami-builder ssh\n")
+				fmt.Printf("  - Re-run ansible: pg-ami-builder ansible-rerun phase1 --sync-files\n")
+				fmt.Printf("  - Cleanup: pg-ami-builder cleanup\n")
+			} else {
+				fmt.Printf("\nNo instance available for debugging (already cleaned up by packer)\n")
+			}
 		}
 
-		fmt.Printf("\nInstance kept running for debugging:\n")
-		fmt.Printf("  Instance ID: %s\n", instanceID)
-		fmt.Printf("  State saved to: %s\n", stateFilePath)
-		fmt.Printf("\nNext steps:\n")
-		fmt.Printf("  - SSH into instance: pg-ami-builder ssh\n")
-		fmt.Printf("  - Re-run ansible: pg-ami-builder ansible-rerun phase1 --sync-files\n")
-		fmt.Printf("  - Cleanup: pg-ami-builder cleanup\n")
 		return fmt.Errorf("packer build failed: %w", packerErr)
 	}
 
@@ -319,54 +332,67 @@ func runBuildPhase2(cmd *cobra.Command, args []string) error {
 	if packerErr != nil {
 		fmt.Printf("\n✗ Packer build failed: %v\n", packerErr)
 
-		// Try to find the packer instance by tag
-		ec2Client, err := aws.NewEC2Client(ctx, region)
-		if err != nil {
-			fmt.Printf("⚠ Could not create EC2 client to find instance: %v\n", err)
-			return fmt.Errorf("packer build failed: %w", packerErr)
-		}
-
-		fmt.Println("\n✓ Looking for packer instance...")
-		instanceID, err := ec2Client.FindInstanceByTag(ctx, "packerExecutionId", executionID)
-		if err != nil {
-			fmt.Printf("⚠ Could not find packer instance: %v\n", err)
-			fmt.Println("\nPacker may have cleaned up the instance already.")
-			return fmt.Errorf("packer build failed: %w", packerErr)
-		}
-
-		fmt.Printf("✓ Found packer instance: %s\n", instanceID)
-
-		// Save state for debugging
+		// Get state file path first
 		stateFilePath := stateFile
 		if stateFilePath == "" {
+			var err error
 			stateFilePath, err = state.GetDefaultStateFile()
 			if err != nil {
-				return fmt.Errorf("failed to get default state file: %w", err)
+				fmt.Printf("⚠ Could not get state file path: %v\n", err)
+				return fmt.Errorf("packer build failed: %w", packerErr)
 			}
 		}
 
-		buildState := &state.State{
-			Region:          region,
-			PostgresVersion: postgresVersion,
-			GitSHA:          sha,
+		// Load existing state or create new
+		buildState, err := state.LoadState(stateFilePath)
+		if err != nil {
+			// Create new state if none exists
+			buildState = &state.State{
+				Region:          region,
+				PostgresVersion: postgresVersion,
+				GitSHA:          sha,
+			}
 		}
+
+		// Try to find the packer instance by tag
+		var instanceID string
+		ec2Client, err := aws.NewEC2Client(ctx, region)
+		if err != nil {
+			fmt.Printf("⚠ Could not create EC2 client to find instance: %v\n", err)
+		} else {
+			fmt.Println("\n✓ Looking for packer instance...")
+			instanceID, err = ec2Client.FindInstanceByTag(ctx, "packerExecutionId", executionID)
+			if err != nil {
+				fmt.Printf("⚠ Could not find packer instance: %v\n", err)
+				fmt.Println("  Packer may have cleaned up the instance already.")
+			} else {
+				fmt.Printf("✓ Found packer instance: %s\n", instanceID)
+			}
+		}
+
+		// Save state with execution ID (and instance ID if found)
 		buildState.SetPhaseState("phase2", &state.PhaseState{
-			InstanceID:  instanceID,
+			InstanceID:  instanceID, // Will be empty string if not found
 			ExecutionID: executionID,
 			Timestamp:   time.Now().Format(time.RFC3339),
 		})
 
 		if err := state.SaveState(stateFilePath, buildState); err != nil {
-			return fmt.Errorf("failed to save state: %w", err)
+			fmt.Printf("⚠ Could not save state: %v\n", err)
+		} else {
+			fmt.Printf("\n✓ State saved to: %s\n", stateFilePath)
+			fmt.Printf("  Execution ID: %s\n", executionID)
+			if instanceID != "" {
+				fmt.Printf("  Instance ID: %s\n", instanceID)
+				fmt.Printf("\nNext steps:\n")
+				fmt.Printf("  - SSH into instance: pg-ami-builder ssh\n")
+				fmt.Printf("  - Re-run ansible: pg-ami-builder ansible-rerun phase2 --sync-files\n")
+				fmt.Printf("  - Cleanup: pg-ami-builder cleanup\n")
+			} else {
+				fmt.Printf("\nNo instance available for debugging (already cleaned up by packer)\n")
+			}
 		}
 
-		fmt.Printf("\nInstance kept running for debugging:\n")
-		fmt.Printf("  Instance ID: %s\n", instanceID)
-		fmt.Printf("  State saved to: %s\n", stateFilePath)
-		fmt.Printf("\nNext steps:\n")
-		fmt.Printf("  - SSH into instance: pg-ami-builder ssh\n")
-		fmt.Printf("  - Re-run ansible: pg-ami-builder ansible-rerun phase2 --sync-files\n")
-		fmt.Printf("  - Cleanup: pg-ami-builder cleanup\n")
 		return fmt.Errorf("packer build failed: %w", packerErr)
 	}
 
