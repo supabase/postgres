@@ -2,6 +2,18 @@
 
 This guide explains how to use `pg-ami-builder` for local AMI development and iteration.
 
+ Summary
+
+  | Aspect             | CI/CD Workflows                 | pg-ami-builder                          |
+  |--------------------|---------------------------------|-----------------------------------------|
+  | AMI Creation       | Packer auto-creates only        | Packer auto-creates + manual create-ami |
+  | Workflow           | Linear, automated               | Iterative, debuggable                   |
+  | State              | Stateless, ephemeral            | Stateful, persistent                    |
+  | Error Handling     | Terminate and restart           | Preserve, debug, fix, continue          |
+  | Use Case           | Production releases, CI testing | Local development, iteration            |
+  | Instance Lifecycle | Always terminated               | Preserved for debugging                 |
+
+
 ## Prerequisites
 
 ### Required Tools
@@ -36,25 +48,25 @@ Your AWS user/role needs these permissions:
 
 ```bash
 # Run phase 1 build (launches instance and runs packer build)
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15
 
 # If packer build fails, instance stays alive for debugging
 # SSH to investigate
-aws-vault exec dev -- nix run .#pg-ami-builder -- ssh
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- ssh
 
 # Make local changes and re-run with file sync
 vim ansible/playbook.yml
-aws-vault exec dev -- nix run .#pg-ami-builder -- ansible-rerun phase1 --sync-files
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- ansible-rerun phase1 --sync-files
 
 # Cleanup when done
-aws-vault exec dev -- nix run .#pg-ami-builder -- cleanup
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- cleanup
 ```
 
 ### Building Phase 2
 
 ```bash
 # Run phase 2 with existing stage-1 AMI
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase2 \
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase2 \
   --source-ami ami-stage1-xyz \
   --postgres-version 15
 ```
@@ -161,40 +173,40 @@ nix run .#pg-ami-builder -- cleanup [flags]
 
 ```bash
 # Run phase 1 build (launches instance and runs packer build)
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15
 
 # If packer fails, instance stays up for debugging
 # SSH to investigate
-aws-vault exec dev -- nix run .#pg-ami-builder -- ssh
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- ssh
 
 # Make local changes to ansible files
 vim ansible/playbook.yml
 
 # Re-run with your local changes
-aws-vault exec dev -- nix run .#pg-ami-builder -- ansible-rerun phase1 --sync-files
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- ansible-rerun phase1 --sync-files
 
 # Repeat until working, then create AMI
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15 --create-ami
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase1 --postgres-version 15 --create-ami
 
 # Cleanup
-aws-vault exec dev -- nix run .#pg-ami-builder -- cleanup
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- cleanup
 ```
 
 ### Workflow 2: Parallel builds for multiple postgres versions
 
 ```bash
 # Build PG 15
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase1 \
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase1 \
   --postgres-version 15 \
   --state-file ~/.pg-ami-build/pg15.json
 
 # Build PG 16 in parallel
-aws-vault exec dev -- nix run .#pg-ami-builder -- build phase1 \
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- build phase1 \
   --postgres-version 16 \
   --state-file ~/.pg-ami-build/pg16.json
 
 # SSH into PG 15 instance
-aws-vault exec dev -- nix run .#pg-ami-builder -- ssh \
+aws-vault exec <profile> -- nix run .#pg-ami-builder -- ssh \
   --state-file ~/.pg-ami-build/pg15.json
 ```
 
