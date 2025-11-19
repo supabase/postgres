@@ -204,11 +204,17 @@ RUN sed -i \
     # Remove items from postgresql.conf
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
     #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
-RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" 
-RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf" 
-RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf" 
-RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf" 
+RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
+RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf"
+RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf"
 
+# OrioleDB rewind configuration
+# Enables time-based rewind capability for up to 20 minutes (1200 seconds)
+# Buffer size: 1280 buffers * 8KB = 10MB for transaction retention
+RUN echo "orioledb.enable_rewind = true" >> "/etc/postgresql/postgresql.conf" && \
+    echo "orioledb.rewind_max_time = 1200" >> "/etc/postgresql/postgresql.conf" && \
+    echo "orioledb.rewind_max_transactions = 100000" >> "/etc/postgresql/postgresql.conf" && \
+    echo "orioledb.rewind_buffers = 1280" >> "/etc/postgresql/postgresql.conf" 
 
 
 # # Include schema migrations

@@ -182,7 +182,7 @@ perform_dump() {
         
         # Only use --restrict-key for standard PostgreSQL 15 and 17 versions
         # OrioleDB doesn't support this flag yet
-        if [ "$PSQL_VERSION" = "15" ] || [ "$PSQL_VERSION" = "17" ]; then
+        if [ "$PSQL_VERSION" = "15" ] || [ "$PSQL_VERSION" = "17" ] || [ "$PSQL_VERSION" = "orioledb-17" ]; then
             # Use a fixed restrict key for reproducible test dumps
             # This is safe in testing contexts but should not be used in production
             dump_cmd="$dump_cmd --restrict-key=SupabaseTestDumpKey123"
