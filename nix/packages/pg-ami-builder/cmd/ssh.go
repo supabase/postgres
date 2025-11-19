@@ -13,6 +13,7 @@ import (
 
 var (
 	sshInstanceID    string
+	sshPhase         string
 	awsEC2ConnectCmd string
 )
 
@@ -51,12 +52,31 @@ func runSSH(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to load state: %w", err)
 		}
 
-		instanceID = buildState.InstanceID
 		region = buildState.Region
+
+		// Get instance ID from phase-specific state
+		if sshPhase != "" {
+			phaseState := buildState.GetPhaseState(sshPhase)
+			if phaseState == nil || phaseState.InstanceID == "" {
+				return fmt.Errorf("no instance found for %s in state file", sshPhase)
+			}
+			instanceID = phaseState.InstanceID
+		} else {
+			// Auto-detect: prefer phase2, then phase1, then legacy
+			if buildState.Phase2 != nil && buildState.Phase2.InstanceID != "" {
+				instanceID = buildState.Phase2.InstanceID
+				fmt.Println("✓ Auto-detected phase2 instance")
+			} else if buildState.Phase1 != nil && buildState.Phase1.InstanceID != "" {
+				instanceID = buildState.Phase1.InstanceID
+				fmt.Println("✓ Auto-detected phase1 instance")
+			} else if buildState.InstanceID != "" {
+				instanceID = buildState.InstanceID
+			}
+		}
 	}
 
 	if instanceID == "" {
-		return fmt.Errorf("no instance ID available (use --instance-id or run build command first)")
+		return fmt.Errorf("no instance ID available (use --instance-id or --phase, or run build command first)")
 	}
 
 	// Connect via EC2 Instance Connect
@@ -147,6 +167,7 @@ func init() {
 	rootCmd.AddCommand(sshCmd)
 
 	sshCmd.Flags().StringVar(&sshInstanceID, "instance-id", "", "Target specific instance (default: from state file)")
+	sshCmd.Flags().StringVar(&sshPhase, "phase", "", "Connect to specific phase instance (phase1 or phase2)")
 	sshCmd.Flags().StringVar(&region, "region", "us-east-1", "AWS region")
 	sshCmd.Flags().StringVar(&awsEC2ConnectCmd, "aws-ec2-connect-cmd", "", "Custom AWS EC2 Instance Connect command (e.g., 'aws ec2-instance-connect ssh --instance-id i-xxx ...')")
 }

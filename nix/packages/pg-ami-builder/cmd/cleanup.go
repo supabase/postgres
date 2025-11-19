@@ -122,12 +122,33 @@ func runCleanup(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("✓ Instance terminated")
 
-	// Clear state file
-	if stateFilePath != "" {
-		if err := state.ClearState(stateFilePath); err != nil {
-			fmt.Printf("Warning: failed to clear state file: %v\n", err)
-		} else {
-			fmt.Println("✓ State file cleared")
+	// Clear phase-specific state
+	if stateFilePath != "" && cleanupPhase != "" {
+		// Load state, clear just this phase, save back
+		buildState, err := state.LoadState(stateFilePath)
+		if err == nil {
+			// Clear this specific phase
+			buildState.SetPhaseState(cleanupPhase, nil)
+
+			// Check if both phases are now empty
+			phase1Empty := buildState.Phase1 == nil || (buildState.Phase1.InstanceID == "" && buildState.Phase1.AMIID == "")
+			phase2Empty := buildState.Phase2 == nil || (buildState.Phase2.InstanceID == "" && buildState.Phase2.AMIID == "")
+
+			if phase1Empty && phase2Empty {
+				// Both phases empty, delete entire file
+				if err := state.ClearState(stateFilePath); err != nil {
+					fmt.Printf("⚠ Failed to clear state file: %v\n", err)
+				} else {
+					fmt.Println("✓ State file cleared (all phases cleaned)")
+				}
+			} else {
+				// Save updated state with this phase cleared
+				if err := state.SaveState(stateFilePath, buildState); err != nil {
+					fmt.Printf("⚠ Failed to update state file: %v\n", err)
+				} else {
+					fmt.Printf("✓ State file updated (%s cleared)\n", cleanupPhase)
+				}
+			}
 		}
 	}
 

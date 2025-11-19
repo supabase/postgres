@@ -45,6 +45,22 @@ func RewriteTemplateWithUniqueAMI(templatePath, executionID, sourceAMI string) (
 		return strings.TrimSuffix(match, `"`) + `-${var.packer-execution-id}"`
 	})
 
+	// Add packerExecutionId to AMI tags (not run_tags)
+	// Find the tags = { block (after run_tags) and inject packerExecutionId
+	tagsPattern := regexp.MustCompile(`(?s)(tags\s*=\s*\{)([^}]*creator\s*=\s*"packer"[^}]*)(\})`)
+	modified = tagsPattern.ReplaceAllStringFunc(modified, func(match string) string {
+		// Check if packerExecutionId already exists in this tags block
+		if strings.Contains(match, "packerExecutionId") {
+			return match // Already has it
+		}
+		// Insert packerExecutionId after the opening brace
+		parts := tagsPattern.FindStringSubmatch(match)
+		if len(parts) == 4 {
+			return parts[1] + "\n    packerExecutionId = \"${var.packer-execution-id}\"" + parts[2] + parts[3]
+		}
+		return match
+	})
+
 	// Create temp file
 	tempDir := os.TempDir()
 	tempFile := filepath.Join(tempDir, fmt.Sprintf("packer-%s-%s", executionID, filepath.Base(templatePath)))

@@ -185,26 +185,21 @@ func runBuildPhase1(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\n✓ Packer build completed successfully!\n")
 	fmt.Println("✓ AMI created by packer")
 
-	// Parse AMI ID from packer output (it's already in stdout above)
-	// For now, use AWS API to find the AMI by tags
+	// Find AMI by execution ID tag (injected by our template rewriter)
+	var amiID string
 	ec2Client, err := aws.NewEC2Client(ctx, region)
 	if err != nil {
 		fmt.Printf("⚠ Could not create EC2 client to find AMI: %v\n", err)
-		fmt.Println("\n✓ Build phase 1 complete!")
-		return nil
+	} else {
+		amiID, err = ec2Client.FindAMIByTag(ctx, "packerExecutionId", executionID)
+		if err != nil {
+			fmt.Printf("⚠ Could not find created AMI: %v\n", err)
+		} else {
+			fmt.Printf("✓ AMI ID: %s\n", amiID)
+		}
 	}
 
-	// Find AMI by execution ID tag
-	amiID, err := ec2Client.FindAMIByTag(ctx, "packerExecutionId", executionID)
-	if err != nil {
-		fmt.Printf("⚠ Could not find created AMI: %v\n", err)
-		fmt.Println("\n✓ Build phase 1 complete!")
-		return nil
-	}
-
-	fmt.Printf("✓ AMI ID: %s\n", amiID)
-
-	// Save AMI ID to state for phase2
+	// Save state even if we couldn't find the AMI
 	stateFilePath := stateFile
 	if stateFilePath == "" {
 		stateFilePath, err = state.GetDefaultStateFile()
@@ -215,14 +210,19 @@ func runBuildPhase1(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	buildState := &state.State{
-		Region:          region,
-		PostgresVersion: postgresVersion,
-		GitSHA:          sha,
+	// Load existing state or create new
+	buildState, err := state.LoadState(stateFilePath)
+	if err != nil {
+		buildState = &state.State{
+			Region:          region,
+			PostgresVersion: postgresVersion,
+			GitSHA:          sha,
+		}
 	}
+
 	buildState.SetPhaseState("phase1", &state.PhaseState{
 		ExecutionID: executionID,
-		AMIID:       amiID,
+		AMIID:       amiID, // Will be empty if not found
 		Timestamp:   time.Now().Format(time.RFC3339),
 	})
 
@@ -233,8 +233,13 @@ func runBuildPhase1(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("\n✓ Build phase 1 complete!")
-	fmt.Printf("\nNext: Run phase 2 with:\n")
-	fmt.Printf("  pg-ami-builder build phase2 --postgres-version %s\n", postgresVersion)
+	if amiID != "" {
+		fmt.Printf("\nNext: Run phase 2 with:\n")
+		fmt.Printf("  pg-ami-builder build phase2 --postgres-version %s\n", postgresVersion)
+	} else {
+		fmt.Printf("\nNote: AMI ID not automatically detected. You can manually add it to:\n")
+		fmt.Printf("  %s\n", stateFilePath)
+	}
 	return nil
 }
 
@@ -398,7 +403,61 @@ func runBuildPhase2(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("\n✓ Packer build completed successfully!\n")
 	fmt.Println("✓ Final production AMI created by packer")
+
+	// Find AMI by execution ID tag (injected by our template rewriter)
+	var amiID string
+	ec2Client, err := aws.NewEC2Client(ctx, region)
+	if err != nil {
+		fmt.Printf("⚠ Could not create EC2 client to find AMI: %v\n", err)
+	} else {
+		amiID, err = ec2Client.FindAMIByTag(ctx, "packerExecutionId", executionID)
+		if err != nil {
+			fmt.Printf("⚠ Could not find created AMI: %v\n", err)
+		} else {
+			fmt.Printf("✓ AMI ID: %s\n", amiID)
+		}
+	}
+
+	// Save state even if we couldn't find the AMI
+	stateFilePath := stateFile
+	if stateFilePath == "" {
+		stateFilePath, err = state.GetDefaultStateFile()
+		if err != nil {
+			fmt.Printf("⚠ Could not get state file path: %v\n", err)
+			fmt.Println("\n✓ Build phase 2 complete!")
+			return nil
+		}
+	}
+
+	// Load existing state or create new
+	buildState, err := state.LoadState(stateFilePath)
+	if err != nil {
+		buildState = &state.State{
+			Region:          region,
+			PostgresVersion: postgresVersion,
+			GitSHA:          sha,
+		}
+	}
+
+	buildState.SetPhaseState("phase2", &state.PhaseState{
+		ExecutionID: executionID,
+		AMIID:       amiID, // Will be empty if not found
+		Timestamp:   time.Now().Format(time.RFC3339),
+	})
+
+	if err := state.SaveState(stateFilePath, buildState); err != nil {
+		fmt.Printf("⚠ Could not save state: %v\n", err)
+	} else {
+		fmt.Printf("✓ State saved to: %s\n", stateFilePath)
+	}
+
 	fmt.Println("\n✓ Build phase 2 complete!")
+	if amiID != "" {
+		fmt.Printf("\nProduction AMI ready: %s\n", amiID)
+	} else {
+		fmt.Printf("\nNote: AMI ID not automatically detected. You can manually add it to:\n")
+		fmt.Printf("  %s\n", stateFilePath)
+	}
 	return nil
 }
 
