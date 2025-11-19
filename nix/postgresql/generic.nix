@@ -241,6 +241,35 @@ let
               fi
             done
           fi
+
+          # Create auth_trgm extension as a duplicate of pg_trgm
+          # auth_trgm uses the same shared library but has separate SQL files
+          echo "Creating auth_trgm extension files..."
+
+          # Copy and rewrite all pg_trgm SQL files (base + upgrade paths)
+          for file in $out/share/postgresql/extension/pg_trgm*.sql; do
+            if [ -f "$file" ]; then
+              base=$(basename "$file")
+              newfile="$out/share/postgresql/extension/''${base//pg_trgm/auth_trgm}"
+              # Replace pg_trgm with auth_trgm in extension references
+              # but preserve the actual function names and module references
+              sed 's/-- complain if script is sourced in psql, rather than via CREATE EXTENSION/-- complain if script is sourced in psql, rather than via CREATE EXTENSION/; s/\\echo Use "CREATE EXTENSION pg_trgm"/\\echo Use "CREATE EXTENSION auth_trgm"/' "$file" > "$newfile"
+            fi
+          done
+
+          # Create auth_trgm.control pointing to the same shared library as pg_trgm
+          if [ -f "$out/share/postgresql/extension/pg_trgm.control" ]; then
+            sed -e 's/# pg_trgm extension/# auth_trgm extension/' \
+                -e 's/text similarity measurement and index searching based on trigrams/authentication text similarity measurement and index searching based on trigrams/' \
+                -e 's/relocatable = true/relocatable = false/' \
+                "$out/share/postgresql/extension/pg_trgm.control" > \
+                "$out/share/postgresql/extension/auth_trgm.control"
+
+            # Append schema = auth to the control file
+            echo "schema = auth" >> "$out/share/postgresql/extension/auth_trgm.control"
+
+            echo "auth_trgm extension files created successfully"
+          fi
         ''
         + lib.optionalString jitSupport ''
           # Move the bitcode and libllvmjit.so library out of $lib; otherwise, every client that
