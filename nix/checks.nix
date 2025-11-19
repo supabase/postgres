@@ -5,6 +5,7 @@
       self',
       system,
       pkgs,
+      lib,
       ...
     }:
     let

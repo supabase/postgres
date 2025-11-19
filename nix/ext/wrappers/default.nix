@@ -40,10 +40,7 @@ let
         buildInputs = [
           openssl
           postgresql
-        ]
-        ++ lib.optionals stdenv.isDarwin [
-          apple-sdk_11
-        ];
+        ] ++ lib.optionals stdenv.isDarwin [ apple-sdk_11 ];
 
         NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
 

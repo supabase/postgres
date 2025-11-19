@@ -1,6 +1,6 @@
 { self, ... }:
 {
-  flake.overlays.default = final: _prev: {
+  flake.overlays.default = final: prev: {
     # NOTE: add any needed overlays here. in theory we could
     # pull them from the overlays/ directory automatically, but we don't
     # want to have an arbitrary order, since it might matter. being

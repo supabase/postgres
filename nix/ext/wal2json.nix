@@ -10,7 +10,7 @@
 let
   pname = "wal2json";
   build =
-    version: rev: hash:
+    version: _rev: hash:
     stdenv.mkDerivation rec {
       inherit version pname;
 
