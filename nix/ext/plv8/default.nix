@@ -2,7 +2,7 @@
   stdenv,
   lib,
   fetchFromGitHub,
-  v8,
+  # v8,
   perl,
   postgresql,
   # For passthru test on various systems, and local development on macos
@@ -36,12 +36,21 @@ let
     lib.mapAttrs (name: value: build name value.hash) supportedVersions
   );
 
+  # plv8 3.1 requires an older version of v8 (we cannot use nodejs.libv8)
+  node_pkgs = import (fetchTarball {
+    url = "https://github.com/nixos/nixpkgs/archive/a76c4553d7e741e17f289224eda135423de0491d.tar.gz";
+    sha256 = "0rwdzp942b8ay625lqgra83qrp64b3wqm6w9a0i4z593df8x822v";
+  }) { system = stdenv.system; };
+  inherit (node_pkgs) v8;
+
   # Build function for individual versions
   build =
     version: hash:
     stdenv.mkDerivation (finalAttrs: {
       inherit pname version;
       #version = "3.1.10";
+
+      v8 = (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8);
 
       src = fetchFromGitHub {
         owner = "plv8";
