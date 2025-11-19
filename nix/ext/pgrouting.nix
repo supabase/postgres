@@ -127,34 +127,12 @@ buildEnv {
     expectedFiles=${toString (numberOfVersions + 1)}
     actualFiles=$(ls -l $out/lib/lib${pname}*${postgresql.dlSuffix} | wc -l)
 
-<<<<<<< HEAD
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
       echo "Error: Expected $expectedFiles library files, found $actualFiles"
       echo "Files found:"
       ls -la $out/lib/*${postgresql.dlSuffix} || true
       exit 1
     fi
-=======
-  #disable compile time warnings for incompatible pointer types only on macos and pg16
-  NIX_CFLAGS_COMPILE = lib.optionalString (
-    stdenv.isDarwin && lib.versionAtLeast postgresql.version "16"
-  ) "-Wno-error=int-conversion -Wno-error=incompatible-pointer-types";
-
-  cmakeFlags = [
-    "-DPOSTGRESQL_VERSION=${postgresql.version}"
-  ]
-  ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
-    "-DCMAKE_MACOSX_RPATH=ON"
-    "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
-    "-DCMAKE_SHARED_LIBRARY_SUFFIX=.dylib"
-  ];
-
-  preConfigure = lib.optionalString (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") ''
-    export DLSUFFIX=.dylib
-    export CMAKE_SHARED_LIBRARY_SUFFIX=.dylib
-    export CMAKE_SHARED_MODULE_SUFFIX=.dylib
-    export MACOSX_RPATH=ON
->>>>>>> 4847adac (chore: update fmt)
   '';
 
   passthru = {
