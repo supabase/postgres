@@ -65,6 +65,8 @@ let
       # detection of crypt fails when using llvm stdenv, so we add it manually
       # for <13 (where it got removed: https://github.com/postgres/postgres/commit/c45643d618e35ec2fe91438df15abd4f3c0d85ca)
       libxcrypt,
+
+      isOrioleDB ? (builtins.match "[0-9][0-9]_.*" version) != null,
     }@args:
     let
       atLeast = lib.versionAtLeast version;
@@ -77,8 +79,6 @@ let
           systemdSupport
         else
           (lib.warn "postgresql: argument enableSystemd is deprecated, please use systemdSupport instead." enableSystemd);
-
-      isOrioleDB = (builtins.match "[0-9][0-9]_.*" version) != null;
 
       pname = "postgresql";
 
