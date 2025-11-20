@@ -81,6 +81,11 @@ source "amazon-ebs" "ubuntu" {
 
   associate_public_ip_address = true
 
+  # Increase timeout for instance stop operations to handle large instances
+  aws_polling {
+    delay_seconds = 15
+    max_attempts  = 120  # 120 * 15s = 30 minutes max wait
+  }
 
   ena_support = true
 
