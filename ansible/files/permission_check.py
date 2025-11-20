@@ -171,10 +171,7 @@ def get_user_groups(username):
         for group in grp.getgrall():
             # Check if user is in the group (either as primary group or in member list)
             if user_gid == group.gr_gid or username in group.gr_mem:
-                groups.append({
-                    "username": username,
-                    "groupname": group.gr_name
-                })
+                groups.append({"username": username, "groupname": group.gr_name})
 
         # Sort by groupname to match expected behavior
         groups.sort(key=lambda x: x["groupname"])
@@ -250,7 +247,9 @@ def check_postgresql_mount():
             continue
 
     if pid is None:
-        print("Could not find postgres process with .postgres-wrapped and -D /etc/postgresql")
+        print(
+            "Could not find postgres process with .postgres-wrapped and -D /etc/postgresql"
+        )
         sys.exit(1)
 
     # Get the mounts for the process
