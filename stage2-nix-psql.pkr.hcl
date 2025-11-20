@@ -92,7 +92,6 @@ source "amazon-ebs" "ubuntu" {
     delete_on_termination = true
     volume_size           = 40
     volume_type           = "gp2"
-    omit_from_artifact    = true
   }
 
   ena_support = true
