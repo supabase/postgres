@@ -22,12 +22,13 @@ order by
   name asc;
           name          
 ------------------------
+ auth_trgm
  pg_cron
  pgjwt
  postgis_tiger_geocoder
  tsm_system_time
  wal2json
-(5 rows)
+(6 rows)
 
 /*
 
