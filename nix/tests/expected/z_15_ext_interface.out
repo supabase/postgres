@@ -29,11 +29,12 @@ order by
   name asc;
       name       
 -----------------
+ auth_trgm
  pg_cron
  pgjwt
  tsm_system_time
  wal2json
-(4 rows)
+(5 rows)
 
 /*
 
