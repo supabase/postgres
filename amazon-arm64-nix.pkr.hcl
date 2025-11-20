@@ -149,7 +149,7 @@ source "amazon-ebssurrogate" "source" {
   launch_block_device_mappings {
     device_name           = "/dev/${var.build-vol}"
     delete_on_termination = true
-    volume_size           = 16
+    volume_size           = 40
     volume_type           = "gp2"
     omit_from_artifact    = true
   }

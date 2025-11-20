@@ -86,6 +86,14 @@ source "amazon-ebs" "ubuntu" {
     delay_seconds = 15
     max_attempts  = 120  # 120 * 15s = 30 minutes max wait
   }
+  
+  launch_block_device_mappings {
+    device_name           = "/dev/xvdc"
+    delete_on_termination = true
+    volume_size           = 40
+    volume_type           = "gp2"
+    omit_from_artifact    = true
+  }
 
   ena_support = true
 
@@ -136,12 +144,22 @@ build {
     destination = "/tmp/ansible-playbook"
   }
 
+  # Mount temporary build volume before nix operations
+  provisioner "shell" {
+    script = "scripts/mount-build-volume.sh"
+  }
+
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
      script = "scripts/nix-provision.sh"
+  }
+
+  # Copy nix store from temp volume to root filesystem after all operations complete
+  provisioner "shell" {
+    script = "scripts/copy-nix-store.sh"
   }
 
 }
