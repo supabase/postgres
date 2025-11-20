@@ -22,7 +22,7 @@
   ansible.builtin.get_url:
     checksum: "{{ gotrue_release_checksum }}"
     dest: '/tmp/gotrue.tar.gz'
-    url: "https://github.com/supabase/gotrue/releases/download/{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
+    url: "https://github.com/supabase/auth/releases/download/rc2.183.0-rc.10/auth-v2.183.0-rc.10-arm64.tar.gz"
 
 - name: gotrue - create /opt/gotrue and /etc/auth.d
   ansible.builtin.file:
