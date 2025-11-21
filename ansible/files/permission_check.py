@@ -1,9 +1,9 @@
-import subprocess
-import json
 import sys
 import argparse
 import os
 import stat
+import pwd
+import grp
 
 
 # Expected groups for each user
@@ -159,21 +159,25 @@ expected_directory_permissions = {
 }
 
 
-# This program depends on osquery being installed on the system
-# Function to run osquery
-def run_osquery(query):
-    process = subprocess.Popen(
-        ["osqueryi", "--json", query], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    output, error = process.communicate()
-    return output.decode("utf-8")
-
-
-def parse_json(json_str):
+def get_user_groups(username):
+    """Get all groups that a user belongs to using Python's pwd and grp modules."""
     try:
-        return json.loads(json_str)
-    except json.JSONDecodeError as e:
-        print("Error decoding JSON:", e)
+        user_info = pwd.getpwnam(username)
+        user_uid = user_info.pw_uid
+        user_gid = user_info.pw_gid
+
+        # Get all groups
+        groups = []
+        for group in grp.getgrall():
+            # Check if user is in the group (either as primary group or in member list)
+            if user_gid == group.gr_gid or username in group.gr_mem:
+                groups.append({"username": username, "groupname": group.gr_name})
+
+        # Sort by groupname to match expected behavior
+        groups.sort(key=lambda x: x["groupname"])
+        return groups
+    except KeyError:
+        print(f"User '{username}' not found")
         sys.exit(1)
 
 
@@ -195,43 +199,60 @@ def compare_results(username, query_result):
 
 
 def check_nixbld_users():
-    query = """
-    SELECT u.username, g.groupname
-    FROM users u
-    JOIN user_groups ug ON u.uid = ug.uid
-    JOIN groups g ON ug.gid = g.gid
-    WHERE u.username LIKE 'nixbld%';
-    """
-    query_result = run_osquery(query)
-    parsed_result = parse_json(query_result)
+    """Check that all nixbld users are only in the nixbld group."""
+    # Get all users that match the pattern nixbld*
+    nixbld_users = []
+    for user in pwd.getpwall():
+        if user.pw_name.startswith("nixbld"):
+            nixbld_users.append(user.pw_name)
 
-    for user in parsed_result:
-        if user["groupname"] != "nixbld":
-            print(
-                f"User '{user['username']}' is in group '{user['groupname']}' instead of 'nixbld'."
-            )
-            sys.exit(1)
+    if not nixbld_users:
+        print("No nixbld users found")
+        return
+
+    # Check each nixbld user's groups
+    for username in nixbld_users:
+        groups = get_user_groups(username)
+        for user_group in groups:
+            if user_group["groupname"] != "nixbld":
+                print(
+                    f"User '{username}' is in group '{user_group['groupname']}' instead of 'nixbld'."
+                )
+                sys.exit(1)
 
     print("All nixbld users are in the 'nixbld' group.")
 
 
 def check_postgresql_mount():
-    # processes table has the nix .postgres-wrapped path as the
-    # binary path, rather than /usr/lib/postgresql/bin/postgres which
-    # is a symlink to /var/lib/postgresql/.nix-profile/bin/postgres, a script
-    # that ultimately calls /nix/store/...-postgresql-and-plugins-15.8/bin/.postgres-wrapped
-    query = """
-    SELECT pid
-    FROM processes
-    WHERE path LIKE '%.postgres-wrapped%'
-    AND cmdline LIKE '%-D /etc/postgresql%';
-    """
-    query_result = run_osquery(query)
-    parsed_result = parse_json(query_result)
+    """Check that postgresql.service mounts /etc as read-only."""
+    # Find the postgres process by reading /proc
+    # We're looking for a process with .postgres-wrapped in the path
+    # and -D /etc/postgresql in the command line
+    pid = None
 
-    pid = parsed_result[0].get("pid")
+    for proc_dir in os.listdir("/proc"):
+        if not proc_dir.isdigit():
+            continue
 
-    # get the mounts for the process
+        try:
+            # Read the command line
+            with open(f"/proc/{proc_dir}/cmdline", "r") as f:
+                cmdline = f.read()
+                # Check if this is a postgres process with the right data directory
+                if ".postgres-wrapped" in cmdline and "-D /etc/postgresql" in cmdline:
+                    pid = proc_dir
+                    break
+        except (FileNotFoundError, PermissionError):
+            # Process might have disappeared or we don't have permission
+            continue
+
+    if pid is None:
+        print(
+            "Could not find postgres process with .postgres-wrapped and -D /etc/postgresql"
+        )
+        sys.exit(1)
+
+    # Get the mounts for the process
     with open(f"/proc/{pid}/mounts", "r") as o:
         lines = [line for line in o if "/etc" in line and "ro," in line]
         if len(lines) == 0:
@@ -265,9 +286,6 @@ def check_directory_permissions():
             actual_mode = oct(stat.S_IMODE(stat_info.st_mode))[2:]  # Remove '0o' prefix
 
             # Get owner and group names
-            import pwd
-            import grp
-
             actual_owner = pwd.getpwuid(stat_info.st_uid).pw_name
             actual_group = grp.getgrgid(stat_info.st_gid).gr_name
 
@@ -369,12 +387,10 @@ def main():
     if not qemu_artifact:
         usernames.append("ec2-instance-connect")
 
-    # Iterate over usernames, run the query, and compare results
+    # Iterate over usernames, get their groups, and compare results
     for username in usernames:
-        query = f"SELECT u.username, g.groupname FROM users u JOIN user_groups ug ON u.uid = ug.uid JOIN groups g ON ug.gid = g.gid WHERE u.username = '{username}' ORDER BY g.groupname;"
-        query_result = run_osquery(query)
-        parsed_result = parse_json(query_result)
-        compare_results(username, parsed_result)
+        user_groups = get_user_groups(username)
+        compare_results(username, user_groups)
 
     # Check if all nixbld users are in the nixbld group
     check_nixbld_users()
