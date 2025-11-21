@@ -11,7 +11,7 @@
 - name: PostgREST - add Postgres PPA main
   ansible.builtin.apt_repository:
     filename: 'postgresql-pgdg'
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: 'present'
 
 - name: PostgREST - install system dependencies
@@ -36,7 +36,7 @@
 
 - name: PostgREST - remove Postgres PPA
   ansible.builtin.apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main"
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg {{ postgresql_major }}"
     state: 'absent'
 
 - name: postgis - ensure dependencies do not get autoremoved
