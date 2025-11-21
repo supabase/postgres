@@ -10,9 +10,17 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     nix2container.url = "github:nlewo/nix2container";
+    nix2container.inputs.nixpkgs.follows = "nixpkgs";
+    nix2container.inputs.flake-utils.follows = "flake-utils";
     nix-editor.url = "github:snowfallorg/nix-editor";
+    nix-editor.inputs.utils.follows = "flake-utils";
+    nix-editor.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     nix-fast-build.url = "github:Mic92/nix-fast-build";
+    nix-fast-build.inputs.flake-parts.follows = "flake-parts";
+    nix-fast-build.inputs.nixpkgs.follows = "nixpkgs";
+    nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";

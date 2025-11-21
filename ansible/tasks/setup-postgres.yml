@@ -115,6 +115,7 @@
         - '/home/postgres'
         - '/var/lib/postgresql/data'
         - '/var/log/postgresql'
+        - '/etc/postgresql-custom/conf.d'
       loop_control:
         loop_var: 'pg_dir_item'
 
@@ -137,6 +138,7 @@
       loop:
         - '/etc/postgresql'
         - '/etc/postgresql-custom'
+        - '/etc/postgresql-custom/conf.d'
       loop_control:
         loop_var: 'pg_config_dir_item'
 
