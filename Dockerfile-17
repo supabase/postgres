@@ -197,7 +197,6 @@ RUN sed -i \
     #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
-    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
     mkdir -p /etc/postgresql-custom/conf.d && \
     chown -R postgres:postgres /etc/postgresql-custom
