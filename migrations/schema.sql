@@ -474,7 +474,9 @@ COMMENT ON FUNCTION extensions.set_graphql_placeholder() IS 'Reintroduces placeh
 --
 
 CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(username text, password text)
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql 
+    SET search_path = ''
+    SECURITY DEFINER
     AS $$
 BEGIN
     RAISE WARNING 'PgBouncer auth request: %', p_usename;
@@ -485,7 +487,8 @@ BEGIN
 END;
 $$;
 
-
+REVOKE ALL ON FUNCTION pgbouncer.get_auth(p_usename TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(p_usename TEXT) TO pgbouncer;
 --
 -- Name: extension(text); Type: FUNCTION; Schema: storage; Owner: -
 --
