@@ -41,7 +41,56 @@ ARG wal_g_release=3.0.5
 
 FROM ubuntu:noble as base
 
-RUN apt update -y && apt install -y \
+# Create reusable apt mirror fallback function
+RUN echo '#!/bin/bash\n\
+apt_update_with_fallback() {\n\
+    local sources_file="/etc/apt/sources.list.d/ubuntu.sources"\n\
+    local max_attempts=2\n\
+    local attempt=1\n\
+    local mirrors="archive.ubuntu.com us.archive.ubuntu.com"\n\
+    \n\
+    for mirror in $mirrors; do\n\
+        echo "========================================="\n\
+        echo "Attempting apt-get update with mirror: ${mirror}"\n\
+        echo "Attempt ${attempt} of ${max_attempts}"\n\
+        echo "========================================="\n\
+        \n\
+        if [ -f "${sources_file}" ]; then\n\
+            sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"\n\
+        fi\n\
+        \n\
+        if timeout 300 apt-get update 2>&1; then\n\
+            echo "========================================="\n\
+            echo "✓ Successfully updated apt cache using mirror: ${mirror}"\n\
+            echo "========================================="\n\
+            return 0\n\
+        else\n\
+            local exit_code=$?\n\
+            echo "========================================="\n\
+            echo "✗ Failed to update using mirror: ${mirror}"\n\
+            echo "Exit code: ${exit_code}"\n\
+            echo "========================================="\n\
+            \n\
+            apt-get clean\n\
+            rm -rf /var/lib/apt/lists/*\n\
+            \n\
+            if [ ${attempt} -lt ${max_attempts} ]; then\n\
+                local sleep_time=$((attempt * 5))\n\
+                echo "Waiting ${sleep_time} seconds before trying next mirror..."\n\
+                sleep ${sleep_time}\n\
+            fi\n\
+        fi\n\
+        \n\
+        attempt=$((attempt + 1))\n\
+    done\n\
+    \n\
+    echo "========================================="\n\
+    echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"\n\
+    echo "========================================="\n\
+    return 1\n\
+}' > /usr/local/bin/apt-update-fallback.sh && chmod +x /usr/local/bin/apt-update-fallback.sh
+
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt install -y \
     curl \
     gnupg \
     lsb-release \
@@ -100,13 +149,13 @@ RUN chown -R postgres:postgres /usr/lib/postgresql
 RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
 
 
-RUN apt-get update && \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
     apt-get install -y --no-install-recommends tzdata
 
 RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN apt-get update && \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
     apt-get install -y --no-install-recommends \
     build-essential \
     checkinstall \
@@ -148,7 +197,7 @@ WORKDIR /
 FROM base as gosu
 ARG TARGETARCH
 # Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
    gnupg \
    ca-certificates \
    && rm -rf /var/lib/apt/lists/*
@@ -233,7 +282,7 @@ ENV POSTGRES_HOST=/var/run/postgresql
 ENV POSTGRES_USER=supabase_admin
 ENV POSTGRES_DB=postgres
 ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
     locales \
     && rm -rf /var/lib/apt/lists/* && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
