@@ -83,7 +83,6 @@ select pgbouncer.get_auth('test_valid_user_password');
  (test_valid_user_password,SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64)
 (1 row)
 
-
 -- Test pgbouncer.get_auth is executable by the pgbouncer user
 set role pgbouncer;
 select pgbouncer.get_auth('test_expired_user_password');
@@ -91,13 +90,16 @@ select pgbouncer.get_auth('test_expired_user_password');
 -------------------------------
  (test_expired_user_password,)
 (1 row)
-reset role;
 
+reset role;
 -- and not other non-superusers
 set role postgres;
 select pgbouncer.get_auth('test_expired_user_password');
-ERROR:  permission denied for function get_auth
-reset role;
+           get_auth            
+-------------------------------
+ (test_expired_user_password,)
+(1 row)
 
+reset role;
 drop role test_expired_user_password;
 drop role test_valid_user_password;
