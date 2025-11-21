@@ -390,7 +390,6 @@ builtins.listToAttrs (
       "pg_jsonschema"
       "pg_net"
       "pg_partman"
-      "pg_stat_monitor"
       "pg_tle"
       "pgaudit"
       "pgtap"
