@@ -44,3 +44,4 @@ runs:
           substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
+          max-jobs = 8
