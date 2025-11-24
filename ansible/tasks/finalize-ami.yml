@@ -8,7 +8,7 @@
   ansible.builtin.template:
     dest: "/etc/postgresql-custom/conf.d/{{ ext_item }}.conf"
     group: 'postgres'
-    src: "files/postgresql_config/conf.d/{{ ext_item | split('_') | join('') }}.conf"
+    src: "files/postgresql_config/conf.d/{{ ext_item }}.conf"
   loop:
     - auto_explain
     # - pg_cron
