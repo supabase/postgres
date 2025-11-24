@@ -10,6 +10,7 @@
 
 let
   pname = "pg_partman";
+  libName = "pg_partman_bgw";
   build =
     version: hash:
     stdenv.mkDerivation rec {
@@ -28,7 +29,7 @@ let
         mkdir -p $out/{lib,share/postgresql/extension}
 
         # Install versioned library
-        install -Dm755 src/*${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        install -Dm755 src/${libName}${postgresql.dlSuffix} $out/lib/${libName}-${version}${postgresql.dlSuffix}
 
         # Only install SQL files for the latest version
         if [[ "${version}" == "${latestVersion}" ]]; then
@@ -79,7 +80,7 @@ pkgs.buildEnv {
       echo "default_version = '${latestVersion}'"
       cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
     } > $out/share/postgresql/extension/${pname}.control
-    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+    ln -sfn ${libName}-${latestVersion}${postgresql.dlSuffix} $out/lib/${libName}${postgresql.dlSuffix}
 
 
     # checks
@@ -90,16 +91,21 @@ pkgs.buildEnv {
     )
 
     makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_pg_partman_version \
-      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}" --prefix LIB_NAME : "${libName}"
   '';
 
   passthru = {
-    inherit versions numberOfVersions switch-ext-version;
+    inherit
+      versions
+      numberOfVersions
+      switch-ext-version
+      libName
+      ;
     pname = "${pname}-all";
     hasBackgroundWorker = true;
     defaultSchema = "partman";
     defaultSettings = {
-      shared_preload_libraries = [ "pg_partman" ];
+      shared_preload_libraries = [ libName ];
     };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);

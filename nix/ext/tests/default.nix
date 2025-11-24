@@ -154,6 +154,8 @@ let
           sql_test_directory = Path("${../../tests}")
           pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
           ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
+          lib_name = "${(installedExtension "15").libName or pname}"
+          print(f"Running tests for extension: {lib_name}")
 
           ${builtins.readFile ./lib.py}
 
@@ -177,7 +179,7 @@ let
 
           if ext_has_background_worker:
             with subtest("Test switch_${pname}_version"):
-              test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+              test.check_switch_extension_with_background_worker(Path(f"${psql_15}/lib/{lib_name}.so"), "15")
 
           with subtest("Check pg_regress with postgresql 15 after installing the last version"):
             test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
