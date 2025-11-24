@@ -20,7 +20,8 @@ begin
 end;
 $$;
 
-revoke execute on function pgbouncer.get_auth(text) from public;
+revoke all on function pgbouncer.get_auth(text) from public;
+revoke execute on function pgbouncer.get_auth(text) from postgres;
 grant execute on function pgbouncer.get_auth(text) to pgbouncer;
 -- migrate:down
 
