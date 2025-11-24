@@ -34,9 +34,10 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-eval.outputs.matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v4
       - name: Install nix (ephemeral)
-        if: ${{ matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
@@ -44,9 +45,10 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Install nix (self-hosted)
-        if: ${{ matrix.runs_on.group == 'self-hosted-runners-nix' }}
+        if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
+        if: ${{ matrix.attr != '' }}
         shell: bash
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
@@ -55,7 +57,7 @@ jobs:
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (aarch64-darwin)
     needs: nix-eval
-    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.nix-eval.outputs.matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
@@ -63,10 +65,13 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-eval.outputs.matrix).aarch64_darwin }}
     steps:
       - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v4
       - name: Install nix
+        if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
+        if: ${{ matrix.attr != '' }}
         shell: bash
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
@@ -75,7 +80,7 @@ jobs:
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (x86_64-linux)
     needs: nix-eval
-    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
@@ -83,8 +88,10 @@ jobs:
       matrix: ${{ fromJSON(needs.nix-eval.outputs.matrix).x86_64_linux }}
     steps:
       - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v4
       - name: Install nix
+        if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
@@ -92,6 +99,7 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: nix build
+        if: ${{ matrix.attr != '' }}
         shell: bash
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
