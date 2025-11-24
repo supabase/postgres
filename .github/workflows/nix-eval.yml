@@ -31,4 +31,5 @@ jobs:
         name: Generate Nix Matrix
         run: |
           set -Eeu -o pipefail
-          echo matrix="$(nix run --accept-flake-config .\#github-matrix -- checks legacyPackages)" >> "$GITHUB_OUTPUT"
+          result=$(nix run --accept-flake-config .\#github-matrix -- checks legacyPackages)
+          echo matrix="$result" >> "$GITHUB_OUTPUT"
