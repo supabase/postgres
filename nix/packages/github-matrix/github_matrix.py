@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Set,
     TypedDict,
+    get_args,
 )
 
 System = Literal["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
@@ -252,10 +253,23 @@ def main() -> None:
             grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
 
     # Create output with system-specific matrices
+    # Ensure that we have at least one entry per system
     gh_output = {}
     for system, packages in grouped_by_system.items():
         gh_output[system.replace("-", "_")] = {"include": packages}
 
+    for system in get_args(System):
+        if system not in gh_output:
+            gh_output[system.replace("-", "_")] = {
+                "include": [
+                    {
+                        "attr": "",
+                        "name": "skipped",
+                        "system": system,
+                        "runs_on": {"labels": "ubuntu-latest"},
+                    }
+                ]
+            }
     print(
         f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}",
         file=sys.stderr,
