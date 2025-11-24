@@ -33,6 +33,11 @@
         cmd: sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-2"
       become: true
 
+    - name: nix collect garbage
+      ansible.builtin.shell:
+        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+      become: true
+
     - name: Create symlink to make wal-g-v2 the default wal-g
       ansible.builtin.file:
         dest: '/usr/local/bin/wal-g'
