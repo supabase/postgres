@@ -6,7 +6,6 @@
   fetchFromGitHub,
   postgresql,
   rust-bin,
-  darwin,
 }:
 let
   pname = "pg_jsonschema";
@@ -45,8 +44,7 @@ let
       nativeBuildInputs = [ cargo ];
       buildInputs = [
         postgresql
-      ]
-      ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.SystemConfiguration ];
+      ];
       # update the following array when the pg_jsonschema version is updated
       # required to ensure that extensions update scripts from previous versions are generated
 

@@ -7,7 +7,6 @@
   pkg-config,
   postgresql,
   buildEnv,
-  apple-sdk_11,
   rust-bin,
   git,
 }:
@@ -40,8 +39,7 @@ let
         buildInputs = [
           openssl
           postgresql
-        ]
-        ++ lib.optionals stdenv.isDarwin [ apple-sdk_11 ];
+        ];
 
         NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
 
