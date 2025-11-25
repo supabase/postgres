@@ -107,6 +107,14 @@
         "cargoHash": "sha256-pK6OxRNubcWhohLvIJIliRtaHSIQOhQp7Q9brPygZYA="
       }
     }
+  },
+  "0.16.1": {
+    "hash": "",
+    "rust": {
+      "1.88.0": {
+        "cargoHash": ""
+      }
+    }
   }
 
 }
