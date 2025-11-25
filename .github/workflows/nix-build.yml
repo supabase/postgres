@@ -104,9 +104,10 @@ jobs:
         run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   run-testinfra:
-    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
+    needs: [nix-eval, nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
     if: |
       !cancelled() &&
+      needs.nix-eval.result == 'success' &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
       (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success') &&
       (needs.nix-build-x86_64-linux.result == 'skipped' || needs.nix-build-x86_64-linux.result == 'success')
@@ -115,9 +116,10 @@ jobs:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
-    needs: [nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
+    needs: [nix-eval, nix-build-aarch64-linux, nix-build-aarch64-darwin, nix-build-x86_64-linux]
     if: |
-      !cancelled() && 
+      !cancelled() &&
+      needs.nix-eval.result == 'success' &&
       (needs.nix-build-aarch64-linux.result == 'skipped' || needs.nix-build-aarch64-linux.result == 'success') &&
       (needs.nix-build-aarch64-darwin.result == 'skipped' || needs.nix-build-aarch64-darwin.result == 'success') &&
       (needs.nix-build-x86_64-linux.result == 'skipped' || needs.nix-build-x86_64-linux.result == 'success')
