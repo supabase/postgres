@@ -750,8 +750,6 @@ jit_provider = 'llvmjit'		# JIT library to use
 # default postgresql.conf.  Note that these are directives, not variable
 # assignments, so they can usefully be given more than once.
 
-#include_dir = '...'			# include files ending in '.conf' from
-					# a directory, e.g., 'conf.d'
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
 
@@ -769,6 +767,7 @@ include = '/etc/postgresql-custom/read-replica.conf'
 # supautils specific configurations
 #include = '/etc/postgresql-custom/supautils.conf'
 
+include_dir = '/etc/postgresql-custom/conf.d'  # include files ending in '.conf' from a directory, e.g., 'conf.d'
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS
 #------------------------------------------------------------------------------
