@@ -182,8 +182,8 @@ def run_nix_eval_jobs(
         result = parse_nix_eval_line(line, drv_paths)
         if result.is_err():
             errors_list.append(result.err_value)
-        elif result.ok_value is not None:
-            packages.append(result.ok_value)
+        elif result._value is not None:
+            packages.append(result._value)
 
     # Parse stderr for warnings (lines starting with "warning:")
     warnings_list: List[str] = []
