@@ -12,6 +12,31 @@ Updating a pgrx extension can involve one or more of these changes:
 
 Each scenario requires different file changes. This guide covers all three.
 
+
+## Quick Reference: File Locations
+
+| Purpose | File |
+|---------|------|
+| Extension versions | `nix/ext/versions.json` |
+| Extension-specific config | `nix/ext/<name>/default.nix` |
+| pgrx versions + Rust mappings | `nix/cargo-pgrx/versions.json` |
+| cargo-pgrx package definitions | `nix/cargo-pgrx/default.nix` |
+| pgrx extension builder | `nix/cargo-pgrx/mkPgrxExtension.nix` |
+| Overlays (buildPgrxExtension_*) | `nix/overlays/default.nix` |
+| Rust toolchain source | `flake.nix` (rust-overlay input) |
+| Pinned rust-overlay version | `flake.lock` |
+
+---
+
+## Summary: Which Scenario Am I In?
+
+| Situation | Scenario |
+|-----------|----------|
+| Same pgrx and Rust as previous version | 1 - Extension only |
+| Extension's Cargo.toml has newer pgrx | 2 - Extension + pgrx |
+| Extension requires Rust version not in rust-overlay | 3 - Full stack update |
+| "attribute missing" error for Rust version | 3 - Need `nix flake update rust-overlay` |
+
 ---
 
 ## 1. Updating Extension Version Only
@@ -346,27 +371,3 @@ Some extensions (like wrappers) have git dependencies that require `outputHashes
 2. Add any new git dependencies with their calculated hashes
 
 ---
-
-## Quick Reference: File Locations
-
-| Purpose | File |
-|---------|------|
-| Extension versions | `nix/ext/versions.json` |
-| Extension-specific config | `nix/ext/<name>/default.nix` |
-| pgrx versions + Rust mappings | `nix/cargo-pgrx/versions.json` |
-| cargo-pgrx package definitions | `nix/cargo-pgrx/default.nix` |
-| pgrx extension builder | `nix/cargo-pgrx/mkPgrxExtension.nix` |
-| Overlays (buildPgrxExtension_*) | `nix/overlays/default.nix` |
-| Rust toolchain source | `flake.nix` (rust-overlay input) |
-| Pinned rust-overlay version | `flake.lock` |
-
----
-
-## Summary: Which Scenario Am I In?
-
-| Situation | Scenario |
-|-----------|----------|
-| Same pgrx and Rust as previous version | 1 - Extension only |
-| Extension's Cargo.toml has newer pgrx | 2 - Extension + pgrx |
-| Extension requires Rust version not in rust-overlay | 3 - Full stack update |
-| "attribute missing" error for Rust version | 3 - Need `nix flake update rust-overlay` |
