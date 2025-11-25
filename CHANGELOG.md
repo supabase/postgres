@@ -1,3 +1,225 @@
+## [unreleased]
+
+### 🚀 Features
+
+- Mirror fallbacks (#1903)
+- Migrate from the DetSys Nix installer to the official Nix installer (#1874)
+- Add branch-based versioning for PR AMI builds (#1902)
+- Upgrade admin-mgr to 0.32.3 (#1915)
+- Support multiple versions of the pg_plan_filter extension (#1873)
+- *(setup-postgres.yml)* Enable checksums via initdb for postgres (#1891)
+- Support multiple versions of the pg-safeupdate extension (#1871)
+- Support multiple versions of the pgjwt extension (#1751)
+- Support multiple versions of the pg_stat_monitor extension (#1683)
+- Reduciton of closure size for plv8 (#1925)
+- Release orioledb with rewind functionality (#1880)
+- Add PostgreSQL conf.d directory (#1929)
+- Need this workflow present to test (#1941)
+- Start of actual changelog
+
+### 🐛 Bug Fixes
+
+- Restore defaults to /var/lib/postgresql (#1901)
+- Rm docker approach to dbmate migration creation (#1904)
+- Update ext custom scripts to follow changes in Salt (#1870)
+- Relocate testinfra build ops to ap-southeast-1 (#1908)
+- Prepare job (lines 23-25): Moved checkout before nix-install-ephemeral (#1914)
+- Restore ami release to us east 1 (#1913)
+- Don't run a nix installer on qemu image build (#1916)
+- Add alpn_protocols to envoy (#1503)
+- Disable temporary Nix checks on aarch64-linux (#1930)
+- Adaptive retry on aws (#1917)
+- *(ci)* Limit max-jobs of nix to 8 to prevent OOM while running nix flake check (#1933)
+- Garbage collect after every profile intall + remove osquery (#1938)
+- Try to use mirror fallbacks for docker images (#1942)
+
+### 📚 Documentation
+
+- Expansion to help understand anatomy and code api in user here (#1944)
+- Changelog after release
+
+### ⚙️ Miscellaneous Tasks
+
+- Standardizes Nix installation across all GitHub Actions workflows (#1907)
+- Upgrade supabase-admin-agent (#1935)
+- Remove extra chars from automated changelog
+## [17.6.1.043] - 2025-11-09
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump admin api for service versions (#1900)
+## [17.6.1.042] - 2025-11-08
+
+### 🚀 Features
+
+- Support multiple versions of the pg_tle extension (#1756)
+## [17.6.1.041] - 2025-11-07
+
+### 🐛 Bug Fixes
+
+- Needs to run on merge not pre merge (#1898)
+- Grant execute on pg_reload_conf() to postgres (#1892)
+## [17.6.1.040] - 2025-11-06
+
+### 🚀 Features
+
+- Support multiple versions of the pgaudit extension (#1758)
+## [17.6.1.039] - 2025-11-06
+
+### 🚀 Features
+
+- Bump auth to v2.182.1 (#1894)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1881)
+
+### 📚 Documentation
+
+- Small fixes to dbmate docs (#1895)
+## [17.6.1.038] - 2025-11-04
+
+### 🚀 Features
+
+- Multiple versions for the vault extension (#1661)
+
+### 🧪 Testing
+
+- Start fail2ban before healthcheck in testinfra (#1888)
+## [17.6.1.037] - 2025-11-03
+
+### 🐛 Bug Fixes
+
+- Explicitly set pg fail2ban jail backend to auto (#1886)
+## [17.6.1.036] - 2025-10-31
+
+### 🚀 Features
+
+- Enable GitHub merge queues (#1849)
+
+### 🐛 Bug Fixes
+
+- Change trigger to `merge_group` in "Release Migrations - Staging / build (push)" workflow (#1884)
+- We won't deploy this newest version of plv8 yet (#1885)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1869)
+
+### 🧪 Testing
+
+- Newline readme (#1883)
+## [17.6.1.035] - 2025-10-30
+
+### 🚀 Features
+
+- Update supautils (#1879)
+## [17.6.1.034] - 2025-10-30
+
+### 🚀 Features
+
+- Support multiple versions of the plv8 extension (#1676)
+## [17.6.1.033] - 2025-10-29
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump wrappers version 0.5.6 (#1877)
+## [17.6.1.032] - 2025-10-28
+
+### 🚀 Features
+
+- Support multiple versions of the pg_hashids extension (#1755)
+## [17.6.1.031] - 2025-10-28
+
+### 🚀 Features
+
+- *(Nix-flakes)* Add pgBackRest flake (#1859)
+
+### 🐛 Bug Fixes
+
+- Wrappers 0.5.3 missing (#1872)
+- Covering migrations for wrappers across all versions` (#1876)
+
+### 🚜 Refactor
+
+- Improve test harness logging and error handling (#1834)
+
+### ⚙️ Miscellaneous Tasks
+
+- Add our substituter config to flake.nix (#1839)
+## [17.6.1.029] - 2025-10-25
+
+### 🚀 Features
+
+- Support multiple versions of the pgroonga extension (#1677)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1862)
+## [17.6.1.028] - 2025-10-24
+
+### 🐛 Bug Fixes
+
+- Bump admin-api with enforce ssl fix (#1857)
+- Bump version for new release (#1860)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1861)
+## [17.6.1.027] - 2025-10-23
+
+### 🚀 Features
+
+- Support multiple versions of the pg_repack extension (#1688)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1852)
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1856)
+## [17.6.1.026] - 2025-10-22
+
+### 🚀 Features
+
+- Support multiple versions of the plpgsql_check extension (#1684)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1848)
+
+### 📚 Documentation
+
+- How to update new structure (#1851)
+- Getting started nix install or config revised (#1853)
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump to release (#1855)
+## [17.6.1.025] - 2025-10-21
+
+### 🚀 Features
+
+- *(wrappers)* Support more versions (#1831)
+
+### 🚜 Refactor
+
+- *(ansible)* Bring our ansible up to modern ansible-lint standards (#1833)
+## [17.6.1.024] - 2025-10-17
+
+### 🐛 Bug Fixes
+
+- Fine tune protection rules to unblock wal-g functionality (#1846)
+## [17.6.1.023] - 2025-10-16
+
+### 🐛 Bug Fixes
+
+- *(nix)* Remove '%' character from Nix trusted-public-keys configuration (#1840)
+- Remove git revision from postgres package
+- Incorporate v3.0.0 supautils (#1844)
+## [17.6.1.022] - 2025-10-14
+
+### ⚙️ Miscellaneous Tasks
+
+- Systemd hardening (#1837)
 ## [17.6.1.021] - 2025-10-10
 
 ### 🚜 Refactor
@@ -2080,7 +2302,6 @@
 - Remove quotes from build args
 - Corrects typo that prevented wal-g being enabled (#639)
 - Perms and dir structure for physical backups (#650)
-- Pgbouncer config perms (#673)
 - Correct permissions on functions upon restore (#678)
 - Pgbouncer config persistence after reboot (#684)
 - Insert pgbouncer pg_hba entries before any other rules (#686)
