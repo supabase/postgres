@@ -102,7 +102,9 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
     return nix_eval_cmd
 
 
-def parse_nix_eval_line(line: str, drv_paths: Set[str]) -> Optional[NixEvalJobsOutput]:
+def parse_nix_eval_line(
+    line: str, drv_paths: Set[str], errors: List[str]
+) -> Optional[NixEvalJobsOutput]:
     """Parse a single line of nix-eval-jobs output"""
     if not line.strip():
         return None
@@ -110,38 +112,44 @@ def parse_nix_eval_line(line: str, drv_paths: Set[str]) -> Optional[NixEvalJobsO
     try:
         data: NixEvalJobsOutput = json.loads(line)
         if "error" in data:
-            raise ValueError(
+            error_msg = (
                 f"Error in nix-eval-jobs output for {data['attr']}: {data['error']}"
             )
+            errors.append(error_msg)
+            return None
         if data["drvPath"] in drv_paths:
             return None
         drv_paths.add(data["drvPath"])
         return data
     except json.JSONDecodeError:
-        print(f"Skipping invalid JSON line: {line}", file=sys.stderr)
+        error_msg = f"Skipping invalid JSON line: {line}"
+        print(error_msg, file=sys.stderr)
+        errors.append(error_msg)
         return None
 
 
-def run_nix_eval_jobs(cmd: List[str]) -> Generator[NixEvalJobsOutput, None, None]:
+def run_nix_eval_jobs(
+    cmd: List[str], errors: List[str]
+) -> Generator[NixEvalJobsOutput, None, None]:
     """Run nix-eval-jobs and yield parsed package data."""
     print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
 
     with subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        cmd, stdout=subprocess.PIPE, stderr=None, text=True
     ) as process:
         drv_paths: Set[str] = set()
         assert process.stdout is not None  # for mypy
-        assert process.stderr is not None  # for mypy
         for line in process.stdout:
-            package = parse_nix_eval_line(line, drv_paths)
+            package = parse_nix_eval_line(line, drv_paths, errors)
             if package:
                 yield package
 
         process.wait()
         if process.returncode != 0:
-            print("Error: Evaluation failed", file=sys.stderr)
-            sys.stderr.write(process.stderr.read())
-            sys.exit(process.returncode)
+            error_msg = "Error: nix-eval-jobs process failed with non-zero exit code"
+            print(error_msg, file=sys.stderr)
+            errors.append(error_msg)
+            # Don't exit here - let main() handle it after reporting all errors
 
 
 def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
@@ -227,7 +235,9 @@ def main() -> None:
 
     cmd = build_nix_eval_command(max_workers, args.flake_outputs)
 
-    gh_action_packages = sort_pkgs_by_closures(list(run_nix_eval_jobs(cmd)))
+    # Collect all evaluation errors
+    errors: List[str] = []
+    gh_action_packages = sort_pkgs_by_closures(list(run_nix_eval_jobs(cmd, errors)))
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
         """Convert nix-eval-jobs output to GitHub Actions matrix package"""
@@ -276,6 +286,18 @@ def main() -> None:
         file=sys.stderr,
     )
     print(json.dumps(gh_output))
+
+    # Check if any errors occurred during evaluation
+    if errors:
+        print("\n=== Evaluation Errors ===", file=sys.stderr)
+        for i, error in enumerate(errors, 1):
+            print(f"\nError {i}:", file=sys.stderr)
+            print(error, file=sys.stderr)
+        print(
+            f"\n=== Total: {len(errors)} error(s) occurred during evaluation ===",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

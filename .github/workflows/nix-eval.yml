@@ -32,4 +32,8 @@ jobs:
         run: |
           set -Eeu -o pipefail
           result=$(nix run --accept-flake-config .\#github-matrix -- checks legacyPackages)
+          if [ -z "$result" ]; then
+            echo "Error: github-matrix returned empty output" >&2
+            exit 1
+          fi
           echo matrix="$result" >> "$GITHUB_OUTPUT"
