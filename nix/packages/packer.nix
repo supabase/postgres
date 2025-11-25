@@ -32,8 +32,6 @@ buildGoModule rec {
 
   nativeBuildInputs = [ installShellFiles ];
 
-  buildInputs = lib.optionals pkgs.stdenv.isDarwin [ pkgs.apple-sdk_11 ];
-
   postInstall = ''
     installShellCompletion --zsh contrib/zsh-completion/_packer
   '';
