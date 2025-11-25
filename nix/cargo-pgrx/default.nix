@@ -1,6 +1,5 @@
 {
   lib,
-  apple-sdk_11,
   fetchCrate,
   openssl,
   pkg-config,
@@ -34,9 +33,7 @@ let
       src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
       nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
-      buildInputs =
-        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
-        ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_11 ];
+      buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ openssl ];
 
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
