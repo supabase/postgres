@@ -325,7 +325,7 @@ def main() -> None:
                 "include": [
                     {
                         "attr": "",
-                        "name": "skipped",
+                        "name": "no packages to build",
                         "system": system,
                         "runs_on": {"labels": "ubuntu-latest"},
                     }
