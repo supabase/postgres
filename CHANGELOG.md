@@ -1,48 +1,3 @@
-## [unreleased]
-
-### 🚀 Features
-
-- Mirror fallbacks (#1903)
-- Migrate from the DetSys Nix installer to the official Nix installer (#1874)
-- Add branch-based versioning for PR AMI builds (#1902)
-- Upgrade admin-mgr to 0.32.3 (#1915)
-- Support multiple versions of the pg_plan_filter extension (#1873)
-- *(setup-postgres.yml)* Enable checksums via initdb for postgres (#1891)
-- Support multiple versions of the pg-safeupdate extension (#1871)
-- Support multiple versions of the pgjwt extension (#1751)
-- Support multiple versions of the pg_stat_monitor extension (#1683)
-- Reduciton of closure size for plv8 (#1925)
-- Release orioledb with rewind functionality (#1880)
-- Add PostgreSQL conf.d directory (#1929)
-- Need this workflow present to test (#1941)
-- Start of actual changelog
-
-### 🐛 Bug Fixes
-
-- Restore defaults to /var/lib/postgresql (#1901)
-- Rm docker approach to dbmate migration creation (#1904)
-- Update ext custom scripts to follow changes in Salt (#1870)
-- Relocate testinfra build ops to ap-southeast-1 (#1908)
-- Prepare job (lines 23-25): Moved checkout before nix-install-ephemeral (#1914)
-- Restore ami release to us east 1 (#1913)
-- Don't run a nix installer on qemu image build (#1916)
-- Add alpn_protocols to envoy (#1503)
-- Disable temporary Nix checks on aarch64-linux (#1930)
-- Adaptive retry on aws (#1917)
-- *(ci)* Limit max-jobs of nix to 8 to prevent OOM while running nix flake check (#1933)
-- Garbage collect after every profile intall + remove osquery (#1938)
-- Try to use mirror fallbacks for docker images (#1942)
-
-### 📚 Documentation
-
-- Expansion to help understand anatomy and code api in user here (#1944)
-- Changelog after release
-
-### ⚙️ Miscellaneous Tasks
-
-- Standardizes Nix installation across all GitHub Actions workflows (#1907)
-- Upgrade supabase-admin-agent (#1935)
-- Remove extra chars from automated changelog
 ## [17.6.1.043] - 2025-11-09
 
 ### ⚙️ Miscellaneous Tasks
@@ -2302,6 +2257,7 @@
 - Remove quotes from build args
 - Corrects typo that prevented wal-g being enabled (#639)
 - Perms and dir structure for physical backups (#650)
+- Pgbouncer config perms (#673)
 - Correct permissions on functions upon restore (#678)
 - Pgbouncer config persistence after reboot (#684)
 - Insert pgbouncer pg_hba entries before any other rules (#686)
