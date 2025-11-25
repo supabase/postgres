@@ -19,11 +19,9 @@
     nix-fast-build.inputs.nixpkgs.follows = "nixpkgs";
     nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
     nix-fast-build.url = "github:Mic92/nix-fast-build";
-    nix2container.inputs.flake-utils.follows = "flake-utils";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix2container.url = "github:nlewo/nix2container";
     nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
-    nixpkgs-pgbackrest.url = "github:nixos/nixpkgs/nixos-unstable-small";
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
