@@ -461,6 +461,16 @@
     }
   },
   "wrappers": {
+    "0.5.5": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-tWa1XewJbbqarwWkJPfvCIev7Fn0hLJRzYiz0vuebyA=",
+      "pgrx": "0.16.0",
+      "rust": "1.87.0"
+    },
     "0.5.6": {
       "postgresql": [
         "15",
