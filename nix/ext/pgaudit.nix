@@ -184,22 +184,20 @@ buildEnv {
         echo "Found control version: $controlVer from package ${pkg}"
 
         # Create migrations from control version to all supported versions on this PG major
-        ${
-          lib.concatMapStringsSep "\n" (targetVer: ''
-            # Skip if control version equals target version
-            if [[ "$controlVer" != "${targetVer}" ]]; then
-              # Skip if migration already exists
-              if [[ ! -f "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql" ]]; then
-                # Create symlink to migration if target SQL exists
-                if [[ -f "$out/share/postgresql/extension/${pname}--${targetVer}.sql" ]]; then
-                  echo "Creating migration symlink from control version $controlVer to ${targetVer}"
-                  ln -s "$out/share/postgresql/extension/${pname}--${targetVer}.sql" \
-                        "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql"
-                fi
+        ${lib.concatMapStringsSep "\n" (targetVer: ''
+          # Skip if control version equals target version
+          if [[ "$controlVer" != "${targetVer}" ]]; then
+            # Skip if migration already exists
+            if [[ ! -f "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql" ]]; then
+              # Create symlink to migration if target SQL exists
+              if [[ -f "$out/share/postgresql/extension/${pname}--${targetVer}.sql" ]]; then
+                echo "Creating migration symlink from control version $controlVer to ${targetVer}"
+                ln -s "$out/share/postgresql/extension/${pname}--${targetVer}.sql" \
+                      "$out/share/postgresql/extension/${pname}--$controlVer--${targetVer}.sql"
               fi
             fi
-          '') versions
-        }
+          fi
+        '') versions}
       fi
     '') packages}
 

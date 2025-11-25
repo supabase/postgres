@@ -37,33 +37,34 @@ stdenv.mkDerivation (finalAttrs: {
     ./0001-build-Allow-using-V8-from-system.patch
   ];
 
-  nativeBuildInputs =
-    [ perl ]
-    ++ lib.optionals stdenv.isDarwin [
-      clang
-      xcbuild
-    ];
+  nativeBuildInputs = [
+    perl
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    clang
+    xcbuild
+  ];
 
   buildInputs = [
     v8
     postgresql
-  ] ++ lib.optionals stdenv.isDarwin [ apple-sdk_11 ];
+  ]
+  ++ lib.optionals stdenv.isDarwin [ apple-sdk_11 ];
 
   buildFlags = [ "all" ];
 
-  makeFlags =
-    [
-      # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
-      "USE_SYSTEM_V8=1"
-      "V8_OUTDIR=${v8}/lib"
-      "PG_CONFIG=${postgresql}/bin/pg_config"
-    ]
-    ++ lib.optionals stdenv.isDarwin [
-      "CC=${clang}/bin/clang"
-      "CXX=${clang}/bin/clang++"
-      "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
-    ]
-    ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
+  makeFlags = [
+    # Nixpkgs build a v8 monolith instead of separate v8_libplatform.
+    "USE_SYSTEM_V8=1"
+    "V8_OUTDIR=${v8}/lib"
+    "PG_CONFIG=${postgresql}/bin/pg_config"
+  ]
+  ++ lib.optionals stdenv.isDarwin [
+    "CC=${clang}/bin/clang"
+    "CXX=${clang}/bin/clang++"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+  ]
+  ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
   NIX_LDFLAGS = (
     lib.optionals stdenv.isDarwin [
@@ -124,11 +125,9 @@ stdenv.mkDerivation (finalAttrs: {
         install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8.so
       ''}
 
-      ${
-        lib.optionalString (!stdenv.isDarwin) ''
-          ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
-        ''
-      }
+      ${lib.optionalString (!stdenv.isDarwin) ''
+        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8.so
+      ''}
     else
       ${lib.optionalString stdenv.isDarwin ''
         install_name_tool -add_rpath "${v8}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
@@ -137,11 +136,9 @@ stdenv.mkDerivation (finalAttrs: {
         install_name_tool -change @rpath/libv8_monolith.dylib ${v8}/lib/libv8_monolith.dylib $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
       ''}
 
-      ${
-        lib.optionalString (!stdenv.isDarwin) ''
-          ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
-        ''
-      }
+      ${lib.optionalString (!stdenv.isDarwin) ''
+        ${patchelf}/bin/patchelf --set-rpath "${v8}/lib:${postgresql}/lib:${stdenv.cc.cc.lib}/lib" $out/lib/plv8-${finalAttrs.version}${postgresql.dlSuffix}
+      ''}
     fi
   '';
 
