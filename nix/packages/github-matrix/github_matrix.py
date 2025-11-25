@@ -259,8 +259,9 @@ def main() -> None:
         gh_output[system.replace("-", "_")] = {"include": packages}
 
     for system in get_args(System):
-        if system not in gh_output:
-            gh_output[system.replace("-", "_")] = {
+        s = system.replace("-", "_")
+        if s not in gh_output:
+            gh_output[s] = {
                 "include": [
                     {
                         "attr": "",
