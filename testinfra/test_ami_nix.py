@@ -108,7 +108,7 @@ pgsodium_root_key_content = (
 )
 postgrest_base_conf_content = """
 db-uri = "postgres://authenticator:postgres@localhost:5432/postgres?application_name=postgrest"
-db-schema = "public, storage, graphql_public"
+db-schema = "public, graphql_public"
 db-anon-role = "anon"
 jwt-secret = "my_jwt_secret_which_is_not_so_secret"
 role-claim-key = ".role"
@@ -447,11 +447,10 @@ def test_postgrest_responds_to_requests(host):
 def test_postgrest_can_connect_to_db(host):
     """Test if PostgREST can connect to the database."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
+        f"http://{host['ip']}/rest-admin/v1/ready",
         headers={
             "apikey": service_role_key,
             "authorization": f"Bearer {service_role_key}",
-            "accept-profile": "storage",
         },
     )
     assert res.ok
@@ -460,10 +459,7 @@ def test_postgrest_can_connect_to_db(host):
 def test_postgrest_starting_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter at start."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "apikey": service_role_key,
             "id": "eq.absent",
@@ -476,10 +472,7 @@ def test_postgrest_starting_apikey_query_parameter_is_removed(host):
 def test_postgrest_middle_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter in middle."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "apikey": service_role_key,
@@ -492,10 +485,7 @@ def test_postgrest_middle_apikey_query_parameter_is_removed(host):
 def test_postgrest_ending_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter at end."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "name": "eq.absent",
@@ -508,10 +498,7 @@ def test_postgrest_ending_apikey_query_parameter_is_removed(host):
 def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter at start."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "": "empty_key",
             "id": "eq.absent",
@@ -524,10 +511,7 @@ def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
 def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter in middle."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "apikey": service_role_key,
             "": "empty_key",
@@ -540,10 +524,7 @@ def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
 def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter at end."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "apikey": service_role_key,
