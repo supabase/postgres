@@ -128,10 +128,23 @@ def parse_nix_eval_line(
         data: NixEvalJobsOutput = json.loads(line)
         if "error" in data:
             error_msg = data["error"]
-            # Strip the redundant first line if it contains "does not have valid outputs"
+
+            # Extract the core error message (last "error:" line and following context)
             error_lines = error_msg.split("\n")
-            if len(error_lines) > 1 and "does not have valid outputs" in error_lines[0]:
-                error_msg = "\n".join(error_lines[1:]).strip()
+            core_error_idx = -1
+            for i in range(len(error_lines) - 1, -1, -1):
+                if error_lines[i].strip().startswith("error:"):
+                    core_error_idx = i
+                    break
+
+            if core_error_idx >= 0:
+                # Take the last error line and up to 3 lines of context after it
+                error_msg = "\n".join(
+                    error_lines[
+                        core_error_idx : min(core_error_idx + 4, len(error_lines))
+                    ]
+                ).strip()
+
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
             return Ok(None)
@@ -152,8 +165,12 @@ def run_nix_eval_jobs(
     """
     debug(f"Running command: {' '.join(cmd)}")
 
+    # Disable colors in nix output
+    env = os.environ.copy()
+    env["NO_COLOR"] = "1"
+
     process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
     stdout_data, stderr_data = process.communicate()
 
@@ -333,23 +350,21 @@ def main() -> None:
             errors_by_message[err["error"]].append(err["attr"])
 
         for error_msg, attrs in errors_by_message.items():
+            # Format message with attributes on first line, then error details
             if len(attrs) > 1:
-                error(
-                    f"{error_msg}\nAffected attributes: {', '.join(attrs)}",
-                    title="Nix Evaluation Error",
-                )
+                formatted_msg = f"Affected attributes ({len(attrs)}): {', '.join(attrs)}\n\n{error_msg}"
             else:
-                error(
-                    f"{error_msg}\nAttribute: {attrs[0]}",
-                    title="Nix Evaluation Error",
-                )
+                formatted_msg = f"Attribute: {attrs[0]}\n\n{error_msg}"
+            formatted_msg = formatted_msg.replace("\n", "%0A")
+            error(formatted_msg, title="Nix Evaluation Error")
 
-    # Exit with error code if any evaluation errors occurred
     if errors_list:
         sys.exit(1)
     else:
-        # Output matrix to GitHub Actions
-        notice(f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}")
+        formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
+            "\n", "%0A"
+        )
+        notice(formatted_msg, title="GitHub Actions Matrix")
         set_output("matrix", json.dumps(gh_output))
 
 
