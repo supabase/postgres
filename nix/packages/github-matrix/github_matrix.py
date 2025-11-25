@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from collections import defaultdict
+from collections import Counter, defaultdict
 import graphlib
 import json
 import os
@@ -10,15 +10,18 @@ import sys
 from typing import (
     Any,
     Dict,
-    Generator,
     List,
     Literal,
     NotRequired,
     Optional,
     Set,
+    Tuple,
     TypedDict,
     get_args,
 )
+
+from github_action_utils import debug, error, set_output, warning
+from result import Err, Ok, Result
 
 System = Literal["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
 RunnerType = Literal["ephemeral", "self-hosted"]
@@ -103,11 +106,16 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
 
 
 def parse_nix_eval_line(
-    line: str, drv_paths: Set[str], errors: List[str]
-) -> Optional[NixEvalJobsOutput]:
-    """Parse a single line of nix-eval-jobs output"""
+    line: str, drv_paths: Set[str]
+) -> Result[Optional[NixEvalJobsOutput], str]:
+    """Parse a single line of nix-eval-jobs output.
+
+    Returns:
+        Ok(package_data) if successful (None for empty/duplicate lines)
+        Err(error_message) if a nix evaluation error occurred
+    """
     if not line.strip():
-        return None
+        return Ok(None)
 
     try:
         data: NixEvalJobsOutput = json.loads(line)
@@ -115,41 +123,58 @@ def parse_nix_eval_line(
             error_msg = (
                 f"Error in nix-eval-jobs output for {data['attr']}: {data['error']}"
             )
-            errors.append(error_msg)
-            return None
+            error(error_msg, title="Nix Evaluation Error")
+            return Err(error_msg)
         if data["drvPath"] in drv_paths:
-            return None
+            return Ok(None)
         drv_paths.add(data["drvPath"])
-        return data
-    except json.JSONDecodeError:
-        error_msg = f"Skipping invalid JSON line: {line}"
-        print(error_msg, file=sys.stderr)
-        errors.append(error_msg)
-        return None
+        return Ok(data)
+    except json.JSONDecodeError as e:
+        warning(f"Skipping invalid JSON line: {line}", title="JSON Parse Warning")
+        return Ok(None)
 
 
 def run_nix_eval_jobs(
-    cmd: List[str], errors: List[str]
-) -> Generator[NixEvalJobsOutput, None, None]:
-    """Run nix-eval-jobs and yield parsed package data."""
-    print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
+    cmd: List[str],
+) -> Tuple[List[NixEvalJobsOutput], List[str], bool]:
+    """Run nix-eval-jobs and return parsed package data, warnings, and error status.
 
-    with subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=None, text=True
-    ) as process:
-        drv_paths: Set[str] = set()
-        assert process.stdout is not None  # for mypy
-        for line in process.stdout:
-            package = parse_nix_eval_line(line, drv_paths, errors)
-            if package:
-                yield package
+    Returns:
+        Tuple of (packages, warnings_list, had_errors)
+    """
+    debug(f"Running command: {' '.join(cmd)}")
 
-        process.wait()
-        if process.returncode != 0:
-            error_msg = "Error: nix-eval-jobs process failed with non-zero exit code"
-            print(error_msg, file=sys.stderr)
-            errors.append(error_msg)
-            # Don't exit here - let main() handle it after reporting all errors
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    stdout_data, stderr_data = process.communicate()
+
+    # Parse stdout for packages
+    packages: List[NixEvalJobsOutput] = []
+    drv_paths: Set[str] = set()
+    had_errors = False
+    for line in stdout_data.splitlines():
+        result = parse_nix_eval_line(line, drv_paths)
+        if result.is_err():
+            had_errors = True
+        elif result.ok_value is not None:
+            packages.append(result.ok_value)
+
+    # Parse stderr for warnings (lines starting with "warning:")
+    warnings_list: List[str] = []
+    for line in stderr_data.splitlines():
+        line = line.strip()
+        if line.startswith("warning:") or line.startswith("evaluation warning:"):
+            # Remove "warning:" prefix for cleaner messages
+            warnings_list.append(line[8:].strip())
+
+    if process.returncode != 0:
+        error(
+            "nix-eval-jobs process failed with non-zero exit code",
+            title="Process Failure",
+        )
+
+    return packages, warnings_list, had_errors
 
 
 def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
@@ -235,9 +260,9 @@ def main() -> None:
 
     cmd = build_nix_eval_command(max_workers, args.flake_outputs)
 
-    # Collect all evaluation errors
-    errors: List[str] = []
-    gh_action_packages = sort_pkgs_by_closures(list(run_nix_eval_jobs(cmd, errors)))
+    # Run evaluation and collect packages and warnings
+    packages, warnings_list, had_errors = run_nix_eval_jobs(cmd)
+    gh_action_packages = sort_pkgs_by_closures(packages)
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
         """Convert nix-eval-jobs output to GitHub Actions matrix package"""
@@ -281,22 +306,24 @@ def main() -> None:
                     }
                 ]
             }
-    print(
-        f"debug: Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}",
-        file=sys.stderr,
-    )
-    print(json.dumps(gh_output))
 
-    # Check if any errors occurred during evaluation
-    if errors:
-        print("\n=== Evaluation Errors ===", file=sys.stderr)
-        for i, error in enumerate(errors, 1):
-            print(f"\nError {i}:", file=sys.stderr)
-            print(error, file=sys.stderr)
-        print(
-            f"\n=== Total: {len(errors)} error(s) occurred during evaluation ===",
-            file=sys.stderr,
-        )
+    if warnings_list:
+        warning_counts = Counter(warnings_list)
+        for warn_msg, count in warning_counts.items():
+            if count > 1:
+                warning(
+                    f"{warn_msg} (occurred {count} times)",
+                    title="Nix Evaluation Warning",
+                )
+            else:
+                warning(warn_msg, title="Nix Evaluation Warning")
+
+    # Output matrix to GitHub Actions
+    debug(f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}")
+    set_output("matrix", json.dumps(gh_output))
+
+    # Exit with error code if any evaluation errors occurred
+    if had_errors:
         sys.exit(1)
 
 
