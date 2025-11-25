@@ -9,7 +9,6 @@
   # to nixpkgs
   clang,
   xcbuild,
-  apple-sdk_11,
   patchelf,
 }:
 let
@@ -48,8 +47,7 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     v8
     postgresql
-  ]
-  ++ lib.optionals stdenv.isDarwin [ apple-sdk_11 ];
+  ];
 
   buildFlags = [ "all" ];
 
