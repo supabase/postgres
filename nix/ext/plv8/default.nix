@@ -10,7 +10,6 @@
   # to nixpkgs
   clang,
   xcbuild,
-  darwin,
   patchelf,
   buildEnv,
   nodejs_20,
@@ -80,10 +79,6 @@ let
       buildInputs = [
         (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8)
         postgresql
-      ]
-      ++ lib.optionals stdenv.isDarwin [
-        darwin.apple_sdk.frameworks.CoreFoundation
-        darwin.apple_sdk.frameworks.Kerberos
       ];
 
       buildFlags = [ "all" ];
@@ -108,10 +103,8 @@ let
         "-lpq"
         "-lpgcommon"
         "-lpgport"
-        "-F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
         "-framework"
         "CoreFoundation"
-        "-F${darwin.apple_sdk.frameworks.Kerberos}/Library/Frameworks"
         "-framework"
         "Kerberos"
         "-undefined"
