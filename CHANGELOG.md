@@ -1,3 +1,86 @@
+## [17.6.1.054] - 2025-11-21
+
+### 🐛 Bug Fixes
+
+- Disable temporary Nix checks on aarch64-linux (#1930)
+- Adaptive retry on aws (#1917)
+- *(ci)* Limit max-jobs of nix to 8 to prevent OOM while running nix flake check (#1933)
+- Garbage collect after every profile intall + remove osquery (#1938)
+
+### ⚙️ Miscellaneous Tasks
+
+- Upgrade supabase-admin-agent (#1935)
+## [17.6.1.053] - 2025-11-19
+
+### 🚀 Features
+
+- Reduciton of closure size for plv8 (#1925)
+- Release orioledb with rewind functionality (#1880)
+## [17.6.1.052] - 2025-11-15
+
+### 🚀 Features
+
+- Support multiple versions of the pg_stat_monitor extension (#1683)
+## [17.6.1.051] - 2025-11-14
+
+### 🚀 Features
+
+- *(setup-postgres.yml)* Enable checksums via initdb for postgres (#1891)
+- Support multiple versions of the pg-safeupdate extension (#1871)
+- Support multiple versions of the pgjwt extension (#1751)
+
+### 🐛 Bug Fixes
+
+- Add alpn_protocols to envoy (#1503)
+## [17.6.1.049] - 2025-11-13
+
+### 🚀 Features
+
+- Support multiple versions of the pg_plan_filter extension (#1873)
+## [17.6.1.048] - 2025-11-13
+
+### 🐛 Bug Fixes
+
+- Don't run a nix installer on qemu image build (#1916)
+## [17.6.1.047] - 2025-11-13
+
+### 🐛 Bug Fixes
+
+- Restore ami release to us east 1 (#1913)
+## [17.6.1.046] - 2025-11-13
+
+### 🚀 Features
+
+- Upgrade admin-mgr to 0.32.3 (#1915)
+
+### 🐛 Bug Fixes
+
+- Prepare job (lines 23-25): Moved checkout before nix-install-ephemeral (#1914)
+## [17.6.1.045] - 2025-11-12
+
+### 🚀 Features
+
+- Add branch-based versioning for PR AMI builds (#1902)
+
+### 🐛 Bug Fixes
+
+- Rm docker approach to dbmate migration creation (#1904)
+- Update ext custom scripts to follow changes in Salt (#1870)
+- Relocate testinfra build ops to ap-southeast-1 (#1908)
+
+### ⚙️ Miscellaneous Tasks
+
+- Standardizes Nix installation across all GitHub Actions workflows (#1907)
+## [17.6.1.044] - 2025-11-11
+
+### 🚀 Features
+
+- Mirror fallbacks (#1903)
+- Migrate from the DetSys Nix installer to the official Nix installer (#1874)
+
+### 🐛 Bug Fixes
+
+- Restore defaults to /var/lib/postgresql (#1901)
 ## [17.6.1.043] - 2025-11-09
 
 ### ⚙️ Miscellaneous Tasks
@@ -2257,7 +2340,6 @@
 - Remove quotes from build args
 - Corrects typo that prevented wal-g being enabled (#639)
 - Perms and dir structure for physical backups (#650)
-- Pgbouncer config perms (#673)
 - Correct permissions on functions upon restore (#678)
 - Pgbouncer config persistence after reboot (#684)
 - Insert pgbouncer pg_hba entries before any other rules (#686)
