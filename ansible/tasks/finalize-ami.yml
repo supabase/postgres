@@ -11,7 +11,7 @@
     src: "files/postgresql_config/conf.d/{{ ext_item }}.conf"
   loop:
     - auto_explain
-    # - pg_cron
+    - pg_cron
   loop_control:
     loop_var: 'ext_item'
 
