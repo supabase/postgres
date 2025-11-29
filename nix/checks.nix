@@ -307,7 +307,7 @@
             postgresql_17_src
             ;
         }
-        // pkgs.lib.optionalAttrs (system == "x86_64-linux") (
+        // (
           {
             devShell = self'.devShells.default;
           }

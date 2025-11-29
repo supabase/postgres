@@ -11,13 +11,13 @@ let
       pname = extension_name;
       inherit (pkgs) lib;
       installedExtension =
-        postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+        postgresMajorVersion: self.packages.${pkgs.pkgsLinux.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
       postgresqlWithExtension =
         postgresql:
         let
           majorVersion = lib.versions.major postgresql.version;
-          pkg = pkgs.buildEnv {
+          pkg = pkgs.pkgsLinux.buildEnv {
             name = "postgresql-${majorVersion}-${pname}";
             paths = [
               postgresql
@@ -32,7 +32,7 @@ let
               withoutJIT = pkg;
               installedExtensions = [ (installedExtension majorVersion) ];
             };
-            nativeBuildInputs = [ pkgs.makeWrapper ];
+            nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
             pathsToLink = [
               "/"
               "/bin"
@@ -46,12 +46,11 @@ let
           };
         in
         pkg;
-      psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      psql_15 = postgresqlWithExtension self.packages.${pkgs.pkgsLinux.system}.postgresql_15;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.pkgsLinux.system}.postgresql_17;
     in
-    self.inputs.nixpkgs.lib.nixos.runTest {
+    pkgs.testers.runNixOSTest {
       name = pname;
-      hostPkgs = pkgs;
       nodes.server =
         { config, ... }:
         {
