@@ -220,9 +220,13 @@ let
     v: !(builtins.elem v versions)
   ) allPreviouslyPackagedVersions;
   numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
-  );
+  packagesAttrSet = lib.mapAttrs' (
+    name: value: {
+      name = lib.replaceStrings ["."] ["_"] name;
+      value = build name value.hash value.rust value.pgrx;
+    }
+  ) supportedVersions;
+  packages = builtins.attrValues packagesAttrSet;
 in
 (buildEnv {
   name = pname;
@@ -305,9 +309,13 @@ in
   '';
   passthru = {
     inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    pname = "${pname}";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    # Expose individual packages for CI to build separately
+    packages = packagesAttrSet // {
+      recurseForDerivations = true;
+    };
   };
 }).overrideAttrs
   (_: {
