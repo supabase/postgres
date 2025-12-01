@@ -15,8 +15,14 @@ from github_matrix import (
 class TestIsExtensionPkg:
     def test_extension_package(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15.exts.pg_cron",
-            "attrPath": ["packages", "x86_64-linux", "psql_15", "exts", "pg_cron"],
+            "attr": "legacyPackages.x86_64-linux.psql_15.exts.pg_cron",
+            "attrPath": [
+                "legacyPackages",
+                "x86_64-linux",
+                "psql_15",
+                "exts",
+                "pg_cron",
+            ],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "pg_cron",
@@ -26,8 +32,8 @@ class TestIsExtensionPkg:
 
     def test_non_extension_package(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15",
-            "attrPath": ["packages", "x86_64-linux", "psql_15"],
+            "attr": "legacyPackages.x86_64-linux.psql_15",
+            "attrPath": ["legacyPackages", "x86_64-linux", "psql_15"],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "postgresql-16.0",
@@ -40,12 +46,12 @@ class TestIsLargePkg:
     @pytest.mark.parametrize(
         "attr,expected",
         [
-            ("packages.x86_64-linux.psql_15.exts.wrappers", True),
-            ("packages.x86_64-linux.psql_15.exts.pg_jsonschema", True),
-            ("packages.x86_64-linux.psql_15.exts.pg_graphql", True),
-            ("packages.x86_64-linux.psql_15.exts.postgis", True),
-            ("packages.x86_64-linux.psql_15.exts.pg_cron", False),
-            ("packages.x86_64-linux.psql_15", False),
+            ("legacyPackages.x86_64-linux.psql_15.exts.wrappers", True),
+            ("legacyPackages.x86_64-linux.psql_15.exts.pg_jsonschema", True),
+            ("legacyPackages.x86_64-linux.psql_15.exts.pg_graphql", True),
+            ("legacyPackages.x86_64-linux.psql_15.exts.postgis", True),
+            ("legacyPackages.x86_64-linux.psql_15.exts.pg_cron", False),
+            ("legacyPackages.x86_64-linux.psql_15", False),
         ],
     )
     def test_large_package_detection(self, attr: str, expected: bool):
@@ -121,8 +127,14 @@ class TestGetRunnerForPackage:
 
     def test_large_package_x86_64_linux(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15.exts.postgis",
-            "attrPath": ["packages", "x86_64-linux", "psql_15", "exts", "postgis"],
+            "attr": "legacyPackages.x86_64-linux.psql_15.exts.postgis",
+            "attrPath": [
+                "legacyPackages",
+                "x86_64-linux",
+                "psql_15",
+                "exts",
+                "postgis",
+            ],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "postgis",
@@ -134,8 +146,14 @@ class TestGetRunnerForPackage:
 
     def test_large_package_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.aarch64-linux.psql_15.exts.pg_graphql",
-            "attrPath": ["packages", "aarch64-linux", "psql_15", "exts", "pg_graphql"],
+            "attr": "legacyPackages.aarch64-linux.psql_15.exts.pg_graphql",
+            "attrPath": [
+                "legacyPackages",
+                "aarch64-linux",
+                "psql_15",
+                "exts",
+                "pg_graphql",
+            ],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "pg_graphql",
@@ -147,8 +165,8 @@ class TestGetRunnerForPackage:
 
     def test_darwin_package(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.aarch64-darwin.psql_15",
-            "attrPath": ["packages", "aarch64-darwin", "psql_15"],
+            "attr": "legacyPackages.aarch64-darwin.psql_15",
+            "attrPath": ["legacyPackages", "aarch64-darwin", "psql_15"],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "postgresql-16.0",
@@ -162,8 +180,14 @@ class TestGetRunnerForPackage:
 
     def test_default_x86_64_linux(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15.exts.pg_cron",
-            "attrPath": ["packages", "x86_64-linux", "psql_15", "exts", "pg_cron"],
+            "attr": "legacyPackages.x86_64-linux.psql_15.exts.pg_cron",
+            "attrPath": [
+                "legacyPackages",
+                "x86_64-linux",
+                "psql_15",
+                "exts",
+                "pg_cron",
+            ],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "pg_cron",
@@ -174,8 +198,14 @@ class TestGetRunnerForPackage:
 
     def test_default_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.aarch64-linux.psql_15.exts.pg_cron",
-            "attrPath": ["packages", "aarch64-linux", "psql_15", "exts", "pg_cron"],
+            "attr": "legacyPackages.aarch64-linux.psql_15.exts.pg_cron",
+            "attrPath": [
+                "legacyPackages",
+                "aarch64-linux",
+                "psql_15",
+                "exts",
+                "pg_cron",
+            ],
             "cacheStatus": "notBuilt",
             "drvPath": "/nix/store/test.drv",
             "name": "pg_cron",

@@ -108,15 +108,24 @@
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
-        (builtins.listToAttrs (
-          map (drv: {
-            name = drv.pname;
-            value = drv;
-          }) (makeOurPostgresPkgs version)
-        ))
-        // {
-          recurseForDerivations = true;
-        };
+        let
+          pkgsList = makeOurPostgresPkgs version;
+          baseAttrs = builtins.listToAttrs (
+            map (drv: {
+              name = drv.pname;
+              value = drv;
+            }) pkgsList
+          );
+          # Expose individual packages from extensions that have them in passthru.packages
+          # This makes them discoverable by nix-eval-jobs --force-recurse
+          individualPkgs = lib.concatMapAttrs (
+            name: drv:
+            lib.optionalAttrs (drv ? passthru.packages) {
+              "${name}-pkgs" = drv.passthru.packages;
+            }
+          ) baseAttrs;
+        in
+        baseAttrs // individualPkgs // { recurseForDerivations = true; };
 
       # Create a binary distribution of PostgreSQL, given a version.
       #
@@ -165,9 +174,13 @@
         psql_17 = makePostgres "17";
         psql_orioledb-17 = makePostgres "orioledb-17";
       };
+      binPackages = lib.mapAttrs' (name: value: {
+        name = "${name}/bin";
+        value = value.bin;
+      }) basePackages;
     in
     {
-      packages = inputs.flake-utils.lib.flattenTree basePackages;
+      packages = binPackages;
       legacyPackages = basePackages;
     };
 }
