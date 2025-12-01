@@ -51,6 +51,7 @@ EOF
         --extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
         --extra-vars "nix_secret_key=${NIX_SECRET_KEY}" \
         --extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
+        --extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
         $ARGS
 }
 
