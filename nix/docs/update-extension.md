@@ -5,7 +5,7 @@
 
 There are two types of extension package structures in our codebase:
 
-1. **Old structure (deprecated, soon to be replaced)**: Extensions like `supautils.nix` that directly define a single version
+1. **Old structure (deprecated)**: Extensions like `supautils.nix` that directly define a single version in the nix expression for the package
 2. **New structure (current standard)**: Extensions that load multiple versions from `nix/ext/versions.json`
 
 Most extensions now use the new structure, which supports multiple versions via the `versions.json` file. The instructions below cover both approaches.
@@ -142,6 +142,8 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 9.  **Ready for PR review**
 
 10. **Once approved**: Update `common-nix.vars.yml` if releasing
+
+> **Need to update pgrx or Rust versions?** See [Updating cargo-pgrx Extensions](./updating-pgrx-extensions.md) for the complete guide covering pgrx version updates, Rust toolchain updates (including `nix flake update rust-overlay`), and troubleshooting.
 
 ---
 
