@@ -33,9 +33,19 @@
         cmd: sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-2"
       become: true
 
+    - name: nix collect garbage
+      ansible.builtin.shell:
+        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+      become: true
+
     - name: Install wal-g 3 from nix binary cache
       ansible.builtin.shell:
         cmd: sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-3"
+      become: true
+
+    - name: nix collect garbage
+      ansible.builtin.shell:
+        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
       become: true
 
     - name: Create symlink for wal-g-3 from Nix profile to /usr/local/bin

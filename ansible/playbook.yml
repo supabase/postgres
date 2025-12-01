@@ -204,17 +204,11 @@
         apt autoremove -y --purge snapd
       when: stage2_nix
 
-    - name: Install osquery from nixpkgs binary cache
-      become: yes
-      shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:nixos/nixpkgs/f98ec4f73c762223d62bee706726138cb6ea27cc#osquery"
-      when: stage2_nix
-
-    - name: Run osquery permission checks
+    - name: Run permission checks
       become: yes
       shell: |
         systemctl start postgresql.service
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && /usr/bin/python3 /tmp/ansible-playbook/ansible/files/permission_check.py {{ '--qemu' if qemu_mode is defined else '' }}"
+        /usr/bin/python3 /tmp/ansible-playbook/ansible/files/permission_check.py {{ '--qemu' if qemu_mode is defined else '' }}
         systemctl stop postgresql.service
       when: stage2_nix
 
@@ -224,12 +218,6 @@
         systemctl start fail2ban.service
         /usr/bin/python3 /tmp/ansible-playbook/ansible/files/fail2ban_check.py
         systemctl stop fail2ban.service
-      when: stage2_nix
-
-    - name: Remove osquery    
-      become: yes
-      shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove osquery"
       when: stage2_nix
 
     - name: nix collect garbage

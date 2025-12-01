@@ -40,6 +40,18 @@
           name = "conf.d";
           path = ../../ansible/files/postgresql_config/conf.d;
         };
+        supautilsConfigFile = builtins.path {
+          name = "supautils.conf";
+          path = ../../ansible/files/postgresql_config/supautils.conf.j2;
+        };
+        loggingConfigFile = builtins.path {
+          name = "logging.conf";
+          path = ../../ansible/files/postgresql_config/postgresql-csvlog.conf;
+        };
+        readReplicaConfigFile = builtins.path {
+          name = "readreplica.conf";
+          path = ../../ansible/files/postgresql_config/custom_read_replica.conf.j2;
+        };
         pgHbaConfigFile = builtins.path {
           name = "pg_hba.conf";
           path = ../../ansible/files/postgresql_config/pg_hba.conf.j2;
