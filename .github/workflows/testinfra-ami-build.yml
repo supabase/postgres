@@ -91,10 +91,6 @@ jobs:
         with:
           endpoint: builders
 
-      - name: Generate random string
-        id: random
-        run: echo "random_string=$(openssl rand -hex 8)" >> $GITHUB_OUTPUT
-
       - name: Set PostgreSQL version environment variable
         run: |
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
@@ -107,6 +103,7 @@ jobs:
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl
+          git add -f common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1
         env:
@@ -114,22 +111,40 @@ jobs:
           AWS_RETRY_MODE: adaptive
         run: |
           GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=" -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" amazon-arm64-nix.pkr.hcl
+          nix run .#build-ami -- stage1 \
+            -var "git-head-version=${GIT_SHA}" \
+            -var "packer-execution-id=${EXECUTION_ID}" \
+            -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" \
+            -var "region=ap-southeast-1" \
+            -var 'ami_regions=["ap-southeast-1"]' \
+            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="common-nix.vars.pkr.hcl" \
+            amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
+        id: build-stage2
         env:
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
+          PACKER_EXECUTION_ID: ${{ env.EXECUTION_ID }}
         run: |
           GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl"  -var "postgres-version=${{ steps.random.outputs.random_string }}" -var "region=ap-southeast-1" -var 'ami_regions=["ap-southeast-1"]' -var "force-deregister=true" -var "git_sha=${GITHUB_SHA}"  stage2-nix-psql.pkr.hcl
+          nix run .#build-ami -- stage2 \
+            -var "git-head-version=${GIT_SHA}" \
+            -var "packer-execution-id=${EXECUTION_ID}" \
+            -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" \
+            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="common-nix.vars.pkr.hcl" \
+            -var "postgres-version=${EXECUTION_ID}" \
+            -var 'ami_regions=["ap-southeast-1"]' \
+            -var "force-deregister=true" \
+            -var "git_sha=${GITHUB_SHA}" \
+            stage2-nix-psql.pkr.hcl
 
       - name: Run tests
         timeout-minutes: 10
         env:
-          AMI_NAME: "supabase-postgres-${{ steps.random.outputs.random_string }}"
+          AMI_ID: ${{ steps.build-stage2.outputs.stage2_ami_id }}
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest pytest-testinfra[paramiko,docker] requests
@@ -138,30 +153,40 @@ jobs:
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
+          INSTANCE_IDS=$(aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text)
+          if [ -n "$INSTANCE_IDS" ]; then
+            echo "Terminating packer build instances: $INSTANCE_IDS"
+            echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids
+          else
+            echo "No packer build instances to clean up"
+          fi
 
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
+          INSTANCE_IDS=$(aws ec2 --region ap-southeast-1 describe-instances --filters "Name=tag:testinfra-run-id,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text)
+          if [ -n "$INSTANCE_IDS" ]; then
+            echo "Terminating testinfra instances: $INSTANCE_IDS"
+            echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
+          else
+            echo "No testinfra instances to clean up"
+          fi
 
-      - name: Cleanup AMIs
+      - name: Cleanup stage 2 AMI
         if: always()
         run: |
-          # Define AMI name patterns
-          STAGE1_AMI_NAME="supabase-postgres-ci-ami-test-stage-1"
-          STAGE2_AMI_NAME="${{ steps.random.outputs.random_string }}"
+          STAGE2_AMI_IDS=$(aws ec2 describe-images \
+            --region ap-southeast-1 \
+            --owners self \
+            --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" \
+            --query 'Images[*].ImageId' \
+            --output text)
 
-          # Function to deregister AMIs by name pattern
-          deregister_ami_by_name() {
-            local ami_name_pattern=$1
-            local ami_ids=$(aws ec2 describe-images --region ap-southeast-1 --owners self --filters "Name=name,Values=${ami_name_pattern}" --query 'Images[*].ImageId' --output text)
-            for ami_id in $ami_ids; do
-              echo "Deregistering AMI: $ami_id"
-              aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id
+          if [ -n "$STAGE2_AMI_IDS" ]; then
+            for ami_id in $STAGE2_AMI_IDS; do
+              echo "Deregistering stage 2 AMI: $ami_id"
+              aws ec2 deregister-image --region ap-southeast-1 --image-id $ami_id || true
             done
-          }
-
-          # Deregister AMIs
-          deregister_ami_by_name "$STAGE1_AMI_NAME"
-          deregister_ami_by_name "$STAGE2_AMI_NAME"
+          else
+            echo "No stage 2 AMI to clean up"
+          fi
