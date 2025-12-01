@@ -66,7 +66,7 @@ source "amazon-ebs" "ubuntu" {
   region        = "${var.region}"
   source_ami_filter {
     filters = {
-      name   = "${var.ami_name}-base-stage-1-nightly"
+      name   = "${var.ami_name}-base-stage-1-*-nightly"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
