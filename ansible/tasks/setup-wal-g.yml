@@ -83,3 +83,27 @@
         regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
         replace: "include = '/etc/postgresql-custom/wal-g.conf'"
       become: true
+
+    - name: Create wal-g log directory
+      ansible.builtin.file:
+        path: '/var/log/wal-g'
+        state: 'directory'
+        owner: 'postgres'
+        group: 'postgres'
+        mode: '0300'
+
+    - name: Create wal-g log files
+      ansible.builtin.file:
+        path: "/var/log/wal-g/{{ walg_log_item }}"
+        state: 'touch'
+        owner: 'postgres'
+        group: 'postgres'
+        mode: '0300'
+      loop:
+        - 'backup-push.log'
+        - 'backup-fetch.log'
+        - 'wal-push.log'
+        - 'wal-fetch.log'
+        - 'pitr.log'
+      loop_control:
+        loop_var: 'walg_log_item'

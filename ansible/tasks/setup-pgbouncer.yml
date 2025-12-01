@@ -135,3 +135,11 @@
 - name: PgBouncer - reload systemd
   ansible.builtin.systemd_service:
     daemon_reload: true
+
+- name: PgBouncer - create log file
+  ansible.builtin.file:
+    path: '/var/log/pgbouncer.log'
+    state: 'touch'
+    owner: 'pgbouncer'
+    group: 'postgres'
+    mode: '0644'
