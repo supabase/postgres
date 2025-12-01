@@ -88,7 +88,7 @@
                 builtins.trace "Major version result: ${result}" result;
 
               # Select the appropriate pgroonga package for this PostgreSQL version
-              pgroonga = self'.legacyPackages."psql_${majorVersion}".exts.pgroonga-all;
+              pgroonga = self'.legacyPackages."psql_${majorVersion}".exts.pgroonga;
 
               pgPort =
                 if (majorVersion == "17") then
