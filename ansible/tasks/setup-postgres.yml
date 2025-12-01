@@ -291,8 +291,7 @@
     path: '/run/postgresql'
     state: 'directory'
   when:
-    - stage2_nix
-    - qemu_mode is defined
+    - stage2_nix or (stage2_nix and qemu_mode is defined)
 
 - name: Restart Postgres Database without Systemd
   become: true
