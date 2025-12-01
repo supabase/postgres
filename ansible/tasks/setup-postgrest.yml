@@ -4,9 +4,11 @@
     state: 'present'
 
 - name: PostgREST - add Postgres PPA gpg key
-  ansible.builtin.apt_key:
+  ansible.builtin.get_url:
+    dest: /etc/apt/trusted.gpg.d/ppdg.asc
+    force: true
+    mode: '0644'
     url: 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
-    state: 'present'
 
 - name: PostgREST - add Postgres PPA main
   ansible.builtin.apt_repository:
@@ -30,9 +32,9 @@
     msg: "Installed libpq5 version: {{ ansible_facts['packages']['libpq5'][0]['version'] }}"
 
 - name: PostgREST - remove Postgres PPA gpg key
-  ansible.builtin.apt_key:
+  ansible.builtin.file:
+    path: /etc/apt/trusted.gpg.d/ppdg.asc
     state: 'absent'
-    url: 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
 
 - name: PostgREST - remove Postgres PPA
   ansible.builtin.apt_repository:
