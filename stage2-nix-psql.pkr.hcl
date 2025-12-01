@@ -51,6 +51,11 @@ variable "postgres_major_version" {
   default = ""
 }
 
+variable "source_ami" {
+  type    = string
+  description = "Source AMI ID from stage 1"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -64,15 +69,7 @@ source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
-  source_ami_filter {
-    filters = {
-      name   = "${var.ami_name}-${var.postgres-version}-stage-1"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    most_recent = true
-    owners      = ["amazon", "self"]
-  }
+  source_ami    = "${var.source_ami}"
 
   communicator = "ssh"
   ssh_pty = true
@@ -107,6 +104,7 @@ source "amazon-ebs" "ubuntu" {
     appType = "postgres"
     postgresVersion = "${var.postgres-version}"
     sourceSha = "${var.git-head-version}"
+    packerExecutionId = "${var.packer-execution-id}"
   }
 }
 

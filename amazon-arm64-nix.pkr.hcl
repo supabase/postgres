@@ -92,6 +92,12 @@ variable "force-deregister" {
   default = false
 }
 
+variable "input-hash" {
+  type    = string
+  default = ""
+  description = "Content hash of all input sources"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -106,7 +112,7 @@ source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
   #access_key    = "${var.aws_access_key}"
   #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  ami_name = "${var.ami_name}-${var.postgres-version}-stage-1"
+  ami_name = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
@@ -172,6 +178,7 @@ source "amazon-ebssurrogate" "source" {
     appType = "postgres"
     postgresVersion = "${var.postgres-version}-stage1"
     sourceSha = "${var.git-head-version}"
+    inputHash = "${var.input-hash}"
   }
 
   communicator = "ssh"
