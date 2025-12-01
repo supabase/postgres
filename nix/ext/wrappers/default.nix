@@ -154,6 +154,7 @@ let
         doCheck = false;
 
         postInstall = ''
+
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
@@ -220,12 +221,10 @@ let
     v: !(builtins.elem v versions)
   ) allPreviouslyPackagedVersions;
   numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
-  packagesAttrSet = lib.mapAttrs' (
-    name: value: {
-      name = lib.replaceStrings ["."] ["_"] name;
-      value = build name value.hash value.rust value.pgrx;
-    }
-  ) supportedVersions;
+  packagesAttrSet = lib.mapAttrs' (name: value: {
+    name = lib.replaceStrings [ "." ] [ "_" ] name;
+    value = build name value.hash value.rust value.pgrx;
+  }) supportedVersions;
   packages = builtins.attrValues packagesAttrSet;
 in
 (buildEnv {
