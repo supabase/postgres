@@ -3,6 +3,9 @@ Description=PostgREST
 Requires=postgrest-optimizations.service
 After=postgrest-optimizations.service
 
+StartLimitIntervalSec=0
+StartLimitBurst=0
+
 [Service]
 Type=simple
 # We allow the base config (sent from the worker) to override the generated config
