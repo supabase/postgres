@@ -63,7 +63,7 @@
           start-server = pkgs-lib.makePostgresDevSetup {
             inherit pkgs;
             name = "start-postgres-server";
-            pgroonga = self'.legacyPackages."psql_${activeVersion}".exts.pgroonga-all;
+            pgroonga = self'.legacyPackages."psql_${activeVersion}".exts.pgroonga;
           };
           switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;

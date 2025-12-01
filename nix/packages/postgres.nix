@@ -112,17 +112,14 @@
           pkgsList = makeOurPostgresPkgs version;
           baseAttrs = builtins.listToAttrs (
             map (drv: {
-              name = drv.pname;
+              name = drv.name;
               value = drv;
             }) pkgsList
           );
           # Expose individual packages from extensions that have them in passthru.packages
           # This makes them discoverable by nix-eval-jobs --force-recurse
           individualPkgs = lib.concatMapAttrs (
-            name: drv:
-            lib.optionalAttrs (drv ? passthru.packages) {
-              "${name}-pkgs" = drv.passthru.packages;
-            }
+            name: drv: lib.optionalAttrs (drv ? passthru.packages) { "${name}-pkgs" = drv.passthru.packages; }
           ) baseAttrs;
         in
         baseAttrs // individualPkgs // { recurseForDerivations = true; };
@@ -140,7 +137,7 @@
         let
           postgresql = getPostgresqlPackage version;
           ourExts = map (ext: {
-            name = ext.pname;
+            name = ext.name;
             version = ext.version;
           }) (makeOurPostgresPkgs version);
 

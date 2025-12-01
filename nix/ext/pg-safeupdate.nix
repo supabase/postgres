@@ -74,8 +74,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    inherit versions numberOfVersions pname;
     defaultSettings = {
       shared_preload_libraries = [ "safeupdate" ];
     };

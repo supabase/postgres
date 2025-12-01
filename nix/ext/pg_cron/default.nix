@@ -110,7 +110,6 @@ buildEnv {
 
   passthru = {
     inherit versions numberOfVersions switch-ext-version;
-    pname = "${pname}-all";
     hasBackgroundWorker = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_cron" ];
