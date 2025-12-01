@@ -31,7 +31,7 @@ ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.5.6
+ARG wrappers_release=0.5.7
 ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.3.2
@@ -41,7 +41,56 @@ ARG wal_g_release=3.0.5
 
 FROM ubuntu:noble as base
 
-RUN apt update -y && apt install -y \
+# Create reusable apt mirror fallback function
+RUN echo '#!/bin/bash\n\
+apt_update_with_fallback() {\n\
+    local sources_file="/etc/apt/sources.list.d/ubuntu.sources"\n\
+    local max_attempts=2\n\
+    local attempt=1\n\
+    local mirrors="archive.ubuntu.com us.archive.ubuntu.com"\n\
+    \n\
+    for mirror in $mirrors; do\n\
+        echo "========================================="\n\
+        echo "Attempting apt-get update with mirror: ${mirror}"\n\
+        echo "Attempt ${attempt} of ${max_attempts}"\n\
+        echo "========================================="\n\
+        \n\
+        if [ -f "${sources_file}" ]; then\n\
+            sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"\n\
+        fi\n\
+        \n\
+        if timeout 300 apt-get update 2>&1; then\n\
+            echo "========================================="\n\
+            echo "✓ Successfully updated apt cache using mirror: ${mirror}"\n\
+            echo "========================================="\n\
+            return 0\n\
+        else\n\
+            local exit_code=$?\n\
+            echo "========================================="\n\
+            echo "✗ Failed to update using mirror: ${mirror}"\n\
+            echo "Exit code: ${exit_code}"\n\
+            echo "========================================="\n\
+            \n\
+            apt-get clean\n\
+            rm -rf /var/lib/apt/lists/*\n\
+            \n\
+            if [ ${attempt} -lt ${max_attempts} ]; then\n\
+                local sleep_time=$((attempt * 5))\n\
+                echo "Waiting ${sleep_time} seconds before trying next mirror..."\n\
+                sleep ${sleep_time}\n\
+            fi\n\
+        fi\n\
+        \n\
+        attempt=$((attempt + 1))\n\
+    done\n\
+    \n\
+    echo "========================================="\n\
+    echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"\n\
+    echo "========================================="\n\
+    return 1\n\
+}' > /usr/local/bin/apt-update-fallback.sh && chmod +x /usr/local/bin/apt-update-fallback.sh
+
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt install -y \
     curl \
     gnupg \
     lsb-release \
@@ -100,13 +149,13 @@ RUN chown -R postgres:postgres /usr/lib/postgresql
 RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
 
 
-RUN apt-get update && \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
     apt-get install -y --no-install-recommends tzdata
 
 RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-RUN apt-get update && \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
     apt-get install -y --no-install-recommends \
     build-essential \
     checkinstall \
@@ -135,7 +184,7 @@ WORKDIR /
 FROM base as gosu
 ARG TARGETARCH
 # Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
    gnupg \
    ca-certificates \
    && rm -rf /var/lib/apt/lists/*
@@ -164,6 +213,7 @@ COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
@@ -178,14 +228,11 @@ RUN sed -i \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
-    echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
-    #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
-    echo 'auto_explain.log_min_duration = 10s' >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
-    mkdir -p /etc/postgresql-custom && \
-    chown postgres:postgres /etc/postgresql-custom
+    mkdir -p /etc/postgresql-custom/conf.d && \
+    chown -R postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
@@ -218,7 +265,7 @@ ENV POSTGRES_HOST=/var/run/postgresql
 ENV POSTGRES_USER=supabase_admin
 ENV POSTGRES_DB=postgres
 ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
     locales \
     && rm -rf /var/lib/apt/lists/* && \
     localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \

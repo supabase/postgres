@@ -36,6 +36,10 @@
           name = "postgresql.conf";
           path = ../../ansible/files/postgresql_config/postgresql.conf.j2;
         };
+        configConfDir = builtins.path {
+          name = "conf.d";
+          path = ../../ansible/files/postgresql_config/conf.d;
+        };
         supautilsConfigFile = builtins.path {
           name = "supautils.conf";
           path = ../../ansible/files/postgresql_config/supautils.conf.j2;
@@ -72,6 +76,11 @@
         else
           "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
+      postgresqlConfigBaseDir = builtins.path {
+        name = "postgresql_config";
+        path = ../../ansible/files/postgresql_config;
+      };
+
       substitutions = {
         SHELL_PATH = "${pkgs.bash}/bin/bash";
         PGSQL_DEFAULT_PORT = "${defaults.port}";
@@ -79,6 +88,7 @@
         PSQL15_BINDIR = "${psql_15}";
         PSQL17_BINDIR = "${psql_17}";
         PSQL_CONF_FILE = "${paths.pgconfigFile}";
+        POSTGRESQL_CONFIG_DIR = "${postgresqlConfigBaseDir}";
         PSQLORIOLEDB17_BINDIR = "${psql_orioledb-17}";
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
         READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
