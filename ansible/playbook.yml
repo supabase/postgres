@@ -46,13 +46,13 @@
         - install-gotrue
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
-  
+
     - name: Install PostgREST
       import_tasks: tasks/setup-postgrest.yml
       tags:
         - install-postgrest
         - install-supabase-internal
-      when: debpkg_mode or nixpkg_mode
+      when: debpkg_mode or stage2_nix
 
     - name: Install Envoy
       import_tasks: tasks/setup-envoy.yml

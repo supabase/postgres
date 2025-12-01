@@ -92,6 +92,18 @@ variable "force-deregister" {
   default = false
 }
 
+variable "base-image-nightly" {
+  type    = bool
+  default = false
+  description = "Build as version-agnostic base image for nightly"
+}
+
+variable "build-timestamp" {
+  type    = string
+  default = ""
+  description = "Timestamp for nightly builds"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -106,7 +118,7 @@ source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
   #access_key    = "${var.aws_access_key}"
   #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  ami_name = "${var.ami_name}-${var.postgres-version}-stage-1"
+  ami_name = var.base-image-nightly ? "${var.ami_name}-base-stage-1-nightly" : "${var.ami_name}-${var.postgres-version}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
@@ -170,8 +182,10 @@ source "amazon-ebssurrogate" "source" {
   tags = {
     creator = "packer"
     appType = "postgres"
-    postgresVersion = "${var.postgres-version}-stage1"
+    postgresVersion = var.base-image-nightly ? "base-nightly" : "${var.postgres-version}-stage1"
     sourceSha = "${var.git-head-version}"
+    buildTimestamp = var.base-image-nightly ? "${var.build-timestamp}" : ""
+    buildType = var.base-image-nightly ? "nightly" : "release"
   }
 
   communicator = "ssh"

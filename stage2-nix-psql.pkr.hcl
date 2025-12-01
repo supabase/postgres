@@ -66,12 +66,12 @@ source "amazon-ebs" "ubuntu" {
   region        = "${var.region}"
   source_ami_filter {
     filters = {
-      name   = "${var.ami_name}-${var.postgres-version}-stage-1"
+      name   = "${var.ami_name}-base-stage-1-nightly"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["amazon", "self"]
+    owners      = ["self"]
   }
 
   communicator = "ssh"
