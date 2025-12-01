@@ -181,7 +181,7 @@ def run_nix_eval_jobs(
     for line in stdout_data.splitlines():
         result = parse_nix_eval_line(line, drv_paths)
         if result.is_err():
-            errors_list.append(result.err_value)
+            errors_list.append(result._value)
         elif result._value is not None:
             packages.append(result._value)
 
@@ -306,31 +306,54 @@ def main() -> None:
             returned_pkg["postgresql_version"] = attrs[-3].split("_")[-1]
         return returned_pkg
 
-    # Group packages by system
-    grouped_by_system = defaultdict(list)
+    # Group packages by system and type (checks vs packages)
+    packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
+    checks_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
     for pkg in gh_action_packages:
         if pkg.get("cacheStatus") == "notBuilt":
-            grouped_by_system[pkg["system"]].append(clean_package_for_output(pkg))
+            cleaned_pkg = clean_package_for_output(pkg)
+            if pkg["attr"].startswith("checks."):
+                checks_by_system[pkg["system"]].append(cleaned_pkg)
+            elif pkg["attr"].startswith("legacyPackages."):
+                packages_by_system[pkg["system"]].append(cleaned_pkg)
 
-    # Create output with system-specific matrices
-    # Ensure that we have at least one entry per system
-    gh_output = {}
-    for system, packages in grouped_by_system.items():
-        gh_output[system.replace("-", "_")] = {"include": packages}
+    packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
+    for pkg_system, pkg_list in packages_by_system.items():
+        packages_output[pkg_system.replace("-", "_")] = {"include": pkg_list}
+
+    checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
+    for check_system, check_list in checks_by_system.items():
+        checks_output[check_system.replace("-", "_")] = {"include": check_list}
 
     for system in get_args(System):
         s = system.replace("-", "_")
-        if s not in gh_output:
-            gh_output[s] = {
+        if s not in checks_output:
+            checks_output[s] = {
+                "include": [
+                    {
+                        "attr": "",
+                        "name": "no checks to build",
+                        "system": system,
+                        "runs_on": {"labels": ["ubuntu-latest"]},
+                    }
+                ]
+            }
+        if s not in packages_output:
+            packages_output[s] = {
                 "include": [
                     {
                         "attr": "",
                         "name": "no packages to build",
                         "system": system,
-                        "runs_on": {"labels": "ubuntu-latest"},
+                        "runs_on": {"labels": ["ubuntu-latest"]},
                     }
                 ]
             }
+
+    gh_output = {
+        "packages": packages_output,
+        "checks": checks_output,
+    }
 
     if warnings_list:
         warning_counts = Counter(warnings_list)
@@ -365,7 +388,8 @@ def main() -> None:
             "\n", "%0A"
         )
         notice(formatted_msg, title="GitHub Actions Matrix")
-        set_output("matrix", json.dumps(gh_output))
+        set_output("packages_matrix", json.dumps(gh_output["packages"]))
+        set_output("checks_matrix", json.dumps(gh_output["checks"]))
 
 
 if __name__ == "__main__":

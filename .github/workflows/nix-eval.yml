@@ -3,9 +3,12 @@ name: Nix Eval
 on:
   workflow_call:
     outputs:
-      matrix:
-        description: 'Generated build matrix'
-        value: ${{ jobs.eval.outputs.matrix }}
+      packages_matrix:
+        description: 'Generated build matrix for packages'
+        value: ${{ jobs.eval.outputs.packages_matrix }}
+      checks_matrix:
+        description: 'Generated build matrix for checks'
+        value: ${{ jobs.eval.outputs.checks_matrix }}
     secrets:
       DEV_AWS_ROLE:
         required: false
@@ -16,7 +19,8 @@ jobs:
   eval:
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      packages_matrix: ${{ steps.set-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.set-matrix.outputs.checks_matrix }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
