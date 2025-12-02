@@ -294,7 +294,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.19.0](http://www.pgbouncer.org/changelog.html#pgbouncer-119x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v13.0.4](https://github.com/PostgREST/postgrest/releases/tag/v13.0.4) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/stable/) | [v14.1](https://github.com/PostgREST/postgrest/releases/tag/v14.1) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
 
 
