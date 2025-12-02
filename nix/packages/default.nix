@@ -68,7 +68,7 @@
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
-          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
+          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
           inherit (pkgs.cargo-pgrx)
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6

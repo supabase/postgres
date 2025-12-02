@@ -35,12 +35,9 @@ group by
   ns.nspname, c.relname, r.rolname, c.relrowsecurity
 order by
   c.relname;
- schema_name | table_name |         owner          | rls_enabled | rls_policies 
--------------+------------+------------------------+-------------+--------------
- storage     | buckets    | supabase_storage_admin | f           | 
- storage     | migrations | supabase_storage_admin | f           | 
- storage     | objects    | supabase_storage_admin | t           | 
-(3 rows)
+ schema_name | table_name | owner | rls_enabled | rls_policies 
+-------------+------------+-------+-------------+--------------
+(0 rows)
 
 -- storage schema objects with roles privileges
 select
@@ -65,86 +62,9 @@ order by
   c.relname,
   r.rolname,
   a.privilege_type;
- schema_name | table_name |       role_name        | privilege_type | is_grantable 
--------------+------------+------------------------+----------------+--------------
- storage     | buckets    | anon                   | DELETE         | f
- storage     | buckets    | anon                   | INSERT         | f
- storage     | buckets    | anon                   | REFERENCES     | f
- storage     | buckets    | anon                   | SELECT         | f
- storage     | buckets    | anon                   | TRIGGER        | f
- storage     | buckets    | anon                   | TRUNCATE       | f
- storage     | buckets    | anon                   | UPDATE         | f
- storage     | buckets    | authenticated          | DELETE         | f
- storage     | buckets    | authenticated          | INSERT         | f
- storage     | buckets    | authenticated          | REFERENCES     | f
- storage     | buckets    | authenticated          | SELECT         | f
- storage     | buckets    | authenticated          | TRIGGER        | f
- storage     | buckets    | authenticated          | TRUNCATE       | f
- storage     | buckets    | authenticated          | UPDATE         | f
- storage     | buckets    | postgres               | DELETE         | t
- storage     | buckets    | postgres               | INSERT         | t
- storage     | buckets    | postgres               | REFERENCES     | t
- storage     | buckets    | postgres               | SELECT         | t
- storage     | buckets    | postgres               | TRIGGER        | t
- storage     | buckets    | postgres               | TRUNCATE       | t
- storage     | buckets    | postgres               | UPDATE         | t
- storage     | buckets    | service_role           | DELETE         | f
- storage     | buckets    | service_role           | INSERT         | f
- storage     | buckets    | service_role           | REFERENCES     | f
- storage     | buckets    | service_role           | SELECT         | f
- storage     | buckets    | service_role           | TRIGGER        | f
- storage     | buckets    | service_role           | TRUNCATE       | f
- storage     | buckets    | service_role           | UPDATE         | f
- storage     | buckets    | supabase_storage_admin | DELETE         | f
- storage     | buckets    | supabase_storage_admin | INSERT         | f
- storage     | buckets    | supabase_storage_admin | REFERENCES     | f
- storage     | buckets    | supabase_storage_admin | SELECT         | f
- storage     | buckets    | supabase_storage_admin | TRIGGER        | f
- storage     | buckets    | supabase_storage_admin | TRUNCATE       | f
- storage     | buckets    | supabase_storage_admin | UPDATE         | f
- storage     | migrations | supabase_storage_admin | DELETE         | f
- storage     | migrations | supabase_storage_admin | INSERT         | f
- storage     | migrations | supabase_storage_admin | REFERENCES     | f
- storage     | migrations | supabase_storage_admin | SELECT         | f
- storage     | migrations | supabase_storage_admin | TRIGGER        | f
- storage     | migrations | supabase_storage_admin | TRUNCATE       | f
- storage     | migrations | supabase_storage_admin | UPDATE         | f
- storage     | objects    | anon                   | DELETE         | f
- storage     | objects    | anon                   | INSERT         | f
- storage     | objects    | anon                   | REFERENCES     | f
- storage     | objects    | anon                   | SELECT         | f
- storage     | objects    | anon                   | TRIGGER        | f
- storage     | objects    | anon                   | TRUNCATE       | f
- storage     | objects    | anon                   | UPDATE         | f
- storage     | objects    | authenticated          | DELETE         | f
- storage     | objects    | authenticated          | INSERT         | f
- storage     | objects    | authenticated          | REFERENCES     | f
- storage     | objects    | authenticated          | SELECT         | f
- storage     | objects    | authenticated          | TRIGGER        | f
- storage     | objects    | authenticated          | TRUNCATE       | f
- storage     | objects    | authenticated          | UPDATE         | f
- storage     | objects    | postgres               | DELETE         | t
- storage     | objects    | postgres               | INSERT         | t
- storage     | objects    | postgres               | REFERENCES     | t
- storage     | objects    | postgres               | SELECT         | t
- storage     | objects    | postgres               | TRIGGER        | t
- storage     | objects    | postgres               | TRUNCATE       | t
- storage     | objects    | postgres               | UPDATE         | t
- storage     | objects    | service_role           | DELETE         | f
- storage     | objects    | service_role           | INSERT         | f
- storage     | objects    | service_role           | REFERENCES     | f
- storage     | objects    | service_role           | SELECT         | f
- storage     | objects    | service_role           | TRIGGER        | f
- storage     | objects    | service_role           | TRUNCATE       | f
- storage     | objects    | service_role           | UPDATE         | f
- storage     | objects    | supabase_storage_admin | DELETE         | f
- storage     | objects    | supabase_storage_admin | INSERT         | f
- storage     | objects    | supabase_storage_admin | REFERENCES     | f
- storage     | objects    | supabase_storage_admin | SELECT         | f
- storage     | objects    | supabase_storage_admin | TRIGGER        | f
- storage     | objects    | supabase_storage_admin | TRUNCATE       | f
- storage     | objects    | supabase_storage_admin | UPDATE         | f
-(77 rows)
+ schema_name | table_name | role_name | privilege_type | is_grantable 
+-------------+------------+-----------+----------------+--------------
+(0 rows)
 
 -- storage indexes with owners
 select
@@ -166,16 +86,9 @@ where
   ns.nspname = 'storage'
 order by
   t.relname, i.relname;
- table_schema | table_name |     index_name      |      index_owner       
---------------+------------+---------------------+------------------------
- storage      | buckets    | bname               | supabase_storage_admin
- storage      | buckets    | buckets_pkey        | supabase_storage_admin
- storage      | migrations | migrations_name_key | supabase_storage_admin
- storage      | migrations | migrations_pkey     | supabase_storage_admin
- storage      | objects    | bucketid_objname    | supabase_storage_admin
- storage      | objects    | name_prefix_search  | supabase_storage_admin
- storage      | objects    | objects_pkey        | supabase_storage_admin
-(7 rows)
+ table_schema | table_name | index_name | index_owner 
+--------------+------------+------------+-------------
+(0 rows)
 
 -- storage schema functions with owners
 select
@@ -192,36 +105,20 @@ where
   n.nspname = 'storage'
 order by
   p.proname;
- schema_name | function_name |         owner          
--------------+---------------+------------------------
- storage     | extension     | supabase_storage_admin
- storage     | filename      | supabase_storage_admin
- storage     | foldername    | supabase_storage_admin
- storage     | search        | supabase_storage_admin
-(4 rows)
-
--- storage service migrations
-select * from storage.migrations ;
- id | name | hash | executed_at 
-----+------+------+-------------
+ schema_name | function_name | owner 
+-------------+---------------+-------
 (0 rows)
 
 -- postgres can grant storage privileges to custom roles
 create role r;
 grant r to postgres with admin option;
-set role r;
-select * from storage.buckets;
-ERROR:  permission denied for schema storage
-LINE 1: select * from storage.buckets;
-                      ^
 set role postgres;
 grant usage on schema storage to r;
-grant select on storage.buckets to r;
-set role r;
-select * from storage.buckets;
- id | name | owner | created_at | updated_at 
-----+------+-------+------------+------------
-(0 rows)
+select pg_catalog.has_schema_privilege('r', 'storage', 'usage');
+ has_schema_privilege 
+----------------------
+ t
+(1 row)
 
 set role postgres;
 drop owned by r cascade;

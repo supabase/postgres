@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: blacksmith-32vcpu-ubuntu-2404	
+          - runner: blacksmith-32vcpu-ubuntu-2404
             arch: amd64
           - runner: blacksmith-32vcpu-ubuntu-2404-arm
             arch: arm64
@@ -66,11 +66,11 @@ jobs:
           sudo rm -rf /tmp/* 2>/dev/null || true
           echo "=== AFTER CLEANUP ==="
           df -h
-      - 
+      -
         name: Build psql bundle
         run: >
-          nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48" 
-          -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }}
+          nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48"
+          -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }} --copy-to "s3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key"
           --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
         env:
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
