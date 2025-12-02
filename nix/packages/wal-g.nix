@@ -77,12 +77,4 @@ in
     vendorHash = "sha256-BbQuY6r30AkxlCZjY8JizaOrqEBdv7rIQet9KQwYB/g=";
     majorVersion = "2";
   };
-
-  # wal-g v3.0.5
-  wal-g-3 = walGCommon {
-    version = "3.0.5";
-    sha256 = "sha256-wVr0L2ZXMuEo6tc2ajNzPinVQ8ZVzNOSoaHZ4oFsA+U=";
-    vendorHash = "sha256-YDLAmRfDl9TgbabXj/1rxVQ052NZDg3IagXVTe5i9dw=";
-    majorVersion = "3";
-  };
 }
