@@ -70,10 +70,10 @@ class NixEvalError(TypedDict):
 BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
     "ephemeral": {
         "aarch64-linux": {
-            "labels": ["blacksmith-4vcpu-ubuntu-2404-arm"],
+            "labels": ["depot-ubuntu-24.04-arm-8"],
         },
         "x86_64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
+            "labels": ["depot-ubuntu-24.04-8"],
         },
     },
     "self-hosted": {
@@ -262,8 +262,8 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
         return runConfig
 
     if is_large_pkg(pkg) and system in ("x86_64-linux", "aarch64-linux"):
-        suffix = "-arm" if system == "aarch64-linux" else ""
-        return {"labels": [f"blacksmith-32vcpu-ubuntu-2404{suffix}"]}
+        arch = "arm-" if system == "aarch64-linux" else ""
+        return {"labels": [f"depot-ubuntu-24.04-{arch}32"]}
 
     if system == "aarch64-darwin":
         return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
