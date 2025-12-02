@@ -154,7 +154,6 @@ let
         doCheck = false;
 
         postInstall = ''
-
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
@@ -163,6 +162,9 @@ let
           }
 
           create_control_files
+
+
+
         '';
 
         meta = with lib; {
