@@ -337,10 +337,6 @@ function clean_system {
 	# https://github.com/fail2ban/fail2ban/issues/1593
 	touch /mnt/var/log/auth.log
 
-	# Note: pgbouncer, postgresql, and wal-g log setup moved to ansible tasks
-	# (setup-pgbouncer.yml, setup-postgres.yml, setup-wal-g.yml)
-	# because those users don't exist in the Stage 1 base image
-
 	# Create Sysstat directory for SAR
 	mkdir /mnt/var/log/sysstat
 

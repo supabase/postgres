@@ -293,6 +293,17 @@
   when:
     - stage2_nix or (stage2_nix and qemu_mode is defined)
 
+- name: Create postgresql log directory for stage2_nix
+  become: true
+  ansible.builtin.file:
+    group: 'postgres'
+    owner: 'postgres'
+    path: '/var/log/postgresql'
+    state: 'directory'
+    mode: '0750'
+  when:
+    - stage2_nix
+
 - name: Restart Postgres Database without Systemd
   become: true
   become_user: 'postgres'
