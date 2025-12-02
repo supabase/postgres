@@ -12,6 +12,15 @@ GRANT ALL ON ALL ROUTINES IN SCHEMA auth TO postgres;
 GRANT ALL ON ALL ROUTINES IN SCHEMA extensions TO postgres;
 do $$
 begin
+  if exists (select from pg_namespace where nspname = 'auth') then
+    GRANT ALL ON SCHEMA auth TO postgres;
+    GRANT ALL ON ALL TABLES IN SCHEMA auth TO postgres;
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA auth TO postgres;
+    GRANT ALL ON ALL ROUTINES IN SCHEMA auth TO postgres;
+  end if;
+end $$;
+do $$
+begin
   if exists (select from pg_namespace where nspname = 'storage') then
     GRANT ALL ON SCHEMA storage TO postgres;
     GRANT ALL ON ALL TABLES IN SCHEMA storage TO postgres;
