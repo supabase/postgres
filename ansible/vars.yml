@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.015-orioledb"
-  postgres17: "17.6.1.058"
-  postgres15: "15.14.1.058"
+  postgresorioledb-17: "17.6.0.016-orioledb"
+  postgres17: "17.6.1.059"
+  postgres15: "15.14.1.059"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.19.0
@@ -53,7 +53,7 @@ postgres_exporter_release_checksum:
   arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
   amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
 
-adminapi_release: "0.93.0"
+adminapi_release: "0.93.1"
 adminmgr_release: "0.32.3"
 supabase_admin_agent_release: 1.6.0
 supabase_admin_agent_splay: 30s
