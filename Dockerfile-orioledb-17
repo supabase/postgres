@@ -264,6 +264,11 @@ ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/17/bullseye/docker-entrypoint.sh \
     /usr/local/bin/docker-entrypoint.sh
 
+RUN sed -i '/03775/a\\
+mkdir -p /etc/postgresql-custom/conf.d\
+chown postgres:postgres /etc/postgresql-custom/conf.d\
+chmod 0755 /etc/postgresql-custom/conf.d' /usr/local/bin/docker-entrypoint.sh
+
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 
 ENTRYPOINT ["docker-entrypoint.sh"]

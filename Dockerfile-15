@@ -209,7 +209,7 @@ COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
-COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/
+COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
@@ -240,6 +240,11 @@ COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/15/bullseye/docker-entrypoint.sh \
     /usr/local/bin/docker-entrypoint.sh
+
+RUN sed -i '/03775/a\\
+mkdir -p /etc/postgresql-custom/conf.d\
+chown postgres:postgres /etc/postgresql-custom/conf.d\
+chmod 0755 /etc/postgresql-custom/conf.d' /usr/local/bin/docker-entrypoint.sh
 
 RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 
