@@ -5,6 +5,10 @@ inputs:
     description: 'Whether to push build outputs to the Nix binary cache'
     required: false
     default: 'false'
+  aws-region:
+    description: 'AWS region for the Nix binary cache S3 bucket'
+    required: false
+    default: 'us-east-1'
 runs:
   using: 'composite'
   steps:
@@ -13,7 +17,7 @@ runs:
       if: ${{ inputs.push-to-cache == 'true' }}
       with:
         role-to-assume: ${{ env.DEV_AWS_ROLE }}
-        aws-region: "us-east-1"
+        aws-region: ${{ inputs.aws-region }}
         output-credentials: true
         role-duration-seconds: 7200
     - name: Setup AWS credentials for Nix
