@@ -510,8 +510,6 @@ begin
 end;
 $_$;
 
-REVOKE ALL ON FUNCTION pgbouncer.get_auth(p_usename TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(p_usename TEXT) TO pgbouncer;
 
 SET default_tablespace = '';
 
