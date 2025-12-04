@@ -32,9 +32,6 @@ let
           inherit hash;
         };
 
-
-
-
         nativeBuildInputs = [
           pkg-config
           cargo
