@@ -142,7 +142,7 @@ class TestGetRunnerForPackage:
             "requiredSystemFeatures": ["big-parallel"],
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["depot-ubuntu-24.04-32"]}
+        assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404"]}
 
     def test_large_package_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
@@ -161,7 +161,7 @@ class TestGetRunnerForPackage:
             "requiredSystemFeatures": ["big-parallel"],
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["depot-ubuntu-24.04-arm-32"]}
+        assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]}
 
     def test_darwin_package(self):
         pkg: NixEvalJobsOutput = {
@@ -194,7 +194,7 @@ class TestGetRunnerForPackage:
             "system": "x86_64-linux",
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["depot-ubuntu-24.04-8"]}
+        assert result == {"labels": ["blacksmith-8vcpu-ubuntu-2404"]}
 
     def test_default_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
@@ -212,7 +212,7 @@ class TestGetRunnerForPackage:
             "system": "aarch64-linux",
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["depot-ubuntu-24.04-arm-8"]}
+        assert result == {"labels": ["blacksmith-4vcpu-ubuntu-2404-arm"]}
 
 
 class TestSortPkgsByClosures:
