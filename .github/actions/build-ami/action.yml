@@ -54,6 +54,7 @@ runs:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
+        AWS_REGION: ${{ inputs.region }}
       run: |
         nix run .#build-ami -- stage1 \
           -var "git-head-version=${{ inputs.git_sha }}" \
@@ -73,6 +74,7 @@ runs:
         PACKER_EXECUTION_ID: ${{ env.EXECUTION_ID }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
+        AWS_REGION: ${{ inputs.region }}
       run: |
         nix run .#build-ami -- stage2 \
           -var "git-head-version=${{ inputs.git_sha }}" \
