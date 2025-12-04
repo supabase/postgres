@@ -38,7 +38,7 @@ nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
 - supabase/postgres
 - supabase/supabase
 - supabase/cli
-- supabase/infrastructure (internal)
+- supabase/platform (internal)
 
 aiming to provide a single source of truth for migrations on the platform that can be depended upon by those components. For more information on goals see [the RFC](https://www.notion.so/supabase/Centralize-SQL-Migrations-cd3847ae027d4f2bba9defb2cc82f69a)
 
@@ -48,8 +48,8 @@ aiming to provide a single source of truth for migrations on the platform that c
 
 Migrations were pulled (in order) from:
 
-1. [init-scripts/postgres](https://github.com/supabase/infrastructure/tree/develop/init-scripts/postgres) => [db/init-scripts](db/init-scripts)
-2. [init-scripts/migrations](https://github.com/supabase/infrastructure/tree/develop/init-scripts/migrations) => [db/migrations](db/migrations)
+1. [init-scripts/postgres](https://github.com/supabase/platform/tree/develop/init-scripts/postgres) => [db/init-scripts](db/init-scripts)
+2. [init-scripts/migrations](https://github.com/supabase/platform/tree/develop/init-scripts/migrations) => [db/migrations](db/migrations)
 
 For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that executes migrations in the same order as ami build:
 

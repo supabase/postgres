@@ -64,6 +64,18 @@
         dest: '/etc/apt/apt.conf.d/10periodic'
         src: 'files/apt_periodic'
 
+    - name: Set local ssh policy
+      ansible.builtin.copy:
+        content: |
+          Match Address 127.0.0.1,::1
+            ForceCommand /bin/false
+            DisableForwarding yes
+            PermitTunnel no
+        dest: /etc/ssh/sshd_config.d/local.conf
+        mode: '0644'
+        owner: 'root'
+        group: 'root'
+
 - name: Install other useful tools
   ansible.builtin.apt:
     pkg:
