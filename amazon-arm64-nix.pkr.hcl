@@ -136,7 +136,8 @@ source "amazon-ebssurrogate" "source" {
     }
     owners = [ "099720109477" ]
     most_recent = true
-   }
+  }
+
   ena_support = true
   launch_block_device_mappings {
     device_name = "/dev/xvdf"

@@ -83,6 +83,7 @@ jobs:
     uses: ./.github/workflows/testinfra-ami-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   run-tests:
     needs: build-run-image
