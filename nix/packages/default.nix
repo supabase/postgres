@@ -19,6 +19,10 @@
         in
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
+      cis-audit-pkgs = pkgs.callPackage ./cis-audit.nix {
+        inherit (pkgs) lib;
+        inherit inputs;
+      };
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
@@ -73,6 +77,13 @@
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (cis-audit-pkgs)
+            goss
+            cis-audit
+            cis-generate-spec
+            ansible-to-goss
+            cis-audit-specs
+            ;
           inherit (pkgs.cargo-pgrx)
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6
