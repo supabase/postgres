@@ -199,6 +199,7 @@ jobs:
     uses: ./.github/workflows/testinfra-ami-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   run-tests:
     needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
