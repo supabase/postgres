@@ -27,6 +27,14 @@ var DefaultExclusions = Config{
 		"/var/cache/apt/*",
 	},
 
+	ShallowDirs: []string{
+		// Nix store - contents change with deployments, only audit top-level structure
+		"/nix/store",
+
+		// PostgreSQL data directory - contents are dynamic database state
+		"/data/pgdata",
+	},
+
 	KernelParams: []string{
 		// Dynamic kernel parameters that change frequently and aren't security-relevant
 		"fs.dentry-state",                 // Dentry cache statistics (dynamic)

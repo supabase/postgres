@@ -18,6 +18,10 @@ type Config struct {
 	// Paths to exclude from scanning (glob patterns supported)
 	Paths []string `yaml:"paths,omitempty"`
 
+	// ShallowDirs are directories to scan at top level only (no recursion)
+	// Files directly in these directories are scanned, but subdirectories are skipped
+	ShallowDirs []string `yaml:"shallowDirs,omitempty"`
+
 	// Kernel parameters to exclude from scanning
 	KernelParams []string `yaml:"kernelParams,omitempty"`
 
@@ -42,6 +46,9 @@ type CLIOptions struct {
 
 	// IncludeProcesses enables process scanning (removes "process" from DisabledScanners)
 	IncludeProcesses bool
+
+	// ShallowDirs adds directories to scan without recursion (from CLI)
+	ShallowDirs []string
 }
 
 // Load reads configuration from defaults, optional config file, and CLI options.
@@ -83,6 +90,11 @@ func Load(configPath string, opts CLIOptions) (*Config, error) {
 		cfg.DisabledScanners = removeItems(cfg.DisabledScanners, []string{"process"})
 	}
 
+	// Add CLI shallow dirs to config
+	if len(opts.ShallowDirs) > 0 {
+		cfg.ShallowDirs = append(cfg.ShallowDirs, opts.ShallowDirs...)
+	}
+
 	return &cfg, nil
 }
 
@@ -108,6 +120,7 @@ func merge(base, file Config) Config {
 
 	// Append file exclusions to base exclusions (additive)
 	result.Paths = append(result.Paths, file.Paths...)
+	result.ShallowDirs = append(result.ShallowDirs, file.ShallowDirs...)
 	result.KernelParams = append(result.KernelParams, file.KernelParams...)
 	result.DisabledScanners = append(result.DisabledScanners, file.DisabledScanners...)
 
@@ -187,4 +200,40 @@ func (c *Config) IsScannerDisabled(scannerType string) bool {
 		}
 	}
 	return false
+}
+
+// IsShallowDir checks if the given path is a shallow directory (should not recurse into).
+// Returns true if path exactly matches a shallow dir or is a subdirectory of one.
+func (c *Config) IsShallowDir(path string) bool {
+	for _, shallow := range c.ShallowDirs {
+		// Normalize paths (remove trailing slashes)
+		shallow = strings.TrimSuffix(shallow, "/")
+		path = strings.TrimSuffix(path, "/")
+
+		// Check if this is exactly the shallow dir or a subdirectory
+		if path == shallow || strings.HasPrefix(path, shallow+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// GetShallowDirDepth returns the depth of the shallow directory that contains this path.
+// Returns -1 if path is not in any shallow directory.
+// Depth 0 = the shallow dir itself, depth 1 = immediate child, etc.
+func (c *Config) GetShallowDirDepth(path string) int {
+	for _, shallow := range c.ShallowDirs {
+		shallow = strings.TrimSuffix(shallow, "/")
+		path = strings.TrimSuffix(path, "/")
+
+		if path == shallow {
+			return 0
+		}
+		if strings.HasPrefix(path, shallow+"/") {
+			// Count the depth relative to shallow dir
+			relPath := strings.TrimPrefix(path, shallow+"/")
+			return strings.Count(relPath, "/") + 1
+		}
+	}
+	return -1
 }

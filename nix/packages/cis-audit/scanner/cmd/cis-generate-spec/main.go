@@ -23,6 +23,7 @@ var (
 	includeDynamic bool
 	includePorts   bool
 	includeProcess bool
+	shallowDirs    []string
 	strict         bool
 	verbose        bool
 	debug          bool
@@ -50,6 +51,9 @@ Examples:
 
   # Enable verbose logging to stderr
   cis-generate-spec --verbose --log-format json
+
+  # Scan directories without recursing into subdirectories
+  cis-generate-spec --shallow-dirs /nix/store --shallow-dirs /data/pgdata
 `,
 	Args:    cobra.MaximumNArgs(1),
 	Version: version,
@@ -62,6 +66,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&includeDynamic, "include-dynamic", false, "Include dynamic kernel parameters")
 	rootCmd.Flags().BoolVar(&includePorts, "include-ports", false, "Include listening ports")
 	rootCmd.Flags().BoolVar(&includeProcess, "include-processes", false, "Include running processes")
+	rootCmd.Flags().StringArrayVar(&shallowDirs, "shallow-dirs", nil, "Directories to scan without recursion (can be specified multiple times)")
 	rootCmd.Flags().BoolVar(&strict, "strict", false, "Fail on any access errors (default: skip and warn)")
 	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable structured logging to stderr")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug logging (implies --verbose)")
@@ -86,6 +91,7 @@ func run(cmd *cobra.Command, args []string) error {
 		IncludeDynamic:   includeDynamic,
 		IncludePorts:     includePorts,
 		IncludeProcesses: includeProcess,
+		ShallowDirs:      shallowDirs,
 	}
 	cfg, err := config.Load(configFile, cliOpts)
 	if err != nil {

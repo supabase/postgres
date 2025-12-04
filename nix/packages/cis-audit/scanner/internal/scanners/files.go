@@ -73,6 +73,16 @@ func (s *FileScanner) Scan(ctx context.Context, opts ScanOptions) (ScanStats, er
 			return nil
 		}
 
+		// Handle shallow directories - scan top level only, skip subdirectories
+		if d != nil && d.IsDir() {
+			depth := cfg.GetShallowDirDepth(path)
+			if depth > 1 {
+				// This is a subdirectory inside a shallow dir - skip it
+				opts.Logger.Debug("Skipping subdirectory in shallow dir", "path", path, "depth", depth)
+				return filepath.SkipDir
+			}
+		}
+
 		// Handle walk errors (permission denied, etc.)
 		if err != nil {
 			return s.handleError(err, path, opts)
