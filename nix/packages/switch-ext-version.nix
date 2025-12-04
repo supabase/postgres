@@ -31,28 +31,32 @@ writeShellApplication {
       echo "  NIX_PROFILE - Path to nix profile (default: /var/lib/postgresql/.nix-profile)"
       echo "  LIB_DIR - Override library directory"
       echo "  EXTENSION_DIR - Override extension directory"
+      echo "  LIB_NAME - Override library name"
       exit 1
     fi
 
     VERSION="$1"
-    echo "$VERSION"
+
+    if [ -z "''${LIB_NAME:-}" ]; then
+      LIB_NAME="$EXT_NAME"
+    fi
 
     # Enable overlay on the wrapper package to be able to switch version
     ${lib.getExe overlayfs-on-package} "$EXT_WRAPPER"
 
     # Check if version exists
     EXT_WRAPPER_LIB="$EXT_WRAPPER/lib"
-    EXT_LIB_TO_USE="$EXT_WRAPPER_LIB/$EXT_NAME-$VERSION${postgresql.dlSuffix}"
+    EXT_LIB_TO_USE="$EXT_WRAPPER_LIB/$LIB_NAME-$VERSION${postgresql.dlSuffix}"
     if [ ! -f "$EXT_LIB_TO_USE" ]; then
       echo "Error: Version $VERSION not found in $EXT_WRAPPER_LIB"
       echo "Available versions:"
       #shellcheck disable=SC2012
-      ls "$EXT_WRAPPER_LIB/$EXT_NAME"-*${postgresql.dlSuffix} 2>/dev/null | sed "s/.*$EXT_NAME-/  /" | sed 's/${postgresql.dlSuffix}$//' || echo "  No versions found"
+      ls "$EXT_WRAPPER_LIB/$LIB_NAME"-*${postgresql.dlSuffix} 2>/dev/null | sed "s/.*$LIB_NAME-/  /" | sed 's/${postgresql.dlSuffix}$//' || echo "  No versions found"
       exit 1
     fi
 
     # Update library symlink
-    ln -sfnv "$EXT_LIB_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME${postgresql.dlSuffix}"
+    ln -sfnv "$EXT_LIB_TO_USE" "$EXT_WRAPPER_LIB/$LIB_NAME${postgresql.dlSuffix}"
 
     # Handle extension specific steps
     if [ -x "''${EXTRA_STEPS:-}" ]; then
