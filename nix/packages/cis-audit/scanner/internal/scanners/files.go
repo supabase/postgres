@@ -73,13 +73,28 @@ func (s *FileScanner) Scan(ctx context.Context, opts ScanOptions) (ScanStats, er
 			return nil
 		}
 
-		// Handle shallow directories - scan top level only, skip subdirectories
+		// Handle shallow directories - limit recursion depth
 		if d != nil && d.IsDir() {
 			depth := cfg.GetShallowDirDepth(path)
-			if depth > 1 {
-				// This is a subdirectory inside a shallow dir - skip it
-				opts.Logger.Debug("Skipping subdirectory in shallow dir", "path", path, "depth", depth)
-				return filepath.SkipDir
+			if depth >= 0 {
+				if depth == 0 && cfg.ShallowDepth == 0 {
+					// Depth 0 means capture this directory entry but don't recurse into it
+					info, err := d.Info()
+					if err == nil {
+						dirSpec := s.buildDirSpec(path, info)
+						if err := writer.Add(dirSpec); err != nil {
+							return fmt.Errorf("failed to write dir spec: %w", err)
+						}
+						s.stats.FilesScanned++
+					}
+					opts.Logger.Debug("Captured shallow dir, skipping contents", "path", path)
+					return filepath.SkipDir
+				}
+				if depth >= cfg.ShallowDepth {
+					// This directory is at or beyond the configured shallow depth - skip it
+					opts.Logger.Debug("Skipping directory beyond shallow depth", "path", path, "depth", depth, "max_depth", cfg.ShallowDepth)
+					return filepath.SkipDir
+				}
 			}
 		}
 
@@ -139,6 +154,28 @@ func (s *FileScanner) buildFileSpec(path string, info fs.FileInfo) spec.FileSpec
 		Owner:    owner,
 		Group:    group,
 		Filetype: "file",
+	}
+}
+
+// buildDirSpec creates a GOSS file spec for a directory
+func (s *FileScanner) buildDirSpec(path string, info fs.FileInfo) spec.FileSpec {
+	// Extract Unix permissions and ownership
+	sys := info.Sys().(*syscall.Stat_t)
+
+	// Mode with leading zero (GOSS format: "0755" not "755")
+	mode := fmt.Sprintf("0%o", info.Mode().Perm())
+
+	// Get username/groupname from UID/GID
+	owner := getUsername(sys.Uid)
+	group := getGroupname(sys.Gid)
+
+	return spec.FileSpec{
+		Path:     path,
+		Exists:   true,
+		Mode:     mode,
+		Owner:    owner,
+		Group:    group,
+		Filetype: "directory",
 	}
 }
 

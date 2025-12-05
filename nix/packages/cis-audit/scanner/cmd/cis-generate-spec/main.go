@@ -24,6 +24,7 @@ var (
 	includePorts   bool
 	includeProcess bool
 	shallowDirs    []string
+	shallowDepth   int
 	strict         bool
 	verbose        bool
 	debug          bool
@@ -52,8 +53,11 @@ Examples:
   # Enable verbose logging to stderr
   cis-generate-spec --verbose --log-format json
 
-  # Scan directories without recursing into subdirectories
+  # Scan directories without recursing into subdirectories (depth 1 = top level only)
   cis-generate-spec --shallow-dirs /nix/store --shallow-dirs /data/pgdata
+
+  # Scan shallow dirs including immediate subdirectories (depth 2)
+  cis-generate-spec --shallow-dirs /nix/store --shallow-depth 2
 `,
 	Args:    cobra.MaximumNArgs(1),
 	Version: version,
@@ -66,7 +70,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&includeDynamic, "include-dynamic", false, "Include dynamic kernel parameters")
 	rootCmd.Flags().BoolVar(&includePorts, "include-ports", false, "Include listening ports")
 	rootCmd.Flags().BoolVar(&includeProcess, "include-processes", false, "Include running processes")
-	rootCmd.Flags().StringArrayVar(&shallowDirs, "shallow-dirs", nil, "Directories to scan without recursion (can be specified multiple times)")
+	rootCmd.Flags().StringArrayVar(&shallowDirs, "shallow-dirs", nil, "Directories to scan with limited depth (can be specified multiple times)")
+	rootCmd.Flags().IntVar(&shallowDepth, "shallow-depth", 1, "How deep to scan in shallow dirs (1=top level only, 2=include immediate subdirs)")
 	rootCmd.Flags().BoolVar(&strict, "strict", false, "Fail on any access errors (default: skip and warn)")
 	rootCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable structured logging to stderr")
 	rootCmd.Flags().BoolVar(&debug, "debug", false, "Enable debug logging (implies --verbose)")
@@ -92,6 +97,7 @@ func run(cmd *cobra.Command, args []string) error {
 		IncludePorts:     includePorts,
 		IncludeProcesses: includeProcess,
 		ShallowDirs:      shallowDirs,
+		ShallowDepth:     shallowDepth,
 	}
 	cfg, err := config.Load(configFile, cliOpts)
 	if err != nil {

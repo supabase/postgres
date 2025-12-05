@@ -18,9 +18,15 @@ type Config struct {
 	// Paths to exclude from scanning (glob patterns supported)
 	Paths []string `yaml:"paths,omitempty"`
 
-	// ShallowDirs are directories to scan at top level only (no recursion)
-	// Files directly in these directories are scanned, but subdirectories are skipped
+	// ShallowDirs are directories to scan with limited recursion depth
+	// Files up to ShallowDepth levels deep are scanned, deeper subdirectories are skipped
 	ShallowDirs []string `yaml:"shallowDirs,omitempty"`
+
+	// ShallowDepth controls how many levels deep to scan in shallow directories
+	// 1 = only files directly in the shallow dir (default)
+	// 2 = files in shallow dir + immediate subdirectories
+	// 3 = files in shallow dir + 2 levels of subdirectories, etc.
+	ShallowDepth int `yaml:"shallowDepth,omitempty"`
 
 	// Kernel parameters to exclude from scanning
 	KernelParams []string `yaml:"kernelParams,omitempty"`
@@ -49,6 +55,9 @@ type CLIOptions struct {
 
 	// ShallowDirs adds directories to scan without recursion (from CLI)
 	ShallowDirs []string
+
+	// ShallowDepth controls recursion depth in shallow directories (from CLI)
+	ShallowDepth int
 }
 
 // Load reads configuration from defaults, optional config file, and CLI options.
@@ -95,6 +104,16 @@ func Load(configPath string, opts CLIOptions) (*Config, error) {
 		cfg.ShallowDirs = append(cfg.ShallowDirs, opts.ShallowDirs...)
 	}
 
+	// Set shallow depth from CLI (overrides config file and defaults)
+	if opts.ShallowDepth > 0 {
+		cfg.ShallowDepth = opts.ShallowDepth
+	}
+
+	// Default shallow depth to 1 if not set
+	if cfg.ShallowDepth == 0 {
+		cfg.ShallowDepth = 1
+	}
+
 	return &cfg, nil
 }
 
@@ -123,6 +142,11 @@ func merge(base, file Config) Config {
 	result.ShallowDirs = append(result.ShallowDirs, file.ShallowDirs...)
 	result.KernelParams = append(result.KernelParams, file.KernelParams...)
 	result.DisabledScanners = append(result.DisabledScanners, file.DisabledScanners...)
+
+	// ShallowDepth from file overrides base if set
+	if file.ShallowDepth > 0 {
+		result.ShallowDepth = file.ShallowDepth
+	}
 
 	return result
 }
