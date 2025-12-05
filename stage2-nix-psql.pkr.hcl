@@ -37,10 +37,6 @@ variable "packer-execution-id" {
   default = "unknown"
 }
 
-variable "force-deregister" {
-  type    = bool
-  default = false
-}
 variable "git_sha" {
   type    = string
   default = env("GIT_SHA")

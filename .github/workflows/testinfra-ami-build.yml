@@ -97,7 +97,7 @@ jobs:
           region: ap-southeast-1
           ami_regions: '["ap-southeast-1"]'
           git_sha: ${{ github.sha }}
-          ami_name_prefix: "supabase-postgres-{{ github.run_id }}"
+          ami_name_prefix: "supabase-postgres-${{ github.run_id }}"
 
       - name: Run tests
         timeout-minutes: 10

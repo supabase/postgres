@@ -88,6 +88,5 @@ runs:
           -var-file="common-nix.vars.pkr.hcl" \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
-          -var "force-deregister=true" \
           -var "git_sha=${{ inputs.git_sha }}" \
           stage2-nix-psql.pkr.hcl
