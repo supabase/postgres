@@ -304,6 +304,7 @@ in
     create_lib_files
     create_migration_sql_files
 
+
     # Verify library count matches expected
     (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
       toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
