@@ -94,8 +94,8 @@ from (
         a.privilege_type = 'MAINTAIN'
 ) sub
 order by schema_order, schema_name, privilege_type, grantee, default_for;
-  schema_name   | privilege_type |      grantee       |     default_for     
-----------------+----------------+--------------------+---------------------
+  schema_name   | privilege_type |      grantee       |  default_for   
+----------------+----------------+--------------------+----------------
  public         | MAINTAIN       | anon               | supabase_admin
  public         | MAINTAIN       | anon               | postgres
  public         | MAINTAIN       | authenticated      | supabase_admin
@@ -104,8 +104,6 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  public         | MAINTAIN       | postgres           | postgres
  public         | MAINTAIN       | service_role       | supabase_admin
  public         | MAINTAIN       | service_role       | postgres
- auth           | MAINTAIN       | dashboard_user     | supabase_auth_admin
- auth           | MAINTAIN       | postgres           | supabase_auth_admin
  extensions     | MAINTAIN       | postgres           | supabase_admin
  graphql        | MAINTAIN       | anon               | supabase_admin
  graphql        | MAINTAIN       | authenticated      | supabase_admin
@@ -124,7 +122,7 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  storage        | MAINTAIN       | authenticated      | postgres
  storage        | MAINTAIN       | postgres           | postgres
  storage        | MAINTAIN       | service_role       | postgres
-(28 rows)
+(26 rows)
 
 -- version specific role memberships
 select

@@ -130,8 +130,8 @@ from (
         a.privilege_type in ('CREATE', 'USAGE')
 ) sub
 order by schema_order, schema_name, privilege_type, grantee, default_for;
-    schema_name     | privilege_type |         grantee          |     default_for     
---------------------+----------------+--------------------------+---------------------
+    schema_name     | privilege_type |         grantee          |    default_for    
+--------------------+----------------+--------------------------+-------------------
  public             | CREATE         | pg_database_owner        | pg_database_owner
  public             | DELETE         | anon                     | supabase_admin
  public             | DELETE         | anon                     | postgres
@@ -229,32 +229,10 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  auth               | CREATE         | dashboard_user           | supabase_admin
  auth               | CREATE         | supabase_admin           | supabase_admin
  auth               | CREATE         | supabase_auth_admin      | supabase_admin
- auth               | DELETE         | dashboard_user           | supabase_auth_admin
- auth               | DELETE         | postgres                 | supabase_auth_admin
- auth               | EXECUTE        | dashboard_user           | supabase_auth_admin
- auth               | EXECUTE        | postgres                 | supabase_auth_admin
- auth               | INSERT         | dashboard_user           | supabase_auth_admin
- auth               | INSERT         | postgres                 | supabase_auth_admin
- auth               | REFERENCES     | dashboard_user           | supabase_auth_admin
- auth               | REFERENCES     | postgres                 | supabase_auth_admin
- auth               | SELECT         | dashboard_user           | supabase_auth_admin
- auth               | SELECT         | dashboard_user           | supabase_auth_admin
- auth               | SELECT         | postgres                 | supabase_auth_admin
- auth               | SELECT         | postgres                 | supabase_auth_admin
- auth               | TRIGGER        | dashboard_user           | supabase_auth_admin
- auth               | TRIGGER        | postgres                 | supabase_auth_admin
- auth               | TRUNCATE       | dashboard_user           | supabase_auth_admin
- auth               | TRUNCATE       | postgres                 | supabase_auth_admin
- auth               | UPDATE         | dashboard_user           | supabase_auth_admin
- auth               | UPDATE         | dashboard_user           | supabase_auth_admin
- auth               | UPDATE         | postgres                 | supabase_auth_admin
- auth               | UPDATE         | postgres                 | supabase_auth_admin
  auth               | USAGE          | anon                     | supabase_admin
  auth               | USAGE          | authenticated            | supabase_admin
  auth               | USAGE          | dashboard_user           | supabase_admin
- auth               | USAGE          | dashboard_user           | supabase_auth_admin
  auth               | USAGE          | postgres                 | supabase_admin
- auth               | USAGE          | postgres                 | supabase_auth_admin
  auth               | USAGE          | service_role             | supabase_admin
  auth               | USAGE          | supabase_admin           | supabase_admin
  auth               | USAGE          | supabase_auth_admin      | supabase_admin
@@ -521,7 +499,7 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  vault              | USAGE          | postgres                 | supabase_admin
  vault              | USAGE          | service_role             | supabase_admin
  vault              | USAGE          | supabase_admin           | supabase_admin
-(389 rows)
+(367 rows)
 
 -- postgres can alter API roles' timeout
 set role postgres;
