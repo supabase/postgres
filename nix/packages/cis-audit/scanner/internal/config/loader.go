@@ -181,9 +181,45 @@ func removeItems(slice []string, itemsToRemove []string) []string {
 }
 
 // IsPathExcluded checks if a given path matches any exclusion pattern.
-// Supports glob patterns (*, ?, []).
+// Supports glob patterns (*, ?, []) and special patterns:
+// - /dir/* matches anything under /dir/
+// - */__pycache__/* matches __pycache__ directories anywhere
+// - *.pyc matches any .pyc file
+// - */.bash_history matches .bash_history file anywhere
 func (c *Config) IsPathExcluded(path string) bool {
 	for _, pattern := range c.Paths {
+		// Handle patterns that match anywhere in the path (starting with *)
+		if strings.HasPrefix(pattern, "*") {
+			// Pattern like *.pyc - match file extension
+			if strings.HasPrefix(pattern, "*.") {
+				suffix := strings.TrimPrefix(pattern, "*")
+				if strings.HasSuffix(path, suffix) {
+					return true
+				}
+				continue
+			}
+			// Pattern like */__pycache__/* or */.cache/* - match directory component anywhere
+			// Pattern like */.bash_history - match file anywhere
+			if strings.HasPrefix(pattern, "*/") {
+				// Get the part after */
+				rest := strings.TrimPrefix(pattern, "*/")
+
+				if strings.HasSuffix(pattern, "/*") {
+					// Directory pattern: */.cache/* should match /.cache/ anywhere
+					dirName := strings.TrimSuffix(rest, "/*")
+					if strings.Contains(path, "/"+dirName+"/") {
+						return true
+					}
+				} else {
+					// File pattern: */.bash_history should match /.bash_history at end
+					if strings.HasSuffix(path, "/"+rest) {
+						return true
+					}
+				}
+				continue
+			}
+		}
+
 		matched, err := filepath.Match(pattern, path)
 		if err != nil {
 			// Invalid pattern, skip

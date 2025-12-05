@@ -217,6 +217,84 @@ func TestLoad_ShallowDirs(t *testing.T) {
 	}
 }
 
+func TestIsPathExcluded_PycacheAndPyc(t *testing.T) {
+	cfg := &Config{
+		Paths: []string{
+			"*/__pycache__/*",
+			"*.pyc",
+		},
+	}
+
+	// Should be excluded
+	excluded := []string{
+		"/opt/saltstack/salt/lib/python3.10/__pycache__/locks.cpython-310.pyc",
+		"/usr/lib/python3/__pycache__/abc.cpython-310.pyc",
+		"/home/user/project/__pycache__/module.pyc",
+		"/some/path/file.pyc",
+		"/another/deeply/nested/file.pyc",
+	}
+
+	for _, path := range excluded {
+		if !cfg.IsPathExcluded(path) {
+			t.Errorf("Expected %s to be excluded", path)
+		}
+	}
+
+	// Should NOT be excluded
+	notExcluded := []string{
+		"/opt/saltstack/salt/lib/python3.10/locks.py",
+		"/usr/lib/python3/abc.py",
+		"/etc/passwd",
+		"/home/user/project/module.py",
+	}
+
+	for _, path := range notExcluded {
+		if cfg.IsPathExcluded(path) {
+			t.Errorf("Expected %s to NOT be excluded", path)
+		}
+	}
+}
+
+func TestIsPathExcluded_CacheAndHistory(t *testing.T) {
+	cfg := &Config{
+		Paths: []string{
+			"*/.cache/*",
+			"*/.bash_history",
+			"*/.ansible/*",
+		},
+	}
+
+	// Should be excluded
+	excluded := []string{
+		"/home/ubuntu/.cache/nix/eval-cache-v6/something.sqlite",
+		"/home/wal-g/.cache/nix/fetcher-cache-v4.sqlite",
+		"/root/.cache/pip/something",
+		"/home/ubuntu/.bash_history",
+		"/root/.bash_history",
+		"/home/ubuntu/.ansible/galaxy_cache/api.json",
+	}
+
+	for _, path := range excluded {
+		if !cfg.IsPathExcluded(path) {
+			t.Errorf("Expected %s to be excluded", path)
+		}
+	}
+
+	// Should NOT be excluded
+	notExcluded := []string{
+		"/home/ubuntu/.bashrc",
+		"/home/ubuntu/.profile",
+		"/etc/passwd",
+		"/home/ubuntu/cache/not-dotcache",
+	}
+
+	for _, path := range notExcluded {
+		if cfg.IsPathExcluded(path) {
+			t.Errorf("Expected %s to NOT be excluded", path)
+		}
+	}
+}
+
 // Helper function to check if a slice contains a string
 func contains(slice []string, item string) bool {
 	for _, s := range slice {

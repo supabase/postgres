@@ -31,6 +31,29 @@ var DefaultExclusions = Config{
 		"/boot/config-*",
 		"/boot/initrd.img-*",
 		"/boot/vmlinuz-*",
+
+		// Development headers (not security-relevant)
+		"/usr/include/*",
+
+		// Python cache files (regenerated, not security-relevant)
+		"*/__pycache__/*",
+		"*.pyc",
+
+		// User cache directories (dynamic, user-specific)
+		"*/.cache/*",
+
+		// Nix build logs and var (deployment artifacts)
+		"/nix/var/*",
+
+		// Dynamic linker cache (regenerated)
+		"/etc/ld.so.cache",
+
+		// Shell history (dynamic, user-specific)
+		"*/.bash_history",
+		"*/.zsh_history",
+
+		// Ansible cache (deployment artifacts)
+		"*/.ansible/*",
 	},
 
 	ShallowDirs: []string{
@@ -39,6 +62,13 @@ var DefaultExclusions = Config{
 
 		// PostgreSQL data directory - contents are dynamic database state
 		"/data/pgdata",
+
+		// Deployment/provisioning tools - internal implementation details
+		"/opt/saltstack",
+
+		// Locally installed software - deep internals not security-relevant
+		"/usr/local/share",
+		"/usr/local/lib",
 	},
 
 	KernelParams: []string{

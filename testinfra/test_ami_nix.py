@@ -10,6 +10,7 @@ from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLog
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 import paramiko
+from pathlib import Path
 
 # if EXECUTION_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
@@ -217,6 +218,16 @@ def run_ssh_command(ssh, command, timeout=None):
         "stdout": stdout.read().decode(),
         "stderr": stderr.read().decode(),
     }
+
+
+def upload_file_via_sftp(ssh, local_path, remote_path):
+    """Upload a file to the remote host via SFTP."""
+    sftp = ssh.open_sftp()
+    try:
+        sftp.put(local_path, remote_path)
+        logger.info(f"Uploaded {local_path} to {remote_path}")
+    finally:
+        sftp.close()
 
 
 # scope='session' uses the same container for all the tests;
@@ -807,3 +818,79 @@ def test_postgrest_read_only_session_attrs(host):
                 print("Warning: Failed to restart PostgreSQL after restoring config")
         else:
             print("Warning: Failed to restore PostgreSQL configuration")
+
+
+def test_cis_baseline_audit(host):
+    """Run CIS baseline audit against the machine and report results.
+
+    This test uploads the current baseline.yml from the repo and uses
+    cis-audit to validate the machine against it. The test reports findings
+    but does not fail the build - it's for visibility into configuration drift.
+    """
+    git_sha = os.environ.get("GITHUB_SHA", "HEAD")
+
+    # Find the baseline file relative to the test file location
+    test_dir = Path(__file__).parent.parent
+    baseline_path = test_dir / "audit-specs" / "baselines" / "baseline.yml"
+
+    if not baseline_path.exists():
+        print(f"\n⚠️  Baseline file not found at {baseline_path}")
+        print("Skipping CIS baseline audit - no baseline file available")
+        pytest.skip("Baseline file not found")
+        return
+
+    print(f"\n{'='*60}")
+    print("CIS BASELINE AUDIT")
+    print(f"{'='*60}")
+    print(f"Baseline file: {baseline_path}")
+
+    # Upload baseline file to the instance
+    remote_baseline_path = "/tmp/baseline.yml"
+    try:
+        upload_file_via_sftp(host["ssh"], str(baseline_path), remote_baseline_path)
+        print(f"✓ Uploaded baseline to {remote_baseline_path}")
+    except Exception as e:
+        print(f"✗ Failed to upload baseline file: {e}")
+        pytest.skip(f"Failed to upload baseline: {e}")
+        return
+
+    # Install cis-audit via nix
+    print("\nInstalling cis-audit tool...")
+    install_cmd = f"nix profile install github:supabase/postgres/{git_sha}#cis-audit --refresh 2>&1"
+    result = run_ssh_command(host["ssh"], install_cmd, timeout=300)
+    if not result["succeeded"]:
+        print(f"Warning: {result['stderr'][:500]}")
+
+    # Run cis-audit with documentation format for readable output
+    print("\nRunning CIS baseline validation...")
+    print(f"{'-'*60}")
+
+    # Use the uploaded baseline file (local path, not bundled)
+    validate_cmd = f"~/.nix-profile/bin/cis-audit --spec {remote_baseline_path} --format documentation 2>&1"
+    result = run_ssh_command(host["ssh"], validate_cmd, timeout=600)
+
+    # Print full output for visibility in GitHub Actions logs
+    print(result["stdout"])
+    if result["stderr"]:
+        print(f"\nStderr:\n{result['stderr']}")
+
+    print(f"{'-'*60}")
+
+    # Also run with tap format to get summary counts
+    validate_tap_cmd = f"~/.nix-profile/bin/cis-audit --spec {remote_baseline_path} --format tap 2>&1 | tail -10"
+    result_tap = run_ssh_command(host["ssh"], validate_tap_cmd, timeout=600)
+
+    print(f"\nSummary:")
+    print(result_tap["stdout"])
+
+    # Clean up
+    run_ssh_command(host["ssh"], f"rm -f {remote_baseline_path}")
+
+    print(f"{'='*60}")
+    print("CIS BASELINE AUDIT COMPLETE")
+    print(f"{'='*60}\n")
+
+    # Note: This test intentionally does not assert/fail on validation results
+    # It's meant to provide visibility into configuration state
+    # To make this test fail on drift, uncomment the following:
+    # assert result["succeeded"], "CIS baseline validation found differences"
