@@ -23,21 +23,6 @@ variable "ansible_arguments" {
   default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
 }
 
-variable "aws_access_key" {
-  type    = string
-  default = ""
-}
-
-variable "aws_secret_key" {
-  type    = string
-  default = ""
-}
-
-variable "environment" {
-  type    = string
-  default = "prod"
-}
-
 variable "region" {
   type    = string
 }
@@ -110,15 +95,12 @@ packer {
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
-  #access_key    = "${var.aws_access_key}"
-  #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   ami_name = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
   instance_type = "c6g.4xlarge"
   region       = "${var.region}"
-  #secret_key   = "${var.aws_secret_key}"
   force_deregister = var.force-deregister
 
   # Increase timeout for instance stop operations to handle large instances

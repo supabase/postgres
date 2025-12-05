@@ -1,18 +1,3 @@
-variable "profile" {
-  type    = string
-  default = "${env("AWS_PROFILE")}"
-}
-
-variable "ami_regions" {
-  type    = list(string)
-  default = ["ap-southeast-1"]
-}
-
-variable "environment" {
-  type    = string
-  default = "prod"
-}
-
 variable "region" {
   type    = string
 }

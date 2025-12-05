@@ -64,7 +64,6 @@ runs:
           -var "git-head-version=${{ inputs.git_sha }}" \
           -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
           -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
-          -var "region=${{ inputs.region }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
           -var-file="development-arm.vars.pkr.hcl" \
           amazon-arm64-nix.pkr.hcl
