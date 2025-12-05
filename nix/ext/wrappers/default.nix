@@ -154,18 +154,14 @@ let
         doCheck = false;
 
         postInstall = ''
+
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
               $out/share/postgresql/extension/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
             rm $out/share/postgresql/extension/${pname}.control
           }
-
           create_control_files
-
-
-
-
         '';
 
         meta = with lib; {
