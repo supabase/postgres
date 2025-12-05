@@ -98,6 +98,7 @@ func run(cmd *cobra.Command, args []string) error {
 		IncludeProcesses: includeProcess,
 		ShallowDirs:      shallowDirs,
 		ShallowDepth:     shallowDepth,
+		ShallowDepthSet:  cmd.Flags().Changed("shallow-depth"),
 	}
 	cfg, err := config.Load(configFile, cliOpts)
 	if err != nil {

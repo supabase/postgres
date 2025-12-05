@@ -74,9 +74,9 @@ func (s *FileScanner) Scan(ctx context.Context, opts ScanOptions) (ScanStats, er
 		}
 
 		// Handle shallow directories - limit recursion depth
-		if d != nil && d.IsDir() {
-			depth := cfg.GetShallowDirDepth(path)
-			if depth >= 0 {
+		depth := cfg.GetShallowDirDepth(path)
+		if depth >= 0 {
+			if d != nil && d.IsDir() {
 				if depth == 0 && cfg.ShallowDepth == 0 {
 					// Depth 0 means capture this directory entry but don't recurse into it
 					info, err := d.Info()
@@ -94,6 +94,12 @@ func (s *FileScanner) Scan(ctx context.Context, opts ScanOptions) (ScanStats, er
 					// This directory is at or beyond the configured shallow depth - skip it
 					opts.Logger.Debug("Skipping directory beyond shallow depth", "path", path, "depth", depth, "max_depth", cfg.ShallowDepth)
 					return filepath.SkipDir
+				}
+			} else if d != nil && d.Type().IsRegular() {
+				// For files inside shallow dirs, skip if at or beyond shallow depth
+				if depth > cfg.ShallowDepth {
+					opts.Logger.Debug("Skipping file beyond shallow depth", "path", path, "depth", depth, "max_depth", cfg.ShallowDepth)
+					return nil
 				}
 			}
 		}

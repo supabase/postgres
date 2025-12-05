@@ -57,7 +57,11 @@ type CLIOptions struct {
 	ShallowDirs []string
 
 	// ShallowDepth controls recursion depth in shallow directories (from CLI)
+	// Use -1 to indicate "not set" (will use default), 0+ for explicit depth
 	ShallowDepth int
+
+	// ShallowDepthSet indicates whether ShallowDepth was explicitly set via CLI
+	ShallowDepthSet bool
 }
 
 // Load reads configuration from defaults, optional config file, and CLI options.
@@ -105,12 +109,11 @@ func Load(configPath string, opts CLIOptions) (*Config, error) {
 	}
 
 	// Set shallow depth from CLI (overrides config file and defaults)
-	if opts.ShallowDepth > 0 {
+	// ShallowDepthSet allows explicit 0 to be distinguished from "not set"
+	if opts.ShallowDepthSet {
 		cfg.ShallowDepth = opts.ShallowDepth
-	}
-
-	// Default shallow depth to 1 if not set
-	if cfg.ShallowDepth == 0 {
+	} else if cfg.ShallowDepth == 0 {
+		// Default shallow depth to 1 only if not explicitly set
 		cfg.ShallowDepth = 1
 	}
 
