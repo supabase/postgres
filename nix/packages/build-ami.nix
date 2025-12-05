@@ -92,6 +92,19 @@ writeShellApplication {
       if [ -n "$AMI_ID" ]; then
         echo "Found existing AMI: $AMI_ID"
         echo "STAGE1_AMI_ID=$AMI_ID"
+
+        if [ -n "''${GITHUB_OUTPUT:-}" ]; then
+          AMI_NAME=$(aws ec2 describe-images \
+            --region "$REGION" \
+            --image-ids "$AMI_ID" \
+            --query 'Images[0].Name' \
+            --output text)
+
+          if [ -n "$AMI_NAME" ]; then
+            echo "::notice title=Stage 1 AMI Found::AMI '$AMI_NAME' (ID: $AMI_ID) found in region $REGION"
+          fi
+        fi
+
         exit 0
       fi
 
@@ -100,10 +113,26 @@ writeShellApplication {
       cd "$PACKER_SOURCES"
       packer init amazon-arm64-nix.pkr.hcl
       packer build \
+        -var-file="development-arm.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
         "$@"
+
+      if [ -n "''${GITHUB_OUTPUT:-}" ]; then
+        STAGE1_AMI_ID=$(find_stage1_ami)
+        if [ -n "$STAGE1_AMI_ID" ]; then
+          AMI_NAME=$(aws ec2 describe-images \
+            --region "$REGION" \
+            --image-ids "$STAGE1_AMI_ID" \
+            --query 'Images[0].Name' \
+            --output text)
+
+          if [ -n "$AMI_NAME" ]; then
+            echo "::notice title=Stage 1 AMI Built::AMI '$AMI_NAME' (ID: $STAGE1_AMI_ID) built in region $REGION"
+          fi
+        fi
+      fi
     elif [ "$STAGE" = "stage2" ]; then
       echo "Building stage 2..."
 
@@ -117,6 +146,8 @@ writeShellApplication {
 
       packer init stage2-nix-psql.pkr.hcl
       packer build \
+        -var-file="development-arm.vars.pkr.hcl" \
+        -var-file="common-nix.vars.pkr.hcl" \
         -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
         "$@"
@@ -136,6 +167,16 @@ writeShellApplication {
 
           if [ -n "''${GITHUB_OUTPUT:-}" ]; then
             echo "stage2_ami_id=$STAGE2_AMI_ID" >> "$GITHUB_OUTPUT"
+
+            AMI_NAME=$(aws ec2 describe-images \
+              --region "$REGION" \
+              --image-ids "$STAGE2_AMI_ID" \
+              --query 'Images[0].Name' \
+              --output text)
+
+            if [ -n "$AMI_NAME" ]; then
+              echo "::notice title=Stage 2 AMI Published::AMI '$AMI_NAME' (ID: $STAGE2_AMI_ID) published in region $REGION"
+            fi
           fi
         fi
       fi
