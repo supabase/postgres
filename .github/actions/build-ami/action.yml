@@ -14,6 +14,10 @@ inputs:
   git_sha:
     description: 'Git SHA for this build'
     required: true
+  ami_name_prefix:
+    description: 'Prefix for the AMI name'
+    required: false
+    default: 'supabase-postgres'
 
 outputs:
   stage2_ami_id:
@@ -41,8 +45,7 @@ runs:
       id: generate-vars
       shell: bash
       run: |
-        PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
-        PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')
+        PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
         echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
         echo "" >> common-nix.vars.pkr.hcl
         git add -f common-nix.vars.pkr.hcl
@@ -52,6 +55,7 @@ runs:
       shell: bash
       env:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
+        POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
@@ -63,7 +67,6 @@ runs:
           -var "region=${{ inputs.region }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
           -var-file="development-arm.vars.pkr.hcl" \
-          -var-file="common-nix.vars.pkr.hcl" \
           amazon-arm64-nix.pkr.hcl
 
     - name: Build AMI stage 2
@@ -71,6 +74,7 @@ runs:
       shell: bash
       env:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
+        POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
         PACKER_EXECUTION_ID: ${{ env.EXECUTION_ID }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
@@ -82,7 +86,7 @@ runs:
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
           -var-file="development-arm.vars.pkr.hcl" \
           -var-file="common-nix.vars.pkr.hcl" \
-          -var "postgres-version=${{ env.EXECUTION_ID }}" \
+          -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
           -var "force-deregister=true" \
           -var "git_sha=${{ inputs.git_sha }}" \

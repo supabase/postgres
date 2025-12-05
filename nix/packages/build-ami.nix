@@ -54,7 +54,6 @@ writeShellApplication {
     shift || true  # Remove first arg, ignore error if no args
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
-    POSTGRES_VERSION="''${POSTGRES_MAJOR_VERSION:-15}"
     PACKER_SOURCES="${packerSources}"
     INPUT_HASH=$(basename "$PACKER_SOURCES" | cut -d- -f1)
 
