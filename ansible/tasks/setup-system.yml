@@ -64,6 +64,18 @@
         dest: '/etc/apt/apt.conf.d/10periodic'
         src: 'files/apt_periodic'
 
+    - name: Set local ssh policy
+      ansible.builtin.copy:
+        content: |
+          Match Address 127.0.0.1,::1
+            ForceCommand /bin/false
+            DisableForwarding yes
+            PermitTunnel no
+        dest: /etc/ssh/sshd_config.d/local.conf
+        mode: '0644'
+        owner: 'root'
+        group: 'root'
+
 - name: Install other useful tools
   ansible.builtin.apt:
     pkg:
@@ -152,6 +164,13 @@
       ansible.builtin.sysctl:
         name: 'net.ipv4.tcp_keepalive_intvl'
         value: 60
+        state: 'present'
+
+    # postgres_exporter runs on port 9187 and postgresT occasionlly chooses it as random srcport
+    - name: Set net.ipv4.ip_local_reserved_ports=9187
+      ansible.builtin.sysctl:
+        name: 'net.ipv4.ip_local_reserved_ports'
+        value: 9187
         state: 'present'
 
 - name: Execute tasks when (debpkg_mode or nixpkg_mode)

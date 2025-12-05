@@ -115,8 +115,17 @@
         - '/home/postgres'
         - '/var/lib/postgresql/data'
         - '/var/log/postgresql'
+        - '/etc/postgresql-custom/conf.d'
       loop_control:
         loop_var: 'pg_dir_item'
+
+    - name: Set /var/lib/postgresql to 0755 for nix-profile symlink traversal
+      ansible.builtin.file:
+        group: 'postgres'
+        mode: '0755'
+        owner: 'postgres'
+        path: '/var/lib/postgresql'
+        state: 'directory'
 
     - name: Allow adminapi to write custom config
       ansible.builtin.file:
@@ -129,6 +138,7 @@
       loop:
         - '/etc/postgresql'
         - '/etc/postgresql-custom'
+        - '/etc/postgresql-custom/conf.d'
       loop_control:
         loop_var: 'pg_config_dir_item'
 
@@ -204,7 +214,7 @@
   become: true
   become_user: 'postgres'
   ansible.builtin.command:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin"
+    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--data-checksums" -o "--username=supabase_admin"
   vars:
     ansible_command_timeout: 60
   when:

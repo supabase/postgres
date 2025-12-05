@@ -167,3 +167,31 @@ order by
  supabase_storage_admin  | authenticator          | f
 (22 rows)
 
+-- Check all privileges of non-superuser roles on functions
+select
+  p.pronamespace::regnamespace as schema,
+  p.proname as object_name,
+  acl.grantee::regrole::text as grantee,
+  acl.privilege_type
+from pg_catalog.pg_proc p
+cross join lateral pg_catalog.aclexplode(p.proacl) as acl
+where p.pronamespace::regnamespace::text = 'pg_catalog'
+  and acl.grantee::regrole::text != 'supabase_admin'
+order by object_name, grantee, privilege_type;
+   schema   |          object_name           |      grantee      | privilege_type 
+------------+--------------------------------+-------------------+----------------
+ pg_catalog | pg_current_logfile             | pg_monitor        | EXECUTE
+ pg_catalog | pg_current_logfile             | pg_monitor        | EXECUTE
+ pg_catalog | pg_get_backend_memory_contexts | pg_read_all_stats | EXECUTE
+ pg_catalog | pg_get_shmem_allocations       | pg_read_all_stats | EXECUTE
+ pg_catalog | pg_ls_archive_statusdir        | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_logdir                   | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_logicalmapdir            | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_logicalsnapdir           | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_replslotdir              | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_tmpdir                   | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_tmpdir                   | pg_monitor        | EXECUTE
+ pg_catalog | pg_ls_waldir                   | pg_monitor        | EXECUTE
+ pg_catalog | pg_reload_conf                 | postgres          | EXECUTE
+(13 rows)
+

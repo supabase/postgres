@@ -46,6 +46,7 @@ let
       # source specification
       version,
       hash,
+      revision ? null,
       muslPatches ? { },
 
       # for tests
@@ -88,11 +89,17 @@ let
       pname = pname + lib.optionalString jitSupport "-jit";
 
       src =
-        if (builtins.match "[0-9][0-9]_.*" version != null) then
-          fetchurl {
-            url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
-            inherit hash;
-          }
+        if isOrioleDB then
+          if revision != null then
+            fetchurl {
+              url = "https://github.com/orioledb/postgres/archive/${revision}.tar.gz";
+              inherit hash;
+            }
+          else
+            fetchurl {
+              url = "https://github.com/orioledb/postgres/archive/refs/tags/patches${version}.tar.gz";
+              inherit hash;
+            }
         else
           fetchurl {
             url = "mirror://postgresql/source/v${version}/${pname}-${version}.tar.bz2";
@@ -124,18 +131,15 @@ let
         ++ lib.optionals gssSupport [ libkrb5 ]
         ++ lib.optionals stdenv'.isLinux [ linux-pam ]
         ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
-        ++
-          lib.optionals
-            ((builtins.match "[0-9][0-9]_.*" version != null) || (lib.versionAtLeast version "17"))
-            [
-              perl
-              bison
-              flex
-              docbook_xsl
-              docbook_xml_dtd_45
-              docbook_xsl_ns
-              libxslt
-            ];
+        ++ lib.optionals (isOrioleDB || (lib.versionAtLeast version "17")) [
+          perl
+          bison
+          flex
+          docbook_xsl
+          docbook_xml_dtd_45
+          docbook_xsl_ns
+          libxslt
+        ];
 
       nativeBuildInputs =
         [
@@ -285,12 +289,19 @@ let
         in
         {
           psqlSchema = lib.versions.major version;
+          inherit revision;
 
           withJIT = if jitSupport then this else jitToggle;
           withoutJIT = if jitSupport then jitToggle else this;
 
           dlSuffix = if olderThan "16" then ".so" else stdenv.hostPlatform.extensions.sharedLibrary;
           inherit isOrioleDB;
+
+          patchset =
+            if isOrioleDB then
+              if revision != null then revision else builtins.elemAt (builtins.split "_" version) 2
+            else
+              null;
 
           pkgs =
             let
@@ -404,7 +415,13 @@ let
       '';
 
       passthru = {
-        inherit (postgresql) version psqlSchema isOrioleDB;
+        inherit (postgresql)
+          version
+          revision
+          patchset
+          psqlSchema
+          isOrioleDB
+          ;
       };
     };
 in

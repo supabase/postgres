@@ -69,12 +69,20 @@ let
             enable = true;
             package = psql_15;
             enableTCPIP = true;
-            initialScript = pkgs.writeText "init-postgres-with-password" ''
-              CREATE USER test WITH PASSWORD 'secret';
-            '';
             authentication = ''
-              host test postgres samenet scram-sha-256
+              local all postgres peer map=postgres
+              local all all peer map=root
             '';
+            identMap = ''
+              root root supabase_admin
+              postgres postgres postgres
+            '';
+            ensureUsers = [
+              {
+                name = "supabase_admin";
+                ensureClauses.superuser = true;
+              }
+            ];
             settings = (installedExtension "15").defaultSettings or { };
           };
 
@@ -83,6 +91,7 @@ let
           specialisation.postgresql17.configuration = {
             services.postgresql = {
               package = lib.mkForce psql_17;
+              settings = (installedExtension "17").defaultSettings or { };
             };
 
             systemd.services.postgresql-migrate = {
@@ -106,7 +115,13 @@ let
                     install -d -m 0700 -o postgres -g postgres "${newDataDir}"
                     ${newPostgresql}/bin/initdb -D "${newDataDir}"
                     ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                      --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
+                      --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin" \
+                      ${
+                        if config.services.postgresql.settings.shared_preload_libraries != null then
+                          " --old-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}' --new-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}'"
+                        else
+                          ""
+                      }
                   else
                     echo "${newDataDir} already exists"
                   fi
@@ -131,13 +146,16 @@ let
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
           }
           extension_name = "${pname}"
-          support_upgrade = False
+          support_upgrade = True
           pg17_configuration = "${pg17-configuration}"
           ext_has_background_worker = ${
             if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
           }
           sql_test_directory = Path("${../../tests}")
           pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+          ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
+          lib_name = "${(installedExtension "15").libName or pname}"
+          print(f"Running tests for extension: {lib_name}")
 
           ${builtins.readFile ./lib.py}
 
@@ -146,7 +164,8 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema)
+          test.create_schema()
 
           with subtest("Check upgrade path with postgresql 15"):
             test.check_upgrade_path("15")
@@ -160,7 +179,7 @@ let
 
           if ext_has_background_worker:
             with subtest("Test switch_${pname}_version"):
-              test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+              test.check_switch_extension_with_background_worker(Path(f"${psql_15}/lib/{lib_name}.so"), "15")
 
           with subtest("Check pg_regress with postgresql 15 after installing the last version"):
             test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
@@ -204,9 +223,15 @@ builtins.listToAttrs (
       "index_advisor"
       "pg_cron"
       "pg_graphql"
+      "pg_hashids"
       "pg_jsonschema"
       "pg_net"
+      "pg_stat_monitor"
+      "pg_tle"
+      "pgaudit"
+      "pg_partman"
       "vector"
+      "wal2json"
       "wrappers"
     ]
 )
