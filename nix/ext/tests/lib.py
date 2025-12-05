@@ -20,6 +20,7 @@ class PostgresExtensionTest(object):
         versions: Versions,
         sql_test_dir: Path,
         support_upgrade: bool = True,
+        schema: str = "public",
     ):
         """Initialize the PostgreSQL extension test framework.
 
@@ -35,6 +36,10 @@ class PostgresExtensionTest(object):
         self.versions = versions
         self.support_upgrade = support_upgrade
         self.sql_test_dir = sql_test_dir
+        self.schema = schema
+
+    def create_schema(self):
+        self.run_sql(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
 
     def run_sql(self, query: str) -> str:
         return self.vm.succeed(
@@ -50,8 +55,12 @@ class PostgresExtensionTest(object):
         self.run_sql(f"DROP EXTENSION IF EXISTS {self.extension_name};")
 
     def install_extension(self, version: str):
+        if self.schema != "public":
+            ext_schema = f"SCHEMA {self.schema} "
+        else:
+            ext_schema = ""
         self.run_sql(
-            f"""CREATE EXTENSION {self.extension_name} WITH VERSION '{version}' CASCADE;"""
+            f"""CREATE EXTENSION {self.extension_name} WITH {ext_schema}VERSION '{version}' CASCADE;"""
         )
         # Verify version was installed correctly
         self.assert_version_matches(version)

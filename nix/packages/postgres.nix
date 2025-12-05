@@ -36,6 +36,7 @@
         ../ext/pg_graphql
         ../ext/pg_stat_monitor.nix
         ../ext/pg_jsonschema
+        ../ext/pg_partman.nix
         ../ext/pgvector.nix
         ../ext/vault.nix
         ../ext/hypopg.nix
