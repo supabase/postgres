@@ -212,7 +212,7 @@ class TestGetRunnerForPackage:
             "system": "aarch64-linux",
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-4vcpu-ubuntu-2404-arm"]}
+        assert result == {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]}
 
 
 class TestSortPkgsByClosures:
