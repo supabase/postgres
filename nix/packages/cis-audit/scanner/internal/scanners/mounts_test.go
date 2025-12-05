@@ -52,8 +52,9 @@ tmpfs /tmp tmpfs rw,nosuid,nodev 0 0
 	if root.Filesystem != "ext4" {
 		t.Errorf("Expected filesystem 'ext4', got '%s'", root.Filesystem)
 	}
-	if root.Source != "/dev/sda1" {
-		t.Errorf("Expected source '/dev/sda1', got '%s'", root.Source)
+	// Source is now filtered out for /dev/* devices (instance-specific)
+	if root.Source != "" {
+		t.Errorf("Expected source to be empty for /dev/* device, got '%s'", root.Source)
 	}
 	if len(root.Opts) == 0 {
 		t.Errorf("Expected mount options to be parsed")
@@ -90,6 +91,58 @@ func TestMountScanner_Properties(t *testing.T) {
 
 	if scanner.IsDynamic() != false {
 		t.Errorf("MountScanner should not be dynamic")
+	}
+}
+
+func TestMountScanner_FiltersInstanceSpecificOptions(t *testing.T) {
+	tmpDir := t.TempDir()
+	mountsFile := filepath.Join(tmpDir, "mounts")
+
+	// Create mounts file with instance-specific options that should be filtered
+	mountsContent := `tmpfs /dev/shm tmpfs rw,nosuid,nodev,size=194656k,nr_inodes=48664,inode64 0 0
+/dev/nvme1n1p2 / ext4 rw,relatime,discard 0 0
+`
+	if err := os.WriteFile(mountsFile, []byte(mountsContent), 0644); err != nil {
+		t.Fatalf("Failed to create test mounts file: %v", err)
+	}
+
+	scanner := &MountScanner{mountsPath: mountsFile}
+	writer := spec.NewTestWriter()
+
+	opts := ScanOptions{
+		Writer: writer,
+		Logger: testLogger(),
+	}
+
+	_, err := scanner.Scan(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("Scan failed: %v", err)
+	}
+
+	results := writer.GetMountResults()
+
+	// Check /dev/shm - should have size= and nr_inodes= filtered out
+	shm, ok := results["/dev/shm"]
+	if !ok {
+		t.Fatalf("/dev/shm mount not found")
+	}
+	for _, opt := range shm.Opts {
+		if opt == "size=194656k" || opt == "nr_inodes=48664" {
+			t.Errorf("Instance-specific option '%s' should have been filtered out", opt)
+		}
+	}
+	// Source should be empty for tmpfs (virtual filesystem)
+	if shm.Source != "" {
+		t.Errorf("Expected empty source for tmpfs, got '%s'", shm.Source)
+	}
+
+	// Check root - source should be empty for /dev/nvme* devices
+	root, ok := results["/"]
+	if !ok {
+		t.Fatalf("root mount not found")
+	}
+	if root.Source != "" {
+		t.Errorf("Expected empty source for /dev/nvme* device, got '%s'", root.Source)
 	}
 }
 

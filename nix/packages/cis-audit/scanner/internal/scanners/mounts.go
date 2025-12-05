@@ -95,18 +95,33 @@ func (s *MountScanner) getMounts(opts ScanOptions) (map[string]spec.MountSpec, e
 		fstype := fields[2]
 		optionsStr := fields[3]
 
-		// Parse options (comma-separated)
-		var opts []string
+		// Parse options (comma-separated), filtering out instance-specific values
+		var filteredOpts []string
 		if optionsStr != "" {
-			opts = strings.Split(optionsStr, ",")
+			for _, opt := range strings.Split(optionsStr, ",") {
+				// Skip instance-specific options that vary by RAM/instance type
+				if strings.HasPrefix(opt, "size=") ||
+					strings.HasPrefix(opt, "nr_inodes=") ||
+					strings.HasPrefix(opt, "nr_blocks=") {
+					continue
+				}
+				filteredOpts = append(filteredOpts, opt)
+			}
+		}
+
+		// Determine if source should be included
+		// Skip source for virtual filesystems where device names are meaningless or instance-specific
+		source := device
+		if isVirtualOrInstanceSpecificSource(device, fstype) {
+			source = ""
 		}
 
 		mounts[mountpoint] = spec.MountSpec{
 			Path:       mountpoint,
 			Exists:     true,
 			Filesystem: fstype,
-			Opts:       opts,
-			Source:     device,
+			Opts:       filteredOpts,
+			Source:     source,
 		}
 	}
 
@@ -115,4 +130,43 @@ func (s *MountScanner) getMounts(opts ScanOptions) (map[string]spec.MountSpec, e
 	}
 
 	return mounts, nil
+}
+
+// isVirtualOrInstanceSpecificSource returns true if the device/source is virtual
+// or instance-specific (e.g., /dev/nvme* device names that vary by instance)
+func isVirtualOrInstanceSpecificSource(device, fstype string) bool {
+	// Virtual filesystems where source is just a label
+	virtualFsTypes := map[string]bool{
+		"tmpfs":      true,
+		"devtmpfs":   true,
+		"sysfs":      true,
+		"proc":       true,
+		"devpts":     true,
+		"cgroup":     true,
+		"cgroup2":    true,
+		"securityfs": true,
+		"debugfs":    true,
+		"hugetlbfs":  true,
+		"mqueue":     true,
+		"binfmt_misc": true,
+		"configfs":   true,
+		"fusectl":    true,
+		"tracefs":    true,
+		"pstore":     true,
+		"efivarfs":   true,
+		"bpf":        true,
+	}
+
+	if virtualFsTypes[fstype] {
+		return true
+	}
+
+	// Instance-specific block devices (NVMe devices vary by instance)
+	if strings.HasPrefix(device, "/dev/nvme") ||
+		strings.HasPrefix(device, "/dev/xvd") ||
+		strings.HasPrefix(device, "/dev/sd") {
+		return true
+	}
+
+	return false
 }

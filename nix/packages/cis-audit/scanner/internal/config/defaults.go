@@ -25,6 +25,12 @@ var DefaultExclusions = Config{
 		// Package manager caches
 		"/var/lib/apt/lists/*",
 		"/var/cache/apt/*",
+
+		// Kernel version-specific files (change with kernel updates)
+		"/boot/System.map-*",
+		"/boot/config-*",
+		"/boot/initrd.img-*",
+		"/boot/vmlinuz-*",
 	},
 
 	ShallowDirs: []string{
@@ -41,12 +47,19 @@ var DefaultExclusions = Config{
 		"fs.file-nr",                      // File handle statistics (dynamic)
 		"fs.inode-nr",                     // Inode statistics (dynamic)
 		"fs.inode-state",                  // Inode state (dynamic)
+		"fs.aio-nr",                       // Current async I/O operations (dynamic)
 		"kernel.random.uuid",              // Random UUID (changes every read)
 		"kernel.random.boot_id",           // Boot ID (changes per boot but not security-relevant)
+		"kernel.random.entropy_avail",     // Available entropy (changes constantly)
 		"kernel.ns_last_pid",              // Last PID allocated (dynamic)
 		"kernel.pty.nr",                   // Current number of PTYs (dynamic)
 		"net.netfilter.*_conntrack_count", // Connection tracking counts (dynamic)
 		"net.netfilter.*_conntrack_max",   // Connection tracking max (dynamic)
+
+		// RAM-dependent parameters (auto-tuned based on system memory)
+		"fs.epoll.max_user_watches",           // Computed from RAM
+		"net.netfilter.nf_conntrack_buckets",  // Auto-tuned based on RAM
+		"net.netfilter.nf_conntrack_expect_max", // Derived from buckets
 	},
 
 	DisabledScanners: []string{

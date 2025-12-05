@@ -156,6 +156,67 @@ kernelParams:
 	}
 }
 
+func TestLoad_ShallowDepthZero(t *testing.T) {
+	// Test that ShallowDepthSet allows explicit 0 to be set
+	cfg, err := Load("", CLIOptions{
+		ShallowDepth:    0,
+		ShallowDepthSet: true,
+	})
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.ShallowDepth != 0 {
+		t.Errorf("Expected ShallowDepth 0 when explicitly set, got %d", cfg.ShallowDepth)
+	}
+}
+
+func TestLoad_ShallowDepthDefault(t *testing.T) {
+	// Test that ShallowDepth defaults to 1 when not set
+	cfg, err := Load("", CLIOptions{
+		ShallowDepthSet: false,
+	})
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.ShallowDepth != 1 {
+		t.Errorf("Expected ShallowDepth 1 as default, got %d", cfg.ShallowDepth)
+	}
+}
+
+func TestLoad_ShallowDepthFromCLI(t *testing.T) {
+	// Test that CLI shallow depth overrides defaults
+	cfg, err := Load("", CLIOptions{
+		ShallowDepth:    3,
+		ShallowDepthSet: true,
+	})
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.ShallowDepth != 3 {
+		t.Errorf("Expected ShallowDepth 3 from CLI, got %d", cfg.ShallowDepth)
+	}
+}
+
+func TestLoad_ShallowDirs(t *testing.T) {
+	// Test that CLI shallow dirs are added
+	cfg, err := Load("", CLIOptions{
+		ShallowDirs: []string{"/custom/shallow", "/another/shallow"},
+	})
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if !contains(cfg.ShallowDirs, "/custom/shallow") {
+		t.Errorf("Expected /custom/shallow in ShallowDirs")
+	}
+	if !contains(cfg.ShallowDirs, "/another/shallow") {
+		t.Errorf("Expected /another/shallow in ShallowDirs")
+	}
+}
+
 // Helper function to check if a slice contains a string
 func contains(slice []string, item string) bool {
 	for _, s := range slice {

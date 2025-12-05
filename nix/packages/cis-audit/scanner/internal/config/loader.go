@@ -81,16 +81,25 @@ func Load(configPath string, opts CLIOptions) (*Config, error) {
 
 	// Apply CLI overrides (highest precedence)
 	if opts.IncludeDynamic {
-		// Remove all dynamic kernel params from the default list
+		// Remove all dynamic/RAM-dependent kernel params from the exclusion list
 		dynamicParams := []string{
+			// Dynamic counters/statistics
 			"fs.dentry-state",
 			"fs.file-nr",
 			"fs.inode-nr",
 			"fs.inode-state",
+			"fs.aio-nr",
 			"kernel.random.uuid",
 			"kernel.random.boot_id",
+			"kernel.random.entropy_avail",
 			"kernel.ns_last_pid",
 			"kernel.pty.nr",
+			"net.netfilter.*_conntrack_count",
+			"net.netfilter.*_conntrack_max",
+			// RAM-dependent parameters
+			"fs.epoll.max_user_watches",
+			"net.netfilter.nf_conntrack_buckets",
+			"net.netfilter.nf_conntrack_expect_max",
 		}
 		cfg.KernelParams = removeItems(cfg.KernelParams, dynamicParams)
 	}
