@@ -115,6 +115,11 @@ build {
     destination = "/tmp/ansible-playbook"
   }
 
+  provisioner "file" {
+    source = "audit-specs"
+    destination = "/tmp/ansible-playbook"
+  }
+
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
