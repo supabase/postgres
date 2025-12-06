@@ -395,9 +395,7 @@
             packer
             pg_regress
             goss
-            cis-audit
-            cis-generate-spec
-            ansible-to-goss
+            supascan
             ;
         }
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (

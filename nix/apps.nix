@@ -27,9 +27,7 @@
         run-testinfra = mkApp "run-testinfra" "run-testinfra";
         cleanup-ami = mkApp "cleanup-ami" "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";
-        cis-audit = mkApp "cis-audit" "cis-audit";
-        cis-generate-spec = mkApp "cis-generate-spec" "cis-generate-spec";
-        ansible-to-goss = mkApp "ansible-to-goss" "ansible-to-goss";
+        supascan = mkApp "supascan" "supascan";
       };
     };
 }
