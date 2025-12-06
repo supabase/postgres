@@ -2,21 +2,19 @@
 # Baseline Validation Check
 #
 # This script validates that the machine matches the committed baseline
-# specifications using the supascan tool from the nix flake.
+# specifications using supascan (pre-installed via nix profile).
 #
-# Usage: cis_baseline_check.sh [baselines-dir] [flake-path]
+# Usage: cis_baseline_check.sh [baselines-dir]
 
 set -euo pipefail
 
 BASELINES_DIR="${1:-/tmp/ansible-playbook/audit-specs/baselines}"
-FLAKE_PATH="${2:-/tmp/ansible-playbook}"
 
 echo "============================================================"
-echo "Baseline Validation Setup"
+echo "Baseline Validation"
 echo "============================================================"
 echo ""
 echo "Baselines directory: $BASELINES_DIR"
-echo "Flake path: $FLAKE_PATH"
 echo ""
 
 # Check baselines directory exists
@@ -27,20 +25,15 @@ fi
 
 # Source nix environment
 if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+  # shellcheck source=/dev/null
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
 
-# Install supascan from the flake if not already installed
-echo "Installing supascan from flake..."
+# Verify supascan is available
 if ! command -v supascan &>/dev/null; then
-  nix profile install "${FLAKE_PATH}#supascan" --accept-flake-config
-  echo "✓ supascan installed"
-else
-  echo "✓ supascan already available"
+  echo "ERROR: supascan not found. It should be pre-installed via nix profile."
+  exit 1
 fi
 
-echo ""
-
 # Run supascan validate
-# The tool handles all the logic for running specs and categorizing results
 exec supascan validate --verbose "$BASELINES_DIR"
