@@ -222,6 +222,7 @@
 
     - name: Run CIS baseline validation
       become: yes
+      become_user: ubuntu
       shell: |
         /bin/bash /tmp/ansible-playbook/ansible/files/cis_baseline_check.sh /tmp/ansible-playbook/audit-specs/baselines
       when: stage2_nix
