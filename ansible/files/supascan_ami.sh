@@ -4,7 +4,7 @@
 # This script validates that the machine matches the committed baseline
 # specifications using supascan (pre-installed via nix profile for ubuntu user).
 #
-# Usage: cis_baseline_check.sh [baselines-dir]
+# Usage: supascan_ami.sh [baselines-dir]
 
 set -euo pipefail
 
