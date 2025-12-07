@@ -8,6 +8,8 @@
   pkg-config,
   systemd,
   nixosTests,
+  pandoc,
+  python3,
 }:
 
 stdenv.mkDerivation rec {
@@ -19,7 +21,11 @@ stdenv.mkDerivation rec {
     hash = "sha256-blZq6S/j739qG54m1gSffXyjnEDinns49tVQCuFdhGU=";
   };
 
-  nativeBuildInputs = [ pkg-config ];
+  nativeBuildInputs = [
+    pkg-config
+    pandoc
+    python3
+  ];
   buildInputs = [
     libevent
     openssl
