@@ -223,7 +223,7 @@
     - name: Run CIS baseline validation
       become: yes
       shell: |
-        /bin/bash /tmp/ansible-playbook/ansible/files/cis_baseline_check.sh /tmp/ansible-playbook/audit-specs/baselines
+        /bin/bash /tmp/ansible-playbook/ansible/files/cis_baseline_check.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
       when: stage2_nix
 
     - name: Remove supascan after validation

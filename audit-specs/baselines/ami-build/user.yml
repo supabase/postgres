@@ -1,0 +1,86 @@
+# User baseline for AMI build
+# Checks that critical system and application users exist
+# UIDs may vary between builds - only checking existence and basic properties
+user:
+  # System users
+  root:
+    exists: true
+    home: /root
+    shell: /bin/bash
+  ubuntu:
+    exists: true
+    home: /home/ubuntu
+    shell: /bin/bash
+  nobody:
+    exists: true
+    shell: /usr/sbin/nologin
+
+  # PostgreSQL ecosystem
+  postgres:
+    exists: true
+    home: /var/lib/postgresql
+    shell: /bin/bash
+  pgbouncer:
+    exists: true
+    home: /home/pgbouncer
+  wal-g:
+    exists: true
+    home: /home/wal-g
+
+  # Supabase services
+  gotrue:
+    exists: true
+    home: /home/gotrue
+  postgrest:
+    exists: true
+    home: /home/postgrest
+  adminapi:
+    exists: true
+    home: /home/adminapi
+  kong:
+    exists: true
+    home: /home/kong
+  envoy:
+    exists: true
+    home: /home/envoy
+  nginx:
+    exists: true
+    home: /home/nginx
+  vector:
+    exists: true
+    home: /var/lib/vector
+  supabase-admin-agent:
+    exists: true
+    home: /home/supabase-admin-agent
+
+  # System service users
+  sshd:
+    exists: true
+    shell: /usr/sbin/nologin
+  messagebus:
+    exists: true
+    shell: /usr/sbin/nologin
+  systemd-network:
+    exists: true
+    shell: /usr/sbin/nologin
+  systemd-resolve:
+    exists: true
+    shell: /usr/sbin/nologin
+  systemd-timesync:
+    exists: true
+    shell: /usr/sbin/nologin
+  polkitd:
+    exists: true
+    shell: /usr/sbin/nologin
+  tcpdump:
+    exists: true
+    shell: /usr/sbin/nologin
+  _apt:
+    exists: true
+    shell: /usr/sbin/nologin
+  ec2-instance-connect:
+    exists: true
+    shell: /usr/sbin/nologin
+  salt:
+    exists: true
+    shell: /usr/sbin/nologin
