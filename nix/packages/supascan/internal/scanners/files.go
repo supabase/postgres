@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/user"
 	"path/filepath"
 	"syscall"
 
@@ -212,14 +213,20 @@ func (s *FileScanner) handleError(err error, path string, opts ScanOptions) erro
 
 // getUsername returns username for UID (or UID as string if lookup fails)
 func getUsername(uid uint32) string {
-	// Simple implementation: just return UID
-	// Could use os/user.LookupId() for name resolution
-	return fmt.Sprintf("%d", uid)
+	u, err := user.LookupId(fmt.Sprintf("%d", uid))
+	if err != nil {
+		// Fall back to numeric UID if lookup fails
+		return fmt.Sprintf("%d", uid)
+	}
+	return u.Username
 }
 
 // getGroupname returns groupname for GID (or GID as string if lookup fails)
 func getGroupname(gid uint32) string {
-	// Simple implementation: just return GID
-	// Could use os/user.LookupGroupId() for name resolution
-	return fmt.Sprintf("%d", gid)
+	g, err := user.LookupGroupId(fmt.Sprintf("%d", gid))
+	if err != nil {
+		// Fall back to numeric GID if lookup fails
+		return fmt.Sprintf("%d", gid)
+	}
+	return g.Name
 }
