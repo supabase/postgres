@@ -4,8 +4,6 @@
 # This script validates that the machine matches the committed baseline
 # specifications using supascan (pre-installed via nix profile for ubuntu user).
 #
-# Must be run as ubuntu user with sudo access (supascan calls sudo goss internally).
-#
 # Usage: cis_baseline_check.sh [baselines-dir]
 
 set -euo pipefail
@@ -25,9 +23,8 @@ if [[ ! -d $BASELINES_DIR ]]; then
   exit 1
 fi
 
-# Source nix environment (for ubuntu user's profile)
-# shellcheck source=/dev/null
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+# Add ubuntu user's nix profile to PATH
+export PATH="/home/ubuntu/.nix-profile/bin:$PATH"
 
 # Verify supascan is available
 if ! command -v supascan &>/dev/null; then
