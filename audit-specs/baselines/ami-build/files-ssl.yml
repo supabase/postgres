@@ -19,19 +19,12 @@ file:
     exists: true
     filetype: directory
     owner: root
-    group: ssl-cert
-    mode: '0710'
+    group: postgres
+    mode: '0750'
   /etc/ssl/openssl.cnf:
     exists: true
     filetype: file
     owner: root
     group: root
     mode: '0644'
-
-  # AdminAPI SSL directory (created during AMI build)
-  /etc/ssl/adminapi:
-    exists: true
-    filetype: directory
-    owner: adminapi
-    group: root
-    mode: '0700'
+  # Note: /etc/ssl/adminapi is created at deploy time, not during AMI build

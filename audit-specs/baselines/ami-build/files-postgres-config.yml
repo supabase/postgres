@@ -8,7 +8,7 @@ file:
     filetype: directory
     owner: postgres
     group: postgres
-    mode: '0755'
+    mode: '0775'
   /etc/postgresql/postgresql.conf:
     exists: true
     filetype: file
@@ -40,13 +40,8 @@ file:
     filetype: directory
     owner: postgres
     group: postgres
-    mode: '0755'
-  /etc/postgresql-custom/platform-defaults.conf:
-    exists: true
-    filetype: file
-    owner: postgres
-    group: postgres
-    mode: '0644'
+    mode: '0775'
+  # Note: platform-defaults.conf and pgsodium_root.key are created at deploy time
   /etc/postgresql-custom/custom-overrides.conf:
     exists: true
     filetype: file
@@ -77,12 +72,6 @@ file:
     owner: postgres
     group: postgres
     mode: '0664'
-  /etc/postgresql-custom/pgsodium_root.key:
-    exists: true
-    filetype: file
-    owner: postgres
-    group: postgres
-    mode: '0600'
 
   # Extension custom scripts directory
   /etc/postgresql-custom/extension-custom-scripts:
@@ -90,7 +79,7 @@ file:
     filetype: directory
     owner: postgres
     group: postgres
-    mode: '0755'
+    mode: '0775'
   /etc/postgresql-custom/extension-custom-scripts/before-create.sql:
     exists: true
     filetype: file
@@ -104,10 +93,10 @@ file:
     filetype: directory
     owner: postgrest
     group: postgrest
-    mode: '0755'
+    mode: '0775'
   /etc/postgrest/base.conf:
     exists: true
     filetype: file
-    owner: root
-    group: root
-    mode: '0664'
+    owner: postgrest
+    group: postgrest
+    mode: '0644'
