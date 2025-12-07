@@ -5,7 +5,7 @@ set -euo pipefail
 DEVICE=${1:-}
 MOUNT_POINT=${2:-}
 
-if [[ -z $DEVICE || -z $MOUNT_POINT ]]; then
+if [[ -z "$DEVICE" || -z "$MOUNT_POINT" ]]; then
   echo "Usage: $0 <device> <mount_point>"
   echo "Example: sudo ./mount-volume.sh /dev/nvme1n1 /data/150008"
   exit 1
@@ -54,7 +54,7 @@ FSTAB_LINE="UUID=$UUID  $MOUNT_POINT  $FSTYPE  $MOUNT_OPTS  0  2"
 
 if ! grep -q "$UUID" "$FSTAB_FILE"; then
   echo "Adding $FSTAB_LINE to $FSTAB_FILE"
-  echo "$FSTAB_LINE" >>"$FSTAB_FILE"
+  echo "$FSTAB_LINE" >> "$FSTAB_FILE"
 else
   echo "UUID $UUID already in $FSTAB_FILE — skipping"
 fi
