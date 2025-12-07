@@ -107,5 +107,3 @@ package:
     installed: true
   xz-utils:
     installed: true
-  zstd:
-    installed: true
