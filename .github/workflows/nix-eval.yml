@@ -31,8 +31,24 @@ jobs:
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Restart Nix Daemon
+        run: |
+          sudo mv /nix/var/nix/daemon-socket/socket /tmp
+      - name: Mount Nix cache disk
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-nix-cache-eval-${{ runner.os }}
+          path: /nix
+      - name: Restart Nix Daemon
+        run: |
+          sudo systemctl restart nix-daemon.service nix-daemon.socket
       - id: set-matrix
         name: Generate Nix Matrix
         run: |
           set -Eeu -o pipefail
           nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
+
+          sudo systemctl stop nix-daemon.socket || true
+          sudo systemctl stop nix-daemon.service || true
+          sudo pkill -9 nix-daemon || true
+          sleep 2
