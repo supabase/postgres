@@ -19,7 +19,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c "split(\"\n\")[:-1]")
+          VERSIONS=$(nix run nixpkgs#yq -- -r '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c "split(\"\n\")[:-1]")
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
   build:
     needs: prepare
