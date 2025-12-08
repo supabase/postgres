@@ -14,77 +14,201 @@ permissions:
   contents: write
   packages: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
-  build-run-image:
+  nix-eval:
+    uses: ./.github/workflows/nix-eval.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  nix-build-packages-aarch64-linux:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-linux)
+    needs: nix-eval
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - runner: blacksmith-32vcpu-ubuntu-2404
-            arch: amd64
-          - runner: blacksmith-32vcpu-ubuntu-2404-arm
-            arch: arm64
-          - runner: macos-latest-xlarge
-            arch: arm64
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 180
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix (ephemeral)
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: ${{ github.secret_source == 'Actions' && 'true' || 'false' }}
+          push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-      - name: Aggressive disk cleanup for DuckDB build
-        if: matrix.runner == 'macos-latest-xlarge'
-        run: |
-          nix --version
-          echo "=== BEFORE CLEANUP ==="
-          df -h
-          # Remove major space consumers
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/watchOS.platform || true
-          sudo rm -rf /Applications/Xcode.app/Contents/Developer/Platforms/tvOS.platform || true
-          # Clean everything possible
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/share/boost || true
-          sudo rm -rf /opt/homebrew || true
-          sudo xcrun simctl delete all 2>/dev/null || true
-          # Aggressive cache cleanup
-          sudo rm -rf /System/Library/Caches/* 2>/dev/null || true
-          sudo rm -rf /Library/Caches/* 2>/dev/null || true
-          sudo rm -rf ~/Library/Caches/* 2>/dev/null || true
-          sudo rm -rf /private/var/log/* 2>/dev/null || true
-          sudo rm -rf /tmp/* 2>/dev/null || true
-          echo "=== AFTER CLEANUP ==="
-          df -h
-      -
-        name: Build psql bundle
-        run: >
-          nix run "github:Mic92/nix-fast-build?rev=b1dae483ab7d4139a6297e02b6de9e5d30e43d48"
-          -- --skip-cached --no-nom ${{ matrix.runner == 'macos-latest-xlarge' && '--max-jobs 1' || '' }} --copy-to "s3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key"
-          --flake ".#checks.$(nix eval --raw --impure --expr 'builtins.currentSystem')"
+      - name: Install nix (self-hosted)
+        if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+
+  nix-build-checks-aarch64-linux:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-linux)
+    needs: [nix-eval, nix-build-packages-aarch64-linux]
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix (ephemeral)
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
         env:
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Install nix (self-hosted)
+        if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+
+  nix-build-packages-aarch64-darwin:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-darwin)
+    needs: nix-eval
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+
+  nix-build-checks-aarch64-darwin:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (aarch64-darwin)
+    needs: [nix-eval, nix-build-packages-aarch64-darwin]
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-self-hosted
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+
+  nix-build-packages-x86_64-linux:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (x86_64-linux)
+    needs: nix-eval
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+
+  nix-build-checks-x86_64-linux:
+    name: >-
+      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
+      (x86_64-linux)
+    needs: [nix-eval, nix-build-packages-x86_64-linux]
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v4
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        shell: bash
+        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
 
   run-testinfra:
-    needs: build-run-image
-    if: ${{ success() }}
+    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
+    if: |
+      !cancelled() &&
+      needs.nix-eval.result == 'success' &&
+      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
+      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success') &&
+      (needs.nix-build-packages-aarch64-darwin.result == 'skipped' || needs.nix-build-packages-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
+      (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
     uses: ./.github/workflows/testinfra-ami-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   run-tests:
-    needs: build-run-image
-    if: ${{ success() }}
+    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
+    if: |
+      !cancelled() &&
+      needs.nix-eval.result == 'success' &&
+      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
+      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success') &&
+      (needs.nix-build-packages-aarch64-darwin.result == 'skipped' || needs.nix-build-packages-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success') &&
+      (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
+      (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
     uses: ./.github/workflows/test.yml
