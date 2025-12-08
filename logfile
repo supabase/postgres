@@ -1,0 +1,29 @@
+2025-12-01 11:36:04.870 EST [4403] LOG:  starting PostgreSQL 18.1 (Homebrew) on aarch64-apple-darwin25.1.0, compiled by Apple clang version 17.0.0 (clang-1700.4.4.1), 64-bit
+2025-12-01 11:36:04.871 EST [4403] LOG:  listening on IPv6 address "::1", port 5432
+2025-12-01 11:36:04.871 EST [4403] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-12-01 11:36:04.872 EST [4403] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-12-01 11:36:04.874 EST [4409] LOG:  database system was shut down at 2025-12-01 11:35:52 EST
+2025-12-01 11:36:04.875 EST [4403] LOG:  database system is ready to accept connections
+2025-12-01 11:36:11.129 EST [4438] FATAL:  database "doug" does not exist
+2025-12-01 11:37:27.997 EST [4403] LOG:  received fast shutdown request
+2025-12-01 11:37:27.997 EST [4403] LOG:  aborting any active transactions
+2025-12-01 11:37:27.999 EST [4403] LOG:  background worker "logical replication launcher" (PID 4412) exited with exit code 1
+2025-12-01 11:37:27.999 EST [4407] LOG:  shutting down
+2025-12-01 11:37:27.999 EST [4407] LOG:  checkpoint starting: shutdown immediate
+2025-12-01 11:37:28.002 EST [4407] LOG:  checkpoint complete: wrote 30 buffers (0.2%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.004 s; sync files=31, longest=0.001 s, average=0.001 s; distance=136 kB, estimate=136 kB; lsn=0/17AD1B8, redo lsn=0/17AD1B8
+2025-12-01 11:37:28.004 EST [4403] LOG:  database system is shut down
+2025-12-01 11:37:42.780 EST [4532] LOG:  starting PostgreSQL 18.1 (Homebrew) on aarch64-apple-darwin25.1.0, compiled by Apple clang version 17.0.0 (clang-1700.4.4.1), 64-bit
+2025-12-01 11:37:42.781 EST [4532] LOG:  listening on IPv6 address "::1", port 5432
+2025-12-01 11:37:42.781 EST [4532] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-12-01 11:37:42.782 EST [4532] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-12-01 11:37:42.784 EST [4538] LOG:  database system was shut down at 2025-12-01 11:37:28 EST
+2025-12-01 11:37:42.786 EST [4532] LOG:  database system is ready to accept connections
+2025-12-01 11:42:42.783 EST [4536] LOG:  checkpoint starting: time
+2025-12-01 11:42:47.440 EST [4536] LOG:  checkpoint complete: wrote 46 buffers (0.3%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=4.653 s, sync=0.002 s, total=4.658 s; sync files=13, longest=0.001 s, average=0.001 s; distance=350 kB, estimate=350 kB; lsn=0/1804BC8, redo lsn=0/1804B70
+2025-12-02 08:51:19.515 EST [4532] LOG:  received fast shutdown request
+2025-12-02 08:51:19.516 EST [4532] LOG:  aborting any active transactions
+2025-12-02 08:51:19.561 EST [4532] LOG:  background worker "logical replication launcher" (PID 4541) exited with exit code 1
+2025-12-02 08:51:19.580 EST [4536] LOG:  shutting down
+2025-12-02 08:51:19.581 EST [4536] LOG:  checkpoint starting: shutdown immediate
+2025-12-02 08:51:19.583 EST [4536] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 0 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.003 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=315 kB; lsn=0/1804C78, redo lsn=0/1804C78
+2025-12-02 08:51:19.590 EST [4532] LOG:  database system is shut down

@@ -11,7 +11,8 @@ let
       pname = extension_name;
       inherit (pkgs) lib;
       installedExtension =
-        postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+        postgresMajorVersion:
+        self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
       postgresqlWithExtension =
         postgresql:

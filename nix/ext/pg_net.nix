@@ -116,8 +116,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    inherit versions numberOfVersions pname;
     hasBackgroundWorker = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_net" ];

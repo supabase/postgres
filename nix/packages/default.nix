@@ -33,6 +33,9 @@
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docs = pkgs.callPackage ./docs.nix { };
+          github-matrix = pkgs.callPackage ./github-matrix {
+            nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
+          };
           supabase-groonga = pkgs.callPackage ./groonga { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
@@ -60,7 +63,7 @@
           start-server = pkgs-lib.makePostgresDevSetup {
             inherit pkgs;
             name = "start-postgres-server";
-            pgroonga = self'.packages."psql_${activeVersion}/exts/pgroonga-all";
+            pgroonga = self'.legacyPackages."psql_${activeVersion}".exts.pgroonga;
           };
           switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;

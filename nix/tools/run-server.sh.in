@@ -251,7 +251,6 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 <<<<<<< HEAD
 ||||||| 1e598fb38
 -e "s|include = '/etc/postgresql/logging.conf'|#&|" \
--e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 =======
