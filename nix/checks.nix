@@ -414,6 +414,17 @@
             inherit self;
             inherit pkgs;
           })
+        )
+        // pkgs.lib.optionalAttrs (system == "aarch64-linux") (
+          import ./docker/tests.nix {
+            inherit
+              self
+              pkgs
+              lib
+              self'
+              system
+              ;
+          }
         );
     };
 }

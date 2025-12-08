@@ -44,6 +44,7 @@
         nix/checks.nix
         nix/config.nix
         nix/devShells.nix
+        nix/docker
         nix/fmt.nix
         nix/hooks.nix
         nix/nixpkgs.nix

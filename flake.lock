@@ -146,19 +146,16 @@
     },
     "nix2container": {
       "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1708764364,
-        "narHash": "sha256-+pOtDvmuVTg0Gi58hKDUyrNla5NbyUvt3Xs3gLR0Fws=",
+        "lastModified": 1749074755,
+        "narHash": "sha256-b1RwMnZoe+YrFBDkQaLrnhsSXBHx13rynnWLzDPrr0E=",
         "owner": "nlewo",
         "repo": "nix2container",
-        "rev": "c891f90d2e3c48a6b33466c96e4851e0fc0cf455",
+        "rev": "b7467d7cf0f05f9f467ab6b719008e1d9c2602c8",
         "type": "github"
       },
       "original": {
