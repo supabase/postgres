@@ -62,9 +62,8 @@ ORDER BY object_name, grantee, privilege_type;
   schema   | object_name |    grantee     | privilege_type 
 -----------+-------------+----------------+----------------
  pgbouncer | get_auth    | pgbouncer      | EXECUTE
- pgbouncer | get_auth    | postgres       | EXECUTE
  pgbouncer | get_auth    | supabase_admin | EXECUTE
-(3 rows)
+(2 rows)
 
 -- Ensure that pgbouncer.get_auth() function does not return an expired password
 create role test_expired_user_password with login password 'expired_password' valid until '2000-01-01 00:00:00+00';
@@ -83,5 +82,19 @@ select pgbouncer.get_auth('test_valid_user_password');
  (test_valid_user_password,SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64)
 (1 row)
 
+-- Test pgbouncer.get_auth is executable by the pgbouncer user
+set role pgbouncer;
+select pgbouncer.get_auth('test_valid_user_password');
+                                           get_auth                                           
+----------------------------------------------------------------------------------------------
+ (test_valid_user_password,SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64)
+(1 row)
+
+reset role;
+-- and not other non-superusers
+set role postgres;
+select pgbouncer.get_auth('test_valid_user_password');
+ERROR:  permission denied for function get_auth
+reset role;
 drop role test_expired_user_password;
 drop role test_valid_user_password;

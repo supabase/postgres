@@ -1,7 +1,7 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, lib, ... }:
     let
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
@@ -108,15 +108,21 @@
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
-        (builtins.listToAttrs (
-          map (drv: {
-            name = drv.pname;
-            value = drv;
-          }) (makeOurPostgresPkgs version)
-        ))
-        // {
-          recurseForDerivations = true;
-        };
+        let
+          pkgsList = makeOurPostgresPkgs version;
+          baseAttrs = builtins.listToAttrs (
+            map (drv: {
+              name = drv.name;
+              value = drv;
+            }) pkgsList
+          );
+          # Expose individual packages from extensions that have them in passthru.packages
+          # This makes them discoverable by nix-eval-jobs --force-recurse
+          individualPkgs = lib.concatMapAttrs (
+            name: drv: lib.optionalAttrs (drv ? passthru.packages) { "${name}-pkgs" = drv.passthru.packages; }
+          ) baseAttrs;
+        in
+        baseAttrs // individualPkgs // { recurseForDerivations = true; };
 
       # Create a binary distribution of PostgreSQL, given a version.
       #
@@ -131,7 +137,7 @@
         let
           postgresql = getPostgresqlPackage version;
           ourExts = map (ext: {
-            name = ext.pname;
+            name = ext.name;
             version = ext.version;
           }) (makeOurPostgresPkgs version);
 
@@ -154,18 +160,24 @@
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
       #    package names.
-      makePostgres = version: {
-        bin = makePostgresBin version;
-        exts = makeOurPostgresPkgsSet version;
-        recurseForDerivations = true;
-      };
+      makePostgres =
+        version:
+        lib.recurseIntoAttrs {
+          bin = makePostgresBin version;
+          exts = makeOurPostgresPkgsSet version;
+        };
       basePackages = {
         psql_15 = makePostgres "15";
         psql_17 = makePostgres "17";
         psql_orioledb-17 = makePostgres "orioledb-17";
       };
+      binPackages = lib.mapAttrs' (name: value: {
+        name = "${name}/bin";
+        value = value.bin;
+      }) basePackages;
     in
     {
-      packages = inputs.flake-utils.lib.flattenTree basePackages;
+      packages = binPackages;
+      legacyPackages = basePackages;
     };
 }
