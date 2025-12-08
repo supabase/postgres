@@ -7,6 +7,7 @@
 
 stdenv.mkDerivation rec {
   pname = "supautils";
+  name = pname;
   version = "3.0.1";
 
   buildInputs = [ postgresql ];
