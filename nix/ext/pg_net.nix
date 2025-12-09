@@ -3,13 +3,19 @@
   lib,
   stdenv,
   fetchFromGitHub,
-  curl,
   postgresql,
   libuv,
   makeWrapper,
   switch-ext-version,
 }:
 
+let
+  olderPkgs = import (fetchTarball {
+    url = "https://github.com/nixos/nixpkgs/archive/a76c4553d7e741e17f289224eda135423de0491d.tar.gz";
+    sha256 = "0rwdzp942b8ay625lqgra83qrp64b3wqm6w9a0i4z593df8x822v";
+  }) { system = stdenv.system; };
+  curl = olderPkgs.curl;
+in
 let
   pname = "pg_net";
   build =
