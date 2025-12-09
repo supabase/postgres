@@ -7,9 +7,12 @@
       lib,
       pkgs,
       self',
+      system,
       ...
     }:
     let
+      sbomnix = inputs.sbomnix.packages.${system}.default;
+      sbomPkgs = pkgs.callPackage ./sbom { inherit sbomnix; };
       activeVersion = "15";
       # Function to create the pg_regress package
       makePgRegress =
@@ -38,6 +41,15 @@
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
+          # SBOM tools
+          inherit (sbomPkgs)
+            sbom
+            sbom-ubuntu
+            sbom-nix
+            sbom-generator
+            sbomnix
+            ;
+
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {

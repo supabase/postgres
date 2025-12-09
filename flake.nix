@@ -31,6 +31,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    sbomnix.url = "github:tiiuae/sbomnix";
   };
 
   outputs =

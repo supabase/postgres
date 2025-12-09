@@ -882,6 +882,33 @@
             wal-g-2
             ;
           devShell = self'.devShells.default;
+
+          # SBOM tool checks
+          sbom-builds = pkgs.runCommand "check-sbom-builds" { } ''
+            # Check the binary exists and shows help
+            ${self'.packages.sbom}/bin/sbom help > /dev/null
+            echo "SUCCESS: sbom binary builds and runs"
+            touch $out
+          '';
+
+          sbomnix-available =
+            let
+              sbomnixPkg = self'.packages.sbomnix;
+            in
+            pkgs.runCommand "check-sbomnix-available" { } ''
+              # Check sbomnix is executable and functional
+              export PATH="${sbomnixPkg}/bin:$PATH"
+              if ! command -v sbomnix &> /dev/null; then
+                echo "ERROR: sbomnix not found in PATH"
+                exit 1
+              fi
+              if ! sbomnix --help &> /dev/null; then
+                echo "ERROR: sbomnix --help failed"
+                exit 1
+              fi
+              echo "SUCCESS: sbomnix is available and functional"
+              touch $out
+            '';
         }
         // (import ./ext/tests {
           inherit self;
