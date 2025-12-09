@@ -11,10 +11,21 @@
           (import inputs.rust-overlay)
           self.overlays.default
           (_final: _prev: {
-            nixpkgs-oldstable = import inputs.nixpkgs-oldstable {
+            # Provide older versions of packages required by some extensions
+            oldstable = import inputs.nixpkgs-oldstable {
               inherit system;
               config.allowUnfree = true;
             };
+            curl_8_6 =
+              (import inputs.nixpkgs-oldstable {
+                inherit system;
+                config.allowUnfree = true;
+              }).curl;
+            v8_oldstable =
+              (import inputs.nixpkgs-oldstable {
+                inherit system;
+                config.allowUnfree = true;
+              }).v8;
           })
         ];
       };
