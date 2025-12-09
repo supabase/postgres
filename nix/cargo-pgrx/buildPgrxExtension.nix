@@ -32,7 +32,6 @@
   pkg-config,
   rustPlatform,
   stdenv,
-  darwin,
   writeShellScriptBin,
   defaultBindgenHook,
 }:
@@ -124,9 +123,7 @@ let
   # so we don't accidentally `(rustPlatform.buildRustPackage argsForBuildRustPackage) // { ... }` because
   # we forgot parentheses
   finalArgs = argsForBuildRustPackage // {
-    buildInputs =
-      (args.buildInputs or [ ])
-      ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+    buildInputs = (args.buildInputs or [ ]);
 
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
