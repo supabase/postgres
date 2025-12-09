@@ -16,10 +16,10 @@
   nixosTests,
   callPackage,
   buildEnv,
+  sfcgal,
 }:
 
 let
-  sfcgal = callPackage ../packages/sfcgal.nix { };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
   pname = "postgis";
 
