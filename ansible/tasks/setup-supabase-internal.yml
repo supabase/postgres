@@ -1,130 +1,130 @@
 - name: AWS CLI dep
-  apt:
+  ansible.builtin.apt:
+    install_recommends: false
     pkg:
-      - unzip
       - jq
-    install_recommends: no
+      - unzip
 
-- name: AWS CLI (arm)
-  get_url:
-    url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
-    dest: "/tmp/awscliv2.zip"
+- name: AWS CLI - get
+  ansible.builtin.get_url:
+    dest: '/tmp/awscliv2.zip'
     timeout: 60
-  when: platform == "arm64"
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ 'aarch64' if platform == 'arm64' else 'x86_64' }}-{{ aws_cli_release }}.zip"
 
-- name: AWS CLI (x86)
-  get_url:
-    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
-    dest: "/tmp/awscliv2.zip"
-    timeout: 60
-  when: platform == "amd64"
 
 - name: AWS CLI - expand
-  unarchive:
-    remote_src: yes
-    src: "/tmp/awscliv2.zip"
-    dest: "/tmp"
+  ansible.builtin.unarchive:
+    dest: '/tmp'
+    remote_src: true
+    src: '/tmp/awscliv2.zip'
 
 - name: AWS CLI - install
-  shell: "/tmp/aws/install --update"
+  ansible.builtin.command:
+    cmd: /tmp/aws/install --update
   become: true
 
 - name: install utilities to manage Amazon EC2 instance storage
-  become: true
-  apt:
+  ansible.builtin.apt:
     pkg:
       - amazon-ec2-utils
+  become: true
 
 - name: AWS CLI - configure ipv6 support for s3
-  shell: |
-    aws configure set default.s3.use_dualstack_endpoint true
+  ansible.builtin.command:
+    cmd: aws configure set default.s3.use_dualstack_endpoint true
 
 - name: install Vector for logging
-  become: true
   apt:
-    deb: "{{ vector_x86_deb }}"
-  when: platform == "amd64"
-
-- name: install Vector for logging
+    deb: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
   become: true
-  apt:
-    deb: "{{ vector_arm_deb }}"
-  when: platform == "arm64"
 
 - name: add Vector to postgres group
+  ansible.builtin.user:
+    append: true
+    groups: 'postgres'
+    name: 'vector'
   become: true
-  shell:
-    cmd: |
-      usermod -a -G postgres vector
 
 - name: create service files for Vector
-  template:
-    src: files/vector.service.j2
-    dest: /etc/systemd/system/vector.service
+  ansible.builtin.template:
+    src: 'files/vector.service.j2'
+    dest: '/etc/systemd/system/vector.service'
 
 - name: configure tmpfiles for postgres - overwrites upstream package
-  template:
-    src: files/postgresql_config/tmpfiles.postgresql.conf
-    dest: /etc/tmpfiles.d/postgresql-common.conf
+  ansible.builtin.template:
+    src: 'files/postgresql_config/tmpfiles.postgresql.conf'
+    dest: '/etc/tmpfiles.d/postgresql-common.conf'
 
 - name: fix permissions for vector config to be managed
-  shell:
-    cmd: |
-      chown -R vector:vector /etc/vector
-      chmod 0775 /etc/vector
+  ansible.builtin.file:
+    group: 'vector'
+    mode: '0775'
+    owner: 'vector'
+    path: '/etc/vector'
+    recurse: true
+    state: 'directory'
 
 - name: vector - reload systemd
-  systemd:
-    daemon_reload: yes
+  ansible.builtin.systemd_service:
+    daemon_reload: true
 
 - name: Create checkpoints dir
+  ansible.builtin.file:
+    owner: 'vector'
+    path: '/var/lib/vector'
+    state: 'directory'
   become: true
-  file:
-    path: /var/lib/vector
-    state: directory
-    owner: vector
 
 - name: Include file for generated optimizations in postgresql.conf
-  become: true
-  replace:
-    path: /etc/postgresql/postgresql.conf
+  ansible.builtin.replace:
+    path: '/etc/postgresql/postgresql.conf'
     regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
     replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
+  become: true
 
 - name: Include file for custom overrides in postgresql.conf
-  become: true
-  replace:
-    path: /etc/postgresql/postgresql.conf
+  ansible.builtin.replace:
+    path: '/etc/postgresql/postgresql.conf'
     regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
     replace: "include = '/etc/postgresql-custom/custom-overrides.conf'"
+  become: true
 
 - name: Install Postgres exporter
-  import_tasks: internal/postgres-exporter.yml
+  ansible.builtin.import_tasks:
+    file: internal/postgres-exporter.yml
 
 - name: Install admin-mgr
-  import_tasks: internal/admin-mgr.yml
+  ansible.builtin.import_tasks:
+    file: internal/admin-mgr.yml
 
 - name: Install adminapi
-  import_tasks: internal/admin-api.yml
+  ansible.builtin.import_tasks:
+    file: internal/admin-api.yml
 
 - name: Init nftabless
-  import_tasks: internal/setup-nftables.yml
+  ansible.builtin.import_tasks:
+    file: internal/setup-nftables.yml
 
 - name: Install pg_egress_collect
-  import_tasks: internal/pg_egress_collect.yml
+  ansible.builtin.import_tasks:
+    file: internal/pg_egress_collect.yml
 
 - name: Install PostgreSQL prestart script
-  import_tasks: internal/postgresql-prestart.yml
+  ansible.builtin.import_tasks:
+    file: internal/postgresql-prestart.yml
 
 - name: Install salt minion
-  import_tasks: internal/install-salt.yml
+  ansible.builtin.import_tasks:
+    file: internal/install-salt.yml
   tags:
     - aws-only
 
 - name: Install supabase-admin-agent
-  import_tasks: internal/supabase-admin-agent.yml
+  ansible.builtin.import_tasks:
+    file: internal/supabase-admin-agent.yml
   tags:
     - aws-only
 
 - name: Envoy - use lds.supabase.yaml for /etc/envoy/lds.yaml
-  command: mv /etc/envoy/lds.supabase.yaml /etc/envoy/lds.yaml
+  ansible.builtin.command:
+    cmd: mv /etc/envoy/lds.supabase.yaml /etc/envoy/lds.yaml

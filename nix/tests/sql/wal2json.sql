@@ -18,12 +18,13 @@ from
 	'reg_test',
     null,
     null,
-	'include-pk', '1',
+	'include-pk', 'true',
 	'include-transaction', 'false',
 	'include-timestamp', 'false',
-	'include-type-oids', 'false',
+	'include-type-oids', 'true',
 	'format-version', '2',
-	'actions', 'insert,update,delete'
+	'actions', 'insert,update,delete',
+	'add-tables', 'v.foo'
   ) x;
 
 select

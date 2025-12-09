@@ -38,7 +38,7 @@ nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
 - supabase/postgres
 - supabase/supabase
 - supabase/cli
-- supabase/infrastructure (internal)
+- supabase/platform (internal)
 
 aiming to provide a single source of truth for migrations on the platform that can be depended upon by those components. For more information on goals see [the RFC](https://www.notion.so/supabase/Centralize-SQL-Migrations-cd3847ae027d4f2bba9defb2cc82f69a)
 
@@ -48,8 +48,8 @@ aiming to provide a single source of truth for migrations on the platform that c
 
 Migrations were pulled (in order) from:
 
-1. [init-scripts/postgres](https://github.com/supabase/infrastructure/tree/develop/init-scripts/postgres) => [db/init-scripts](db/init-scripts)
-2. [init-scripts/migrations](https://github.com/supabase/infrastructure/tree/develop/init-scripts/migrations) => [db/migrations](db/migrations)
+1. [init-scripts/postgres](https://github.com/supabase/platform/tree/develop/init-scripts/postgres) => [db/init-scripts](db/init-scripts)
+2. [init-scripts/migrations](https://github.com/supabase/platform/tree/develop/init-scripts/migrations) => [db/migrations](db/migrations)
 
 For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that executes migrations in the same order as ami build:
 
@@ -102,28 +102,16 @@ dbmate --migrations-dir="migrations/db/migrations" new '<some message>'
 Then, execute the migration at `./migrations/db/xxxxxxxxx_<some_message>` and make sure it runs successfully with:
 
 ```shell
-dbmate --no-dump-schema --migrations-dir"migrations/db/migrations" up
+# Make sure DATABASE_URL is set, or use the -u flag to specify the database connection
+# Example with DATABASE_URL:
+dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" up
+
+# Or with -u flag:
+dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" -u "postgres://supabase_admin:postgres@localhost:5435/postgres?sslmode=disable" up
 ```
 
 Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.
 
-### Adding a migration with docker-compose
-
-dbmate can optionally be run locally using docker:
-
-```shell
-# Start the database server
-docker-compose up
-
-# create a new migration
-docker-compose run --rm dbmate new '<some message>'
-```
-
-Then, populate the migration at `./db/migrations/xxxxxxxxx_<some_message>` and make sure it execute sucessfully with
-
-```shell
-docker-compose run --rm dbmate up
-```
 ### Updating schema.sql for each major version
 
 After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:

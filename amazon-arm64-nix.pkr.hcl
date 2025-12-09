@@ -15,7 +15,7 @@ variable "ami_name" {
 
 variable "ami_regions" {
   type    = list(string)
-  default = ["ap-southeast-2"]
+  default = ["ap-southeast-1"]
 }
 
 variable "ansible_arguments" {
@@ -114,6 +114,12 @@ source "amazon-ebssurrogate" "source" {
   region       = "${var.region}"
   #secret_key   = "${var.aws_secret_key}"
   force_deregister = var.force-deregister
+
+  # Increase timeout for instance stop operations to handle large instances
+  aws_polling {
+    delay_seconds = 15
+    max_attempts  = 120  # 120 * 15s = 30 minutes max wait
+  }
 
   # Use latest official ubuntu noble ami owned by Canonical.
   source_ami_filter {

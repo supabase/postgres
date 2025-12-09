@@ -20,6 +20,7 @@ class PostgresExtensionTest(object):
         versions: Versions,
         sql_test_dir: Path,
         support_upgrade: bool = True,
+        schema: str = "public",
     ):
         """Initialize the PostgreSQL extension test framework.
 
@@ -35,23 +36,31 @@ class PostgresExtensionTest(object):
         self.versions = versions
         self.support_upgrade = support_upgrade
         self.sql_test_dir = sql_test_dir
+        self.schema = schema
+
+    def create_schema(self):
+        self.run_sql(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
 
     def run_sql(self, query: str) -> str:
         return self.vm.succeed(
-            f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """
+            f"""psql -U supabase_admin -d postgres -t -A -F\",\" -c \"{query}\" """
         ).strip()
 
     def run_sql_file(self, file: str) -> str:
         return self.vm.succeed(
-            f"""sudo -u postgres psql -v ON_ERROR_STOP=1 -f \"{file}\""""
+            f"""psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f \"{file}\""""
         ).strip()
 
     def drop_extension(self):
         self.run_sql(f"DROP EXTENSION IF EXISTS {self.extension_name};")
 
     def install_extension(self, version: str):
+        if self.schema != "public":
+            ext_schema = f"SCHEMA {self.schema} "
+        else:
+            ext_schema = ""
         self.run_sql(
-            f"""CREATE EXTENSION {self.extension_name} WITH VERSION '{version}' CASCADE;"""
+            f"""CREATE EXTENSION {self.extension_name} WITH {ext_schema}VERSION '{version}' CASCADE;"""
         )
         # Verify version was installed correctly
         self.assert_version_matches(version)

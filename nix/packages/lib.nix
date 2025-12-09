@@ -5,13 +5,13 @@
   defaults,
   supabase-groonga,
   system,
-  pgroonga,
 }:
 {
   makePostgresDevSetup =
     {
       pkgs,
       name,
+      pgroonga,
       extraSubstitutions ? { },
     }:
     let
@@ -36,6 +36,10 @@
           name = "postgresql.conf";
           path = ../../ansible/files/postgresql_config/postgresql.conf.j2;
         };
+        configConfDir = builtins.path {
+          name = "conf.d";
+          path = ../../ansible/files/postgresql_config/conf.d;
+        };
         supautilsConfigFile = builtins.path {
           name = "supautils.conf";
           path = ../../ansible/files/postgresql_config/supautils.conf.j2;
@@ -43,10 +47,6 @@
         loggingConfigFile = builtins.path {
           name = "logging.conf";
           path = ../../ansible/files/postgresql_config/postgresql-csvlog.conf;
-        };
-        readReplicaConfigFile = builtins.path {
-          name = "readreplica.conf";
-          path = ../../ansible/files/postgresql_config/custom_read_replica.conf.j2;
         };
         pgHbaConfigFile = builtins.path {
           name = "pg_hba.conf";
@@ -72,6 +72,11 @@
         else
           "${pkgs.glibcLocales}/lib/locale/locale-archive";
 
+      postgresqlConfigBaseDir = builtins.path {
+        name = "postgresql_config";
+        path = ../../ansible/files/postgresql_config;
+      };
+
       substitutions = {
         SHELL_PATH = "${pkgs.bash}/bin/bash";
         PGSQL_DEFAULT_PORT = "${defaults.port}";
@@ -79,9 +84,9 @@
         PSQL15_BINDIR = "${psql_15}";
         PSQL17_BINDIR = "${psql_17}";
         PSQL_CONF_FILE = "${paths.pgconfigFile}";
+        POSTGRESQL_CONFIG_DIR = "${postgresqlConfigBaseDir}";
         PSQLORIOLEDB17_BINDIR = "${psql_orioledb-17}";
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
-        READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
         LOGGING_CONF_FILE = "${paths.loggingConfigFile}";
         SUPAUTILS_CONF_FILE = "${paths.supautilsConfigFile}";
         PG_HBA = "${paths.pgHbaConfigFile}";
@@ -113,7 +118,6 @@
         cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
         cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
         cp ${paths.loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
-        cp ${paths.readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
         cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
         cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
         cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }

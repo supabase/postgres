@@ -1,21 +1,101 @@
-Let's go ahead and install Nix. To do that, we'll use the
-**[nix-installer tool]** by Determinate Systems. This works on many platforms,
-but most importantly it works on **aarch64 Linux** and **x86_64 Linux**. Use the
-following command in your shell, **it should work on any Linux distro of your
-choice**:
+## Uninstall Previous Nix Installation (if applicable)
 
-[nix-installer tool]: https://github.com/DeterminateSystems/nix-installer
+If you previously installed Nix using the Determinate Systems installer, you'll need to uninstall it first:
 
 ```bash
-curl \
-  --proto '=https' --tlsv1.2 \
-  -sSf -L https://install.determinate.systems/nix \
-| sh -s -- install
+sudo /nix/nix-installer uninstall
 ```
 
+If you installed Nix using a different method, follow the appropriate uninstall procedure for that installation method before proceeding.
+
+## Update Existing Official Nix Installation
+
+If you already have the official Nix installer (not Determinate Systems) installed, you can simply update your configuration instead of reinstalling:
+
+### Step 1: Edit /etc/nix/nix.conf
+
+Add or update the following configuration in `/etc/nix/nix.conf`:
+
+```
+allowed-users = *
+always-allow-substitutes = true
+auto-optimise-store = false
+build-users-group = nixbld
+builders-use-substitutes = true
+cores = 0
+experimental-features = nix-command flakes
+max-jobs = auto
+netrc-file =
+require-sigs = true
+substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+trusted-substituters =
+trusted-users = YOUR_USERNAME root
+extra-sandbox-paths =
+extra-substituters =
+```
+
+**Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
+
+### Step 2: Restart the Nix Daemon
+
+After updating the configuration, restart the Nix daemon:
+
+**On macOS:**
+```bash
+sudo launchctl stop org.nixos.nix-daemon
+sudo launchctl start org.nixos.nix-daemon
+```
+
+**On Linux (systemd):**
+```bash
+sudo systemctl restart nix-daemon
+```
+
+Your Nix installation is now configured with the proper build caches and should work without substituter errors.
+
+## Install Nix (Fresh Installation)
+
+We'll use the official Nix installer with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
+
+### Step 1: Create nix.conf
+
+First, create a file named `nix.conf` with the following content:
+
+```
+allowed-users = *
+always-allow-substitutes = true
+auto-optimise-store = false
+build-users-group = nixbld
+builders-use-substitutes = true
+cores = 0
+experimental-features = nix-command flakes
+max-jobs = auto
+netrc-file =
+require-sigs = true
+substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+trusted-substituters =
+trusted-users = YOUR_USERNAME root
+extra-sandbox-paths =
+extra-substituters =
+```
+
+**Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
+
+### Step 2: Install Nix 2.29.2
+
+Run the following command to install Nix 2.29.2 (the version used in CI) with the custom configuration:
+
+```bash
+curl -L https://releases.nixos.org/nix/nix-2.29.2/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+```
+
+This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
+
 After you do this, **you must log in and log back out of your desktop
-environment** to get a new login session. This is so that your shell can have
-the Nix tools installed on `$PATH` and so that your user shell can see some
+environment** (or restart your terminal session) to get a new login session. This is so that your shell can have
+the Nix tools installed on `$PATH` and so that your user shell can see the
 extra settings.
 
 You should now be able to do something like the following; try running these
@@ -23,7 +103,7 @@ same commands on your machine:
 
 ```
 $ nix --version
-nix (Nix) 2.16.1
+nix (Nix) 2.29.2
 ```
 
 ```
@@ -32,20 +112,12 @@ $ nix run nixpkgs#nix-info -- -m
  - host os: `Linux 5.15.90.1-microsoft-standard-WSL2, Ubuntu, 22.04.2 LTS (Jammy Jellyfish), nobuild`
  - multi-user?: `yes`
  - sandbox: `yes`
- - version: `nix-env (Nix) 2.16.1`
+ - version: `nix-env (Nix) 2.29.2`
  - channels(root): `"nixpkgs"`
  - nixpkgs: `/nix/var/nix/profiles/per-user/root/channels/nixpkgs`
 ```
 
 If the above worked, you're now cooking with gas!
-
-> _**NOTE**_: While there is an upstream tool to install Nix, written in Bash,
-> we use the Determinate Systems installer — which will hopefully replace the
-> original — because it's faster, and takes care of several extra edge cases
-> that the original one couldn't handle, and makes several changes to the
-> default installed configuration to make things more user friendly. Determinate
-> Systems is staffed by many long-time Nix contributors and the creator of Nix,
-> and is trustworthy.
 
 ## Do some fun stuff
 

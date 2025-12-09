@@ -99,8 +99,10 @@ buildEnv {
   pathsToLink = [ "/share/postgresql/extension" ];
 
   passthru = {
-    inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    inherit versions numberOfVersions pname;
+    defaultSettings = {
+      search_path = "\"$user\", public, auth, extensions";
+    };
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };

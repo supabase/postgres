@@ -4,6 +4,17 @@
     group: 'postgres'
     src: 'files/postgresql_config/postgresql-csvlog.conf'
 
+- name: auto_explain and pg_cron confs
+  ansible.builtin.template:
+    dest: "/etc/postgresql-custom/conf.d/{{ ext_item }}.conf"
+    group: 'postgres'
+    src: "files/postgresql_config/conf.d/{{ ext_item }}.conf"
+  loop:
+    - auto_explain
+    - pg_cron
+  loop_control:
+    loop_var: 'ext_item'
+
 - name: UFW - Allow SSH connections
   community.general.ufw:
     name: 'OpenSSH'

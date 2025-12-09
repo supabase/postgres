@@ -72,3 +72,15 @@ where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserve
 and g.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by
     r.rolname, g.rolname;
+
+-- Check all privileges of non-superuser roles on functions
+select
+  p.pronamespace::regnamespace as schema,
+  p.proname as object_name,
+  acl.grantee::regrole::text as grantee,
+  acl.privilege_type
+from pg_catalog.pg_proc p
+cross join lateral pg_catalog.aclexplode(p.proacl) as acl
+where p.pronamespace::regnamespace::text = 'pg_catalog'
+  and acl.grantee::regrole::text != 'supabase_admin'
+order by object_name, grantee, privilege_type;

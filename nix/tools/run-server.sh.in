@@ -215,6 +215,13 @@ fi
 echo "NOTE: patching postgresql.conf files"
 cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
+# Copy entire conf.d directory from postgresql_config
+POSTGRESQL_CONFIG_DIR="@POSTGRESQL_CONFIG_DIR@"
+cp -r "$POSTGRESQL_CONFIG_DIR/conf.d" "$DATDIR/"
+
+# Make conf.d files writable (they're read-only from Nix store)
+chmod -R u+w "$DATDIR/conf.d"
+
 cp "$READREPL_CONFIG_FILE" "$DATDIR/read-replica.conf"
 mkdir -p "$DATDIR/extension-custom-scripts"
 cp -r "$EXTENSION_CUSTOM_SCRIPTS"/* "$DATDIR/extension-custom-scripts"
@@ -233,9 +240,9 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
 -e "s|include = '/etc/postgresql/logging.conf'|#&|" \
--e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
+-e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
 # Function to configure OrioleDB specific settings
@@ -248,6 +255,11 @@ orioledb_config_items() {
         sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/supautils.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
+        # OrioleDB rewind configuration (20 minute window, 10MB buffer)
+        echo "orioledb.enable_rewind = true" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_max_time = 1200" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_max_transactions = 100000" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_buffers = 1280" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
@@ -263,6 +275,11 @@ orioledb_config_items() {
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
         
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
+        # OrioleDB rewind configuration (20 minute window, 10MB buffer)
+        echo "orioledb.enable_rewind = true" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_max_time = 1200" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_max_transactions = 100000" >> "$DATDIR/postgresql.conf"
+        echo "orioledb.rewind_buffers = 1280" >> "$DATDIR/postgresql.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         echo "non-macos pg 17 conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
