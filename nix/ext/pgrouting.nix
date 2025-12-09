@@ -49,6 +49,10 @@ let
         inherit hash;
       };
 
+      patches = lib.optionals (version == "3.4.1" && lib.versionAtLeast postgresql.version "17") [
+        ./pgrouting/pgrouting-3.4.1-pg17.patch
+      ];
+
       #disable compile time warnings for incompatible pointer types only on macos and pg16
       NIX_CFLAGS_COMPILE = lib.optionalString (
         stdenv.isDarwin && lib.versionAtLeast postgresql.version "16"
@@ -56,6 +60,7 @@ let
 
       cmakeFlags = [
         "-DPOSTGRESQL_VERSION=${postgresql.version}"
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
       ]
       ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
         "-DCMAKE_MACOSX_RPATH=ON"
