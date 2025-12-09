@@ -10,23 +10,19 @@
         overlays = [
           (import inputs.rust-overlay)
           self.overlays.default
-          (_final: _prev: {
-            # Provide older versions of packages required by some extensions
-            oldstable = import inputs.nixpkgs-oldstable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-            curl_8_6 =
-              (import inputs.nixpkgs-oldstable {
+          (
+            let
+              # Provide older versions of packages required by some extensions
+              oldstable = import inputs.nixpkgs-oldstable {
                 inherit system;
                 config.allowUnfree = true;
-              }).curl;
-            v8_oldstable =
-              (import inputs.nixpkgs-oldstable {
-                inherit system;
-                config.allowUnfree = true;
-              }).v8;
-          })
+              };
+            in
+            _final: _prev: {
+              curl_8_6 = oldstable.curl;
+              v8_oldstable = oldstable.v8;
+            }
+          )
         ];
       };
     };
