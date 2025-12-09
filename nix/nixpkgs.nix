@@ -10,6 +10,12 @@
         overlays = [
           (import inputs.rust-overlay)
           self.overlays.default
+          (_final: _prev: {
+            nixpkgs-oldstable = import inputs.nixpkgs-oldstable {
+              inherit system;
+              config.allowUnfree = true;
+            };
+          })
         ];
       };
     };
