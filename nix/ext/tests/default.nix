@@ -168,7 +168,7 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
           test.create_schema()
 
           with subtest("Check upgrade path with postgresql 15"):
