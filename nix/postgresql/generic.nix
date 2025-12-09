@@ -100,7 +100,8 @@ let
             inherit hash;
           };
 
-      hardeningEnable = lib.optionals (!stdenv'.cc.isClang) [ "pie" ];
+      # The 'pie' hardening flag has been removed in favor of enabling PIE by default in compilers and should no longer be used.
+      # hardeningEnable = lib.optionals (!stdenv'.cc.isClang) [ "pie" ];
 
       outputs = [
         "out"
@@ -204,9 +205,6 @@ let
       postPatch = ''
         # Hardcode the path to pgxs so pg_config returns the path in $out
         substituteInPlace "src/common/config_info.c" --subst-var out
-        substituteInPlace "src/backend/commands/collationcmds.c" --replace-fail '@locale@' '${
-          if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc
-        }/bin/locale'
       ''
       + lib.optionalString jitSupport ''
         # Force lookup of jit stuff in $out instead of $lib
