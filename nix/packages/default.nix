@@ -41,7 +41,7 @@
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
-          supabase-groonga = pkgs.callPackage ./groonga { };
+          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
