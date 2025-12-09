@@ -15,7 +15,7 @@ let
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
-          installedExtensions = [ self.packages.${pkgs.system}."psql_orioledb-17/exts/orioledb" ];
+          installedExtensions = [ (self.legacyPackages.${pkgs.system}."psql_orioledb-17".exts.orioledb) ];
           lib = pkg;
           withPackages = _: pkg;
           withJIT = pkg;
