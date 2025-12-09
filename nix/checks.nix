@@ -396,7 +396,7 @@
             pg_regress
             ;
         }
-        // pkgs.lib.optionalAttrs (system == "aarch64-linux") (
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (
           {
             inherit (self'.packages)
               postgresql_15_debug
