@@ -7,11 +7,11 @@
   libuv,
   makeWrapper,
   switch-ext-version,
-  nixpkgs-oldstable,
+  curl_8_6,
 }:
 
 let
-  curl = nixpkgs-oldstable.curl;
+  curl = curl_8_6;
 in
 let
   pname = "pg_net";
