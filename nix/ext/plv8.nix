@@ -57,7 +57,7 @@ stdenv.mkDerivation (finalAttrs: {
   ++ lib.optionals stdenv.isDarwin [
     "CC=${clang}/bin/clang"
     "CXX=${clang}/bin/clang++"
-    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib"
+    "SHLIB_LINK=-L${v8}/lib -lv8_monolith -Wl,-rpath,${v8}/lib -Wl,-headerpad_max_install_names"
   ]
   ++ lib.optionals (!stdenv.isDarwin) [ "SHLIB_LINK=-lv8" ];
 
@@ -76,6 +76,7 @@ stdenv.mkDerivation (finalAttrs: {
       "-undefined"
       "dynamic_lookup"
       "-flat_namespace"
+      "-headerpad_max_install_names"
     ]
   );
 
