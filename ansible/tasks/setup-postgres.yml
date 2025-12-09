@@ -147,11 +147,11 @@
         group: 'postgres'
         mode: '0664'
         owner: 'postgres'
-        path: "/etc/postgresql-custom/{{ pg_config_item }}"
+        path: "/etc/postgresql-custom/conf.d{{ pg_config_item }}"
         state: 'touch'
       loop:
-        - 'custom-overrides.conf'
-        - 'generated-optimizations.conf'
+        - 'custom_overrides.conf'
+        - 'generated_optimizations.conf'
       loop_control:
         loop_var: 'pg_config_item'
 
@@ -274,9 +274,9 @@
 - name: copy PG and optimizations systemd units
   ansible.builtin.template:
     dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
-    src: "files/{{ systemd_svc_item }}.j2"
+    src: "files/{{ systemd_svc_item }}"
   loop:
-    - 'database-optimizations.service'
+    - 'database_optimizations.service'
     - 'postgresql_config/postgresql.service'
   loop_control:
     loop_var: 'systemd_svc_item'

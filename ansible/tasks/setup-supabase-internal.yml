@@ -75,20 +75,6 @@
     state: 'directory'
   become: true
 
-- name: Include file for generated optimizations in postgresql.conf
-  ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
-    regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
-    replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
-  become: true
-
-- name: Include file for custom overrides in postgresql.conf
-  ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
-    regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
-    replace: "include = '/etc/postgresql-custom/custom-overrides.conf'"
-  become: true
-
 - name: Install Postgres exporter
   ansible.builtin.import_tasks:
     file: internal/postgres-exporter.yml
