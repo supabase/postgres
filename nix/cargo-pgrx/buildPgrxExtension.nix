@@ -28,6 +28,7 @@
 # SOFTWARE.
 {
   lib,
+  bash,
   cargo-pgrx,
   pkg-config,
   rustPlatform,
@@ -136,24 +137,48 @@ let
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
     buildPhase = ''
-      runHook preBuild
+            runHook preBuild
 
-      echo "Executing cargo-pgrx buildPhase"
-      ${preBuildAndTest}
-      ${maybeEnterBuildAndTestSubdir}
+            echo "Executing cargo-pgrx buildPhase"
+            ${preBuildAndTest}
+            ${maybeEnterBuildAndTestSubdir}
 
-      export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
-      export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
-      ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
-      cargo ${pgrxBinaryName} package \
-        --pg-config ${lib.getDev postgresql}/bin/pg_config \
-        ${maybeDebugFlag} \
-        --features "${builtins.concatStringsSep " " buildFeatures}" \
-        --out-dir "$out"
+            export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
+            export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
 
-      ${maybeLeaveBuildAndTestSubdir}
+            # Wrap rustc to filter out empty postmaster_stub.rs arguments
+            original_rustc=$(command -v rustc)
+            mkdir -p $out/bin
+            cat > $out/bin/rustc << EOF
+      #!${bash}/bin/bash
+      filtered_args=()
+      for arg in "\$@"; do
+        if [[ -z "\$arg" ]]; then
+          continue
+        fi
+        if [[ "\$arg" =~ postmaster_stub\.rs$ ]]; then
+          if [[ ! -s "\$arg" ]]; then
+            continue
+          fi
+        fi
+        filtered_args+=("\$arg")
+      done
+      exec "$original_rustc" "\''${filtered_args[@]}"
+      EOF
+            chmod +x $out/bin/rustc
+            export PATH="$out/bin:$PATH"
+            export RUSTC="$out/bin/rustc"
 
-      runHook postBuild
+            ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
+            cargo ${pgrxBinaryName} package \
+              --pg-config ${lib.getDev postgresql}/bin/pg_config \
+              ${maybeDebugFlag} \
+              --features "${builtins.concatStringsSep " " buildFeatures}" \
+              --out-dir "$out"
+
+            ${maybeLeaveBuildAndTestSubdir}
+
+            runHook postBuild
     '';
 
     preCheck = preBuildAndTest + args.preCheck or "";
