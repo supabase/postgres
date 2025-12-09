@@ -2,9 +2,6 @@
   "0.6.1": {
     "hash": "sha256-O4eHVbJBudybsPab+zr2eXnfheREMqLAHAKm2GDbfrs=",
     "rust": {
-      "1.76.0": {
-        "cargoHash": "sha256-lcnUVO8dJET5g6wM1YgTsj4uP4I3vVZy5PWBKIsvLB8="
-      },
       "1.82.0": {
         "cargoHash": "sha256-lcnUVO8dJET5g6wM1YgTsj4uP4I3vVZy5PWBKIsvLB8="
       }
@@ -13,9 +10,6 @@
   "0.7.1": {
     "hash": "sha256-t/gdlrBeP6KFkBFJiZUa8KKVJVYMf6753vQGKJdytss=",
     "rust": {
-      "1.76.0": {
-        "cargoHash": "sha256-bLS/pKJnwgcp38wAHej6vOkzVb/E2UHRCQ/OMDI6GqU="
-      },
       "1.82.0": {
         "cargoHash": "sha256-bLS/pKJnwgcp38wAHej6vOkzVb/E2UHRCQ/OMDI6GqU="
       }
@@ -26,9 +20,6 @@
     "rust": {
       "1.70.0": {
         "cargoHash": "sha256-TGeHOA5kRZ7KclRfYj6V+/ZbPiPx/4xUyKxNm4o7ubM="
-      },
-      "1.76.0": {
-        "cargoHash": "sha256-TGeHOA5kRZ7KclRfYj6V+/ZbPiPx/4xUyKxNm4o7ubM="
       }
     }
   },
@@ -36,9 +27,6 @@
     "hash": "sha256-uDBq7tUZ9f8h5nlRFR1mv4+Ty1OFtAk5P7OTNQPI1gI=",
     "rust": {
       "1.70.0": {
-        "cargoHash": "sha256-uc1/zWMLt5U0egsf3xu/5RxouSl0m+81qY+ZZd8BSxU="
-      },
-      "1.76.0": {
         "cargoHash": "sha256-uc1/zWMLt5U0egsf3xu/5RxouSl0m+81qY+ZZd8BSxU="
       }
     }
@@ -60,6 +48,9 @@
       "1.70.0": {
         "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
       },
+      "1.76.0": {
+        "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
+      },
       "1.85.1": {
         "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
       }
@@ -68,9 +59,6 @@
   "0.11.3": {
     "hash": "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=",
     "rust": {
-      "1.70.0": {
-        "cargoHash": "sha256-giL077I5VzWJ+fAbxqp/Oc28Qjc7ontVm7of5LQz+uY="
-      },
       "1.76.0": {
         "cargoHash": "sha256-giL077I5VzWJ+fAbxqp/Oc28Qjc7ontVm7of5LQz+uY="
       },
@@ -97,6 +85,9 @@
         "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
       },
       "1.84.0": {
+        "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
+      },
+      "1.87.0": {
         "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
       }
     }
@@ -125,5 +116,4 @@
       }
     }
   }
-
 }
