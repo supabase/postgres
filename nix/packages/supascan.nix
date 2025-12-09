@@ -1,11 +1,11 @@
 {
   pkgs,
   lib,
-  inputs,
+  ...
 }:
 let
   # Use Go 1.24 for the scanner which requires Go >= 1.23.2
-  go124 = inputs.nixpkgs-go124.legacyPackages.${pkgs.system}.go_1_24;
+  go124 = pkgs.go_1_24;
   buildGoModule124 = pkgs.buildGoModule.override { go = go124; };
 
   # Package GOSS - server validation spec runner

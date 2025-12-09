@@ -14,14 +14,13 @@
     nix-editor.inputs.nixpkgs.follows = "nixpkgs";
     nix-editor.inputs.utils.follows = "flake-utils";
     nix-editor.url = "github:snowfallorg/nix-editor";
+    nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
+    nix-eval-jobs.inputs.treefmt-nix.follows = "treefmt-nix";
     nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
-    nix-fast-build.inputs.flake-parts.follows = "flake-parts";
-    nix-fast-build.inputs.nixpkgs.follows = "nixpkgs";
-    nix-fast-build.inputs.treefmt-nix.follows = "treefmt-nix";
-    nix-fast-build.url = "github:Mic92/nix-fast-build";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix2container.url = "github:nlewo/nix2container";
-    nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
+    # Pin to a specific nixpkgs version that has compatible v8 and curl versions
+    # for extensions that require older package versions
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
