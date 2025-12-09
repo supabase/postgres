@@ -62,5 +62,15 @@ select pgbouncer.get_auth('test_expired_user_password');
 
 select pgbouncer.get_auth('test_valid_user_password');
 
+-- Test pgbouncer.get_auth is executable by the pgbouncer user
+set role pgbouncer;
+select pgbouncer.get_auth('test_valid_user_password');
+reset role;
+
+-- and not other non-superusers
+set role postgres;
+select pgbouncer.get_auth('test_valid_user_password');
+reset role;
+
 drop role test_expired_user_password;
 drop role test_valid_user_password;

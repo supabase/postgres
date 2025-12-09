@@ -44,6 +44,7 @@ let
           ]
           ++ lib.optionals stdenv.isDarwin [
             darwin.apple_sdk.frameworks.CoreFoundation
+            darwin.apple_sdk.frameworks.CoreServices
             darwin.apple_sdk.frameworks.Security
             darwin.apple_sdk.frameworks.SystemConfiguration
           ];
@@ -98,6 +99,11 @@ let
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
                 "iceberg-catalog-s3tables-0.6.0" = "sha256-AUK7B0wMqQZwJho91woLs8uOC4k1RdUEEN5Khw2OoqQ=";
               }
+            else if builtins.compareVersions "0.5.7" version == 0 then
+              {
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "iceberg-catalog-s3tables-0.6.0" = "sha256-AUK7B0wMqQZwJho91woLs8uOC4k1RdUEEN5Khw2OoqQ=";
+              }
             else
               {
                 "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
@@ -148,6 +154,7 @@ let
         doCheck = false;
 
         postInstall = ''
+
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
@@ -214,11 +221,13 @@ let
     v: !(builtins.elem v versions)
   ) allPreviouslyPackagedVersions;
   numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
-  );
+  packagesAttrSet = lib.mapAttrs' (name: value: {
+    name = lib.replaceStrings [ "." ] [ "_" ] name;
+    value = build name value.hash value.rust value.pgrx;
+  }) supportedVersions;
+  packages = builtins.attrValues packagesAttrSet;
 in
-buildEnv {
+(buildEnv {
   name = pname;
   paths = packages;
   pathsToLink = [
@@ -299,8 +308,15 @@ buildEnv {
   '';
   passthru = {
     inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    pname = "${pname}";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    # Expose individual packages for CI to build separately
+    packages = packagesAttrSet // {
+      recurseForDerivations = true;
+    };
   };
-}
+}).overrideAttrs
+  (_: {
+    requiredSystemFeatures = [ "big-parallel" ];
+  })

@@ -69,7 +69,6 @@ let
       meta = with lib; {
         description = "Open-source vector similarity search for Postgres";
         homepage = "https://github.com/${src.owner}/${src.repo}";
-        maintainers = with maintainers; [ olirice ];
         platforms = postgresql.meta.platforms;
         license = licenses.postgresql;
       };
@@ -84,8 +83,7 @@ pkgs.buildEnv {
   ];
 
   passthru = {
-    inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    inherit versions numberOfVersions pname;
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     pgRegressTestName = "pgvector";

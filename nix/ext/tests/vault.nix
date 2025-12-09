@@ -3,7 +3,8 @@ let
   pname = "supabase_vault";
   inherit (pkgs) lib;
   installedExtension =
-    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+    postgresMajorVersion:
+    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -15,7 +16,7 @@ let
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          self.packages.${pkgs.system}."psql_${majorVersion}/exts/pgsodium-all" # dependency
+          (self.legacyPackages.${pkgs.system}."psql_${majorVersion}".exts.pgsodium) # dependency
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;

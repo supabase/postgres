@@ -105,15 +105,20 @@ CREATE ROLE dashboard_user NOSUPERUSER CREATEDB CREATEROLE REPLICATION;
 GRANT ALL ON DATABASE postgres TO dashboard_user;
 GRANT ALL ON SCHEMA auth TO dashboard_user;
 GRANT ALL ON SCHEMA extensions TO dashboard_user;
-GRANT ALL ON SCHEMA storage TO dashboard_user;
 GRANT ALL ON ALL TABLES IN SCHEMA auth TO dashboard_user;
 GRANT ALL ON ALL TABLES IN SCHEMA extensions TO dashboard_user;
 -- GRANT ALL ON ALL TABLES IN SCHEMA storage TO dashboard_user;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA auth TO dashboard_user;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA storage TO dashboard_user;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA extensions TO dashboard_user;
 GRANT ALL ON ALL ROUTINES IN SCHEMA auth TO dashboard_user;
-GRANT ALL ON ALL ROUTINES IN SCHEMA storage TO dashboard_user;
 GRANT ALL ON ALL ROUTINES IN SCHEMA extensions TO dashboard_user;
+do $$
+begin
+  if exists (select from pg_namespace where nspname = 'storage') then
+    GRANT ALL ON SCHEMA storage TO dashboard_user;
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA storage TO dashboard_user;
+    GRANT ALL ON ALL ROUTINES IN SCHEMA storage TO dashboard_user;
+  end if;
+end $$;
 
 -- migrate:down

@@ -48,10 +48,6 @@
           name = "logging.conf";
           path = ../../ansible/files/postgresql_config/postgresql-csvlog.conf;
         };
-        readReplicaConfigFile = builtins.path {
-          name = "readreplica.conf";
-          path = ../../ansible/files/postgresql_config/custom_read_replica.conf.j2;
-        };
         pgHbaConfigFile = builtins.path {
           name = "pg_hba.conf";
           path = ../../ansible/files/postgresql_config/pg_hba.conf.j2;
@@ -91,7 +87,6 @@
         POSTGRESQL_CONFIG_DIR = "${postgresqlConfigBaseDir}";
         PSQLORIOLEDB17_BINDIR = "${psql_orioledb-17}";
         PGSODIUM_GETKEY = "${paths.getkeyScript}";
-        READREPL_CONF_FILE = "${paths.readReplicaConfigFile}";
         LOGGING_CONF_FILE = "${paths.loggingConfigFile}";
         SUPAUTILS_CONF_FILE = "${paths.supautilsConfigFile}";
         PG_HBA = "${paths.pgHbaConfigFile}";
@@ -123,7 +118,6 @@
         cp ${paths.supautilsConfigFile} $out/etc/postgresql-custom/supautils.conf || { echo "Failed to copy supautils.conf"; exit 1; }
         cp ${paths.pgconfigFile} $out/etc/postgresql/postgresql.conf || { echo "Failed to copy postgresql.conf"; exit 1; }
         cp ${paths.loggingConfigFile} $out/etc/postgresql-custom/logging.conf || { echo "Failed to copy logging.conf"; exit 1; }
-        cp ${paths.readReplicaConfigFile} $out/etc/postgresql-custom/read-replica.conf || { echo "Failed to copy read-replica.conf"; exit 1; }
         cp ${paths.pgHbaConfigFile} $out/etc/postgresql/pg_hba.conf || { echo "Failed to copy pg_hba.conf"; exit 1; }
         cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
         cp -r ${paths.postgresqlExtensionCustomScriptsPath}/* $out/extension-custom-scripts/ || { echo "Failed to copy custom scripts"; exit 1; }

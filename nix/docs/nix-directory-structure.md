@@ -2,6 +2,12 @@
 
 This document explains the Nix structure used in this repository. The project uses [flake-parts](https://flake.parts/) to split a `flake.nix` into specialized, maintainable modules.
 
+!!! tip "Deep Dive"
+    For a comprehensive explanation of how flake-parts works in this repository, including module scopes, evaluation order, and common patterns, see:
+
+    - **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Module structure and patterns
+    - **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)** - nixpkgs lib foundations
+
 The root `flake.nix` serves only as an entry point that references specialized modules in the `nix/` directory:
 
 ```

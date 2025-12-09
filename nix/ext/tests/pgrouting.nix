@@ -3,7 +3,8 @@ let
   pname = "pgrouting";
   inherit (pkgs) lib;
   installedExtension =
-    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+    postgresMajorVersion:
+    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -16,10 +17,11 @@ let
             postgresql
             postgresql.lib
             (installedExtension majorVersion)
-            self.packages.${pkgs.system}."psql_${majorVersion}/exts/postgis-all"
+            (self.legacyPackages.${pkgs.system}."psql_${majorVersion}".exts.postgis)
           ]
-          ++ lib.optional (postgresql.isOrioleDB
-          ) self.packages.${pkgs.system}."psql_orioledb-17/exts/orioledb";
+          ++ lib.optional (postgresql.isOrioleDB) (
+            self.legacyPackages.${pkgs.system}."psql_orioledb-17".exts.orioledb
+          );
         passthru = {
           inherit (postgresql) version psqlSchema;
           lib = pkg;
