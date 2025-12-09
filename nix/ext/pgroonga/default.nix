@@ -9,10 +9,13 @@
   makeWrapper,
   xxHash,
   buildEnv,
-  supabase-groonga,
   mecab-naist-jdic,
+  callPackage,
 }:
 let
+  # Import groonga locally since it's only used by pgroonga
+  supabase-groonga = callPackage ./groonga.nix { };
+
   pname = "pgroonga";
 
   # Load version configuration from external file
@@ -171,7 +174,13 @@ buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    inherit
+      versions
+      numberOfVersions
+      pname
+      supabase-groonga
+      ;
+    groonga = supabase-groonga;
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
