@@ -25,7 +25,7 @@
         ../ext/pgjwt.nix
         ../ext/pgaudit.nix
         ../ext/postgis.nix
-        ../ext/pgrouting.nix
+        ../ext/pgrouting
         ../ext/pgtap.nix
         ../ext/pg_cron
         ../ext/pgsql-http.nix
