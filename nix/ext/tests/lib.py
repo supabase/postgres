@@ -184,3 +184,34 @@ class PostgresExtensionTest(object):
         assert ext_version.endswith(f"{self.extension_name}-{last_version}.so"), (
             f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
         )
+
+    def check_pg_regress(self, pg_regress: Path, pg_version: str, test_name: str):
+        """Run pg_regress tests for the extension on a given PostgreSQL version.
+
+        Args:
+            pg_regress: Path to the pg_regress binary
+            pg_version: PostgreSQL version to test (e.g., "14", "15")
+            test_name: SQL test file to run with pg_regress
+        """
+        sql_file = self.sql_test_dir / "sql" / f"{test_name}.sql"
+        if not sql_file.exists():
+            # check if we have a postgres version specific sql file
+            test_name = f"z_{pg_version}_{test_name}"
+            sql_file = self.sql_test_dir / "sql" / f"{test_name}.sql"
+            if not sql_file.exists():
+                print(f"Skipping pg_regress test for {pg_version}, no sql file found")
+                return
+        try:
+            print(
+                self.vm.succeed(
+                    f"""sudo -u postgres {pg_regress} --inputdir={self.sql_test_dir} --debug --use-existing --dbname=postgres --outputdir=/tmp/regression_output_{pg_version} "{test_name}" """
+                )
+            )
+        except:
+            print("Error running pg_regress, diff:")
+            print(
+                self.vm.succeed(
+                    f"cat /tmp/regression_output_{pg_version}/regression.diffs"
+                )
+            )
+            raise
