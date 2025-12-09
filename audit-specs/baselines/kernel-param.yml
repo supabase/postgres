@@ -1,0 +1,2077 @@
+# Kernel-Param baseline
+# Generated from baseline.yml - 1037 items
+kernel-param:
+  abi.cp15_barrier:
+    value: '1'
+  abi.setend:
+    value: '1'
+  abi.swp:
+    value: '0'
+  abi.tagged_addr_disabled:
+    value: '0'
+  debug.exception-trace:
+    value: '0'
+  dev.cdrom.autoclose:
+    value: '1'
+  dev.cdrom.autoeject:
+    value: '0'
+  dev.cdrom.check_media:
+    value: '0'
+  dev.cdrom.debug:
+    value: '0'
+  dev.cdrom.info:
+    value: ''
+  dev.cdrom.lock:
+    value: '0'
+  dev.raid.speed_limit_max:
+    value: '200000'
+  dev.raid.speed_limit_min:
+    value: '1000'
+  dev.scsi.logging_level:
+    value: '0'
+  dev.tty.ldisc_autoload:
+    value: '1'
+  dev.tty.legacy_tiocsti:
+    value: '0'
+  fs.aio-max-nr:
+    value: '65536'
+  fs.binfmt_misc.python3/12:
+    value: magic cb0d0d0a
+  fs.binfmt_misc.status:
+    value: enabled
+  fs.dentry-negative:
+    value: '0'
+  fs.dir-notify-enable:
+    value: '1'
+  fs.fanotify.max_queued_events:
+    value: '16384'
+  fs.fanotify.max_user_groups:
+    value: '128'
+  fs.fanotify.max_user_marks:
+    value: '8192'
+  fs.file-max:
+    value: '9223372036854775807'
+  fs.fuse.max_pages_limit:
+    value: '256'
+  fs.inotify.max_queued_events:
+    value: '16384'
+  fs.inotify.max_user_instances:
+    value: '128'
+  fs.inotify.max_user_watches:
+    value: '8192'
+  fs.lease-break-time:
+    value: '45'
+  fs.leases-enable:
+    value: '1'
+  fs.mount-max:
+    value: '100000'
+  fs.mqueue.msg_default:
+    value: '10'
+  fs.mqueue.msg_max:
+    value: '10'
+  fs.mqueue.msgsize_default:
+    value: '8192'
+  fs.mqueue.msgsize_max:
+    value: '8192'
+  fs.mqueue.queues_max:
+    value: '256'
+  fs.nr_open:
+    value: '1048576'
+  fs.overflowgid:
+    value: '65534'
+  fs.overflowuid:
+    value: '65534'
+  fs.pipe-max-size:
+    value: '1048576'
+  fs.pipe-user-pages-hard:
+    value: '0'
+  fs.pipe-user-pages-soft:
+    value: '16384'
+  fs.protected_fifos:
+    value: '1'
+  fs.protected_hardlinks:
+    value: '1'
+  fs.protected_regular:
+    value: '2'
+  fs.protected_symlinks:
+    value: '1'
+  fs.quota.allocated_dquots:
+    value: '0'
+  fs.quota.cache_hits:
+    value: '0'
+  fs.quota.drops:
+    value: '0'
+  fs.quota.free_dquots:
+    value: '0'
+  fs.quota.lookups:
+    value: '0'
+  fs.quota.reads:
+    value: '0'
+  fs.quota.syncs:
+    value: '0'
+  fs.quota.writes:
+    value: '0'
+  fs.suid_dumpable:
+    value: '0'
+  fs.verity.require_signatures:
+    value: '0'
+  kernel.acct:
+    value: 4 2 30
+  kernel.apparmor_display_secid_mode:
+    value: '0'
+  kernel.apparmor_restrict_unprivileged_io_uring:
+    value: '0'
+  kernel.apparmor_restrict_unprivileged_unconfined:
+    value: '0'
+  kernel.apparmor_restrict_unprivileged_userns:
+    value: '1'
+  kernel.apparmor_restrict_unprivileged_userns_complain:
+    value: '0'
+  kernel.apparmor_restrict_unprivileged_userns_force:
+    value: '0'
+  kernel.arch:
+    value: aarch64
+  kernel.auto_msgmni:
+    value: '0'
+  kernel.bpf_stats_enabled:
+    value: '0'
+  kernel.cad_pid:
+    value: '1'
+  kernel.cap_last_cap:
+    value: '40'
+  kernel.core_file_note_size_limit:
+    value: '4194304'
+  kernel.core_pattern:
+    value: core
+  kernel.core_pipe_limit:
+    value: '0'
+  kernel.core_sort_vma:
+    value: '0'
+  kernel.core_uses_pid:
+    value: '0'
+  kernel.ctrl-alt-del:
+    value: '0'
+  kernel.dmesg_restrict:
+    value: '1'
+  kernel.domainname:
+    value: (none)
+  kernel.firmware_config.force_sysfs_fallback:
+    value: '0'
+  kernel.firmware_config.ignore_sysfs_fallback:
+    value: '0'
+  kernel.ftrace_dump_on_oops:
+    value: '0'
+  kernel.ftrace_enabled:
+    value: '1'
+  kernel.hardlockup_all_cpu_backtrace:
+    value: '0'
+  kernel.hardlockup_panic:
+    value: '0'
+  kernel.hostname:
+    value: db-cbgvumnjbgqcezvvagjl
+  kernel.hotplug:
+    value: ''
+  kernel.hung_task_all_cpu_backtrace:
+    value: '0'
+  kernel.hung_task_check_count:
+    value: '4194304'
+  kernel.hung_task_check_interval_secs:
+    value: '0'
+  kernel.hung_task_detect_count:
+    value: '0'
+  kernel.hung_task_panic:
+    value: '0'
+  kernel.hung_task_timeout_secs:
+    value: '120'
+  kernel.hung_task_warnings:
+    value: '10'
+  kernel.io_uring_disabled:
+    value: '0'
+  kernel.io_uring_group:
+    value: '-1'
+  kernel.kexec_load_disabled:
+    value: '0'
+  kernel.kexec_load_limit_panic:
+    value: '-1'
+  kernel.kexec_load_limit_reboot:
+    value: '-1'
+  kernel.keys.gc_delay:
+    value: '300'
+  kernel.keys.maxbytes:
+    value: '20000'
+  kernel.keys.maxkeys:
+    value: '200'
+  kernel.keys.persistent_keyring_expiry:
+    value: '259200'
+  kernel.keys.root_maxbytes:
+    value: '25000000'
+  kernel.keys.root_maxkeys:
+    value: '1000000'
+  kernel.kptr_restrict:
+    value: '1'
+  kernel.latencytop:
+    value: '0'
+  kernel.max_lock_depth:
+    value: '1024'
+  kernel.max_rcu_stall_to_panic:
+    value: '0'
+  kernel.modprobe:
+    value: /sbin/modprobe
+  kernel.modules_disabled:
+    value: '0'
+  kernel.msg_next_id:
+    value: '-1'
+  kernel.msgmax:
+    value: '8192'
+  kernel.msgmnb:
+    value: '16384'
+  kernel.msgmni:
+    value: '32000'
+  kernel.ngroups_max:
+    value: '65536'
+  kernel.nmi_watchdog:
+    value: '0'
+  kernel.numa_balancing:
+    value: '0'
+  kernel.numa_balancing_promote_rate_limit_MBps:
+    value: '65536'
+  kernel.oops_all_cpu_backtrace:
+    value: '0'
+  kernel.oops_limit:
+    value: '10000'
+  kernel.osrelease:
+    value: 6.14.0-1017-aws
+  kernel.ostype:
+    value: Linux
+  kernel.overflowgid:
+    value: '65534'
+  kernel.overflowuid:
+    value: '65534'
+  kernel.panic:
+    value: '10'
+  kernel.panic_on_oops:
+    value: '0'
+  kernel.panic_on_rcu_stall:
+    value: '0'
+  kernel.panic_on_warn:
+    value: '0'
+  kernel.panic_print:
+    value: '0'
+  kernel.perf_cpu_time_max_percent:
+    value: '25'
+  kernel.perf_event_max_contexts_per_stack:
+    value: '8'
+  kernel.perf_event_max_sample_rate:
+    value: '100000'
+  kernel.perf_event_max_stack:
+    value: '127'
+  kernel.perf_event_mlock_kb:
+    value: '516'
+  kernel.perf_event_paranoid:
+    value: '4'
+  kernel.perf_user_access:
+    value: '0'
+  kernel.pid_max:
+    value: '4194304'
+  kernel.poweroff_cmd:
+    value: /sbin/poweroff
+  kernel.print-fatal-signals:
+    value: '0'
+  kernel.printk:
+    value: 4 4 1 7
+  kernel.printk_delay:
+    value: '0'
+  kernel.printk_devkmsg:
+    value: 'on'
+  kernel.printk_ratelimit:
+    value: '5'
+  kernel.printk_ratelimit_burst:
+    value: '10'
+  kernel.pty.max:
+    value: '4096'
+  kernel.pty.reserve:
+    value: '1024'
+  kernel.random.poolsize:
+    value: '256'
+  kernel.random.urandom_min_reseed_secs:
+    value: '60'
+  kernel.random.write_wakeup_threshold:
+    value: '256'
+  kernel.randomize_va_space:
+    value: '2'
+  kernel.real-root-dev:
+    value: '0'
+  kernel.sched_autogroup_enabled:
+    value: '1'
+  kernel.sched_cfs_bandwidth_slice_us:
+    value: '5000'
+  kernel.sched_deadline_period_max_us:
+    value: '4194304'
+  kernel.sched_deadline_period_min_us:
+    value: '100'
+  kernel.sched_rr_timeslice_ms:
+    value: '100'
+  kernel.sched_rt_period_us:
+    value: '1000000'
+  kernel.sched_rt_runtime_us:
+    value: '950000'
+  kernel.sched_schedstats:
+    value: '0'
+  kernel.sched_util_clamp_max:
+    value: '1024'
+  kernel.sched_util_clamp_min:
+    value: '1024'
+  kernel.sched_util_clamp_min_rt_default:
+    value: '1024'
+  kernel.seccomp.actions_avail:
+    value: kill_process kill_thread trap errno user_notif trace log allow
+  kernel.seccomp.actions_logged:
+    value: kill_process kill_thread trap errno user_notif trace log
+  kernel.sem:
+    value: 32000 1024000000 500 32000
+  kernel.sem_next_id:
+    value: '-1'
+  kernel.shm_next_id:
+    value: '-1'
+  kernel.shm_rmid_forced:
+    value: '0'
+  kernel.shmall:
+    value: '18446744073692774399'
+  kernel.shmmax:
+    value: '18446744073692774399'
+  kernel.shmmni:
+    value: '4096'
+  kernel.soft_watchdog:
+    value: '1'
+  kernel.softlockup_all_cpu_backtrace:
+    value: '0'
+  kernel.softlockup_panic:
+    value: '0'
+  kernel.stack_tracer_enabled:
+    value: '0'
+  kernel.sysctl_writes_strict:
+    value: '1'
+  kernel.sysrq:
+    value: '176'
+  kernel.tainted:
+    value: '0'
+  kernel.task_delayacct:
+    value: '0'
+  kernel.threads-max:
+    value: '3074'
+  kernel.timer_migration:
+    value: '1'
+  kernel.traceoff_on_warning:
+    value: '0'
+  kernel.tracepoint_printk:
+    value: '0'
+  kernel.unprivileged_bpf_disabled:
+    value: '2'
+  kernel.unprivileged_userns_apparmor_policy:
+    value: '1'
+  kernel.unprivileged_userns_clone:
+    value: '1'
+  kernel.user_events_max:
+    value: '32768'
+  kernel.usermodehelper.bset:
+    value: 4294967295 511
+  kernel.usermodehelper.inheritable:
+    value: 4294967295 511
+  kernel.version:
+    value: '#17~24.04.1-Ubuntu SMP Wed Nov  5 10:32:15 UTC 2025'
+  kernel.warn_limit:
+    value: '0'
+  kernel.watchdog:
+    value: '1'
+  kernel.watchdog_cpumask:
+    value: 0-1
+  kernel.watchdog_thresh:
+    value: '10'
+  kernel.yama.ptrace_scope:
+    value: '1'
+  net.core.bpf_jit_enable:
+    value: '1'
+  net.core.bpf_jit_harden:
+    value: '0'
+  net.core.bpf_jit_kallsyms:
+    value: '1'
+  net.core.bpf_jit_limit:
+    value: '69267617742848'
+  net.core.busy_poll:
+    value: '0'
+  net.core.busy_read:
+    value: '0'
+  net.core.default_qdisc:
+    value: fq_codel
+  net.core.dev_weight:
+    value: '64'
+  net.core.dev_weight_rx_bias:
+    value: '1'
+  net.core.dev_weight_tx_bias:
+    value: '1'
+  net.core.devconf_inherit_init_net:
+    value: '0'
+  net.core.fb_tunnels_only_for_init_net:
+    value: '0'
+  net.core.flow_limit_cpu_bitmap:
+    value: '0'
+  net.core.flow_limit_table_len:
+    value: '4096'
+  net.core.gro_normal_batch:
+    value: '8'
+  net.core.high_order_alloc_disable:
+    value: '0'
+  net.core.max_skb_frags:
+    value: '17'
+  net.core.mem_pcpu_rsv:
+    value: '256'
+  net.core.message_burst:
+    value: '10'
+  net.core.message_cost:
+    value: '5'
+  net.core.netdev_budget:
+    value: '300'
+  net.core.netdev_budget_usecs:
+    value: '2000'
+  net.core.netdev_max_backlog:
+    value: '1000'
+  net.core.netdev_rss_key:
+    value: 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+  net.core.netdev_tstamp_prequeue:
+    value: '1'
+  net.core.netdev_unregister_timeout_secs:
+    value: '10'
+  net.core.optmem_max:
+    value: '131072'
+  net.core.rmem_default:
+    value: '212992'
+  net.core.rmem_max:
+    value: '212992'
+  net.core.rps_default_mask:
+    value: '0'
+  net.core.rps_sock_flow_entries:
+    value: '0'
+  net.core.skb_defer_max:
+    value: '64'
+  net.core.somaxconn:
+    value: '16834'
+  net.core.tstamp_allow_data:
+    value: '1'
+  net.core.txrehash:
+    value: '1'
+  net.core.warnings:
+    value: '0'
+  net.core.wmem_default:
+    value: '212992'
+  net.core.wmem_max:
+    value: '212992'
+  net.core.xfrm_acq_expires:
+    value: '30'
+  net.core.xfrm_aevent_etime:
+    value: '10'
+  net.core.xfrm_aevent_rseqth:
+    value: '2'
+  net.core.xfrm_larval_drop:
+    value: '1'
+  net.ipv4.cipso_cache_bucket_size:
+    value: '10'
+  net.ipv4.cipso_cache_enable:
+    value: '1'
+  net.ipv4.cipso_rbm_optfmt:
+    value: '0'
+  net.ipv4.cipso_rbm_strictvalid:
+    value: '1'
+  net.ipv4.conf.all.accept_local:
+    value: '0'
+  net.ipv4.conf.all.accept_redirects:
+    value: '0'
+  net.ipv4.conf.all.accept_source_route:
+    value: '0'
+  net.ipv4.conf.all.arp_accept:
+    value: '0'
+  net.ipv4.conf.all.arp_announce:
+    value: '0'
+  net.ipv4.conf.all.arp_evict_nocarrier:
+    value: '1'
+  net.ipv4.conf.all.arp_filter:
+    value: '0'
+  net.ipv4.conf.all.arp_ignore:
+    value: '0'
+  net.ipv4.conf.all.arp_notify:
+    value: '0'
+  net.ipv4.conf.all.bc_forwarding:
+    value: '0'
+  net.ipv4.conf.all.bootp_relay:
+    value: '0'
+  net.ipv4.conf.all.disable_policy:
+    value: '0'
+  net.ipv4.conf.all.disable_xfrm:
+    value: '0'
+  net.ipv4.conf.all.drop_gratuitous_arp:
+    value: '0'
+  net.ipv4.conf.all.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv4.conf.all.force_igmp_version:
+    value: '0'
+  net.ipv4.conf.all.forwarding:
+    value: '0'
+  net.ipv4.conf.all.igmpv2_unsolicited_report_interval:
+    value: '10000'
+  net.ipv4.conf.all.igmpv3_unsolicited_report_interval:
+    value: '1000'
+  net.ipv4.conf.all.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv4.conf.all.log_martians:
+    value: '0'
+  net.ipv4.conf.all.mc_forwarding:
+    value: '0'
+  net.ipv4.conf.all.medium_id:
+    value: '0'
+  net.ipv4.conf.all.promote_secondaries:
+    value: '0'
+  net.ipv4.conf.all.proxy_arp:
+    value: '0'
+  net.ipv4.conf.all.proxy_arp_pvlan:
+    value: '0'
+  net.ipv4.conf.all.route_localnet:
+    value: '0'
+  net.ipv4.conf.all.rp_filter:
+    value: '2'
+  net.ipv4.conf.all.secure_redirects:
+    value: '1'
+  net.ipv4.conf.all.send_redirects:
+    value: '1'
+  net.ipv4.conf.all.shared_media:
+    value: '1'
+  net.ipv4.conf.all.src_valid_mark:
+    value: '0'
+  net.ipv4.conf.all.tag:
+    value: '0'
+  net.ipv4.conf.default.accept_local:
+    value: '0'
+  net.ipv4.conf.default.accept_redirects:
+    value: '0'
+  net.ipv4.conf.default.accept_source_route:
+    value: '1'
+  net.ipv4.conf.default.arp_accept:
+    value: '0'
+  net.ipv4.conf.default.arp_announce:
+    value: '0'
+  net.ipv4.conf.default.arp_evict_nocarrier:
+    value: '1'
+  net.ipv4.conf.default.arp_filter:
+    value: '0'
+  net.ipv4.conf.default.arp_ignore:
+    value: '0'
+  net.ipv4.conf.default.arp_notify:
+    value: '0'
+  net.ipv4.conf.default.bc_forwarding:
+    value: '0'
+  net.ipv4.conf.default.bootp_relay:
+    value: '0'
+  net.ipv4.conf.default.disable_policy:
+    value: '0'
+  net.ipv4.conf.default.disable_xfrm:
+    value: '0'
+  net.ipv4.conf.default.drop_gratuitous_arp:
+    value: '0'
+  net.ipv4.conf.default.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv4.conf.default.force_igmp_version:
+    value: '0'
+  net.ipv4.conf.default.forwarding:
+    value: '0'
+  net.ipv4.conf.default.igmpv2_unsolicited_report_interval:
+    value: '10000'
+  net.ipv4.conf.default.igmpv3_unsolicited_report_interval:
+    value: '1000'
+  net.ipv4.conf.default.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv4.conf.default.log_martians:
+    value: '0'
+  net.ipv4.conf.default.mc_forwarding:
+    value: '0'
+  net.ipv4.conf.default.medium_id:
+    value: '0'
+  net.ipv4.conf.default.promote_secondaries:
+    value: '0'
+  net.ipv4.conf.default.proxy_arp:
+    value: '0'
+  net.ipv4.conf.default.proxy_arp_pvlan:
+    value: '0'
+  net.ipv4.conf.default.route_localnet:
+    value: '0'
+  net.ipv4.conf.default.rp_filter:
+    value: '2'
+  net.ipv4.conf.default.secure_redirects:
+    value: '1'
+  net.ipv4.conf.default.send_redirects:
+    value: '1'
+  net.ipv4.conf.default.shared_media:
+    value: '1'
+  net.ipv4.conf.default.src_valid_mark:
+    value: '0'
+  net.ipv4.conf.default.tag:
+    value: '0'
+  net.ipv4.conf.ens5.accept_local:
+    value: '0'
+  net.ipv4.conf.ens5.accept_redirects:
+    value: '0'
+  net.ipv4.conf.ens5.accept_source_route:
+    value: '1'
+  net.ipv4.conf.ens5.arp_accept:
+    value: '0'
+  net.ipv4.conf.ens5.arp_announce:
+    value: '0'
+  net.ipv4.conf.ens5.arp_evict_nocarrier:
+    value: '1'
+  net.ipv4.conf.ens5.arp_filter:
+    value: '0'
+  net.ipv4.conf.ens5.arp_ignore:
+    value: '0'
+  net.ipv4.conf.ens5.arp_notify:
+    value: '0'
+  net.ipv4.conf.ens5.bc_forwarding:
+    value: '0'
+  net.ipv4.conf.ens5.bootp_relay:
+    value: '0'
+  net.ipv4.conf.ens5.disable_policy:
+    value: '0'
+  net.ipv4.conf.ens5.disable_xfrm:
+    value: '0'
+  net.ipv4.conf.ens5.drop_gratuitous_arp:
+    value: '0'
+  net.ipv4.conf.ens5.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv4.conf.ens5.force_igmp_version:
+    value: '0'
+  net.ipv4.conf.ens5.forwarding:
+    value: '0'
+  net.ipv4.conf.ens5.igmpv2_unsolicited_report_interval:
+    value: '10000'
+  net.ipv4.conf.ens5.igmpv3_unsolicited_report_interval:
+    value: '1000'
+  net.ipv4.conf.ens5.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv4.conf.ens5.log_martians:
+    value: '0'
+  net.ipv4.conf.ens5.mc_forwarding:
+    value: '0'
+  net.ipv4.conf.ens5.medium_id:
+    value: '0'
+  net.ipv4.conf.ens5.promote_secondaries:
+    value: '1'
+  net.ipv4.conf.ens5.proxy_arp:
+    value: '0'
+  net.ipv4.conf.ens5.proxy_arp_pvlan:
+    value: '0'
+  net.ipv4.conf.ens5.route_localnet:
+    value: '0'
+  net.ipv4.conf.ens5.rp_filter:
+    value: '2'
+  net.ipv4.conf.ens5.secure_redirects:
+    value: '1'
+  net.ipv4.conf.ens5.send_redirects:
+    value: '1'
+  net.ipv4.conf.ens5.shared_media:
+    value: '1'
+  net.ipv4.conf.ens5.src_valid_mark:
+    value: '0'
+  net.ipv4.conf.ens5.tag:
+    value: '0'
+  net.ipv4.conf.lo.accept_local:
+    value: '0'
+  net.ipv4.conf.lo.accept_redirects:
+    value: '1'
+  net.ipv4.conf.lo.accept_source_route:
+    value: '1'
+  net.ipv4.conf.lo.arp_accept:
+    value: '0'
+  net.ipv4.conf.lo.arp_announce:
+    value: '0'
+  net.ipv4.conf.lo.arp_evict_nocarrier:
+    value: '1'
+  net.ipv4.conf.lo.arp_filter:
+    value: '0'
+  net.ipv4.conf.lo.arp_ignore:
+    value: '0'
+  net.ipv4.conf.lo.arp_notify:
+    value: '0'
+  net.ipv4.conf.lo.bc_forwarding:
+    value: '0'
+  net.ipv4.conf.lo.bootp_relay:
+    value: '0'
+  net.ipv4.conf.lo.disable_policy:
+    value: '1'
+  net.ipv4.conf.lo.disable_xfrm:
+    value: '1'
+  net.ipv4.conf.lo.drop_gratuitous_arp:
+    value: '0'
+  net.ipv4.conf.lo.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv4.conf.lo.force_igmp_version:
+    value: '0'
+  net.ipv4.conf.lo.forwarding:
+    value: '0'
+  net.ipv4.conf.lo.igmpv2_unsolicited_report_interval:
+    value: '10000'
+  net.ipv4.conf.lo.igmpv3_unsolicited_report_interval:
+    value: '1000'
+  net.ipv4.conf.lo.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv4.conf.lo.log_martians:
+    value: '0'
+  net.ipv4.conf.lo.mc_forwarding:
+    value: '0'
+  net.ipv4.conf.lo.medium_id:
+    value: '0'
+  net.ipv4.conf.lo.promote_secondaries:
+    value: '0'
+  net.ipv4.conf.lo.proxy_arp:
+    value: '0'
+  net.ipv4.conf.lo.proxy_arp_pvlan:
+    value: '0'
+  net.ipv4.conf.lo.route_localnet:
+    value: '0'
+  net.ipv4.conf.lo.rp_filter:
+    value: '0'
+  net.ipv4.conf.lo.secure_redirects:
+    value: '1'
+  net.ipv4.conf.lo.send_redirects:
+    value: '1'
+  net.ipv4.conf.lo.shared_media:
+    value: '1'
+  net.ipv4.conf.lo.src_valid_mark:
+    value: '0'
+  net.ipv4.conf.lo.tag:
+    value: '0'
+  net.ipv4.fib_multipath_hash_fields:
+    value: '7'
+  net.ipv4.fib_multipath_hash_policy:
+    value: '0'
+  net.ipv4.fib_multipath_hash_seed:
+    value: '0'
+  net.ipv4.fib_multipath_use_neigh:
+    value: '0'
+  net.ipv4.fib_notify_on_flag_change:
+    value: '0'
+  net.ipv4.fib_sync_mem:
+    value: '524288'
+  net.ipv4.fwmark_reflect:
+    value: '0'
+  net.ipv4.icmp_echo_enable_probe:
+    value: '0'
+  net.ipv4.icmp_echo_ignore_all:
+    value: '0'
+  net.ipv4.icmp_echo_ignore_broadcasts:
+    value: '1'
+  net.ipv4.icmp_errors_use_inbound_ifaddr:
+    value: '0'
+  net.ipv4.icmp_ignore_bogus_error_responses:
+    value: '1'
+  net.ipv4.icmp_msgs_burst:
+    value: '50'
+  net.ipv4.icmp_msgs_per_sec:
+    value: '1000'
+  net.ipv4.icmp_ratelimit:
+    value: '1000'
+  net.ipv4.icmp_ratemask:
+    value: '6168'
+  net.ipv4.igmp_link_local_mcast_reports:
+    value: '1'
+  net.ipv4.igmp_max_memberships:
+    value: '20'
+  net.ipv4.igmp_max_msf:
+    value: '10'
+  net.ipv4.igmp_qrv:
+    value: '2'
+  net.ipv4.inet_peer_maxttl:
+    value: '600'
+  net.ipv4.inet_peer_minttl:
+    value: '120'
+  net.ipv4.inet_peer_threshold:
+    value: '20763'
+  net.ipv4.ip_autobind_reuse:
+    value: '0'
+  net.ipv4.ip_default_ttl:
+    value: '64'
+  net.ipv4.ip_dynaddr:
+    value: '0'
+  net.ipv4.ip_early_demux:
+    value: '1'
+  net.ipv4.ip_forward:
+    value: '0'
+  net.ipv4.ip_forward_update_priority:
+    value: '1'
+  net.ipv4.ip_forward_use_pmtu:
+    value: '0'
+  net.ipv4.ip_local_port_range:
+    value: 1025 65000
+  net.ipv4.ip_local_reserved_ports:
+    value: ''
+  net.ipv4.ip_no_pmtu_disc:
+    value: '0'
+  net.ipv4.ip_nonlocal_bind:
+    value: '0'
+  net.ipv4.ip_unprivileged_port_start:
+    value: '1024'
+  net.ipv4.ipfrag_high_thresh:
+    value: '4194304'
+  net.ipv4.ipfrag_low_thresh:
+    value: '3145728'
+  net.ipv4.ipfrag_max_dist:
+    value: '64'
+  net.ipv4.ipfrag_secret_interval:
+    value: '0'
+  net.ipv4.ipfrag_time:
+    value: '30'
+  net.ipv4.neigh.default.anycast_delay:
+    value: '100'
+  net.ipv4.neigh.default.app_solicit:
+    value: '0'
+  net.ipv4.neigh.default.base_reachable_time_ms:
+    value: '30000'
+  net.ipv4.neigh.default.delay_first_probe_time:
+    value: '5'
+  net.ipv4.neigh.default.gc_interval:
+    value: '30'
+  net.ipv4.neigh.default.gc_stale_time:
+    value: '60'
+  net.ipv4.neigh.default.gc_thresh1:
+    value: '128'
+  net.ipv4.neigh.default.gc_thresh2:
+    value: '512'
+  net.ipv4.neigh.default.gc_thresh3:
+    value: '1024'
+  net.ipv4.neigh.default.interval_probe_time_ms:
+    value: '5000'
+  net.ipv4.neigh.default.locktime:
+    value: '100'
+  net.ipv4.neigh.default.mcast_resolicit:
+    value: '0'
+  net.ipv4.neigh.default.mcast_solicit:
+    value: '3'
+  net.ipv4.neigh.default.proxy_delay:
+    value: '80'
+  net.ipv4.neigh.default.proxy_qlen:
+    value: '64'
+  net.ipv4.neigh.default.retrans_time_ms:
+    value: '1000'
+  net.ipv4.neigh.default.ucast_solicit:
+    value: '3'
+  net.ipv4.neigh.default.unres_qlen:
+    value: '101'
+  net.ipv4.neigh.default.unres_qlen_bytes:
+    value: '212992'
+  net.ipv4.neigh.ens5.anycast_delay:
+    value: '100'
+  net.ipv4.neigh.ens5.app_solicit:
+    value: '0'
+  net.ipv4.neigh.ens5.base_reachable_time_ms:
+    value: '30000'
+  net.ipv4.neigh.ens5.delay_first_probe_time:
+    value: '5'
+  net.ipv4.neigh.ens5.gc_stale_time:
+    value: '60'
+  net.ipv4.neigh.ens5.interval_probe_time_ms:
+    value: '5000'
+  net.ipv4.neigh.ens5.locktime:
+    value: '100'
+  net.ipv4.neigh.ens5.mcast_resolicit:
+    value: '0'
+  net.ipv4.neigh.ens5.mcast_solicit:
+    value: '3'
+  net.ipv4.neigh.ens5.proxy_delay:
+    value: '80'
+  net.ipv4.neigh.ens5.proxy_qlen:
+    value: '64'
+  net.ipv4.neigh.ens5.retrans_time_ms:
+    value: '1000'
+  net.ipv4.neigh.ens5.ucast_solicit:
+    value: '3'
+  net.ipv4.neigh.ens5.unres_qlen:
+    value: '101'
+  net.ipv4.neigh.ens5.unres_qlen_bytes:
+    value: '212992'
+  net.ipv4.neigh.lo.anycast_delay:
+    value: '100'
+  net.ipv4.neigh.lo.app_solicit:
+    value: '0'
+  net.ipv4.neigh.lo.base_reachable_time_ms:
+    value: '30000'
+  net.ipv4.neigh.lo.delay_first_probe_time:
+    value: '5'
+  net.ipv4.neigh.lo.gc_stale_time:
+    value: '60'
+  net.ipv4.neigh.lo.interval_probe_time_ms:
+    value: '5000'
+  net.ipv4.neigh.lo.locktime:
+    value: '100'
+  net.ipv4.neigh.lo.mcast_resolicit:
+    value: '0'
+  net.ipv4.neigh.lo.mcast_solicit:
+    value: '3'
+  net.ipv4.neigh.lo.proxy_delay:
+    value: '80'
+  net.ipv4.neigh.lo.proxy_qlen:
+    value: '64'
+  net.ipv4.neigh.lo.retrans_time_ms:
+    value: '1000'
+  net.ipv4.neigh.lo.ucast_solicit:
+    value: '3'
+  net.ipv4.neigh.lo.unres_qlen:
+    value: '101'
+  net.ipv4.neigh.lo.unres_qlen_bytes:
+    value: '212992'
+  net.ipv4.nexthop_compat_mode:
+    value: '1'
+  net.ipv4.ping_group_range:
+    value: 1 0
+  net.ipv4.raw_l3mdev_accept:
+    value: '1'
+  net.ipv4.route.error_burst:
+    value: '5000'
+  net.ipv4.route.error_cost:
+    value: '1000'
+  net.ipv4.route.gc_elasticity:
+    value: '8'
+  net.ipv4.route.gc_interval:
+    value: '60'
+  net.ipv4.route.gc_min_interval:
+    value: '0'
+  net.ipv4.route.gc_min_interval_ms:
+    value: '500'
+  net.ipv4.route.gc_thresh:
+    value: '-1'
+  net.ipv4.route.gc_timeout:
+    value: '300'
+  net.ipv4.route.max_size:
+    value: '2147483647'
+  net.ipv4.route.min_adv_mss:
+    value: '256'
+  net.ipv4.route.min_pmtu:
+    value: '552'
+  net.ipv4.route.mtu_expires:
+    value: '600'
+  net.ipv4.route.redirect_load:
+    value: '20'
+  net.ipv4.route.redirect_number:
+    value: '9'
+  net.ipv4.route.redirect_silence:
+    value: '20480'
+  net.ipv4.tcp_abort_on_overflow:
+    value: '0'
+  net.ipv4.tcp_adv_win_scale:
+    value: '1'
+  net.ipv4.tcp_allowed_congestion_control:
+    value: reno cubic
+  net.ipv4.tcp_app_win:
+    value: '31'
+  net.ipv4.tcp_autocorking:
+    value: '1'
+  net.ipv4.tcp_available_congestion_control:
+    value: reno cubic
+  net.ipv4.tcp_available_ulp:
+    value: espintcp mptcp
+  net.ipv4.tcp_backlog_ack_defer:
+    value: '1'
+  net.ipv4.tcp_base_mss:
+    value: '1024'
+  net.ipv4.tcp_challenge_ack_limit:
+    value: '2147483647'
+  net.ipv4.tcp_child_ehash_entries:
+    value: '0'
+  net.ipv4.tcp_comp_sack_delay_ns:
+    value: '1000000'
+  net.ipv4.tcp_comp_sack_nr:
+    value: '44'
+  net.ipv4.tcp_comp_sack_slack_ns:
+    value: '100000'
+  net.ipv4.tcp_congestion_control:
+    value: cubic
+  net.ipv4.tcp_dsack:
+    value: '1'
+  net.ipv4.tcp_early_demux:
+    value: '1'
+  net.ipv4.tcp_early_retrans:
+    value: '3'
+  net.ipv4.tcp_ecn:
+    value: '2'
+  net.ipv4.tcp_ecn_fallback:
+    value: '1'
+  net.ipv4.tcp_ehash_entries:
+    value: '4096'
+  net.ipv4.tcp_fack:
+    value: '0'
+  net.ipv4.tcp_fastopen:
+    value: '1'
+  net.ipv4.tcp_fastopen_blackhole_timeout_sec:
+    value: '0'
+  net.ipv4.tcp_fastopen_key:
+    value: 10c302a6-ea1232b2-53295a60-5d0dfb1f
+  net.ipv4.tcp_fin_timeout:
+    value: '60'
+  net.ipv4.tcp_frto:
+    value: '2'
+  net.ipv4.tcp_fwmark_accept:
+    value: '0'
+  net.ipv4.tcp_invalid_ratelimit:
+    value: '500'
+  net.ipv4.tcp_keepalive_intvl:
+    value: '60'
+  net.ipv4.tcp_keepalive_probes:
+    value: '9'
+  net.ipv4.tcp_keepalive_time:
+    value: '1800'
+  net.ipv4.tcp_l3mdev_accept:
+    value: '0'
+  net.ipv4.tcp_limit_output_bytes:
+    value: '1048576'
+  net.ipv4.tcp_low_latency:
+    value: '0'
+  net.ipv4.tcp_max_orphans:
+    value: '2048'
+  net.ipv4.tcp_max_reordering:
+    value: '300'
+  net.ipv4.tcp_max_syn_backlog:
+    value: '128'
+  net.ipv4.tcp_max_tw_buckets:
+    value: '2048'
+  net.ipv4.tcp_mem:
+    value: 4518 6024 9036
+  net.ipv4.tcp_migrate_req:
+    value: '0'
+  net.ipv4.tcp_min_rtt_wlen:
+    value: '300'
+  net.ipv4.tcp_min_snd_mss:
+    value: '48'
+  net.ipv4.tcp_min_tso_segs:
+    value: '2'
+  net.ipv4.tcp_moderate_rcvbuf:
+    value: '1'
+  net.ipv4.tcp_mtu_probe_floor:
+    value: '48'
+  net.ipv4.tcp_mtu_probing:
+    value: '0'
+  net.ipv4.tcp_no_metrics_save:
+    value: '0'
+  net.ipv4.tcp_no_ssthresh_metrics_save:
+    value: '1'
+  net.ipv4.tcp_notsent_lowat:
+    value: '4294967295'
+  net.ipv4.tcp_orphan_retries:
+    value: '0'
+  net.ipv4.tcp_pacing_ca_ratio:
+    value: '120'
+  net.ipv4.tcp_pacing_ss_ratio:
+    value: '200'
+  net.ipv4.tcp_pingpong_thresh:
+    value: '1'
+  net.ipv4.tcp_plb_cong_thresh:
+    value: '128'
+  net.ipv4.tcp_plb_enabled:
+    value: '0'
+  net.ipv4.tcp_plb_idle_rehash_rounds:
+    value: '3'
+  net.ipv4.tcp_plb_rehash_rounds:
+    value: '12'
+  net.ipv4.tcp_plb_suspend_rto_sec:
+    value: '60'
+  net.ipv4.tcp_probe_interval:
+    value: '600'
+  net.ipv4.tcp_probe_threshold:
+    value: '8'
+  net.ipv4.tcp_recovery:
+    value: '1'
+  net.ipv4.tcp_reflect_tos:
+    value: '0'
+  net.ipv4.tcp_reordering:
+    value: '3'
+  net.ipv4.tcp_retrans_collapse:
+    value: '1'
+  net.ipv4.tcp_retries1:
+    value: '3'
+  net.ipv4.tcp_retries2:
+    value: '15'
+  net.ipv4.tcp_rfc1337:
+    value: '0'
+  net.ipv4.tcp_rmem:
+    value: 4096 131072 3084672
+  net.ipv4.tcp_rto_min_us:
+    value: '200000'
+  net.ipv4.tcp_sack:
+    value: '1'
+  net.ipv4.tcp_shrink_window:
+    value: '0'
+  net.ipv4.tcp_slow_start_after_idle:
+    value: '1'
+  net.ipv4.tcp_stdurg:
+    value: '0'
+  net.ipv4.tcp_syn_linear_timeouts:
+    value: '4'
+  net.ipv4.tcp_syn_retries:
+    value: '6'
+  net.ipv4.tcp_synack_retries:
+    value: '5'
+  net.ipv4.tcp_syncookies:
+    value: '1'
+  net.ipv4.tcp_thin_linear_timeouts:
+    value: '0'
+  net.ipv4.tcp_timestamps:
+    value: '1'
+  net.ipv4.tcp_tso_rtt_log:
+    value: '9'
+  net.ipv4.tcp_tso_win_divisor:
+    value: '3'
+  net.ipv4.tcp_tw_reuse:
+    value: '2'
+  net.ipv4.tcp_tw_reuse_delay:
+    value: '1000'
+  net.ipv4.tcp_window_scaling:
+    value: '1'
+  net.ipv4.tcp_wmem:
+    value: 4096 16384 3084672
+  net.ipv4.tcp_workaround_signed_windows:
+    value: '0'
+  net.ipv4.udp_child_hash_entries:
+    value: '0'
+  net.ipv4.udp_early_demux:
+    value: '1'
+  net.ipv4.udp_hash_entries:
+    value: '256'
+  net.ipv4.udp_l3mdev_accept:
+    value: '0'
+  net.ipv4.udp_mem:
+    value: 9036 12049 18072
+  net.ipv4.udp_rmem_min:
+    value: '4096'
+  net.ipv4.udp_wmem_min:
+    value: '4096'
+  net.ipv4.xfrm4_gc_thresh:
+    value: '32768'
+  net.ipv6.anycast_src_echo_reply:
+    value: '0'
+  net.ipv6.auto_flowlabels:
+    value: '1'
+  net.ipv6.bindv6only:
+    value: '0'
+  net.ipv6.calipso_cache_bucket_size:
+    value: '10'
+  net.ipv6.calipso_cache_enable:
+    value: '1'
+  net.ipv6.conf.all.accept_dad:
+    value: '0'
+  net.ipv6.conf.all.accept_ra:
+    value: '1'
+  net.ipv6.conf.all.accept_ra_defrtr:
+    value: '1'
+  net.ipv6.conf.all.accept_ra_from_local:
+    value: '0'
+  net.ipv6.conf.all.accept_ra_min_hop_limit:
+    value: '1'
+  net.ipv6.conf.all.accept_ra_min_lft:
+    value: '0'
+  net.ipv6.conf.all.accept_ra_mtu:
+    value: '1'
+  net.ipv6.conf.all.accept_ra_pinfo:
+    value: '1'
+  net.ipv6.conf.all.accept_ra_rt_info_max_plen:
+    value: '0'
+  net.ipv6.conf.all.accept_ra_rt_info_min_plen:
+    value: '0'
+  net.ipv6.conf.all.accept_ra_rtr_pref:
+    value: '1'
+  net.ipv6.conf.all.accept_redirects:
+    value: '0'
+  net.ipv6.conf.all.accept_source_route:
+    value: '0'
+  net.ipv6.conf.all.accept_untracked_na:
+    value: '0'
+  net.ipv6.conf.all.addr_gen_mode:
+    value: '0'
+  net.ipv6.conf.all.autoconf:
+    value: '1'
+  net.ipv6.conf.all.dad_transmits:
+    value: '1'
+  net.ipv6.conf.all.disable_ipv6:
+    value: '0'
+  net.ipv6.conf.all.disable_policy:
+    value: '0'
+  net.ipv6.conf.all.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv6.conf.all.drop_unsolicited_na:
+    value: '0'
+  net.ipv6.conf.all.enhanced_dad:
+    value: '1'
+  net.ipv6.conf.all.force_mld_version:
+    value: '0'
+  net.ipv6.conf.all.force_tllao:
+    value: '0'
+  net.ipv6.conf.all.forwarding:
+    value: '0'
+  net.ipv6.conf.all.hop_limit:
+    value: '64'
+  net.ipv6.conf.all.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv6.conf.all.ioam6_enabled:
+    value: '0'
+  net.ipv6.conf.all.ioam6_id:
+    value: '65535'
+  net.ipv6.conf.all.ioam6_id_wide:
+    value: '4294967295'
+  net.ipv6.conf.all.keep_addr_on_down:
+    value: '0'
+  net.ipv6.conf.all.max_addresses:
+    value: '16'
+  net.ipv6.conf.all.max_desync_factor:
+    value: '600'
+  net.ipv6.conf.all.mc_forwarding:
+    value: '0'
+  net.ipv6.conf.all.mldv1_unsolicited_report_interval:
+    value: '10000'
+  net.ipv6.conf.all.mldv2_unsolicited_report_interval:
+    value: '1000'
+  net.ipv6.conf.all.mtu:
+    value: '1280'
+  net.ipv6.conf.all.ndisc_evict_nocarrier:
+    value: '1'
+  net.ipv6.conf.all.ndisc_notify:
+    value: '0'
+  net.ipv6.conf.all.ndisc_tclass:
+    value: '0'
+  net.ipv6.conf.all.proxy_ndp:
+    value: '0'
+  net.ipv6.conf.all.ra_defrtr_metric:
+    value: '1024'
+  net.ipv6.conf.all.ra_honor_pio_life:
+    value: '0'
+  net.ipv6.conf.all.ra_honor_pio_pflag:
+    value: '0'
+  net.ipv6.conf.all.regen_max_retry:
+    value: '3'
+  net.ipv6.conf.all.regen_min_advance:
+    value: '2'
+  net.ipv6.conf.all.router_probe_interval:
+    value: '60'
+  net.ipv6.conf.all.router_solicitation_delay:
+    value: '1'
+  net.ipv6.conf.all.router_solicitation_interval:
+    value: '4'
+  net.ipv6.conf.all.router_solicitation_max_interval:
+    value: '3600'
+  net.ipv6.conf.all.router_solicitations:
+    value: '-1'
+  net.ipv6.conf.all.rpl_seg_enabled:
+    value: '0'
+  net.ipv6.conf.all.seg6_enabled:
+    value: '0'
+  net.ipv6.conf.all.seg6_require_hmac:
+    value: '0'
+  net.ipv6.conf.all.suppress_frag_ndisc:
+    value: '1'
+  net.ipv6.conf.all.temp_prefered_lft:
+    value: '86400'
+  net.ipv6.conf.all.temp_valid_lft:
+    value: '604800'
+  net.ipv6.conf.all.use_oif_addrs_only:
+    value: '0'
+  net.ipv6.conf.all.use_tempaddr:
+    value: '2'
+  net.ipv6.conf.default.accept_dad:
+    value: '1'
+  net.ipv6.conf.default.accept_ra:
+    value: '1'
+  net.ipv6.conf.default.accept_ra_defrtr:
+    value: '1'
+  net.ipv6.conf.default.accept_ra_from_local:
+    value: '0'
+  net.ipv6.conf.default.accept_ra_min_hop_limit:
+    value: '1'
+  net.ipv6.conf.default.accept_ra_min_lft:
+    value: '0'
+  net.ipv6.conf.default.accept_ra_mtu:
+    value: '1'
+  net.ipv6.conf.default.accept_ra_pinfo:
+    value: '1'
+  net.ipv6.conf.default.accept_ra_rt_info_max_plen:
+    value: '0'
+  net.ipv6.conf.default.accept_ra_rt_info_min_plen:
+    value: '0'
+  net.ipv6.conf.default.accept_ra_rtr_pref:
+    value: '1'
+  net.ipv6.conf.default.accept_redirects:
+    value: '0'
+  net.ipv6.conf.default.accept_source_route:
+    value: '0'
+  net.ipv6.conf.default.accept_untracked_na:
+    value: '0'
+  net.ipv6.conf.default.addr_gen_mode:
+    value: '0'
+  net.ipv6.conf.default.autoconf:
+    value: '1'
+  net.ipv6.conf.default.dad_transmits:
+    value: '1'
+  net.ipv6.conf.default.disable_ipv6:
+    value: '0'
+  net.ipv6.conf.default.disable_policy:
+    value: '0'
+  net.ipv6.conf.default.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv6.conf.default.drop_unsolicited_na:
+    value: '0'
+  net.ipv6.conf.default.enhanced_dad:
+    value: '1'
+  net.ipv6.conf.default.force_mld_version:
+    value: '0'
+  net.ipv6.conf.default.force_tllao:
+    value: '0'
+  net.ipv6.conf.default.forwarding:
+    value: '0'
+  net.ipv6.conf.default.hop_limit:
+    value: '64'
+  net.ipv6.conf.default.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv6.conf.default.ioam6_enabled:
+    value: '0'
+  net.ipv6.conf.default.ioam6_id:
+    value: '65535'
+  net.ipv6.conf.default.ioam6_id_wide:
+    value: '4294967295'
+  net.ipv6.conf.default.keep_addr_on_down:
+    value: '0'
+  net.ipv6.conf.default.max_addresses:
+    value: '16'
+  net.ipv6.conf.default.max_desync_factor:
+    value: '600'
+  net.ipv6.conf.default.mc_forwarding:
+    value: '0'
+  net.ipv6.conf.default.mldv1_unsolicited_report_interval:
+    value: '10000'
+  net.ipv6.conf.default.mldv2_unsolicited_report_interval:
+    value: '1000'
+  net.ipv6.conf.default.mtu:
+    value: '1280'
+  net.ipv6.conf.default.ndisc_evict_nocarrier:
+    value: '1'
+  net.ipv6.conf.default.ndisc_notify:
+    value: '0'
+  net.ipv6.conf.default.ndisc_tclass:
+    value: '0'
+  net.ipv6.conf.default.proxy_ndp:
+    value: '0'
+  net.ipv6.conf.default.ra_defrtr_metric:
+    value: '1024'
+  net.ipv6.conf.default.ra_honor_pio_life:
+    value: '0'
+  net.ipv6.conf.default.ra_honor_pio_pflag:
+    value: '0'
+  net.ipv6.conf.default.regen_max_retry:
+    value: '3'
+  net.ipv6.conf.default.regen_min_advance:
+    value: '2'
+  net.ipv6.conf.default.router_probe_interval:
+    value: '60'
+  net.ipv6.conf.default.router_solicitation_delay:
+    value: '1'
+  net.ipv6.conf.default.router_solicitation_interval:
+    value: '4'
+  net.ipv6.conf.default.router_solicitation_max_interval:
+    value: '3600'
+  net.ipv6.conf.default.router_solicitations:
+    value: '-1'
+  net.ipv6.conf.default.rpl_seg_enabled:
+    value: '0'
+  net.ipv6.conf.default.seg6_enabled:
+    value: '0'
+  net.ipv6.conf.default.seg6_require_hmac:
+    value: '0'
+  net.ipv6.conf.default.suppress_frag_ndisc:
+    value: '1'
+  net.ipv6.conf.default.temp_prefered_lft:
+    value: '86400'
+  net.ipv6.conf.default.temp_valid_lft:
+    value: '604800'
+  net.ipv6.conf.default.use_oif_addrs_only:
+    value: '0'
+  net.ipv6.conf.default.use_tempaddr:
+    value: '2'
+  net.ipv6.conf.ens5.accept_dad:
+    value: '1'
+  net.ipv6.conf.ens5.accept_ra:
+    value: '0'
+  net.ipv6.conf.ens5.accept_ra_defrtr:
+    value: '1'
+  net.ipv6.conf.ens5.accept_ra_from_local:
+    value: '0'
+  net.ipv6.conf.ens5.accept_ra_min_hop_limit:
+    value: '1'
+  net.ipv6.conf.ens5.accept_ra_min_lft:
+    value: '0'
+  net.ipv6.conf.ens5.accept_ra_mtu:
+    value: '1'
+  net.ipv6.conf.ens5.accept_ra_pinfo:
+    value: '1'
+  net.ipv6.conf.ens5.accept_ra_rt_info_max_plen:
+    value: '0'
+  net.ipv6.conf.ens5.accept_ra_rt_info_min_plen:
+    value: '0'
+  net.ipv6.conf.ens5.accept_ra_rtr_pref:
+    value: '1'
+  net.ipv6.conf.ens5.accept_redirects:
+    value: '1'
+  net.ipv6.conf.ens5.accept_source_route:
+    value: '0'
+  net.ipv6.conf.ens5.accept_untracked_na:
+    value: '0'
+  net.ipv6.conf.ens5.addr_gen_mode:
+    value: '0'
+  net.ipv6.conf.ens5.autoconf:
+    value: '1'
+  net.ipv6.conf.ens5.dad_transmits:
+    value: '1'
+  net.ipv6.conf.ens5.disable_ipv6:
+    value: '0'
+  net.ipv6.conf.ens5.disable_policy:
+    value: '0'
+  net.ipv6.conf.ens5.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv6.conf.ens5.drop_unsolicited_na:
+    value: '0'
+  net.ipv6.conf.ens5.enhanced_dad:
+    value: '1'
+  net.ipv6.conf.ens5.force_mld_version:
+    value: '0'
+  net.ipv6.conf.ens5.force_tllao:
+    value: '0'
+  net.ipv6.conf.ens5.forwarding:
+    value: '0'
+  net.ipv6.conf.ens5.hop_limit:
+    value: '255'
+  net.ipv6.conf.ens5.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv6.conf.ens5.ioam6_enabled:
+    value: '0'
+  net.ipv6.conf.ens5.ioam6_id:
+    value: '65535'
+  net.ipv6.conf.ens5.ioam6_id_wide:
+    value: '4294967295'
+  net.ipv6.conf.ens5.keep_addr_on_down:
+    value: '0'
+  net.ipv6.conf.ens5.max_addresses:
+    value: '16'
+  net.ipv6.conf.ens5.max_desync_factor:
+    value: '600'
+  net.ipv6.conf.ens5.mc_forwarding:
+    value: '0'
+  net.ipv6.conf.ens5.mldv1_unsolicited_report_interval:
+    value: '10000'
+  net.ipv6.conf.ens5.mldv2_unsolicited_report_interval:
+    value: '1000'
+  net.ipv6.conf.ens5.mtu:
+    value: '9001'
+  net.ipv6.conf.ens5.ndisc_evict_nocarrier:
+    value: '1'
+  net.ipv6.conf.ens5.ndisc_notify:
+    value: '0'
+  net.ipv6.conf.ens5.ndisc_tclass:
+    value: '0'
+  net.ipv6.conf.ens5.proxy_ndp:
+    value: '0'
+  net.ipv6.conf.ens5.ra_defrtr_metric:
+    value: '1024'
+  net.ipv6.conf.ens5.ra_honor_pio_life:
+    value: '0'
+  net.ipv6.conf.ens5.ra_honor_pio_pflag:
+    value: '0'
+  net.ipv6.conf.ens5.regen_max_retry:
+    value: '3'
+  net.ipv6.conf.ens5.regen_min_advance:
+    value: '2'
+  net.ipv6.conf.ens5.router_probe_interval:
+    value: '60'
+  net.ipv6.conf.ens5.router_solicitation_delay:
+    value: '1'
+  net.ipv6.conf.ens5.router_solicitation_interval:
+    value: '4'
+  net.ipv6.conf.ens5.router_solicitation_max_interval:
+    value: '3600'
+  net.ipv6.conf.ens5.router_solicitations:
+    value: '-1'
+  net.ipv6.conf.ens5.rpl_seg_enabled:
+    value: '0'
+  net.ipv6.conf.ens5.seg6_enabled:
+    value: '0'
+  net.ipv6.conf.ens5.seg6_require_hmac:
+    value: '0'
+  net.ipv6.conf.ens5.suppress_frag_ndisc:
+    value: '1'
+  net.ipv6.conf.ens5.temp_prefered_lft:
+    value: '86400'
+  net.ipv6.conf.ens5.temp_valid_lft:
+    value: '604800'
+  net.ipv6.conf.ens5.use_oif_addrs_only:
+    value: '0'
+  net.ipv6.conf.ens5.use_tempaddr:
+    value: '0'
+  net.ipv6.conf.lo.accept_dad:
+    value: '-1'
+  net.ipv6.conf.lo.accept_ra:
+    value: '1'
+  net.ipv6.conf.lo.accept_ra_defrtr:
+    value: '1'
+  net.ipv6.conf.lo.accept_ra_from_local:
+    value: '0'
+  net.ipv6.conf.lo.accept_ra_min_hop_limit:
+    value: '1'
+  net.ipv6.conf.lo.accept_ra_min_lft:
+    value: '0'
+  net.ipv6.conf.lo.accept_ra_mtu:
+    value: '1'
+  net.ipv6.conf.lo.accept_ra_pinfo:
+    value: '1'
+  net.ipv6.conf.lo.accept_ra_rt_info_max_plen:
+    value: '0'
+  net.ipv6.conf.lo.accept_ra_rt_info_min_plen:
+    value: '0'
+  net.ipv6.conf.lo.accept_ra_rtr_pref:
+    value: '1'
+  net.ipv6.conf.lo.accept_redirects:
+    value: '1'
+  net.ipv6.conf.lo.accept_source_route:
+    value: '0'
+  net.ipv6.conf.lo.accept_untracked_na:
+    value: '0'
+  net.ipv6.conf.lo.addr_gen_mode:
+    value: '0'
+  net.ipv6.conf.lo.autoconf:
+    value: '1'
+  net.ipv6.conf.lo.dad_transmits:
+    value: '1'
+  net.ipv6.conf.lo.disable_ipv6:
+    value: '0'
+  net.ipv6.conf.lo.disable_policy:
+    value: '0'
+  net.ipv6.conf.lo.drop_unicast_in_l2_multicast:
+    value: '0'
+  net.ipv6.conf.lo.drop_unsolicited_na:
+    value: '0'
+  net.ipv6.conf.lo.enhanced_dad:
+    value: '1'
+  net.ipv6.conf.lo.force_mld_version:
+    value: '0'
+  net.ipv6.conf.lo.force_tllao:
+    value: '0'
+  net.ipv6.conf.lo.forwarding:
+    value: '0'
+  net.ipv6.conf.lo.hop_limit:
+    value: '64'
+  net.ipv6.conf.lo.ignore_routes_with_linkdown:
+    value: '0'
+  net.ipv6.conf.lo.ioam6_enabled:
+    value: '0'
+  net.ipv6.conf.lo.ioam6_id:
+    value: '65535'
+  net.ipv6.conf.lo.ioam6_id_wide:
+    value: '4294967295'
+  net.ipv6.conf.lo.keep_addr_on_down:
+    value: '0'
+  net.ipv6.conf.lo.max_addresses:
+    value: '16'
+  net.ipv6.conf.lo.max_desync_factor:
+    value: '600'
+  net.ipv6.conf.lo.mc_forwarding:
+    value: '0'
+  net.ipv6.conf.lo.mldv1_unsolicited_report_interval:
+    value: '10000'
+  net.ipv6.conf.lo.mldv2_unsolicited_report_interval:
+    value: '1000'
+  net.ipv6.conf.lo.mtu:
+    value: '65536'
+  net.ipv6.conf.lo.ndisc_evict_nocarrier:
+    value: '1'
+  net.ipv6.conf.lo.ndisc_notify:
+    value: '0'
+  net.ipv6.conf.lo.ndisc_tclass:
+    value: '0'
+  net.ipv6.conf.lo.proxy_ndp:
+    value: '0'
+  net.ipv6.conf.lo.ra_defrtr_metric:
+    value: '1024'
+  net.ipv6.conf.lo.ra_honor_pio_life:
+    value: '0'
+  net.ipv6.conf.lo.ra_honor_pio_pflag:
+    value: '0'
+  net.ipv6.conf.lo.regen_max_retry:
+    value: '3'
+  net.ipv6.conf.lo.regen_min_advance:
+    value: '2'
+  net.ipv6.conf.lo.router_probe_interval:
+    value: '60'
+  net.ipv6.conf.lo.router_solicitation_delay:
+    value: '1'
+  net.ipv6.conf.lo.router_solicitation_interval:
+    value: '4'
+  net.ipv6.conf.lo.router_solicitation_max_interval:
+    value: '3600'
+  net.ipv6.conf.lo.router_solicitations:
+    value: '-1'
+  net.ipv6.conf.lo.rpl_seg_enabled:
+    value: '0'
+  net.ipv6.conf.lo.seg6_enabled:
+    value: '0'
+  net.ipv6.conf.lo.seg6_require_hmac:
+    value: '0'
+  net.ipv6.conf.lo.suppress_frag_ndisc:
+    value: '1'
+  net.ipv6.conf.lo.temp_prefered_lft:
+    value: '86400'
+  net.ipv6.conf.lo.temp_valid_lft:
+    value: '604800'
+  net.ipv6.conf.lo.use_oif_addrs_only:
+    value: '0'
+  net.ipv6.conf.lo.use_tempaddr:
+    value: '-1'
+  net.ipv6.fib_multipath_hash_fields:
+    value: '7'
+  net.ipv6.fib_multipath_hash_policy:
+    value: '0'
+  net.ipv6.fib_notify_on_flag_change:
+    value: '0'
+  net.ipv6.flowlabel_consistency:
+    value: '1'
+  net.ipv6.flowlabel_reflect:
+    value: '0'
+  net.ipv6.flowlabel_state_ranges:
+    value: '0'
+  net.ipv6.fwmark_reflect:
+    value: '0'
+  net.ipv6.icmp.echo_ignore_all:
+    value: '0'
+  net.ipv6.icmp.echo_ignore_anycast:
+    value: '0'
+  net.ipv6.icmp.echo_ignore_multicast:
+    value: '0'
+  net.ipv6.icmp.error_anycast_as_unicast:
+    value: '0'
+  net.ipv6.icmp.ratelimit:
+    value: '1000'
+  net.ipv6.icmp.ratemask:
+    value: 0-1,3-127
+  net.ipv6.idgen_delay:
+    value: '1'
+  net.ipv6.idgen_retries:
+    value: '3'
+  net.ipv6.ioam6_id:
+    value: '16777215'
+  net.ipv6.ioam6_id_wide:
+    value: '72057594037927935'
+  net.ipv6.ip6frag_high_thresh:
+    value: '4194304'
+  net.ipv6.ip6frag_low_thresh:
+    value: '3145728'
+  net.ipv6.ip6frag_secret_interval:
+    value: '0'
+  net.ipv6.ip6frag_time:
+    value: '60'
+  net.ipv6.ip_nonlocal_bind:
+    value: '0'
+  net.ipv6.max_dst_opts_length:
+    value: '2147483647'
+  net.ipv6.max_dst_opts_number:
+    value: '8'
+  net.ipv6.max_hbh_length:
+    value: '2147483647'
+  net.ipv6.max_hbh_opts_number:
+    value: '8'
+  net.ipv6.mld_max_msf:
+    value: '64'
+  net.ipv6.mld_qrv:
+    value: '2'
+  net.ipv6.neigh.default.anycast_delay:
+    value: '100'
+  net.ipv6.neigh.default.app_solicit:
+    value: '0'
+  net.ipv6.neigh.default.base_reachable_time_ms:
+    value: '30000'
+  net.ipv6.neigh.default.delay_first_probe_time:
+    value: '5'
+  net.ipv6.neigh.default.gc_interval:
+    value: '30'
+  net.ipv6.neigh.default.gc_stale_time:
+    value: '60'
+  net.ipv6.neigh.default.gc_thresh1:
+    value: '128'
+  net.ipv6.neigh.default.gc_thresh2:
+    value: '512'
+  net.ipv6.neigh.default.gc_thresh3:
+    value: '1024'
+  net.ipv6.neigh.default.interval_probe_time_ms:
+    value: '5000'
+  net.ipv6.neigh.default.locktime:
+    value: '0'
+  net.ipv6.neigh.default.mcast_resolicit:
+    value: '0'
+  net.ipv6.neigh.default.mcast_solicit:
+    value: '3'
+  net.ipv6.neigh.default.proxy_delay:
+    value: '80'
+  net.ipv6.neigh.default.proxy_qlen:
+    value: '64'
+  net.ipv6.neigh.default.retrans_time_ms:
+    value: '1000'
+  net.ipv6.neigh.default.ucast_solicit:
+    value: '3'
+  net.ipv6.neigh.default.unres_qlen:
+    value: '101'
+  net.ipv6.neigh.default.unres_qlen_bytes:
+    value: '212992'
+  net.ipv6.neigh.ens5.anycast_delay:
+    value: '100'
+  net.ipv6.neigh.ens5.app_solicit:
+    value: '0'
+  net.ipv6.neigh.ens5.base_reachable_time_ms:
+    value: '30000'
+  net.ipv6.neigh.ens5.delay_first_probe_time:
+    value: '5'
+  net.ipv6.neigh.ens5.gc_stale_time:
+    value: '60'
+  net.ipv6.neigh.ens5.interval_probe_time_ms:
+    value: '5000'
+  net.ipv6.neigh.ens5.locktime:
+    value: '0'
+  net.ipv6.neigh.ens5.mcast_resolicit:
+    value: '0'
+  net.ipv6.neigh.ens5.mcast_solicit:
+    value: '3'
+  net.ipv6.neigh.ens5.proxy_delay:
+    value: '80'
+  net.ipv6.neigh.ens5.proxy_qlen:
+    value: '64'
+  net.ipv6.neigh.ens5.retrans_time_ms:
+    value: '1000'
+  net.ipv6.neigh.ens5.ucast_solicit:
+    value: '3'
+  net.ipv6.neigh.ens5.unres_qlen:
+    value: '101'
+  net.ipv6.neigh.ens5.unres_qlen_bytes:
+    value: '212992'
+  net.ipv6.neigh.lo.anycast_delay:
+    value: '100'
+  net.ipv6.neigh.lo.app_solicit:
+    value: '0'
+  net.ipv6.neigh.lo.base_reachable_time_ms:
+    value: '30000'
+  net.ipv6.neigh.lo.delay_first_probe_time:
+    value: '5'
+  net.ipv6.neigh.lo.gc_stale_time:
+    value: '60'
+  net.ipv6.neigh.lo.interval_probe_time_ms:
+    value: '5000'
+  net.ipv6.neigh.lo.locktime:
+    value: '0'
+  net.ipv6.neigh.lo.mcast_resolicit:
+    value: '0'
+  net.ipv6.neigh.lo.mcast_solicit:
+    value: '3'
+  net.ipv6.neigh.lo.proxy_delay:
+    value: '80'
+  net.ipv6.neigh.lo.proxy_qlen:
+    value: '64'
+  net.ipv6.neigh.lo.retrans_time_ms:
+    value: '1000'
+  net.ipv6.neigh.lo.ucast_solicit:
+    value: '3'
+  net.ipv6.neigh.lo.unres_qlen:
+    value: '101'
+  net.ipv6.neigh.lo.unres_qlen_bytes:
+    value: '212992'
+  net.ipv6.route.gc_elasticity:
+    value: '9'
+  net.ipv6.route.gc_interval:
+    value: '30'
+  net.ipv6.route.gc_min_interval:
+    value: '0'
+  net.ipv6.route.gc_min_interval_ms:
+    value: '500'
+  net.ipv6.route.gc_thresh:
+    value: '1024'
+  net.ipv6.route.gc_timeout:
+    value: '60'
+  net.ipv6.route.max_size:
+    value: '2147483647'
+  net.ipv6.route.min_adv_mss:
+    value: '1220'
+  net.ipv6.route.mtu_expires:
+    value: '600'
+  net.ipv6.route.skip_notify_on_dev_down:
+    value: '0'
+  net.ipv6.seg6_flowlabel:
+    value: '0'
+  net.ipv6.xfrm6_gc_thresh:
+    value: '32768'
+  net.mptcp.add_addr_timeout:
+    value: '120'
+  net.mptcp.allow_join_initial_addr_port:
+    value: '1'
+  net.mptcp.available_schedulers:
+    value: default
+  net.mptcp.blackhole_timeout:
+    value: '3600'
+  net.mptcp.checksum_enabled:
+    value: '0'
+  net.mptcp.close_timeout:
+    value: '60'
+  net.mptcp.enabled:
+    value: '1'
+  net.mptcp.pm_type:
+    value: '0'
+  net.mptcp.scheduler:
+    value: default
+  net.mptcp.stale_loss_cnt:
+    value: '4'
+  net.mptcp.syn_retrans_before_tcp_fallback:
+    value: '2'
+  net.netfilter.nf_conntrack_acct:
+    value: '0'
+  net.netfilter.nf_conntrack_checksum:
+    value: '1'
+  net.netfilter.nf_conntrack_dccp_loose:
+    value: '1'
+  net.netfilter.nf_conntrack_dccp_timeout_closereq:
+    value: '64'
+  net.netfilter.nf_conntrack_dccp_timeout_closing:
+    value: '64'
+  net.netfilter.nf_conntrack_dccp_timeout_open:
+    value: '43200'
+  net.netfilter.nf_conntrack_dccp_timeout_partopen:
+    value: '480'
+  net.netfilter.nf_conntrack_dccp_timeout_request:
+    value: '240'
+  net.netfilter.nf_conntrack_dccp_timeout_respond:
+    value: '480'
+  net.netfilter.nf_conntrack_dccp_timeout_timewait:
+    value: '240'
+  net.netfilter.nf_conntrack_events:
+    value: '2'
+  net.netfilter.nf_conntrack_frag6_high_thresh:
+    value: '4194304'
+  net.netfilter.nf_conntrack_frag6_low_thresh:
+    value: '3145728'
+  net.netfilter.nf_conntrack_frag6_timeout:
+    value: '60'
+  net.netfilter.nf_conntrack_generic_timeout:
+    value: '600'
+  net.netfilter.nf_conntrack_gre_timeout:
+    value: '30'
+  net.netfilter.nf_conntrack_gre_timeout_stream:
+    value: '180'
+  net.netfilter.nf_conntrack_icmp_timeout:
+    value: '30'
+  net.netfilter.nf_conntrack_icmpv6_timeout:
+    value: '30'
+  net.netfilter.nf_conntrack_log_invalid:
+    value: '0'
+  net.netfilter.nf_conntrack_sctp_timeout_closed:
+    value: '10'
+  net.netfilter.nf_conntrack_sctp_timeout_cookie_echoed:
+    value: '3'
+  net.netfilter.nf_conntrack_sctp_timeout_cookie_wait:
+    value: '3'
+  net.netfilter.nf_conntrack_sctp_timeout_established:
+    value: '210'
+  net.netfilter.nf_conntrack_sctp_timeout_heartbeat_sent:
+    value: '30'
+  net.netfilter.nf_conntrack_sctp_timeout_shutdown_ack_sent:
+    value: '3'
+  net.netfilter.nf_conntrack_sctp_timeout_shutdown_recd:
+    value: '3'
+  net.netfilter.nf_conntrack_sctp_timeout_shutdown_sent:
+    value: '3'
+  net.netfilter.nf_conntrack_tcp_be_liberal:
+    value: '0'
+  net.netfilter.nf_conntrack_tcp_ignore_invalid_rst:
+    value: '0'
+  net.netfilter.nf_conntrack_tcp_loose:
+    value: '1'
+  net.netfilter.nf_conntrack_tcp_max_retrans:
+    value: '3'
+  net.netfilter.nf_conntrack_tcp_timeout_close:
+    value: '10'
+  net.netfilter.nf_conntrack_tcp_timeout_close_wait:
+    value: '60'
+  net.netfilter.nf_conntrack_tcp_timeout_established:
+    value: '432000'
+  net.netfilter.nf_conntrack_tcp_timeout_fin_wait:
+    value: '120'
+  net.netfilter.nf_conntrack_tcp_timeout_last_ack:
+    value: '30'
+  net.netfilter.nf_conntrack_tcp_timeout_max_retrans:
+    value: '300'
+  net.netfilter.nf_conntrack_tcp_timeout_syn_recv:
+    value: '60'
+  net.netfilter.nf_conntrack_tcp_timeout_syn_sent:
+    value: '120'
+  net.netfilter.nf_conntrack_tcp_timeout_time_wait:
+    value: '120'
+  net.netfilter.nf_conntrack_tcp_timeout_unacknowledged:
+    value: '300'
+  net.netfilter.nf_conntrack_timestamp:
+    value: '0'
+  net.netfilter.nf_conntrack_udp_timeout:
+    value: '30'
+  net.netfilter.nf_conntrack_udp_timeout_stream:
+    value: '120'
+  net.netfilter.nf_flowtable_tcp_timeout:
+    value: '30'
+  net.netfilter.nf_flowtable_udp_timeout:
+    value: '30'
+  net.netfilter.nf_hooks_lwtunnel:
+    value: '0'
+  net.netfilter.nf_log.0:
+    value: NONE
+  net.netfilter.nf_log.1:
+    value: NONE
+  net.netfilter.nf_log.10:
+    value: nf_log_ipv6
+  net.netfilter.nf_log.2:
+    value: nf_log_ipv4
+  net.netfilter.nf_log.3:
+    value: nf_log_arp
+  net.netfilter.nf_log.4:
+    value: NONE
+  net.netfilter.nf_log.5:
+    value: nf_log_netdev
+  net.netfilter.nf_log.6:
+    value: NONE
+  net.netfilter.nf_log.7:
+    value: nf_log_bridge
+  net.netfilter.nf_log.8:
+    value: NONE
+  net.netfilter.nf_log.9:
+    value: NONE
+  net.netfilter.nf_log_all_netns:
+    value: '0'
+  net.nf_conntrack_max:
+    value: '3584'
+  net.unix.max_dgram_qlen:
+    value: '512'
+  user.max_cgroup_namespaces:
+    value: '1537'
+  user.max_fanotify_groups:
+    value: '128'
+  user.max_fanotify_marks:
+    value: '8192'
+  user.max_inotify_instances:
+    value: '128'
+  user.max_inotify_watches:
+    value: '8192'
+  user.max_ipc_namespaces:
+    value: '1537'
+  user.max_mnt_namespaces:
+    value: '1537'
+  user.max_net_namespaces:
+    value: '1537'
+  user.max_pid_namespaces:
+    value: '1537'
+  user.max_time_namespaces:
+    value: '1537'
+  user.max_user_namespaces:
+    value: '1537'
+  user.max_uts_namespaces:
+    value: '1537'
+  vm.admin_reserve_kbytes:
+    value: '8192'
+  vm.compact_unevictable_allowed:
+    value: '1'
+  vm.compaction_proactiveness:
+    value: '20'
+  vm.dirty_background_bytes:
+    value: '0'
+  vm.dirty_background_ratio:
+    value: '10'
+  vm.dirty_bytes:
+    value: '0'
+  vm.dirty_expire_centisecs:
+    value: '3000'
+  vm.dirty_ratio:
+    value: '20'
+  vm.dirty_writeback_centisecs:
+    value: '500'
+  vm.dirtytime_expire_seconds:
+    value: '43200'
+  vm.enable_soft_offline:
+    value: '1'
+  vm.extfrag_threshold:
+    value: '500'
+  vm.hugetlb_shm_group:
+    value: '0'
+  vm.laptop_mode:
+    value: '0'
+  vm.legacy_va_layout:
+    value: '0'
+  vm.lowmem_reserve_ratio:
+    value: 256 256 32 0 0
+  vm.max_map_count:
+    value: '1048576'
+  vm.memfd_noexec:
+    value: '0'
+  vm.memory_failure_early_kill:
+    value: '0'
+  vm.memory_failure_recovery:
+    value: '1'
+  vm.min_free_kbytes:
+    value: '2495'
+  vm.min_slab_ratio:
+    value: '5'
+  vm.min_unmapped_ratio:
+    value: '1'
+  vm.mmap_min_addr:
+    value: '32768'
+  vm.mmap_rnd_bits:
+    value: '33'
+  vm.mmap_rnd_compat_bits:
+    value: '16'
+  vm.nr_hugepages:
+    value: '0'
+  vm.nr_hugepages_mempolicy:
+    value: '0'
+  vm.nr_overcommit_hugepages:
+    value: '0'
+  vm.numa_stat:
+    value: '1'
+  vm.numa_zonelist_order:
+    value: Node
+  vm.oom_dump_tasks:
+    value: '1'
+  vm.oom_kill_allocating_task:
+    value: '0'
+  vm.overcommit_kbytes:
+    value: '0'
+  vm.overcommit_memory:
+    value: '0'
+  vm.overcommit_ratio:
+    value: '50'
+  vm.page-cluster:
+    value: '3'
+  vm.page_lock_unfairness:
+    value: '5'
+  vm.panic_on_oom:
+    value: '1'
+  vm.percpu_pagelist_high_fraction:
+    value: '0'
+  vm.stat_interval:
+    value: '1'
+  vm.swappiness:
+    value: '60'
+  vm.unprivileged_userfaultfd:
+    value: '0'
+  vm.user_reserve_kbytes:
+    value: '11856'
+  vm.vfs_cache_pressure:
+    value: '100'
+  vm.watermark_boost_factor:
+    value: '15000'
+  vm.watermark_scale_factor:
+    value: '10'
+  vm.zone_reclaim_mode:
+    value: '0'

@@ -1,0 +1,9 @@
+# File baseline: nix
+# Generated from baseline.yml - 1 files
+file:
+  /nix/store:
+    exists: true
+    filetype: directory
+    group: '30000'
+    mode: '0775'
+    owner: '0'

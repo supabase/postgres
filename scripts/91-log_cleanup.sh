@@ -4,7 +4,7 @@
 echo "Clearing all log files"
 rm -rf /var/log/*
 
-# creating system stats directory 
+# creating system stats directory
 mkdir /var/log/sysstat
 
 # https://github.com/fail2ban/fail2ban/issues/1593
@@ -21,4 +21,3 @@ cd /var/log/wal-g
 touch backup-push.log backup-fetch.log wal-push.log wal-fetch.log pitr.log
 chown -R postgres:postgres /var/log/wal-g
 chmod -R 0300 /var/log/wal-g
-

@@ -1,0 +1,4413 @@
+# File baseline: etc
+# Generated from baseline.yml - 735 files
+file:
+  /etc/.pwd.lock:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/.resolv.conf.systemd-resolved.bak:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/.updated:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/PackageKit/PackageKit.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/PackageKit/Vendor.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/X11/Xsession.d/20dbus_xdg-runtime:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/X11/Xsession.d/90gpg-agent:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/acpi/actions/hibinit-power.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/acpi/actions/sleep.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/acpi/events/hibinit-power:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/acpi/events/hibinit-sleep:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/adduser.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/adminapi/adminapi.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/check.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/common.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/complete.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/initiate.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/pgsodium_getkey.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/adminapi/pg_upgrade_scripts/prepare.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '1006'
+  /etc/alternatives/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ansible/ansible.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ansible/hosts:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/1password:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/Discord:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/MongoDB_Compass:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/QtWebEngineProcess:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abi/3.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abi/4.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abi/kernel-5.4-outoftree-network:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abi/kernel-5.4-vanilla:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/X:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apache2-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apparmor_api/change_profile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apparmor_api/examine:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apparmor_api/find_mountpoint:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apparmor_api/introspect:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/apparmor_api/is_enabled:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/aspell:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/audio:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/authentication:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/base:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/bash:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/consoles:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/crypto:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/cups-client:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-accessibility:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-accessibility-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-network-manager-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-session:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-session-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dbus-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dconf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dovecot-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dri-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/dri-enumerate:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/enchant:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/exo-open:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/fcitx:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/fcitx-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/fonts:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/freedesktop.org:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/gio-open:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/gnome:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/gnupg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/groff:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/gtk:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/gvfs-open:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/hosts_access:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ibus:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kde:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kde-globals-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kde-icon-cache-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kde-language-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kde-open5:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/kerberosclient:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ldapclient:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/libpam-systemd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/likewise:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/mdns:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/mesa:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/mir:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/mozc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/mysql:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/nameservice:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/nis:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/nss-systemd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/nvidia:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl-intel:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl-mesa:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl-nvidia:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/opencl-pocl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/openssl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/orbit2:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/p11-kit:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/perl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/php:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/php-worker:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/php5:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/postfix-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/private-files:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/private-files-strict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/python:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/qt5:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/qt5-compose-cache-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/qt5-settings-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/recent-documents-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ruby:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/samba:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/samba-rpcd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/smbpass:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/snap_browsers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ssl_certs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ssl_keys:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/svn-repositories:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/transmission-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/trash:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-bittorrent-clients:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/chromium-browser:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/java:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/kde:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/mailto:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/multimedia:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/plugins-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/productivity:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/text-editors:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/ubuntu-integration:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/ubuntu-integration-xul:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-browsers.d/user-files:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-console-browsers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-console-email:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-email:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-feed-readers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-gnome-terminal:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-helpers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-konsole:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-media-players:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-unity7-base:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-unity7-launcher:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-unity7-messaging:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/ubuntu-xterm:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/user-download:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/user-mail:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/user-manpages:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/user-tmp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/user-write:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/video:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/vulkan:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/wayland:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/web-data:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/winbind:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/wutmp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/xad:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/xdg-desktop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/abstractions/xdg-open:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/balena-etcher:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/brave:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/buildah:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/busybox:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/cam:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/ch-checkns:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/ch-run:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/chrome:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/code:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/crun:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/devhelp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/element-desktop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/epiphany:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/evolution:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/firefox:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/flatpak:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/foliate:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/geary:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/github-desktop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/goldendict:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/ipa_verify:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/kchmviewer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/keybase:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lc-compliance:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/libcamerify:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/linux-sandbox:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/local/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/local/lsb_release:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/local/nvidia_modprobe:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/local/usr.bin.tcpdump:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/loupe:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lsb_release:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-attach:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-create:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-destroy:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-execute:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-stop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-unshare:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/lxc-usernsexec:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/mmdebstrap:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/msedge:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/nautilus:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/notepadqq:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/nvidia_modprobe:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/obsidian:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/opam:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/opera:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/opt.gotrue.gotrue:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/opt.postgrest:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/pageedit:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/plasmashell:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/podman:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/polypane:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/privacybrowser:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/qcam:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/qmapshack:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/qutebrowser:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/rootlesskit:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/rpm:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/rssguard:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/runc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-abort:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-adduser:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-apt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-checkpackages:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-clean:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-createchroot:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-destroychroot:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-distupgrade:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-hold:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-shell:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-unhold:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-update:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/sbuild-upgrade:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/scide:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/signal-desktop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/slack:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/slirp4netns:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/steam:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/stress-ng:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/surfshark:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/systemd-coredump:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/thunderbird:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/toybox:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/transmission:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/trinity:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/alias:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/apparmorfs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/dovecot:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/etc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/global:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/home:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/home.d/site.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/home.d/ubuntu:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/kernelvars:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/multiarch:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/multiarch.d/site.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/proc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/run:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/securityfs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/share:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/sys:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/xdg-user-dirs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tunables/xdg-user-dirs.d/site.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tup:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/tuxedo-control-center:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/unix-chkpwd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/unprivileged_userns:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/userbindmount:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/usr.bin.tcpdump:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/usr.bin.vector:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/usr.lib.postgresql.bin.postgres:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/usr.local.bin.pgbouncer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/uwsgi-core:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/vdens:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/virtiofsd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/vivaldi-bin:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/vpnns:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/wike:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor.d/wpcom:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor/easyprof.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor/logprof.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor/parser.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apparmor/severity.db:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/01-vendor-ubuntu:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/01autoremove:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/10periodic:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/20auto-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/20packagekit:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/50appstream:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/50unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/apt.conf.d/70debconf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/keyrings/salt-archive-keyring-2023.pgp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/sources.list:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/sources.list.d/salt.list.list:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/trusted.gpg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/trusted.gpg.d/ubuntu-keyring-2012-cdimage.gpg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/trusted.gpg.d/ubuntu-keyring-2018-archive.gpg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/apt/trusted.gpg~:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/at.deny:
+    exists: true
+    filetype: file
+    group: '1'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/audit-stop.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/audit.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/auditd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/plugins.d/af_unix.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/plugins.d/syslog.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/audit/rules.d/audit.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/bash.bashrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/bash.bashrc.backup-before-nix:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/bashrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/bindresvport.blacklist:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ca-certificates.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/cloud.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/cloud.cfg.d/05_logging.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/cloud.cfg.d/90_dpkg.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/cloud.cfg.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chef_client.rb.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.almalinux.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.alpine.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.centos.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.cloudlinux.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.cos.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.debian.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.fedora.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.freebsd.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.opensuse-leap.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.opensuse-microos.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.opensuse-tumbleweed.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.opensuse.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.photon.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.rhel.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.rocky.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.sle-micro.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.sle_hpc.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.sles.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/chrony.conf.ubuntu.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.alpine.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.aosc.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.arch.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.azurelinux.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.debian.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.freebsd.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.gentoo.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.mariner.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.openeuler.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.photon.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.redhat.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/hosts.suse.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.almalinux.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.alpine.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.cloudlinux.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.debian.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.fedora.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.freebsd.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.opensuse.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.photon.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.rhel.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.rocky.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.sles.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntp.conf.ubuntu.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/ntpd.conf.openbsd.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/resolv.conf.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/sources.list.debian.deb822.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/sources.list.debian.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/sources.list.ubuntu.deb822.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/sources.list.ubuntu.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/systemd.resolved.conf.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cloud/templates/timesyncd.conf.tmpl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.d/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.d/e2scrub_all:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.d/sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.daily/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.daily/apt-compat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/cron.daily/dpkg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/cron.daily/logrotate:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/cron.daily/sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/cron.deny:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.hourly/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.monthly/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.weekly/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/cron.yearly/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/crontab:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dbus-1/system.d/com.ubuntu.SoftwareProperties.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/debconf.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/debian_version:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/acpid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/auditd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/cron:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/dbus:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/fail2ban:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/grub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/networkd-dispatcher:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/ssh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/ufw:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/useradd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/default/vector:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/deluser.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/depmod.d/ubuntu.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dhcp/dhclient-exit-hooks.d/timesyncd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dhcpcd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dpkg/dpkg.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dpkg/origins/debian:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dpkg/origins/ubuntu:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dpkg/shlibs.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/dpkg/shlibs.override:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/e2scrub.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/environment:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/environment.d/postgresql.env:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '999'
+  /etc/envoy/cds.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/envoy/envoy.yaml:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0664'
+    owner: '1003'
+  /etc/envoy/fullChain.pem:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /etc/envoy/lds.yaml:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0664'
+    owner: '1003'
+  /etc/envoy/privKey.pem:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /etc/ethertypes:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans-mono.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-serif.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-sans-mono.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-sans.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/20-unhint-small-dejavu-serif.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/57-dejavu-sans-mono.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/57-dejavu-sans.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/57-dejavu-serif.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/58-dejavu-lgc-sans-mono.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/58-dejavu-lgc-sans.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.avail/58-dejavu-lgc-serif.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/conf.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fonts/fonts.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fstab:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/gai.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/gnutls/config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/gotrue.env:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0664'
+    owner: '0'
+  /etc/gprofng.rc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/groff/man.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/groff/mdoc.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/group:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/group-:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/grub.d/00_header:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/05_debian_theme:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/10_linux:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/10_linux_zfs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/20_linux_xen:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/25_bli:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/30_uefi-firmware:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/40_custom:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/41_custom:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/grub.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/gshadow:
+    exists: true
+    filetype: file
+    group: '42'
+    mode: '0640'
+    owner: '0'
+  /etc/gshadow-:
+    exists: true
+    filetype: file
+    group: '42'
+    mode: '0640'
+    owner: '0'
+  /etc/hibagent-config.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/hibinit-config.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/host.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/hostname:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/hosts:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/hosts.allow:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/hosts.deny:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/init.d/acpid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/apparmor:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/atd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/auditd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/cron:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/dbus:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/fail2ban:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/grub-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/hibagent:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/kmod:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/procps:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/ssh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/ufw:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/init.d/unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/initramfs-tools/initramfs.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/initramfs-tools/modules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/initramfs-tools/update-initramfs.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/inputrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/bpf_pinning:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/ematch_map:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/group:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/nl_protos:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_dsfield:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_protos:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_protos.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_realms:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_scopes:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_tables:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/iproute2/rt_tables.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/issue:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/issue.net:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/kernel/postinst.d/initramfs-tools:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kernel/postinst.d/unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kernel/postinst.d/xx-update-initrd-links:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kernel/postinst.d/zz-update-grub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kernel/postrm.d/initramfs-tools:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kernel/postrm.d/zz-update-grub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/kong/fullChain.pem:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /etc/kong/kong.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0664'
+    owner: '0'
+  /etc/kong/kong.conf.default:
+    exists: true
+    filetype: file
+    group: '1008'
+    mode: '0664'
+    owner: '1004'
+  /etc/kong/kong.env:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/kong/kong.logrotate:
+    exists: true
+    filetype: file
+    group: '1008'
+    mode: '0664'
+    owner: '1004'
+  /etc/kong/kong.yml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/kong/privKey.pem:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /etc/ld.so.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ld.so.conf.d/aarch64-linux-gnu.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ld.so.conf.d/fakeroot-aarch64-linux-gnu.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ld.so.conf.d/libc.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ldap/ldap.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/legal:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libaudit.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/bnxt_re.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/cxgb4.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/efa.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/erdma.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/hfi1verbs.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/hns.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/ipathverbs.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/irdma.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/mana.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/mlx4.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/mlx5.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/mthca.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/ocrdma.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/qedr.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/rxe.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/siw.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libibverbs.d/vmw_pvrdma.driver:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libnl-3/classid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/libnl-3/pktloc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/locale.alias:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/locale.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/locale.gen:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logcheck/ignore.d.server/gpg-agent:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/login.defs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/alternatives:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/apt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/btmp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/cloud-init:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/dpkg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/fail2ban:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/logrotate-postgres-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /etc/logrotate.d/logrotate-postgres-csv.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /etc/logrotate.d/logrotate-postgres.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /etc/logrotate.d/logrotate-walg.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /etc/logrotate.d/salt-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/ufw:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/logrotate.d/wtmp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/lsb-release:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/machine-id:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0444'
+    owner: '0'
+  /etc/mime.types:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/mke2fs.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/blacklist-ath_pci.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/blacklist-firewire.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/blacklist-framebuffer.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/blacklist-rare-network.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/blacklist.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modprobe.d/iwlwifi.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/modules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/monit/monitrc.d/fail2ban:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/netplan/01-hostname.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/netplan/50-cloud-init.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/netplan/eth0.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/network/if-pre-up.d/ethtool:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/network/if-up.d/ethtool:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/networks:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/nginx/fastcgi.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/fastcgi.conf.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/fastcgi_params:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/fastcgi_params.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/koi-utf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/koi-win:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/mime.types:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/mime.types.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/nginx.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/nginx.conf.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/scgi_params:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/scgi_params.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/uwsgi_params:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/uwsgi_params.default:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nginx/win-utf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1005'
+  /etc/nix/nix.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/nsswitch.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/atd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/chfn:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/chpasswd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/chsh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/common-account:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/common-auth:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/common-password:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/common-session:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/common-session-noninteractive:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/cron:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/login:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/newusers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/other:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/passwd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/runuser:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/runuser-l:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/sshd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/su:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/su-l:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/sudo:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pam.d/sudo-i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/passwd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/passwd-:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/perl/Net/libnet.cfg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/pgbouncer-custom/custom-overrides.ini:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0664'
+    owner: '1000'
+  /etc/pgbouncer-custom/generated-optimizations.ini:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0664'
+    owner: '1000'
+  /etc/pgbouncer-custom/ssl-config.ini:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0664'
+    owner: '1000'
+  /etc/pgbouncer/pgbouncer.ini:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '1000'
+  /etc/pgbouncer/userlist.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0664'
+    owner: '0'
+  /etc/pm/sleep.d/10_grub-common:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/pm/sleep.d/10_unattended-upgrades-hibernate:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/profile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/profile.d/01-locale-fix.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/profile.d/09-history-timestamps.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/profile.d/10-systemd-pager.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/profile.d/Z99-cloud-locale-test.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/profile.d/Z99-cloudinit-warnings.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/profile.d/nix.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/protocols:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/python3.12/sitecustomize.py:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/python3/debian_config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/rpc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/rsyslog.d/20-ufw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/rsyslog.d/21-cloudinit.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/salt/gpgkeys:
+    exists: true
+    filetype: directory
+    group: '987'
+    mode: '0755'
+    owner: '993'
+  /etc/salt/minion:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/salt/proxy:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/access.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/capability.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/faillock.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/group.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/limits.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/namespace.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/namespace.init:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/security/opasswd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/security/pam_env.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/pwhistory.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/sepermit.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/security/time.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/selinux/semanage.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sensors.d/.placeholder:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sensors3.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/services:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sgml/xml-core.cat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/shadow:
+    exists: true
+    filetype: file
+    group: '42'
+    mode: '0640'
+    owner: '0'
+  /etc/shadow-:
+    exists: true
+    filetype: file
+    group: '42'
+    mode: '0640'
+    owner: '0'
+  /etc/shells:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/skel/.bash_logout:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/skel/.bashrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/skel/.profile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/moduli:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/revoked_keys:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/ssh/ssh_config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/ssh_host_ecdsa_key:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/ssh/ssh_host_ecdsa_key.pub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/ssh_host_ed25519_key:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/ssh/ssh_host_ed25519_key.pub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/ssh_host_rsa_key:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/ssh/ssh_host_rsa_key.pub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/ssh_import_id:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssh/sshd_config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/subgid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/subgid-:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/subuid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/subuid-:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sudo.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sudo_logsrvd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sudoers:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0440'
+    owner: '0'
+  /etc/sudoers.d/90-cloud-init-users:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0440'
+    owner: '0'
+  /etc/sudoers.d/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0440'
+    owner: '0'
+  /etc/sudoers.d/adminapi:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0440'
+    owner: '0'
+  /etc/sudoers.d/supabase-admin-agent:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0440'
+    owner: '0'
+  /etc/supercat/spcrc-crontab:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/supercat/spcrc-crontab-light:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-bufferbloat.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-console-messages.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-ipv6-privacy.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-kernel-hardening.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-magic-sysrq.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-map-count.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-network-security.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-ptrace.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/10-zeropage.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysctl.d/README.sysctl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysstat/sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/sysstat/sysstat.ioconf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/terminfo/README:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/timezone:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/tmpfiles.d/pgbouncer.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/tmpfiles.d/postgresql-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ucf.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/udev/iocost.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/udev/rules.d/70-ec2-nvme-devices.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/udev/udev.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ufw/after.init:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/after.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/after6.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/applications.d/openssh-server:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ufw/before.init:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/before.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/before6.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/sysctl.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ufw/ufw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ufw/user.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/ufw/user6.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /etc/update-motd.d/00-header:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/update-motd.d/10-help-text:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/update-motd.d/50-motd-news:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/update-motd.d/92-unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/vector/examples/docs_example.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/environment_variables.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/es_s3_hybrid.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/file_to_cloudwatch_metrics.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/file_to_prometheus.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/prometheus_to_console.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/stdio.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/examples/wrapped_json.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0775'
+    owner: '995'
+  /etc/vector/vector.yaml:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0600'
+    owner: '995'
+  /etc/vim/vimrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/wal-g/config.json:
+    exists: true
+    filetype: file
+    group: '1004'
+    mode: '0664'
+    owner: '996'
+  /etc/wgetrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xattr.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xdg/autostart/xdg-user-dirs.desktop:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xdg/user-dirs.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xdg/user-dirs.defaults:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/catalog:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/catalog.old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/polkitd.xml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/polkitd.xml.old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/xml-core.xml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/xml/xml-core.xml.old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/zshrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'

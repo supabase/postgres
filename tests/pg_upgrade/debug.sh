@@ -34,10 +34,10 @@ cp "$LATEST_VERSION_BIN" scripts/pg_upgrade_bin.tar.gz
 docker rm -f pg_upgrade_test || true
 
 docker run -t --name pg_upgrade_test --env-file .env \
-   -v "$(pwd)/scripts:/tmp/upgrade" \
-   --entrypoint /tmp/upgrade/entrypoint.sh -d \
-   -p 5432:5432 \
-   "supabase/postgres:${INITIAL_PG_VERSION}"
+  -v "$(pwd)/scripts:/tmp/upgrade" \
+  --entrypoint /tmp/upgrade/entrypoint.sh -d \
+  -p 5432:5432 \
+  "supabase/postgres:${INITIAL_PG_VERSION}"
 
 sleep 3
 while ! docker exec -it pg_upgrade_test bash -c "pg_isready"; do
@@ -77,4 +77,3 @@ fi
 pg_prove tests/01-schema.sql
 pg_prove tests/02-data.sql
 pg_prove tests/03-settings.sql
-

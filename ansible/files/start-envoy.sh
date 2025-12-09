@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-if [[ $(cat /sys/module/ipv6/parameters/disable) = 1 ]]; then
+if [[ $(cat /sys/module/ipv6/parameters/disable) == 1 ]]; then
   sed -i -e "s/address: '::'/address: '0.0.0.0'/" -e 's/ipv4_compat: true/ipv4_compat: false/' /etc/envoy/lds.yaml
 else
   sed -i -e "s/address: '0.0.0.0'/address: '::'/" -e 's/ipv4_compat: false/ipv4_compat: true/' /etc/envoy/lds.yaml

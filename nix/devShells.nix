@@ -55,9 +55,7 @@
               self'.packages.build-test-ami
               self'.packages.run-testinfra
               self'.packages.cleanup-ami
-              self'.packages.cis-audit
-              self'.packages.cis-generate-spec
-              self'.packages.ansible-to-goss
+              self'.packages.supascan
               self'.packages.goss
               dbmate
               nushell

@@ -20,23 +20,23 @@ if [ -n "$(command -v yum)" ]; then
 elif [ -n "$(command -v apt-get)" ]; then
   # Cleanup more packages
   apt-get -y remove --purge \
-	automake \
- 	autoconf \
-	autotools-dev \
- 	cmake-data \
-	cpp-9  \
-	cpp-10  \
-	gcc-9  \
-	gcc-10  \
-	git  \
-	git-man  \
-	ansible \
-	libicu-dev \
-	libcgal-dev \
-	libgcc-9-dev \
-	libgcc-8-dev \
-	ansible \
-        snapd
+    automake \
+    autoconf \
+    autotools-dev \
+    cmake-data \
+    cpp-9 \
+    cpp-10 \
+    gcc-9 \
+    gcc-10 \
+    git \
+    git-man \
+    ansible \
+    libicu-dev \
+    libcgal-dev \
+    libgcc-9-dev \
+    libgcc-8-dev \
+    ansible \
+    snapd
 
   add-apt-repository --yes --remove ppa:ansible/ansible
 
@@ -78,7 +78,7 @@ systemctl mask graphical.target
 
 rm -rf /tmp/* /var/tmp/*
 history -c
-cat /dev/null > /root/.bash_history
+cat /dev/null >/root/.bash_history
 unset HISTFILE
 
 journalctl --rotate
@@ -90,16 +90,17 @@ rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
 
-cat /dev/null > /var/log/lastlog
-cat /dev/null > /var/log/wtmp
+cat /dev/null >/var/log/lastlog
+cat /dev/null >/var/log/wtmp
 
 dd if=/dev/zero of=/zerofile &
-  PID=$!
-  while [ -d /proc/$PID ]
-    do
-      printf "."
-      sleep 5
-    done
-sync; rm /zerofile; sync
+PID=$!
+while [ -d /proc/$PID ]; do
+  printf "."
+  sleep 5
+done
+sync
+rm /zerofile
+sync
 
 fstrim /

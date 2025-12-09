@@ -26,7 +26,7 @@ if [ $(dpkg --print-architecture) = "amd64" ];
 then
 	ARCH="amd64";
 else
-	ARCH="arm64";
+  ARCH="arm64"
 fi
 
 # Get current mirror from sources.list
@@ -88,38 +88,38 @@ function apt_update_with_fallback {
 
 		switch_mirror "${mirror}"
 
-		# Attempt update with timeout (5 minutes)
-		if timeout 300 apt-get $APT_OPTIONS update 2>&1; then
-			echo "========================================="
-			echo "✓ Successfully updated apt cache using mirror: ${mirror}"
-			echo "========================================="
-			return 0
-		else
-			local exit_code=$?
-			echo "========================================="
-			echo "✗ Failed to update using mirror: ${mirror}"
-			echo "Exit code: ${exit_code}"
-			echo "========================================="
+    # Attempt update with timeout (5 minutes)
+    if timeout 300 apt-get $APT_OPTIONS update 2>&1; then
+      echo "========================================="
+      echo "✓ Successfully updated apt cache using mirror: ${mirror}"
+      echo "========================================="
+      return 0
+    else
+      local exit_code=$?
+      echo "========================================="
+      echo "✗ Failed to update using mirror: ${mirror}"
+      echo "Exit code: ${exit_code}"
+      echo "========================================="
 
-			# Clean partial downloads
-			apt-get clean
-			rm -rf /var/lib/apt/lists/*
+      # Clean partial downloads
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
 
-			# Exponential backoff before next attempt
-			if [ ${attempt} -lt ${max_attempts} ]; then
-				local sleep_time=$((attempt * 5))
-				echo "Waiting ${sleep_time} seconds before trying next mirror..."
-				sleep ${sleep_time}
-			fi
-		fi
+      # Exponential backoff before next attempt
+      if [ ${attempt} -lt ${max_attempts} ]; then
+        local sleep_time=$((attempt * 5))
+        echo "Waiting ${sleep_time} seconds before trying next mirror..."
+        sleep ${sleep_time}
+      fi
+    fi
 
-		attempt=$((attempt + 1))
-	done
+    attempt=$((attempt + 1))
+  done
 
-	echo "========================================="
-	echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"
-	echo "========================================="
-	return 1
+  echo "========================================="
+  echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"
+  echo "========================================="
+  return 1
 }
 
 # Wrapper for apt-get install with mirror fallback on 404 errors
@@ -181,15 +181,15 @@ function apt_install_with_fallback {
 
 
 function update_install_packages {
-	source /etc/os-release
+  source /etc/os-release
 
-	# Update APT with new sources (using fallback mechanism)
-	cat /etc/apt/sources.list
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists with any mirror tier"
-		exit 1
-	fi
-	apt-get $APT_OPTIONS --yes dist-upgrade
+  # Update APT with new sources (using fallback mechanism)
+  cat /etc/apt/sources.list
+  if ! apt_update_with_fallback; then
+    echo "FATAL: Failed to update package lists with any mirror tier"
+    exit 1
+  fi
+  apt-get $APT_OPTIONS --yes dist-upgrade
 
 	# Do not configure grub during package install
 	if [ "${ARCH}" = "amd64" ]; then
@@ -221,8 +221,8 @@ function update_install_packages {
 		exit 1
 	fi
 
-	# apt upgrade
-	apt-get upgrade -y
+  # apt upgrade
+  apt-get upgrade -y
 
 	# Install OpenSSH and other packages
 	sudo add-apt-repository --yes universe
@@ -254,23 +254,23 @@ function update_install_packages {
 }
 
 function setup_locale {
-cat << EOF >> /etc/locale.gen
+  cat <<EOF >>/etc/locale.gen
 en_US.UTF-8 UTF-8
 EOF
 
-cat << EOF > /etc/default/locale
+  cat <<EOF >/etc/default/locale
 LANG="C.UTF-8"
 LC_CTYPE="C.UTF-8"
 EOF
-	locale-gen en_US.UTF-8
+  locale-gen en_US.UTF-8
 }
 
 function setup_postgesql_env {
-	    # Create the directory if it doesn't exist
-    sudo mkdir -p /etc/environment.d
-    
-    # Define the contents of the PostgreSQL environment file
-    cat <<EOF | sudo tee /etc/environment.d/postgresql.env >/dev/null
+  # Create the directory if it doesn't exist
+  sudo mkdir -p /etc/environment.d
+
+  # Define the contents of the PostgreSQL environment file
+  cat <<EOF | sudo tee /etc/environment.d/postgresql.env >/dev/null
 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
 LANG="en_US.UTF-8"
 LANGUAGE="en_US.UTF-8"
@@ -280,22 +280,22 @@ EOF
 }
 
 function install_packages_for_build {
-	apt-get install -y --no-install-recommends linux-libc-dev \
-	 acl \
-	 magic-wormhole sysstat \
-	 build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libsystemd-dev libpq-dev libxml2-utils uuid-dev xsltproc ssl-cert \
-	 gcc-10 g++-10 \
-	 libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
-	 libkrb5-dev \
-	 maven default-jre default-jdk \
-	 curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
-	 liblzo2-dev
+  apt-get install -y --no-install-recommends linux-libc-dev \
+    acl \
+    magic-wormhole sysstat \
+    build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libsystemd-dev libpq-dev libxml2-utils uuid-dev xsltproc ssl-cert \
+    gcc-10 g++-10 \
+    libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
+    libkrb5-dev \
+    maven default-jre default-jdk \
+    curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
+    liblzo2-dev
 
-	source /etc/os-release
+  source /etc/os-release
 
-	apt-get install -y --no-install-recommends llvm-11-dev clang-11
-	# Mark llvm as manual to prevent auto removal
-	apt-mark manual libllvm11:arm64
+  apt-get install -y --no-install-recommends llvm-11-dev clang-11
+  # Mark llvm as manual to prevent auto removal
+  apt-mark manual libllvm11:arm64
 }
 
 function setup_apparmor {
@@ -304,12 +304,12 @@ function setup_apparmor {
 		exit 1
 	fi
 
-	# Copy apparmor profiles
-	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
+  # Copy apparmor profiles
+  cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
 }
 
 function setup_grub_conf_arm64 {
-cat << EOF > /etc/default/grub
+  cat <<EOF >/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
 GRUB_TIMEOUT_STYLE="hidden"
@@ -334,16 +334,16 @@ function install_configure_grub {
 
 # skip fsck for first boot
 function disable_fsck {
-	touch /fastboot
+  touch /fastboot
 }
 
 # Don't request hostname during boot but set hostname
 function setup_hostname {
-	# Set the static hostname
-	echo "ubuntu" > /etc/hostname
-	chmod 644 /etc/hostname
-	# Update netplan configuration to not send hostname
-	cat << EOF > /etc/netplan/01-hostname.yaml
+  # Set the static hostname
+  echo "ubuntu" >/etc/hostname
+  chmod 644 /etc/hostname
+  # Update netplan configuration to not send hostname
+  cat <<EOF >/etc/netplan/01-hostname.yaml
 network:
   version: 2
   ethernets:
@@ -352,50 +352,50 @@ network:
       dhcp4-overrides:
         send-hostname: false
 EOF
-	# Set proper permissions for netplan security
-	chmod 600 /etc/netplan/01-hostname.yaml
+  # Set proper permissions for netplan security
+  chmod 600 /etc/netplan/01-hostname.yaml
 }
 
 # Set options for the default interface
 function setup_eth0_interface {
-cat << EOF > /etc/netplan/eth0.yaml
+  cat <<EOF >/etc/netplan/eth0.yaml
 network:
   version: 2
   ethernets:
     eth0:
       dhcp4: true
 EOF
-	# Set proper permissions for netplan security
-	chmod 600 /etc/netplan/eth0.yaml
+  # Set proper permissions for netplan security
+  chmod 600 /etc/netplan/eth0.yaml
 }
 
 function disable_sshd_passwd_auth {
-	sed -i -E -e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
-	  -e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
-	 /etc/ssh/sshd_config
+  sed -i -E -e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
+    -e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+    /etc/ssh/sshd_config
 }
 
 function create_admin_account {
-	groupadd admin
+  groupadd admin
 }
 
 #Set default target as multi-user
 function set_default_target {
-	rm -f /etc/systemd/system/default.target
-	ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
+  rm -f /etc/systemd/system/default.target
+  ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 }
 
 # Setup ccache
 function setup_ccache {
-	apt-get install ccache -y
-	mkdir -p /tmp/ccache
-	export PATH=/usr/lib/ccache:$PATH
-	echo "PATH=$PATH" >> /etc/environment
+  apt-get install ccache -y
+  mkdir -p /tmp/ccache
+  export PATH=/usr/lib/ccache:$PATH
+  echo "PATH=$PATH" >>/etc/environment
 }
 
 # Clear apt caches
 function cleanup_cache {
-	apt-get clean
+  apt-get clean
 }
 
 # Remove policy-rc.d so services start normally on boot
