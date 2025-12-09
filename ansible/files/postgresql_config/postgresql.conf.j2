@@ -242,12 +242,11 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 
 # - Archiving -
 
-#archive_mode = off		# enables archiving; off, on, or always
-				# (change requires restart)
-#archive_command = ''		# command to use to archive a logfile segment
-				# placeholders: %p = path of file to archive
-				#               %f = file name only
-				# e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
+archive_mode = on  # enables archiving; off, on, or always (change requires restart)
+archive_command = '/bin/true'   # command to use to archive a logfile segment
+                                # placeholders: %p = path of file to archive
+                                # %f = file name only
+                                # e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
 #archive_timeout = 0		# force a logfile segment switch after this
 				# number of seconds; 0 disables
 
@@ -757,9 +756,6 @@ jit_provider = 'llvmjit'		# JIT library to use
 #include = '/etc/postgresql-custom/generated-optimizations.conf'
 # User-supplied custom parameters, override any automatically generated ones
 #include = '/etc/postgresql-custom/custom-overrides.conf'
-
-# WAL-G specific configurations
-#include = '/etc/postgresql-custom/wal-g.conf'
 
 # supautils specific configurations
 #include = '/etc/postgresql-custom/supautils.conf'
