@@ -2,7 +2,6 @@
   stdenv,
   lib,
   fetchFromGitHub,
-  # v8,
   perl,
   postgresql,
   # For passthru test on various systems, and local development on macos
@@ -14,7 +13,7 @@
   buildEnv,
   nodejs_20,
   libcxx,
-  nixpkgs-oldstable,
+  v8_oldstable,
 }:
 
 let
@@ -37,7 +36,7 @@ let
   );
 
   # plv8 3.1 requires an older version of v8 (we cannot use nodejs.libv8)
-  inherit (nixpkgs-oldstable) v8;
+  v8 = v8_oldstable;
 
   # Build function for individual versions
   build =
