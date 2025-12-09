@@ -84,9 +84,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         self.packages.${pkgs.system}.mecab-naist-jdic
       }/lib/mecab/dic/naist-jdic";
       systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.mecab}/bin/mecab-config";
-      systemd.services.postgresql.environment.GRN_PLUGINS_DIR = "${
-        self.packages.${pkgs.system}.supabase-groonga
-      }/lib/groonga/plugins";
+      systemd.services.postgresql.environment.GRN_PLUGINS_DIR =
+        "${(installedExtension "15").passthru.groonga}/lib/groonga/plugins";
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {

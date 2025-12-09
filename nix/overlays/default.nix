@@ -10,7 +10,7 @@
       postgresql_15
       postgresql_17
       postgresql_orioledb-17
-      supabase-groonga
+
       switch-ext-version
       mecab-naist-jdic
       ;
