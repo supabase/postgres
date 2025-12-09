@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -136,7 +137,18 @@ func (g *Generator) getInstalledPackages() ([]DpkgPackage, error) {
 }
 
 func (g *Generator) getPackageLicense(packageName string) (string, string) {
-	copyrightPath := fmt.Sprintf("/usr/share/doc/%s/copyright", packageName)
+	// Sanitize package name to prevent path traversal
+	cleanName := filepath.Clean(packageName)
+	if strings.Contains(cleanName, "..") || strings.HasPrefix(cleanName, "/") || strings.Contains(cleanName, string(filepath.Separator)) {
+		return "NOASSERTION", "NOASSERTION"
+	}
+
+	copyrightPath := filepath.Join("/usr/share/doc", cleanName, "copyright")
+
+	// Verify the resolved path is within the expected directory
+	if !strings.HasPrefix(copyrightPath, "/usr/share/doc/") {
+		return "NOASSERTION", "NOASSERTION"
+	}
 
 	content, err := os.ReadFile(copyrightPath)
 	if err != nil {
@@ -211,7 +223,13 @@ func (g *Generator) packageToSPDX(pkg DpkgPackage, id int) spdx.Package {
 }
 
 func (g *Generator) calculatePackageChecksum(packageName string) string {
-	cmd := exec.Command("dpkg", "-L", packageName)
+	// Sanitize package name to prevent command injection
+	cleanName := filepath.Clean(packageName)
+	if strings.Contains(cleanName, "..") || strings.HasPrefix(cleanName, "/") || strings.Contains(cleanName, string(filepath.Separator)) {
+		return ""
+	}
+
+	cmd := exec.Command("dpkg", "-L", cleanName)
 	output, err := cmd.Output()
 	if err != nil {
 		return ""
@@ -235,7 +253,21 @@ func (g *Generator) calculatePackageChecksum(packageName string) string {
 }
 
 func hashFile(path string) string {
-	file, err := os.Open(path)
+	// Sanitize path to prevent path traversal
+	cleanPath := filepath.Clean(path)
+
+	// Reject paths with traversal attempts or that aren't absolute
+	if strings.Contains(cleanPath, "..") || !filepath.IsAbs(cleanPath) {
+		return ""
+	}
+
+	// Verify it's a regular file (not a symlink to outside, directory, etc.)
+	info, err := os.Lstat(cleanPath)
+	if err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+
+	file, err := os.Open(cleanPath)
 	if err != nil {
 		return ""
 	}
