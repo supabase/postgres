@@ -53,7 +53,6 @@
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
-          sfcgal = pkgs.callPackage ./sfcgal.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
