@@ -1,14 +1,12 @@
 {
   pkgs,
-  inputs,
   lib,
   fetchFromGitHub,
   installShellFiles,
   ...
 }:
 let
-  go124 = inputs.nixpkgs-go124.legacyPackages.${pkgs.system}.go_1_24;
-  buildGoModule = pkgs.buildGoModule.override { go = go124; };
+  buildGoModule = pkgs.buildGoModule;
 in
 buildGoModule rec {
   pname = "packer";
