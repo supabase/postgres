@@ -46,12 +46,20 @@ function get_mirror_list {
 
 	local -a mirrors=()
 
-	# Add regional CDN if detected
+	# Priority order:
+	# 1. Country-specific mirror (most reliable)
+	# 2. Regional CDN (can be inconsistent)
+	# 3. Global fallback
+
+	# Singapore country mirror for ap-southeast-1
+	if [ "${current_region}" = "ap-southeast-1" ]; then
+		mirrors+=("sg.ports.ubuntu.com")
+	fi
+
 	if [ -n "${current_region}" ]; then
 		mirrors+=("${current_region}.clouds.ports.ubuntu.com")
 	fi
 
-	# Add global fallback
 	mirrors+=("ports.ubuntu.com")
 
 	echo "${mirrors[@]}"
