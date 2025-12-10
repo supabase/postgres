@@ -14,6 +14,14 @@ export APT_OPTIONS="-oAPT::Install-Recommends=false \
 		  -oAPT::Install-Suggests=false \
 		    -oAcquire::Languages=none"
 
+# Prevent services from starting during package installation in chroot
+# This avoids hangs from cloud-init, dbus, etc. trying to start services
+cat > /usr/sbin/policy-rc.d <<'EOF'
+#!/bin/sh
+exit 101
+EOF
+chmod +x /usr/sbin/policy-rc.d
+
 if [ $(dpkg --print-architecture) = "amd64" ];
 then
 	ARCH="amd64";
@@ -457,6 +465,11 @@ function cleanup_cache {
 	apt-get clean
 }
 
+# Remove policy-rc.d so services start normally on boot
+function enable_services {
+	rm -f /usr/sbin/policy-rc.d
+}
+
 update_install_packages
 setup_locale
 setup_postgesql_env
@@ -471,3 +484,4 @@ disable_sshd_passwd_auth
 disable_fsck
 #setup_ccache
 cleanup_cache
+enable_services
