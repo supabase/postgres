@@ -107,6 +107,7 @@ Directory containing custom package definitions such as:
   - `start-replica.nix` - Replication tools
   - `migrate-tool.nix` - Migration utilities
   - `dbmate-tool.nix` - Database migration tool
+  - `postgres.nix` - Postgres extension registry and ourExtensions list
 
 #### `nix/checks.nix`
 
@@ -132,7 +133,6 @@ PostgreSQL package definitions:
 
 PostgreSQL extensions:
 
-- `default.nix` - Extension registry and ourExtensions list
 - Individual `.nix` files - Extension definitions like:
   - `pgvector.nix` - Vector similarity search
   - `pgsodium.nix` - Encryption extension
