@@ -14,6 +14,14 @@ export APT_OPTIONS="-oAPT::Install-Recommends=false \
 		  -oAPT::Install-Suggests=false \
 		    -oAcquire::Languages=none"
 
+# Prevent services from starting during package installation in chroot
+# This avoids hangs from cloud-init, dbus, etc. trying to start services
+cat > /usr/sbin/policy-rc.d <<'EOF'
+#!/bin/sh
+exit 101
+EOF
+chmod +x /usr/sbin/policy-rc.d
+
 if [ $(dpkg --print-architecture) = "amd64" ];
 then
 	ARCH="amd64";
@@ -21,40 +29,64 @@ else
 	ARCH="arm64";
 fi
 
+# Get current mirror from sources.list
+function get_current_mirror {
+	grep -oP 'http://[^/]+(?=/ubuntu-ports/)' /etc/apt/sources.list | head -1 || echo ""
+}
+
+# Switch to a different mirror
+function switch_mirror {
+	local new_mirror="$1"
+	local sources_file="/etc/apt/sources.list"
+
+	echo "Switching to mirror: ${new_mirror}"
+	sed -i "s|http://[^/]*/ubuntu-ports/|http://${new_mirror}/ubuntu-ports/|g" "${sources_file}"
+
+	# Show what we're using
+	echo "Current sources.list configuration:"
+	grep -E '^deb ' "${sources_file}" | head -3
+}
+
+# Get list of mirrors to try
+function get_mirror_list {
+	local sources_file="/etc/apt/sources.list"
+	local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
+
+	local -a mirrors=()
+
+	# Priority order:
+	# 1. Country-specific mirror (most reliable)
+	# 2. Regional CDN (can be inconsistent)
+	# 3. Global fallback
+
+	# Singapore country mirror for ap-southeast-1
+	if [ "${current_region}" = "ap-southeast-1" ]; then
+		mirrors+=("sg.ports.ubuntu.com")
+	fi
+
+	if [ -n "${current_region}" ]; then
+		mirrors+=("${current_region}.clouds.ports.ubuntu.com")
+	fi
+
+	mirrors+=("ports.ubuntu.com")
+
+	echo "${mirrors[@]}"
+}
+
 # Mirror fallback function for resilient apt-get update
 function apt_update_with_fallback {
 	local sources_file="/etc/apt/sources.list"
-	local max_attempts=2
+	local -a mirror_list=($(get_mirror_list))
 	local attempt=1
+	local max_attempts=${#mirror_list[@]}
 
-	# Detect the current region from sources.list (it's already been substituted)
-	# Extract the region from existing sources.list entries
-	local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
-
-	# Define mirror tiers (in priority order)
-	local -a mirror_tiers=(
-		"${current_region}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN (as set in sources.list)
-		"ports.ubuntu.com"                             # Tier 2: Global pool
-	)
-
-	# If we couldn't detect current region, skip tier 1
-	if [ -z "${current_region}" ]; then
-		echo "Warning: Could not determine region from sources.list, skipping regional CDN"
-		mirror_tiers=("${mirror_tiers[@]:1}")  # Remove first element
-	fi
-
-	for mirror in "${mirror_tiers[@]}"; do
+	for mirror in "${mirror_list[@]}"; do
 		echo "========================================="
 		echo "Attempting apt-get update with mirror: ${mirror}"
 		echo "Attempt ${attempt} of ${max_attempts}"
 		echo "========================================="
 
-		# Update sources.list to use current mirror
-		sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
-
-		# Show what we're using
-		echo "Current sources.list configuration:"
-		grep -E '^deb ' "${sources_file}" | head -3
+		switch_mirror "${mirror}"
 
 		# Attempt update with timeout (5 minutes)
 		if timeout 300 apt-get $APT_OPTIONS update 2>&1; then
@@ -90,6 +122,62 @@ function apt_update_with_fallback {
 	return 1
 }
 
+# Wrapper for apt-get install with mirror fallback on 404 errors
+function apt_install_with_fallback {
+	local -a mirror_list=($(get_mirror_list))
+	local attempt=1
+	local max_attempts=${#mirror_list[@]}
+	local original_mirror=$(get_current_mirror)
+
+	for mirror in "${mirror_list[@]}"; do
+		echo "========================================="
+		echo "Attempting apt-get install with mirror: ${mirror}"
+		echo "Attempt ${attempt} of ${max_attempts}"
+		echo "========================================="
+
+		switch_mirror "${mirror}"
+
+		# Re-run apt-get update to get package lists from new mirror
+		if ! timeout 300 apt-get $APT_OPTIONS update 2>&1; then
+			echo "Warning: apt-get update failed for mirror ${mirror}, trying next..."
+			attempt=$((attempt + 1))
+			continue
+		fi
+
+		# Run apt-get install directly (no output capture to avoid buffering/timeout issues)
+		local exit_code=0
+		apt-get "$@" || exit_code=$?
+
+		if [ ${exit_code} -eq 0 ]; then
+			echo "========================================="
+			echo "✓ Successfully installed packages using mirror: ${mirror}"
+			echo "========================================="
+			return 0
+		fi
+
+		# On failure, check if it's a mirror issue worth retrying
+		echo "========================================="
+		echo "✗ apt-get failed with exit code: ${exit_code}"
+		echo "========================================="
+
+		# Clean apt cache before potential retry
+		apt-get clean
+
+		if [ ${attempt} -lt ${max_attempts} ]; then
+			local sleep_time=$((attempt * 5))
+			echo "Waiting ${sleep_time} seconds before trying next mirror..."
+			sleep ${sleep_time}
+		fi
+
+		attempt=$((attempt + 1))
+	done
+
+	echo "========================================="
+	echo "ERROR: All mirror tiers failed for apt-get install after ${max_attempts} attempts"
+	echo "========================================="
+	return 1
+}
+
 
 
 function update_install_packages {
@@ -107,25 +195,31 @@ function update_install_packages {
 	if [ "${ARCH}" = "amd64" ]; then
 		echo 'grub-pc grub-pc/install_devices_empty select true' | debconf-set-selections
 		echo 'grub-pc grub-pc/install_devices select' | debconf-set-selections
-	# Install various packages needed for a booting system
-		apt-get install -y \
-		linux-aws \
-		grub-pc \
-		e2fsprogs
+	# Install various packages needed for a booting system (with mirror fallback)
+		if ! apt_install_with_fallback install -y linux-aws grub-pc e2fsprogs; then
+			echo "FATAL: Failed to install boot packages"
+			exit 1
+		fi
 	else
-		apt-get install -y e2fsprogs
+		if ! apt_install_with_fallback install -y e2fsprogs; then
+			echo "FATAL: Failed to install e2fsprogs"
+			exit 1
+		fi
 	fi
-	# Install standard packages
-	apt-get install -y \
+	# Install standard packages (with mirror fallback)
+	# Note: ec2-hibinit-agent, ec2-instance-connect, hibagent moved to stage 2
+	# because their post-install scripts try to access EC2 metadata service
+	# which doesn't work in a chroot and causes long hangs
+	if ! apt_install_with_fallback install -y \
 		sudo \
 		wget \
 		cloud-init \
 		acpid \
-		ec2-hibinit-agent \
-		ec2-instance-connect \
-		hibagent \
 		ncurses-term \
-		ssh-import-id \
+		ssh-import-id; then
+		echo "FATAL: Failed to install standard packages"
+		exit 1
+	fi
 
 	# apt upgrade
 	apt-get upgrade -y
@@ -136,7 +230,7 @@ function update_install_packages {
 		echo "FATAL: Failed to update package lists after adding universe repository"
 		exit 1
 	fi
-	apt-get install -y --no-install-recommends \
+	if ! apt_install_with_fallback install -y --no-install-recommends \
 		openssh-server \
 		git \
 		ufw \
@@ -146,10 +240,16 @@ function update_install_packages {
 		locales \
 		at \
 		less \
-		python3-systemd
+		python3-systemd; then
+		echo "FATAL: Failed to install universe packages"
+		exit 1
+	fi
 
 	if [ "${ARCH}" = "arm64" ]; then
-		apt-get $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools
+		if ! apt_install_with_fallback $APT_OPTIONS --yes install linux-aws initramfs-tools dosfstools; then
+			echo "FATAL: Failed to install arm64 boot packages"
+			exit 1
+		fi
 	fi
 }
 
@@ -199,7 +299,10 @@ function install_packages_for_build {
 }
 
 function setup_apparmor {
-	apt-get install -y apparmor apparmor-utils auditd
+	if ! apt_install_with_fallback install -y apparmor apparmor-utils auditd; then
+		echo "FATAL: Failed to install apparmor packages"
+		exit 1
+	fi
 
 	# Copy apparmor profiles
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
@@ -218,7 +321,10 @@ EOF
 # Install GRUB
 function install_configure_grub {
 	if [ "${ARCH}" = "arm64" ]; then
-		apt-get $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr
+		if ! apt_install_with_fallback $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr; then
+			echo "FATAL: Failed to install grub packages for arm64"
+			exit 1
+		fi
 		setup_grub_conf_arm64
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1
@@ -292,6 +398,11 @@ function cleanup_cache {
 	apt-get clean
 }
 
+# Remove policy-rc.d so services start normally on boot
+function enable_services {
+	rm -f /usr/sbin/policy-rc.d
+}
+
 update_install_packages
 setup_locale
 setup_postgesql_env
@@ -306,3 +417,4 @@ disable_sshd_passwd_auth
 disable_fsck
 #setup_ccache
 cleanup_cache
+enable_services
