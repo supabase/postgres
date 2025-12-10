@@ -266,14 +266,14 @@ function update_install_packages {
 		fi
 	fi
 	# Install standard packages (with mirror fallback)
+	# Note: ec2-hibinit-agent, ec2-instance-connect, hibagent moved to stage 2
+	# because their post-install scripts try to access EC2 metadata service
+	# which doesn't work in a chroot and causes long hangs
 	if ! apt_install_with_fallback install -y \
 		sudo \
 		wget \
 		cloud-init \
 		acpid \
-		ec2-hibinit-agent \
-		ec2-instance-connect \
-		hibagent \
 		ncurses-term \
 		ssh-import-id; then
 		echo "FATAL: Failed to install standard packages"
