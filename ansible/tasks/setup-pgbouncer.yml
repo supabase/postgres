@@ -7,6 +7,8 @@
       - libssl-dev
       - libsystemd-dev
       - pkg-config
+      - pandoc
+      - python3
     update_cache: true
 
 - name: PgBouncer - download latest release
