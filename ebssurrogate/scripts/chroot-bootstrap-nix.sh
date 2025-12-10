@@ -144,12 +144,9 @@ function apt_install_with_fallback {
 			continue
 		fi
 
-		# Attempt install with timeout (30 minutes for large packages)
-		# Capture output to detect 404 errors
-		local output
-		local exit_code
-		output=$(timeout 1800 apt-get "$@" 2>&1) && exit_code=0 || exit_code=$?
-		echo "${output}"
+		# Run apt-get install directly (no output capture to avoid buffering/timeout issues)
+		local exit_code=0
+		apt-get "$@" || exit_code=$?
 
 		if [ ${exit_code} -eq 0 ]; then
 			echo "========================================="
@@ -158,82 +155,18 @@ function apt_install_with_fallback {
 			return 0
 		fi
 
-		# Handle timeout (exit code 124) - check if packages were actually installed
-		if [ ${exit_code} -eq 124 ]; then
-			echo "========================================="
-			echo "⚠ Timeout occurred (exit code 124), verifying if packages were installed..."
-			echo "========================================="
+		# On failure, check if it's a mirror issue worth retrying
+		echo "========================================="
+		echo "✗ apt-get failed with exit code: ${exit_code}"
+		echo "========================================="
 
-			# Extract package names from arguments (skip flags like -y, --no-install-recommends, install)
-			local -a packages_to_check=()
-			local skip_next=false
-			for arg in "$@"; do
-				if [ "${skip_next}" = true ]; then
-					skip_next=false
-					continue
-				fi
-				case "${arg}" in
-					install|-y|--yes|--no-install-recommends|--no-install-suggests)
-						continue
-						;;
-					-o*)
-						continue
-						;;
-					-*)
-						# Skip flags and their potential arguments
-						continue
-						;;
-					*)
-						packages_to_check+=("${arg}")
-						;;
-				esac
-			done
+		# Clean apt cache before potential retry
+		apt-get clean
 
-			# Verify each package is installed
-			local all_installed=true
-			for pkg in "${packages_to_check[@]}"; do
-				if dpkg -l "${pkg}" 2>/dev/null | grep -q "^ii"; then
-					echo "✓ Package '${pkg}' is installed"
-				else
-					echo "✗ Package '${pkg}' is NOT installed"
-					all_installed=false
-				fi
-			done
-
-			if [ "${all_installed}" = true ]; then
-				echo "========================================="
-				echo "✓ All packages verified as installed despite timeout"
-				echo "  (Timeout likely occurred during post-install triggers)"
-				echo "========================================="
-				return 0
-			else
-				echo "========================================="
-				echo "✗ Some packages missing after timeout, will retry..."
-				echo "========================================="
-				# Fall through to retry logic
-			fi
-		fi
-
-		# Check if failure was due to 404/mirror issues
-		if echo "${output}" | grep -qE '(404\s+Not Found|Failed to fetch|Hash Sum mismatch|Size mismatch)'; then
-			echo "========================================="
-			echo "✗ Mirror issue detected (404/hash/size mismatch), trying next mirror..."
-			echo "========================================="
-
-			# Clean apt cache to force re-download
-			apt-get clean
-
-			if [ ${attempt} -lt ${max_attempts} ]; then
-				local sleep_time=$((attempt * 5))
-				echo "Waiting ${sleep_time} seconds before trying next mirror..."
-				sleep ${sleep_time}
-			fi
-		elif [ ${exit_code} -ne 124 ]; then
-			# Non-mirror, non-timeout related failure, don't retry
-			echo "========================================="
-			echo "✗ Install failed with non-mirror error (exit code: ${exit_code}), not retrying"
-			echo "========================================="
-			return ${exit_code}
+		if [ ${attempt} -lt ${max_attempts} ]; then
+			local sleep_time=$((attempt * 5))
+			echo "Waiting ${sleep_time} seconds before trying next mirror..."
+			sleep ${sleep_time}
 		fi
 
 		attempt=$((attempt + 1))
