@@ -19,7 +19,7 @@ RUN_ID = os.environ.get(
     + "@"
     + socket.gethostname(),
 )
-AMI_NAME = os.environ.get("AMI_NAME")
+AMI_ID = os.environ.get("AMI_ID")
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
@@ -224,13 +224,7 @@ def run_ssh_command(ssh, command, timeout=None):
 @pytest.fixture(scope="session")
 def host():
     ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
-    images = list(
-        ec2.images.filter(
-            Filters=[{"Name": "name", "Values": [AMI_NAME]}],
-        )
-    )
-    assert len(images) == 1
-    image = images[0]
+    image = ec2.Image(AMI_ID)
 
     def gzip_then_base64_encode(s: str) -> str:
         return base64.b64encode(gzip.compress(s.encode())).decode()

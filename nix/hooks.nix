@@ -4,6 +4,9 @@ let
   lintedWorkflows = [
     "nix-eval.yml"
     "nix-build.yml"
+    "testinfra-ami-build.yml"
+    "ami-release-nix.yml"
+    "ami-release-nix-single.yml"
   ];
 in
 {
