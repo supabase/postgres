@@ -28,6 +28,7 @@
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     nixpkgs-go124.url = "github:Nixos/nixpkgs/d2ac4dfa61fba987a84a0a81555da57ae0b9a2b0";
     nixpkgs-pgbackrest.url = "github:nixos/nixpkgs/nixos-unstable-small";
+    nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
   };
 
   outputs =

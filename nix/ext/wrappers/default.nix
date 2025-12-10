@@ -154,6 +154,7 @@ let
         doCheck = false;
 
         postInstall = ''
+
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
@@ -220,11 +221,13 @@ let
     v: !(builtins.elem v versions)
   ) allPreviouslyPackagedVersions;
   numberOfPreviouslyPackagedVersions = builtins.length previouslyPackagedVersions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
-  );
+  packagesAttrSet = lib.mapAttrs' (name: value: {
+    name = lib.replaceStrings [ "." ] [ "_" ] name;
+    value = build name value.hash value.rust value.pgrx;
+  }) supportedVersions;
+  packages = builtins.attrValues packagesAttrSet;
 in
-buildEnv {
+(buildEnv {
   name = pname;
   paths = packages;
   pathsToLink = [
@@ -305,8 +308,15 @@ buildEnv {
   '';
   passthru = {
     inherit versions numberOfVersions;
-    pname = "${pname}-all";
+    pname = "${pname}";
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    # Expose individual packages for CI to build separately
+    packages = packagesAttrSet // {
+      recurseForDerivations = true;
+    };
   };
-}
+}).overrideAttrs
+  (_: {
+    requiredSystemFeatures = [ "big-parallel" ];
+  })

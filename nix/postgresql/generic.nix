@@ -21,7 +21,6 @@ let
       libxml2,
       tzdata,
       libkrb5,
-      substituteAll,
       darwin,
       linux-pam,
       #orioledb specific
@@ -193,11 +192,7 @@ let
           ./patches/paths-for-split-outputs.patch
           ./patches/specify_pkglibdir_at_runtime.patch
           ./patches/paths-with-postgresql-suffix.patch
-
-          (substituteAll {
-            src = ./patches/locale-binary-path.patch;
-            locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
-          })
+          ./patches/locale-binary-path.patch
         ]
         ++ lib.optionals stdenv'.hostPlatform.isMusl (
           # Using fetchurl instead of fetchpatch on purpose: https://github.com/NixOS/nixpkgs/issues/240141
@@ -213,6 +208,9 @@ let
         ''
           # Hardcode the path to pgxs so pg_config returns the path in $out
           substituteInPlace "src/common/config_info.c" --subst-var out
+          substituteInPlace "src/backend/commands/collationcmds.c" --replace-fail '@locale@' '${
+            if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc
+          }/bin/locale'
         ''
         + lib.optionalString jitSupport ''
           # Force lookup of jit stuff in $out instead of $lib

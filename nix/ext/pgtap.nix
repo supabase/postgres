@@ -10,6 +10,7 @@
 
 stdenv.mkDerivation rec {
   pname = "pgtap";
+  name = pname;
   version = "1.2.0";
 
   src = fetchFromGitHub {
