@@ -1,0 +1,54 @@
+name: Nix Eval
+
+on:
+  workflow_call:
+    outputs:
+      packages_matrix:
+        description: 'Generated build matrix for packages'
+        value: ${{ jobs.eval.outputs.packages_matrix }}
+      checks_matrix:
+        description: 'Generated build matrix for checks'
+        value: ${{ jobs.eval.outputs.checks_matrix }}
+    secrets:
+      DEV_AWS_ROLE:
+        required: false
+      NIX_SIGN_SECRET_KEY:
+        required: false
+
+jobs:
+  eval:
+    runs-on: blacksmith-32vcpu-ubuntu-2404
+    outputs:
+      packages_matrix: ${{ steps.set-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.set-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Restart Nix Daemon
+        run: |
+          sudo mv /nix/var/nix/daemon-socket/socket /tmp
+      - name: Mount Nix cache disk
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-nix-cache-eval-${{ runner.os }}
+          path: /nix
+      - name: Restart Nix Daemon
+        run: |
+          sudo systemctl restart nix-daemon.service nix-daemon.socket
+      - id: set-matrix
+        name: Generate Nix Matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
+
+          sudo systemctl stop nix-daemon.socket || true
+          sudo systemctl stop nix-daemon.service || true
+          sudo pkill -9 nix-daemon || true
+          sleep 2

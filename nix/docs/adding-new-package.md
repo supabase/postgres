@@ -42,7 +42,7 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Open-source vector similarity search for Postgres";
     homepage = "https://github.com/${src.owner}/${src.repo}";
-    maintainers = with maintainers; [ olirice ];
+    maintainers = [ "olirice" ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

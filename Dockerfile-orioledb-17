@@ -31,7 +31,7 @@ ARG pg_repack_release=1.4.8
 ARG vault_release=0.2.8
 ARG groonga_release=12.0.8
 ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.5.6
+ARG wrappers_release=0.5.7
 ARG hypopg_release=1.3.1
 ARG pgvector_release=0.4.0
 ARG pg_tle_release=1.3.2
@@ -116,7 +116,7 @@ COPY . /nixpg
 
 WORKDIR /nixpg
 
-RUN nix profile install .#psql_orioledb-17/bin 
+RUN nix profile add path:.#psql_orioledb-17/bin 
 
 RUN nix store gc
 
@@ -163,19 +163,6 @@ RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fal
 
 ENV PGDATA=/var/lib/postgresql/data
 
-####################
-# setup-wal-g.yml
-####################
-FROM base as walg
-ARG wal_g_release
-
-WORKDIR /nixpg
-
-RUN nix profile install .#wal-g-3 && \
-    ln -s /nix/var/nix/profiles/default/bin/wal-g-3 /tmp/wal-g
-
-RUN nix store gc
-
 WORKDIR /
 ####################
 # setup-groonga
@@ -184,7 +171,7 @@ FROM base as groonga
 
 WORKDIR /nixpg
 
-RUN nix profile install .#supabase-groonga && \
+RUN nix profile add path:.#supabase-groonga && \
     mkdir -p /tmp/groonga-plugins && \
     cp -r /nix/var/nix/profiles/default/lib/groonga/plugins /tmp/groonga-plugins/
 
@@ -220,20 +207,17 @@ RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY &&
 FROM gosu as production
 RUN id postgres || (echo "postgres user does not exist" && exit 1)
 # # Setup extensions
-COPY --from=walg /tmp/wal-g /usr/local/bin/
 COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
 
 # # Initialise configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
-COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/
+COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/conf.d
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/bin/pgsodium_getkey.sh
-COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf.j2 /etc/postgresql-custom/read-replica.conf
-COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf.j2 /etc/postgresql-custom/wal-g.conf
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
@@ -241,13 +225,10 @@ RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
-    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
-    echo "cron.database_name = 'postgres'" >> /etc/postgresql/postgresql.conf && \
-    #echo "pljava.libjvm_location = '/usr/lib/jvm/java-11-openjdk-${TARGETARCH}/lib/server/libjvm.so'" >> /etc/postgresql/postgresql.conf && \
+    /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
-    mkdir -p /etc/postgresql-custom/conf.d && \
     chown -R postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf

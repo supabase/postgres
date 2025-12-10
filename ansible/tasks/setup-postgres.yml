@@ -167,13 +167,13 @@
       loop_control:
         loop_var: 'pg_config_item'
 
-    - name: Move custom read-replica.conf file to /etc/postgresql-custom/read-replica.conf
-      ansible.builtin.template:
-        dest: '/etc/postgresql-custom/read-replica.conf'
+    - name: Move read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
+      ansible.builtin.copy:
+        dest: '/etc/postgresql-custom/conf.d/read_replica.conf'
         mode: '0664'
         owner: 'postgres'
         group: 'postgres'
-        src: 'files/postgresql_config/custom_read_replica.conf.j2'
+        src: 'files/postgresql_config/conf.d/read_replica.conf'
 
 # Install extensions before init
 - name: Install Postgres extensions

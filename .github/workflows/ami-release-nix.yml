@@ -112,30 +112,6 @@ jobs:
         run: |
           VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          # Check if version matches release pattern
-          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]{3}(-orioledb)?$'; then
-            echo "is_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_release=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Generate Changelog
-        if: steps.process_release_version.outputs.is_release == 'true'
-        run: |
-          nix run nixpkgs#git-cliff -- --tag-pattern "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]{3}(-orioledb)?$" --unreleased --tag "${{ steps.process_release_version.outputs.version }}" --prepend CHANGELOG.md
-          # Remove the changelog commit itself from the changelog
-          sed -i '/- Changelog after release/d' CHANGELOG.md
-
-      - name: Commit and push changelog
-        if: steps.process_release_version.outputs.is_release == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "docs: update changelog for ${{ steps.process_release_version.outputs.version }}"
-          git push
-          echo "changelog_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-        id: commit_changelog
 
       - name: Create nix flake revision tarball
         run: |
@@ -193,8 +169,7 @@ jobs:
         with:
           name: ${{ steps.process_release_version.outputs.version }}
           tag_name: ${{ steps.process_release_version.outputs.version }}
-          target_commitish: ${{ steps.process_release_version.outputs.is_release == 'true' && steps.commit_changelog.outputs.changelog_commit || github.sha }}
-          files: CHANGELOG.md
+          target_commitish: ${{github.sha}}
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
