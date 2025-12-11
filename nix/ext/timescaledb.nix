@@ -39,8 +39,7 @@ let
         "-DREGRESS_CHECKS=OFF"
         "-DTAP_CHECKS=OFF"
         "-DAPACHE_ONLY=1"
-      ]
-      ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
+      ] ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
 
       postPatch = ''
         for x in CMakeLists.txt sql/CMakeLists.txt; do

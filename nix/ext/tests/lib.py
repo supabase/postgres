@@ -93,9 +93,9 @@ class PostgresExtensionTest(object):
             AssertionError: If the installed version does not match the expected version
         """
         installed_version = self.get_installed_version()
-        assert installed_version == expected_version, (
-            f"Expected version {expected_version}, but found {installed_version}"
-        )
+        assert (
+            installed_version == expected_version
+        ), f"Expected version {expected_version}, but found {installed_version}"
 
     def check_upgrade_path(self, pg_version: str):
         """Test the complete upgrade path for a PostgreSQL version.
@@ -163,9 +163,9 @@ class PostgresExtensionTest(object):
                 f"No versions available for PostgreSQL version {pg_version}"
             )
         last_version = available_versions[-1]
-        assert ext_version.endswith(f"{last_version}.so"), (
-            f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
-        )
+        assert ext_version.endswith(
+            f"{last_version}.so"
+        ), f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
 
         # Switch to the first version
         first_version = available_versions[0]
@@ -173,17 +173,17 @@ class PostgresExtensionTest(object):
 
         # Check that we are using the first version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
-        assert ext_version.endswith(f"{first_version}.so"), (
-            f"Expected {self.extension_name} version {first_version}, but found {ext_version}"
-        )
+        assert ext_version.endswith(
+            f"{first_version}.so"
+        ), f"Expected {self.extension_name} version {first_version}, but found {ext_version}"
 
         # Switch to the last version
         self.vm.succeed(f"switch_{self.extension_name}_version {last_version}")
         # Check that we are using the last version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
-        assert ext_version.endswith(f"{last_version}.so"), (
-            f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
-        )
+        assert ext_version.endswith(
+            f"{last_version}.so"
+        ), f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
 
     def check_pg_regress(self, pg_regress: Path, pg_version: str, test_name: str):
         """Run pg_regress tests for the extension on a given PostgreSQL version.
