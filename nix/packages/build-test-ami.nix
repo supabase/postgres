@@ -1,23 +1,29 @@
-{ pkgs, runCommand }:
-runCommand "build-test-ami"
-  {
-    buildInputs = with pkgs; [
-      packer
-      awscli2
-      yq
-      jq
-      openssl
-      git
-      coreutils
-      aws-vault
-    ];
-  }
-  ''
-    mkdir -p $out/bin
-    cat > $out/bin/build-test-ami << 'EOL'
-    #!/usr/bin/env bash
-    set -euo pipefail
-
+{
+  writeShellApplication,
+  packer,
+  awscli2,
+  yq,
+  jq,
+  openssl,
+  gitMinimal,
+  coreutils,
+  aws-vault,
+  python3,
+}:
+writeShellApplication {
+  name = "build-test-ami";
+  runtimeInputs = [
+    packer
+    awscli2
+    yq
+    jq
+    openssl
+    gitMinimal
+    coreutils
+    aws-vault
+    python3
+  ];
+  text = ''
     show_help() {
       cat << EOF
     Usage: build-test-ami [--help] <postgres-version>
@@ -51,30 +57,6 @@ runCommand "build-test-ami"
       show_help
       exit 0
     fi
-
-    export PATH="${
-      pkgs.lib.makeBinPath (
-        with pkgs;
-        [
-          packer
-          awscli2
-          yq
-          jq
-          openssl
-          git
-          coreutils
-          aws-vault
-        ]
-      )
-    }:$PATH"
-
-    # Check for required tools
-    for cmd in packer aws-vault yq jq openssl; do
-      if ! command -v $cmd &> /dev/null; then
-        echo "Error: $cmd is required but not found"
-        exit 1
-      fi
-    done
 
     # Check AWS Vault profile
     if [ -z "''${AWS_VAULT:-}" ]; then
@@ -140,18 +122,18 @@ runCommand "build-test-ami"
     VENV_DIR=$(mktemp -d)
     trap 'rm -rf "$VENV_DIR"' EXIT HUP INT QUIT TERM
     python3 -m venv "$VENV_DIR"
+    # shellcheck source=/dev/null
     source "$VENV_DIR/bin/activate"
 
     # Install required Python packages
     echo "Installing required Python packages..."
-    pip install boto3 boto3-stubs[essential] docker ec2instanceconnectcli pytest paramiko requests
+    pip install boto3 'boto3-stubs[essential]' docker ec2instanceconnectcli pytest paramiko requests
 
     # Run the tests with aws-vault
     echo "Running tests for AMI: $RANDOM_STRING using AWS Vault profile: $AWS_VAULT_PROFILE"
-    aws-vault exec $AWS_VAULT_PROFILE -- pytest -vv -s testinfra/test_ami_nix.py
+    aws-vault exec "$AWS_VAULT_PROFILE" -- pytest -vv -s testinfra/test_ami_nix.py
 
     # Deactivate virtual environment (cleanup is handled by trap)
     deactivate
-    EOL
-    chmod +x $out/bin/build-test-ami
-  ''
+  '';
+}
