@@ -1,5 +1,4 @@
 {
-  stdenv,
   writeShellApplication,
   overmind,
   dbmate,

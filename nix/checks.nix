@@ -390,8 +390,6 @@
           );
           inherit (self'.packages)
             wal-g-2
-            dbmate-tool
-            packer
             pg_regress
             goss
             supascan

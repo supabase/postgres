@@ -33,7 +33,7 @@
     {
       packages = (
         {
-          build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
+          build-ami = pkgs.callPackage ./build-ami.nix { };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
@@ -47,7 +47,6 @@
           mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
-          packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
