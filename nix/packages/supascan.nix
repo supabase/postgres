@@ -42,6 +42,9 @@ let
 
     subPackages = [ "cmd/supascan" ];
 
+    # Disable CGO to avoid Darwin framework dependencies
+    env.CGO_ENABLED = "0";
+
     ldflags = [
       "-s"
       "-w"
@@ -55,11 +58,6 @@ let
       wrapProgram $out/bin/supascan \
         --prefix PATH : ${goss}/bin
     '';
-
-    buildInputs = lib.optionals pkgs.stdenv.isDarwin [
-      pkgs.darwin.apple_sdk.frameworks.IOKit
-      pkgs.darwin.apple_sdk.frameworks.CoreFoundation
-    ];
 
     doCheck = true;
     checkPhase = ''
