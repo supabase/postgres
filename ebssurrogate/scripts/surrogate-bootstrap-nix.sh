@@ -10,12 +10,85 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-if [ $(dpkg --print-architecture) = "amd64" ]; 
-then 
+if [ $(dpkg --print-architecture) = "amd64" ];
+then
 	ARCH="amd64";
 else
-        ARCH="arm64";
+	ARCH="arm64";
 fi
+
+# Mirror fallback function for resilient apt-get update
+function apt_update_with_fallback {
+	local sources_file="/etc/apt/sources.list"
+	local max_attempts=2
+	local attempt=1
+
+	# Get EC2 region if not already set
+	if [ -z "${REGION}" ]; then
+		REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g' || echo "")
+	fi
+
+	# Define mirror tiers (in priority order)
+	local -a mirror_tiers=(
+		"${REGION}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN
+		"ports.ubuntu.com"                     # Tier 2: Global pool
+	)
+
+	# If we couldn't get REGION, skip tier 1
+	if [ -z "${REGION}" ]; then
+		echo "Warning: Could not determine EC2 region, skipping regional CDN"
+		mirror_tiers=("${mirror_tiers[@]:1}")  # Remove first element
+	fi
+
+	for mirror in "${mirror_tiers[@]}"; do
+		echo "========================================="
+		echo "Attempting apt-get update with mirror: ${mirror}"
+		echo "Attempt ${attempt} of ${max_attempts}"
+		echo "========================================="
+
+		# Update sources.list to use current mirror
+		# Replace the region-specific mirror URL
+		sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
+		# Also update any security sources
+		sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+
+		# Show what we're using
+		echo "Current sources.list configuration:"
+		grep -E '^deb ' "${sources_file}" | head -3
+
+		# Attempt update with timeout (5 minutes)
+		if timeout 300 apt-get update 2>&1; then
+			echo "========================================="
+			echo "✓ Successfully updated apt cache using mirror: ${mirror}"
+			echo "========================================="
+			return 0
+		else
+			local exit_code=$?
+			echo "========================================="
+			echo "✗ Failed to update using mirror: ${mirror}"
+			echo "Exit code: ${exit_code}"
+			echo "========================================="
+
+			# Clean partial downloads
+			apt-get clean
+			rm -rf /var/lib/apt/lists/*
+
+			# Exponential backoff before next attempt
+			if [ ${attempt} -lt ${max_attempts} ]; then
+				local sleep_time=$((attempt * 5))
+				echo "Waiting ${sleep_time} seconds before trying next mirror..."
+				sleep ${sleep_time}
+			fi
+		fi
+
+		attempt=$((attempt + 1))
+	done
+
+	echo "========================================="
+	echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"
+	echo "========================================="
+	return 1
+}
 
 function waitfor_boot_finished {
 	export DEBIAN_FRONTEND=noninteractive
@@ -30,12 +103,28 @@ function waitfor_boot_finished {
 
 function install_packages {
 	# Setup Ansible on host VM
-	apt-get update && sudo apt-get install software-properties-common -y
-	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists on host VM"
+		exit 1
+	fi
+
+	sudo apt-get install software-properties-common -y
+	add-apt-repository --yes --update ppa:ansible/ansible
+
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists after adding Ansible PPA"
+		exit 1
+	fi
+
+	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 
 	# Update apt and install required packages
-	apt-get update
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists before installing tools"
+		exit 1
+	fi
+
 	apt-get install -y \
 		gdisk \
 		e2fsprogs \

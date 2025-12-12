@@ -10,6 +10,7 @@ from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLog
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from time import sleep
 import paramiko
+from pathlib import Path
 
 # if EXECUTION_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
@@ -19,7 +20,7 @@ RUN_ID = os.environ.get(
     + "@"
     + socket.gethostname(),
 )
-AMI_NAME = os.environ.get("AMI_NAME")
+AMI_ID = os.environ.get("AMI_ID")
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
@@ -108,7 +109,7 @@ pgsodium_root_key_content = (
 )
 postgrest_base_conf_content = """
 db-uri = "postgres://authenticator:postgres@localhost:5432/postgres?application_name=postgrest"
-db-schema = "public, storage, graphql_public"
+db-schema = "public, graphql_public"
 db-anon-role = "anon"
 jwt-secret = "my_jwt_secret_which_is_not_so_secret"
 role-claim-key = ".role"
@@ -219,18 +220,22 @@ def run_ssh_command(ssh, command, timeout=None):
     }
 
 
+def upload_file_via_sftp(ssh, local_path, remote_path):
+    """Upload a file to the remote host via SFTP."""
+    sftp = ssh.open_sftp()
+    try:
+        sftp.put(local_path, remote_path)
+        logger.info(f"Uploaded {local_path} to {remote_path}")
+    finally:
+        sftp.close()
+
+
 # scope='session' uses the same container for all the tests;
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
 def host():
     ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
-    images = list(
-        ec2.images.filter(
-            Filters=[{"Name": "name", "Values": [AMI_NAME]}],
-        )
-    )
-    assert len(images) == 1
-    image = images[0]
+    image = ec2.Image(AMI_ID)
 
     def gzip_then_base64_encode(s: str) -> str:
         return base64.b64encode(gzip.compress(s.encode())).decode()
@@ -351,6 +356,30 @@ users:
         instance.terminate()
         raise TimeoutError("init.sh failed to complete within the timeout period")
 
+    # Create auth-failures.csv file if it doesn't exist (required for fail2ban to start)
+    # This matches what setup_fail2ban() does in the init script
+    logger.info("Ensuring PostgreSQL auth-failures.csv exists...")
+    result = run_ssh_command(
+        ssh,
+        "sudo mkdir -p /var/log/postgresql && sudo chown -R postgres:postgres /var/log/postgresql && sudo chmod 1775 /var/log/postgresql && sudo -u postgres touch /var/log/postgresql/auth-failures.csv && sudo chmod 0664 /var/log/postgresql/auth-failures.csv",
+    )
+    if not result["succeeded"]:
+        logger.warning(f"Failed to create auth-failures.csv: {result['stderr']}")
+
+    # Start fail2ban service before health checks
+    logger.info("Starting fail2ban service...")
+    result = run_ssh_command(ssh, "sudo systemctl start fail2ban.service")
+    if not result["succeeded"]:
+        logger.warning(f"Failed to start fail2ban: {result['stderr']}")
+        # Check fail2ban logs for more details
+        log_result = run_ssh_command(
+            ssh, "sudo journalctl -u fail2ban -n 20 --no-pager"
+        )
+        if log_result["succeeded"]:
+            logger.warning(f"fail2ban logs:\n{log_result['stdout']}")
+    else:
+        logger.info("fail2ban service started successfully")
+
     def is_healthy(ssh) -> bool:
         health_checks = [
             ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
@@ -423,11 +452,10 @@ def test_postgrest_responds_to_requests(host):
 def test_postgrest_can_connect_to_db(host):
     """Test if PostgREST can connect to the database."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
+        f"http://{host['ip']}/rest-admin/v1/ready",
         headers={
             "apikey": service_role_key,
             "authorization": f"Bearer {service_role_key}",
-            "accept-profile": "storage",
         },
     )
     assert res.ok
@@ -436,10 +464,7 @@ def test_postgrest_can_connect_to_db(host):
 def test_postgrest_starting_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter at start."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "apikey": service_role_key,
             "id": "eq.absent",
@@ -452,10 +477,7 @@ def test_postgrest_starting_apikey_query_parameter_is_removed(host):
 def test_postgrest_middle_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter in middle."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "apikey": service_role_key,
@@ -468,10 +490,7 @@ def test_postgrest_middle_apikey_query_parameter_is_removed(host):
 def test_postgrest_ending_apikey_query_parameter_is_removed(host):
     """Test if PostgREST removes apikey query parameter at end."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "name": "eq.absent",
@@ -484,10 +503,7 @@ def test_postgrest_ending_apikey_query_parameter_is_removed(host):
 def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter at start."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "": "empty_key",
             "id": "eq.absent",
@@ -500,10 +516,7 @@ def test_postgrest_starting_empty_key_query_parameter_is_removed(host):
 def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter in middle."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "apikey": service_role_key,
             "": "empty_key",
@@ -516,10 +529,7 @@ def test_postgrest_middle_empty_key_query_parameter_is_removed(host):
 def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
     """Test if PostgREST removes empty key query parameter at end."""
     res = requests.get(
-        f"http://{host['ip']}/rest/v1/buckets",
-        headers={
-            "accept-profile": "storage",
-        },
+        f"http://{host['ip']}/rest/v1/",
         params={
             "id": "eq.absent",
             "apikey": service_role_key,

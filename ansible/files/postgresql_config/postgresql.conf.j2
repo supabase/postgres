@@ -64,7 +64,7 @@ listen_addresses = '*'		# what IP address(es) to listen on;
 #port = 5432				# (change requires restart)
 #max_connections = 100			# (change requires restart)
 #superuser_reserved_connections = 3	# (change requires restart)
-#unix_socket_directories = '/tmp'	# comma-separated list of directories
+unix_socket_directories = '/var/run/postgresql'	# comma-separated list of directories
 					# (change requires restart)
 #unix_socket_group = ''			# (change requires restart)
 #unix_socket_permissions = 0777		# begin with 0 to use octal notation
@@ -242,12 +242,11 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 
 # - Archiving -
 
-#archive_mode = off		# enables archiving; off, on, or always
-				# (change requires restart)
-#archive_command = ''		# command to use to archive a logfile segment
-				# placeholders: %p = path of file to archive
-				#               %f = file name only
-				# e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
+archive_mode = on  # enables archiving; off, on, or always (change requires restart)
+archive_command = '/bin/true'   # command to use to archive a logfile segment
+                                # placeholders: %p = path of file to archive
+                                # %f = file name only
+                                # e.g. 'test ! -f /mnt/server/archivedir/%f && cp %p /mnt/server/archivedir/%f'
 #archive_timeout = 0		# force a logfile segment switch after this
 				# number of seconds; 0 disables
 
@@ -750,29 +749,15 @@ jit_provider = 'llvmjit'		# JIT library to use
 # default postgresql.conf.  Note that these are directives, not variable
 # assignments, so they can usefully be given more than once.
 
-#include_dir = '...'			# include files ending in '.conf' from
-					# a directory, e.g., 'conf.d'
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
-
-# Automatically generated optimizations
-#include = '/etc/postgresql-custom/generated-optimizations.conf'
-# User-supplied custom parameters, override any automatically generated ones
-#include = '/etc/postgresql-custom/custom-overrides.conf'
-
-# WAL-G specific configurations
-#include = '/etc/postgresql-custom/wal-g.conf'
-
-# read replica specific configurations
-include = '/etc/postgresql-custom/read-replica.conf'
 
 # supautils specific configurations
 #include = '/etc/postgresql-custom/supautils.conf'
 
+include_dir = '/etc/postgresql-custom/conf.d'  # include files ending in '.conf' from a directory, e.g., 'conf.d'
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS
 #------------------------------------------------------------------------------
 
 # Add settings for extensions here
-auto_explain.log_min_duration = 10s
-cron.database_name = 'postgres'

@@ -1,0 +1,433 @@
+# User baseline
+# Generated from baseline.yml - 72 items
+user:
+  _apt:
+    exists: true
+    gid: 65534
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+    uid: 42
+  adminapi:
+    exists: true
+    gid: 1010
+    home: /home/adminapi
+    shell: /bin/sh
+    uid: 1006
+  backup:
+    exists: true
+    gid: 34
+    home: /var/backups
+    shell: /usr/sbin/nologin
+    uid: 34
+  bin:
+    exists: true
+    gid: 2
+    home: /bin
+    shell: /usr/sbin/nologin
+    uid: 2
+  daemon:
+    exists: true
+    gid: 1
+    home: /usr/sbin
+    shell: /usr/sbin/nologin
+    uid: 1
+  dhcpcd:
+    exists: true
+    gid: 65534
+    home: /usr/lib/dhcpcd
+    shell: /bin/false
+    uid: 101
+  ec2-instance-connect:
+    exists: true
+    gid: 65534
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+    uid: 100
+  envoy:
+    exists: true
+    gid: 1007
+    home: /home/envoy
+    shell: /bin/sh
+    uid: 1003
+  games:
+    exists: true
+    gid: 60
+    home: /usr/games
+    shell: /usr/sbin/nologin
+    uid: 5
+  gotrue:
+    exists: true
+    gid: 1005
+    home: /home/gotrue
+    shell: /bin/sh
+    uid: 1001
+  irc:
+    exists: true
+    gid: 39
+    home: /run/ircd
+    shell: /usr/sbin/nologin
+    uid: 39
+  kong:
+    exists: true
+    gid: 1008
+    home: /home/kong
+    shell: /bin/sh
+    uid: 1004
+  list:
+    exists: true
+    gid: 38
+    home: /var/list
+    shell: /usr/sbin/nologin
+    uid: 38
+  lp:
+    exists: true
+    gid: 7
+    home: /var/spool/lpd
+    shell: /usr/sbin/nologin
+    uid: 7
+  mail:
+    exists: true
+    gid: 8
+    home: /var/mail
+    shell: /usr/sbin/nologin
+    uid: 8
+  man:
+    exists: true
+    gid: 12
+    home: /var/cache/man
+    shell: /usr/sbin/nologin
+    uid: 6
+  messagebus:
+    exists: true
+    gid: 101
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+    uid: 102
+  news:
+    exists: true
+    gid: 9
+    home: /var/spool/news
+    shell: /usr/sbin/nologin
+    uid: 9
+  nginx:
+    exists: true
+    gid: 1009
+    home: /home/nginx
+    shell: /bin/sh
+    uid: 1005
+  nixbld1:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30001
+  nixbld10:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30010
+  nixbld11:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30011
+  nixbld12:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30012
+  nixbld13:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30013
+  nixbld14:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30014
+  nixbld15:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30015
+  nixbld16:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30016
+  nixbld17:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30017
+  nixbld18:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30018
+  nixbld19:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30019
+  nixbld2:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30002
+  nixbld20:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30020
+  nixbld21:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30021
+  nixbld22:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30022
+  nixbld23:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30023
+  nixbld24:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30024
+  nixbld25:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30025
+  nixbld26:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30026
+  nixbld27:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30027
+  nixbld28:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30028
+  nixbld29:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30029
+  nixbld3:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30003
+  nixbld30:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30030
+  nixbld31:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30031
+  nixbld32:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30032
+  nixbld4:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30004
+  nixbld5:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30005
+  nixbld6:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30006
+  nixbld7:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30007
+  nixbld8:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30008
+  nixbld9:
+    exists: true
+    gid: 30000
+    home: /var/empty
+    shell: /sbin/nologin
+    uid: 30009
+  nobody:
+    exists: true
+    gid: 65534
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+    uid: 65534
+  pgbouncer:
+    exists: true
+    gid: 1003
+    home: /home/pgbouncer
+    shell: /usr/sbin/nolign
+    uid: 1000
+  polkitd:
+    exists: true
+    gid: 991
+    home: /
+    shell: /usr/sbin/nologin
+    uid: 991
+  postgres:
+    exists: true
+    gid: 1002
+    home: /var/lib/postgresql
+    shell: /bin/bash
+    uid: 999
+  postgrest:
+    exists: true
+    gid: 1006
+    home: /home/postgrest
+    shell: /bin/sh
+    uid: 1002
+  proxy:
+    exists: true
+    gid: 13
+    home: /bin
+    shell: /usr/sbin/nologin
+    uid: 13
+  root:
+    exists: true
+    home: /root
+    shell: /bin/bash
+  salt:
+    exists: true
+    gid: 988
+    home: /opt/saltstack/salt
+    shell: /usr/sbin/nologin
+    uid: 994
+  sshd:
+    exists: true
+    gid: 65534
+    home: /run/sshd
+    shell: /usr/sbin/nologin
+    uid: 103
+  supabase-admin-agent:
+    exists: true
+    gid: 987
+    home: /home/supabase-admin-agent
+    shell: /bin/sh
+    uid: 993
+  sync:
+    exists: true
+    gid: 65534
+    home: /bin
+    shell: /bin/sync
+    uid: 4
+  sys:
+    exists: true
+    gid: 3
+    home: /dev
+    shell: /usr/sbin/nologin
+    uid: 3
+  systemd-network:
+    exists: true
+    gid: 998
+    home: /
+    shell: /usr/sbin/nologin
+    uid: 998
+  systemd-resolve:
+    exists: true
+    gid: 992
+    home: /
+    shell: /usr/sbin/nologin
+    uid: 992
+  systemd-timesync:
+    exists: true
+    gid: 997
+    home: /
+    shell: /usr/sbin/nologin
+    uid: 997
+  tcpdump:
+    exists: true
+    gid: 104
+    home: /nonexistent
+    shell: /usr/sbin/nologin
+    uid: 104
+  ubuntu:
+    exists: true
+    gid: 1013
+    home: /home/ubuntu
+    shell: /bin/bash
+    uid: 1007
+  uucp:
+    exists: true
+    gid: 10
+    home: /var/spool/uucp
+    shell: /usr/sbin/nologin
+    uid: 10
+  vector:
+    exists: true
+    gid: 989
+    home: /var/lib/vector
+    shell: /sbin/nologin
+    uid: 995
+  wal-g:
+    exists: true
+    gid: 1004
+    home: /home/wal-g
+    shell: /usr/bin/nologin
+    uid: 996
+  www-data:
+    exists: true
+    gid: 33
+    home: /var/www
+    shell: /usr/sbin/nologin
+    uid: 33

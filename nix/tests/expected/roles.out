@@ -46,7 +46,7 @@ order by rolname;
  service_role               | f             | f           | f        | t          | f           | f              |           -1 | t            | 
  supabase_admin             | t             | t           | t        | t          | t           | t              |           -1 | t            | 
  supabase_auth_admin        | t             | t           | f        | f          | f           | f              |           -1 | f            | 
- supabase_etl_admin         | f             | t           | f        | t          | f           | t              |           -1 | f            | 
+ supabase_etl_admin         | f             | t           | f        | t          | f           | t              |           -1 | t            | 
  supabase_functions_admin   | t             | t           | f        | f          | f           | f              |           -1 | f            | 
  supabase_read_only_user    | f             | t           | f        | t          | f           | f              |           -1 | t            | 
  supabase_replication_admin | f             | t           | f        | t          | f           | t              |           -1 | f            | 

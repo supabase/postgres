@@ -1,0 +1,471 @@
+# File baseline: opt
+# Generated from baseline.yml - 78 files
+file:
+  /opt/LICENSE:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1006'
+  /opt/README.md:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1006'
+  /opt/envoy:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0700'
+    owner: '1003'
+  /opt/envoy-hot-restarter.py:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0700'
+    owner: '1003'
+  /opt/gotrue/auth:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0755'
+    owner: '1001'
+  /opt/gotrue/migrations/00_init_auth_schema.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20210710035447_alter_users.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20210722035447_adds_confirmed_at.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20210730183235_add_email_change_confirmed.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20210909172000_create_identities_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20210927181326_add_refresh_token_parent.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20211122151130_create_user_id_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20211124214934_update_auth_functions.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20211202183645_update_auth_uid.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220114185221_update_user_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220114185340_add_banned_until.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220224000811_update_auth_functions.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220323170000_add_user_reauthentication.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220429102000_add_unique_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220531120530_add_auth_jwt_function.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220614074223_add_ip_address_to_audit_log.postgres.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20220811173540_add_sessions_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221003041349_add_mfa_schema.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221003041400_add_aal_and_factor_id_to_sessions.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221011041400_add_mfa_indexes.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221020193600_add_sessions_user_id_index.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221021073300_add_refresh_tokens_session_id_revoked_index.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221021082433_add_saml.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221027105023_add_identities_user_id_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221114143122_add_session_not_after_column.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221114143410_remove_parent_foreign_key_refresh_tokens.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221125140132_backfill_email_identity.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221208132122_backfill_email_last_sign_in_at.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221215195500_modify_users_email_unique_index.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221215195800_add_identities_email_column.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20221215195900_remove_sso_sessions.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230116124310_alter_phone_type.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230116124412_add_deleted_at.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230131181311_backfill_invite_identities.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230322519590_add_flow_state_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230402418590_add_authentication_method_to_flow_state_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230411005111_remove_duplicate_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230508135423_add_cleanup_indexes.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230523124323_add_mfa_challenge_cleanup_index.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230818113222_add_flow_state_to_relay_state.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20230914180801_add_mfa_factors_user_id_idx.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20231027141322_add_session_refresh_columns.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20231114161723_add_sessions_tag.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20231117164230_add_id_pkey_identities.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240115144230_remove_ip_address_from_saml_relay_state.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240214120130_add_is_anonymous_column.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240306115329_add_issued_at_to_flow_state.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240314092811_add_saml_name_id_format.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240427152123_add_one_time_tokens_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240612123726_enable_rls_update_grants.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240729123726_add_mfa_phone_config.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240802193726_add_mfa_factors_column_last_challenged_at.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20240806073726_drop_uniqueness_constraint_on_phone.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20241009103726_add_web_authn.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250717082212_add_disabled_to_sso_providers.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250731150234_add_oauth_clients_table.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250804100000_add_oauth_authorizations_consents.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250901200500_add_oauth_client_type.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250903112500_remove_oauth_client_id_column.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250904133000_add_oauth_client_id_to_session.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20250925093508_add_last_webauthn_challenge_data.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/gotrue/migrations/20251007112900_add_session_refresh_token_columns.up.sql:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0644'
+    owner: '1001'
+  /opt/postgres_exporter/LICENSE:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '1001'
+  /opt/postgres_exporter/NOTICE:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '1001'
+  /opt/postgres_exporter/postgres_exporter:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0755'
+    owner: '1001'
+  /opt/postgres_exporter/queries.yml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /opt/postgrest:
+    exists: true
+    filetype: file
+    group: '118'
+    mode: '0755'
+    owner: '1002'
+  /opt/saltstack:
+    exists: true
+    filetype: directory
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /opt/start-envoy.sh:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0700'
+    owner: '1003'
+  /opt/supabase-admin-agent/README.md:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0644'
+    owner: '993'
+  /opt/supabase-admin-agent/config.yaml:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0640'
+    owner: '993'
+  /opt/supabase-admin-agent/supabase-admin-agent-linux-arm64:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0755'
+    owner: '993'
+  /opt/supabase-admin-api:
+    exists: true
+    filetype: file
+    group: '1001'
+    mode: '0755'
+    owner: '1006'

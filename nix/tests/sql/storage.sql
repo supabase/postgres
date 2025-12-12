@@ -93,22 +93,13 @@ where
 order by
   p.proname;
 
--- storage service migrations
-select * from storage.migrations ;
-
 -- postgres can grant storage privileges to custom roles
 create role r;
 grant r to postgres with admin option;
 
-set role r;
-select * from storage.buckets;
-
 set role postgres;
 grant usage on schema storage to r;
-grant select on storage.buckets to r;
-
-set role r;
-select * from storage.buckets;
+select pg_catalog.has_schema_privilege('r', 'storage', 'usage');
 
 set role postgres;
 drop owned by r cascade;

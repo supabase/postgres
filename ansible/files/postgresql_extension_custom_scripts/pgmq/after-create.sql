@@ -1,11 +1,12 @@
 do $$
 declare
   extoid oid := (select oid from pg_extension where extname = 'pgmq');
+  extversion text := (select extversion from pg_extension where extname = 'pgmq');
+  search_path text := (select current_setting('search_path'));
   r record;
   cls pg_class%rowtype;
 begin
-
-  set local search_path = '';
+  perform set_config('search_path', '', true);
 
 /*
     Override the pgmq.drop_queue to check if relevant tables are owned
@@ -18,8 +19,13 @@ begin
     physical backups everywhere
 */
 -- Detach and delete the official function
-alter extension pgmq drop function pgmq.drop_queue(TEXT);
-drop function pgmq.drop_queue(TEXT);
+if extversion = '1.4.4' then
+  alter extension pgmq drop function pgmq.drop_queue;
+  drop function pgmq.drop_queue;
+else -- 1.5.1+
+  alter extension pgmq drop function pgmq.drop_queue(TEXT);
+  drop function pgmq.drop_queue(TEXT);
+end if;
 
 -- Create and reattach the patched function
 CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
@@ -134,7 +140,11 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-alter extension pgmq add function pgmq.drop_queue(TEXT);
+if extversion = '1.4.4' then
+  alter extension pgmq add function pgmq.drop_queue;
+else -- 1.5.1+
+  alter extension pgmq add function pgmq.drop_queue(TEXT);
+end if;
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
@@ -170,4 +180,7 @@ alter extension pgmq add function pgmq.drop_queue(TEXT);
 
     end if;
   end loop;
+
+  -- restore configs
+  perform set_config('search_path', search_path, true);
 end $$;

@@ -1,0 +1,231 @@
+# File baseline: home
+# Generated from baseline.yml - 38 files
+file:
+  /home/adminapi/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /home/adminapi/.bashrc:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /home/adminapi/.profile:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /home/adminapi/.sudo_as_admin_successful:
+    exists: true
+    filetype: file
+    group: '1010'
+    mode: '0644'
+    owner: '1006'
+  /home/envoy/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0644'
+    owner: '1003'
+  /home/envoy/.bashrc:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0644'
+    owner: '1003'
+  /home/envoy/.profile:
+    exists: true
+    filetype: file
+    group: '1007'
+    mode: '0644'
+    owner: '1003'
+  /home/gotrue/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1005'
+    mode: '0644'
+    owner: '1001'
+  /home/gotrue/.bashrc:
+    exists: true
+    filetype: file
+    group: '1005'
+    mode: '0644'
+    owner: '1001'
+  /home/gotrue/.profile:
+    exists: true
+    filetype: file
+    group: '1005'
+    mode: '0644'
+    owner: '1001'
+  /home/kong/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1008'
+    mode: '0644'
+    owner: '1004'
+  /home/kong/.bashrc:
+    exists: true
+    filetype: file
+    group: '1008'
+    mode: '0644'
+    owner: '1004'
+  /home/kong/.profile:
+    exists: true
+    filetype: file
+    group: '1008'
+    mode: '0644'
+    owner: '1004'
+  /home/nginx/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1009'
+    mode: '0644'
+    owner: '1005'
+  /home/nginx/.bashrc:
+    exists: true
+    filetype: file
+    group: '1009'
+    mode: '0644'
+    owner: '1005'
+  /home/nginx/.profile:
+    exists: true
+    filetype: file
+    group: '1009'
+    mode: '0644'
+    owner: '1005'
+  /home/pgbouncer/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0644'
+    owner: '1000'
+  /home/pgbouncer/.bashrc:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0644'
+    owner: '1000'
+  /home/pgbouncer/.profile:
+    exists: true
+    filetype: file
+    group: '1003'
+    mode: '0644'
+    owner: '1000'
+  /home/postgres/wal_fetch.sh:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0500'
+    owner: '999'
+  /home/postgrest/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0644'
+    owner: '1002'
+  /home/postgrest/.bashrc:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0644'
+    owner: '1002'
+  /home/postgrest/.profile:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0644'
+    owner: '1002'
+  /home/supabase-admin-agent/.bash_logout:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0644'
+    owner: '993'
+  /home/supabase-admin-agent/.bashrc:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0644'
+    owner: '993'
+  /home/supabase-admin-agent/.profile:
+    exists: true
+    filetype: file
+    group: '987'
+    mode: '0644'
+    owner: '993'
+  /home/ubuntu/.bash_aliases:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/.bashrc:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/.local/share/nix/trusted-settings.json:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/.profile:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/.ssh/authorized_keys:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0600'
+    owner: '1007'
+  /home/ubuntu/.sudo_as_admin_successful:
+    exists: true
+    filetype: file
+    group: '1013'
+    mode: '0644'
+    owner: '1007'
+  /home/ubuntu/50M_PLACEHOLDER:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /home/ubuntu/machine-baseline.yaml:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /home/wal-g/.bash_logout:
+    exists: true
+    filetype: file
+    group: '1004'
+    mode: '0644'
+    owner: '996'
+  /home/wal-g/.bashrc:
+    exists: true
+    filetype: file
+    group: '1004'
+    mode: '0644'
+    owner: '996'
+  /home/wal-g/.profile:
+    exists: true
+    filetype: file
+    group: '1004'
+    mode: '0644'
+    owner: '996'

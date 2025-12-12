@@ -1,18 +1,3 @@
-variable "profile" {
-  type    = string
-  default = "${env("AWS_PROFILE")}"
-}
-
-variable "ami_regions" {
-  type    = list(string)
-  default = ["ap-southeast-2"]
-}
-
-variable "environment" {
-  type    = string
-  default = "prod"
-}
-
 variable "region" {
   type    = string
 }
@@ -37,10 +22,6 @@ variable "packer-execution-id" {
   default = "unknown"
 }
 
-variable "force-deregister" {
-  type    = bool
-  default = false
-}
 variable "git_sha" {
   type    = string
   default = env("GIT_SHA")
@@ -49,6 +30,11 @@ variable "git_sha" {
 variable "postgres_major_version" {
   type    = string
   default = ""
+}
+
+variable "source_ami" {
+  type    = string
+  description = "Source AMI ID from stage 1"
 }
 
 packer {
@@ -64,15 +50,7 @@ source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
   instance_type = "c6g.4xlarge"
   region        = "${var.region}"
-  source_ami_filter {
-    filters = {
-      name   = "${var.ami_name}-${var.postgres-version}-stage-1"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    most_recent = true
-    owners      = ["amazon", "self"]
-  }
+  source_ami    = "${var.source_ami}"
 
   communicator = "ssh"
   ssh_pty = true
@@ -81,6 +59,11 @@ source "amazon-ebs" "ubuntu" {
 
   associate_public_ip_address = true
 
+  # Increase timeout for instance stop operations to handle large instances
+  aws_polling {
+    delay_seconds = 15
+    max_attempts  = 120  # 120 * 15s = 30 minutes max wait
+  }
 
   ena_support = true
 
@@ -102,6 +85,7 @@ source "amazon-ebs" "ubuntu" {
     appType = "postgres"
     postgresVersion = "${var.postgres-version}"
     sourceSha = "${var.git-head-version}"
+    packerExecutionId = "${var.packer-execution-id}"
   }
 }
 
@@ -128,6 +112,11 @@ build {
 
   provisioner "file" {
     source = "scripts"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    source = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
 
