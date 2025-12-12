@@ -42,9 +42,7 @@ let
           "";
 
       nativeBuildInputs = [ cargo ];
-      buildInputs = [
-        postgresql
-      ];
+      buildInputs = [ postgresql ];
       # update the following array when the pg_jsonschema version is updated
       # required to ensure that extensions update scripts from previous versions are generated
       previousVersions = [

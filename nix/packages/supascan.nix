@@ -1,8 +1,4 @@
-{
-  pkgs,
-  lib,
-  ...
-}:
+{ pkgs, lib, ... }:
 let
   # Use Go 1.24 for the scanner which requires Go >= 1.23.2
   go124 = pkgs.go_1_24;
