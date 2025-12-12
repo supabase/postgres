@@ -1,0 +1,15 @@
+# File baseline: data
+# Generated from baseline.yml - 2 files
+file:
+  /data/50M_PLACEHOLDER:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /data/pgdata:
+    exists: true
+    filetype: directory
+    group: '1002'
+    mode: '0750'
+    owner: '999'

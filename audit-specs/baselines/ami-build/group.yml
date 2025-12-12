@@ -1,0 +1,89 @@
+# Group baseline for AMI build
+# Checks that critical system and application groups exist
+# GIDs may vary between builds - only checking existence
+group:
+  # System groups
+  root:
+    exists: true
+  sudo:
+    exists: true
+  adm:
+    exists: true
+  admin:
+    exists: true
+  users:
+    exists: true
+  nogroup:
+    exists: true
+  ubuntu:
+    exists: true
+
+  # PostgreSQL ecosystem
+  postgres:
+    exists: true
+  pgbouncer:
+    exists: true
+  wal-g:
+    exists: true
+  ssl-cert:
+    exists: true
+
+  # Supabase services
+  gotrue:
+    exists: true
+  postgrest:
+    exists: true
+  adminapi:
+    exists: true
+  kong:
+    exists: true
+  envoy:
+    exists: true
+  nginx:
+    exists: true
+  vector:
+    exists: true
+  supabase-admin-agent:
+    exists: true
+
+  # System service groups
+  messagebus:
+    exists: true
+  systemd-network:
+    exists: true
+  systemd-resolve:
+    exists: true
+  systemd-timesync:
+    exists: true
+  systemd-journal:
+    exists: true
+  polkitd:
+    exists: true
+  tcpdump:
+    exists: true
+  _ssh:
+    exists: true
+  salt:
+    exists: true
+
+  # Nix
+  nixbld:
+    exists: true
+
+  # Other system groups
+  disk:
+    exists: true
+  tty:
+    exists: true
+  audio:
+    exists: true
+  video:
+    exists: true
+  plugdev:
+    exists: true
+  netdev:
+    exists: true
+  lxd:
+    exists: true
+  crontab:
+    exists: true

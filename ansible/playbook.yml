@@ -220,6 +220,18 @@
         systemctl stop fail2ban.service
       when: stage2_nix
 
+    - name: Run supascan baseline validation
+      become: yes
+      shell: |
+        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
+      when: stage2_nix
+
+    - name: Remove supascan after validation
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove supascan"
+      when: stage2_nix
+
     - name: nix collect garbage
       become: yes
       shell: |

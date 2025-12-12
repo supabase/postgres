@@ -1,0 +1,165 @@
+# File baseline: postgres-config
+# Generated from baseline.yml - 27 files
+file:
+  /etc/postgresql-custom/custom-overrides.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/before-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/dblink/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pg_cron/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pg_repack/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pg_tle/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pgmq/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pgsodium/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/pgsodium/before-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/postgis_tiger_geocoder/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/postgres_fdw/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/extension-custom-scripts/supabase_vault/after-create.sql:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0775'
+    owner: '999'
+  /etc/postgresql-custom/generated-optimizations.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '999'
+  /etc/postgresql-custom/pgsodium_root.key:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0600'
+    owner: '999'
+  /etc/postgresql-custom/platform-defaults.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '999'
+  /etc/postgresql-custom/read-replica.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '999'
+  /etc/postgresql-custom/supautils.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '999'
+  /etc/postgresql-custom/wal-g.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '999'
+  /etc/postgresql.schema.sql:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /etc/postgresql/logging.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '0'
+  /etc/postgresql/pg_hba.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0664'
+    owner: '0'
+  /etc/postgresql/pg_ident.conf:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0644'
+    owner: '0'
+  /etc/postgresql/postgresql.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/postgrest/base.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0664'
+    owner: '0'
+  /etc/postgrest/generated.conf:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0644'
+    owner: '1002'
+  /etc/postgrest/merge.sh:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0750'
+    owner: '1002'
+  /etc/postgrest/merged.conf:
+    exists: true
+    filetype: file
+    group: '1006'
+    mode: '0644'
+    owner: '1002'
