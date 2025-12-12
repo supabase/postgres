@@ -3,6 +3,7 @@
   psql_15,
   psql_orioledb-17,
   defaults,
+  supabase-groonga,
   system,
 }:
 {
@@ -14,7 +15,6 @@
       extraSubstitutions ? { },
     }:
     let
-      supabase-groonga = pgroonga.passthru.groonga or (pkgs.callPackage ../ext/pgroonga/groonga.nix { });
       paths = {
         migrationsDir = builtins.path {
           name = "migrations";
