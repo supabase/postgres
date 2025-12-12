@@ -172,6 +172,7 @@
                 start-postgres-server-bin
                 which
                 getkey-script
+                supabase-groonga
                 python3
                 netcat
               ];
@@ -257,7 +258,7 @@
                 export HTTP_MOCK_PORT
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
-                export GRN_PLUGINS_DIR=${pgroonga.passthru.groonga}/lib/groonga/plugins
+                export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
                 log info "Creating temporary PostgreSQL cluster at $PGTAP_CLUSTER"
                 log_cmd initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
