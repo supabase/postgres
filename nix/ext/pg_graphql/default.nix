@@ -17,6 +17,7 @@ let
       cargo = rust-bin.stable.${rustVersion}.default;
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
         inherit rustVersion pgrxVersion;
+        useCrane = false;
       };
       src = fetchFromGitHub {
         owner = "supabase";
@@ -103,11 +104,13 @@ let
         };
       }
       // lib.optionalAttrs (builtins.compareVersions "1.2.0" version >= 0) {
-        # Add missing Cargo.lock
-        patches = [ ./0001-Add-missing-Cargo.lock-${version}.patch ];
+        # For crane: Copy the external Cargo.lock into the source so vendorCargoDeps can find it
+        postPatch = ''
+          cp ${./Cargo-${version}.lock} Cargo.lock
+        '';
 
         cargoLock = {
-          lockFile = ./Cargo-${version}.lock;
+          inherit lockFile;
           outputHashes = {
             "pgx-contrib-spiext-0.1.0" =
               if (version == "1.2.0") then

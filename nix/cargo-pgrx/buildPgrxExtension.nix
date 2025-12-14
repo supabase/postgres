@@ -29,6 +29,7 @@
 {
   lib,
   cargo-pgrx,
+  craneLib ? null,
   pkg-config,
   rustPlatform,
   stdenv,
@@ -36,10 +37,18 @@
   defaultBindgenHook,
 }:
 
-# The idea behind: Use it mostly like rustPlatform.buildRustPackage and so
-# we hand most of the arguments down.
+# Unified pgrx extension builder supporting both rustPlatform and crane.
+# When craneLib is provided, uses crane for better incremental builds and caching.
+# Otherwise falls back to rustPlatform.buildRustPackage.
 #
-# Additional arguments are:
+# Crane separates dependency builds from main crate builds, enabling better caching.
+# Both approaches accept the same arguments and produce compatible outputs.
+#
+# IMPORTANT: External Cargo.lock files are handled by extensions' postPatch phases,
+# not by copying during evaluation. This avoids IFD (Import From Derivation) issues
+# that caused cross-compilation failures when evaluating aarch64 packages on x86_64.
+#
+# Additional arguments:
 #   - `postgresql` postgresql package of the version of postgresql this extension should be build for.
 #                  Needs to be the build platform variant.
 #   - `useFakeRustfmt` Whether to use a noop fake command as rustfmt. cargo-pgrx tries to call rustfmt.
@@ -139,84 +148,177 @@ let
     pg_ctl stop
   '';
 
-  argsForBuildRustPackage = builtins.removeAttrs args [
-    "postgresql"
-    "useFakeRustfmt"
-    "usePgTestCheckFeature"
-  ];
+  # Crane-specific: Determine if we're using crane and handle cargo lock info
+  # Note: External lockfiles are handled by extensions' postPatch, not here, to avoid
+  # creating platform-specific derivations during evaluation (prevents IFD issues)
+  useCrane = craneLib != null;
+  cargoLockInfo = args.cargoLock or null;
 
-  # so we don't accidentally `(rustPlatform.buildRustPackage argsForBuildRustPackage) // { ... }` because
-  # we forgot parentheses
-  finalArgs = argsForBuildRustPackage // {
-    buildInputs = (args.buildInputs or [ ]);
+  # External Cargo.lock files are handled by the extension's postPatch phase
+  # which creates symlinks. Crane finds them during build, not evaluation.
+  # This approach prevents IFD cross-compilation issues.
 
-    nativeBuildInputs =
-      (args.nativeBuildInputs or [ ])
-      ++ [
-        cargo-pgrx
-        postgresql
-        pkg-config
-        bindgenHook
-      ]
-      ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
+  # Handle git dependencies based on build system
+  cargoVendorDir =
+    if useCrane && cargoLockInfo != null then
+      # For crane, use vendorCargoDeps with external Cargo.lock file
+      craneLib.vendorCargoDeps {
+        src = args.src;
+        cargoLock = cargoLockInfo.lockFile;
+      }
+    else
+      null;
 
-    buildPhase = ''
-      runHook preBuild
+  # Remove rustPlatform-specific args and pgrx-specific args.
+  # For crane, also remove build/install phases (added back later).
+  argsForBuilder = builtins.removeAttrs args (
+    [
+      "postgresql"
+      "useFakeRustfmt"
+      "usePgTestCheckFeature"
+    ]
+    ++ lib.optionals useCrane [
+      "cargoHash" # rustPlatform uses this, crane uses Cargo.lock directly
+      "cargoLock" # handled separately via modifiedSrc and cargoVendorDir
+      "installPhase" # we provide our own pgrx-specific install phase
+      "buildPhase" # we provide our own pgrx-specific build phase
+    ]
+  );
 
-      echo "Executing cargo-pgrx buildPhase"
-      ${preBuildAndTest}
-      ${maybeEnterBuildAndTestSubdir}
+  # Common arguments for both rustPlatform and crane
+  commonArgs =
+    argsForBuilder
+    // {
+      src = args.src; # Use original source - extensions handle external lockfiles via postPatch
+      strictDeps = true;
 
-      export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
-      export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
+      buildInputs = (args.buildInputs or [ ]);
 
-      ${lib.optionalString needsRustcWrapper ''
-        export ORIGINAL_RUSTC="$(command -v ${stdenv.cc.targetPrefix}rustc || command -v rustc)"
-        export PATH="${rustcWrapper}/bin:$PATH"
-        export RUSTC="${rustcWrapper}/bin/rustc"
-      ''}
+      nativeBuildInputs =
+        (args.nativeBuildInputs or [ ])
+        ++ [
+          cargo-pgrx
+          postgresql
+          pkg-config
+          bindgenHook
+        ]
+        ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
-      ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
-      cargo ${pgrxBinaryName} package \
-        --pg-config ${lib.getDev postgresql}/bin/pg_config \
-        ${maybeDebugFlag} \
-        --features "${builtins.concatStringsSep " " buildFeatures}" \
-        --out-dir "$out"
+      PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
+      CARGO_BUILD_INCREMENTAL = "false";
+      RUST_BACKTRACE = "full";
 
-      ${maybeLeaveBuildAndTestSubdir}
+      checkNoDefaultFeatures = true;
+      checkFeatures =
+        (args.checkFeatures or [ ])
+        ++ (lib.optionals usePgTestCheckFeature [ "pg_test" ])
+        ++ [ "pg${pgrxPostgresMajor}" ];
+    }
+    // lib.optionalAttrs (cargoVendorDir != null) {
+      inherit cargoVendorDir;
+    };
 
-      runHook postBuild
-    '';
+  # Shared build and install phases for both rustPlatform and crane
+  sharedBuildPhase = ''
+    runHook preBuild
 
+    ${preBuildAndTest}
+    ${maybeEnterBuildAndTestSubdir}
+
+    export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
+    export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
+
+    ${lib.optionalString needsRustcWrapper ''
+      export ORIGINAL_RUSTC="$(command -v ${stdenv.cc.targetPrefix}rustc || command -v rustc)"
+      export PATH="${rustcWrapper}/bin:$PATH"
+      export RUSTC="${rustcWrapper}/bin/rustc"
+    ''}
+
+    ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
+    cargo ${pgrxBinaryName} package \
+      --pg-config ${lib.getDev postgresql}/bin/pg_config \
+      ${maybeDebugFlag} \
+      --features "${builtins.concatStringsSep " " buildFeatures}" \
+      --out-dir "$out"
+
+    ${maybeLeaveBuildAndTestSubdir}
+
+    runHook postBuild
+  '';
+
+  sharedInstallPhase = ''
+    runHook preInstall
+
+    ${maybeEnterBuildAndTestSubdir}
+
+    cargo-${pgrxBinaryName} ${pgrxBinaryName} stop all
+
+    mv $out/${postgresql}/* $out
+    mv $out/${postgresql.lib}/* $out
+    rm -rf $out/nix
+
+    ${maybeLeaveBuildAndTestSubdir}
+
+    runHook postInstall
+  '';
+
+  # Arguments for rustPlatform.buildRustPackage
+  rustPlatformArgs = commonArgs // {
+    buildPhase = sharedBuildPhase;
+    installPhase = sharedInstallPhase;
     preCheck = preBuildAndTest + args.preCheck or "";
+  };
 
-    installPhase = ''
-      runHook preInstall
+  # Crane's two-phase build: first build dependencies, then build the extension.
+  # buildDepsOnly creates a derivation containing only Cargo dependency artifacts.
+  # This is cached separately, so changing extension code doesn't rebuild dependencies.
+  cargoArtifacts =
+    if useCrane then
+      craneLib.buildDepsOnly (
+        commonArgs
+        // {
+          pname = "${args.pname or "pgrx-extension"}-deps";
 
-      echo "Executing buildPgrxExtension install"
+          # pgrx-pg-sys needs PGRX_HOME during dependency build
+          preBuild = ''
+            ${preBuildAndTest}
+            ${maybeEnterBuildAndTestSubdir}
+          ''
+          + (args.preBuild or "");
 
-      ${maybeEnterBuildAndTestSubdir}
+          postBuild = ''
+            ${maybeLeaveBuildAndTestSubdir}
+          ''
+          + (args.postBuild or "");
 
-      cargo-${pgrxBinaryName} ${pgrxBinaryName} stop all
+          # Dependencies don't have a postInstall phase
+          postInstall = "";
 
-      mv $out/${postgresql}/* $out
-      mv $out/${postgresql.lib}/* $out
-      rm -rf $out/nix
+          # Need to specify PostgreSQL version feature for pgrx dependencies
+          # and disable default features to avoid multiple pg version conflicts
+          cargoExtraArgs = "--no-default-features --features ${
+            builtins.concatStringsSep "," ([ "pg${pgrxPostgresMajor}" ] ++ buildFeatures)
+          }";
+        }
+      )
+    else
+      null;
 
-      ${maybeLeaveBuildAndTestSubdir}
+  # Arguments for crane.buildPackage
+  craneArgs = commonArgs // {
+    inherit cargoArtifacts;
+    pname = args.pname or "pgrx-extension";
 
-      runHook postInstall
-    '';
+    # Explicitly preserve postInstall from args (needed for version-specific file renaming)
+    postInstall = args.postInstall or "";
 
-    PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
-    CARGO_BUILD_INCREMENTAL = "false";
-    RUST_BACKTRACE = "full";
+    # We handle installation ourselves via pgrx, don't let crane try to install binaries
+    doNotInstallCargoBinaries = true;
+    doNotPostBuildInstallCargoBinaries = true;
 
-    checkNoDefaultFeatures = true;
-    checkFeatures =
-      (args.checkFeatures or [ ])
-      ++ (lib.optionals usePgTestCheckFeature [ "pg_test" ])
-      ++ [ "pg${pgrxPostgresMajor}" ];
+    buildPhase = sharedBuildPhase;
+    installPhase = sharedInstallPhase;
+    preCheck = preBuildAndTest + args.preCheck or "";
   };
 in
-rustPlatform.buildRustPackage finalArgs
+if useCrane then craneLib.buildPackage craneArgs else rustPlatform.buildRustPackage rustPlatformArgs

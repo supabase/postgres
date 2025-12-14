@@ -15,6 +15,7 @@ let
       cargo = rust-bin.stable.${rustVersion}.default;
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
         inherit rustVersion pgrxVersion;
+        useCrane = true;
       };
       src = fetchFromGitHub {
         owner = "supabase";
@@ -42,7 +43,9 @@ let
           "";
 
       nativeBuildInputs = [ cargo ];
-      buildInputs = [ postgresql ];
+      buildInputs = [
+        postgresql
+      ];
       # update the following array when the pg_jsonschema version is updated
       # required to ensure that extensions update scripts from previous versions are generated
       previousVersions = [

@@ -1,10 +1,13 @@
 {
   callPackage,
-  rustVersion,
-  pgrxVersion,
+  crane ? null,
   makeRustPlatform,
+  pgrxVersion,
+  pkgs,
   rust-bin,
+  rustVersion,
   stdenv,
+  useCrane ? false,
 }:
 let
   inherit ((callPackage ./default.nix { inherit rustVersion; })) mkCargoPgrx;
@@ -51,9 +54,22 @@ let
       }
     else
       rustPlatform.bindgenHook;
+
+  # Initialize crane with the same Rust toolchain as rustPlatform to ensure consistency.
+  # crane.mkLib creates a library of crane functions bound to a specific package set,
+  # then we override the toolchain to match the pgrx-required Rust version.
+  craneLib =
+    if useCrane then
+      let
+        # Use crane parameter if provided, otherwise get it from pkgs overlay
+        craneInput = if crane != null then crane else pkgs.crane;
+      in
+      (craneInput.mkLib pkgs).overrideToolchain rust-bin.stable.${rustVersion}.default
+    else
+      null;
 in
+# Use unified builder that supports both crane and rustPlatform
 callPackage ./buildPgrxExtension.nix {
-  inherit rustPlatform;
-  inherit cargo-pgrx;
+  inherit rustPlatform cargo-pgrx craneLib;
   defaultBindgenHook = bindgenHook;
 }

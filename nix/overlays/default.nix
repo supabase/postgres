@@ -1,4 +1,4 @@
-{ self, ... }:
+{ self, inputs, ... }:
 {
   flake.overlays.default = final: _prev: {
     # NOTE: add any needed overlays here. in theory we could
@@ -16,6 +16,9 @@
       ;
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
+
+    # Make crane available as pkgs.crane for Rust builds
+    crane = inputs.crane;
 
     cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
       inherit (final) lib;
