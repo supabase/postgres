@@ -1,0 +1,46 @@
+name: ⚙️ Manual AWS OIDC Debug Run
+
+# 1. Define the trigger for On-Demand/Manual runs
+on:
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        description: 'AWS Region'
+        required: true
+        default: 'ap-southeast-1'
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify_role_assumption:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Configure AWS Credentials (Assume Role)
+        id: aws-creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ github.event.inputs.aws_region || 'ap-southeast-1' }}
+          # Set a unique session name for CloudTrail auditing
+          role-session-name: "BrentTestRoleSession" 
+          # Ensure this is set to true to load credentials into the environment
+          output-env-credentials: true
+          role-duration-seconds: 1800
+      
+        # Verify the Assumed Role Identity
+      - name: Verify Assumed Role with sts:GetCallerIdentity
+        if: ${{ steps.aws-creds.outcome == 'success' }}
+        run: |
+          echo "--- AWS CALLER IDENTITY CONFIRMATION ---"
+          # The AWS CLI is now authenticated with the temporary credentials
+          aws sts get-caller-identity --output json 
+          echo "----------------------------------------"
+
+          
