@@ -175,18 +175,20 @@
         group: 'postgres'
         src: 'files/postgresql_config/conf.d/read_replica.conf'
 
-    - name: Check if psql_version is psql_15
-      set_fact:
-        is_psql_15: "{{ psql_version in ['psql_15'] }}"
+    - name: configure pam
+      block:
+        - name: Check if psql_version is psql_15
+          ansible.builtin.set_fact:
+            is_psql_15: "{{ psql_version in ['psql_15'] }}"
 
-    - name: create placeholder pam config
-      file:
-        path: '/etc/pam.d/postgresql'
-        state: touch
-        owner: postgres
-        group: postgres
-        mode: 0664
-      when: not is_psql_15
+        - name: create placeholder pam config
+          file:
+            path: '/etc/pam.d/postgresql'
+            state: touch
+            owner: postgres
+            group: postgres
+            mode: 0664
+          when: not is_psql_15
 
 # Install extensions before init
 - name: Install Postgres extensions
