@@ -24,10 +24,10 @@ let
     '';
 
     installPhase = ''
-          runHook preInstall
-          mkdir -p $out/lib/security
-          cp pam_jit_pg.so $out/lib/security/
-          runHook postInstall
+      runHook preInstall
+      mkdir -p $out/lib/security
+      cp pam_jit_pg.so $out/lib/security/
+      runHook postInstall
     '';
   };
 in
