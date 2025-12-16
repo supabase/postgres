@@ -17,14 +17,18 @@ let
 
     buildInputs = [ pkgs.pam ];
 
-    # Environment variables - choose ONE approach
-    CGO_ENABLED = "1";
+    buildPhase = ''
+      runHook preBuild
+      go build -buildmode=c-shared -o pam_jit_pg.so
+      runHook postBuild
+    '';
 
-    # Build flags
-    ldflags = [
-      "-s"
-      "-w"
-    ];
+    installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib/security
+          cp pam_jit_pg.so $out/lib/security/
+          runHook postInstall
+    '';
   };
 in
 
@@ -38,6 +42,6 @@ pkgs.stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/lib/security/
-    cp ${upstream-gatekeeper}/bin/jit-db-gatekeeper $out/lib/security/pam_jit_pg.so
+    cp ${upstream-gatekeeper}/lib/security/pam_jit_pg.so $out/lib/security/pam_jit_pg.so
   '';
 }
