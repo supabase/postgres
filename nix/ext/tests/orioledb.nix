@@ -11,7 +11,7 @@ let
         paths = [
           postgresql
           postgresql.lib
-          self.packages.${pkgs.system}."psql_orioledb-17/exts/orioledb"
+          (self.legacyPackages.${pkgs.system}."psql_orioledb-17".exts.orioledb)
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;

@@ -1,0 +1,207 @@
+# File baseline: systemd
+# Generated from baseline.yml - 34 files
+file:
+  /etc/systemd/journald.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/logind.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/networkd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/pstore.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/resolved.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/sleep.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/adminapi.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/commence-backup.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/database-optimizations.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/envoy.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/fail2ban.service.d/overrides.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/gotrue-optimizations.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/gotrue.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/kong.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/logrotate.timer.d/override.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/nginx.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/pg_egress_collect.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/pgbouncer.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/postgres_exporter.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/postgresql.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/postgrest-optimizations.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/postgrest.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/services.slice:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/supabase-admin-agent_salt.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/supabase-admin-agent_salt.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/systemd-networkd-check-and-fix.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/systemd-networkd-check-and-fix.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/systemd-resolved.service.d/systemd-resolved.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/ufw.service.d/overrides.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/vector.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/vector.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/timesyncd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/user.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'

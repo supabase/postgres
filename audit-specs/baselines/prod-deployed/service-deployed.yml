@@ -1,0 +1,423 @@
+# Service baseline
+# Generated from baseline.yml - 140 items
+service:
+  NetworkManager:
+    enabled: false
+    running: false
+  acpid:
+    enabled: false
+    running: true
+  adminapi:
+    enabled: true
+    running: true
+  apparmor:
+    enabled: true
+    running: true
+  apt-daily:
+    enabled: false
+    running: false
+  apt-daily-upgrade:
+    enabled: false
+    running: false
+  atd:
+    enabled: true
+    running: true
+  auditd:
+    enabled: true
+    running: true
+  cloud-config:
+    enabled: true
+    running: true
+  cloud-final:
+    enabled: true
+    running: true
+  cloud-init:
+    enabled: true
+    running: true
+  cloud-init-hotplugd:
+    enabled: false
+    running: false
+  cloud-init-local:
+    enabled: true
+    running: true
+  connman:
+    enabled: false
+    running: false
+  cron:
+    enabled: true
+    running: true
+  database-optimizations:
+    enabled: false
+    running: false
+  dbus:
+    enabled: false
+    running: true
+  display-manager:
+    enabled: false
+    running: false
+  dpkg-db-backup:
+    enabled: false
+    running: false
+  e2scrub_all:
+    enabled: false
+    running: false
+  e2scrub_reap:
+    enabled: true
+    running: false
+  ec2-instance-connect-harvest-hostkeys:
+    enabled: true
+    running: false
+  emergency:
+    enabled: false
+    running: false
+  envoy:
+    enabled: true
+    running: true
+  fail2ban:
+    enabled: true
+    running: true
+  firewalld:
+    enabled: false
+    running: false
+  fstrim:
+    enabled: false
+    running: false
+  getty-static:
+    enabled: false
+    running: false
+  getty@tty1:
+    enabled: true
+    running: true
+  gotrue:
+    enabled: true
+    running: true
+  grub-common:
+    enabled: true
+    running: false
+  grub-initrd-fallback:
+    enabled: true
+    running: false
+  hibinit-agent:
+    enabled: true
+    running: false
+  hv_kvp_daemon:
+    enabled: false
+    running: false
+  initrd-cleanup:
+    enabled: false
+    running: false
+  initrd-parse-etc:
+    enabled: false
+    running: false
+  initrd-switch-root:
+    enabled: false
+    running: false
+  initrd-udevadm-cleanup-db:
+    enabled: false
+    running: false
+  ip6tables:
+    enabled: false
+    running: false
+  ipset:
+    enabled: false
+    running: false
+  iptables:
+    enabled: false
+    running: false
+  kmod-static-nodes:
+    enabled: false
+    running: true
+  kong:
+    enabled: false
+    running: false
+  ldconfig:
+    enabled: false
+    running: false
+  logrotate:
+    enabled: false
+    running: false
+  modprobe@configfs:
+    enabled: false
+    running: false
+  modprobe@dm_mod:
+    enabled: false
+    running: false
+  modprobe@drm:
+    enabled: false
+    running: false
+  modprobe@efi_pstore:
+    enabled: false
+    running: false
+  modprobe@fuse:
+    enabled: false
+    running: false
+  modprobe@loop:
+    enabled: false
+    running: false
+  motd-news:
+    enabled: false
+    running: false
+  netplan-ovs-cleanup:
+    enabled: false
+    running: false
+  networkd-dispatcher:
+    enabled: true
+    running: false
+  networking:
+    enabled: false
+    running: false
+  nftables:
+    enabled: false
+    running: true
+  nix-daemon:
+    enabled: false
+    running: true
+  ovsdb-server:
+    enabled: false
+    running: false
+  pg_egress_collect:
+    enabled: true
+    running: true
+  pgbouncer:
+    enabled: true
+    running: true
+  plymouth-quit-wait:
+    enabled: false
+    running: false
+  plymouth-start:
+    enabled: false
+    running: false
+  polkit:
+    enabled: false
+    running: true
+  postgres_exporter:
+    enabled: true
+    running: true
+  postgresql:
+    enabled: true
+    running: true
+  postgrest:
+    enabled: true
+    running: true
+  postgrest-optimizations:
+    enabled: false
+    running: false
+  rc-local:
+    enabled: false
+    running: false
+  rescue:
+    enabled: false
+    running: false
+  serial-getty@ttyS0:
+    enabled: false
+    running: true
+  ssh:
+    enabled: false
+    running: true
+  ssh-keygen:
+    enabled: false
+    running: false
+  sshd:
+    enabled: false
+    running: false
+  sshd-keygen:
+    enabled: false
+    running: false
+  supabase-admin-agent_salt:
+    enabled: false
+    running: false
+  syslog:
+    enabled: false
+    running: false
+  sysstat:
+    enabled: true
+    running: true
+  sysstat-collect:
+    enabled: false
+    running: false
+  sysstat-summary:
+    enabled: false
+    running: false
+  systemd-ask-password-console:
+    enabled: false
+    running: false
+  systemd-ask-password-wall:
+    enabled: false
+    running: false
+  systemd-battery-check:
+    enabled: false
+    running: false
+  systemd-binfmt:
+    enabled: false
+    running: true
+  systemd-bsod:
+    enabled: false
+    running: false
+  systemd-firstboot:
+    enabled: false
+    running: false
+  systemd-fsck-root:
+    enabled: false
+    running: false
+  systemd-fsck@dev-disk-by\x2duuid-05b48569\x2d2b4d\x2d4952\x2d9be1\x2db743503798e0:
+    enabled: false
+    running: true
+  systemd-fsck@dev-disk-by\x2duuid-0C6C\x2d179C:
+    enabled: false
+    running: true
+  systemd-fsckd:
+    enabled: false
+    running: false
+  systemd-hibernate:
+    enabled: false
+    running: false
+  systemd-hibernate-resume:
+    enabled: false
+    running: false
+  systemd-hwdb-update:
+    enabled: false
+    running: false
+  systemd-hybrid-sleep:
+    enabled: false
+    running: false
+  systemd-initctl:
+    enabled: false
+    running: false
+  systemd-journal-catalog-update:
+    enabled: false
+    running: false
+  systemd-journal-flush:
+    enabled: false
+    running: true
+  systemd-journald:
+    enabled: false
+    running: true
+  systemd-logind:
+    enabled: false
+    running: true
+  systemd-machine-id-commit:
+    enabled: false
+    running: false
+  systemd-modules-load:
+    enabled: false
+    running: true
+  systemd-networkd:
+    enabled: false
+    running: true
+  systemd-networkd-wait-online:
+    enabled: false
+    running: true
+  systemd-oomd:
+    enabled: false
+    running: false
+  systemd-pcrmachine:
+    enabled: false
+    running: false
+  systemd-pcrphase:
+    enabled: false
+    running: false
+  systemd-pcrphase-initrd:
+    enabled: false
+    running: false
+  systemd-pcrphase-sysinit:
+    enabled: false
+    running: false
+  systemd-pstore:
+    enabled: true
+    running: false
+  systemd-quotacheck:
+    enabled: false
+    running: false
+  systemd-random-seed:
+    enabled: false
+    running: true
+  systemd-remount-fs:
+    enabled: false
+    running: true
+  systemd-repart:
+    enabled: false
+    running: false
+  systemd-resolved:
+    enabled: true
+    running: true
+  systemd-rfkill:
+    enabled: false
+    running: false
+  systemd-soft-reboot:
+    enabled: false
+    running: false
+  systemd-suspend:
+    enabled: false
+    running: false
+  systemd-suspend-then-hibernate:
+    enabled: false
+    running: false
+  systemd-sysctl:
+    enabled: false
+    running: true
+  systemd-sysext:
+    enabled: false
+    running: false
+  systemd-sysusers:
+    enabled: false
+    running: false
+  systemd-timesyncd:
+    enabled: true
+    running: true
+  systemd-tmpfiles-clean:
+    enabled: false
+    running: false
+  systemd-tmpfiles-setup:
+    enabled: false
+    running: true
+  systemd-tmpfiles-setup-dev:
+    enabled: false
+    running: true
+  systemd-tmpfiles-setup-dev-early:
+    enabled: false
+    running: true
+  systemd-tpm2-setup:
+    enabled: false
+    running: false
+  systemd-tpm2-setup-early:
+    enabled: false
+    running: false
+  systemd-udev-settle:
+    enabled: false
+    running: false
+  systemd-udev-trigger:
+    enabled: false
+    running: true
+  systemd-udevd:
+    enabled: false
+    running: true
+  systemd-update-done:
+    enabled: false
+    running: false
+  systemd-update-utmp:
+    enabled: false
+    running: true
+  systemd-update-utmp-runlevel:
+    enabled: false
+    running: false
+  systemd-user-sessions:
+    enabled: false
+    running: true
+  systemd-vconsole-setup:
+    enabled: false
+    running: false
+  ufw:
+    enabled: true
+    running: true
+  unattended-upgrades:
+    enabled: true
+    running: true
+  user-runtime-dir@1007:
+    enabled: false
+    running: true
+  user@1007:
+    enabled: false
+    running: true
+  vector:
+    enabled: true
+    running: true

@@ -58,7 +58,6 @@ AWS_PROFILE=supabase-dev packer build \
   -var "postgres-version=ci-ami-test" \
   -var "region=ap-southeast-1" \
   -var 'ami_regions=["ap-southeast-1"]' \
-  -var "force-deregister=true" \
   amazon-arm64.pkr.hcl
 
 # run tests

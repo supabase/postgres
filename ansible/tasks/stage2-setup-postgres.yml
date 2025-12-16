@@ -106,6 +106,14 @@
       loop_control:
         loop_var: 'nix_item'
 
+    - name: Install supascan for baseline validation
+      ansible.builtin.shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
+
+    - name: nix collect garbage after supascan install
+      ansible.builtin.shell:
+        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
         group: 'postgres'

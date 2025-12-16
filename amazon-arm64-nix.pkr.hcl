@@ -23,21 +23,6 @@ variable "ansible_arguments" {
   default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
 }
 
-variable "aws_access_key" {
-  type    = string
-  default = ""
-}
-
-variable "aws_secret_key" {
-  type    = string
-  default = ""
-}
-
-variable "environment" {
-  type    = string
-  default = "prod"
-}
-
 variable "region" {
   type    = string
 }
@@ -92,6 +77,12 @@ variable "force-deregister" {
   default = false
 }
 
+variable "input-hash" {
+  type    = string
+  default = ""
+  description = "Content hash of all input sources"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -104,15 +95,12 @@ packer {
 # source block
 source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
-  #access_key    = "${var.aws_access_key}"
-  #ami_name = "${var.ami_name}-arm64-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  ami_name = "${var.ami_name}-${var.postgres-version}-stage-1"
+  ami_name = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture = "arm64"
   ami_regions   = "${var.ami_regions}"
   instance_type = "c6g.4xlarge"
   region       = "${var.region}"
-  #secret_key   = "${var.aws_secret_key}"
   force_deregister = var.force-deregister
 
   # Increase timeout for instance stop operations to handle large instances
@@ -130,7 +118,8 @@ source "amazon-ebssurrogate" "source" {
     }
     owners = [ "099720109477" ]
     most_recent = true
-   }
+  }
+
   ena_support = true
   launch_block_device_mappings {
     device_name = "/dev/xvdf"
@@ -172,6 +161,7 @@ source "amazon-ebssurrogate" "source" {
     appType = "postgres"
     postgresVersion = "${var.postgres-version}-stage1"
     sourceSha = "${var.git-head-version}"
+    inputHash = "${var.input-hash}"
   }
 
   communicator = "ssh"

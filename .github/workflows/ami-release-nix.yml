@@ -25,18 +25,13 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install nix
-        uses: cachix/install-nix-action@v27
-        with:
-          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
-          extra_nix_config: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+        uses: ./.github/actions/nix-install-ephemeral
 
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
-          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
+          VERSIONS=$(nix run nixpkgs#yq -- -r '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   build:
     needs: prepare
@@ -51,6 +46,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - name: aws-creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -60,12 +56,12 @@ jobs:
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: cachix/install-nix-action@v27
+        uses: ./.github/actions/nix-install-ephemeral
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.29.1/install
-          extra_nix_config: |
-            substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-            trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -76,47 +72,25 @@ jobs:
             exit 1
           fi
 
-      - name: Set PostgreSQL version environment variable
-        run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
-
-      - name: Generate common-nix.vars.pkr.hcl
-        run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
-          echo "" >> common-nix.vars.pkr.hcl
-
-      - name: Build AMI stage 1
-        env:
-          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
-        run: |
-          GIT_SHA=${{github.sha}}
-          nix  run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
-          # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
-          nix  run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' amazon-arm64-nix.pkr.hcl
-
-      - name: Build AMI stage 2
-        env:
-          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
-        run: |
-          GIT_SHA=${{github.sha}}
-          nix  run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          nix  run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' stage2-nix-psql.pkr.hcl
+      - name: Build AMI
+        id: build-ami
+        uses: ./.github/actions/build-ami
+        with:
+          postgres_version: ${{ matrix.postgres_version }}
+          region: us-east-1
+          ami_regions: '["us-east-1"]'
+          git_sha: ${{ github.sha }}
 
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION="${{ steps.build-ami.outputs.postgres_release_version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create nix flake revision tarball
         run: |
           GIT_SHA=${{github.sha}}
-          MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
+          MAJOR_VERSION=${{ matrix.postgres_version }}
 
           mkdir -p "/tmp/pg_upgrade_bin/${MAJOR_VERSION}"
           echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${MAJOR_VERSION}/nix_flake_version"
@@ -134,7 +108,7 @@ jobs:
           ansible-playbook -i localhost \
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
+            -e "postgres_major_version=${{ matrix.postgres_version }}" \
             manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 staging
@@ -155,9 +129,9 @@ jobs:
           ansible-playbook -i localhost \
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=${{ env.POSTGRES_MAJOR_VERSION }}" \
+            -e "postgres_major_version=${{ matrix.postgres_version }}" \
             manifest-playbook.yml
-    
+
       - name: Upload nix flake revision to s3 prod
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
@@ -184,9 +158,11 @@ jobs:
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
+          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
+          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids

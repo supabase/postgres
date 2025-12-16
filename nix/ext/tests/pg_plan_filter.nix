@@ -3,7 +3,8 @@ let
   pname = "plan_filter";
   inherit (pkgs) lib;
   installedExtension =
-    postgresMajorVersion: self.packages.${pkgs.system}."psql_${postgresMajorVersion}/exts/${pname}-all";
+    postgresMajorVersion:
+    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:

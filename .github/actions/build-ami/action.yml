@@ -1,0 +1,87 @@
+name: Build AMI
+description: Build both stage 1 and stage 2 AMIs
+
+inputs:
+  postgres_version:
+    description: 'PostgreSQL major version (e.g., 15)'
+    required: true
+  region:
+    description: 'AWS region'
+    required: true
+  ami_regions:
+    description: 'AMI regions as JSON array (e.g., ["us-east-1"])'
+    required: true
+  git_sha:
+    description: 'Git SHA for this build'
+    required: true
+  ami_name_prefix:
+    description: 'Prefix for the AMI name'
+    required: false
+    default: 'supabase-postgres'
+
+outputs:
+  stage2_ami_id:
+    description: 'The AMI ID of the stage 2 build'
+    value: ${{ steps.build-stage2.outputs.stage2_ami_id }}
+  postgres_release_version:
+    description: 'The PostgreSQL release version'
+    value: ${{ steps.generate-vars.outputs.version }}
+  execution_id:
+    description: 'The execution ID for this build'
+    value: ${{ steps.set-execution-id.outputs.execution_id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set execution ID
+      id: set-execution-id
+      shell: bash
+      run: |
+        EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}"
+        echo "EXECUTION_ID=$EXECUTION_ID" >> $GITHUB_ENV
+        echo "execution_id=$EXECUTION_ID" >> $GITHUB_OUTPUT
+
+    - name: Generate common-nix.vars.pkr.hcl
+      id: generate-vars
+      shell: bash
+      run: |
+        PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
+        echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+        echo "" >> common-nix.vars.pkr.hcl
+        git add -f common-nix.vars.pkr.hcl
+        echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Build AMI stage 1
+      shell: bash
+      env:
+        POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
+        POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
+        AWS_MAX_ATTEMPTS: 10
+        AWS_RETRY_MODE: adaptive
+        AWS_REGION: ${{ inputs.region }}
+      run: |
+        nix run .#build-ami -- stage1 \
+          -var "git-head-version=${{ inputs.git_sha }}" \
+          -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
+          -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
+          -var 'ami_regions=${{ inputs.ami_regions }}' \
+          amazon-arm64-nix.pkr.hcl
+
+    - name: Build AMI stage 2
+      id: build-stage2
+      shell: bash
+      env:
+        POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
+        POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
+        PACKER_EXECUTION_ID: ${{ env.EXECUTION_ID }}
+        AWS_MAX_ATTEMPTS: 10
+        AWS_RETRY_MODE: adaptive
+        AWS_REGION: ${{ inputs.region }}
+      run: |
+        nix run .#build-ami -- stage2 \
+          -var "git-head-version=${{ inputs.git_sha }}" \
+          -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
+          -var "postgres_major_version=${{ inputs.postgres_version }}" \
+          -var "ami_name=${{ inputs.ami_name_prefix }}" \
+          -var "git_sha=${{ inputs.git_sha }}" \
+          stage2-nix-psql.pkr.hcl
