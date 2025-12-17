@@ -92,10 +92,10 @@
         owner: 'postgres'
         src: 'files/postgresql_config/custom_walg.conf'
 
-    - name: Create symlink for admin-mgr compatibility
-      ansible.builtin.file:
-        src: '/etc/postgresql-custom/conf.d/wal-g.conf'
-        dest: '/etc/postgresql-custom/wal-g.conf'
-        state: 'link'
-        owner: 'postgres'
-        group: 'postgres'
+    # - name: Create symlink for admin-mgr compatibility
+    #   ansible.builtin.file:
+    #     src: '/etc/postgresql-custom/conf.d/wal-g.conf'
+    #     dest: '/etc/postgresql-custom/wal-g.conf'
+    #     state: 'link'
+    #     owner: 'postgres'
+    #     group: 'postgres'
