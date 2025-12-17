@@ -167,13 +167,13 @@
       loop_control:
         loop_var: 'pg_config_item'
 
-    - name: Move read-replica.conf file to /etc/postgresql-custom/conf.d/read-replica.conf
+    - name: Move read-replica.conf file to /etc/postgresql-custom/read-replica.conf
       ansible.builtin.copy:
-        dest: '/etc/postgresql-custom/conf.d/read_replica.conf'
+        dest: '/etc/postgresql-custom/read-replica.conf'
         mode: '0664'
         owner: 'postgres'
         group: 'postgres'
-        src: 'files/postgresql_config/conf.d/read_replica.conf'
+        src: 'files/postgresql_config/custom_read_replica.conf'
 
     - name: configure pam
       block:
