@@ -175,6 +175,22 @@
         group: 'postgres'
         src: 'files/postgresql_config/conf.d/read_replica.conf'
 
+    - name: Create symlink for admin-mgr compatibility
+      ansible.builtin.file:
+        src: '/etc/postgresql-custom/conf.d/read_replica.conf'
+        dest: '/etc/postgresql-custom/read-replica.conf'
+        state: 'link'
+        owner: 'postgres'
+        group: 'postgres'
+
+    - name: Create symlink for supabase-admin-api compatibility
+      ansible.builtin.file:
+        src: '/etc/postgresql-custom/conf.d/custom_overrides.conf'
+        dest: '/etc/postgresql-custom/custom-overrides.conf'
+        state: 'link'
+        owner: 'postgres'
+        group: 'postgres'
+
 # Install extensions before init
 - name: Install Postgres extensions
   ansible.builtin.import_tasks:
