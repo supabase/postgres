@@ -5461,7 +5461,7 @@ file:
     owner: "0"
     group: "0"
     filetype: file
-  /etc/systemd/system/database_optimizations.service:
+  /etc/systemd/system/database-optimizations.service:
     exists: true
     mode: "0644"
     owner: "0"
