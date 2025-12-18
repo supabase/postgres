@@ -85,9 +85,37 @@
   ansible.builtin.copy:
     content: |
       #!/bin/bash
-      _raw_args="$@"
-      _sanitized_args=$(echo $_raw_args | sed -e 's/--cmd=[^ ]*//g; s/--repo-host-cmd=[^ ]*//g; s/--config=[^ ]*//g' )
-      exec sudo -u pgbackrest /var/lib/pgbackrest/.nix-profile/bin/pgbackrest "$_sanitized_args"
+      # Sanitize dangerous arguments
+      sanitized_args=()
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --cmd=*|--cmd)
+            # Skip --cmd and its value
+            [[ "$1" == "--cmd" ]] && shift
+            shift || true
+            ;;
+          --ssh-cmd=*|--ssh-cmd)
+            # Skip --ssh-cmd and its value
+            [[ "$1" == "--ssh-cmd" ]] && shift
+            shift || true
+            ;;
+          --repo-host-cmd=*|--repo-host-cmd)
+            # Skip --repo-host-cmd and its value
+            [[ "$1" == "--repo-host-cmd" ]] && shift
+            shift || true
+            ;;
+          --config=*|--config)
+            # Skip --config and its value
+            [[ "$1" == "--config" ]] && shift
+            shift || true
+            ;;
+          *)
+            sanitized_args+=("$1")
+            shift
+            ;;
+        esac
+      done
+      exec sudo -u pgbackrest /var/lib/pgbackrest/.nix-profile/bin/pgbackrest "${sanitized_args[@]}"
     dest: '/usr/bin/pgbackrest'
     group: 'root'
     mode: '0755'
