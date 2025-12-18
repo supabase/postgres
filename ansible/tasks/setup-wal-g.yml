@@ -76,3 +76,11 @@
         mode: '0664'
         owner: 'postgres'
         src: 'files/postgresql_config/conf.d/wal-g.conf'
+
+    - name: Create symlink for admin-mgr compatibility
+      ansible.builtin.file:
+        src: '/etc/postgresql-custom/conf.d/wal-g.conf'
+        dest: '/etc/postgresql-custom/wal-g.conf'
+        state: 'link'
+        owner: 'postgres'
+        group: 'postgres'

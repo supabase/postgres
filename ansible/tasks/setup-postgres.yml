@@ -147,7 +147,7 @@
         group: 'postgres'
         mode: '0664'
         owner: 'postgres'
-        path: "/etc/postgresql-custom/conf.d{{ pg_config_item }}"
+        path: "/etc/postgresql-custom/conf.d/{{ pg_config_item }}"
         state: 'touch'
       loop:
         - 'custom_overrides.conf'

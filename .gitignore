@@ -31,3 +31,5 @@ common-nix.vars.pkr.hcl
 # pre-commit config is managed in nix
 .pre-commit-config.yaml
 nixos.qcow2
+.lsp
+.clj-kondo
