@@ -67,7 +67,7 @@
   ansible.legacy.copy:
     group: postgres
     dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
-    mode: '0644'
+    mode: '0640'
     owner: pgbackrest
     src: "files/pgbackrest_config/{{ conf_item['name'] }}"
   loop:
