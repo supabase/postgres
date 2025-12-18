@@ -8,7 +8,7 @@
         config.allowUnfree = true;
         permittedInsecurePackages = [ "v8-9.7.106.18" ];
         overlays = [
-          (import inputs.rust-overlay)
+          inputs.rust-overlay.overlays.default
           self.overlays.default
         ];
       };

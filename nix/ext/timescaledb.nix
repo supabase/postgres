@@ -130,7 +130,7 @@ buildEnv {
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" -gt 0
     )
-    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_timescaledb_version \
+    makeWrapper ${switch-ext-version}/bin/switch-ext-version $out/bin/switch_timescaledb_version \
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}" --prefix EXTRA_STEPS : ${lib.getExe switch-timescaledb-loader}
   '';
 

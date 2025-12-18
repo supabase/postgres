@@ -90,7 +90,7 @@ pkgs.buildEnv {
        }"
     )
 
-    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_pg_partman_version \
+    makeWrapper ${switch-ext-version}/bin/switch-ext-version $out/bin/switch_pg_partman_version \
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}" --prefix LIB_NAME : "${libName}"
   '';
 

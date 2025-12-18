@@ -125,7 +125,7 @@ buildEnv {
       previous_version=$ver
     done
 
-    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_plpgsql_check_version \
+    makeWrapper ${switch-ext-version}/bin/switch-ext-version $out/bin/switch_plpgsql_check_version \
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 

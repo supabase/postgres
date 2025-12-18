@@ -63,8 +63,10 @@ let
         CARGO = "${cargo}/bin/cargo";
 
         cargoLock = {
-          lockFile = "${src}/Cargo.lock";
+          lockFile = ./Cargo.lock-${version};
           outputHashes =
+            if builtins.compareVersions "0.4.4" version >= 0 then
+              { } else
             if builtins.compareVersions "0.4.2" version >= 0 then
               { "clickhouse-rs-1.0.0-alpha.1" = "sha256-0zmoUo/GLyCKDLkpBsnLAyGs1xz6cubJhn+eVqMEMaw="; }
             else if builtins.compareVersions "0.5.0" version >= 0 then

@@ -44,6 +44,10 @@ writeShellApplication {
     jq
   ];
 
+  runtimeEnv = {
+    PACKER_SOURCES=packerSources;
+  };
+
   text = ''
     set -euo pipefail
 
@@ -54,7 +58,6 @@ writeShellApplication {
     shift || true  # Remove first arg, ignore error if no args
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
-    PACKER_SOURCES="${packerSources}"
     INPUT_HASH=$(basename "$PACKER_SOURCES" | cut -d- -f1)
 
     find_stage1_ami() {

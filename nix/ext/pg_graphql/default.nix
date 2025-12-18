@@ -24,8 +24,7 @@ let
         rev = "v${version}";
         inherit hash;
       };
-      lockFile =
-        if builtins.pathExists "${src}/Cargo.lock" then "${src}/Cargo.lock" else ./Cargo-${version}.lock;
+      lockFile = ./Cargo-${version}.lock;
     in
     mkPgrxExtension (
       rec {
