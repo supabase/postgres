@@ -1,0 +1,1053 @@
+# File baseline: security
+# Generated from baseline.yml - 175 files
+file:
+  /etc/fail2ban/action.d/abuseipdb.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/apf.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/apprise.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/blocklist_de.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/bsd-ipfw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/cloudflare-token.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/cloudflare.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/complain.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/dshield.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/dummy.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-allports.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-ipset.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-multiport.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-new.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-rich-logging.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/firewallcmd-rich-rules.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/helpers-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/hostsdeny.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/ipfilter.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/ipfw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-allports.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-ipset-proto4.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-ipset-proto6-allports.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-ipset-proto6.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-ipset.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-multiport-log.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-multiport.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-new.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables-xt_recent-echo.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/iptables.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/ipthreat.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mail-buffered.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mail-whois-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mail-whois-lines.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mail-whois.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/mynetwatchman.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/netscaler.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/nftables-allports.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/nftables-multiport.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/nftables.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/nginx-block-map.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/npf.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/nsupdate.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/osx-afctl.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/osx-ipfw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/pf.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/route.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-buffered.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-geoip-lines.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-whois-ipjailmatches.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-whois-ipmatches.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-whois-lines.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-whois-matches.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail-whois.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/sendmail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/shorewall-ipset-proto6.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/shorewall.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/smtp.py:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/symbiosis-blacklist-allports.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/ufw.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/action.d/xarf-login-attack.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/fail2ban.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/3proxy.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-badbots.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-botsearch.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-fakegooglebot.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-modsecurity.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-nohome.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-noscript.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-overflows.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-pass.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/apache-shellshock.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/assp.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/asterisk.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/bitwarden.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/botsearch-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/centreon.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/counter-strike.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/courier-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/courier-smtp.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/cyrus-imap.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/directadmin.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/domino-smtp.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/dovecot.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/dropbear.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/drupal-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/ejabberd-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/exim-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/exim-spam.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/exim.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/freeswitch.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/froxlor-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/gitlab.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/grafana.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/groupoffice.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/gssftpd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/guacamole.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/haproxy-http-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/horde.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/ignorecommands/apache-fakegooglebot:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/fail2ban/filter.d/kerio.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/lighttpd-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/mongodb-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/monit.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/monitorix.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/mssql-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/murmur.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/mysqld-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nagios.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/named-refused.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nginx-bad-request.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nginx-botsearch.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nginx-http-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nginx-limit-req.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/nsd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/openhab.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/openwebmail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/oracleims.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/pam-generic.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/perdition.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/pgbouncer.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/php-url-fopen.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/phpmyadmin-syslog.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/portsentry.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/postfix.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/postgresql.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/proftpd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/pure-ftpd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/qmail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/recidive.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/roundcube-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/scanlogd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/screensharingd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/selinux-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/selinux-ssh.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/sendmail-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/sendmail-reject.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/sieve.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/slapd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/softethervpn.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/sogo-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/solid-pop3d.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/squid.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/squirrelmail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/sshd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/stunnel.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/suhosin.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/tine20.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/traefik-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/uwimap-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/vsftpd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/webmin-auth.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/wuftpd.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/xinetd-fail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/znc-adminlog.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/filter.d/zoneminder.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.d/defaults-debian.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.d/pgbouncer.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.d/postgresql.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.d/postgresql.confE:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.d/sshd.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/jail.local:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/paths-arch.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/paths-common.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/paths-debian.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/fail2ban/paths-opensuse.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/nftables.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/nftables/supabase_managed.conf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '1006'

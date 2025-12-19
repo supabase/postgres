@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 DEVICE=${1:-}
@@ -8,55 +7,99 @@ MOUNT_POINT=${2:-}
 if [[ -z "$DEVICE" || -z "$MOUNT_POINT" ]]; then
   echo "Usage: $0 <device> <mount_point>"
   echo "Example: sudo ./mount-volume.sh /dev/nvme1n1 /data/150008"
+  logger "Usage: $0 <device> <mount_point>"
+  logger "Example: sudo ./mount-volume.sh /dev/nvme1n1 /data/150008"
   exit 1
 fi
-
-#  Mount a block device to a specified mount point
-#  If the device is not formatted, format it as ext4
-#  Set ownership to postgres:postgres and permissions to 750
-#  Add the mount entry to /etc/fstab for persistence across reboots
 
 OWNER="postgres:postgres"
 PERMISSIONS="750"
 FSTYPE="ext4"
 MOUNT_OPTS="defaults"
 FSTAB_FILE="/etc/fstab"
+TIMEOUT=60
+INTERVAL=2
+ELAPSED=0
+LOGGER_TAG="mount-volume"
 
+# --- Helper function for echo + logger ---
+log() {
+    echo "$1"
+    logger -t "$LOGGER_TAG" "$1"
+}
+
+log "Starting mount procedure for device $DEVICE → $MOUNT_POINT"
+
+# --- Wait for block device ---
+log "Waiting for block device $DEVICE to become available..."
+while true; do
+  if [ -b "$DEVICE" ]; then
+    if blkid "$DEVICE" >/dev/null 2>&1 || true; then
+      log "$DEVICE is ready"
+      break
+    fi
+  fi
+
+  ELAPSED=$((ELAPSED + INTERVAL))
+  if [ $ELAPSED -ge $TIMEOUT ]; then
+    log "Error: $DEVICE did not become ready after $TIMEOUT seconds"
+    exit 3
+  fi
+
+  sleep $INTERVAL
+done
+
+# --- Validate device ---
 if [ ! -b "$DEVICE" ]; then
-  echo "Error: Block device '$DEVICE' does not exist."
+  log "Error: Block device '$DEVICE' does not exist."
   exit 2
 fi
 
+# --- Safety: refuse to mount over non-empty directory ---
+mkdir -p "$MOUNT_POINT"
+if [ "$(ls -A "$MOUNT_POINT" 2>/dev/null)" ]; then
+  if ! mountpoint -q "$MOUNT_POINT"; then
+    log "Error: Mount point $MOUNT_POINT is not empty. Aborting to protect existing data."
+    exit 4
+  fi
+fi
+
+# --- Format if needed ---
 if ! blkid "$DEVICE" >/dev/null 2>&1; then
-  echo "Device $DEVICE appears unformatted. Formatting as $FSTYPE..."
+  log "Device $DEVICE appears unformatted. Formatting as $FSTYPE..."
   mkfs."$FSTYPE" -F "$DEVICE"
 else
-  echo "$DEVICE already has a filesystem — skipping format."
+  log "$DEVICE already has a filesystem — skipping format."
 fi
 
-mkdir -p "$MOUNT_POINT"
-
-e2fsck -pf "$DEVICE"
-
+# --- Filesystem check ---
 if ! mountpoint -q "$MOUNT_POINT"; then
-  echo "Mounting $DEVICE to $MOUNT_POINT"
+  log "Running e2fsck check on $DEVICE"
+  e2fsck -pf "$DEVICE" || log "Warning: e2fsck returned non-zero exit code"
+fi
+
+# --- Mount ---
+if ! mountpoint -q "$MOUNT_POINT"; then
+  log "Mounting $DEVICE to $MOUNT_POINT"
   mount -t "$FSTYPE" -o "$MOUNT_OPTS" "$DEVICE" "$MOUNT_POINT"
 else
-  echo "$MOUNT_POINT is already mounted"
+  log "$MOUNT_POINT is already mounted"
 fi
 
-echo "Setting ownership and permissions on $MOUNT_POINT"
+# --- Ownership and permissions ---
+log "Setting ownership and permissions on $MOUNT_POINT"
 chown "$OWNER" "$MOUNT_POINT"
 chmod "$PERMISSIONS" "$MOUNT_POINT"
 
+# --- Persist in /etc/fstab ---
 UUID=$(blkid -s UUID -o value "$DEVICE")
 FSTAB_LINE="UUID=$UUID  $MOUNT_POINT  $FSTYPE  $MOUNT_OPTS  0  2"
 
 if ! grep -q "$UUID" "$FSTAB_FILE"; then
-  echo "Adding $FSTAB_LINE to $FSTAB_FILE"
+  log "Adding $FSTAB_LINE to $FSTAB_FILE"
   echo "$FSTAB_LINE" >> "$FSTAB_FILE"
 else
-  echo "UUID $UUID already in $FSTAB_FILE — skipping"
+  log "UUID $UUID already in $FSTAB_FILE — skipping"
 fi
 
-echo "Mounted $DEVICE at $MOUNT_POINT with postgres:postgres and mode $PERMISSIONS"
+log "Mounted $DEVICE at $MOUNT_POINT with owner=$OWNER and mode=$PERMISSIONS"

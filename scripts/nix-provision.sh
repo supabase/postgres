@@ -9,6 +9,11 @@ function install_packages {
     # Setup Ansible on host VM
     sudo apt-get update && sudo apt-get install -y software-properties-common
 
+    # Install EC2-specific packages that were deferred from stage 1
+    # These packages have post-install scripts that need EC2 metadata service access
+    # which only works on a real running EC2 instance (not in chroot)
+    sudo apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
+
     # Manually add GPG key with explicit keyserver
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
 

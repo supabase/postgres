@@ -1,0 +1,1935 @@
+# Package baseline
+# Generated from baseline.yml - 483 items
+package:
+  acl:
+    installed: true
+    versions:
+    - 2.3.2-1build1.1
+  acpid:
+    installed: true
+    versions:
+    - 1:2.0.34-1ubuntu2
+  adduser:
+    installed: true
+    versions:
+    - 3.137ubuntu1
+  amazon-ec2-utils:
+    installed: true
+    versions:
+    - 2.1.0-1.1
+  ansible-core:
+    installed: true
+    versions:
+    - 2.19.4-1ppa~noble
+  apparmor:
+    installed: true
+    versions:
+    - 4.0.1really4.0.1-0ubuntu0.24.04.4
+  apparmor-utils:
+    installed: true
+    versions:
+    - 4.0.1really4.0.1-0ubuntu0.24.04.4
+  appstream:
+    installed: true
+    versions:
+    - 1.0.2-1build6
+  apt:
+    installed: true
+    versions:
+    - 2.8.3
+  at:
+    installed: true
+    versions:
+    - 3.2.5-2.1ubuntu3
+  auditd:
+    installed: true
+    versions:
+    - 1:3.1.2-2.1build1.1
+  base-files:
+    installed: true
+    versions:
+    - 13ubuntu10.3
+  base-passwd:
+    installed: true
+    versions:
+    - 3.6.3build1
+  bash:
+    installed: true
+    versions:
+    - 5.2.21-2ubuntu4
+  binutils:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  binutils-aarch64-linux-gnu:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  binutils-common:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  bsdutils:
+    installed: true
+    versions:
+    - 1:2.39.3-9ubuntu6.3
+  busybox-initramfs:
+    installed: true
+    versions:
+    - 1:1.36.1-6ubuntu3.1
+  bwm-ng:
+    installed: true
+    versions:
+    - 0.6.3-2
+  bzip2:
+    installed: true
+    versions:
+    - 1.0.8-5.1build0.1
+  ca-certificates:
+    installed: true
+    versions:
+    - '20240203'
+  cloud-guest-utils:
+    installed: true
+    versions:
+    - 0.33-1
+  cloud-init:
+    installed: true
+    versions:
+    - 25.2-0ubuntu1~24.04.1
+  coreutils:
+    installed: true
+    versions:
+    - 9.4-3ubuntu6.1
+  cpio:
+    installed: true
+    versions:
+    - 2.15+dfsg-1ubuntu2
+  cron:
+    installed: true
+    versions:
+    - 3.0pl1-184ubuntu2
+  cron-daemon-common:
+    installed: true
+    versions:
+    - 3.0pl1-184ubuntu2
+  curl:
+    installed: true
+    versions:
+    - 8.5.0-2ubuntu10.6
+  dash:
+    installed: true
+    versions:
+    - 0.5.12-6ubuntu5
+  dbus:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dbus-bin:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dbus-daemon:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dbus-session-bus-common:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dbus-system-bus-common:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dbus-user-session:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  dctrl-tools:
+    installed: true
+    versions:
+    - 2.24-3build3
+  debconf:
+    installed: true
+    versions:
+    - 1.5.86ubuntu1
+  debconf-utils:
+    installed: true
+    versions:
+    - 1.5.86ubuntu1
+  debianutils:
+    installed: true
+    versions:
+    - 5.17build1
+  dhcpcd-base:
+    installed: true
+    versions:
+    - 1:10.0.6-1ubuntu3.1
+  diffutils:
+    installed: true
+    versions:
+    - 1:3.10-1build1
+  dirmngr:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  distro-info-data:
+    installed: true
+    versions:
+    - 0.60ubuntu0.5
+  dmidecode:
+    installed: true
+    versions:
+    - 3.5-3ubuntu0.1
+  dmsetup:
+    installed: true
+    versions:
+    - 2:1.02.185-3ubuntu3.2
+  dosfstools:
+    installed: true
+    versions:
+    - 4.2-1.1build1
+  dpkg:
+    installed: true
+    versions:
+    - 1.22.6ubuntu6.5
+  dracut-install:
+    installed: true
+    versions:
+    - 060+5-1ubuntu3.3
+  e2fsprogs:
+    installed: true
+    versions:
+    - 1.47.0-2.4~exp1ubuntu4.1
+  eatmydata:
+    installed: true
+    versions:
+    - 131-1ubuntu1
+  ec2-hibinit-agent:
+    installed: true
+    versions:
+    - 1.0.0-0ubuntu16.24.04.1
+  ec2-instance-connect:
+    installed: true
+    versions:
+    - 1.1.17-0ubuntu1
+  efibootmgr:
+    installed: true
+    versions:
+    - 18-1build2
+  ethtool:
+    installed: true
+    versions:
+    - 1:6.7-1build1
+  fail2ban:
+    installed: true
+    versions:
+    - 1.0.2-3ubuntu0.1
+  fdisk:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  findutils:
+    installed: true
+    versions:
+    - 4.9.0-5build1
+  fontconfig-config:
+    installed: true
+    versions:
+    - 2.15.0-1.1ubuntu2
+  fonts-dejavu-core:
+    installed: true
+    versions:
+    - 2.37-8
+  fonts-dejavu-mono:
+    installed: true
+    versions:
+    - 2.37-8
+  gcc-14-base:
+    installed: true
+    versions:
+    - 14.2.0-4ubuntu2~24.04
+  gdisk:
+    installed: true
+    versions:
+    - 1.0.10-1build1
+  gettext-base:
+    installed: true
+    versions:
+    - 0.21-14ubuntu2
+  gir1.2-girepository-2.0:
+    installed: true
+    versions:
+    - 1.80.1-1
+  gir1.2-glib-2.0:
+    installed: true
+    versions:
+    - 2.80.0-6ubuntu3.4
+  gir1.2-packagekitglib-1.0:
+    installed: true
+    versions:
+    - 1.2.8-2ubuntu1.4
+  gnupg:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gnupg-l10n:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gnupg-utils:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpg:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpg-agent:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpg-wks-client:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpgconf:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpgsm:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  gpgv:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  grep:
+    installed: true
+    versions:
+    - 3.11-4build1
+  groff-base:
+    installed: true
+    versions:
+    - 1.23.0-3build2
+  grub-common:
+    installed: true
+    versions:
+    - 2.12-1ubuntu7.3
+  grub-efi-arm64:
+    installed: true
+    versions:
+    - 2.12-1ubuntu7.3
+  grub-efi-arm64-bin:
+    installed: true
+    versions:
+    - 2.12-1ubuntu7.3
+  grub2-common:
+    installed: true
+    versions:
+    - 2.12-1ubuntu7.3
+  gzip:
+    installed: true
+    versions:
+    - 1.12-1ubuntu3.1
+  hibagent:
+    installed: true
+    versions:
+    - 1.0.1+git20230216.9ac1209f7-0ubuntu3
+  hostname:
+    installed: true
+    versions:
+    - 3.23+nmu2ubuntu2
+  htop:
+    installed: true
+    versions:
+    - 3.3.0-4build1
+  ibverbs-providers:
+    installed: true
+    versions:
+    - 50.0-2ubuntu0.2
+  init-system-helpers:
+    installed: true
+    versions:
+    - 1.66ubuntu1
+  initramfs-tools:
+    installed: true
+    versions:
+    - 0.142ubuntu25.5
+  initramfs-tools-bin:
+    installed: true
+    versions:
+    - 0.142ubuntu25.5
+  initramfs-tools-core:
+    installed: true
+    versions:
+    - 0.142ubuntu25.5
+  iproute2:
+    installed: true
+    versions:
+    - 6.1.0-1ubuntu6.2
+  iptables:
+    installed: true
+    versions:
+    - 1.8.10-3ubuntu2
+  iso-codes:
+    installed: true
+    versions:
+    - 4.16.0-1
+  jq:
+    installed: true
+    versions:
+    - 1.7.1-3ubuntu0.24.04.1
+  keyboxd:
+    installed: true
+    versions:
+    - 2.4.4-2ubuntu17.3
+  klibc-utils:
+    installed: true
+    versions:
+    - 2.0.13-4ubuntu0.1
+  kmod:
+    installed: true
+    versions:
+    - 31+20240202-2ubuntu7.1
+  kong:
+    installed: true
+    versions:
+    - 2.8.1
+  krb5-locales:
+    installed: true
+    versions:
+    - 1.20.1-6ubuntu2.6
+  less:
+    installed: true
+    versions:
+    - 590-2ubuntu2.1
+  libacl1:
+    installed: true
+    versions:
+    - 2.3.2-1build1.1
+  libaom3:
+    installed: true
+    versions:
+    - 3.8.2-2ubuntu0.1
+  libapparmor1:
+    installed: true
+    versions:
+    - 4.0.1really4.0.1-0ubuntu0.24.04.4
+  libappstream5:
+    installed: true
+    versions:
+    - 1.0.2-1build6
+  libapt-pkg6.0t64:
+    installed: true
+    versions:
+    - 2.8.3
+  libargon2-1:
+    installed: true
+    versions:
+    - 0~20190702+dfsg-4build1
+  libassuan0:
+    installed: true
+    versions:
+    - 2.5.6-1build1
+  libasync-mergepoint-perl:
+    installed: true
+    versions:
+    - 0.04-4
+  libatm1t64:
+    installed: true
+    versions:
+    - 1:2.5.1-5.1build1
+  libattr1:
+    installed: true
+    versions:
+    - 1:2.5.2-1build1.1
+  libaudit-common:
+    installed: true
+    versions:
+    - 1:3.1.2-2.1build1.1
+  libaudit1:
+    installed: true
+    versions:
+    - 1:3.1.2-2.1build1.1
+  libauparse0t64:
+    installed: true
+    versions:
+    - 1:3.1.2-2.1build1.1
+  libb-hooks-op-check-perl:
+    installed: true
+    versions:
+    - 0.22-3build1
+  libbinutils:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  libblkid1:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  libbpf1:
+    installed: true
+    versions:
+    - 1:1.3.0-2build2
+  libbrotli1:
+    installed: true
+    versions:
+    - 1.1.0-2build2
+  libbsd0:
+    installed: true
+    versions:
+    - 0.12.1-1build1.1
+  libbz2-1.0:
+    installed: true
+    versions:
+    - 1.0.8-5.1build0.1
+  libc-bin:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  libc-dev-bin:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  libc-devtools:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  libc6:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  libc6-dev:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  libcap-ng0:
+    installed: true
+    versions:
+    - 0.8.4-2build2
+  libcap2:
+    installed: true
+    versions:
+    - 1:2.66-5ubuntu2.2
+  libcap2-bin:
+    installed: true
+    versions:
+    - 1:2.66-5ubuntu2.2
+  libcbor0.10:
+    installed: true
+    versions:
+    - 0.10.2-1.2ubuntu2
+  libcom-err2:
+    installed: true
+    versions:
+    - 1.47.0-2.4~exp1ubuntu4.1
+  libcrypt-dev:
+    installed: true
+    versions:
+    - 1:4.4.36-4build1
+  libcrypt1:
+    installed: true
+    versions:
+    - 1:4.4.36-4build1
+  libcryptsetup12:
+    installed: true
+    versions:
+    - 2:2.7.0-1ubuntu4.2
+  libctf-nobfd0:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  libctf0:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  libcurl3t64-gnutls:
+    installed: true
+    versions:
+    - 8.5.0-2ubuntu10.6
+  libcurl4t64:
+    installed: true
+    versions:
+    - 8.5.0-2ubuntu10.6
+  libdatrie1:
+    installed: true
+    versions:
+    - 0.2.13-3build1
+  libdb5.3t64:
+    installed: true
+    versions:
+    - 5.3.28+dfsg2-7
+  libdbus-1-3:
+    installed: true
+    versions:
+    - 1.14.10-4ubuntu4.1
+  libde265-0:
+    installed: true
+    versions:
+    - 1.0.15-1build3
+  libdebconfclient0:
+    installed: true
+    versions:
+    - 0.271ubuntu3
+  libdeflate0:
+    installed: true
+    versions:
+    - 1.19-1build1.1
+  libdevel-callchecker-perl:
+    installed: true
+    versions:
+    - 0.008-2build3
+  libdevmapper1.02.1:
+    installed: true
+    versions:
+    - 2:1.02.185-3ubuntu3.2
+  libduktape207:
+    installed: true
+    versions:
+    - 2.7.0+tests-0ubuntu3
+  libdw1t64:
+    installed: true
+    versions:
+    - 0.190-1.1ubuntu0.1
+  libdynaloader-functions-perl:
+    installed: true
+    versions:
+    - 0.003-3
+  libeatmydata1:
+    installed: true
+    versions:
+    - 131-1ubuntu1
+  libedit2:
+    installed: true
+    versions:
+    - 3.1-20230828-1build1
+  libefiboot1t64:
+    installed: true
+    versions:
+    - 38-3.1build1
+  libefivar1t64:
+    installed: true
+    versions:
+    - 38-3.1build1
+  libelf1t64:
+    installed: true
+    versions:
+    - 0.190-1.1ubuntu0.1
+  libevent-2.1-7t64:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libevent-core-2.1-7t64:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libevent-dev:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libevent-extra-2.1-7t64:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libevent-openssl-2.1-7t64:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libevent-pthreads-2.1-7t64:
+    installed: true
+    versions:
+    - 2.1.12-stable-9ubuntu2
+  libexpat1:
+    installed: true
+    versions:
+    - 2.6.1-2ubuntu0.3
+  libext2fs2t64:
+    installed: true
+    versions:
+    - 1.47.0-2.4~exp1ubuntu4.1
+  libfdisk1:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  libffi8:
+    installed: true
+    versions:
+    - 3.4.6-1build1
+  libfido2-1:
+    installed: true
+    versions:
+    - 1.14.0-1build3
+  libfontconfig1:
+    installed: true
+    versions:
+    - 2.15.0-1.1ubuntu2
+  libfreetype6:
+    installed: true
+    versions:
+    - 2.13.2+dfsg-1build3
+  libfuse3-3:
+    installed: true
+    versions:
+    - 3.14.0-5build1
+  libfuture-io-perl:
+    installed: true
+    versions:
+    - 0.15-1
+  libfuture-perl:
+    installed: true
+    versions:
+    - 0.50-1
+  libfuture-xs-perl:
+    installed: true
+    versions:
+    - 0.12-1build3
+  libgcc-s1:
+    installed: true
+    versions:
+    - 14.2.0-4ubuntu2~24.04
+  libgcrypt20:
+    installed: true
+    versions:
+    - 1.10.3-2build1
+  libgd3:
+    installed: true
+    versions:
+    - 2.3.3-9ubuntu5
+  libgdbm-compat4t64:
+    installed: true
+    versions:
+    - 1.23-5.1build1
+  libgdbm6t64:
+    installed: true
+    versions:
+    - 1.23-5.1build1
+  libgirepository-1.0-1:
+    installed: true
+    versions:
+    - 1.80.1-1
+  libglib2.0-0t64:
+    installed: true
+    versions:
+    - 2.80.0-6ubuntu3.4
+  libglib2.0-bin:
+    installed: true
+    versions:
+    - 2.80.0-6ubuntu3.4
+  libglib2.0-data:
+    installed: true
+    versions:
+    - 2.80.0-6ubuntu3.4
+  libgmp10:
+    installed: true
+    versions:
+    - 2:6.3.0+dfsg-2ubuntu6.1
+  libgnutls30t64:
+    installed: true
+    versions:
+    - 3.8.3-1.1ubuntu3.4
+  libgpg-error0:
+    installed: true
+    versions:
+    - 1.47-3build2.1
+  libgpm2:
+    installed: true
+    versions:
+    - 1.20.7-11
+  libgprofng0:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  libgssapi-krb5-2:
+    installed: true
+    versions:
+    - 1.20.1-6ubuntu2.6
+  libgstreamer1.0-0:
+    installed: true
+    versions:
+    - 1.24.2-1ubuntu0.1
+  libheif-plugin-aomdec:
+    installed: true
+    versions:
+    - 1.17.6-1ubuntu4.1
+  libheif-plugin-aomenc:
+    installed: true
+    versions:
+    - 1.17.6-1ubuntu4.1
+  libheif-plugin-libde265:
+    installed: true
+    versions:
+    - 1.17.6-1ubuntu4.1
+  libheif1:
+    installed: true
+    versions:
+    - 1.17.6-1ubuntu4.1
+  libhogweed6t64:
+    installed: true
+    versions:
+    - 3.9.1-2.2build1.1
+  libibverbs1:
+    installed: true
+    versions:
+    - 50.0-2ubuntu0.2
+  libicu74:
+    installed: true
+    versions:
+    - 74.2-1ubuntu3.1
+  libidn2-0:
+    installed: true
+    versions:
+    - 2.3.7-2build1.1
+  libio-async-perl:
+    installed: true
+    versions:
+    - 0.803-1
+  libip4tc2:
+    installed: true
+    versions:
+    - 1.8.10-3ubuntu2
+  libip6tc2:
+    installed: true
+    versions:
+    - 1.8.10-3ubuntu2
+  libjansson4:
+    installed: true
+    versions:
+    - 2.14-2build2
+  libjbig0:
+    installed: true
+    versions:
+    - 2.1-6.1ubuntu2
+  libjpeg-turbo8:
+    installed: true
+    versions:
+    - 2.1.5-2ubuntu2
+  libjpeg8:
+    installed: true
+    versions:
+    - 8c-2ubuntu11
+  libjq1:
+    installed: true
+    versions:
+    - 1.7.1-3ubuntu0.24.04.1
+  libjson-c5:
+    installed: true
+    versions:
+    - 0.17-1build1
+  libk5crypto3:
+    installed: true
+    versions:
+    - 1.20.1-6ubuntu2.6
+  libkeyutils1:
+    installed: true
+    versions:
+    - 1.6.3-3build1
+  libklibc:
+    installed: true
+    versions:
+    - 2.0.13-4ubuntu0.1
+  libkmod2:
+    installed: true
+    versions:
+    - 31+20240202-2ubuntu7.1
+  libkrb5-3:
+    installed: true
+    versions:
+    - 1.20.1-6ubuntu2.6
+  libkrb5support0:
+    installed: true
+    versions:
+    - 1.20.1-6ubuntu2.6
+  libksba8:
+    installed: true
+    versions:
+    - 1.6.6-1build1
+  libldap-common:
+    installed: true
+    versions:
+    - 2.6.7+dfsg-1~exp1ubuntu8.2
+  libldap2:
+    installed: true
+    versions:
+    - 2.6.7+dfsg-1~exp1ubuntu8.2
+  liblerc4:
+    installed: true
+    versions:
+    - 4.0.0+ds-4ubuntu2
+  liblocale-gettext-perl:
+    installed: true
+    versions:
+    - 1.07-6ubuntu5
+  liblz4-1:
+    installed: true
+    versions:
+    - 1.9.4-1build1.1
+  liblzma5:
+    installed: true
+    versions:
+    - 5.6.1+really5.4.5-1ubuntu0.2
+  libmd0:
+    installed: true
+    versions:
+    - 1.1.0-2build1.1
+  libmetrics-any-perl:
+    installed: true
+    versions:
+    - 0.10-1
+  libmime-charset-perl:
+    installed: true
+    versions:
+    - 1.013.1-2
+  libmnl0:
+    installed: true
+    versions:
+    - 1.0.5-2build1
+  libmodule-pluggable-perl:
+    installed: true
+    versions:
+    - 5.2-4
+  libmodule-runtime-perl:
+    installed: true
+    versions:
+    - 0.016-2
+  libmount1:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  libncurses6:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  libncursesw6:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  libnet1:
+    installed: true
+    versions:
+    - 1.1.6+dfsg-3.2build1
+  libnetfilter-conntrack3:
+    installed: true
+    versions:
+    - 1.0.9-6build1
+  libnetplan1:
+    installed: true
+    versions:
+    - 1.1.2-2~ubuntu24.04.2
+  libnettle8t64:
+    installed: true
+    versions:
+    - 3.9.1-2.2build1.1
+  libnfnetlink0:
+    installed: true
+    versions:
+    - 1.0.2-2build1
+  libnftables1:
+    installed: true
+    versions:
+    - 1.0.9-1build1
+  libnftnl11:
+    installed: true
+    versions:
+    - 1.2.6-2build1
+  libnghttp2-14:
+    installed: true
+    versions:
+    - 1.59.0-1ubuntu0.2
+  libnl-3-200:
+    installed: true
+    versions:
+    - 3.7.0-0.3build1.1
+  libnl-genl-3-200:
+    installed: true
+    versions:
+    - 3.7.0-0.3build1.1
+  libnl-route-3-200:
+    installed: true
+    versions:
+    - 3.7.0-0.3build1.1
+  libnpth0t64:
+    installed: true
+    versions:
+    - 1.6-3.1build1
+  libnss-systemd:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libnuma1:
+    installed: true
+    versions:
+    - 2.0.18-1build1
+  libonig5:
+    installed: true
+    versions:
+    - 6.9.9-1build1
+  libp11-kit0:
+    installed: true
+    versions:
+    - 0.25.3-4ubuntu2.1
+  libpackagekit-glib2-18:
+    installed: true
+    versions:
+    - 1.2.8-2ubuntu1.4
+  libpam-cap:
+    installed: true
+    versions:
+    - 1:2.66-5ubuntu2.2
+  libpam-modules:
+    installed: true
+    versions:
+    - 1.5.3-5ubuntu5.5
+  libpam-modules-bin:
+    installed: true
+    versions:
+    - 1.5.3-5ubuntu5.5
+  libpam-runtime:
+    installed: true
+    versions:
+    - 1.5.3-5ubuntu5.5
+  libpam-systemd:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libpam0g:
+    installed: true
+    versions:
+    - 1.5.3-5ubuntu5.5
+  libparams-classify-perl:
+    installed: true
+    versions:
+    - 0.015-2build5
+  libpcap0.8t64:
+    installed: true
+    versions:
+    - 1.10.4-4.1ubuntu3
+  libpcre16-3:
+    installed: true
+    versions:
+    - 2:8.39-15build1
+  libpcre2-8-0:
+    installed: true
+    versions:
+    - 10.42-4ubuntu2.1
+  libpcre3:
+    installed: true
+    versions:
+    - 2:8.39-15build1
+  libpcre3-dev:
+    installed: true
+    versions:
+    - 2:8.39-15build1
+  libpcre32-3:
+    installed: true
+    versions:
+    - 2:8.39-15build1
+  libpcrecpp0v5:
+    installed: true
+    versions:
+    - 2:8.39-15build1
+  libperl5.38t64:
+    installed: true
+    versions:
+    - 5.38.2-3.2ubuntu0.2
+  libpkgconf3:
+    installed: true
+    versions:
+    - 1.8.1-2build1
+  libpng16-16t64:
+    installed: true
+    versions:
+    - 1.6.43-5build1
+  libpolkit-agent-1-0:
+    installed: true
+    versions:
+    - 124-2ubuntu1.24.04.2
+  libpolkit-gobject-1-0:
+    installed: true
+    versions:
+    - 124-2ubuntu1.24.04.2
+  libpopt0:
+    installed: true
+    versions:
+    - 1.19+dfsg-1build1
+  libpq5:
+    installed: true
+    versions:
+    - 17.7-3.pgdg24.04+1
+  libproc2-0:
+    installed: true
+    versions:
+    - 2:4.0.4-4ubuntu3.2
+  libpsl5t64:
+    installed: true
+    versions:
+    - 0.21.2-1.1build1
+  libpython3-stdlib:
+    installed: true
+    versions:
+    - 3.12.3-0ubuntu2.1
+  libpython3.12-minimal:
+    installed: true
+    versions:
+    - 3.12.3-1ubuntu0.9
+  libpython3.12-stdlib:
+    installed: true
+    versions:
+    - 3.12.3-1ubuntu0.9
+  libpython3.12t64:
+    installed: true
+    versions:
+    - 3.12.3-1ubuntu0.9
+  libreadline8t64:
+    installed: true
+    versions:
+    - 8.2-4build1
+  librtmp1:
+    installed: true
+    versions:
+    - 2.4+20151223.gitfa8646d.1-2build7
+  libsasl2-2:
+    installed: true
+    versions:
+    - 2.1.28+dfsg1-5ubuntu3.1
+  libsasl2-modules:
+    installed: true
+    versions:
+    - 2.1.28+dfsg1-5ubuntu3.1
+  libsasl2-modules-db:
+    installed: true
+    versions:
+    - 2.1.28+dfsg1-5ubuntu3.1
+  libseccomp2:
+    installed: true
+    versions:
+    - 2.5.5-1ubuntu3.1
+  libselinux1:
+    installed: true
+    versions:
+    - 3.5-2ubuntu2.1
+  libsemanage-common:
+    installed: true
+    versions:
+    - 3.5-1build5
+  libsemanage2:
+    installed: true
+    versions:
+    - 3.5-1build5
+  libsensors-config:
+    installed: true
+    versions:
+    - 1:3.6.0-9build1
+  libsensors5:
+    installed: true
+    versions:
+    - 1:3.6.0-9build1
+  libsepol2:
+    installed: true
+    versions:
+    - 3.5-2build1
+  libsereal-decoder-perl:
+    installed: true
+    versions:
+    - 5.004+ds-1build3
+  libsereal-encoder-perl:
+    installed: true
+    versions:
+    - 5.004+ds-1build3
+  libsereal-perl:
+    installed: true
+    versions:
+    - 5.004-1
+  libsframe1:
+    installed: true
+    versions:
+    - 2.42-4ubuntu2.7
+  libsharpyuv0:
+    installed: true
+    versions:
+    - 1.3.2-0.4build3
+  libsmartcols1:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  libsodium23:
+    installed: true
+    versions:
+    - 1.0.18-1build3
+  libsombok3:
+    installed: true
+    versions:
+    - 2.4.0-2build1
+  libsqlite3-0:
+    installed: true
+    versions:
+    - 3.45.1-1ubuntu2.5
+  libss2:
+    installed: true
+    versions:
+    - 1.47.0-2.4~exp1ubuntu4.1
+  libssh-4:
+    installed: true
+    versions:
+    - 0.10.6-2ubuntu0.2
+  libssl-dev:
+    installed: true
+    versions:
+    - 3.0.13-0ubuntu3.6
+  libssl3t64:
+    installed: true
+    versions:
+    - 3.0.13-0ubuntu3.6
+  libstdc++6:
+    installed: true
+    versions:
+    - 14.2.0-4ubuntu2~24.04
+  libstemmer0d:
+    installed: true
+    versions:
+    - 2.2.0-4build1
+  libstruct-dumb-perl:
+    installed: true
+    versions:
+    - 0.14-1
+  libsystemd-dev:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libsystemd-shared:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libsystemd0:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libtasn1-6:
+    installed: true
+    versions:
+    - 4.19.0-3ubuntu0.24.04.1
+  libterm-table-perl:
+    installed: true
+    versions:
+    - 0.018-1
+  libtest-metrics-any-perl:
+    installed: true
+    versions:
+    - 0.01-2
+  libtest2-suite-perl:
+    installed: true
+    versions:
+    - 0.000159-1
+  libthai-data:
+    installed: true
+    versions:
+    - 0.1.29-2build1
+  libthai0:
+    installed: true
+    versions:
+    - 0.1.29-2build1
+  libtiff6:
+    installed: true
+    versions:
+    - 4.5.1+git230720-4ubuntu2.4
+  libtinfo6:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  libuchardet0:
+    installed: true
+    versions:
+    - 0.0.8-1build1
+  libudev1:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  libunicode-linebreak-perl:
+    installed: true
+    versions:
+    - 0.0.20190101-1build7
+  libunistring5:
+    installed: true
+    versions:
+    - 1.1-2build1.1
+  libunwind8:
+    installed: true
+    versions:
+    - 1.6.2-3build1.1
+  libuuid1:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  libwebp7:
+    installed: true
+    versions:
+    - 1.3.2-0.4build3
+  libwrap0:
+    installed: true
+    versions:
+    - 7.6.q-33
+  libx11-6:
+    installed: true
+    versions:
+    - 2:1.8.7-1build1
+  libx11-data:
+    installed: true
+    versions:
+    - 2:1.8.7-1build1
+  libxau6:
+    installed: true
+    versions:
+    - 1:1.0.9-1build6
+  libxcb1:
+    installed: true
+    versions:
+    - 1.15-1ubuntu2
+  libxdmcp6:
+    installed: true
+    versions:
+    - 1:1.1.3-0ubuntu6
+  libxext6:
+    installed: true
+    versions:
+    - 2:1.3.4-1build2
+  libxml2:
+    installed: true
+    versions:
+    - 2.9.14+dfsg-1.3ubuntu3.6
+  libxmlb2:
+    installed: true
+    versions:
+    - 0.3.18-1
+  libxmuu1:
+    installed: true
+    versions:
+    - 2:1.1.3-3build2
+  libxpm4:
+    installed: true
+    versions:
+    - 1:3.5.17-1build2
+  libxtables12:
+    installed: true
+    versions:
+    - 1.8.10-3ubuntu2
+  libxxhash0:
+    installed: true
+    versions:
+    - 0.8.2-2build1
+  libyaml-0-2:
+    installed: true
+    versions:
+    - 0.2.5-1build1
+  libzstd1:
+    installed: true
+    versions:
+    - 1.5.5+dfsg2-2build1.1
+  linux-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-aws-6.14-headers-6.14.0-1017:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-base:
+    installed: true
+    versions:
+    - 4.5ubuntu9+24.04.1
+  linux-headers-6.14.0-1017-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-headers-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-image-6.14.0-1017-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-image-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  linux-libc-dev:
+    installed: true
+    versions:
+    - 6.8.0-88.89
+  linux-modules-6.14.0-1017-aws:
+    installed: true
+    versions:
+    - 6.14.0-1017.17~24.04.1
+  locales:
+    installed: true
+    versions:
+    - 2.39-0ubuntu8.6
+  login:
+    installed: true
+    versions:
+    - 1:4.13+dfsg1-4ubuntu3.2
+  logrotate:
+    installed: true
+    versions:
+    - 3.21.0-2build1
+  logsave:
+    installed: true
+    versions:
+    - 1.47.0-2.4~exp1ubuntu4.1
+  lsb-release:
+    installed: true
+    versions:
+    - 12.0-2
+  mawk:
+    installed: true
+    versions:
+    - 1.3.4.20240123-1build1
+  media-types:
+    installed: true
+    versions:
+    - 10.1.0
+  mount:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  ncurses-base:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  ncurses-bin:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  ncurses-term:
+    installed: true
+    versions:
+    - 6.4+20240113-1ubuntu2
+  net-tools:
+    installed: true
+    versions:
+    - 2.10-0.1ubuntu4.4
+  netbase:
+    installed: true
+    versions:
+    - '6.4'
+  netplan-generator:
+    installed: true
+    versions:
+    - 1.1.2-2~ubuntu24.04.2
+  netplan.io:
+    installed: true
+    versions:
+    - 1.1.2-2~ubuntu24.04.2
+  networkd-dispatcher:
+    installed: true
+    versions:
+    - 2.2.4-1
+  nftables:
+    installed: true
+    versions:
+    - 1.0.9-1build1
+  ngrep:
+    installed: true
+    versions:
+    - 1.47+ds1-5build2
+  openssh-client:
+    installed: true
+    versions:
+    - 1:9.6p1-3ubuntu13.14
+  openssh-server:
+    installed: true
+    versions:
+    - 1:9.6p1-3ubuntu13.14
+  openssh-sftp-server:
+    installed: true
+    versions:
+    - 1:9.6p1-3ubuntu13.14
+  openssl:
+    installed: true
+    versions:
+    - 3.0.13-0ubuntu3.6
+  os-prober:
+    installed: true
+    versions:
+    - 1.81ubuntu4
+  packagekit:
+    installed: true
+    versions:
+    - 1.2.8-2ubuntu1.4
+  packagekit-tools:
+    installed: true
+    versions:
+    - 1.2.8-2ubuntu1.4
+  passwd:
+    installed: true
+    versions:
+    - 1:4.13+dfsg1-4ubuntu3.2
+  perl:
+    installed: true
+    versions:
+    - 5.38.2-3.2ubuntu0.2
+  perl-base:
+    installed: true
+    versions:
+    - 5.38.2-3.2ubuntu0.2
+  perl-modules-5.38:
+    installed: true
+    versions:
+    - 5.38.2-3.2ubuntu0.2
+  pinentry-curses:
+    installed: true
+    versions:
+    - 1.2.1-3ubuntu5
+  pkg-config:
+    installed: true
+    versions:
+    - 1.8.1-2build1
+  pkgconf:
+    installed: true
+    versions:
+    - 1.8.1-2build1
+  pkgconf-bin:
+    installed: true
+    versions:
+    - 1.8.1-2build1
+  polkitd:
+    installed: true
+    versions:
+    - 124-2ubuntu1.24.04.2
+  procps:
+    installed: true
+    versions:
+    - 2:4.0.4-4ubuntu3.2
+  publicsuffix:
+    installed: true
+    versions:
+    - 20231001.0357-0.1
+  python-apt-common:
+    installed: true
+    versions:
+    - 2.7.7ubuntu5
+  python-babel-localedata:
+    installed: true
+    versions:
+    - 2.10.3-3build1
+  python3:
+    installed: true
+    versions:
+    - 3.12.3-0ubuntu2.1
+  python3-apparmor:
+    installed: true
+    versions:
+    - 4.0.1really4.0.1-0ubuntu0.24.04.4
+  python3-apt:
+    installed: true
+    versions:
+    - 2.7.7ubuntu5
+  python3-attr:
+    installed: true
+    versions:
+    - 23.2.0-2
+  python3-babel:
+    installed: true
+    versions:
+    - 2.10.3-3build1
+  python3-bcrypt:
+    installed: true
+    versions:
+    - 3.2.2-1build1
+  python3-blinker:
+    installed: true
+    versions:
+    - 1.7.0-1
+  python3-certifi:
+    installed: true
+    versions:
+    - 2023.11.17-1
+  python3-cffi-backend:
+    installed: true
+    versions:
+    - 1.16.0-2build1
+  python3-chardet:
+    installed: true
+    versions:
+    - 5.2.0+dfsg-1
+  python3-configobj:
+    installed: true
+    versions:
+    - 5.0.8-3
+  python3-cryptography:
+    installed: true
+    versions:
+    - 41.0.7-4ubuntu0.1
+  python3-dbus:
+    installed: true
+    versions:
+    - 1.3.2-5build3
+  python3-debconf:
+    installed: true
+    versions:
+    - 1.5.86ubuntu1
+  python3-distro:
+    installed: true
+    versions:
+    - 1.9.0-1
+  python3-distro-info:
+    installed: true
+    versions:
+    - 1.7build1
+  python3-gi:
+    installed: true
+    versions:
+    - 3.48.2-1
+  python3-httplib2:
+    installed: true
+    versions:
+    - 0.20.4-3
+  python3-idna:
+    installed: true
+    versions:
+    - 3.6-2ubuntu0.1
+  python3-jinja2:
+    installed: true
+    versions:
+    - 3.1.2-1ubuntu1.3
+  python3-jmespath:
+    installed: true
+    versions:
+    - 1.0.1-1
+  python3-json-pointer:
+    installed: true
+    versions:
+    - 2.0-0ubuntu1
+  python3-jsonpatch:
+    installed: true
+    versions:
+    - 1.32-3
+  python3-jsonschema:
+    installed: true
+    versions:
+    - 4.10.3-2ubuntu1
+  python3-jwt:
+    installed: true
+    versions:
+    - 2.7.0-1
+  python3-kerberos:
+    installed: true
+    versions:
+    - 1.1.14-3.1build9
+  python3-launchpadlib:
+    installed: true
+    versions:
+    - 1.11.0-6
+  python3-lazr.restfulclient:
+    installed: true
+    versions:
+    - 0.14.6-1
+  python3-lazr.uri:
+    installed: true
+    versions:
+    - 1.0.6-3
+  python3-libapparmor:
+    installed: true
+    versions:
+    - 4.0.1really4.0.1-0ubuntu0.24.04.4
+  python3-markdown-it:
+    installed: true
+    versions:
+    - 3.0.0-2
+  python3-markupsafe:
+    installed: true
+    versions:
+    - 2.1.5-1build2
+  python3-mdurl:
+    installed: true
+    versions:
+    - 0.1.2-1
+  python3-minimal:
+    installed: true
+    versions:
+    - 3.12.3-0ubuntu2.1
+  python3-nacl:
+    installed: true
+    versions:
+    - 1.5.0-4build1
+  python3-netplan:
+    installed: true
+    versions:
+    - 1.1.2-2~ubuntu24.04.2
+  python3-ntlm-auth:
+    installed: true
+    versions:
+    - 1.5.0-1
+  python3-oauthlib:
+    installed: true
+    versions:
+    - 3.2.2-1
+  python3-packaging:
+    installed: true
+    versions:
+    - 24.0-1
+  python3-paramiko:
+    installed: true
+    versions:
+    - 2.12.0-2ubuntu4.1
+  python3-pkg-resources:
+    installed: true
+    versions:
+    - 68.1.2-2ubuntu1.2
+  python3-psycopg2:
+    installed: true
+    versions:
+    - 2.9.9-1build1
+  python3-pyasyncore:
+    installed: true
+    versions:
+    - 1.0.2-2
+  python3-pygments:
+    installed: true
+    versions:
+    - 2.17.2+dfsg-1
+  python3-pyparsing:
+    installed: true
+    versions:
+    - 3.1.1-1
+  python3-pyrsistent:
+    installed: true
+    versions:
+    - 0.20.0-1build2
+  python3-requests:
+    installed: true
+    versions:
+    - 2.31.0+dfsg-1ubuntu1.1
+  python3-requests-ntlm:
+    installed: true
+    versions:
+    - 1.1.0-3
+  python3-resolvelib:
+    installed: true
+    versions:
+    - 1.0.1-1
+  python3-rich:
+    installed: true
+    versions:
+    - 13.7.1-1
+  python3-serial:
+    installed: true
+    versions:
+    - 3.5-2
+  python3-setuptools:
+    installed: true
+    versions:
+    - 68.1.2-2ubuntu1.2
+  python3-six:
+    installed: true
+    versions:
+    - 1.16.0-4
+  python3-software-properties:
+    installed: true
+    versions:
+    - 0.99.49.3
+  python3-systemd:
+    installed: true
+    versions:
+    - 235-1build4
+  python3-tz:
+    installed: true
+    versions:
+    - 2024.1-2
+  python3-urllib3:
+    installed: true
+    versions:
+    - 2.0.7-1ubuntu0.2
+  python3-wadllib:
+    installed: true
+    versions:
+    - 1.3.6-5
+  python3-winrm:
+    installed: true
+    versions:
+    - 0.4.3-2
+  python3-xmltodict:
+    installed: true
+    versions:
+    - 0.13.0-1ubuntu0.24.04.1
+  python3-yaml:
+    installed: true
+    versions:
+    - 6.0.1-2build2
+  python3.12:
+    installed: true
+    versions:
+    - 3.12.3-1ubuntu0.9
+  python3.12-minimal:
+    installed: true
+    versions:
+    - 3.12.3-1ubuntu0.9
+  readline-common:
+    installed: true
+    versions:
+    - 8.2-4build1
+  rpcsvc-proto:
+    installed: true
+    versions:
+    - 1.4.2-0ubuntu7
+  salt-common:
+    installed: true
+    versions:
+    - '3007.9'
+  salt-minion:
+    installed: true
+    versions:
+    - '3007.9'
+  sed:
+    installed: true
+    versions:
+    - 4.9-2build1
+  sensible-utils:
+    installed: true
+    versions:
+    - 0.0.22
+  sgml-base:
+    installed: true
+    versions:
+    - '1.31'
+  shared-mime-info:
+    installed: true
+    versions:
+    - 2.4-4
+  software-properties-common:
+    installed: true
+    versions:
+    - 0.99.49.3
+  ssh-import-id:
+    installed: true
+    versions:
+    - 5.11-0ubuntu2.24.04.1
+  sshpass:
+    installed: true
+    versions:
+    - 1.09-1
+  sudo:
+    installed: true
+    versions:
+    - 1.9.15p5-3ubuntu5.24.04.1
+  sysstat:
+    installed: true
+    versions:
+    - 12.6.1-2
+  systemd:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  systemd-dev:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  systemd-hwe-hwdb:
+    installed: true
+    versions:
+    - 255.1.6
+  systemd-resolved:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  systemd-sysv:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  systemd-timesyncd:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  sysvinit-utils:
+    installed: true
+    versions:
+    - 3.08-6ubuntu3
+  tar:
+    installed: true
+    versions:
+    - 1.35+dfsg-3build1
+  tcpdump:
+    installed: true
+    versions:
+    - 4.99.4-3ubuntu4.24.04.1
+  tzdata:
+    installed: true
+    versions:
+    - 2025b-0ubuntu0.24.04.1
+  ubuntu-keyring:
+    installed: true
+    versions:
+    - 2023.11.28.1
+  ucf:
+    installed: true
+    versions:
+    - 3.0043+nmu1
+  udev:
+    installed: true
+    versions:
+    - 255.4-1ubuntu8.11
+  ufw:
+    installed: true
+    versions:
+    - 0.36.2-6
+  unattended-upgrades:
+    installed: true
+    versions:
+    - 2.9.1+nmu4ubuntu1
+  unzip:
+    installed: true
+    versions:
+    - 6.0-28ubuntu4.1
+  util-linux:
+    installed: true
+    versions:
+    - 2.39.3-9ubuntu6.3
+  vector:
+    installed: true
+    versions:
+    - 0.48.0-1
+  vim:
+    installed: true
+    versions:
+    - 2:9.1.0016-1ubuntu7.9
+  vim-common:
+    installed: true
+    versions:
+    - 2:9.1.0016-1ubuntu7.9
+  vim-runtime:
+    installed: true
+    versions:
+    - 2:9.1.0016-1ubuntu7.9
+  wget:
+    installed: true
+    versions:
+    - 1.21.4-1ubuntu4.1
+  xauth:
+    installed: true
+    versions:
+    - 1:1.1.2-1build1
+  xdg-user-dirs:
+    installed: true
+    versions:
+    - 0.18-1build1
+  xml-core:
+    installed: true
+    versions:
+    - '0.19'
+  xxd:
+    installed: true
+    versions:
+    - 2:9.1.0016-1ubuntu7.9
+  xz-utils:
+    installed: true
+    versions:
+    - 5.6.1+really5.4.5-1ubuntu0.2
+  zlib1g:
+    installed: true
+    versions:
+    - 1:1.3.dfsg-3.1ubuntu2.1
+  zlib1g-dev:
+    installed: true
+    versions:
+    - 1:1.3.dfsg-3.1ubuntu2.1

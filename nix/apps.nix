@@ -27,6 +27,7 @@
         run-testinfra = mkApp "run-testinfra" "run-testinfra";
         cleanup-ami = mkApp "cleanup-ami" "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build" "trigger-nix-build";
+        supascan = mkApp "supascan" "supascan";
       };
     };
 }

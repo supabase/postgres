@@ -1,0 +1,212 @@
+# Group baseline
+# Generated from baseline.yml - 70 items
+group:
+  _ssh:
+    exists: true
+    gid: 102
+  adm:
+    exists: true
+    gid: 4
+  admin:
+    exists: true
+    gid: 1000
+  adminapi:
+    exists: true
+    gid: 1010
+  audio:
+    exists: true
+    gid: 29
+  backup:
+    exists: true
+    gid: 34
+  bin:
+    exists: true
+    gid: 2
+  cdrom:
+    exists: true
+    gid: 24
+  crontab:
+    exists: true
+    gid: 990
+  daemon:
+    exists: true
+    gid: 1
+  dialout:
+    exists: true
+    gid: 20
+  dip:
+    exists: true
+    gid: 30
+  disk:
+    exists: true
+    gid: 6
+  envoy:
+    exists: true
+    gid: 1007
+  fax:
+    exists: true
+    gid: 21
+  floppy:
+    exists: true
+    gid: 25
+  games:
+    exists: true
+    gid: 60
+  gotrue:
+    exists: true
+    gid: 1005
+  input:
+    exists: true
+    gid: 996
+  irc:
+    exists: true
+    gid: 39
+  kmem:
+    exists: true
+    gid: 15
+  kong:
+    exists: true
+    gid: 1008
+  kvm:
+    exists: true
+    gid: 994
+  list:
+    exists: true
+    gid: 38
+  lp:
+    exists: true
+    gid: 7
+  lxd:
+    exists: true
+    gid: 1011
+  mail:
+    exists: true
+    gid: 8
+  man:
+    exists: true
+    gid: 12
+  messagebus:
+    exists: true
+    gid: 101
+  netdev:
+    exists: true
+    gid: 1012
+  news:
+    exists: true
+    gid: 9
+  nginx:
+    exists: true
+    gid: 1009
+  nixbld:
+    exists: true
+    gid: 30000
+  nogroup:
+    exists: true
+    gid: 65534
+  operator:
+    exists: true
+    gid: 37
+  pgbouncer:
+    exists: true
+    gid: 1003
+  plugdev:
+    exists: true
+    gid: 46
+  polkitd:
+    exists: true
+    gid: 991
+  postgres:
+    exists: true
+    gid: 1002
+  postgrest:
+    exists: true
+    gid: 1006
+  proxy:
+    exists: true
+    gid: 13
+  rdma:
+    exists: true
+    gid: 103
+  render:
+    exists: true
+    gid: 993
+  root:
+    exists: true
+  salt:
+    exists: true
+    gid: 988
+  sasl:
+    exists: true
+    gid: 45
+  sgx:
+    exists: true
+    gid: 995
+  shadow:
+    exists: true
+    gid: 42
+  src:
+    exists: true
+    gid: 40
+  ssl-cert:
+    exists: true
+    gid: 1001
+  staff:
+    exists: true
+    gid: 50
+  sudo:
+    exists: true
+    gid: 27
+  supabase-admin-agent:
+    exists: true
+    gid: 987
+  sys:
+    exists: true
+    gid: 3
+  systemd-journal:
+    exists: true
+    gid: 999
+  systemd-network:
+    exists: true
+    gid: 998
+  systemd-resolve:
+    exists: true
+    gid: 992
+  systemd-timesync:
+    exists: true
+    gid: 997
+  tape:
+    exists: true
+    gid: 26
+  tcpdump:
+    exists: true
+    gid: 104
+  tty:
+    exists: true
+    gid: 5
+  ubuntu:
+    exists: true
+    gid: 1013
+  users:
+    exists: true
+    gid: 100
+  utmp:
+    exists: true
+    gid: 43
+  uucp:
+    exists: true
+    gid: 10
+  vector:
+    exists: true
+    gid: 989
+  video:
+    exists: true
+    gid: 44
+  voice:
+    exists: true
+    gid: 22
+  wal-g:
+    exists: true
+    gid: 1004
+  www-data:
+    exists: true
+    gid: 33

@@ -1,0 +1,9 @@
+# File baseline: postgres-data
+# Generated from baseline.yml - 1 files
+file:
+  /var/lib/postgresql:
+    exists: true
+    filetype: directory
+    group: '1002'
+    mode: '0755'
+    owner: '999'

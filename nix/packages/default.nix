@@ -19,6 +19,10 @@
         in
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
+      supascan-pkgs = pkgs.callPackage ./supascan.nix {
+        inherit (pkgs) lib;
+        inherit inputs;
+      };
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
@@ -29,6 +33,7 @@
     {
       packages = (
         {
+          build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
@@ -72,6 +77,7 @@
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pkgs.cargo-pgrx)
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6

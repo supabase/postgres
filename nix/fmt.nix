@@ -4,14 +4,23 @@
   perSystem =
     { pkgs, ... }:
     {
-      treefmt.flakeCheck = false;
-      treefmt.programs = {
-        deadnix.enable = true;
-        nixfmt = {
-          enable = true;
-          package = pkgs.nixfmt-rfc-style;
+      treefmt = {
+        programs = {
+          deadnix.enable = true;
+          nixfmt = {
+            enable = true;
+            package = pkgs.nixfmt-rfc-style;
+          };
+          ruff-format.enable = true;
+          gofmt.enable = true;
         };
-        ruff-format.enable = true;
+
+        settings = {
+          global.excludes = [
+            "*.sum"
+            "vendor/*"
+          ];
+        };
       };
     };
 }

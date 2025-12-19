@@ -120,7 +120,6 @@ runCommand "build-test-ami"
       -var "postgres-version=$RANDOM_STRING" \
       -var "region=$REGION" \
       -var 'ami_regions=["'"$REGION"'"]' \
-      -var "force-deregister=true" \
       -var "git_sha=$GIT_SHA" \
       stage2-nix-psql.pkr.hcl
 

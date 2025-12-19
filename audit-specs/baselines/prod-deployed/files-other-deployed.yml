@@ -1,0 +1,147 @@
+# File baseline: other
+# Generated from baseline.yml - 24 files
+file:
+  /root/.aws/config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/.bashrc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/.gnupg/pubring.kbx:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/.gnupg/trustdb.gpg:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/.init-script-time:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,-application,json,fc4e1e3a03117146fb1e9d492ab76690:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,-application,vnd.sun.wadl+xml,2f09acb494bdefdbf8ef0d1396a05e86
+  : exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,+archive,ubuntu,ansible,ws.op=getSigningKeyData-application,json,ae98eb0a68e7ef80c2d2e3b0acf85696
+  : exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,name=%22ansible%22&ws.op=getPPAByName-application,json,7ac403cb58cf1f9e62db6d4019d76690
+  : exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/.memory-state:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/.nix-channels:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/.profile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/.ssh/authorized_keys:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/MIGRATION-AMI:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/grow_fs.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /root/init.json:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/manage_readonly_mode.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /root/mount-volume.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /root/pg_egress_collect.pl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /root/supabase-release:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /root/unmount-volume.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /root/upgrade-reporting-credentials:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /root/wal_change_ownership.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /swapfile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'

@@ -1,0 +1,33 @@
+# File baseline: ssl
+# Generated from baseline.yml - 5 files
+file:
+  /etc/ssl/adminapi/server.crt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '1006'
+  /etc/ssl/adminapi/server.key:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '1006'
+  /etc/ssl/certs:
+    exists: true
+    filetype: directory
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /etc/ssl/openssl.cnf:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/ssl/private/server.key:
+    exists: true
+    filetype: file
+    group: '1002'
+    mode: '0640'
+    owner: '0'

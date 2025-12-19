@@ -1,0 +1,1719 @@
+# File baseline: var
+# Generated from baseline.yml - 286 files
+file:
+  /var/.updated:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/alternatives.tar.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/apt.extended_states.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/dpkg.arch.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/dpkg.diversions.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/dpkg.statoverride.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/backups/dpkg.status.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/cache:
+    exists: true
+    filetype: directory
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /var/lib/PackageKit/transactions.db:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/daily_lock:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/extended_states:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/periodic/autoclean-stamp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/periodic/download-upgradeable-stamp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/periodic/unattended-upgrades-stamp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/periodic/update-stamp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/apt/periodic/upgrade-stamp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/instance-id:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/previous-datasource:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/previous-hostname:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/previous-instance-id:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/python-version:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/result.json:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/set-hostname:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/data/status.json:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/boot-finished:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/cloud-config.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/datasource:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/network-config.json:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/obj.pkl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0400'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/scripts/runcmd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_reset_rmc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_runcmd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_scripts_per_instance:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_scripts_user:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_scripts_vendor:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_set_hostname:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_ssh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_users_groups:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/config_write_files:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/sem/consume_data:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/user-data.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/user-data.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/vendor-data.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/vendor-data.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/vendor-data2.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-00786be8677b9e205/vendor-data2.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/cloud-config.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/datasource:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/network-config.json:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/obj.pkl:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0400'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_reset_rmc:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_scripts_per_instance:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_scripts_user:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_scripts_vendor:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_set_hostname:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_ssh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/config_users_groups:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/sem/consume_data:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/user-data.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/user-data.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/vendor-data.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/vendor-data.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/vendor-data2.txt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/instances/i-0e715576e7fb68932/vendor-data2.txt.i:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/cloud/scripts/per-boot/supaboot.sh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0750'
+    owner: '0'
+  /var/lib/cloud/sem/config_scripts_per_once.once:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dbus/machine-id:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dhcpcd/duid:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /var/lib/dhcpcd/ens5.lease:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /var/lib/dpkg/alternatives/arptables:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/awk:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/builtins.7.gz:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/ebtables:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/editor:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/ex:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/ip6tables:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/iptables:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/jsondiff:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/lzma:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/mt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/pager:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/pinentry:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/pybabel:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/rmt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/rview:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/rvim:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/sar:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/vi:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/view:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/vim:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/vimdiff:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/alternatives/which:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/available:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/cmethopt:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/diversions:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/diversions-old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/info:
+    exists: true
+    filetype: directory
+    group: '0'
+    mode: '0755'
+    owner: '0'
+  /var/lib/dpkg/lock:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /var/lib/dpkg/lock-frontend:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /var/lib/dpkg/statoverride:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/statoverride-old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/status:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/status-old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/File:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/Lock:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/dpkg/triggers/Unincorp:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/ldconfig:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/lib32:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/lib64:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/libo32:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/libx32:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/linux-update-6.14.0-1017-aws:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/update-ca-certificates:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/update-ca-certificates-fresh:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/update-initramfs:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/dpkg/triggers/update-sgmlcatalog:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/fail2ban/fail2ban.sqlite3:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/grub/ucf/grub.previous:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/logrotate/status:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0640'
+    owner: '0'
+  /var/lib/pam/account:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/pam/auth:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/pam/password:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/pam/seen:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/pam/session:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/pam/session-noninteractive:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/polkit-1/localauthority/10-vendor.d/org.freedesktop.packagekit.pkla:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/python/python3.12_installed:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/sgml-base/supercatalog:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/sgml-base/supercatalog.old:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/shells.state:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/supabase/certs.setup:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/envoy.initialized:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/firewall.initialized:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/init.completed:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/kong.initialized:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/kong.setup:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/postgres_defaults.overwritten:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/reverse_proxy_certs.setup:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/schema.initialized:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/supabase-admin-agent.setup:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/supabase/vector.initialized:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/systemd/catalog/database:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/acpid.path.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/acpid.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/acpid.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/apparmor.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/apt-daily-upgrade.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/apt-daily.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/atd.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/auditd.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-config.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-config.target.wants/cloud-init-hotplugd.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-final.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init-hotplugd.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init-local.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init.target.wants/cloud-config.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init.target.wants/cloud-final.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init.target.wants/cloud-init-local.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cloud-init.target.wants/cloud-init.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/cron.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/dbus-org.freedesktop.resolve1.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/dbus-org.freedesktop.timesync1.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/dpkg-db-backup.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/e2scrub_all.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/e2scrub_reap.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/ec2-instance-connect-harvest-hostkeys.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/emergency.target.wants/grub-initrd-fallback.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/fail2ban.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/fstrim.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/grub-common.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/grub-initrd-fallback.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/hibernate.target.wants/grub-common.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/hibinit-agent.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/hybrid-sleep.target.wants/grub-common.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/logrotate.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/motd-news.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/atd.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/auditd.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/cron.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/e2scrub_reap.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/ec2-instance-connect-harvest-hostkeys.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/fail2ban.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/grub-common.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/grub-initrd-fallback.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/hibinit-agent.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/networkd-dispatcher.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/salt-minion.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/sysstat.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/ufw.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/unattended-upgrades.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/networkd-dispatcher.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/nftables.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/paths.target.wants/acpid.path:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/rescue.target.wants/grub-initrd-fallback.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/salt-minion.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sleep.target.wants/grub-initrd-fallback.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sockets.target.wants/acpid.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sockets.target.wants/ssh.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/ssh.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/ssh.service.requires/ssh.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/ssh.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/suspend-then-hibernate.target.wants/grub-common.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/suspend.target.wants/grub-common.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysinit.target.wants/apparmor.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysinit.target.wants/systemd-resolved.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysinit.target.wants/systemd-timesyncd.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysstat-collect.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysstat-summary.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysstat.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysstat.service.wants/sysstat-collect.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/sysstat.service.wants/sysstat-summary.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/systemd-resolved.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/systemd-timesyncd.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/apt-daily-upgrade.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/apt-daily.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/dpkg-db-backup.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/e2scrub_all.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/fstrim.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/logrotate.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/timers.target.wants/motd-news.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/ufw.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/unattended-upgrades.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-helper-enabled/vector.service.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/dirmngr.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/gpg-agent-browser.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/gpg-agent-extra.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/gpg-agent-ssh.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/gpg-agent.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/keyboxd.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/launchpadlib-cache-clean.timer.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/pk-debconf-helper.socket.dsh-also:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/dirmngr.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/gpg-agent-browser.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/gpg-agent-extra.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/gpg-agent-ssh.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/gpg-agent.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/keyboxd.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/sockets.target.wants/pk-debconf-helper.socket:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/deb-systemd-user-helper-enabled/timers.target.wants/launchpadlib-cache-clean.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/random-seed:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-apt-daily-upgrade.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-apt-daily.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-dpkg-db-backup.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-e2scrub_all.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-fstrim.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-logrotate.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timers/stamp-motd-news.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/systemd/timesync/clock:
+    exists: true
+    filetype: file
+    group: '997'
+    mode: '0644'
+    owner: '997'
+  /var/lib/ucf/cache/:etc:apt:apt.conf.d:20auto-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:apt:apt.conf.d:50unattended-upgrades:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:default:grub:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:default:sysstat:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0600'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:ssh:sshd_config:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:ufw:after.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:ufw:after6.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:ufw:before.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/cache/:etc:ufw:before6.rules:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.1:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.2:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.3:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.4:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.5:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.6:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/hashfile.7:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry.0:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry.1:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry.2:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry.3:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/ucf/registry.4:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/vector/gotrue_journald/checkpoint.txt:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/networkd_journald/checkpoint.txt:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/pg_upgrade_internal_log/checkpoints.json:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/pg_upgrade_server_log/checkpoints.json:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/pgbouncer_journald/checkpoint.txt:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/pitr_log/checkpoints.json:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/postgres_log/checkpoints.json:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/postgresql_journald/checkpoint.txt:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/vector/postgrest_journald/checkpoint.txt:
+    exists: true
+    filetype: file
+    group: '989'
+    mode: '0644'
+    owner: '995'
+  /var/lib/xml-core/catalog:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/xml-core/polkitd:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/lib/xml-core/xml-core:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /var/spool/cron/atjobs/.SEQ:
+    exists: true
+    filetype: file
+    group: '1'
+    mode: '0600'
+    owner: '1'
