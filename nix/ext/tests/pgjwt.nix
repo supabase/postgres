@@ -53,16 +53,6 @@ pkgs.testers.runNixOSTest {
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
-
       services.postgresql = {
         enable = true;
         package = psql_15;

@@ -46,15 +46,6 @@ pkgs.testers.runNixOSTest {
   nodes.server =
     { ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
       services.openssh = {
         enable = true;
       };
