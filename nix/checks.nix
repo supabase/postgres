@@ -439,21 +439,19 @@
             ;
           devShell = self'.devShells.default;
         }
-        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (
-          {
-            inherit (self'.packages)
-              postgresql_15_debug
-              postgresql_15_src
-              postgresql_orioledb-17_debug
-              postgresql_orioledb-17_src
-              postgresql_17_debug
-              postgresql_17_src
-              ;
-          }
-          // (import ./ext/tests {
-            inherit self;
-            inherit pkgs;
-          })
-        );
+        // (import ./ext/tests {
+          inherit self;
+          inherit pkgs;
+        })
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
+          inherit (self'.packages)
+            postgresql_15_debug
+            postgresql_15_src
+            postgresql_orioledb-17_debug
+            postgresql_orioledb-17_src
+            postgresql_17_debug
+            postgresql_17_src
+            ;
+        };
     };
 }

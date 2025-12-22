@@ -25,7 +25,7 @@ let
         let
           majorVersion =
             if postgresql.isOrioleDB then "orioledb-17" else lib.versions.major postgresql.version;
-          pkg = pkgs.buildEnv {
+          pkg = pkgs.pkgsLinux.buildEnv {
             name = "postgresql-${majorVersion}-${pname}";
             paths = [
               postgresql
@@ -42,7 +42,7 @@ let
               withoutJIT = pkg;
               installedExtensions = [ (installedExtension majorVersion) ];
             };
-            nativeBuildInputs = [ pkgs.makeWrapper ];
+            nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
             pathsToLink = [
               "/"
               "/bin"
@@ -56,15 +56,18 @@ let
           };
         in
         pkg;
-      psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+      psql_15 =
+        postgresqlWithExtension
+          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+      psql_17 =
+        postgresqlWithExtension
+          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
       orioledb_17 =
         postgresqlWithExtension
           self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
     in
-    self.inputs.nixpkgs.lib.nixos.runTest {
+    pkgs.testers.runNixOSTest {
       name = pname;
-      hostPkgs = pkgs;
       nodes.server =
         { config, ... }:
         {
