@@ -55,7 +55,7 @@ pkgs.testers.runNixOSTest {
     {
       services.postgresql = {
         enable = true;
-        package = (postgresqlWithExtension psql_15);
+        package = psql_15;
         settings = (installedExtension "15").defaultSettings or { };
       };
 

@@ -49,13 +49,13 @@ let
       self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
 in
 pkgs.testers.runNixOSTest {
-  name = "timescaledb";
+  name = "pgmq";
   nodes.server =
     { config, ... }:
     {
       services.postgresql = {
         enable = true;
-        package = (postgresqlWithExtension psql_15);
+        package = psql_15;
         authentication = ''
           local all postgres peer map=postgres
           local all all peer map=root
