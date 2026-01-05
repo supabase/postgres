@@ -318,7 +318,8 @@ EXTRA_NIX_CONF
         fi
 
         # Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
-        CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${NIX_FLAKE_VERSION}.json"
+        # Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
+        CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
         echo "Fetching catalog from: $CATALOG_URL"
 
         if ! CATALOG_RESPONSE=$(curl -sf "$CATALOG_URL"); then
@@ -326,10 +327,10 @@ EXTRA_NIX_CONF
             exit 1
         fi
 
-        STORE_PATH=$(echo "$CATALOG_RESPONSE" | jq -r ".\"${SYSTEM}\".\"psql_${PGVERSION}/bin\"")
+        STORE_PATH=$(echo "$CATALOG_RESPONSE" | jq -r ".\"${SYSTEM}\"")
 
         if [ -z "$STORE_PATH" ] || [ "$STORE_PATH" = "null" ]; then
-            echo "ERROR: Could not find store path in catalog for ${SYSTEM}.psql_${PGVERSION}/bin"
+            echo "ERROR: Could not find store path in catalog for ${SYSTEM}"
             echo "Catalog contents:"
             echo "$CATALOG_RESPONSE" | jq .
             exit 1
