@@ -1,6 +1,6 @@
 {
   pkgs,
-  system,
+  stdenv,
   defaults,
 }:
 let
@@ -28,7 +28,7 @@ pkgs.runCommand "dbmate-tool"
       --subst-var-by 'MIGRATIONS_DIR' $out \
       --subst-var-by 'PGSQL_SUPERUSER' '${defaults.superuser}' \
       --subst-var-by 'ANSIBLE_VARS' ${ansibleVars} \
-      --subst-var-by 'CURRENT_SYSTEM' '${system}' \
+      --subst-var-by 'CURRENT_SYSTEM' '${stdenv.hostPlatform.system}' \
       --subst-var-by 'PGBOUNCER_AUTH_SCHEMA_SQL' '${pgbouncerAuthSchemaSql}' \
       --subst-var-by 'STAT_EXTENSION_SQL' '${statExtensionSql}'
     chmod +x $out/bin/dbmate-tool

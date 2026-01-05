@@ -12,7 +12,9 @@ let
       inherit (pkgs) lib;
       installedExtension =
         postgresMajorVersion:
-        self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+        self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+          pname
+        }";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
       postgresqlWithExtension =
         postgresql:
@@ -47,8 +49,8 @@ let
           };
         in
         pkg;
-      psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
     in
     self.inputs.nixpkgs.lib.nixos.runTest {
       name = pname;
