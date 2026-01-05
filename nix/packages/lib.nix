@@ -4,7 +4,7 @@
   psql_orioledb-17,
   defaults,
   supabase-groonga,
-  system,
+  stdenv,
 }:
 {
   makePostgresDevSetup =
@@ -99,7 +99,7 @@
         POSTGRESQL_SCHEMA_SQL = "${paths.postgresqlSchemaSql}";
         PGBOUNCER_AUTH_SCHEMA_SQL = "${paths.pgbouncerAuthSchemaSql}";
         STAT_EXTENSION_SQL = "${paths.statExtensionSql}";
-        CURRENT_SYSTEM = "${system}";
+        CURRENT_SYSTEM = "${stdenv.hostPlatform.system}";
       }
       // extraSubstitutions; # Merge in any extra substitutions
     in

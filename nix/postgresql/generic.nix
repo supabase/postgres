@@ -322,7 +322,7 @@ let
 
           tests = {
             postgresql-wal-receiver = import ../../../../nixos/tests/postgresql-wal-receiver.nix {
-              inherit (stdenv) system;
+              system = stdenv.hostPlatform.system;
               pkgs = self;
               package = this;
             };
@@ -330,7 +330,7 @@ let
           }
           // lib.optionalAttrs jitSupport {
             postgresql-jit = import ../../../../nixos/tests/postgresql-jit.nix {
-              inherit (stdenv) system;
+              system = stdenv.hostPlatform.system;
               pkgs = self;
               package = this;
             };
