@@ -301,11 +301,46 @@ EXTRA_NIX_CONF
             fi
         fi
 
-        echo "1.2. Installing flake revision: $NIX_FLAKE_VERSION"
+        echo "1.2. Fetching store path for flake revision: $NIX_FLAKE_VERSION"
         # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         nix-collect-garbage -d > /tmp/pg_upgrade-nix-gc.log 2>&1 || true
-        PG_UPGRADE_BIN_DIR=$(nix build "github:supabase/postgres/${NIX_FLAKE_VERSION}#psql_${PGVERSION}/bin" --no-link --print-out-paths --extra-experimental-features nix-command --extra-experimental-features flakes)
+
+        # Determine system architecture
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "aarch64" ]; then
+            SYSTEM="aarch64-linux"
+        elif [ "$ARCH" = "x86_64" ]; then
+            SYSTEM="x86_64-linux"
+        else
+            echo "ERROR: Unsupported architecture: $ARCH"
+            exit 1
+        fi
+
+        # Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
+        CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${NIX_FLAKE_VERSION}.json"
+        echo "Fetching catalog from: $CATALOG_URL"
+
+        if ! CATALOG_RESPONSE=$(curl -sf "$CATALOG_URL"); then
+            echo "ERROR: Failed to fetch catalog from $CATALOG_URL"
+            exit 1
+        fi
+
+        STORE_PATH=$(echo "$CATALOG_RESPONSE" | jq -r ".\"${SYSTEM}\".\"psql_${PGVERSION}/bin\"")
+
+        if [ -z "$STORE_PATH" ] || [ "$STORE_PATH" = "null" ]; then
+            echo "ERROR: Could not find store path in catalog for ${SYSTEM}.psql_${PGVERSION}/bin"
+            echo "Catalog contents:"
+            echo "$CATALOG_RESPONSE" | jq .
+            exit 1
+        fi
+
+        echo "Store path: $STORE_PATH"
+
+        # Realize from binary cache (no nix evaluation needed!)
+        nix-store -r "$STORE_PATH"
+
+        PG_UPGRADE_BIN_DIR="$STORE_PATH"
         PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
     fi
 
