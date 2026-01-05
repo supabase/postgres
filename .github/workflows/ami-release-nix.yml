@@ -144,37 +144,26 @@ jobs:
           GIT_SHA="${{ github.sha }}"
           PG_VERSION="${{ matrix.postgres_version }}"
           SYSTEM="aarch64-linux"
-          ATTR="psql_${PG_VERSION}/bin"
 
           # Get store path for this build
           STORE_PATH=$(nix eval --raw ".#psql_${PG_VERSION}/bin.outPath")
 
-          # Catalog keyed by git SHA (what the upgrade script has access to)
-          CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${GIT_SHA}.json"
-          CATALOG_S3="s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}.json"
+          # Each postgres version gets its own catalog file (no race conditions)
+          CATALOG_S3="s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}-psql_${PG_VERSION}.json"
 
-          # Download existing catalog or create new
-          if curl -sf "$CATALOG_URL" -o /tmp/catalog.json; then
-            echo "Updating existing catalog for ${GIT_SHA}"
-          else
-            echo '{}' > /tmp/catalog.json
-            echo "Creating new catalog for ${GIT_SHA}"
-          fi
-
-          # Add metadata (version and git_sha) and entry for this system/attr
-          jq --arg ver "$VERSION" \
+          # Create catalog JSON for this version
+          jq -n \
+             --arg ver "$VERSION" \
              --arg sha "$GIT_SHA" \
              --arg sys "$SYSTEM" \
-             --arg attr "$ATTR" \
              --arg path "$STORE_PATH" \
-             '.version = $ver | .git_sha = $sha | if .[$sys] == null then .[$sys] = {} else . end | .[$sys][$attr] = $path' \
-             /tmp/catalog.json > /tmp/catalog-updated.json
+             '{version: $ver, git_sha: $sha, ($sys): $path}' > /tmp/catalog.json
 
-          echo "Catalog entry: ${SYSTEM}.${ATTR} = ${STORE_PATH}"
-          cat /tmp/catalog-updated.json
+          echo "Catalog for psql_${PG_VERSION}:"
+          cat /tmp/catalog.json
 
-          # Upload updated catalog
-          aws s3 cp /tmp/catalog-updated.json "$CATALOG_S3" \
+          # Upload catalog
+          aws s3 cp /tmp/catalog.json "$CATALOG_S3" \
             --content-type "application/json"
 
           echo "Catalog uploaded to ${CATALOG_S3}"
