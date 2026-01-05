@@ -138,6 +138,47 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
 
+      - name: Update nix store path catalog
+        run: |
+          VERSION="${{ steps.process_release_version.outputs.version }}"
+          GIT_SHA="${{ github.sha }}"
+          PG_VERSION="${{ matrix.postgres_version }}"
+          SYSTEM="aarch64-linux"
+          ATTR="psql_${PG_VERSION}/bin"
+
+          # Get store path for this build
+          STORE_PATH=$(nix eval --raw ".#psql_${PG_VERSION}/bin.outPath")
+
+          # Catalog keyed by git SHA (what the upgrade script has access to)
+          CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${GIT_SHA}.json"
+          CATALOG_S3="s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}.json"
+
+          # Download existing catalog or create new
+          if curl -sf "$CATALOG_URL" -o /tmp/catalog.json; then
+            echo "Updating existing catalog for ${GIT_SHA}"
+          else
+            echo '{}' > /tmp/catalog.json
+            echo "Creating new catalog for ${GIT_SHA}"
+          fi
+
+          # Add metadata (version and git_sha) and entry for this system/attr
+          jq --arg ver "$VERSION" \
+             --arg sha "$GIT_SHA" \
+             --arg sys "$SYSTEM" \
+             --arg attr "$ATTR" \
+             --arg path "$STORE_PATH" \
+             '.version = $ver | .git_sha = $sha | if .[$sys] == null then .[$sys] = {} else . end | .[$sys][$attr] = $path' \
+             /tmp/catalog.json > /tmp/catalog-updated.json
+
+          echo "Catalog entry: ${SYSTEM}.${ATTR} = ${STORE_PATH}"
+          cat /tmp/catalog-updated.json
+
+          # Upload updated catalog
+          aws s3 cp /tmp/catalog-updated.json "$CATALOG_S3" \
+            --content-type "application/json"
+
+          echo "Catalog uploaded to ${CATALOG_S3}"
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
