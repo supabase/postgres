@@ -319,20 +319,21 @@ EXTRA_NIX_CONF
 
         # Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
         # Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
-        CATALOG_URL="https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
-        echo "Fetching catalog from: $CATALOG_URL"
+        CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
+        CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
+        echo "Fetching catalog from: $CATALOG_S3"
 
-        if ! CATALOG_RESPONSE=$(curl -sf "$CATALOG_URL"); then
-            echo "ERROR: Failed to fetch catalog from $CATALOG_URL"
+        if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
+            echo "ERROR: Failed to fetch catalog from $CATALOG_S3"
             exit 1
         fi
 
-        STORE_PATH=$(echo "$CATALOG_RESPONSE" | jq -r ".\"${SYSTEM}\"")
+        STORE_PATH=$(jq -r ".\"${SYSTEM}\"" "$CATALOG_LOCAL")
 
         if [ -z "$STORE_PATH" ] || [ "$STORE_PATH" = "null" ]; then
             echo "ERROR: Could not find store path in catalog for ${SYSTEM}"
             echo "Catalog contents:"
-            echo "$CATALOG_RESPONSE" | jq .
+            jq . "$CATALOG_LOCAL"
             exit 1
         fi
 
