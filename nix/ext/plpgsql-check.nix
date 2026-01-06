@@ -131,13 +131,10 @@ buildEnv {
 
   passthru = {
     inherit versions numberOfVersions switch-ext-version;
-    hasBackgroundWorker = true;
-    defaultSettings = {
-      shared_preload_libraries = [
-        "plpgsql"
-        "plpgsql_check"
-      ];
-    };
+    # plpgsql_check is a development/linting tool that should be loaded on-demand
+    # via CREATE EXTENSION, not automatically preloaded. Automatic preloading causes
+    # "cannot find parent statement on pldbgapi2 call stack" errors in recursive
+    # PL/pgSQL functions (see issue #41529)
     version =
       "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
