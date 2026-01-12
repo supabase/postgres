@@ -34,6 +34,7 @@
   stdenv,
   writeShellScriptBin,
   defaultBindgenHook,
+  sccache,
 }:
 
 # The idea behind: Use it mostly like rustPlatform.buildRustPackage and so
@@ -55,7 +56,7 @@
   postgresql,
   # enable override to generate bindings using bindgenHook.
   # Some older versions of cargo-pgrx use a bindgenHook that is not compatible with the
-  # current clang version present in stdenv
+  # current clang version present in stdenv
   bindgenHook ? defaultBindgenHook,
   # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
   # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
@@ -157,11 +158,21 @@ let
         postgresql
         pkg-config
         bindgenHook
+        sccache
       ]
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
     buildPhase = ''
       runHook preBuild
+
+      if [[ -d "/nix/var/cache/sccache" && -w "/nix/var/cache/sccache" ]]; then
+        echo "sccache: cache directory available, enabling"
+        export RUSTC_WRAPPER="${sccache}/bin/sccache"
+        export SCCACHE_DIR="/nix/var/cache/sccache"
+        export SCCACHE_CACHE_SIZE="500G"
+      else
+        echo "sccache: cache directory not available, skipping"
+      fi
 
       echo "Executing cargo-pgrx buildPhase"
       ${preBuildAndTest}
@@ -182,6 +193,11 @@ let
         ${maybeDebugFlag} \
         --features "${builtins.concatStringsSep " " buildFeatures}" \
         --out-dir "$out"
+
+      if [[ -n "''${RUSTC_WRAPPER:-}" ]]; then
+        echo "sccache stats:"
+        ${sccache}/bin/sccache --show-stats
+      fi
 
       ${maybeLeaveBuildAndTestSubdir}
 

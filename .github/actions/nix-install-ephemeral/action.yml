@@ -5,6 +5,10 @@ inputs:
     description: 'Whether to push build outputs to the Nix binary cache'
     required: false
     default: 'false'
+  enable-sccache-sandbox-path:
+    description: 'Whether to expose /nix/var/cache/sccache in the Nix sandbox'
+    required: false
+    default: 'false'
   aws-region:
     description: 'AWS region for the Nix binary cache S3 bucket'
     required: false
@@ -48,4 +52,5 @@ runs:
           substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
+          ${{ inputs.enable-sccache-sandbox-path == 'true' && 'extra-sandbox-paths = /nix/var/cache/sccache?' || '' }}
           max-jobs = 4

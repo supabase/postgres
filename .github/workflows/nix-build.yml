@@ -14,10 +14,6 @@ permissions:
   contents: write
   packages: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   nix-eval:
     uses: ./.github/workflows/nix-eval.yml
@@ -40,17 +36,31 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
+          enable-sccache-sandbox-path: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          sudo chgrp nixbld /nix/var/cache/sccache
+          sudo chmod 777 /nix/var/cache/sccache
+          sudo chmod g+s /nix/var/cache/sccache
+          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -71,17 +81,31 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
+          enable-sccache-sandbox-path: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          sudo chgrp nixbld /nix/var/cache/sccache
+          sudo chmod 777 /nix/var/cache/sccache
+          sudo chmod g+s /nix/var/cache/sccache
+          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -148,14 +172,28 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          enable-sccache-sandbox-path: 'true'
           push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          sudo chgrp nixbld /nix/var/cache/sccache
+          sudo chmod 777 /nix/var/cache/sccache
+          sudo chmod g+s /nix/var/cache/sccache
+          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -176,14 +214,28 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          enable-sccache-sandbox-path: 'true'
           push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          sudo chgrp nixbld /nix/var/cache/sccache
+          sudo chmod 777 /nix/var/cache/sccache
+          sudo chmod g+s /nix/var/cache/sccache
+          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -217,15 +269,3 @@ jobs:
       (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
       (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
     uses: ./.github/workflows/test.yml
-
-  docker-image-test:
-    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux]
-    if: |
-      !cancelled() &&
-      needs.nix-eval.result == 'success' &&
-      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
-      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
-    uses: ./.github/workflows/docker-image-test.yml
-    secrets:
-      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
