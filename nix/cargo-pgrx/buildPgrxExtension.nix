@@ -169,7 +169,7 @@ let
         echo "sccache: cache directory available, enabling"
         export RUSTC_WRAPPER="${sccache}/bin/sccache"
         export SCCACHE_DIR="/nix/var/cache/sccache"
-        export SCCACHE_CACHE_SIZE="500G"
+        export SCCACHE_CACHE_SIZE="50G"
       else
         echo "sccache: cache directory not available, skipping"
       fi

@@ -40,7 +40,7 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: useblacksmith/stickydisk@v1
         with:
-          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
           path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
@@ -57,10 +57,9 @@ jobs:
       - name: Allow sccache cache write access
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
-          sudo chgrp nixbld /nix/var/cache/sccache
-          sudo chmod 777 /nix/var/cache/sccache
-          sudo chmod g+s /nix/var/cache/sccache
-          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          sudo chown -R 872415232 /nix/var/cache/sccache
+          sudo chmod -R 2777 /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -85,7 +84,7 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: useblacksmith/stickydisk@v1
         with:
-          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
           path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
@@ -102,10 +101,9 @@ jobs:
       - name: Allow sccache cache write access
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
-          sudo chgrp nixbld /nix/var/cache/sccache
-          sudo chmod 777 /nix/var/cache/sccache
-          sudo chmod g+s /nix/var/cache/sccache
-          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          sudo chown -R 872415232 /nix/var/cache/sccache
+          sudo chmod -R 2777 /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -176,7 +174,7 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: useblacksmith/stickydisk@v1
         with:
-          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
           path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
@@ -190,10 +188,9 @@ jobs:
       - name: Allow sccache cache write access
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
-          sudo chgrp nixbld /nix/var/cache/sccache
-          sudo chmod 777 /nix/var/cache/sccache
-          sudo chmod g+s /nix/var/cache/sccache
-          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          sudo chown -R 872415232 /nix/var/cache/sccache
+          sudo chmod -R 2777 /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -218,7 +215,7 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: useblacksmith/stickydisk@v1
         with:
-          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
           path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
@@ -232,10 +229,9 @@ jobs:
       - name: Allow sccache cache write access
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
-          sudo chgrp nixbld /nix/var/cache/sccache
-          sudo chmod 777 /nix/var/cache/sccache
-          sudo chmod g+s /nix/var/cache/sccache
-          sudo setfacl -d -m u::rwX,g::rwX,o::rwX /nix/var/cache/sccache
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          sudo chown -R 872415232 /nix/var/cache/sccache
+          sudo chmod -R 2777 /nix/var/cache/sccache
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash

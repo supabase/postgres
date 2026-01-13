@@ -53,4 +53,7 @@ runs:
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
           ${{ inputs.enable-sccache-sandbox-path == 'true' && 'extra-sandbox-paths = /nix/var/cache/sccache?' || '' }}
-          max-jobs = 4
+          max-jobs = 1
+          auto-allocate-uids = true
+          use-cgroups = true
+          experimental-features = nix-command flakes cgroups auto-allocate-uids

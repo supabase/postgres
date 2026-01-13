@@ -58,6 +58,7 @@ class GitHubActionPackage(TypedDict):
     system: System
     runs_on: RunsOnConfig
     postgresql_version: NotRequired[str]
+    cache_key: NotRequired[str]
 
 
 class NixEvalError(TypedDict):
@@ -213,8 +214,7 @@ def run_nix_eval_jobs(
 
 def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Check if the package is a postgresql extension package."""
-    attrs = pkg["attr"].split(".")
-    return attrs[-2] == "exts"
+    return ".exts." in pkg["attr"]
 
 
 # thank you buildbot-nix https://github.com/nix-community/buildbot-nix/blob/985d069a2a45cf4a571a4346107671adc2bd2a16/buildbot_nix/buildbot_nix/build_trigger.py#L297
@@ -249,6 +249,31 @@ def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
 def is_kvm_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Determine if a package requires KVM"""
     return "kvm" in pkg.get("requiredSystemFeatures", [])
+
+
+def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
+    """Convert nix-eval-jobs output to GitHub Actions matrix package"""
+    runner = get_runner_for_package(pkg)
+    if runner is None:
+        raise ValueError(f"No runner configuration for system: {pkg['system']}")
+    returned_pkg: GitHubActionPackage = {
+        "attr": pkg["attr"],
+        "name": pkg["name"],
+        "system": pkg["system"],
+        "runs_on": runner,
+    }
+    if is_extension_pkg(pkg):
+        # Extract PostgreSQL version from attribute path
+        # e.g., legacyPackages.aarch64-linux.psql_17.exts.wrappers-pkgs.0_5_6
+        #   or  legacyPackages.aarch64-linux.psql_17.exts.pg_graphql
+        attrs = pkg["attr"].split(".")
+        exts_idx = attrs.index("exts")
+        pg_version = attrs[exts_idx - 1].split("_")[-1]
+        returned_pkg["postgresql_version"] = pg_version
+        returned_pkg["cache_key"] = f"pg{pg_version}"
+    else:
+        returned_pkg["cache_key"] = "shared"
+    return returned_pkg
 
 
 def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
@@ -303,23 +328,6 @@ def main() -> None:
     # Run evaluation and collect packages, warnings, and errors
     packages, warnings_list, errors_list = run_nix_eval_jobs(cmd)
     gh_action_packages = sort_pkgs_by_closures(packages)
-
-    def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
-        """Convert nix-eval-jobs output to GitHub Actions matrix package"""
-        runner = get_runner_for_package(pkg)
-        if runner is None:
-            raise ValueError(f"No runner configuration for system: {pkg['system']}")
-        returned_pkg: GitHubActionPackage = {
-            "attr": pkg["attr"],
-            "name": pkg["name"],
-            "system": pkg["system"],
-            "runs_on": runner,
-        }
-        if is_extension_pkg(pkg):
-            # Extract PostgreSQL version from attribute path
-            attrs = pkg["attr"].split(".")
-            returned_pkg["postgresql_version"] = attrs[-3].split("_")[-1]
-        return returned_pkg
 
     # Group packages by system and type (checks vs packages)
     packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)

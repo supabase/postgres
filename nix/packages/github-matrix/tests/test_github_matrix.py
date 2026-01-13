@@ -4,6 +4,7 @@ import pytest
 
 from github_matrix import (
     NixEvalJobsOutput,
+    clean_package_for_output,
     get_runner_for_package,
     is_extension_pkg,
     is_kvm_pkg,
@@ -260,3 +261,80 @@ class TestSortPkgsByClosures:
 
         result = sort_pkgs_by_closures([pkg1, pkg2])
         assert result == [pkg1, pkg2]
+
+
+class TestCleanPackageForOutput:
+    def test_extension_package_simple_path(self):
+        """Test extension package like pg_graphql with simple attr path"""
+        pkg: NixEvalJobsOutput = {
+            "attr": "legacyPackages.aarch64-linux.psql_17.exts.pg_graphql",
+            "attrPath": [
+                "legacyPackages",
+                "aarch64-linux",
+                "psql_17",
+                "exts",
+                "pg_graphql",
+            ],
+            "cacheStatus": "notBuilt",
+            "drvPath": "/nix/store/test.drv",
+            "name": "pg_graphql",
+            "system": "aarch64-linux",
+        }
+        result = clean_package_for_output(pkg)
+        assert result["postgresql_version"] == "17"
+        assert result["cache_key"] == "pg17"
+
+    def test_extension_package_versioned_path(self):
+        """Test extension package like wrappers with version suffix in attr path"""
+        pkg: NixEvalJobsOutput = {
+            "attr": "legacyPackages.aarch64-linux.psql_17.exts.wrappers-pkgs.0_5_6",
+            "attrPath": [
+                "legacyPackages",
+                "aarch64-linux",
+                "psql_17",
+                "exts",
+                "wrappers-pkgs",
+                "0_5_6",
+            ],
+            "cacheStatus": "notBuilt",
+            "drvPath": "/nix/store/test.drv",
+            "name": "wrappers-0.5.6",
+            "system": "aarch64-linux",
+        }
+        result = clean_package_for_output(pkg)
+        assert result["postgresql_version"] == "17"
+        assert result["cache_key"] == "pg17"
+
+    def test_extension_package_pg15(self):
+        """Test extension package with PostgreSQL 15"""
+        pkg: NixEvalJobsOutput = {
+            "attr": "legacyPackages.x86_64-linux.psql_15.exts.pg_cron",
+            "attrPath": [
+                "legacyPackages",
+                "x86_64-linux",
+                "psql_15",
+                "exts",
+                "pg_cron",
+            ],
+            "cacheStatus": "notBuilt",
+            "drvPath": "/nix/store/test.drv",
+            "name": "pg_cron",
+            "system": "x86_64-linux",
+        }
+        result = clean_package_for_output(pkg)
+        assert result["postgresql_version"] == "15"
+        assert result["cache_key"] == "pg15"
+
+    def test_non_extension_package(self):
+        """Test non-extension package gets shared cache key"""
+        pkg: NixEvalJobsOutput = {
+            "attr": "legacyPackages.x86_64-linux.psql_15",
+            "attrPath": ["legacyPackages", "x86_64-linux", "psql_15"],
+            "cacheStatus": "notBuilt",
+            "drvPath": "/nix/store/test.drv",
+            "name": "postgresql-15.0",
+            "system": "x86_64-linux",
+        }
+        result = clean_package_for_output(pkg)
+        assert "postgresql_version" not in result
+        assert result["cache_key"] == "shared"
