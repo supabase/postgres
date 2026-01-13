@@ -41,6 +41,10 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Testing PG Upgrade Scripts](./testing-pg-upgrade-scripts.md)** - Testing PostgreSQL upgrades
 - **[Docker Image testing](./docker-testing.md)** - How to test the docker images against the pg_regress test suite.
 
+## CI/CD
+
+- **[sccache in CI](./sccache-ci.md)** - Rust compilation caching for pgrx extensions
+
 ## Reference
 
 - **[References](./references.md)** - Useful links and resources
