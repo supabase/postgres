@@ -9,6 +9,10 @@ inputs:
     description: 'Whether to expose /nix/var/cache/sccache in the Nix sandbox'
     required: false
     default: 'false'
+  max-jobs:
+    description: 'Maximum number of parallel Nix builds'
+    required: false
+    default: ''
   aws-region:
     description: 'AWS region for the Nix binary cache S3 bucket'
     required: false
@@ -53,7 +57,7 @@ runs:
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
           ${{ inputs.enable-sccache-sandbox-path == 'true' && 'extra-sandbox-paths = /nix/var/cache/sccache?' || '' }}
-          max-jobs = 1
-          auto-allocate-uids = true
-          use-cgroups = true
-          experimental-features = nix-command flakes cgroups auto-allocate-uids
+          ${{ inputs.max-jobs != '' && format('max-jobs = {0}', inputs.max-jobs) || '' }}
+          ${{ inputs.enable-sccache-sandbox-path == 'true' && 'auto-allocate-uids = true' || '' }}
+          ${{ inputs.enable-sccache-sandbox-path == 'true' && 'use-cgroups = true' || '' }}
+          experimental-features = nix-command flakes ${{ inputs.enable-sccache-sandbox-path == 'true' && 'cgroups auto-allocate-uids' || '' }}
