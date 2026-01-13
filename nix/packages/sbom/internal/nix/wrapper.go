@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 type Wrapper struct {
@@ -22,8 +24,14 @@ func (w *Wrapper) Generate(derivationPath, outputPath string) error {
 		return fmt.Errorf("derivation path does not exist: %s", derivationPath)
 	}
 
+	// Validate and sanitize outputPath to prevent path traversal
+	cleanOutputPath := filepath.Clean(outputPath)
+	if strings.Contains(cleanOutputPath, "..") {
+		return fmt.Errorf("invalid output path: path traversal detected")
+	}
+
 	// Call sbomnix
-	cmd := exec.Command(w.SbomnixPath, derivationPath, fmt.Sprintf("--spdx=%s", outputPath))
+	cmd := exec.Command(w.SbomnixPath, derivationPath, fmt.Sprintf("--spdx=%s", cleanOutputPath))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

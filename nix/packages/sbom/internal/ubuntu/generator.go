@@ -46,12 +46,17 @@ func (g *Generator) Generate() (*spdx.Document, error) {
 		return nil, fmt.Errorf("failed to get packages: %w", err)
 	}
 
+	uuid, err := spdx.GenerateUUID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
+
 	doc := &spdx.Document{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
 		Name:              fmt.Sprintf("Ubuntu-System-SBOM-%s", time.Now().Format("2006-01-02")),
-		DocumentNamespace: fmt.Sprintf("https://sbom.ubuntu.system/%s", generateUUID()),
+		DocumentNamespace: fmt.Sprintf("https://sbom.ubuntu.system/%s", uuid),
 		CreationInfo: spdx.CreationInfo{
 			Created:            time.Now().UTC().Format(time.RFC3339),
 			Creators:           []string{"Tool: ubuntu-sbom-generator-1.0"},
@@ -388,15 +393,4 @@ func sanitizeName(name string) string {
 	// Replace non-alphanumeric characters with hyphens for SPDX IDs
 	re := regexp.MustCompile(`[^a-zA-Z0-9-.]`)
 	return re.ReplaceAllString(name, "-")
-}
-
-func generateUUID() string {
-	// Simple UUID v4 generation
-	b := make([]byte, 16)
-	for i := range b {
-		b[i] = byte(time.Now().UnixNano() & 0xff)
-	}
-
-	return fmt.Sprintf("%x-%x-%x-%x-%x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }

@@ -891,6 +891,22 @@
             touch $out
           '';
 
+          sbom-tests = pkgs.stdenv.mkDerivation {
+            name = "sbom-tests";
+            src = ./packages/sbom;
+            nativeBuildInputs = [ pkgs.go ];
+            buildPhase = ''
+              export HOME=$TMPDIR
+              export GOCACHE=$TMPDIR/go-cache
+              export GOMODCACHE=$TMPDIR/go-mod-cache
+              go test ./... -v
+            '';
+            installPhase = ''
+              echo "SUCCESS: sbom tests passed"
+              touch $out
+            '';
+          };
+
           sbomnix-available =
             let
               sbomnixPkg = self'.packages.sbomnix;

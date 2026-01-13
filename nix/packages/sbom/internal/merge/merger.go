@@ -30,13 +30,18 @@ func (m *Merger) Merge(ubuntuPath, nixPath string) (*spdx.Document, error) {
 		return nil, fmt.Errorf("failed to load Nix SBOM: %w", err)
 	}
 
+	uuid, err := spdx.GenerateUUID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
+
 	// Create merged document
 	mergedDoc := &spdx.Document{
 		SPDXVersion:       "SPDX-2.3",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
 		Name:              fmt.Sprintf("Ubuntu-Nix-System-SBOM-%s", time.Now().Format("2006-01-02")),
-		DocumentNamespace: fmt.Sprintf("https://sbom.ubuntu-nix.system/%s", generateUUID()),
+		DocumentNamespace: fmt.Sprintf("https://sbom.ubuntu-nix.system/%s", uuid),
 		CreationInfo: spdx.CreationInfo{
 			Created:            time.Now().UTC().Format(time.RFC3339),
 			Creators:           m.mergeCreators(ubuntuDoc, nixDoc),
@@ -306,15 +311,4 @@ func sanitizeCPEComponent(component string) string {
 	}
 
 	return component
-}
-
-func generateUUID() string {
-	// Simple UUID v4 generation
-	b := make([]byte, 16)
-	for i := range b {
-		b[i] = byte(time.Now().UnixNano() & 0xff)
-	}
-
-	return fmt.Sprintf("%x-%x-%x-%x-%x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
