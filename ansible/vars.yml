@@ -21,9 +21,9 @@ pgbouncer_release_checksum: sha256:af0b05e97d0e1fd9ad45fe00ea6d2a934c63075f67f7e
 # The checksum can be found under "Assets", in the GitHub release page for each version.
 # The binaries used are: ubuntu-aarch64 and linux-static.
 # https://github.com/PostgREST/postgrest/releases
-postgrest_release: 14.1
-postgrest_arm_release_checksum: sha256:68885d936873059b946afadaae697467daedacd7d8e697a80b7f0f6881c9c92f
-postgrest_x86_release_checksum: sha256:bdab6ab3389ca0d6c1f3b8363491674dbca71875c3f30261d92d8fecdde35277
+postgrest_release: 14.3
+postgrest_arm_release_checksum: sha256:76218c55c262ebaa2804330e6b1f9fc8ae9bf2f9ced8287206a351c6645fe562
+postgrest_x86_release_checksum: sha256:3d619a36f0532c736857a5d6ead168b2864e2a383ab167d67acdd3d38e97508e
 
 gotrue_release: 2.184.0
 gotrue_release_checksum: sha1:8da1a0cdbf55e016a5e6dfe8949491eb54fa0fce
