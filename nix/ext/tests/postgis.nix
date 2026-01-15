@@ -128,6 +128,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       def check_upgrade_path(pg_version):
         with subtest("Check ${pname} upgrade path"):
           firstVersion = versions[pg_version][0]
+          server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS postgis_sfcgal;'")
           server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
           run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{firstVersion}' CASCADE;""")
           installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
