@@ -135,12 +135,18 @@ let
       '';
 
       # Run PostGIS regression tests
+      # Note: We run tests in specific directories to avoid doc/ which requires
+      # network access to fetch DocBook DTDs for XML validation
       checkPhase = ''
         runHook preCheck
 
-        # Run the regression tests in extension mode
-        # This tests core postgis, raster, topology, and sfcgal
-        make check RUNTESTFLAGS="--extension"
+        # Run unit tests in code directories (skip doc/ which needs network for DocBook DTD)
+        make -C liblwgeom check
+        make -C sfcgal check
+        make -C loader check
+
+        # Run the SQL regression tests in extension mode
+        make -C regress check RUNTESTFLAGS="--extension"
 
         runHook postCheck
       '';
