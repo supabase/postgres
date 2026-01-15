@@ -144,6 +144,65 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       check_upgrade_path("15")
 
+      with subtest("Check SFCGAL extension and functions"):
+        # Create the SFCGAL extension
+        run_sql("CREATE EXTENSION IF NOT EXISTS postgis_sfcgal CASCADE;")
+
+        # Verify SFCGAL version is loaded
+        sfcgal_version = run_sql("SELECT postgis_sfcgal_version();")
+        assert sfcgal_version, f"SFCGAL version should not be empty, got: {sfcgal_version}"
+        print(f"SFCGAL version: {sfcgal_version}")
+
+        # Test ST_3DArea - compute area of a 3D polygon
+        area_3d = run_sql("""
+          SELECT ST_3DArea(
+            ST_GeomFromText('POLYGON((0 0 0, 0 1 0, 1 1 0, 1 0 0, 0 0 0))')
+          );
+        """)
+        assert float(area_3d) == 1.0, f"Expected 3D area of 1.0, got {area_3d}"
+
+        # Test ST_StraightSkeleton - compute skeleton of a polygon
+        skeleton = run_sql("""
+          SELECT ST_AsText(
+            ST_StraightSkeleton(
+              ST_GeomFromText('POLYGON((0 0, 0 10, 10 10, 10 0, 0 0))')
+            )
+          );
+        """)
+        assert "MULTILINESTRING" in skeleton, f"Expected MULTILINESTRING skeleton, got {skeleton}"
+
+        # Test ST_Tesselate - triangulate a polygon
+        tesselate = run_sql("""
+          SELECT ST_AsText(
+            ST_Tesselate(
+              ST_GeomFromText('POLYGON((0 0, 0 10, 10 10, 10 0, 0 0))')
+            )
+          );
+        """)
+        assert "TIN" in tesselate or "TRIANGLE" in tesselate, f"Expected TIN/TRIANGLE result, got {tesselate}"
+
+        # Test ST_Extrude - extrude a 2D polygon to 3D
+        extrude = run_sql("""
+          SELECT ST_AsText(
+            ST_Extrude(
+              ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'),
+              0, 0, 1
+            )
+          );
+        """)
+        assert "POLYHEDRALSURFACE" in extrude, f"Expected POLYHEDRALSURFACE from extrude, got {extrude}"
+
+        # Test ST_Volume - compute volume of an extruded solid
+        volume = run_sql("""
+          SELECT ST_Volume(
+            ST_Extrude(
+              ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'),
+              0, 0, 1
+            )
+          );
+        """)
+        assert float(volume) == 1.0, f"Expected volume of 1.0, got {volume}"
+
       with subtest("Check ${pname} latest extension version"):
         server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
         server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
@@ -162,6 +221,32 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         latestVersion = versions["17"][-1]
         majMinVersion = ".".join(latestVersion.split('.')[:1])
         assert f"${pname},{majMinVersion}" in installed_extensions
+
+      with subtest("Check SFCGAL functions after PostgreSQL 17 upgrade"):
+        # Verify SFCGAL extension still works after pg_upgrade
+        run_sql("CREATE EXTENSION IF NOT EXISTS postgis_sfcgal CASCADE;")
+
+        sfcgal_version = run_sql("SELECT postgis_sfcgal_version();")
+        assert sfcgal_version, f"SFCGAL version should not be empty after upgrade, got: {sfcgal_version}"
+        print(f"SFCGAL version on PG17: {sfcgal_version}")
+
+        # Re-run core SFCGAL function tests on PG17
+        area_3d = run_sql("""
+          SELECT ST_3DArea(
+            ST_GeomFromText('POLYGON((0 0 0, 0 1 0, 1 1 0, 1 0 0, 0 0 0))')
+          );
+        """)
+        assert float(area_3d) == 1.0, f"Expected 3D area of 1.0 on PG17, got {area_3d}"
+
+        volume = run_sql("""
+          SELECT ST_Volume(
+            ST_Extrude(
+              ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'),
+              0, 0, 1
+            )
+          );
+        """)
+        assert float(volume) == 1.0, f"Expected volume of 1.0 on PG17, got {volume}"
 
       check_upgrade_path("17")
     '';
