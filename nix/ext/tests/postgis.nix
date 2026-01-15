@@ -204,6 +204,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         assert float(volume) == 1.0, f"Expected volume of 1.0, got {volume}"
 
       with subtest("Check ${pname} latest extension version"):
+        # Drop postgis_sfcgal first since it depends on postgis
+        server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS postgis_sfcgal;'")
         server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
         server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension where extname = '${pname}';""")
