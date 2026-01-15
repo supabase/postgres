@@ -128,11 +128,4 @@ build {
      script = "scripts/nix-provision.sh"
   }
 
-  # Download the SBOM generated on the instance
-  provisioner "file" {
-    source      = "/tmp/ubuntu-sbom.spdx.json"
-    destination = "ubuntu-sbom-${var.postgres-version}.spdx.json"
-    direction   = "download"
-  }
-
 }
