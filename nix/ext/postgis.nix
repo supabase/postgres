@@ -5,6 +5,7 @@
   perl,
   libxml2,
   postgresql,
+  postgresqlTestHook,
   geos,
   proj,
   json_c,
@@ -13,6 +14,7 @@
   protobufc,
   libiconv,
   pcre2,
+  cunit,
   nixosTests,
   callPackage,
   buildEnv,
@@ -85,6 +87,20 @@ let
         perl
         pkg-config
       ];
+
+      # Test dependencies
+      nativeCheckInputs = [
+        postgresqlTestHook
+        cunit
+      ];
+
+      # Only run tests on Linux (PostgreSQL test hook doesn't work on Darwin)
+      doCheck = stdenv.hostPlatform.isLinux;
+
+      # PostgreSQL test configuration
+      postgresqlTestUserOptions = "LOGIN SUPERUSER";
+      failureHook = "postgresqlStop";
+
       dontDisableStatic = true;
 
       env.NIX_LDFLAGS = "-L${lib.getLib json_c}/lib";
@@ -106,6 +122,27 @@ let
             "raster/scripts/python/Makefile";
         mkdir -p $out/bin
         ln -s ${postgresql}/bin/postgres $out/bin/postgres
+      '';
+
+      # Set up environment for regression tests
+      preCheck = ''
+        # Create temp directory for test output
+        export PGIS_REG_TMPDIR="$TMPDIR/pgis_reg"
+        mkdir -p "$PGIS_REG_TMPDIR"
+
+        # Ensure the extension libraries can be found
+        export LD_LIBRARY_PATH="${lib.getLib geos}/lib:${lib.getLib proj}/lib:${lib.getLib gdal}/lib:${lib.getLib json_c}/lib:${lib.getLib sfcgal}/lib:$LD_LIBRARY_PATH"
+      '';
+
+      # Run PostGIS regression tests
+      checkPhase = ''
+        runHook preCheck
+
+        # Run the regression tests in extension mode
+        # This tests core postgis, raster, topology, and sfcgal
+        make check RUNTESTFLAGS="--extension"
+
+        runHook postCheck
       '';
 
       postInstall = ''
