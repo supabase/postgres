@@ -26,7 +26,12 @@ func (w *Wrapper) Generate(derivationPath, outputPath string) error {
 		return fmt.Errorf("derivation path does not exist: %s", derivationPath)
 	}
 
-	// Validate and sanitize outputPath to prevent path traversal
+	// Validate and sanitize outputPath to prevent path traversal.
+	// Security assumption: outputPath is operator-controlled via command-line flags
+	// (e.g., --output in main.go). Untrusted input must not be accepted here.
+	// Allowing absolute paths that clean to system locations is intentional since
+	// input is trusted. If Generate() becomes reachable from untrusted sources,
+	// this validation must be strengthened.
 	cleanOutputPath := filepath.Clean(outputPath)
 	if strings.Contains(cleanOutputPath, "..") {
 		return fmt.Errorf("invalid output path: path traversal detected")
@@ -54,7 +59,8 @@ func (w *Wrapper) GenerateMultiple(derivationPaths []string, outputPath string) 
 		return w.Generate(derivationPaths[0], outputPath)
 	}
 
-	// Validate and sanitize outputPath to prevent path traversal
+	// Validate and sanitize outputPath to prevent path traversal.
+	// See security assumption comment in Generate().
 	cleanOutputPath := filepath.Clean(outputPath)
 	if strings.Contains(cleanOutputPath, "..") {
 		return fmt.Errorf("invalid output path: path traversal detected")
