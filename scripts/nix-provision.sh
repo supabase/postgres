@@ -6,23 +6,10 @@ set -o pipefail
 set -o xtrace
 
 function install_packages {
-    # Setup Ansible on host VM
-    sudo apt-get update && sudo apt-get install -y software-properties-common
-
     # Install EC2-specific packages that were deferred from stage 1
     # These packages have post-install scripts that need EC2 metadata service access
     # which only works on a real running EC2 instance (not in chroot)
-    sudo apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
-
-    # Manually add GPG key with explicit keyserver
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
-
-    # Add repository and install
-    sudo add-apt-repository --yes ppa:ansible/ansible
-    sudo apt-get update
-    sudo apt-get install -y ansible
-
-    ansible-galaxy collection install community.general
+    sudo apt-get update && sudo apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
 }
 
 
@@ -35,6 +22,11 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 EXTRA_NIX_CONF" -s /bin/bash root
     #shellcheck disable=SC1091
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+}
+
+function install_ansible() {
+    nix profile install nixpkgs#ansible
+    ansible-galaxy collection install community.general
 }
 
 
@@ -59,12 +51,12 @@ EOF
         $ARGS
 }
 
-function cleanup_packages {
-    sudo apt-get -y remove --purge ansible
-    sudo add-apt-repository --yes --remove ppa:ansible/ansible
+function cleanup_ansible {
+    nix profile remove nixpkgs#ansible
 }
 
 install_packages
 install_nix
+install_ansible
 execute_stage2_playbook
-cleanup_packages
+cleanup_ansible
