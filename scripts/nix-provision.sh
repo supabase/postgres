@@ -59,21 +59,6 @@ EOF
         $ARGS
 }
 
-function generate_sbom {
-    echo "Generating SBOM for Ubuntu packages..."
-    # Run the sbom tool for Ubuntu packages only (Nix SBOM will be generated separately)
-    # The sbom binary is built into the Nix flake
-    #shellcheck disable=SC1091
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-
-    # Generate Ubuntu-only SBOM (dpkg packages)
-    nix run "github:supabase/postgres/${GIT_SHA}#sbom" -- ubuntu \
-        --output /tmp/ubuntu-sbom.spdx.json \
-        --no-progress
-
-    echo "Ubuntu SBOM generated at /tmp/ubuntu-sbom.spdx.json"
-}
-
 function cleanup_packages {
     sudo apt-get -y remove --purge ansible
     sudo add-apt-repository --yes --remove ppa:ansible/ansible
@@ -82,5 +67,4 @@ function cleanup_packages {
 install_packages
 install_nix
 execute_stage2_playbook
-generate_sbom
 cleanup_packages
