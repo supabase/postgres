@@ -33,3 +33,8 @@ common-nix.vars.pkr.hcl
 nixos.qcow2
 .lsp
 .clj-kondo
+#sbom development files
+http_cache.sqlite
+nix-sbom.spdx.json
+sbom.cdx.json
+sbom.csv

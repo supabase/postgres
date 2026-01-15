@@ -127,7 +127,130 @@ func (m *Merger) Merge(ubuntuPath, nixPath string) (*spdx.Document, error) {
 	return mergedDoc, nil
 }
 
+// MergeMultipleNix merges multiple Nix SPDX documents into a single document
+func (m *Merger) MergeMultipleNix(nixPaths []string) (*spdx.Document, error) {
+	if len(nixPaths) == 0 {
+		return nil, fmt.Errorf("no SPDX files provided")
+	}
+
+	if len(nixPaths) == 1 {
+		return m.LoadDocument(nixPaths[0])
+	}
+
+	uuid, err := spdx.GenerateUUID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
+
+	// Create merged document
+	mergedDoc := &spdx.Document{
+		SPDXVersion:       "SPDX-2.3",
+		DataLicense:       "CC0-1.0",
+		SPDXID:            "SPDXRef-DOCUMENT",
+		Name:              fmt.Sprintf("Nix-System-SBOM-%s", time.Now().Format("2006-01-02")),
+		DocumentNamespace: fmt.Sprintf("https://sbom.nix.system/%s", uuid),
+		CreationInfo: spdx.CreationInfo{
+			Created:            time.Now().UTC().Format(time.RFC3339),
+			Creators:           []string{"Tool: nix-sbom-merger-1.0"},
+			LicenseListVersion: "3.20",
+		},
+		Packages:      []spdx.Package{},
+		Relationships: []spdx.Relationship{},
+	}
+
+	// Create the single root System package
+	systemPkg := spdx.Package{
+		SPDXID:           "SPDXRef-System",
+		Name:             "Nix-System",
+		DownloadLocation: "NOASSERTION",
+		FilesAnalyzed:    false,
+		LicenseConcluded: "NOASSERTION",
+		LicenseDeclared:  "NOASSERTION",
+		CopyrightText:    "NOASSERTION",
+		Description:      "Combined Nix package system from multiple profiles",
+	}
+	mergedDoc.Packages = append(mergedDoc.Packages, systemPkg)
+
+	// Add document describes relationship
+	mergedDoc.Relationships = append(mergedDoc.Relationships, spdx.Relationship{
+		SPDXElementID:      "SPDXRef-DOCUMENT",
+		RelatedSPDXElement: "SPDXRef-System",
+		RelationshipType:   "DESCRIBES",
+	})
+
+	// Track seen packages by SPDXID to deduplicate
+	seenPackages := make(map[string]bool)
+	totalCount := 0
+
+	for i, nixPath := range nixPaths {
+		nixDoc, err := m.LoadDocument(nixPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load Nix SBOM %s: %w", nixPath, err)
+		}
+
+		// Collect creators
+		for _, creator := range nixDoc.CreationInfo.Creators {
+			found := false
+			for _, existing := range mergedDoc.CreationInfo.Creators {
+				if existing == creator {
+					found = true
+					break
+				}
+			}
+			if !found {
+				mergedDoc.CreationInfo.Creators = append(mergedDoc.CreationInfo.Creators, creator)
+			}
+		}
+
+		// Process Nix packages
+		for _, pkg := range nixDoc.Packages {
+			// Skip root/system packages
+			if strings.Contains(strings.ToLower(pkg.Name), "system") &&
+				(pkg.SPDXID == "SPDXRef-DOCUMENT" || strings.HasSuffix(pkg.SPDXID, "-System")) {
+				continue
+			}
+
+			// Ensure SPDXID has Nix prefix with source index to avoid conflicts
+			originalID := pkg.SPDXID
+			if !strings.HasPrefix(pkg.SPDXID, "SPDXRef-Nix-") {
+				pkg.SPDXID = m.renumberSPDXID(pkg.SPDXID, fmt.Sprintf("Nix%d", i))
+			}
+
+			// Skip if we've already seen this package (by name+version for deduplication)
+			pkgKey := fmt.Sprintf("%s-%s", pkg.Name, pkg.PackageVersion)
+			if seenPackages[pkgKey] {
+				continue
+			}
+			seenPackages[pkgKey] = true
+
+			// Clean up invalid CPE references from sbomnix
+			pkg.ExternalRefs = m.cleanExternalRefs(pkg.ExternalRefs)
+
+			mergedDoc.Packages = append(mergedDoc.Packages, pkg)
+
+			// Add relationship to system root
+			mergedDoc.Relationships = append(mergedDoc.Relationships, spdx.Relationship{
+				SPDXElementID:      "SPDXRef-System",
+				RelatedSPDXElement: pkg.SPDXID,
+				RelationshipType:   "CONTAINS",
+			})
+			totalCount++
+
+			_ = originalID // suppress unused warning
+		}
+	}
+
+	fmt.Printf("Merged %d unique Nix packages from %d sources\n", totalCount, len(nixPaths))
+
+	return mergedDoc, nil
+}
+
 func (m *Merger) loadDocument(path string) (*spdx.Document, error) {
+	return m.LoadDocument(path)
+}
+
+// LoadDocument loads an SPDX document from a file
+func (m *Merger) LoadDocument(path string) (*spdx.Document, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

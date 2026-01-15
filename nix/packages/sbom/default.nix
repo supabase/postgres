@@ -31,6 +31,18 @@ let
     export PATH="${sbomnix}/bin:$PATH"
     ${sbom}/bin/sbom combined "$@"
   '';
+
+  # Script to collect nix store paths from all user profile manifests
+  collect-nix-paths = pkgs.writeShellScriptBin "collect-nix-paths" ''
+    set -euo pipefail
+    USERS="adminapi envoy gotrue kong nginx pgbouncer postgres postgrest supabase-admin-agent ubuntu wal-g"
+    for user in $USERS; do
+      manifest="/home/$user/.nix-profile/manifest.json"
+      if [ -f "$manifest" ]; then
+        ${pkgs.jq}/bin/jq -r '.elements | to_entries[].value.storePaths[]' "$manifest" 2>/dev/null || true
+      fi
+    done | sort -u | grep -v '^$'
+  '';
 in
 {
   inherit
@@ -38,6 +50,7 @@ in
     sbom-ubuntu
     sbom-nix
     sbom-generator
+    collect-nix-paths
     sbomnix
     ;
 }

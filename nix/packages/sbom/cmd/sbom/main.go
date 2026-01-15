@@ -5,11 +5,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/supabase/postgres/nix/packages/sbom/internal/merge"
 	"github.com/supabase/postgres/nix/packages/sbom/internal/nix"
+	"github.com/supabase/postgres/nix/packages/sbom/internal/spdx"
 	"github.com/supabase/postgres/nix/packages/sbom/internal/ubuntu"
 )
+
+// stringSliceFlag allows multiple values for a single flag
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string {
+	return strings.Join(*s, ", ")
+}
+
+func (s *stringSliceFlag) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -91,12 +105,12 @@ func nixCommand(args []string) {
 	outputFile := fs.String("output", "nix-sbom.spdx.json", "Output file path")
 
 	fs.Usage = func() {
-		fmt.Println("Usage: sbom nix <derivation-path> [flags]")
+		fmt.Println("Usage: sbom nix <derivation-path> [derivation-path...] [flags]")
 		fmt.Println()
 		fmt.Println("Generate Nix-only SBOM using sbomnix")
 		fmt.Println()
 		fmt.Println("Arguments:")
-		fmt.Println("  derivation-path    Path to the Nix derivation (required)")
+		fmt.Println("  derivation-path    Path(s) to Nix derivation(s) (at least one required)")
 		fmt.Println()
 		fmt.Println("Flags:")
 		fs.PrintDefaults()
@@ -107,19 +121,26 @@ func nixCommand(args []string) {
 	}
 
 	if fs.NArg() < 1 {
-		fmt.Println("Error: derivation path required")
+		fmt.Println("Error: at least one derivation path required")
 		fmt.Println()
 		fs.Usage()
 		os.Exit(1)
 	}
 
-	derivationPath := fs.Arg(0)
-
 	// Use sbomnix from PATH
 	wrapper := nix.NewWrapper("sbomnix")
 
-	if err := wrapper.Generate(derivationPath, *outputFile); err != nil {
-		log.Fatalf("Failed to generate Nix SBOM: %v", err)
+	if fs.NArg() == 1 {
+		// Single path - use original method
+		if err := wrapper.Generate(fs.Arg(0), *outputFile); err != nil {
+			log.Fatalf("Failed to generate Nix SBOM: %v", err)
+		}
+	} else {
+		// Multiple paths - use new method
+		paths := fs.Args()
+		if err := wrapper.GenerateMultiple(paths, *outputFile); err != nil {
+			log.Fatalf("Failed to generate Nix SBOM: %v", err)
+		}
 	}
 
 	fmt.Printf("Nix SBOM generated successfully: %s\n", *outputFile)
@@ -127,14 +148,16 @@ func nixCommand(args []string) {
 
 func combinedCommand(args []string) {
 	fs := flag.NewFlagSet("combined", flag.ExitOnError)
-	nixTarget := fs.String("nix-target", "", "Path to Nix derivation (required)")
+	var nixTargets stringSliceFlag
+	fs.Var(&nixTargets, "nix-target", "Path to Nix derivation (can be specified multiple times)")
 	outputFile := fs.String("output", "merged-sbom.spdx.json", "Output file path")
 	includeFiles := fs.Bool("include-files", false, "Include file checksums for Ubuntu packages")
 	progress := fs.Bool("progress", true, "Show progress indicators")
 	noProgress := fs.Bool("no-progress", false, "Disable progress indicators")
+	nixOnly := fs.Bool("nix-only", false, "Generate Nix-only SBOM (skip Ubuntu packages)")
 
 	fs.Usage = func() {
-		fmt.Println("Usage: sbom combined --nix-target <derivation> [flags]")
+		fmt.Println("Usage: sbom combined --nix-target <derivation> [--nix-target <derivation>...] [flags]")
 		fmt.Println()
 		fmt.Println("Generate and merge both Ubuntu and Nix SBOMs")
 		fmt.Println()
@@ -146,8 +169,8 @@ func combinedCommand(args []string) {
 		os.Exit(1)
 	}
 
-	if *nixTarget == "" {
-		fmt.Println("Error: --nix-target is required")
+	if len(nixTargets) == 0 {
+		fmt.Println("Error: at least one --nix-target is required")
 		fmt.Println()
 		fs.Usage()
 		os.Exit(1)
@@ -162,33 +185,52 @@ func combinedCommand(args []string) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	ubuntuSBOM := fmt.Sprintf("%s/ubuntu-sbom.spdx.json", tmpDir)
+	merger := merge.NewMerger()
+	nixWrapper := nix.NewWrapper("sbomnix")
+
+	var ubuntuSBOM string
+	if !*nixOnly {
+		// Generate Ubuntu SBOM
+		fmt.Println("Generating Ubuntu SBOM...")
+		ubuntuSBOM = fmt.Sprintf("%s/ubuntu-sbom.spdx.json", tmpDir)
+		ubuntuGen := ubuntu.NewGenerator(*includeFiles, showProgress)
+		ubuntuDoc, err := ubuntuGen.Generate()
+		if err != nil {
+			log.Fatalf("Failed to generate Ubuntu SBOM: %v", err)
+		}
+		if err := ubuntuGen.Save(ubuntuDoc, ubuntuSBOM); err != nil {
+			log.Fatalf("Failed to save Ubuntu SBOM: %v", err)
+		}
+	}
+
+	// Generate Nix SBOM(s)
+	fmt.Printf("Generating Nix SBOM from %d target(s)...\n", len(nixTargets))
 	nixSBOM := fmt.Sprintf("%s/nix-sbom.spdx.json", tmpDir)
 
-	// Generate Ubuntu SBOM
-	fmt.Println("Generating Ubuntu SBOM...")
-	ubuntuGen := ubuntu.NewGenerator(*includeFiles, showProgress)
-	ubuntuDoc, err := ubuntuGen.Generate()
-	if err != nil {
-		log.Fatalf("Failed to generate Ubuntu SBOM: %v", err)
-	}
-	if err := ubuntuGen.Save(ubuntuDoc, ubuntuSBOM); err != nil {
-		log.Fatalf("Failed to save Ubuntu SBOM: %v", err)
-	}
-
-	// Generate Nix SBOM
-	fmt.Println("Generating Nix SBOM...")
-	nixWrapper := nix.NewWrapper("sbomnix")
-	if err := nixWrapper.Generate(*nixTarget, nixSBOM); err != nil {
-		log.Fatalf("Failed to generate Nix SBOM: %v", err)
+	if len(nixTargets) == 1 {
+		if err := nixWrapper.Generate(nixTargets[0], nixSBOM); err != nil {
+			log.Fatalf("Failed to generate Nix SBOM: %v", err)
+		}
+	} else {
+		if err := nixWrapper.GenerateMultiple([]string(nixTargets), nixSBOM); err != nil {
+			log.Fatalf("Failed to generate Nix SBOM: %v", err)
+		}
 	}
 
 	// Merge SBOMs
 	fmt.Println("Merging SBOMs...")
-	merger := merge.NewMerger()
-	mergedDoc, err := merger.Merge(ubuntuSBOM, nixSBOM)
-	if err != nil {
-		log.Fatalf("Failed to merge SBOMs: %v", err)
+	var mergedDoc *spdx.Document
+	if *nixOnly {
+		// Load and output Nix SBOM directly
+		mergedDoc, err = merger.LoadDocument(nixSBOM)
+		if err != nil {
+			log.Fatalf("Failed to load Nix SBOM: %v", err)
+		}
+	} else {
+		mergedDoc, err = merger.Merge(ubuntuSBOM, nixSBOM)
+		if err != nil {
+			log.Fatalf("Failed to merge SBOMs: %v", err)
+		}
 	}
 
 	if err := merger.Save(mergedDoc, *outputFile); err != nil {

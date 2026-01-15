@@ -244,6 +244,36 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
+      - name: Assume SBOM artifacts role
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-region: ap-southeast-1
+          role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
+          role-session-name: shared-services-jump
+
+      - name: Upload comprehensive SBOM to shared artifacts
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          aws-region: ap-southeast-1
+          role-to-assume: arn:aws:iam::279559813984:role/supabase-sbom-artifacts-role
+          role-skip-session-tagging: true
+          role-session-name: upload-sbom
+          role-chaining: true
+
+      - name: Upload SBOM
+        run: |
+          VERSION="${{ steps.process_release_version.outputs.version }}"
+
+          # Check if comprehensive SBOM exists (generated during AMI build)
+          if [ -f "nix-sbom.spdx.json" ]; then
+            aws s3 cp nix-sbom.spdx.json \
+              "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/sbom/${VERSION}/sbom.spdx.json" \
+              --content-type "application/json"
+            echo "::notice title=SBOM Uploaded::Comprehensive SBOM for ${VERSION} uploaded to shared artifacts"
+          else
+            echo "::warning title=SBOM Missing::Comprehensive SBOM file not found, skipping upload"
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:

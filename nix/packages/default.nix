@@ -47,6 +47,7 @@
             sbom-ubuntu
             sbom-nix
             sbom-generator
+            collect-nix-paths
             sbomnix
             ;
 
