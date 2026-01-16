@@ -4,7 +4,9 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+      pname
+    }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -12,20 +14,22 @@ let
       majorVersion = lib.versions.major postgresql.version;
       pkg = pkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
-        paths =
-          [
-            postgresql
-            postgresql.lib
-            (installedExtension majorVersion)
-            (self.legacyPackages.${pkgs.system}."psql_${majorVersion}".exts.postgis)
-          ]
-          ++ lib.optional (postgresql.isOrioleDB) (
-            self.legacyPackages.${pkgs.system}."psql_orioledb-17".exts.orioledb
-          );
+        paths = [
+          postgresql
+          postgresql.lib
+          (installedExtension majorVersion)
+          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.postgis)
+        ]
+        ++ lib.optional (postgresql.isOrioleDB) (
+          self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb
+        );
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [ (installedExtension majorVersion) ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -42,7 +46,7 @@ let
     in
     pkg;
   pg_regress = pkgs.callPackage ../pg_regress.nix {
-    postgresql = self.packages.${pkgs.system}.postgresql_15;
+    postgresql = self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
   };
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
@@ -69,12 +73,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+        package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
       };
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
+          package = lib.mkForce (
+            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
+          );
         };
 
         systemd.services.postgresql-migrate = {
@@ -88,8 +94,12 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              oldPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+              oldPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+              newPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in
@@ -113,7 +123,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       specialisation.orioledb17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+          package = lib.mkForce (
+            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
+          );
           settings = {
             shared_preload_libraries = "orioledb";
             default_table_access_method = "orioledb";
@@ -141,7 +153,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+              newPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
               set -x

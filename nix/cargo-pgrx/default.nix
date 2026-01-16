@@ -1,6 +1,5 @@
 {
   lib,
-  darwin,
   fetchCrate,
   openssl,
   pkg-config,
@@ -34,9 +33,7 @@ let
       src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
       nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
-      buildInputs =
-        lib.optionals stdenv.hostPlatform.isLinux [ openssl ]
-        ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+      buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ openssl ];
 
       OPENSSL_DIR = "${openssl.dev}";
       OPENSSL_INCLUDE_DIR = "${openssl.dev}/include";
@@ -73,17 +70,17 @@ in
   cargo-pgrx_0_12_6 = mkCargoPgrx {
     version = "0.12.6";
     hash = "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=";
-    cargoHash = "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w=";
+    cargoHash = "sha256-pnMxWWfvr1/AEp8DvG4awig8zjdHizJHoZ5RJA8CL08=";
   };
   cargo-pgrx_0_12_9 = mkCargoPgrx {
     version = "0.12.9";
     hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
-    cargoHash = "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY=";
+    cargoHash = "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc=";
   };
   cargo-pgrx_0_14_3 = mkCargoPgrx {
     version = "0.14.3";
     hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
-    cargoHash = "sha256-Ny7j56pwB+2eEK62X0nWfFKQy5fBz+Q1oyvecivxLkk=";
+    cargoHash = "sha256-LZUXhjMxkBs3O5feH4X5NQC7Qk4Ja6M5+sAYaSCikrY=";
   };
   inherit mkCargoPgrx;
 }

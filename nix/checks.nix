@@ -2,10 +2,10 @@
 {
   perSystem =
     {
-      lib,
       self',
       system,
       pkgs,
+      lib,
       ...
     }:
     let

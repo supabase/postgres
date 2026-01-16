@@ -4,7 +4,9 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+      pname
+    }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -16,12 +18,15 @@ let
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          (self.legacyPackages.${pkgs.system}."psql_${majorVersion}".exts.pgsodium) # dependency
+          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.pgsodium) # dependency
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [ (installedExtension majorVersion) ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -42,8 +47,8 @@ let
       echo 0000000000000000000000000000000000000000000000000000000000000000
     ''
   );
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;

@@ -39,7 +39,8 @@ let
         "-DREGRESS_CHECKS=OFF"
         "-DTAP_CHECKS=OFF"
         "-DAPACHE_ONLY=1"
-      ] ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
+      ]
+      ++ lib.optionals stdenv.isDarwin [ "-DLINTER=OFF" ];
 
       postPatch = ''
         for x in CMakeLists.txt sql/CMakeLists.txt; do
@@ -107,6 +108,7 @@ let
       EXT_LOADER_TO_USE="$EXT_WRAPPER_LIB/$EXT_NAME-loader-$VERSION${postgresql.dlSuffix}"
       if [ -f "$EXT_LOADER_TO_USE" ]; then
         ln -sfnv "$EXT_LOADER_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME${postgresql.dlSuffix}"
+        ln -sfnv "$EXT_LOADER_TO_USE" "$EXT_WRAPPER_LIB/$EXT_NAME-loader${postgresql.dlSuffix}"
       fi
     '';
   };
@@ -123,6 +125,9 @@ buildEnv {
 
     # Create symlink from the latest versioned loader to timescaledb.so
     ln -sfn ${pname}-loader-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    # Create symlink for timescaledb-loader.so (used by background worker tests)
+    ln -sfn ${pname}-loader-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}-loader${postgresql.dlSuffix}
 
     # The versioned extension libraries (timescaledb-VERSION.so) are already in place
 
@@ -142,6 +147,7 @@ buildEnv {
   passthru = {
     inherit versions numberOfVersions switch-ext-version;
     hasBackgroundWorker = true;
+    libName = "timescaledb-loader";
     defaultSettings = {
       shared_preload_libraries = [ "timescaledb" ];
     };

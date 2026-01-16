@@ -40,9 +40,19 @@ After=network-online.target systemd-resolved.service
 Wants=postgresql.service
 After=postgresql.service
 
-# Lower start limit ival and burst to prevent the noisy flapping
-StartLimitIntervalSec=10
-StartLimitBurst=5
+# The systemd default is 10s / 5 for these values with a DefaultRestartUSec of
+# 100ms. Most services set a RestartSec limit of 3, under most circumstances it
+# takes 15s to restart 5 times so the limit of 10s is not exceeded. However if
+# other system processes (salt, cloud init) restart it explicitly, or recovering
+# system services within the --before chain trigger a restart the limit can be
+# exceeded causing it to be marked as failed. Since no services mark
+# gotrue.service as required it will remain offline until the next explicit
+# restart is issued.
+#
+# Setting these values to 0 with Restart=always and RestartSec=3 will prevent
+# gotrue from being marked as failed.
+StartLimitIntervalSec=0
+StartLimitBurst=0
 
 [Service]
 Type=exec

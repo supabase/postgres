@@ -36,21 +36,20 @@ stdenv.mkDerivation (finalAttrs: {
     pkg-config
     makeWrapper
   ];
-  buildInputs =
-    [
-      rapidjson
-      xxHash
-      zstd
-      mecab
-      kytea
-      msgpack-c
-    ]
-    ++ lib.optionals lz4Support [ lz4 ]
-    ++ lib.optional zlibSupport [ zlib ]
-    ++ lib.optionals suggestSupport [
-      zeromq
-      libevent
-    ];
+  buildInputs = [
+    rapidjson
+    xxHash
+    zstd
+    mecab
+    kytea
+    msgpack-c
+  ]
+  ++ lib.optionals lz4Support [ lz4 ]
+  ++ lib.optional zlibSupport [ zlib ]
+  ++ lib.optionals suggestSupport [
+    zeromq
+    libevent
+  ];
   cmakeFlags = [
     "-DWITH_MECAB=ON"
     "-DMECAB_DICDIR=${mecab-naist-jdic}/lib/mecab/dic/naist-jdic"

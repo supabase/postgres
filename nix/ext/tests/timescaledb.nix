@@ -4,7 +4,9 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+      pname
+    }";
   versions = (installedExtension "15").versions;
   postgresqlWithExtension =
     postgresql:
@@ -19,8 +21,11 @@ let
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [ (installedExtension majorVersion) ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -36,7 +41,7 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = "timescaledb";
@@ -85,12 +90,12 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       support_upgrade = True
       sql_test_directory = Path("${../../tests}")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, "public", "timescaledb-loader")
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
 
       with subtest("Test switch_${pname}_version"):
-        test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+        test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/timescaledb-loader.so"), "15")
     '';
 }

@@ -295,6 +295,12 @@ orioledb_config_items() {
 
 # Apply OrioleDB configuration if needed
 orioledb_config_items "$VERSION"
+
+# Fix archive_command for macOS (Darwin doesn't have /bin/true, use /usr/bin/true instead)
+if [[ "$CURRENT_SYSTEM" == *"-darwin" ]]; then
+    perl -pi -e "s|archive_command = '/bin/true'|archive_command = '/usr/bin/true'|" "$DATDIR/postgresql.conf"
+fi
+
 # Configure Groonga
 export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 
