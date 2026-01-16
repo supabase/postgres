@@ -716,9 +716,9 @@ def test_pam_postgresql_config(host):
                 perms = result["stdout"].strip()
                 print(f"PAM config permissions: {perms}")
                 # Should be owned by postgres:postgres with 664 permissions
-                assert (
-                    "postgres postgres" in perms
-                ), "PAM config not owned by postgres:postgres"
+                assert "postgres postgres" in perms, (
+                    "PAM config not owned by postgres:postgres"
+                )
         else:
             print("\nPAM config file not found")
             assert False, "PAM configuration file /etc/pam.d/postgresql not found"
