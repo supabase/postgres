@@ -508,6 +508,8 @@ $(cat /etc/postgresql/pg_hba.conf)" > /etc/postgresql/pg_hba.conf
     --new-datadir=${PGDATANEW} \
     --username=supabase_admin \
     --jobs="${WORKERS}" -r \
+    --swap \
+    --sync-method=fsync \
     --old-options="-c config_file=$TMP_CONFIG" \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
