@@ -220,6 +220,7 @@ let
             server.succeed(
               f"{pg17_configuration}/bin/switch-to-configuration test >&2"
             )
+            server.wait_for_unit("postgresql.service")
             has_update_script = server.succeed(
               "test -f /var/lib/postgresql/update_extensions.sql && echo 'yes' || echo 'no'"
             ).strip() == "yes"
