@@ -1,0 +1,24 @@
+name: Update Flake Lock
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  update-flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Update flake.lock
+        uses: Mic92/update-flake-inputs@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-labels: |
+            dependencies
+            automated
