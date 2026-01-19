@@ -22,7 +22,11 @@ let
 
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
-  latestVersion = lib.last versions;
+  latestVersion =
+    assert lib.assertMsg (
+      versions != [ ]
+    ) "pgtap: no supported versions for PostgreSQL ${lib.versions.major postgresql.version}";
+    lib.last versions;
   numberOfVersions = builtins.length versions;
   packages = builtins.attrValues (
     lib.mapAttrs (name: value: build name value.hash) supportedVersions
@@ -64,10 +68,18 @@ let
         mkdir -p $out/{lib,share/postgresql/extension}
 
         # Create version-specific control file
-        ext="$out/lib/${pname}-${version}${postgresql.dlSuffix}"
-        sed -e "/^default_version =/d" \
-            -e "s|^module_pathname = .*|module_pathname = '$ext'|" \
-          ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+        if [[ -f src/pgtap${postgresql.dlSuffix} ]]; then
+          # For versions with shared library, set module_pathname
+          ext="$out/lib/${pname}-${version}${postgresql.dlSuffix}"
+          sed -e "/^default_version =/d" \
+              -e "s|^module_pathname = .*|module_pathname = '$ext'|" \
+            ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+        else
+          # For SQL-only versions, remove module_pathname line entirely
+          sed -e "/^default_version =/d" \
+              -e "/^module_pathname =/d" \
+            ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+        fi
 
         # Copy SQL file to install the specific version
         cp sql/${pname}--${version}.sql $out/share/postgresql/extension
