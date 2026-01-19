@@ -94,7 +94,6 @@ let
         ]);
 
       postInstall = ''
-        find $out
         mv $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
         create_control_files() {
