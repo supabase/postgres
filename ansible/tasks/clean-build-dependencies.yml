@@ -19,3 +19,41 @@
       - patch
       - python2
     state: 'absent'
+
+# Security hardening: remove packages that increase attack surface
+# - Compiler toolchain enables local exploit compilation
+# - Dev packages provide headers for building exploits
+# - salt-minion is a remote management agent (large attack surface)
+# - sshpass stores credentials in plaintext
+- name: Remove high-security-risk packages
+  ansible.builtin.apt:
+    autoremove: true
+    pkg:
+      # Compiler toolchain
+      - binutils
+      - binutils-aarch64-linux-gnu
+      - binutils-common
+      - gcc-14-base
+      # Dev/header packages
+      - libc6-dev
+      - libcrypt-dev
+      - libevent-dev
+      - libpcre3-dev
+      - libssl-dev
+      - libsystemd-dev
+      - linux-headers-aws
+      - linux-libc-dev
+      - pkg-config
+      - pkgconf
+      - pkgconf-bin
+      - rpcsvc-proto
+      - systemd-dev
+      - zlib1g-dev
+      # Remote management (if not used)
+      - salt-minion
+      - salt-common
+      # Credential handling
+      - sshpass
+      # Build tool leftovers
+      - ansible-core
+    state: 'absent'
