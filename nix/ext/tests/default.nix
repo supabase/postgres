@@ -16,7 +16,9 @@ let
 
       installedExtension =
         postgresMajorVersion:
-        self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+        self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+          pname
+        }";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
       postgresqlWithExtension =
         postgresql:
@@ -51,8 +53,8 @@ let
           };
         in
         pkg;
-      psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
     in
     self.inputs.nixpkgs.lib.nixos.runTest {
       name = pname;
@@ -154,6 +156,7 @@ let
             "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
           }
           extension_name = "${pname}"
+          support_upgrade = ${if support_upgrade then "True" else "False"}
           pg17_configuration = "${pg17-configuration}"
           ext_has_background_worker = ${
             if support_upgrade && (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
@@ -171,9 +174,7 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, ${
-            if support_upgrade then "True" else "False"
-          }, ext_schema, lib_name)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
           test.create_schema()
 
           with subtest("Check upgrade path with postgresql 15"):

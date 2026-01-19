@@ -155,6 +155,27 @@
         path: '/var/lib/postgresql/.nix-profile/bin/'
       register: 'nix_links'
 
+    - name: setup gatekeeper
+      block:
+        - name: Check if psql_version is psql_15
+          ansible.builtin.set_fact:
+            is_psql_15: "{{ psql_version == 'psql_15' }}"
+
+        - name: Install gatekeeper if not pg15
+          when:
+            - stage2_nix
+            - not is_psql_15
+          block:
+            - name: Install gatekeeper from nix binary cache
+              become: yes
+              shell: |
+                sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#gatekeeper"
+
+            - name: Create symbolic link for linux-pam to find pam_jit_pg.so
+              become: yes
+              shell: |
+                sudo ln -s /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
+
     - name: Create symlinks for Nix files into /usr/lib/postgresql/bin
       ansible.builtin.file:
         group: 'postgres'

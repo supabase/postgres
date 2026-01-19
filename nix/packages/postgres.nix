@@ -102,8 +102,16 @@
               dbExtensions17
             else
               ourExtensions;
+          extCallPackage = pkgs.lib.callPackageWith (
+            pkgs
+            // {
+              inherit postgresql;
+              switch-ext-version = extCallPackage ./switch-ext-version.nix { };
+              overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
+            }
+          );
         in
-        map (path: pkgs.callPackage path { inherit postgresql; }) extensionsToUse;
+        map (path: extCallPackage path { }) extensionsToUse;
 
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
@@ -136,12 +144,13 @@
         version:
         let
           postgresql = getPostgresqlPackage version;
+          postgres-pkgs = makeOurPostgresPkgs version;
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
-          }) (makeOurPostgresPkgs version);
+          }) postgres-pkgs;
 
-          pgbin = postgresql.withPackages (_ps: makeOurPostgresPkgs version);
+          pgbin = postgresql.withPackages (_ps: postgres-pkgs);
         in
         pkgs.symlinkJoin {
           inherit (pgbin) name version;

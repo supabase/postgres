@@ -3,9 +3,8 @@ Description=AdminAPI
 Requires=network-online.target
 After=network-online.target
 
-# Move this to the Service section if on systemd >=250
-StartLimitIntervalSec=60
-StartLimitBurst=10
+StartLimitIntervalSec=0
+StartLimitBurst=0
 
 [Service]
 Type=simple

@@ -46,7 +46,7 @@ service:
   cron:
     enabled: true
     running: true
-  database-optimizations:
+  database_optimizations:
     enabled: false
     running: false
   dbus:
