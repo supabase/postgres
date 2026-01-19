@@ -72,9 +72,9 @@ let
         # Copy SQL file to install the specific version
         cp sql/${pname}--${version}.sql $out/share/postgresql/extension
 
-        if [[ -f src/pgtap.so ]]; then
+        if [[ -f src/pgtap${postgresql.dlSuffix} ]]; then
           # Install the shared library with version suffix
-          install -Dm755 src/pgtap.so $out/lib/${pname}-${version}${postgresql.dlSuffix}
+          install -Dm755 src/pgtap${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
         fi
 
         # For the latest version, create default control file and symlink and copy SQL upgrade scripts
