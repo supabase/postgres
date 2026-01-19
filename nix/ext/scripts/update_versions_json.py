@@ -22,18 +22,32 @@ def run(cmd: List[str]) -> str:
 def get_tags(url: str) -> Dict[str, str]:
     output = run(["git", "ls-remote", "--tags", url])
     tags: Dict[str, str] = {}
+    peeled_tags: Dict[str, str] = {}
+
+    # First pass: collect both normal and peeled entries
     for line in output.splitlines():
-        if "^{}" not in line:
-            parts = line.split("\t")
-            if len(parts) == 2:
-                commit_hash, ref = parts
-                if ref.startswith("refs/tags/"):
+        parts = line.split("\t")
+        if len(parts) == 2:
+            commit_hash, ref = parts
+            if ref.startswith("refs/tags/"):
+                if ref.endswith("^{}"):
+                    # This is a peeled tag (commit hash for annotated tag)
+                    tag = ref.removeprefix("refs/tags/").removesuffix("^{}")
+                    peeled_tags[tag] = commit_hash
+                else:
+                    # Regular tag entry
                     tag = ref.removeprefix("refs/tags/")
                     try:
                         parse_version(tag)
                     except InvalidVersion:
                         continue
                     tags[tag] = commit_hash
+
+    # Second pass: prefer peeled commit hashes when available
+    for tag, commit_hash in tags.items():
+        if tag in peeled_tags:
+            tags[tag] = peeled_tags[tag]
+
     return tags
 
 
