@@ -64,6 +64,7 @@ let
         mkdir -p $out/{lib,share/postgresql/extension}
 
         # Create version-specific control file
+        ext="$out/lib/${pname}-${version}${postgresql.dlSuffix}"
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '$ext'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
