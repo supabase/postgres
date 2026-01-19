@@ -177,8 +177,15 @@ let
           test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
           test.create_schema()
 
-          with subtest("Check upgrade path with postgresql 15"):
-            test.check_upgrade_path("15")
+          ${
+            if support_upgrade then
+              ''
+                with subtest("Check upgrade path with postgresql 15"):
+                  test.check_upgrade_path("15")
+              ''
+            else
+              ""
+          }
 
           ${
             if run_pg_regress then
@@ -216,8 +223,15 @@ let
           with subtest("Check last version of the extension after postgresql upgrade"):
             test.assert_version_matches(last_version)
 
-          with subtest("Check upgrade path with postgresql 17"):
-            test.check_upgrade_path("17")
+          ${
+            if support_upgrade then
+              ''
+                with subtest("Check upgrade path with postgresql 17"):
+                  test.check_upgrade_path("17")
+              ''
+            else
+              ""
+          }
 
           ${
             if run_pg_regress then
