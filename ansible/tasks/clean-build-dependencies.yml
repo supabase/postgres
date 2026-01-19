@@ -29,11 +29,10 @@
   ansible.builtin.apt:
     autoremove: true
     pkg:
-      # Compiler toolchain
+      # Compiler toolchain (gcc-14-base kept - libgcc-s1 runtime depends on it)
       - binutils
       - binutils-aarch64-linux-gnu
       - binutils-common
-      - gcc-14-base
       # Dev/header packages
       - libc6-dev
       - libcrypt-dev
