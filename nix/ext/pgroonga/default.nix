@@ -57,7 +57,8 @@ let
         msgpack-c
         supabase-groonga
         mecab
-      ] ++ lib.optionals stdenv.isDarwin [ xxHash ];
+      ]
+      ++ lib.optionals stdenv.isDarwin [ xxHash ];
 
       propagatedBuildInputs = [
         supabase-groonga

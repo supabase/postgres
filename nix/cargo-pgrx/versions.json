@@ -3,7 +3,7 @@
     "hash": "sha256-O4eHVbJBudybsPab+zr2eXnfheREMqLAHAKm2GDbfrs=",
     "rust": {
       "1.82.0": {
-        "cargoHash": "sha256-MucGrA3qXgJOcT2LMNmoNOhQi8QA3LuqgZEHKycLCCo="
+        "cargoHash": "sha256-lcnUVO8dJET5g6wM1YgTsj4uP4I3vVZy5PWBKIsvLB8="
       }
     }
   },
@@ -11,7 +11,7 @@
     "hash": "sha256-t/gdlrBeP6KFkBFJiZUa8KKVJVYMf6753vQGKJdytss=",
     "rust": {
       "1.82.0": {
-        "cargoHash": "sha256-muce9wT4LAJmfNLWWEShARnpZgglXe/KrfxlitmGgXk="
+        "cargoHash": "sha256-bLS/pKJnwgcp38wAHej6vOkzVb/E2UHRCQ/OMDI6GqU="
       }
     }
   },
@@ -19,7 +19,7 @@
     "hash": "sha256-GpXQUOBuojAqPXyRR+k8AVW2XzBbn6V0+2dhP4w4Vs8=",
     "rust": {
       "1.70.0": {
-        "cargoHash": "sha256-YbwGh3tbt8W9/VOu11fTWO9fRMUlrwJnG4wxUHuyX10="
+        "cargoHash": "sha256-TGeHOA5kRZ7KclRfYj6V+/ZbPiPx/4xUyKxNm4o7ubM="
       }
     }
   },
@@ -27,7 +27,7 @@
     "hash": "sha256-uDBq7tUZ9f8h5nlRFR1mv4+Ty1OFtAk5P7OTNQPI1gI=",
     "rust": {
       "1.70.0": {
-        "cargoHash": "sha256-YTkjqMNF+cz5XtELh7+l8KwvRoVKQP7t98nkJwkW218="
+        "cargoHash": "sha256-uc1/zWMLt5U0egsf3xu/5RxouSl0m+81qY+ZZd8BSxU="
       }
     }
   },
@@ -35,10 +35,10 @@
     "hash": "sha256-FqjfbJmSy5UCpPPPk4bkEyvQCnaH9zYtkI7txgIn+ls=",
     "rust": {
       "1.70.0": {
-        "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
+        "cargoHash": "sha256-VlxXXSwegKGYIO3r3XtclwdtkJNz4r5H35Tkkw0nl9c="
       },
       "1.76.0": {
-        "cargoHash": "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI="
+        "cargoHash": "sha256-VlxXXSwegKGYIO3r3XtclwdtkJNz4r5H35Tkkw0nl9c="
       }
     }
   },
@@ -46,13 +46,13 @@
     "hash": "sha256-8NlpMDFaltTIA8G4JioYm8LaPJ2RGKH5o6sd6lBHmmM=",
     "rust": {
       "1.70.0": {
-        "cargoHash": "sha256-qTb3JV3u42EilaK2jP9oa5D09mkuHyRbGGRs9Rg4TzI="
+        "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
       },
       "1.76.0": {
-        "cargoHash": "sha256-qTb3JV3u42EilaK2jP9oa5D09mkuHyRbGGRs9Rg4TzI="
+        "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
       },
       "1.85.1": {
-        "cargoHash": "sha256-CbU5B0pvB9ApTZOdYP/ZwuIG8bqGzk/ING2PCM0q2bQ="
+        "cargoHash": "sha256-TMuJ7kyMckCT4JJVWuEE14HpD5uw3Vjym96GA71vOMo="
       }
     }
   },
@@ -60,10 +60,10 @@
     "hash": "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=",
     "rust": {
       "1.76.0": {
-        "cargoHash": "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw="
+        "cargoHash": "sha256-giL077I5VzWJ+fAbxqp/Oc28Qjc7ontVm7of5LQz+uY="
       },
       "1.85.1": {
-        "cargoHash": "sha256-KBlT3FARjGcbtHIGDoC6ir3aNXXfDRmIoy990SOqoFg="
+        "cargoHash": "sha256-giL077I5VzWJ+fAbxqp/Oc28Qjc7ontVm7of5LQz+uY="
       }
     }
   },
@@ -71,10 +71,10 @@
     "hash": "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=",
     "rust": {
       "1.80.0": {
-        "cargoHash": "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w="
+        "cargoHash": "sha256-pnMxWWfvr1/AEp8DvG4awig8zjdHizJHoZ5RJA8CL08="
       },
       "1.81.0": {
-        "cargoHash": "sha256-Di4UldQwAt3xVyvgQT1gUhdvYUVp7n/a72pnX45kP0w="
+        "cargoHash": "sha256-pnMxWWfvr1/AEp8DvG4awig8zjdHizJHoZ5RJA8CL08="
       }
     }
   },
@@ -82,13 +82,13 @@
     "hash": "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=",
     "rust": {
       "1.81.0": {
-        "cargoHash": "sha256-53HKhvsKLTa2JCByLEcK3UzWXoM+LTatd98zvS1C9no="
+        "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
       },
       "1.84.0": {
-        "cargoHash": "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY="
+        "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
       },
       "1.87.0": {
-        "cargoHash": "sha256-KTKcol9qSNLQZGW32e6fBb6cPkUGItknyVpLdBYqrBY="
+        "cargoHash": "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc="
       }
     }
   },
@@ -96,7 +96,7 @@
     "hash": "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=",
     "rust": {
       "1.87.0": {
-        "cargoHash": "sha256-Ny7j56pwB+2eEK62X0nWfFKQy5fBz+Q1oyvecivxLkk="
+        "cargoHash": "sha256-LZUXhjMxkBs3O5feH4X5NQC7Qk4Ja6M5+sAYaSCikrY="
       }
     }
   },
@@ -104,7 +104,7 @@
     "hash": "sha256-emNR7fXNVD9sY/Mdno7mwpH6l/7AD28cBUsFRn9je50=",
     "rust": {
       "1.87.0": {
-        "cargoHash": "sha256-pK6OxRNubcWhohLvIJIliRtaHSIQOhQp7Q9brPygZYA="
+        "cargoHash": "sha256-3eyBDWDoCzSU0tbab8qbjSnBkkN0oOgd7YbuyHLEHYw="
       }
     }
   },
@@ -112,9 +112,8 @@
     "hash": "sha256-AjoBr+/sEPdzbD0wLUNVm2syCySkGaFOFQ70TST1U9w=",
     "rust": {
       "1.88.0": {
-        "cargoHash": "sha256-uWj/V2lJa6HF2GlHX+i5RbSMZFOxZsBzOf6okKDb0j8="
+        "cargoHash": "sha256-95DHq5GLnAqb3bbKwwaeBeKEmkfRh81ZTRaJ7L59DAg="
       }
     }
   }
-
 }

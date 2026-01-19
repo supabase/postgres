@@ -4,6 +4,9 @@ Documentation=https://vector.dev
 After=network-online.target
 Requires=network-online.target
 
+StartLimitIntervalSec=0
+StartLimitBurst=0
+
 [Service]
 User=vector
 Group=vector

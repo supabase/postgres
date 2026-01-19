@@ -1,14 +1,12 @@
 {
   pkgs,
-  inputs,
   lib,
   fetchFromGitHub,
   installShellFiles,
   ...
 }:
 let
-  go124 = inputs.nixpkgs-go124.legacyPackages.${pkgs.system}.go_1_24;
-  buildGoModule = pkgs.buildGoModule.override { go = go124; };
+  buildGoModule = pkgs.buildGoModule;
 in
 buildGoModule rec {
   pname = "packer";
@@ -31,11 +29,6 @@ buildGoModule rec {
   ];
 
   nativeBuildInputs = [ installShellFiles ];
-
-  buildInputs = lib.optionals pkgs.stdenv.isDarwin [
-    pkgs.darwin.apple_sdk.frameworks.IOKit
-    pkgs.darwin.apple_sdk.frameworks.Security
-  ];
 
   postInstall = ''
     installShellCompletion --zsh contrib/zsh-completion/_packer

@@ -19,6 +19,10 @@
         in
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
+      supascan-pkgs = pkgs.callPackage ./supascan.nix {
+        inherit (pkgs) lib;
+        inherit inputs;
+      };
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
@@ -37,19 +41,19 @@
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
-          supabase-groonga = pkgs.callPackage ./groonga { };
+          gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
+          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
-          pg-backrest = inputs.nixpkgs-pgbackrest.legacyPackages.${pkgs.system}.pgbackrest;
+          pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
-          sfcgal = pkgs.callPackage ./sfcgal.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
@@ -73,6 +77,7 @@
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pkgs.cargo-pgrx)
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6

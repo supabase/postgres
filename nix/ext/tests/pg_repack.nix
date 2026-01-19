@@ -4,7 +4,9 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+      pname
+    }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -19,8 +21,11 @@ let
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [ (installedExtension majorVersion) ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -58,7 +63,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
+        package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
         enableTCPIP = true;
         authentication = ''
           local all postgres peer map=postgres
@@ -80,7 +85,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17);
+          package = lib.mkForce (
+            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
+          );
         };
 
         systemd.services.postgresql-migrate = {
@@ -94,8 +101,12 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              oldPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+              oldPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+              newPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in

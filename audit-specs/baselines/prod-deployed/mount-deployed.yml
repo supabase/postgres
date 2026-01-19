@@ -1,0 +1,219 @@
+# Mount baseline
+# Generated from baseline.yml - 23 items
+mount:
+  /:
+    exists: true
+    filesystem: ext4
+    opts:
+    - rw
+    - relatime
+    - discard
+  /boot/efi:
+    exists: true
+    filesystem: vfat
+    opts:
+    - rw
+    - relatime
+    - fmask=0077
+    - dmask=0077
+    - codepage=437
+    - iocharset=iso8859-1
+    - shortname=mixed
+    - errors=remount-ro
+  /data:
+    exists: true
+    filesystem: ext4
+    opts:
+    - rw
+    - relatime
+    - discard
+  /dev:
+    exists: true
+    filesystem: devtmpfs
+    opts:
+    - rw
+    - nosuid
+    - relatime
+    - mode=755
+    - inode64
+  /dev/hugepages:
+    exists: true
+    filesystem: hugetlbfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - relatime
+    - pagesize=2M
+  /dev/mqueue:
+    exists: true
+    filesystem: mqueue
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /dev/pts:
+    exists: true
+    filesystem: devpts
+    opts:
+    - rw
+    - nosuid
+    - noexec
+    - relatime
+    - gid=5
+    - mode=620
+    - ptmxmode=000
+  /dev/shm:
+    exists: true
+    filesystem: tmpfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - inode64
+  /proc:
+    exists: true
+    filesystem: proc
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /proc/sys/fs/binfmt_misc:
+    exists: true
+    filesystem: binfmt_misc
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /run:
+    exists: true
+    filesystem: tmpfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+    - mode=755
+    - inode64
+  /run/lock:
+    exists: true
+    filesystem: tmpfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+    - inode64
+  /run/user/1007:
+    exists: true
+    filesystem: tmpfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - relatime
+    - mode=700
+    - uid=1007
+    - gid=1013
+    - inode64
+  /sys:
+    exists: true
+    filesystem: sysfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/firmware/efi/efivars:
+    exists: true
+    filesystem: efivarfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/fs/bpf:
+    exists: true
+    filesystem: bpf
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+    - mode=700
+  /sys/fs/cgroup:
+    exists: true
+    filesystem: cgroup2
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+    - nsdelegate
+    - memory_recursiveprot
+  /sys/fs/fuse/connections:
+    exists: true
+    filesystem: fusectl
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/fs/pstore:
+    exists: true
+    filesystem: pstore
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/kernel/config:
+    exists: true
+    filesystem: configfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/kernel/debug:
+    exists: true
+    filesystem: debugfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/kernel/security:
+    exists: true
+    filesystem: securityfs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime
+  /sys/kernel/tracing:
+    exists: true
+    filesystem: tracefs
+    opts:
+    - rw
+    - nosuid
+    - nodev
+    - noexec
+    - relatime

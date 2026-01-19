@@ -2,10 +2,10 @@
 {
   perSystem =
     {
-      lib,
       self',
       system,
       pkgs,
+      lib,
       ...
     }:
     let
@@ -394,6 +394,8 @@
             dbmate-tool
             packer
             pg_regress
+            goss
+            supascan
             ;
         }
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (

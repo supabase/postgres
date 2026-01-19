@@ -6,7 +6,7 @@
     # want to have an arbitrary order, since it might matter. being
     # explicit is better.
 
-    inherit (self.packages.${final.system})
+    inherit (self.packages.${final.stdenv.hostPlatform.system})
       postgresql_15
       postgresql_17
       postgresql_orioledb-17
@@ -19,7 +19,6 @@
 
     cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
       inherit (final) lib;
-      inherit (final) darwin;
       inherit (final) fetchCrate;
       inherit (final) openssl;
       inherit (final) pkg-config;

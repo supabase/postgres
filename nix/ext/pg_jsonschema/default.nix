@@ -6,7 +6,6 @@
   fetchFromGitHub,
   postgresql,
   rust-bin,
-  darwin,
 }:
 let
   pname = "pg_jsonschema";
@@ -43,12 +42,9 @@ let
           "";
 
       nativeBuildInputs = [ cargo ];
-      buildInputs = [
-        postgresql
-      ] ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.SystemConfiguration ];
+      buildInputs = [ postgresql ];
       # update the following array when the pg_jsonschema version is updated
       # required to ensure that extensions update scripts from previous versions are generated
-
       previousVersions = [
         "0.3.1"
         "0.3.0"
@@ -84,7 +80,17 @@ let
         cargo pgrx init --pg${lib.versions.major postgresql.version} $PGRX_HOME/${lib.versions.major postgresql.version}/bin/pg_config
       '';
 
-      doCheck = true;
+      # Tests are disabled for specific versions because pgrx tests require
+      # `cargo pgrx install --test` which fails in the nix sandbox due to
+      # write permission restrictions. Unlike pg_graphql which has a custom
+      # installcheck script, pg_jsonschema only has pgrx cargo tests.
+      # See: https://github.com/supabase/pg_jsonschema/blob/v0.3.3/src/lib.rs#L45-L195
+      doCheck =
+        !(builtins.elem version [
+          "0.2.0"
+          "0.3.1"
+          "0.3.3"
+        ]);
 
       preBuild = ''
         echo "Processing git tags..."

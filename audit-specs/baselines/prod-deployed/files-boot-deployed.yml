@@ -1,0 +1,21 @@
+# File baseline: boot
+# Generated from baseline.yml - 3 files
+file:
+  /boot/efi/EFI/BOOT/BOOTAA64.EFI:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /boot/efi/EFI/supabase/grubaa64.efi:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0700'
+    owner: '0'
+  /boot/grub:
+    exists: true
+    filetype: directory
+    group: '0'
+    mode: '0755'
+    owner: '0'

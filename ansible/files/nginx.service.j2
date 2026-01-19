@@ -3,6 +3,9 @@ Description=nginx server
 After=postgrest.service gotrue.service adminapi.service
 Wants=postgrest.service gotrue.service adminapi.service
 
+StartLimitIntervalSec=0
+StartLimitBurst=0
+
 [Service]
 Type=forking
 ExecStart=/usr/local/nginx/sbin/nginx -c /etc/nginx/nginx.conf
