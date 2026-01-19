@@ -44,7 +44,7 @@ def get_tags(url: str) -> Dict[str, str]:
                     tags[tag] = commit_hash
 
     # Second pass: prefer peeled commit hashes when available
-    for tag, commit_hash in tags.items():
+    for tag, _ in tags.items():
         if tag in peeled_tags:
             tags[tag] = peeled_tags[tag]
 
