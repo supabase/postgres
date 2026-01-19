@@ -43,6 +43,24 @@ let
       fi
     done | sort -u | grep -v '^$'
   '';
+
+  # Combined wrapper that collects paths from profiles and generates SBOM
+  sbom-from-profiles = pkgs.writeShellScriptBin "sbom-from-profiles" ''
+    set -euo pipefail
+    OUTPUT="''${1:-/tmp/nix-sbom.spdx.json}"
+
+    # Collect store paths from user profiles
+    PATHS=$(${collect-nix-paths}/bin/collect-nix-paths)
+
+    # Build --nix-target arguments
+    ARGS=""
+    while IFS= read -r path; do
+      [ -n "$path" ] && ARGS="$ARGS --nix-target $path"
+    done <<< "$PATHS"
+
+    # Generate combined SBOM
+    ${sbom-generator}/bin/sbom-generator $ARGS --output "$OUTPUT"
+  '';
 in
 {
   inherit
@@ -50,6 +68,7 @@ in
     sbom-ubuntu
     sbom-nix
     sbom-generator
+    sbom-from-profiles
     collect-nix-paths
     sbomnix
     ;

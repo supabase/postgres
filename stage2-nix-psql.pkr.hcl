@@ -128,4 +128,11 @@ build {
      script = "scripts/nix-provision.sh"
   }
 
+  # Download SBOM from AMI to runner
+  provisioner "file" {
+    source      = "/tmp/nix-sbom.spdx.json"
+    destination = "nix-sbom.spdx.json"
+    direction   = "download"
+  }
+
 }

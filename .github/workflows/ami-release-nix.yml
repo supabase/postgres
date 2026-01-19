@@ -242,14 +242,14 @@ jobs:
         run: |
           VERSION="${{ steps.process_release_version.outputs.version }}"
 
-          # Check if comprehensive SBOM exists (generated during AMI build)
           if [ -f "nix-sbom.spdx.json" ]; then
             aws s3 cp nix-sbom.spdx.json \
               "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/sbom/${VERSION}/sbom.spdx.json" \
               --content-type "application/json"
             echo "::notice title=SBOM Uploaded::Comprehensive SBOM for ${VERSION} uploaded to shared artifacts"
           else
-            echo "::warning title=SBOM Missing::Comprehensive SBOM file not found, skipping upload"
+            echo "::error title=SBOM Missing::SBOM file not found - build cannot proceed without SBOM"
+            exit 1
           fi
 
       - name: Create release
