@@ -12,7 +12,9 @@ let
       inherit (pkgs) lib;
       installedExtension =
         postgresMajorVersion:
-        self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+        self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+          pname
+        }";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
       postgresqlWithExtension =
         postgresql:
@@ -29,6 +31,9 @@ let
               inherit (postgresql) version psqlSchema;
               lib = pkg;
               withPackages = _: pkg;
+              withJIT = pkg;
+              withoutJIT = pkg;
+              installedExtensions = [ (installedExtension majorVersion) ];
             };
             nativeBuildInputs = [ pkgs.makeWrapper ];
             pathsToLink = [
@@ -44,8 +49,8 @@ let
           };
         in
         pkg;
-      psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
     in
     self.inputs.nixpkgs.lib.nixos.runTest {
       name = pname;
@@ -165,7 +170,7 @@ let
           server.wait_for_unit("multi-user.target")
           server.wait_for_unit("postgresql.service")
 
-          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema)
+          test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
           test.create_schema()
 
           with subtest("Check upgrade path with postgresql 15"):

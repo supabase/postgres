@@ -12,7 +12,7 @@ let
   pname = "pgrouting";
 
   # Load version configuration from external file
-  allVersions = (builtins.fromJSON (builtins.readFile ./versions.json)).${pname};
+  allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).${pname};
 
   # Filter versions compatible with current PostgreSQL version
   supportedVersions = lib.filterAttrs (
@@ -49,18 +49,24 @@ let
         inherit hash;
       };
 
+      patches = lib.optionals (version == "3.4.1" && lib.versionAtLeast postgresql.version "17") [
+        ./pgrouting-3.4.1-pg17.patch
+      ];
+
       #disable compile time warnings for incompatible pointer types only on macos and pg16
       NIX_CFLAGS_COMPILE = lib.optionalString (
         stdenv.isDarwin && lib.versionAtLeast postgresql.version "16"
       ) "-Wno-error=int-conversion -Wno-error=incompatible-pointer-types";
 
-      cmakeFlags =
-        [ "-DPOSTGRESQL_VERSION=${postgresql.version}" ]
-        ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
-          "-DCMAKE_MACOSX_RPATH=ON"
-          "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
-          "-DCMAKE_SHARED_LIBRARY_SUFFIX=.dylib"
-        ];
+      cmakeFlags = [
+        "-DPOSTGRESQL_VERSION=${postgresql.version}"
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+      ]
+      ++ lib.optionals (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") [
+        "-DCMAKE_MACOSX_RPATH=ON"
+        "-DCMAKE_SHARED_MODULE_SUFFIX=.dylib"
+        "-DCMAKE_SHARED_LIBRARY_SUFFIX=.dylib"
+      ];
 
       preConfigure = lib.optionalString (stdenv.isDarwin && lib.versionAtLeast postgresql.version "16") ''
         export DLSUFFIX=.dylib

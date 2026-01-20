@@ -32,7 +32,6 @@
   pkg-config,
   rustPlatform,
   stdenv,
-  darwin,
   writeShellScriptBin,
   defaultBindgenHook,
 }:
@@ -86,6 +85,27 @@ let
   fakeRustfmt = writeShellScriptBin "rustfmt" ''
     exit 0
   '';
+
+  # Rustc wrapper for pgrx < 0.12.0 to filter out empty postmaster_stub.rs arguments
+  # This fixes an issue that causes build failures.
+  # Fixed upstream in pgcentralfoundation/pgrx#1435 and #1441, available from pgrx >= 0.12.
+  rustcWrapper = writeShellScriptBin "rustc" ''
+    # ORIGINAL_RUSTC is set in the buildPhase before this wrapper is added to PATH
+    original_rustc="''${ORIGINAL_RUSTC:-rustc}"
+    filtered_args=()
+    for arg in "$@"; do
+      if [[ -z "$arg" ]]; then
+        continue
+      fi
+      if [[ "$arg" =~ postmaster_stub\.rs$ ]]; then
+        if [[ ! -s "$arg" ]]; then
+          continue
+        fi
+      fi
+      filtered_args+=("$arg")
+    done
+    exec "$original_rustc" "''${filtered_args[@]}"
+  '';
   maybeDebugFlag = lib.optionalString (buildType != "release") "--debug";
   maybeEnterBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) ''
     export CARGO_TARGET_DIR="$(pwd)/target"
@@ -93,6 +113,10 @@ let
   '';
   maybeLeaveBuildAndTestSubdir = lib.optionalString (buildAndTestSubdir != null) "popd";
   pgrxBinaryName = if builtins.compareVersions "0.7.4" cargo-pgrx.version >= 0 then "pgx" else "pgrx";
+
+  # The rustc wrapper is only needed for pgrx < 0.12.0
+  # fixed upstream in pgcentralfoundation/pgrx#1435 and #1441
+  needsRustcWrapper = builtins.compareVersions cargo-pgrx.version "0.12.0" < 0;
 
   pgrxPostgresMajor = lib.versions.major postgresql.version;
   preBuildAndTest = ''
@@ -124,9 +148,7 @@ let
   # so we don't accidentally `(rustPlatform.buildRustPackage argsForBuildRustPackage) // { ... }` because
   # we forgot parentheses
   finalArgs = argsForBuildRustPackage // {
-    buildInputs =
-      (args.buildInputs or [ ])
-      ++ lib.optionals stdenv.hostPlatform.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+    buildInputs = (args.buildInputs or [ ]);
 
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
@@ -147,6 +169,13 @@ let
 
       export PGRX_BUILD_FLAGS="--frozen -j $NIX_BUILD_CORES ${builtins.concatStringsSep " " cargoBuildFlags}"
       export PGX_BUILD_FLAGS="$PGRX_BUILD_FLAGS"
+
+      ${lib.optionalString needsRustcWrapper ''
+        export ORIGINAL_RUSTC="$(command -v ${stdenv.cc.targetPrefix}rustc || command -v rustc)"
+        export PATH="${rustcWrapper}/bin:$PATH"
+        export RUSTC="${rustcWrapper}/bin/rustc"
+      ''}
+
       ${lib.optionalString stdenv.hostPlatform.isDarwin ''RUSTFLAGS="''${RUSTFLAGS:+''${RUSTFLAGS} }-Clink-args=-Wl,-undefined,dynamic_lookup"''} \
       cargo ${pgrxBinaryName} package \
         --pg-config ${lib.getDev postgresql}/bin/pg_config \
