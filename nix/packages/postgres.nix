@@ -158,6 +158,10 @@
             pgbin
             (makeReceipt pgbin ourExts)
           ];
+          passthru = postgresql.passthru // {
+            withPackages = f: postgresql.withPackages f;
+            installedExtensions = postgres-pkgs;
+          };
         };
 
       # Create an attribute set, containing all the relevant packages for a
