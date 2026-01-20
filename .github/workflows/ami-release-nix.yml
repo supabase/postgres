@@ -216,6 +216,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run publish-nix-pgupgrade-scripts.yml \
+            --ref "${{ github.ref_name }}" \
             -f postgresVersion="${{ steps.process_release_version.outputs.version }}"
 
       - name: Trigger pg_upgrade_bin flake version workflow
@@ -223,6 +224,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh workflow run publish-nix-pgupgrade-bin-flake-version.yml \
+            --ref "${{ github.ref_name }}" \
             -f postgresVersion="${{ steps.process_release_version.outputs.version }}"
 
       - name: Slack Notification on Failure
