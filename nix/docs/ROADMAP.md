@@ -33,15 +33,13 @@ graph TD
 
     %% multi-versions
     1678[#1678 support multiple versions of the pg_tap extension]
-    1921[#1921 support multiple versions of the supautils extension]
     1748[#1748 add older versions of the wrappers extension]
 
     subgraph multi-versions["multi-versions"]
-        1748 --> 1921 --> 1678
+        1748 --> 1678
     end
 
     click 1678 "https://github.com/supabase/postgres/pull/1678" "Open PR #1678"
-    click 1921 "https://github.com/supabase/postgres/pull/1921" "Open PR #1921"
     click 1748 "https://github.com/supabase/postgres/pull/1748" "Open PR #1748"
 
     %% gh workflow
@@ -80,7 +78,6 @@ graph TD
 
     %% testing
     1906[#1906 DRY extensions NixOS test]
-    1921[#1921 support multiple versions of the supautils extension]
     1896[#1896 handle pg_upgrade generated update_extensions.sql script]
     1897[#1897 test pg_upgrade compatibility with older extension version]
     1889[#1889 test extensions with OrioleDB]
@@ -94,7 +91,6 @@ graph TD
     click 1897 "https://github.com/supabase/postgres/pull/1897" "Open PR #1897"
     click 1889 "https://github.com/supabase/postgres/pull/1889" "Open PR #1889"
     click 1865 "https://github.com/supabase/postgres/pull/1865" "Open PR #1865"
-    click 1921 "https://github.com/supabase/postgres/pull/1921" "Open PR #1921"
     click 1977 "https://github.com/supabase/postgres/pull/1977" "Open PR #1877"
     click 1978 "https://github.com/supabase/postgres/pull/1978" "Open PR #1978"
     click 1989 "https://github.com/supabase/postgres/pull/1889" "Open PR #1989"
@@ -110,7 +106,7 @@ graph TD
     1910[#1910 add branch based versioning for PR AMI builds]
     click 1910 "https://github.com/supabase/postgres/pull/1910" "Open PR #1910"
 
-    1978 --> 1748 --> 1977 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910 --> 1678 --> 1921 --> 1865 --> 1989
+    1978 --> 1748 --> 1977 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910 --> 1678 --> 1865 --> 1989
 ```
 
 Here is a another view focusing on the system-manager PRs:
