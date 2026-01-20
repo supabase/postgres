@@ -33,7 +33,7 @@ let
               (installedExtension majorVersion)
             ]
             ++ lib.optional (postgresql.isOrioleDB
-            ) self.legacyPackages.${pkgs.system}.psql_orioledb-17.exts.orioledb;
+            ) self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
             passthru = {
               inherit (postgresql) version psqlSchema;
               lib = pkg;
@@ -57,7 +57,7 @@ let
         in
         pkg;
       psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-      psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+      psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
       orioledb_17 =
         postgresqlWithExtension
           self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
@@ -152,7 +152,9 @@ let
 
           specialisation.orioledb17.configuration = {
             services.postgresql = {
-              package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+              package = lib.mkForce (
+                postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
+              );
               settings = lib.mkForce (
                 ((installedExtension "17").defaultSettings or { })
                 // {
@@ -187,11 +189,15 @@ let
               };
               script =
                 let
-                  newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+                  newPostgresql =
+                    postgresqlWithExtension
+                      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
                 in
                 ''
-                  set -x
-                  systemctl cat postgresql.service
+                  if [[ -z "${newPostgresql.psqlSchema}" ]]; then
+                    echo "Error: psqlSchema is empty, refusing to rm -rf"
+                    exit 1
+                  fi
                   rm -rf ${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}
                 '';
             };
@@ -311,6 +317,7 @@ let
                   )
                   installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
                   assert "orioledb" in installed_extensions
+                  test.create_schema()
 
                 with subtest("Check upgrade path with orioledb 17"):
                   test.check_upgrade_path("orioledb-17")

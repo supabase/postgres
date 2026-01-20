@@ -21,7 +21,7 @@ let
           (installedExtension majorVersion)
         ]
         ++ lib.optional (postgresql.isOrioleDB
-        ) self.legacyPackages.${pkgs.system}.psql_orioledb-17.exts.orioledb;
+        ) self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
         passthru = {
           inherit (postgresql) version psqlSchema;
           installedExtensions = [ (installedExtension majorVersion) ];
@@ -44,9 +44,11 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
-  orioledb_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+  orioledb_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
@@ -70,6 +72,21 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       services.postgresql = {
         enable = true;
         package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+        settings = (installedExtension "15").defaultSettings or { };
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
         initialScript = pkgs.writeText "init-postgres" ''
           CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
           INSERT INTO test_config (key, value) VALUES ('http_mock_port', '8880') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
@@ -91,6 +108,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           package = lib.mkForce (
             postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
           );
+          settings = ((installedExtension "17").defaultSettings or { });
         };
 
         systemd.services.postgresql-migrate = {
@@ -133,7 +151,9 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       specialisation.orioledb17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+          package = lib.mkForce (
+            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
+          );
           settings = lib.mkForce (
             ((installedExtension "17").defaultSettings or { })
             // {
@@ -172,11 +192,15 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+              newPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
-              set -x
-              systemctl cat postgresql.service
+              if [[ -z "${newPostgresql.psqlSchema}" ]]; then
+                echo "Error: psqlSchema is empty, refusing to rm -rf"
+                exit 1
+              fi
               rm -rf ${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}
             '';
         };
@@ -205,11 +229,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         }],
       }
       extension_name = "${pname}"
+      support_upgrade = True
       ext_has_background_worker = ${
         if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
       }
       sql_test_directory = Path("${../../tests}")
       pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+      ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
+      lib_name = "${(installedExtension "15").libName or pname}"
 
       ${builtins.readFile ./lib.py}
 
@@ -218,7 +245,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory)
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
+      test.create_schema()
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
@@ -232,7 +260,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       if ext_has_background_worker:
         with subtest("Test switch_${pname}_version"):
-          test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+          test.check_switch_extension_with_background_worker(Path(f"${psql_15}/lib/{lib_name}.so"), "15")
 
       with subtest("Check pg_regress with postgresql 15 after installing the last version"):
         test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
@@ -263,6 +291,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         )
         installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
         assert "orioledb" in installed_extensions
+        test.create_schema()
 
       with subtest("Check upgrade path with orioledb 17"):
         test.check_upgrade_path("orioledb-17")

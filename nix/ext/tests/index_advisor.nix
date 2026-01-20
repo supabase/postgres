@@ -69,6 +69,20 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         enable = true;
         package = psql_15;
         enableTCPIP = true;
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
         settings = (installedExtension "15").defaultSettings or { };
       };
 
@@ -77,6 +91,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce psql_17;
+          settings = (installedExtension "17").defaultSettings or { };
         };
 
         systemd.services.postgresql-migrate = {
@@ -150,11 +165,15 @@ self.inputs.nixpkgs.lib.nixos.runTest {
           };
           script =
             let
-              newPostgresql = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+              newPostgresql =
+                postgresqlWithExtension
+                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
-              set -x
-              systemctl cat postgresql.service
+              if [[ -z "${newPostgresql.psqlSchema}" ]]; then
+                echo "Error: psqlSchema is empty, refusing to rm -rf"
+                exit 1
+              fi
               rm -rf ${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}
             '';
         };
@@ -179,11 +198,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "orioledb-17"))}],
       }
       extension_name = "${pname}"
+      support_upgrade = True
       ext_has_background_worker = ${
         if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
       }
       sql_test_directory = Path("${../../tests}")
       pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+      ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
+      lib_name = "${(installedExtension "15").libName or pname}"
 
       ${builtins.readFile ./lib.py}
 
@@ -192,7 +214,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory)
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
+      test.create_schema()
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
@@ -206,7 +229,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       if ext_has_background_worker:
         with subtest("Test switch_${pname}_version"):
-          test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
+          test.check_switch_extension_with_background_worker(Path(f"${psql_15}/lib/{lib_name}.so"), "15")
 
       with subtest("Check pg_regress with postgresql 15 after installing the last version"):
         test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
@@ -237,11 +260,16 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         )
         installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
         assert "orioledb" in installed_extensions
+        test.create_schema()
 
       with subtest("Check upgrade path with orioledb 17"):
         test.check_upgrade_path("orioledb-17")
 
-      #FIXME: pg_regress tests are failing with orioledb:
+      # NOTE: pg_regress tests are currently disabled for OrioleDB due to compatibility issues
+      # The standard pg_regress test framework does not currently work with OrioleDB's
+      # specialized storage engine, causing test failures that need investigation.
+      #
+      # TODO: Re-enable once OrioleDB pg_regress compatibility is resolved
       # with subtest("Check pg_regress with orioledb 17 after installing the last version"):
       #   test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
     '';
