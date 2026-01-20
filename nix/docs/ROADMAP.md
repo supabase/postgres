@@ -77,34 +77,30 @@ Based on this graph, I propose the following order for merging PRs:
 ```mermaid
 graph TD
     %% nixpkgs update
-    1866[#1866 consolidate flake inputs by adding missing follows declarations]
-    1714[#1714 Update nixpkgs]
-
-    click 1866 "https://github.com/supabase/postgres/pull/1866" "Open PR #1866"
-    click 1714 "https://github.com/supabase/postgres/pull/1714" "Open PR #1714"
 
     %% testing
     1906[#1906 DRY extensions NixOS test]
     1896[#1896 handle pg_upgrade generated update_extensions.sql script]
     1897[#1897 test pg_upgrade compatibility with older extension version]
     1889[#1889 test extensions with OrioleDB]
+    1865[#1865 feat pg_repack: use default nixos extension test]
 
     click 1906 "https://github.com/supabase/postgres/pull/1906" "Open PR #1906"
     click 1896 "https://github.com/supabase/postgres/pull/1896" "Open PR #1896"
     click 1897 "https://github.com/supabase/postgres/pull/1897" "Open PR #1897"
     click 1889 "https://github.com/supabase/postgres/pull/1889" "Open PR #1889"
+    click 1865 "https://github.com/supabase/postgres/pull/1865" "Open PR #1865"
 
     %% multi-versions
     1748[#1748 add older versions of the wrappers extension]
+    1678[#1678 support multiple versions of the pg_tap extension]
 
     click 1748 "https://github.com/supabase/postgres/pull/1748" "Open PR #1748"
+    click 1678 "https://github.com/supabase/postgres/pull/1678" "Open PR #1678"
 
     %% gh workflow
     1910[#1910 add branch based versioning for PR AMI builds]
-    1745[#1745 Custom GitHub runners for Nix builds]
-
     click 1910 "https://github.com/supabase/postgres/pull/1910" "Open PR #1910"
-    click 1745 "https://github.com/supabase/postgres/pull/1745" "Open PR #1745"
 
-    1866 --> 1745 --> 1714 --> 1748 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910
+    1748 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910 --> 1678 --> 1865
 ```
