@@ -80,16 +80,24 @@ graph TD
 
     %% testing
     1906[#1906 DRY extensions NixOS test]
+    1921[#1921 support multiple versions of the supautils extension]
     1896[#1896 handle pg_upgrade generated update_extensions.sql script]
     1897[#1897 test pg_upgrade compatibility with older extension version]
     1889[#1889 test extensions with OrioleDB]
     1865[#1865 feat pg_repack: use default nixos extension test]
+    1977[#1977 improve devshell experience]
+    1978[#1978 chore: add monthly flake.lock inputs update workflow]
+    1989[#1989 feat: enable nixosTest on aarch64 darwin]
 
     click 1906 "https://github.com/supabase/postgres/pull/1906" "Open PR #1906"
     click 1896 "https://github.com/supabase/postgres/pull/1896" "Open PR #1896"
     click 1897 "https://github.com/supabase/postgres/pull/1897" "Open PR #1897"
     click 1889 "https://github.com/supabase/postgres/pull/1889" "Open PR #1889"
     click 1865 "https://github.com/supabase/postgres/pull/1865" "Open PR #1865"
+    click 1921 "https://github.com/supabase/postgres/pull/1921" "Open PR #1921"
+    click 1977 "https://github.com/supabase/postgres/pull/1977" "Open PR #1877"
+    click 1978 "https://github.com/supabase/postgres/pull/1978" "Open PR #1978"
+    click 1989 "https://github.com/supabase/postgres/pull/1889" "Open PR #1989"
 
     %% multi-versions
     1748[#1748 add older versions of the wrappers extension]
@@ -102,5 +110,29 @@ graph TD
     1910[#1910 add branch based versioning for PR AMI builds]
     click 1910 "https://github.com/supabase/postgres/pull/1910" "Open PR #1910"
 
-    1748 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910 --> 1678 --> 1865
+    1978 --> 1748 --> 1977 --> 1906 --> 1896 --> 1897 --> 1889 --> 1910 --> 1678 --> 1921 --> 1865 --> 1989
 ```
+
+Here is a another view focusing on the system-manager PRs:
+
+```mermaid
+graph TD
+    %% system-manager
+
+    1746[#1746 Add tests for ansible and system manager modules]
+    1786[#1786 feat: configure postgresql using system-manager for testing]
+    1787[#1787 feat: deploy gotrue using system manager]
+    2166[#2166 feat: add a nix default package and developer shell for gotrue]
+    1769[#1769 feat: deploy logrotate using system manager]
+    1796[#1796 feat: deploy pgbouncer using system manager]
+
+    click 1746 "https://github.com/supabase/postgres/pull/1746" "Open PR #1746"
+    click 1786 "https://github.com/supabase/postgres/pull/1786" "Open PR #1786"
+    click 1787 "https://github.com/supabase/postgres/pull/1787" "Open PR #1787"
+    click 2166 "https://github.com/supabase/auth/pull/2166" "Open PR #2166"
+    click 1769 "https://github.com/supabase/postgres/pull/1769" "Open PR #1769"
+    click 1796 "https://github.com/supabase/postgres/pull/1796" "Open PR #1796"
+
+    1746 --> 1786 --> 2166 --> 1787 --> 1769 --> 1796
+```
+
