@@ -10,7 +10,11 @@ output-cloudimg/packer-cloudimg: ansible qemu-arm64-nix.pkr.hcl
 alpine-image: output-cloudimg/packer-cloudimg
 	sudo nerdctl build . -t supabase-postgres-test:$(GIT_SHA) -f ./Dockerfile-kubernetes
 
+# Build minimal Alpine-based image
+minimal-image:
+	docker build -f Dockerfile-alpine-minimal -t supabase/postgres:minimal .
+
 clean:
 	rm -rf output-cloudimg
 
-.PHONY: alpine-image init clean
+.PHONY: alpine-image init clean minimal-image

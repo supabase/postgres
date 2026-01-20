@@ -1,0 +1,546 @@
+# syntax=docker/dockerfile:1.6
+#
+# Minimal Supabase Postgres Docker Image (Alpine-based)
+#
+# This Dockerfile builds a minimal PostgreSQL image with only the extensions
+# required for PostgREST (Supabase Data API) and GoTrue (Supabase Auth).
+#
+# Key optimization: The database is pre-initialized during the Docker build,
+# so containers start with an already-configured database for faster boot times.
+#
+# Required extensions:
+#   - supautils: Security and role management for PostgREST
+#   - pgsodium: Encryption for GoTrue
+#   - vault: Secrets management for GoTrue
+#   - pgjwt: JWT generation/verification for GoTrue
+#
+# Usage:
+#   docker build -f Dockerfile-alpine-minimal -t supabase/postgres:minimal .
+#
+# Note: This image uses Alpine Linux (musl libc) for a smaller footprint.
+# Extensions are built natively on Alpine for compatibility.
+
+# Build arguments
+ARG POSTGRES_VERSION=17
+
+# Extension versions (hardcoded for PoC - matching repo versions for PostgreSQL 17)
+ARG SUPAUTILS_VERSION=3.0.1
+ARG PGSODIUM_VERSION=3.1.8
+ARG VAULT_VERSION=0.3.1
+ARG PGJWT_VERSION=0.2.0
+
+# ====================
+# Stage 1: Build extensions on Alpine
+# Extensions must be built on Alpine (musl) for compatibility with Alpine runtime
+# ====================
+FROM postgres:${POSTGRES_VERSION}-alpine AS builder
+
+ARG POSTGRES_VERSION
+ARG SUPAUTILS_VERSION
+ARG PGSODIUM_VERSION
+ARG VAULT_VERSION
+ARG PGJWT_VERSION
+
+# Install build dependencies for Alpine
+# Note: clang19 and llvm19 are required because postgres:17-alpine is built with JIT support
+# The postgres PGXS build system will try to compile .bc (bitcode) files for JIT
+# icu-dev is required for supautils (uses PostgreSQL's ICU-dependent locale functions)
+RUN apk add --no-cache \
+    build-base \
+    ca-certificates \
+    clang19 \
+    git \
+    icu-dev \
+    libsodium-dev \
+    llvm19-dev
+
+# Create extension build directory
+WORKDIR /build
+
+# Build pgjwt (uses commit hash, not version tag)
+RUN git clone --depth 1 https://github.com/michelp/pgjwt.git && \
+    cd pgjwt && \
+    git checkout f3d82fd30151e754e19ce5d6a06c71c20689ce3d && \
+    make && make install && \
+    cd .. && rm -rf pgjwt
+
+# Build pgsodium
+RUN git clone --depth 1 --branch v${PGSODIUM_VERSION} https://github.com/michelp/pgsodium.git && \
+    cd pgsodium && \
+    make && make install && \
+    cd .. && rm -rf pgsodium
+
+# Build vault (depends on pgsodium)
+RUN git clone --depth 1 --branch v${VAULT_VERSION} https://github.com/supabase/vault.git && \
+    cd vault && \
+    make && make install && \
+    cd .. && rm -rf vault
+
+# Build supautils
+RUN git clone --depth 1 --branch v${SUPAUTILS_VERSION} https://github.com/supabase/supautils.git && \
+    cd supautils && \
+    make && make install && \
+    cd .. && rm -rf supautils
+
+# ====================
+# Stage 2: Initialize database with all migrations
+# Run Postgres, apply all migrations, then snapshot the data directory
+# ====================
+FROM postgres:${POSTGRES_VERSION}-alpine AS initializer
+
+ARG POSTGRES_VERSION
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    icu-libs \
+    libsodium \
+    musl-locales
+
+# Copy built extensions from builder
+COPY --from=builder /usr/local/share/postgresql/extension/ /usr/local/share/postgresql/extension/
+COPY --from=builder /usr/local/lib/postgresql/ /usr/local/lib/postgresql/
+
+# Create required directories
+RUN mkdir -p \
+    /etc/postgresql-custom/extension-custom-scripts \
+    /etc/postgresql-custom/conf.d \
+    /docker-entrypoint-initdb.d \
+    /usr/local/lib/postgresql/bin \
+    && chown -R postgres:postgres /etc/postgresql-custom
+
+# Copy configuration files
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts/pgsodium /etc/postgresql-custom/extension-custom-scripts/pgsodium
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts/supabase_vault /etc/postgresql-custom/extension-custom-scripts/supabase_vault
+COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/local/lib/postgresql/bin/pgsodium_getkey.sh
+
+# Configure PostgreSQL
+RUN chmod +x /usr/local/lib/postgresql/bin/pgsodium_getkey.sh && \
+    sed -i \
+    -e "s|shared_preload_libraries = '.*'|shared_preload_libraries = 'pg_stat_statements, plpgsql, pgsodium, supabase_vault, supautils'|g" \
+    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/local/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo "vault.getkey_script= '/usr/local/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf
+
+# Remove extensions not available in minimal builds from config
+RUN sed -i \
+    -e 's/ timescaledb,//g' \
+    -e 's/ plv8,//g' \
+    -e 's/ pgroonga,//g' \
+    -e 's/ postgis,//g' \
+    -e 's/ pgrouting,//g' \
+    -e 's/ wal2json,//g' \
+    -e 's/ pg-safeupdate,//g' \
+    -e 's/ pg_cron,//g' \
+    -e 's/ pg_net,//g' \
+    -e 's/ pg_graphql,//g' \
+    -e 's/ pgmq,//g' \
+    -e 's/ pg_repack,//g' \
+    -e 's/ pg_tle,//g' \
+    -e 's/ dblink,//g' \
+    -e 's/ postgres_fdw,//g' \
+    "/etc/postgresql/postgresql.conf" 2>/dev/null || true && \
+    sed -i \
+    -e 's/ timescaledb,//g' \
+    -e 's/ plv8,//g' \
+    -e 's/ pgroonga,//g' \
+    -e 's/ postgis,//g' \
+    -e 's/ pgrouting,//g' \
+    -e 's/ wal2json,//g' \
+    -e 's/ pg-safeupdate,//g' \
+    -e 's/ pg_cron,//g' \
+    -e 's/ pg_net,//g' \
+    -e 's/ pg_graphql,//g' \
+    -e 's/ pgmq,//g' \
+    -e 's/ pg_repack,//g' \
+    -e 's/ pg_tle,//g' \
+    -e 's/ dblink,//g' \
+    -e 's/ postgres_fdw,//g' \
+    "/etc/postgresql-custom/supautils.conf" 2>/dev/null || true
+
+# Disable deprecated settings
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g' "/etc/postgresql/postgresql.conf" 2>/dev/null || true
+
+# Set up pgsodium key script symlink
+RUN ln -sf /usr/local/lib/postgresql/bin/pgsodium_getkey.sh /usr/local/share/postgresql/extension/pgsodium_getkey
+
+# Copy all init scripts and migrations to a staging directory (not entrypoint)
+# We'll run these manually during the build
+RUN mkdir -p /init-scripts
+
+# Core setup - extensions
+COPY ansible/files/stat_extension.sql /init-scripts/01-extension.sql
+
+# Init scripts - roles, schemas, permissions
+COPY migrations/db/init-scripts/00000000000000-initial-schema.sql /init-scripts/10-initial-schema.sql
+COPY migrations/db/init-scripts/00000000000001-auth-schema.sql /init-scripts/11-auth-schema.sql
+COPY migrations/db/init-scripts/00000000000003-post-setup.sql /init-scripts/12-post-setup.sql
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /init-scripts/13-pgbouncer-schema.sql
+
+# Migrations - all required for PostgREST and GoTrue
+COPY migrations/db/migrations/20211115181400_update-auth-permissions.sql /init-scripts/20-update-auth-permissions.sql
+COPY migrations/db/migrations/20211124212715_update-auth-owner.sql /init-scripts/21-update-auth-owner.sql
+COPY migrations/db/migrations/20220126121436_finer-postgrest-triggers.sql /init-scripts/22-finer-postgrest-triggers.sql
+COPY migrations/db/migrations/20220224211803_fix-postgrest-supautils.sql /init-scripts/23-fix-postgrest-supautils.sql
+COPY migrations/db/migrations/20220321174452_fix-postgrest-alter-type-event-trigger.sql /init-scripts/24-fix-postgrest-alter-type-event-trigger.sql
+COPY migrations/db/migrations/20220322085208_gotrue-session-limit.sql /init-scripts/25-gotrue-session-limit.sql
+COPY migrations/db/migrations/20220609081115_grant-supabase-auth-admin-and-supabase-storage-admin-to-postgres.sql /init-scripts/26-grant-auth-storage-admin.sql
+COPY migrations/db/migrations/20230201083204_grant_auth_roles_to_postgres.sql /init-scripts/27-grant-auth-roles-to-postgres.sql
+COPY migrations/db/migrations/20230327032006_grant_auth_roles_to_supabase_storage_admin.sql /init-scripts/28-grant-auth-roles-to-storage-admin.sql
+COPY migrations/db/migrations/20231013070755_grant_authenticator_to_supabase_storage_admin.sql /init-scripts/29-grant-authenticator-to-storage-admin.sql
+COPY migrations/db/migrations/20221207154255_create_pgsodium_and_vault.sql /init-scripts/30-create-pgsodium-and-vault.sql
+COPY migrations/db/migrations/20250218031949_pgsodium_mask_role.sql /init-scripts/31-pgsodium-mask-role.sql
+COPY migrations/db/migrations/20221028101028_set_authenticator_timeout.sql /init-scripts/32-set-authenticator-timeout.sql
+COPY migrations/db/migrations/20221103090837_revoke_admin.sql /init-scripts/33-revoke-admin.sql
+COPY migrations/db/migrations/20230224042246_grant_extensions_perms_for_postgres.sql /init-scripts/34-grant-extensions-perms.sql
+COPY migrations/db/migrations/20230306081037_grant_pg_monitor_to_postgres.sql /init-scripts/35-grant-pg-monitor.sql
+COPY migrations/db/migrations/20230529180330_alter_api_roles_for_inherit.sql /init-scripts/36-alter-api-roles-inherit.sql
+COPY migrations/db/migrations/20231130133139_set_lock_timeout_to_authenticator_role.sql /init-scripts/37-set-lock-timeout-authenticator.sql
+COPY migrations/db/migrations/20240606060239_grant_predefined_roles_to_postgres.sql /init-scripts/38-grant-predefined-roles.sql
+COPY migrations/db/migrations/20250312095419_pgbouncer_ownership.sql /init-scripts/39-pgbouncer-ownership.sql
+COPY migrations/db/migrations/20250417190610_update_pgbouncer_get_auth.sql /init-scripts/40-update-pgbouncer-get-auth.sql
+COPY migrations/db/migrations/20251121132723_correct_search_path_pgbouncer.sql /init-scripts/41-correct-search-path-pgbouncer.sql
+COPY migrations/db/migrations/20250402065937_alter_internal_event_triggers_owner_to_supabase_admin.sql /init-scripts/90-alter-event-triggers-owner.sql
+COPY migrations/db/migrations/20250421084701_revoke_admin_roles_from_postgres.sql /init-scripts/91-revoke-admin-roles.sql
+COPY migrations/db/migrations/10000000000000_demote-postgres.sql /init-scripts/99-demote-postgres.sql
+
+# Create the initialization script that runs all migrations
+# This script:
+# 1. Initializes the data directory
+# 2. Starts Postgres with local trust auth
+# 3. Creates required roles
+# 4. Runs all migration scripts in order
+# 5. Sets default passwords
+# 6. Stops Postgres cleanly
+COPY --chmod=755 <<'INITSCRIPT' /init-database.sh
+#!/bin/sh
+set -e
+
+PGDATA="/var/lib/postgresql/data"
+POSTGRES_USER="supabase_admin"
+POSTGRES_DB="postgres"
+
+echo "=== Starting database initialization ==="
+
+# Initialize the database cluster with trust auth for local connections
+echo "Initializing PostgreSQL data directory..."
+initdb -D "$PGDATA" \
+    --username="$POSTGRES_USER" \
+    --encoding=UTF8 \
+    --locale=en_US.UTF-8 \
+    --auth-local=trust \
+    --auth-host=trust
+
+# Create a temporary pg_hba.conf that allows all local connections without password
+# This is only used during build - the final image uses the proper pg_hba.conf
+cat > "$PGDATA/pg_hba.conf" <<'HBAEOF'
+# Allow all local connections without password during initialization
+local   all             all                                     trust
+host    all             all             127.0.0.1/32            trust
+host    all             all             ::1/128                 trust
+HBAEOF
+
+# Start PostgreSQL with minimal config (not using /etc/postgresql/postgresql.conf yet
+# because it may have settings that require extensions not yet loaded)
+echo "Starting PostgreSQL for initialization..."
+pg_ctl -D "$PGDATA" -o "-c listen_addresses='localhost'" -w start
+
+# Wait for PostgreSQL to be ready
+until pg_isready -U "$POSTGRES_USER"; do
+    echo "Waiting for PostgreSQL to start..."
+    sleep 1
+done
+
+echo "PostgreSQL started successfully"
+
+# Create required roles first
+echo "Creating required roles..."
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'EOSQL'
+-- Create postgres role (Alpine's postgres image doesn't create it by default)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN
+        CREATE ROLE postgres WITH LOGIN SUPERUSER INHERIT CREATEDB CREATEROLE REPLICATION BYPASSRLS PASSWORD 'postgres';
+    END IF;
+END
+$$;
+
+-- Create supabase_storage_admin stub (we don't include storage, but migrations reference this role)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN
+        CREATE ROLE supabase_storage_admin WITH LOGIN NOINHERIT;
+    END IF;
+END
+$$;
+EOSQL
+
+# Run all init scripts in order
+echo "Running initialization scripts..."
+for script in /init-scripts/*.sql; do
+    if [ -f "$script" ]; then
+        echo "  Running: $(basename "$script")"
+        psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$script" || {
+            echo "Warning: Script $script had errors, continuing..."
+        }
+    fi
+done
+
+# Set default passwords for service roles
+# These can be overridden at runtime via environment variables
+echo "Setting default role passwords..."
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'EOSQL'
+-- Set default passwords (these should be changed at runtime)
+ALTER ROLE authenticator WITH PASSWORD 'postgres';
+ALTER ROLE supabase_auth_admin WITH PASSWORD 'postgres';
+EOSQL
+
+echo "=== Database initialization complete ==="
+
+# Perform a checkpoint before stopping to ensure all data is flushed to disk
+echo "Performing checkpoint before shutdown..."
+psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CHECKPOINT;"
+
+# Stop PostgreSQL cleanly using "smart" mode to ensure clean shutdown
+echo "Stopping PostgreSQL..."
+pg_ctl -D "$PGDATA" -m smart -w stop
+
+echo "PostgreSQL stopped. Data directory is ready."
+
+# Now copy the proper pg_hba.conf from /etc/postgresql for runtime
+cp /etc/postgresql/pg_hba.conf "$PGDATA/pg_hba.conf"
+
+# Clean up replication slots (safe to remove)
+rm -rf "$PGDATA/pg_replslot/"*
+
+# Clean up statistics and temporary files to reduce image size
+rm -rf "$PGDATA/pg_stat_tmp/"*
+rm -f "$PGDATA/postmaster.pid" "$PGDATA/postmaster.opts"
+
+# DO NOT delete pg_wal files - they contain checkpoint records required for startup
+# The WAL files are essential for PostgreSQL to verify database consistency
+
+# Ensure proper permissions
+chown -R postgres:postgres "$PGDATA"
+chmod 700 "$PGDATA"
+
+echo "=== Initialization complete ==="
+INITSCRIPT
+
+# Run the initialization as the postgres user
+USER postgres
+RUN /init-database.sh
+
+# ====================
+# Stage 3: Production image (Alpine)
+# Lightweight runtime with pre-initialized database
+# ====================
+FROM postgres:${POSTGRES_VERSION}-alpine AS production
+
+ARG POSTGRES_VERSION
+
+# Install runtime dependencies only
+RUN apk add --no-cache \
+    ca-certificates \
+    icu-libs \
+    libsodium \
+    musl-locales \
+    su-exec
+
+# Copy built extensions from builder
+COPY --from=builder /usr/local/share/postgresql/extension/ /usr/local/share/postgresql/extension/
+COPY --from=builder /usr/local/lib/postgresql/ /usr/local/lib/postgresql/
+
+# Create required directories
+RUN mkdir -p \
+    /etc/postgresql-custom/extension-custom-scripts \
+    /etc/postgresql-custom/conf.d \
+    /usr/local/lib/postgresql/bin \
+    && chown -R postgres:postgres /etc/postgresql-custom
+
+# Copy configuration files
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts/pgsodium /etc/postgresql-custom/extension-custom-scripts/pgsodium
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts/supabase_vault /etc/postgresql-custom/extension-custom-scripts/supabase_vault
+COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/local/lib/postgresql/bin/pgsodium_getkey.sh
+
+# Configure PostgreSQL (same as initializer)
+RUN chmod +x /usr/local/lib/postgresql/bin/pgsodium_getkey.sh && \
+    sed -i \
+    -e "s|shared_preload_libraries = '.*'|shared_preload_libraries = 'pg_stat_statements, plpgsql, pgsodium, supabase_vault, supautils'|g" \
+    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/local/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo "vault.getkey_script= '/usr/local/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf
+
+# Remove extensions not available in minimal builds from config
+RUN sed -i \
+    -e 's/ timescaledb,//g' \
+    -e 's/ plv8,//g' \
+    -e 's/ pgroonga,//g' \
+    -e 's/ postgis,//g' \
+    -e 's/ pgrouting,//g' \
+    -e 's/ wal2json,//g' \
+    -e 's/ pg-safeupdate,//g' \
+    -e 's/ pg_cron,//g' \
+    -e 's/ pg_net,//g' \
+    -e 's/ pg_graphql,//g' \
+    -e 's/ pgmq,//g' \
+    -e 's/ pg_repack,//g' \
+    -e 's/ pg_tle,//g' \
+    -e 's/ dblink,//g' \
+    -e 's/ postgres_fdw,//g' \
+    "/etc/postgresql/postgresql.conf" 2>/dev/null || true && \
+    sed -i \
+    -e 's/ timescaledb,//g' \
+    -e 's/ plv8,//g' \
+    -e 's/ pgroonga,//g' \
+    -e 's/ postgis,//g' \
+    -e 's/ pgrouting,//g' \
+    -e 's/ wal2json,//g' \
+    -e 's/ pg-safeupdate,//g' \
+    -e 's/ pg_cron,//g' \
+    -e 's/ pg_net,//g' \
+    -e 's/ pg_graphql,//g' \
+    -e 's/ pgmq,//g' \
+    -e 's/ pg_repack,//g' \
+    -e 's/ pg_tle,//g' \
+    -e 's/ dblink,//g' \
+    -e 's/ postgres_fdw,//g' \
+    "/etc/postgresql-custom/supautils.conf" 2>/dev/null || true
+
+# Disable deprecated settings
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g' "/etc/postgresql/postgresql.conf" 2>/dev/null || true
+
+# Set up pgsodium key script symlink
+RUN ln -sf /usr/local/lib/postgresql/bin/pgsodium_getkey.sh /usr/local/share/postgresql/extension/pgsodium_getkey
+
+# Copy pre-initialized data directory from initializer stage
+# This is the key optimization - database is already set up!
+COPY --from=initializer --chown=postgres:postgres /var/lib/postgresql/data /var/lib/postgresql/data
+
+# Save the original docker-entrypoint.sh from the base image
+RUN cp /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint-original.sh
+
+# Create wrapper entrypoint that updates passwords before starting postgres
+# This handles both:
+# 1. Direct container start (using ENTRYPOINT)
+# 2. CLI's custom entrypoint that calls docker-entrypoint.sh
+COPY --chmod=755 <<'WRAPPER' /usr/local/bin/docker-entrypoint.sh
+#!/bin/sh
+set -e
+
+PGDATA="${PGDATA:-/var/lib/postgresql/data}"
+
+# Marker file to track if passwords have been updated this session
+PASSWORD_MARKER="/tmp/.supabase_passwords_updated"
+
+# Always update role passwords if POSTGRES_PASSWORD is set
+# Only do this once per container start (check marker file)
+if [ -n "$POSTGRES_PASSWORD" ] && [ ! -f "$PASSWORD_MARKER" ]; then
+    echo "Updating role passwords from POSTGRES_PASSWORD..."
+
+    # Ensure data directory permissions are correct
+    if [ "$(id -u)" = '0' ]; then
+        chown -R postgres:postgres "$PGDATA"
+        chmod 700 "$PGDATA"
+    fi
+
+    # Run as postgres user (OS user) but connect as supabase_admin (DB superuser)
+    if [ "$(id -u)" = '0' ]; then
+        PGCTL="su-exec postgres pg_ctl"
+        PSQL="su-exec postgres psql"
+    else
+        PGCTL="pg_ctl"
+        PSQL="psql"
+    fi
+
+    # Clean up any stale postmaster.pid that might exist from unclean shutdown
+    if [ -f "$PGDATA/postmaster.pid" ]; then
+        # Check if the PID in the file is actually running
+        OLD_PID=$(head -1 "$PGDATA/postmaster.pid" 2>/dev/null || true)
+        if [ -n "$OLD_PID" ] && ! kill -0 "$OLD_PID" 2>/dev/null; then
+            echo "Removing stale postmaster.pid..."
+            rm -f "$PGDATA/postmaster.pid"
+        fi
+    fi
+
+    # Start postgres temporarily to update passwords (local connections only)
+    # Use trust auth for local connections during password update
+    echo "local all all trust" > "$PGDATA/pg_hba.conf.tmp"
+    mv "$PGDATA/pg_hba.conf" "$PGDATA/pg_hba.conf.bak"
+    mv "$PGDATA/pg_hba.conf.tmp" "$PGDATA/pg_hba.conf"
+
+    $PGCTL -D "$PGDATA" -o "-c listen_addresses=''" -w start
+
+    # Wait for PostgreSQL to be ready
+    until pg_isready -q; do
+        echo "Waiting for PostgreSQL to be ready..."
+        sleep 1
+    done
+
+    # Update passwords for all service roles
+    # Connect as supabase_admin (superuser) to have permission to alter all roles
+    # The postgres user has been demoted and cannot alter other roles' passwords
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE authenticator WITH PASSWORD '$POSTGRES_PASSWORD';"
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE supabase_auth_admin WITH PASSWORD '$POSTGRES_PASSWORD';"
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE supabase_storage_admin WITH PASSWORD '$POSTGRES_PASSWORD';"
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE pgbouncer WITH PASSWORD '$POSTGRES_PASSWORD';"
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE postgres WITH PASSWORD '$POSTGRES_PASSWORD';"
+    $PSQL -U supabase_admin -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE supabase_admin WITH PASSWORD '$POSTGRES_PASSWORD';"
+
+    # Stop postgres cleanly with checkpoint
+    $PSQL -U supabase_admin -d postgres -c "CHECKPOINT;" 2>/dev/null || true
+    $PGCTL -D "$PGDATA" -m fast -w stop
+
+    # Wait to ensure postgres has fully stopped
+    while [ -f "$PGDATA/postmaster.pid" ]; do
+        sleep 0.5
+    done
+
+    # Restore the original pg_hba.conf
+    mv "$PGDATA/pg_hba.conf.bak" "$PGDATA/pg_hba.conf"
+
+    # Mark passwords as updated
+    touch "$PASSWORD_MARKER"
+
+    echo "Role passwords updated."
+fi
+
+# Now start postgres with the actual arguments
+# If running as root, switch to postgres user
+if [ "$(id -u)" = '0' ]; then
+    exec su-exec postgres "$@"
+else
+    exec "$@"
+fi
+WRAPPER
+
+# Store build metadata
+RUN echo "{\"postgres_version\": \"${POSTGRES_VERSION}\", \"build_type\": \"minimal-postgrest-gotrue-prebuilt\", \"extensions\": [\"supautils\", \"pgsodium\", \"vault\", \"pgjwt\"], \"preinitialized\": true}" > /etc/supabase-postgres-build.json
+
+# Environment variables
+ENV POSTGRES_USER=supabase_admin
+ENV POSTGRES_DB=postgres
+ENV LANG=en_US.UTF-8
+ENV PGDATA=/var/lib/postgresql/data
+
+HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U supabase_admin -h localhost
+
+STOPSIGNAL SIGINT
+EXPOSE 5432
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
