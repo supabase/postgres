@@ -3,13 +3,16 @@
   lib,
   stdenv,
   fetchFromGitHub,
-  curl,
   postgresql,
   libuv,
   makeWrapper,
   switch-ext-version,
+  curl_8_6,
 }:
 
+let
+  curl = curl_8_6;
+in
 let
   pname = "pg_net";
   build =
@@ -20,7 +23,8 @@ let
       buildInputs = [
         curl
         postgresql
-      ] ++ lib.optional (version == "0.6") libuv;
+      ]
+      ++ lib.optional (version == "0.6") libuv;
 
       src = fetchFromGitHub {
         owner = "supabase";
@@ -45,7 +49,14 @@ let
           rm sql/pg_net--0.5.1--0.6.sql
         '';
 
-      env.NIX_CFLAGS_COMPILE = lib.optionalString (lib.versionOlder version "0.19.1") "-Wno-error";
+      env.NIX_CFLAGS_COMPILE =
+        if (lib.versionOlder version "0.19.1") then
+          "-Wno-error"
+        else if (version == "0.19.5" && stdenv.isDarwin && stdenv.isAarch64) then
+          # Fix for dangling pointer warning in src/core.c:177 on aarch64-darwin with newer clang
+          "-Wno-error=dangling-assignment"
+        else
+          "";
 
       installPhase = ''
         mkdir -p $out/{lib,share/postgresql/extension}

@@ -116,7 +116,7 @@ service:
   supabase-admin-agent_salt:
     enabled: false
     running: false
-  database-optimizations:
+  database_optimizations:
     enabled: false
     running: false
   postgrest-optimizations:

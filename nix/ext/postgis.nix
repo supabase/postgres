@@ -16,10 +16,10 @@
   nixosTests,
   callPackage,
   buildEnv,
+  sfcgal,
 }:
 
 let
-  sfcgal = callPackage ../packages/sfcgal.nix { };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
   pname = "postgis";
 
@@ -79,7 +79,8 @@ let
         protobufc
         pcre2.dev
         sfcgal
-      ] ++ lib.optional stdenv.isDarwin libiconv;
+      ]
+      ++ lib.optional stdenv.isDarwin libiconv;
       nativeBuildInputs = [
         perl
         pkg-config

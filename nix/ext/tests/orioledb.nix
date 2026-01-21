@@ -11,12 +11,17 @@ let
         paths = [
           postgresql
           postgresql.lib
-          (self.legacyPackages.${pkgs.system}."psql_orioledb-17".exts.orioledb)
+          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [
+            (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
+          ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -32,7 +37,9 @@ let
       };
     in
     pkg;
-  psql_orioledb = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+  psql_orioledb =
+    postgresqlWithExtension
+      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;

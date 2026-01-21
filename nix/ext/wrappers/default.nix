@@ -7,7 +7,6 @@
   pkg-config,
   postgresql,
   buildEnv,
-  darwin,
   rust-bin,
   git,
 }:
@@ -37,17 +36,10 @@ let
           cargo
           git
         ];
-        buildInputs =
-          [
-            openssl
-            postgresql
-          ]
-          ++ lib.optionals stdenv.isDarwin [
-            darwin.apple_sdk.frameworks.CoreFoundation
-            darwin.apple_sdk.frameworks.CoreServices
-            darwin.apple_sdk.frameworks.Security
-            darwin.apple_sdk.frameworks.SystemConfiguration
-          ];
+        buildInputs = [
+          openssl
+          postgresql
+        ];
 
         NIX_LDFLAGS = "-L${postgresql}/lib -lpq";
 

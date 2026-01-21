@@ -40,6 +40,9 @@ let
         inherit hash;
       };
 
+      # Fix build with gcc 15
+      env.NIX_CFLAGS_COMPILE = "-std=gnu17";
+
       buildInputs = [ postgresql ];
 
       installPhase = ''

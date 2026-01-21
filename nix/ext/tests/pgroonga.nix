@@ -4,7 +4,9 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts."${pname}";
+    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+      pname
+    }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
@@ -19,8 +21,11 @@ let
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
+          installedExtensions = [ (installedExtension majorVersion) ];
           lib = pkg;
           withPackages = _: pkg;
+          withJIT = pkg;
+          withoutJIT = pkg;
         };
         nativeBuildInputs = [ pkgs.makeWrapper ];
         pathsToLink = [
@@ -36,8 +41,8 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
+  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
 in
 self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
@@ -78,11 +83,11 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         ];
       };
       systemd.services.postgresql.environment.MECAB_DICDIR = "${
-        self.packages.${pkgs.system}.mecab-naist-jdic
+        self.packages.${pkgs.stdenv.hostPlatform.system}.mecab-naist-jdic
       }/lib/mecab/dic/naist-jdic";
       systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.mecab}/bin/mecab-config";
       systemd.services.postgresql.environment.GRN_PLUGINS_DIR = "${
-        self.packages.${pkgs.system}.supabase-groonga
+        self.packages.${pkgs.stdenv.hostPlatform.system}.supabase-groonga
       }/lib/groonga/plugins";
 
       specialisation.postgresql17.configuration = {
