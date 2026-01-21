@@ -107,6 +107,7 @@
         version:
         {
           variant ? "full",
+          latestOnly ? false,
         }:
         let
           postgresql = getPostgresqlPackage version;
@@ -122,7 +123,7 @@
           extCallPackage = pkgs.lib.callPackageWith (
             pkgs
             // {
-              inherit postgresql;
+              inherit postgresql latestOnly;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
             }
@@ -135,9 +136,10 @@
         version:
         {
           variant ? "full",
+          latestOnly ? false,
         }:
         let
-          pkgsList = makeOurPostgresPkgs version { inherit variant; };
+          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -164,6 +166,7 @@
         version:
         {
           variant ? "full",
+          latestOnly ? false,
         }:
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
@@ -172,7 +175,7 @@
               (getPostgresqlPackage version).override { portable = true; }
             else
               getPostgresqlPackage version;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant; };
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -201,15 +204,19 @@
         version:
         {
           variant ? "full",
+          latestOnly ? false,
         }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant; };
-          exts = makeOurPostgresPkgsSet version { inherit variant; };
+          bin = makePostgresBin version { inherit variant latestOnly; };
+          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
         };
       basePackages = {
         psql_15 = makePostgres "15" { };
         psql_17 = makePostgres "17" { };
         psql_orioledb-17 = makePostgres "orioledb-17" { };
+      };
+      slimPackages = {
+        psql_17_slim = makePostgres "17" { latestOnly = true; };
       };
 
       # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
@@ -220,10 +227,10 @@
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // cliPackages);
+      }) (basePackages // slimPackages // cliPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // cliPackages;
+      legacyPackages = basePackages // slimPackages // cliPackages;
     };
 }

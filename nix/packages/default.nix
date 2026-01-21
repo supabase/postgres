@@ -45,6 +45,7 @@
           gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
           supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
+          image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
           mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
