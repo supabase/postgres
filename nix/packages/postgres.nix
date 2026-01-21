@@ -93,6 +93,9 @@
 
       makeOurPostgresPkgs =
         version:
+        {
+          latestOnly ? false,
+        }:
         let
           postgresql = getPostgresqlPackage version;
           extensionsToUse =
@@ -105,7 +108,7 @@
           extCallPackage = pkgs.lib.callPackageWith (
             pkgs
             // {
-              inherit postgresql;
+              inherit postgresql latestOnly;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
             }
@@ -116,8 +119,11 @@
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
+        {
+          latestOnly ? false,
+        }:
         let
-          pkgsList = makeOurPostgresPkgs version;
+          pkgsList = makeOurPostgresPkgs version { inherit latestOnly; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -142,9 +148,12 @@
       # basis for building extensions, etc.
       makePostgresBin =
         version:
+        {
+          latestOnly ? false,
+        }:
         let
           postgresql = getPostgresqlPackage version;
-          postgres-pkgs = makeOurPostgresPkgs version;
+          postgres-pkgs = makeOurPostgresPkgs version { inherit latestOnly; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -171,22 +180,28 @@
       #    package names.
       makePostgres =
         version:
+        {
+          latestOnly ? false,
+        }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version;
-          exts = makeOurPostgresPkgsSet version;
+          bin = makePostgresBin version { inherit latestOnly; };
+          exts = makeOurPostgresPkgsSet version { inherit latestOnly; };
         };
       basePackages = {
-        psql_15 = makePostgres "15";
-        psql_17 = makePostgres "17";
-        psql_orioledb-17 = makePostgres "orioledb-17";
+        psql_15 = makePostgres "15" { };
+        psql_17 = makePostgres "17" { };
+        psql_orioledb-17 = makePostgres "orioledb-17" { };
+      };
+      slimPackages = {
+        psql_17_slim = makePostgres "17" { latestOnly = true; };
       };
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) basePackages;
+      }) (basePackages // slimPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages;
+      legacyPackages = basePackages // slimPackages;
     };
 }
