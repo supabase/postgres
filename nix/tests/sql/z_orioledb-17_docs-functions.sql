@@ -69,7 +69,7 @@ language plpgsql
 security definer set search_path = ''
 as $$
 begin
-  select 'hello world';
+  return 'hello world';
 end;
 $$;
 

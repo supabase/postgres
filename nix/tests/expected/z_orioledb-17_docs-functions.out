@@ -74,13 +74,15 @@ language plpgsql
 security definer set search_path = ''
 as $$
 begin
-  select 'hello world';
+  return 'hello world';
 end;
 $$;
 select hello_world_definer();
-ERROR:  query has no destination for result data
-HINT:  If you want to discard the results of a SELECT, use PERFORM instead.
-CONTEXT:  PL/pgSQL function public.hello_world_definer() line 3 at SQL statement
+ hello_world_definer 
+---------------------
+ hello world
+(1 row)
+
 revoke execute on function public.hello_world from public;
 revoke execute on function public.hello_world from anon;
 grant execute on function public.hello_world to authenticated;
