@@ -86,6 +86,11 @@ get_version_info() {
     esac
 }
 
+# Tests to skip for OrioleDB (not compatible with OrioleDB storage)
+ORIOLEDB_SKIP_TESTS=(
+    "index_advisor"  # index_advisor doesn't support OrioleDB tables
+)
+
 # Filter test files based on version
 get_test_list() {
     local version="$1"
@@ -106,6 +111,20 @@ get_test_list() {
     for f in "$TESTS_SQL_DIR"/*.sql; do
         local basename
         basename=$(basename "$f" .sql)
+
+        # Skip tests that don't work with OrioleDB
+        if [[ "$version" == "orioledb-17" ]]; then
+            local should_skip=false
+            for skip_test in "${ORIOLEDB_SKIP_TESTS[@]}"; do
+                if [[ "$basename" == "$skip_test" ]]; then
+                    should_skip=true
+                    break
+                fi
+            done
+            if [[ "$should_skip" == "true" ]]; then
+                continue
+            fi
+        fi
 
         # Check if it's a version-specific test (starts with z_)
         if [[ "$basename" == z_* ]]; then
@@ -374,15 +393,6 @@ main() {
             -e 's/\\"\$user\\"/\\"\\\\$user\\"/g' \
             "$PATCHED_TESTS_DIR/expected/roles.out"
         rm -f "$PATCHED_TESTS_DIR/expected/roles.out.bak"
-    fi
-
-    # Patch index_advisor OID: Docker and Nix have different catalog OIDs
-    # The OID in the error message is environment-specific
-    if [[ -f "$PATCHED_TESTS_DIR/expected/z_orioledb-17_index_advisor.out" ]]; then
-        sed -i.bak \
-            -e 's/OID 14007/OID 13638/g' \
-            "$PATCHED_TESTS_DIR/expected/z_orioledb-17_index_advisor.out"
-        rm -f "$PATCHED_TESTS_DIR/expected/z_orioledb-17_index_advisor.out.bak"
     fi
 
     # Run pg_regress

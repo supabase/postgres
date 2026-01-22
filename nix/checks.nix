@@ -123,6 +123,11 @@
                 else
                   throw "Unsupported PostgreSQL version: ${name}";
 
+              # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
+              orioledbSkipTests = [
+                "index_advisor" # index_advisor doesn't support OrioleDB tables
+              ];
+
               # Helper function to filter SQL files based on version
               filterTestFiles =
                 version: dir:
@@ -140,8 +145,12 @@
                     let
                       isVersionSpecific = builtins.match "z_.*" name != null;
                       basename = builtins.substring 0 (pkgs.lib.stringLength name - 4) name; # Remove .sql
+                      # Skip tests that don't work with OrioleDB
+                      isSkippedForOrioledb = version == "orioledb-17" && builtins.elem basename orioledbSkipTests;
                       matchesVersion =
-                        if isVersionSpecific then
+                        if isSkippedForOrioledb then
+                          false
+                        else if isVersionSpecific then
                           if version == "orioledb-17" then
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
