@@ -133,7 +133,7 @@
                 version: dir:
                 let
                   files = builtins.readDir dir;
-                  # Get list of OrioleDB-specific test basenames (without z_orioledb-17_ prefix)
+                  # Get list of OrioleDB-specific test basenames , then strip the orioledb prefix from them
                   orioledbVariants = pkgs.lib.pipe files [
                     builtins.attrNames
                     (builtins.filter (n: builtins.match "z_orioledb-17_.*\\.sql" n != null))
