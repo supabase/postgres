@@ -166,6 +166,9 @@ get_test_list() {
 
 # Cleanup function
 cleanup() {
+    # since this function is set as the trap for EXIT
+    # store the return code of the last command that 
+    # was executed before said EXIT
     local exit_code=$?
 
     if [[ -n "$CONTAINER_NAME" ]] && [[ "$KEEP_CONTAINER" != "true" ]]; then
