@@ -231,8 +231,9 @@ RUN sed -i \
     chown -R postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf
-RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
-    #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
+RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf"
+    # As of pg 16.4+ db_user_namespace is totally deprecated and will break the server if setting is present
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf"
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
 RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf"
 RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf"

@@ -113,32 +113,54 @@
                 let
                   name = pkg.version;
                 in
-                if builtins.match "15.*" name != null then
+                # Check orioledb first since "17_15" would match "17.*" pattern
+                if builtins.match "17_[0-9]+" name != null then
+                  "orioledb-17"
+                else if builtins.match "15.*" name != null then
                   "15"
                 else if builtins.match "17.*" name != null then
                   "17"
-                else if builtins.match "orioledb-17.*" name != null then
-                  "orioledb-17"
                 else
                   throw "Unsupported PostgreSQL version: ${name}";
+
+              # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
+              orioledbSkipTests = [
+                "index_advisor" # index_advisor doesn't support OrioleDB tables
+              ];
 
               # Helper function to filter SQL files based on version
               filterTestFiles =
                 version: dir:
                 let
                   files = builtins.readDir dir;
+                  # Get list of OrioleDB-specific test basenames , then strip the orioledb prefix from them
+                  orioledbVariants = pkgs.lib.pipe files [
+                    builtins.attrNames
+                    (builtins.filter (n: builtins.match "z_orioledb-17_.*\\.sql" n != null))
+                    (map (n: builtins.substring 14 (pkgs.lib.stringLength n - 18) n)) # Remove "z_orioledb-17_" prefix (14 chars) and ".sql" suffix (4 chars)
+                  ];
+                  hasOrioledbVariant = basename: builtins.elem basename orioledbVariants;
                   isValidFile =
                     name:
                     let
                       isVersionSpecific = builtins.match "z_.*" name != null;
+                      basename = builtins.substring 0 (pkgs.lib.stringLength name - 4) name; # Remove .sql
+                      # Skip tests that don't work with OrioleDB
+                      isSkippedForOrioledb = version == "orioledb-17" && builtins.elem basename orioledbSkipTests;
                       matchesVersion =
-                        if isVersionSpecific then
+                        if isSkippedForOrioledb then
+                          false
+                        else if isVersionSpecific then
                           if version == "orioledb-17" then
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
                           else
                             builtins.match "z_15_.*" name != null
+                        else
+                        # For common tests: exclude if OrioleDB variant exists and we're running OrioleDB
+                        if version == "orioledb-17" && hasOrioledbVariant basename then
+                          false
                         else
                           true;
                     in
@@ -275,7 +297,14 @@
                 if [[ "${pgpkg.version}" == *"17"* ]]; then
                   perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
                 fi
-                #NOTE in the future we may also need to add the orioledb extension to the cluster when cluster is oriole
+                # Configure OrioleDB if running orioledb-17 check
+                #shellcheck disable=SC2193
+                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                  log info "Configuring OrioleDB..."
+                  # Add orioledb to shared_preload_libraries
+                  perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
+                  log info "OrioleDB added to shared_preload_libraries"
+                fi
 
                 # Check if postgresql.conf exists
                 if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
@@ -301,6 +330,13 @@
 
                 log info "Creating test database"
                 log_cmd createdb -p ${pgPort} -h localhost --username=supabase_admin testing
+
+                # Create orioledb extension if running orioledb-17 check (before prime.sql)
+                #shellcheck disable=SC2193
+                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                  log info "Creating orioledb extension..."
+                  log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
+                fi
 
                 log info "Loading prime SQL file"
                 if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
@@ -340,6 +376,13 @@
                 fi
 
                 check_postgres_ready
+
+                # Create orioledb extension if running orioledb-17 check (before prime.sql)
+                #shellcheck disable=SC2193
+                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                  log info "Creating orioledb extension for pg_regress tests..."
+                  log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
+                fi
 
                 log info "Loading prime SQL file"
                 if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
