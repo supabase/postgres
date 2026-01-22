@@ -109,14 +109,14 @@ get_test_list() {
     done
 
     for f in "$TESTS_SQL_DIR"/*.sql; do
-        local basename
-        basename=$(basename "$f" .sql)
+        local _basename
+        _basename=$(basename "$f" .sql)
 
         # Skip tests that don't work with OrioleDB
         if [[ "$version" == "orioledb-17" ]]; then
             local should_skip=false
             for skip_test in "${ORIOLEDB_SKIP_TESTS[@]}"; do
-                if [[ "$basename" == "$skip_test" ]]; then
+                if [[ "$_basename" == "$skip_test" ]]; then
                     should_skip=true
                     break
                 fi
@@ -127,17 +127,17 @@ get_test_list() {
         fi
 
         # Check if it's a version-specific test (starts with z_)
-        if [[ "$basename" == z_* ]]; then
+        if [[ "$_basename" == z_* ]]; then
             # Only include if it matches our version
             case "$version" in
                 15)
-                    [[ "$basename" == z_15_* ]] && tests+=("$basename")
+                    [[ "$_basename" == z_15_* ]] && tests+=("$_basename")
                     ;;
                 17)
-                    [[ "$basename" == z_17_* ]] && tests+=("$basename")
+                    [[ "$_basename" == z_17_* ]] && tests+=("$_basename")
                     ;;
                 orioledb-17)
-                    [[ "$basename" == z_orioledb-17_* ]] && tests+=("$basename")
+                    [[ "$_basename" == z_orioledb-17_* ]] && tests+=("$_basename")
                     ;;
             esac
         else
@@ -146,16 +146,16 @@ get_test_list() {
                 # Skip common test if OrioleDB-specific variant exists
                 local has_variant=false
                 for variant in "${orioledb_variants[@]}"; do
-                    if [[ "$basename" == "$variant" ]]; then
+                    if [[ "$_basename" == "$variant" ]]; then
                         has_variant=true
                         break
                     fi
                 done
                 if [[ "$has_variant" == "false" ]]; then
-                    tests+=("$basename")
+                    tests+=("$_basename")
                 fi
             else
-                tests+=("$basename")
+                tests+=("$_basename")
             fi
         fi
     done
