@@ -29,7 +29,7 @@ jobs:
         working-directory: ${{ github.workspace }}/migrations/db/migrations
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "ap-southeast-1"

@@ -23,7 +23,7 @@ jobs:
       checks_matrix: ${{ steps.set-matrix.outputs.checks_matrix }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
@@ -35,7 +35,7 @@ jobs:
         run: |
           sudo mv /nix/var/nix/daemon-socket/socket /tmp
       - name: Mount Nix cache disk
-        uses: useblacksmith/stickydisk@v1
+        uses: useblacksmith/stickydisk@a652394bf1bf95399f406e648482b41fbd25c51f # v1
         with:
           key: ${{ github.repository }}-nix-cache-eval-${{ runner.os }}
           path: /nix

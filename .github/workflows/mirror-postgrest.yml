@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
       - id: args
-        uses: mikefarah/yq@master
+        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
         with:
           cmd: yq '.postgrest_release' 'ansible/vars.yml'
 

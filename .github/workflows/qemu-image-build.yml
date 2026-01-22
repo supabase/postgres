@@ -98,14 +98,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
           aws-region: "us-east-1"
 
       - name: Login to Amazon ECR
         id: login-ecr-private-dev
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: Build image
         env:
@@ -124,14 +124,14 @@ jobs:
 
       # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
           aws-region: "us-east-1"
 
       - name: Login to Amazon ECR
         id: login-ecr-private-prod
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: Push docker image to Amazon ECR
         env:
@@ -144,7 +144,7 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           SLACK_USERNAME: 'gha-failures-notifier'
