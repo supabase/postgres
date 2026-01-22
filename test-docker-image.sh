@@ -327,8 +327,8 @@ main() {
     docker cp "$HTTP_MOCK_SERVER" "$CONTAINER_NAME:/tmp/http-mock-server.py"
 
     # Start mock server in container background
-    docker exec -d "$CONTAINER_NAME" python3 /tmp/http-mock-server.py 8880
     HTTP_MOCK_PORT=8880
+    docker exec -d "$CONTAINER_NAME" python3 /tmp/http-mock-server.py $HTTP_MOCK_PORT
 
     # Wait for mock server to be ready
     sleep 2
