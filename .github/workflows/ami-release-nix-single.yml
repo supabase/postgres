@@ -29,7 +29,7 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
 
       - name: aws-creds
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -74,7 +74,7 @@ jobs:
           tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -95,7 +95,7 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -116,7 +116,7 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: Create release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           name: ${{ steps.process_release_version.outputs.version }}
           tag_name: ${{ steps.process_release_version.outputs.version }}
@@ -124,7 +124,7 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2
+        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           SLACK_USERNAME: 'gha-failures-notifier'
