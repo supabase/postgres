@@ -34,7 +34,7 @@
       tags:
         - install-pgbouncer
         - install-supabase-internal
-      when: debpkg_mode or nixpkg_mode
+      when: debpkg_mode or nixpkg_mode or stage2_nix
 
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml

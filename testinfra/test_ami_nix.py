@@ -145,6 +145,34 @@ walg_config_json_content = """
 anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyMjQ5NjYsImV4cCI6MjAxMTgwMDk2Nn0.QW95aRPA-4QuLzuvaIeeoFKlJP9J2hvAIpJ3WJ6G5zo"
 service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjIyNDk2NiwiZXhwIjoyMDExODAwOTY2fQ.Om7yqv15gC3mLGitBmvFRB3M4IsLsX9fXzTQnFM7lu0"
 supabase_admin_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InN1cGFiYXNlX2FkbWluIiwiaWF0IjoxNjk2MjI0OTY2LCJleHAiOjIwMTE4MDA5NjZ9.jrD3j2rBWiIx0vhVZzd1CXFv7qkAP392nBMadvXxk1c"
+
+
+def load_expected_pgbouncer_version() -> str:
+    repo_root = Path(__file__).resolve().parent.parent
+    ansible_vars = repo_root / "ansible" / "vars.yml"
+    if ansible_vars.exists():
+        with ansible_vars.open() as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if line.startswith("pgbouncer_release:"):
+                    return line.split(":", 1)[1].strip().strip('"')
+
+    nix_file = repo_root / "nix" / "pgbouncer.nix"
+    if nix_file.exists():
+        with nix_file.open() as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if line.startswith("version ="):
+                    value = line.split("=", 1)[1].strip()
+                    return value.strip(";").strip('"')
+
+    raise RuntimeError(
+        "Could not determine expected PgBouncer version from configuration files"
+    )
+
+
+EXPECTED_PGBOUNCER_VERSION = load_expected_pgbouncer_version()
+PGBOUNCER_BINARY = "/nix/var/nix/profiles/per-user/pgbouncer/profile/bin/pgbouncer"
 init_json_content = f"""
 {{
   "jwt_secret": "my_jwt_secret_which_is_not_so_secret",
@@ -200,7 +228,7 @@ def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
             else:
                 raise Exception("SSH test command failed")
 
-        except Exception as e:
+        except Exception:
             if attempt == max_retries - 1:
                 raise
             logger.warning(
