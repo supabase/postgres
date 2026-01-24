@@ -18,6 +18,7 @@
         ../ext/pgroonga
         ../ext/index_advisor.nix
         ../ext/wal2json.nix
+        ../ext/spock.nix
         ../ext/pgmq
         ../ext/pg_repack.nix
         ../ext/pg-safeupdate.nix
@@ -29,7 +30,7 @@
         ../ext/pgtap.nix
         ../ext/pg_cron
         ../ext/pgsql-http.nix
-        ../ext/pg_plan_filter.nix
+        # ../ext/pg_plan_filter.nix  # Repository deleted from GitHub
         ../ext/pg_net.nix
         ../ext/pg_hashids.nix
         ../ext/pgsodium.nix

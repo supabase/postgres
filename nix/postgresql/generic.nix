@@ -146,6 +146,7 @@ let
       nativeBuildInputs = [
         makeWrapper
         pkg-config
+        perl
       ]
       ++ lib.optionals jitSupport [
         llvmPackages.llvm.dev
@@ -204,6 +205,11 @@ let
       )
       ++ lib.optionals stdenv'.isLinux [
         (if atLeast "13" then ./patches/socketdir-in-run-13+.patch else ./patches/socketdir-in-run.patch)
+      ]
+      # Spock 3.1.8 patches for bi-directional replication (PostgreSQL 15 only)
+      ++ lib.optionals (atLeast "15" && olderThan "16") [
+        ./patches/pg15-allow_logical_decoding_on_standbys.patch
+        ./patches/pg15-log_old_value-pg1514.diff
       ];
 
       installTargets = [ "install-world-bin" ];

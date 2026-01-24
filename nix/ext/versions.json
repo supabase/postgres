@@ -832,5 +832,13 @@
       ],
       "hash": "sha256-+QoACPCKiFfuT2lJfSUmgfzC5MXf75KpSoc2PzPxKyM="
     }
+  },
+  "spock": {
+    "3.1.8": {
+      "postgresql": [
+        "15"
+      ],
+      "hash": "sha256-s6c6FKMZ2JDn0u1IKGCgtai8MXBjZM9p1zXC07QLEk4="
+    }
   }
 }
