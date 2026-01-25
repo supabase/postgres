@@ -1,0 +1,250 @@
+diff --git a/src/backend/access/rmgrdesc/committsdesc.c b/src/backend/access/rmgrdesc/committsdesc.c
+index 3a65538bb0..6f4b6608e8 100644
+--- a/src/backend/access/rmgrdesc/committsdesc.c
++++ b/src/backend/access/rmgrdesc/committsdesc.c
+@@ -38,6 +38,13 @@ commit_ts_desc(StringInfo buf, XLogReaderState *record)
+ 		appendStringInfo(buf, "pageno %d, oldestXid %u",
+ 						 trunc->pageno, trunc->oldestXid);
+ 	}
++	else if (info == COMMIT_TS_SUBTRANS_TS)
++	{
++		SubTransactionCommitTsEntry	*entry = (SubTransactionCommitTsEntry *)rec;
++
++		appendStringInfo(buf, "xid %u, time %ld, nodeid %d",
++						 entry->xid, entry->time, entry->nodeid);
++	}
+ }
+ 
+ const char *
+@@ -49,6 +56,8 @@ commit_ts_identify(uint8 info)
+ 			return "ZEROPAGE";
+ 		case COMMIT_TS_TRUNCATE:
+ 			return "TRUNCATE";
++		case COMMIT_TS_SUBTRANS_TS:
++			return "SUBTRANS_TS";
+ 		default:
+ 			return NULL;
+ 	}
+diff --git a/src/backend/access/transam/commit_ts.c b/src/backend/access/transam/commit_ts.c
+index 4dc8d402bd..69a8973e35 100644
+--- a/src/backend/access/transam/commit_ts.c
++++ b/src/backend/access/transam/commit_ts.c
+@@ -80,6 +80,14 @@ static SlruCtlData CommitTsCtlData;
+ 
+ #define CommitTsCtl (&CommitTsCtlData)
+ 
++/*
++ * Data to override CommitTsData for individual subtransaction.
++ * This is needed for pgEdge Delta Apply CommitTs tracking.
++ */
++static SubTransactionCommitTsEntry	   *sub_trans_commit_ts_data = NULL;
++static int								sub_trans_commit_n_alloc = 0;
++static int								sub_trans_commit_n_used = 0;
++
+ /*
+  * We keep a cache of the last value set in shared memory.
+  *
+@@ -116,6 +124,8 @@ static void ActivateCommitTs(void);
+ static void DeactivateCommitTs(void);
+ static void WriteZeroPageXlogRec(int pageno);
+ static void WriteTruncateXlogRec(int pageno, TransactionId oldestXid);
++static void WriteSubTransTsXlogRec(TransactionId xid, TimestampTz ts,
++								   RepOriginId nodeid);
+ 
+ /*
+  * TransactionTreeSetCommitTsData
+@@ -208,6 +218,15 @@ TransactionTreeSetCommitTsData(TransactionId xid, int nsubxids,
+ 	if (TransactionIdPrecedes(ShmemVariableCache->newestCommitTsXid, newestXact))
+ 		ShmemVariableCache->newestCommitTsXid = newestXact;
+ 	LWLockRelease(CommitTsLock);
++
++	/* Cleanup subtransaction commit ts override data */
++	if (sub_trans_commit_ts_data != NULL)
++	{
++		pfree(sub_trans_commit_ts_data);
++		sub_trans_commit_ts_data = NULL;
++		sub_trans_commit_n_used = 0;
++		sub_trans_commit_n_alloc = 0;
++	}
+ }
+ 
+ /*
+@@ -246,12 +265,24 @@ TransactionIdSetCommitTs(TransactionId xid, TimestampTz ts,
+ {
+ 	int			entryno = TransactionIdToCTsEntry(xid);
+ 	CommitTimestampEntry entry;
++	int			i;
+ 
+ 	Assert(TransactionIdIsNormal(xid));
+ 
+ 	entry.time = ts;
+ 	entry.nodeid = nodeid;
+ 
++	/* Override the time and nodeid if an individual entry was recorded */
++	for (i = 0; i < sub_trans_commit_n_used; i++)
++	{
++		if (sub_trans_commit_ts_data[i].xid == xid)
++		{
++			entry.time = sub_trans_commit_ts_data[i].time;
++			entry.nodeid = sub_trans_commit_ts_data[i].nodeid;
++			break;
++		}
++	}
++
+ 	memcpy(CommitTsCtl->shared->page_buffer[slotno] +
+ 		   SizeOfCommitTimestampEntry * entryno,
+ 		   &entry, SizeOfCommitTimestampEntry);
+@@ -372,6 +403,60 @@ GetLatestCommitTsData(TimestampTz *ts, RepOriginId *nodeid)
+ 	return xid;
+ }
+ 
++/*
++ * Record a different CommitTsData entry for a given subtransaction
++ *
++ * pgEdge uses this in Spock to track the correct commit ts and origin
++ * in case a delta apply had to force an update to a row that would
++ * otherwise not be updated because last-update-wins found in favor of
++ * the existing local row.
++ */
++void
++SubTransactionIdSetCommitTsData(TransactionId xid, TimestampTz ts,
++								RepOriginId nodeid)
++{
++	SubTransactionCommitTsEntry *ent;
++
++	/* Ensure we have space in the tracking array */
++	if (sub_trans_commit_n_used >= sub_trans_commit_n_alloc)
++	{
++		/*
++		 * We allocate this in the top memory context. This could accumulate
++		 * if transactions over and over record entries and then abort.
++		 * Under the Spock apply worker that cannot happen as such error
++		 * condition would restart the backend.
++		 */
++		MemoryContext	oldcontext;
++
++		oldcontext = MemoryContextSwitchTo(TopMemoryContext);
++
++		if (sub_trans_commit_ts_data == NULL)
++		{
++			sub_trans_commit_n_alloc = 32;
++			sub_trans_commit_ts_data = (SubTransactionCommitTsEntry *)
++									   palloc(sizeof(SubTransactionCommitTsEntry) * sub_trans_commit_n_alloc);
++		}
++		else
++		{
++			sub_trans_commit_n_alloc *= 2;
++			sub_trans_commit_ts_data = (SubTransactionCommitTsEntry *)
++									   repalloc(sub_trans_commit_ts_data,
++												sizeof(SubTransactionCommitTsEntry) * sub_trans_commit_n_alloc);
++		}
++
++		MemoryContextSwitchTo(oldcontext);
++	}
++
++	ent = &sub_trans_commit_ts_data[sub_trans_commit_n_used++];
++
++	ent->xid = xid;
++	ent->time = ts;
++	ent->nodeid = nodeid;
++
++	if (!RecoveryInProgress())
++		WriteSubTransTsXlogRec(xid, ts, nodeid);
++}
++
+ static void
+ error_commit_ts_disabled(void)
+ {
+@@ -981,6 +1066,23 @@ WriteTruncateXlogRec(int pageno, TransactionId oldestXid)
+ 	(void) XLogInsert(RM_COMMIT_TS_ID, COMMIT_TS_TRUNCATE);
+ }
+ 
++/*
++ * Write a SUBTRANS_TS xlog record
++ */
++static void
++WriteSubTransTsXlogRec(TransactionId xid, TimestampTz time, RepOriginId nodeid)
++{
++	SubTransactionCommitTsEntry	entry;
++
++	entry.xid = xid;
++	entry.time = time;
++	entry.nodeid = nodeid;
++
++	XLogBeginInsert();
++	XLogRegisterData((char *) (&entry), sizeof(entry));
++	(void) XLogInsert(RM_COMMIT_TS_ID, COMMIT_TS_SUBTRANS_TS);
++}
++
+ /*
+  * CommitTS resource manager's routines
+  */
+@@ -1021,6 +1123,19 @@ commit_ts_redo(XLogReaderState *record)
+ 
+ 		SimpleLruTruncate(CommitTsCtl, trunc->pageno);
+ 	}
++	else if (info == COMMIT_TS_SUBTRANS_TS)
++	{
++		SubTransactionCommitTsEntry	entry;
++
++		/*
++		 * Redo of the commit record does also restore the commit_ts data,
++		 * including for all subtransactions. We need to create the same
++		 * override information as done during the original replication
++		 * transaction on delta-apply.
++		 */
++		memcpy(&entry, XLogRecGetData(record), sizeof(entry));
++		SubTransactionIdSetCommitTsData(entry.xid, entry.time, entry.nodeid);
++	}
+ 	else
+ 		elog(PANIC, "commit_ts_redo: unknown op code %u", info);
+ }
+diff --git a/src/include/access/commit_ts.h b/src/include/access/commit_ts.h
+index 7662f8e1a9..d64e0808ef 100644
+--- a/src/include/access/commit_ts.h
++++ b/src/include/access/commit_ts.h
+@@ -1,3 +1,4 @@
++
+ /*
+  * commit_ts.h
+  *
+@@ -16,6 +17,21 @@
+ #include "replication/origin.h"
+ #include "storage/sync.h"
+ 
++/*
++ * pgEdge requires to override the CommitTimestampEntry for individual
++ * subtransactions in the case that delta-apply needs to override losing
++ * last-update-wins. spock_apply_heap will then perform this (rare)
++ * update in a subtransaction so that this individual row gets its own
++ * xmin. By overriding this xid's CommitTsData the row can retain its
++ * original CommitTsData and not assume that of the overall replication
++ * transaction.
++ */
++typedef struct SubTransactionCommitTsEntry
++{
++	TransactionId	xid;
++	TimestampTz		time;
++	RepOriginId		nodeid;
++} SubTransactionCommitTsEntry;
+ 
+ extern PGDLLIMPORT bool track_commit_timestamp;
+ 
+@@ -26,6 +42,9 @@ extern bool TransactionIdGetCommitTsData(TransactionId xid,
+ 										 TimestampTz *ts, RepOriginId *nodeid);
+ extern TransactionId GetLatestCommitTsData(TimestampTz *ts,
+ 										   RepOriginId *nodeid);
++extern void SubTransactionIdSetCommitTsData(TransactionId xid,
++											TimestampTz ts,
++											RepOriginId nodeid);
+ 
+ extern Size CommitTsShmemBuffers(void);
+ extern Size CommitTsShmemSize(void);
+@@ -46,6 +65,7 @@ extern int	committssyncfiletag(const FileTag *ftag, char *path);
+ /* XLOG stuff */
+ #define COMMIT_TS_ZEROPAGE		0x00
+ #define COMMIT_TS_TRUNCATE		0x10
++#define COMMIT_TS_SUBTRANS_TS	0x20
+ 
+ typedef struct xl_commit_ts_set
+ {

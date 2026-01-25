@@ -1,0 +1,356 @@
+diff --git a/src/backend/access/transam/xact.c b/src/backend/access/transam/xact.c
+index 7a3d9b4b012..b8aaeccccef 100644
+--- a/src/backend/access/transam/xact.c
++++ b/src/backend/access/transam/xact.c
+@@ -134,6 +134,15 @@ static TransactionId *ParallelCurrentXids;
+  */
+ int			MyXactFlags;
+ 
++/*
++ * Spock:
++ * Incoming remote commit timestamp used in our monotonically increasing
++ * logical clock. This will be set by a logical replication apply worker
++ * to bump our local logical clock forward in case we receive a remote
++ * transaction that appears to have happened in the future.
++ */
++TimestampTz	remoteTransactionStopTimestamp = 0;
++
+ /*
+  *	transaction states - transaction state from server perspective
+  */
+@@ -358,6 +367,13 @@ static void ShowTransactionStateRec(const char *str, TransactionState state);
+ static const char *BlockStateAsString(TBlockState blockState);
+ static const char *TransStateAsString(TransState state);
+ 
++/*
++ * Spock:
++ * Hook function to be called while holding the WAL insert spinlock
++ * to adjust commit timestamps via Lamport clock if needed.
++ */
++static void EnsureMonotonicTransactionStopTimestamp(void *data);
++
+ 
+ /* ----------------------------------------------------------------
+  *	transaction state accessors
+@@ -2115,6 +2131,13 @@ StartTransaction(void)
+ 	/* Mark xactStopTimestamp as unset. */
+ 	xactStopTimestamp = 0;
+ 
++	/*
++	 * Spock:
++	 * Reset the remoteTransactionStopTimestamp in case we are a
++	 * replication apply worker.
++	 */
++	remoteTransactionStopTimestamp = 0;
++
+ 	/*
+ 	 * initialize other subsystems for new transaction
+ 	 */
+@@ -2128,6 +2151,13 @@ StartTransaction(void)
+ 	 */
+ 	s->state = TRANS_INPROGRESS;
+ 
++	/*
++	 * Spock:
++	 * Reset XLogReserveInsertHook
++	 */
++	XLogReserveInsertHook = NULL;
++	XLogReserveInsertHookData = NULL;
++
+ 	ShowTransactionState("StartTransaction");
+ }
+ 
+@@ -5633,6 +5663,7 @@ XactLogCommitRecord(TimestampTz commit_time,
+ 	xl_xact_twophase xl_twophase;
+ 	xl_xact_origin xl_origin;
+ 	uint8		info;
++	XLogRecPtr	result;
+ 
+ 	Assert(CritSectionCount > 0);
+ 
+@@ -5776,7 +5807,20 @@ XactLogCommitRecord(TimestampTz commit_time,
+ 	/* we allow filtering by xacts */
+ 	XLogSetRecordFlags(XLOG_INCLUDE_ORIGIN);
+ 
+-	return XLogInsert(RM_XACT_ID, info);
++	/*
++	 * Spock:
++	 * Install our hook for the call to XLogInsert() so that we can
++	 * modify the xactStopTimestamp and the xact_time of the xlrec
++	 * while holding the lock that determines the commit-LSN to ensure
++	 * the commit timestamps are monotonically increasing.
++	 */
++	XLogReserveInsertHook = EnsureMonotonicTransactionStopTimestamp;
++	XLogReserveInsertHookData = (void *)&xlrec;
++	result = XLogInsert(RM_XACT_ID, info);
++	XLogReserveInsertHook = NULL;
++	XLogReserveInsertHookData = NULL;
++
++	return result;
+ }
+ 
+ /*
+@@ -6248,3 +6292,60 @@ xact_redo(XLogReaderState *record)
+ 	else
+ 		elog(PANIC, "xact_redo: unknown op code %u", info);
+ }
++
++/*
++ * Spock:
++ * Hook function used in XactLogCommitRecord() to ensure that the
++ * commit timestamp is monotonically increasing in commit-LSN order.
++ */
++static void
++EnsureMonotonicTransactionStopTimestamp(void *data)
++{
++	xl_xact_commit	   *xlrec = (xl_xact_commit *)data;
++	TimestampTz			logical_clock;
++
++	logical_clock = XLogGetLastTransactionStopTimestamp();
++
++	if (remoteTransactionStopTimestamp != 0)
++	{
++		/*
++		 * We are committing a replication apply worker transaction.
++		 * In this case we only make sure that the logical clock is
++		 * max(logical_clock, new xact_time, remote_xact_time).
++		 * This is sufficient because the apply logic will use the
++		 * tracked remote timestamp or the delta apply tracking data
++		 * in the future, so no need to adjust the timestamp of the
++		 * replication transaction itself.
++		 */
++		if (xlrec->xact_time > logical_clock)
++			logical_clock = xlrec->xact_time;
++		if (remoteTransactionStopTimestamp > logical_clock)
++			logical_clock = remoteTransactionStopTimestamp;
++	}
++	else
++	{
++		/*
++		 * This is a local transaction. Make sure that the xact_time
++		 * higher than any timestamp we have seen thus far.
++		 *
++		 * TODO: This is not postmaster restart safe. If the local
++		 * system clock is further behind other nodes than it takes
++		 * for the postmaster to restart (time between it stops
++		 * accepting new transactions and time when it becomes ready
++		 * to accept new transactions), local transactions will not
++		 * be bumped into the future correctly.
++		 */
++		if (logical_clock >= xlrec->xact_time)
++		{
++			logical_clock++;
++			xlrec->xact_time = logical_clock;
++			xactStopTimestamp = logical_clock;
++
++			XLogReserveInsertHookModifiedRecord = true;
++		}
++		else
++			logical_clock = xlrec->xact_time;
++	}
++
++	XLogSetLastTransactionStopTimestamp(logical_clock);
++}
+diff --git a/src/backend/access/transam/xlog.c b/src/backend/access/transam/xlog.c
+index 0528ac38d59..22ee4fcedd5 100644
+--- a/src/backend/access/transam/xlog.c
++++ b/src/backend/access/transam/xlog.c
+@@ -157,6 +157,16 @@ int			wal_segment_size = DEFAULT_XLOG_SEG_SIZE;
+  */
+ int			CheckPointSegments;
+ 
++/*
++ * Spock:
++ * Hook used to ensure commit timestamps are monotonically increasing
++ * in commit-LSN order and a flag that the tells if the hook changed
++ * the record itself requiring to correct the CRC.
++ */
++XLogReserveInsertHookType	XLogReserveInsertHook = NULL;
++void					   *XLogReserveInsertHookData = NULL;
++bool						XLogReserveInsertHookModifiedRecord = false;
++
+ /* Estimated distance between checkpoints, in bytes */
+ static double CheckPointDistanceEstimate = 0;
+ static double PrevCheckPointDistance = 0;
+@@ -554,6 +564,14 @@ typedef struct XLogCtlData
+ 	XLogRecPtr	lastFpwDisableRecPtr;
+ 
+ 	slock_t		info_lck;		/* locks shared variables shown above */
++
++	/*
++	 * Spock:
++	 * This is our shared, logical clock that we use to force
++	 * commit timestamps to be monotonically increasing in
++	 * commit-LSN order.
++	 */
++	TimestampTz	lastTransactionStopTimestamp;
+ } XLogCtlData;
+ 
+ static XLogCtlData *XLogCtl = NULL;
+@@ -682,6 +700,7 @@ static void CopyXLogRecordToWAL(int write_len, bool isLogSwitch,
+ 								XLogRecData *rdata,
+ 								XLogRecPtr StartPos, XLogRecPtr EndPos,
+ 								TimeLineID tli);
++static void XLogRecordCorrectCRC(XLogRecData *rdata);
+ static void ReserveXLogInsertLocation(int size, XLogRecPtr *StartPos,
+ 									  XLogRecPtr *EndPos, XLogRecPtr *PrevPtr);
+ static bool ReserveXLogSwitch(XLogRecPtr *StartPos, XLogRecPtr *EndPos,
+@@ -832,6 +851,13 @@ XLogInsertRecord(XLogRecData *rdata,
+ 		return InvalidXLogRecPtr;
+ 	}
+ 
++	/*
++	 * Spock:
++	 * Make sure the flag telling that ReserveXLog...() modified the
++	 * record is false at this point.
++	 */
++	XLogReserveInsertHookModifiedRecord = false;
++
+ 	/*
+ 	 * Reserve space for the record in the WAL. This also sets the xl_prev
+ 	 * pointer.
+@@ -847,6 +873,17 @@ XLogInsertRecord(XLogRecData *rdata,
+ 
+ 	if (inserted)
+ 	{
++		/*
++		 * Spock:
++		 * If our logical_clock hook modified the XLog Record,
++		 * recalculate the CRC.
++		 */
++		if (XLogReserveInsertHookModifiedRecord)
++		{
++			XLogRecordCorrectCRC(rdata);
++			XLogReserveInsertHookModifiedRecord = false;
++		}
++
+ 		/*
+ 		 * Now that xl_prev has been filled in, calculate CRC of the record
+ 		 * header.
+@@ -1027,6 +1064,27 @@ XLogInsertRecord(XLogRecData *rdata,
+ 	return EndPos;
+ }
+ 
++/*
++ * Spock:
++ * Function to recalculate the WAL Record's CRC in case it was
++ * altered to ensure a monotonically increasing commit timestamp
++ * in LSN order.
++ */
++static void
++XLogRecordCorrectCRC(XLogRecData *rdata)
++{
++	XLogRecData    *rdt;
++	XLogRecord	   *rechdr = (XLogRecord *)rdata->data;
++	pg_crc32c       rdata_crc;
++
++	INIT_CRC32C(rdata_crc);
++	COMP_CRC32C(rdata_crc, rdata->data + SizeOfXLogRecord, rdata->len - SizeOfXLogRecord);
++	for (rdt = rdata->next; rdt != NULL; rdt = rdt->next)
++		COMP_CRC32C(rdata_crc, rdt->data, rdt->len);
++
++	rechdr->xl_crc = rdata_crc;
++}
++
+ /*
+  * Reserves the right amount of space for a record of given size from the WAL.
+  * *StartPos is set to the beginning of the reserved section, *EndPos to
+@@ -1067,6 +1125,13 @@ ReserveXLogInsertLocation(int size, XLogRecPtr *StartPos, XLogRecPtr *EndPos,
+ 	 */
+ 	SpinLockAcquire(&Insert->insertpos_lck);
+ 
++	/*
++	 * Spock:
++	 * If set call the XLogReserveInsertHook function
++	 */
++	if (XLogReserveInsertHook != NULL)
++		XLogReserveInsertHook(XLogReserveInsertHookData);
++
+ 	startbytepos = Insert->CurrBytePos;
+ 	endbytepos = startbytepos + size;
+ 	prevbytepos = Insert->PrevBytePos;
+@@ -1126,6 +1191,12 @@ ReserveXLogSwitch(XLogRecPtr *StartPos, XLogRecPtr *EndPos, XLogRecPtr *PrevPtr)
+ 		return false;
+ 	}
+ 
++	/* Spock:
++	 * If set call the XLogReserveInsertHook function
++	 */
++	if (XLogReserveInsertHook != NULL)
++		XLogReserveInsertHook(XLogReserveInsertHookData);
++
+ 	endbytepos = startbytepos + size;
+ 	prevbytepos = Insert->PrevBytePos;
+ 
+@@ -8982,3 +9053,15 @@ SetWalWriterSleeping(bool sleeping)
+ 	XLogCtl->WalWriterSleeping = sleeping;
+ 	SpinLockRelease(&XLogCtl->info_lck);
+ }
++
++extern TimestampTz
++XLogGetLastTransactionStopTimestamp(void)
++{
++	return XLogCtl->lastTransactionStopTimestamp;
++}
++
++extern void
++XLogSetLastTransactionStopTimestamp(TimestampTz ts)
++{
++	XLogCtl->lastTransactionStopTimestamp = ts;
++}
+diff --git a/src/include/access/xact.h b/src/include/access/xact.h
+index 8d46a781bbd..a665662ebfd 100644
+--- a/src/include/access/xact.h
++++ b/src/include/access/xact.h
+@@ -95,6 +95,13 @@ extern PGDLLIMPORT bool bsysscan;
+  */
+ extern PGDLLIMPORT int MyXactFlags;
+ 
++/*
++ * Spock:
++ * Incoming remote commit timestamp used in our monotonically increasing
++ * logical clock.
++ */
++extern PGDLLIMPORT TimestampTz remoteTransactionStopTimestamp;
++
+ /*
+  * XACT_FLAGS_ACCESSEDTEMPNAMESPACE - set when a temporary object is accessed.
+  * We don't allow PREPARE TRANSACTION in that case.
+diff --git a/src/include/access/xlog.h b/src/include/access/xlog.h
+index e81a9d6aec9..24aece75182 100644
+--- a/src/include/access/xlog.h
++++ b/src/include/access/xlog.h
+@@ -192,6 +192,18 @@ typedef enum WALAvailability
+ 
+ struct XLogRecData;
+ 
++/*
++ * Spock:
++ * Hook called from inside of holding the lock that determines
++ * the LSN order of commit records. We use this to ensure that
++ * commit timestamps are monotonically increasing in their LSN
++ * order.
++ */
++typedef void (*XLogReserveInsertHookType)(void *data);
++extern XLogReserveInsertHookType XLogReserveInsertHook;
++extern void *XLogReserveInsertHookData;
++extern bool XLogReserveInsertHookModifiedRecord;
++
+ extern XLogRecPtr XLogInsertRecord(struct XLogRecData *rdata,
+ 								   XLogRecPtr fpw_lsn,
+ 								   uint8 flags,
+@@ -260,6 +272,14 @@ extern bool IsInstallXLogFileSegmentActive(void);
+ extern void ResetInstallXLogFileSegmentActive(void);
+ extern void XLogShutdownWalRcv(void);
+ 
++/*
++ * Spock:
++ * Functions to access the last commit Lamport timestamp held in
++ * XLogCtl.
++ */
++extern TimestampTz XLogGetLastTransactionStopTimestamp(void);
++extern void XLogSetLastTransactionStopTimestamp(TimestampTz tz);
++
+ /*
+  * Routines to start, stop, and get status of a base backup.
+  */
