@@ -27,7 +27,7 @@ jobs:
           ref: ${{ github.event.inputs.branch || 'develop' }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -35,7 +35,7 @@ jobs:
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: cachix/install-nix-action@ba0dd844c9180cbf77aa72a116d6fbc515d0e87b # v27
+        uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15  # v31.9.0
         with:
           install_url: https://releases.nixos.org/nix/nix-2.29.1/install
           extra_nix_config: |

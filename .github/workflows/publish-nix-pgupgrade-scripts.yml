@@ -64,7 +64,7 @@ jobs:
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -115,7 +115,7 @@ jobs:
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
