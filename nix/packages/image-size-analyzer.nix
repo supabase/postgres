@@ -224,16 +224,27 @@ runCommand "image-size-analyzer"
         }' | jq -s '.' 2>/dev/null || echo "[]"
     }
 
-    # Get APT package sizes
+    # Get APT/APK package sizes (handles both Debian and Alpine)
     get_apt_packages() {
       local tag=$1
+      local result
 
-      docker run --rm "$tag" dpkg-query -W -f="\''${Package}\t\''${Installed-Size}\n" 2>/dev/null | \
-        sort -t$'\t' -k2 -rn | head -15 | \
-        awk -F'\t' '{
-          # Installed-Size is in KB, convert to bytes
-          printf "{\"name\":\"%s\",\"size_bytes\":%d}\n", $1, $2 * 1024
-        }' | jq -s '.' 2>/dev/null || echo "[]"
+      # Try dpkg first (Debian/Ubuntu), then apk (Alpine)
+      result=$(docker run --rm "$tag" sh -c '
+        if command -v dpkg-query >/dev/null 2>&1; then
+          dpkg-query -W -f="''${Package}\t''${Installed-Size}\n" 2>/dev/null | sort -t"	" -k2 -rn | head -15 | awk -F"\t" "{printf \"{\\\"name\\\":\\\"%s\\\",\\\"size_bytes\\\":%d}\\n\", \$1, \$2 * 1024}"
+        elif command -v apk >/dev/null 2>&1; then
+          apk info -s 2>/dev/null | paste - - | sort -t"	" -k2 -rn | head -15 | awk -F"\t" "{gsub(/ /, \"\", \$2); printf \"{\\\"name\\\":\\\"%s\\\",\\\"size_bytes\\\":%s}\\n\", \$1, \$2}"
+        else
+          echo ""
+        fi
+      ' 2>/dev/null)
+
+      if [[ -n "$result" ]]; then
+        echo "$result" | jq -s '.' 2>/dev/null || echo "[]"
+      else
+        echo "[]"
+      fi
     }
 
     # Analyze a single image
@@ -244,18 +255,23 @@ runCommand "image-size-analyzer"
 
       local total_size
       total_size=$(get_total_size "$tag")
+      [[ -z "$total_size" || "$total_size" == "" ]] && total_size="0"
 
       local layers
       layers=$(get_layers "$tag")
+      [[ -z "$layers" || "$layers" == "" ]] && layers="[]"
 
       local directories
       directories=$(get_directories "$tag")
+      [[ -z "$directories" || "$directories" == "" ]] && directories="[]"
 
       local nix_packages
       nix_packages=$(get_nix_packages "$tag")
+      [[ -z "$nix_packages" || "$nix_packages" == "" ]] && nix_packages="[]"
 
       local apt_packages
       apt_packages=$(get_apt_packages "$tag")
+      [[ -z "$apt_packages" || "$apt_packages" == "" ]] && apt_packages="[]"
 
       # Build JSON result for this image
       jq -n \

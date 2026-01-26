@@ -5,6 +5,7 @@
   fetchFromGitHub,
   postgresql,
   libsodium,
+  latestOnly ? false,
 }:
 let
   pname = "pgsodium";
@@ -20,10 +21,14 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
 
   # Build function for individual pgsodium versions
   build =
@@ -89,7 +94,7 @@ pkgs.buildEnv {
 
   postBuild = ''
     # Verify all expected library files are present
-    expectedFiles=${toString (numberOfVersions + 1)}
+    expectedFiles=${toString (numberOfVersionsBuilt + 1)}
     actualFiles=$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
@@ -101,8 +106,13 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
