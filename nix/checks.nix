@@ -253,10 +253,10 @@
                 }
 
                 # Start HTTP mock server for http extension tests
-                HTTP_MOCK_PORT_FILE="$BUILD_TMP/http-mock-port"
+                export HTTP_MOCK_PORT_FILE="$BUILD_TMP/http-mock-port"
 
                 log info "Starting HTTP mock server (will find free port)..."
-                HTTP_MOCK_PORT_FILE="$HTTP_MOCK_PORT_FILE" log_cmd ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
+                log_cmd ${pkgs.python3}/bin/python3 ${./tests/http-mock-server.py} &
                 HTTP_MOCK_PID=$!
 
                 # Clean up on exit
