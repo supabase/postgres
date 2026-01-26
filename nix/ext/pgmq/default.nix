@@ -4,6 +4,7 @@
   fetchFromGitHub,
   postgresql,
   buildEnv,
+  latestOnly ? false,
 }:
 let
   pname = "pgmq";
@@ -19,10 +20,14 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
 
   # Build function for individual versions
   build =
@@ -99,11 +104,16 @@ buildEnv {
   pathsToLink = [ "/share/postgresql/extension" ];
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     defaultSettings = {
       search_path = "\"$user\", public, auth, extensions";
     };
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

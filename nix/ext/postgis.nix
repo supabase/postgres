@@ -17,6 +17,7 @@
   callPackage,
   buildEnv,
   sfcgal,
+  latestOnly ? false,
 }:
 
 let
@@ -34,10 +35,14 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
 
   # List of C extensions to be included in the build
   cExtensions = [
@@ -190,9 +195,9 @@ in
   ];
   postBuild = ''
     # Verify all expected library files are present
-    # We expect: (numberOfVersions * cExtensions) versioned libraries + cExtensions symlinks
+    # We expect: (numberOfVersionsBuilt * cExtensions) versioned libraries + cExtensions symlinks
     expectedFiles=${
-      toString ((numberOfVersions * builtins.length cExtensions) + builtins.length cExtensions)
+      toString ((numberOfVersionsBuilt * builtins.length cExtensions) + builtins.length cExtensions)
     }
     actualFiles=$(ls -A $out/lib/*${postgresql.dlSuffix} | wc -l)
 
@@ -205,9 +210,14 @@ in
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }).overrideAttrs
   (_: {
