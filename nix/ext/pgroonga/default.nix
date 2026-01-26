@@ -11,6 +11,7 @@
   buildEnv,
   supabase-groonga,
   mecab-naist-jdic,
+  latestOnly ? false,
 }:
 let
   pname = "pgroonga";
@@ -26,10 +27,14 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
 
   # List of C extensions to be included in the build
   cExtensions = [
@@ -159,7 +164,7 @@ buildEnv {
   ];
   postBuild = ''
     # Verify all expected library files are present
-    expectedFiles=${toString ((numberOfVersions + 1) * (builtins.length cExtensions))}
+    expectedFiles=${toString ((numberOfVersionsBuilt + 1) * (builtins.length cExtensions))}
     actualFiles=$(ls -l $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
@@ -171,8 +176,13 @@ buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

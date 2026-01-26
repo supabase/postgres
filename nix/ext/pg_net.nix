@@ -121,6 +121,10 @@ pkgs.buildEnv {
   name = pname;
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
   postBuild = ''
     {
       echo "default_version = '${latestVersion}'"
