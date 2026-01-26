@@ -24,6 +24,15 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount Nix cache disk
+        uses: useblacksmith/stickydisk@a652394bf1bf95399f406e648482b41fbd25c51f # v1
+        with:
+          key: ${{ github.repository }}-nix-cache-eval-${{ runner.os }}
+          path: /nix
+      - name: Remove existing Nix socket
+        run: |
+          sudo rm /nix/var/nix/daemon-socket/socket /nix/receipt.json || true
+          sudo chown root /nix /nix/var /nix/var/nix || true
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:

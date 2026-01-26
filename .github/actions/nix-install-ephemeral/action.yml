@@ -40,11 +40,10 @@ runs:
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
-    - name: Install nix
-      uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15 # v31.9.0
+    - uses: NixOS/nix-installer-action@d6ef7ecd8f685af89869e5aca0580a33e3e3150c
       with:
-        install_url: https://releases.nixos.org/nix/nix-2.32.2/install
-        extra_nix_config: |
+        installer-version: 2.33.1
+        extra-conf: |
           substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
