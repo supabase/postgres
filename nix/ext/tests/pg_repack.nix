@@ -1,6 +1,6 @@
 { self, pkgs }:
 let
-  pname = "postgis";
+  pname = "pg_repack";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
@@ -64,7 +64,24 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       services.postgresql = {
         enable = true;
         package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+        enableTCPIP = true;
+        authentication = ''
+          local all postgres peer map=postgres
+          local all all peer map=root
+        '';
+        identMap = ''
+          root root supabase_admin
+          postgres postgres postgres
+        '';
+        ensureUsers = [
+          {
+            name = "supabase_admin";
+            ensureClauses.superuser = true;
+          }
+        ];
       };
+
+      networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
@@ -117,52 +134,44 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
     in
     ''
+      from pathlib import Path
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
       }
+      extension_name = "${pname}"
+      support_upgrade = False
+      pg17_configuration = "${pg17-configuration}"
+      sql_test_directory = Path("${../../tests}")
 
-      def run_sql(query):
-        return server.succeed(f"""sudo -u postgres psql -t -A -F\",\" -c \"{query}\" """).strip()
-
-      def check_upgrade_path(pg_version):
-        with subtest("Check ${pname} upgrade path"):
-          firstVersion = versions[pg_version][0]
-          server.succeed("sudo -u postgres psql -c 'DROP EXTENSION IF EXISTS ${pname};'")
-          run_sql(f"""CREATE EXTENSION ${pname} WITH VERSION '{firstVersion}' CASCADE;""")
-          installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
-          assert installed_version == firstVersion, f"Expected ${pname} version {firstVersion}, but found {installed_version}"
-          for version in versions[pg_version][1:]:
-            run_sql(f"""ALTER EXTENSION ${pname} UPDATE TO '{version}';""")
-            installed_version = run_sql(r"""SELECT extversion FROM pg_extension WHERE extname = '${pname}';""")
-            assert installed_version == version, f"Expected ${pname} version {version}, but found {installed_version}"
+      ${builtins.readFile ./lib.py}
 
       start_all()
 
       server.wait_for_unit("multi-user.target")
       server.wait_for_unit("postgresql.service")
 
-      check_upgrade_path("15")
+      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
-      with subtest("Check ${pname} latest extension version"):
-        server.succeed("sudo -u postgres psql -c 'DROP EXTENSION ${pname};'")
-        server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
-        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension where extname = '${pname}';""")
-        latestVersion = versions["15"][-1]
-        majMinVersion = ".".join(latestVersion.split('.')[:1])
-        assert f"${pname},{majMinVersion}" in installed_extensions, f"Expected ${pname} version {latestVersion}, but found {installed_extensions}"
+      with subtest("Check upgrade path with postgresql 15"):
+        test.check_upgrade_path("15")
+
+      last_version = None
+      with subtest("Check the install of the last version of the extension"):
+        last_version = test.check_install_last_version("15")
 
       with subtest("switch to postgresql 17"):
         server.succeed(
-          "${pg17-configuration}/bin/switch-to-configuration test >&2"
+          f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
 
-      with subtest("Check ${pname} latest extension version after upgrade"):
-        installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
-        latestVersion = versions["17"][-1]
-        majMinVersion = ".".join(latestVersion.split('.')[:1])
-        assert f"${pname},{majMinVersion}" in installed_extensions
+      with subtest("Check last version of the extension after upgrade"):
+        test.assert_version_matches(last_version)
 
-      check_upgrade_path("17")
+      with subtest("Check upgrade path with postgresql 17"):
+        test.check_upgrade_path("17")
     '';
 }
+# We don't use the generic test for this extension because:
+# pg_repack does not support upgrade as the extension doesn't provide the upgrade SQL scripts
+# and fails with ERROR:  extension "pg_repack" has no update path from version "1.4.8" to version "1.5.0"
