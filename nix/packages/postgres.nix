@@ -55,7 +55,12 @@
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
       dbExtensions17 = orioleFilteredExtensions;
-      getPostgresqlPackage = version: pkgs."postgresql_${version}";
+      getPostgresqlPackage =
+        version: latestOnly:
+        let
+          base = pkgs."postgresql_${version}";
+        in
+        if latestOnly then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -97,7 +102,7 @@
           latestOnly ? false,
         }:
         let
-          postgresql = getPostgresqlPackage version;
+          postgresql = getPostgresqlPackage version latestOnly;
           extensionsToUse =
             if (builtins.elem version [ "orioledb-17" ]) then
               orioledbExtensions
@@ -152,7 +157,7 @@
           latestOnly ? false,
         }:
         let
-          postgresql = getPostgresqlPackage version;
+          postgresql = getPostgresqlPackage version latestOnly;
           postgres-pkgs = makeOurPostgresPkgs version { inherit latestOnly; };
           ourExts = map (ext: {
             name = ext.name;
@@ -193,7 +198,9 @@
         psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
       slimPackages = {
+        psql_15_slim = makePostgres "15" { latestOnly = true; };
         psql_17_slim = makePostgres "17" { latestOnly = true; };
+        psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
       };
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";

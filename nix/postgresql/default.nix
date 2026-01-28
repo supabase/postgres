@@ -22,8 +22,6 @@ let
           inherit isOrioleDB;
           inherit (config) version hash revision;
           jitSupport = jitSupport;
-          # Disable systemd support - not needed in Docker containers
-          systemdSupport = false;
           self = pkgs;
         }
       )
