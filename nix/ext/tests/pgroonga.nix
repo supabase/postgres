@@ -79,7 +79,7 @@ pkgs.testers.runNixOSTest {
       systemd.services.postgresql.environment.MECAB_DICDIR = "${
         self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.mecab-naist-jdic
       }/lib/mecab/dic/naist-jdic";
-      systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.mecab}/bin/mecab-config";
+      systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.pkgsLinux.mecab}/bin/mecab-config";
       systemd.services.postgresql.environment.GRN_PLUGINS_DIR = "${
         self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.supabase-groonga
       }/lib/groonga/plugins";

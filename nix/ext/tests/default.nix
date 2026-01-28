@@ -16,7 +16,7 @@ let
 
       installedExtension =
         postgresMajorVersion:
-        self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+        self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
           pname
         }";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -33,7 +33,7 @@ let
               (installedExtension majorVersion)
             ]
             ++ lib.optional (postgresql.isOrioleDB
-            ) self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
+            ) self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
             passthru = {
               inherit (postgresql) version psqlSchema;
               lib = pkg;
@@ -64,7 +64,7 @@ let
           self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
       orioledb_17 =
         postgresqlWithExtension
-          self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
     in
     pkgs.testers.runNixOSTest {
       name = pname;
@@ -147,7 +147,8 @@ let
           specialisation.orioledb17.configuration = {
             services.postgresql = {
               package = lib.mkForce (
-                postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
+                postgresqlWithExtension
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
               );
               settings = lib.mkForce (
                 ((installedExtension "17").defaultSettings or { })
@@ -185,7 +186,7 @@ let
                 let
                   newPostgresql =
                     postgresqlWithExtension
-                      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+                      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
                 in
                 ''
                   if [[ -z "${newPostgresql.psqlSchema}" ]]; then

@@ -4,14 +4,14 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.system}."psql_${postgresMajorVersion}".exts.index_advisor;
+    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts.index_advisor;
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
   postgresqlWithExtension =
     postgresql:
     let
       majorVersion =
         if postgresql.isOrioleDB then "orioledb-17" else lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
@@ -19,7 +19,7 @@ let
           (installedExtension majorVersion)
         ]
         ++ lib.optional (postgresql.isOrioleDB
-        ) self.legacyPackages.${pkgs.system}.psql_orioledb-17.exts.orioledb;
+        ) self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
         passthru = {
           inherit (postgresql) version psqlSchema;
           installedExtensions = [ (installedExtension majorVersion) ];
@@ -28,7 +28,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -42,25 +42,21 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_17;
-  orioledb_17 = postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17;
+  psql_15 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+  orioledb_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
       services.openssh = {
         enable = true;
       };
@@ -130,7 +126,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       specialisation.orioledb17.configuration = {
         services.postgresql = {
-          package = lib.mkForce (postgresqlWithExtension self.packages.${pkgs.system}.postgresql_orioledb-17);
+          package = lib.mkForce (
+            postgresqlWithExtension
+              self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
+          );
           settings = lib.mkForce (
             ((installedExtension "17").defaultSettings or { })
             // {
@@ -167,7 +166,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             let
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
               if [[ -z "${newPostgresql.psqlSchema}" ]]; then
