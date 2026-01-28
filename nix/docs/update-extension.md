@@ -45,14 +45,14 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
 
 3. **Calculate the hash** - Run a nix build to get the correct hash:
    ```bash
-   nix build .#psql_15/exts/extension_name -L
+   nix build .#psql_15.exts.extension_name -L
    ```
 
    Nix will fail and print the correct hash. Copy it and update the `hash` field in `versions.json`.
 
 4. **Re-run the build** to verify:
    ```bash
-   nix build .#psql_15/exts/extension_name -L
+   nix build .#psql_15.exts.extension_name -L
    ```
 
 5. **Add any needed migrations** into the `supabase/postgres` migrations directory
@@ -102,7 +102,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 3. **Calculate the hash**:
 
    ```bash
-   nix build .#psql_15/exts/extension_name -L
+   nix build .#psql_15.exts.extension_name -L
    ```
 
    Nix build will fail and print the correct hash. Update the `hash` field in `versions.json`.
@@ -125,7 +125,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 
 5. **Re-run the build** to verify:
    ```bash
-   nix build .#psql_15/exts/extension_name -L
+   nix build .#psql_15.exts.extension_name -L
    ```
 
 6. **Add any needed migrations** into the `supabase/postgres` migrations directory
@@ -169,7 +169,7 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
 
 4. **Calculate the hash**:
    ```bash
-   nix build .#psql_15/exts/supautils -L
+   nix build .#psql_15.exts.supautils -L
    ```
 
    Nix will print the calculated sha256 value.
@@ -181,7 +181,7 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
 
 6. **Re-run the build**:
    ```bash
-   nix build .#psql_15/exts/supautils -L
+   nix build .#psql_15.exts.supautils -L
    ```
 
 7. **Add migrations** as needed

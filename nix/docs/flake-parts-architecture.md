@@ -276,10 +276,10 @@ Demonstrates advanced functional composition:
 { psql_15.bin = <drv>; psql_15.exts.rum = <drv>; }
 
 # Output:
-{ "psql_15/bin" = <drv>; "psql_15/exts/rum" = <drv>; }
+{ "psql_15.bin" = <drv>; "psql_15.exts.rum" = <drv>; }
 ```
 
-This allows `nix build .#psql_15/bin` or `nix build .#psql_15/exts/rum`.
+This allows `nix build .#psql_15.bin` or `nix build .#psql_15.exts.rum`.
 
 #### nix/apps.nix
 
@@ -351,9 +351,9 @@ Overlays are flake-level (not per-system):
   {
     checks = {
       psql_15 = pkgs.runCommand "run-check-harness-psql-15" { }
-        (lib.getExe (makeCheckHarness self'.packages."psql_15/bin"));
+        (lib.getExe (makeCheckHarness self'.packages."psql_15.bin"));
       psql_17 = pkgs.runCommand "run-check-harness-psql-17" { }
-        (lib.getExe (makeCheckHarness self'.packages."psql_17/bin"));
+        (lib.getExe (makeCheckHarness self'.packages."psql_17.bin"));
     }
     // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
       devShell = self'.devShells.default;
@@ -463,7 +463,7 @@ Modules reference outputs from other modules:
 
 ```nix
 # Reference current system's packages
-self'.packages."psql_15/bin"
+self'.packages."psql_15.bin"
 
 # Reference flake-level config
 self.supabase.defaults
@@ -514,7 +514,7 @@ Allow building nested package paths:
 }
 ```
 
-**Effect**: Enables `nix build .#psql_15/exts/rum`.
+**Effect**: Enables `nix build .#psql_15.exts.rum`.
 
 ### Attribute Set Merging
 

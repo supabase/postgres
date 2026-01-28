@@ -132,7 +132,7 @@ Edit `nix/ext/versions.json` and add your extension:
 
 **To calculate the hash:** Use a dummy hash first, then run:
 ```bash
-nix build .#psql_15/exts/my_extension -L
+nix build .#psql_15.exts.my_extension -L
 ```
 The error message will show the correct hash.
 
@@ -206,13 +206,13 @@ The pgrx dev shells provide:
 
 ```bash
 # Build extension for PostgreSQL 15
-nix build .#psql_15/exts/my_extension -L
+nix build .#psql_15.exts.my_extension -L
 
 # Build extension for PostgreSQL 17
-nix build .#psql_17/exts/my_extension -L
+nix build .#psql_17.exts.my_extension -L
 
 # Build all extensions (full PostgreSQL package)
-nix build .#psql_15/bin -L
+nix build .#psql_15.bin -L
 
 # Run tests
 nix flake check -L

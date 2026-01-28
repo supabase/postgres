@@ -15,7 +15,7 @@ points to a path which contains an entire PostgreSQL 15 installation &mdash;
 extensions and all:
 
 ```
-nix build .#psql_15/bin
+nix build .#psql_15.bin
 ```
 
 ```
@@ -102,7 +102,7 @@ _content_, is a very powerful primitive, as we'll see later.
 What if we wanted PostgreSQL 16 and plugins? Just replace `_15` with `_16`:
 
 ```
-nix build .#psql_16/bin
+nix build .#psql_16.bin
 ```
 
 You're done:
