@@ -240,6 +240,7 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|hba_file = '/etc/postgresql/pg_hba.conf'|hba_file = '$DATDIR/pg_hba.conf'|" \
 -e "s|ident_file = '/etc/postgresql/pg_ident.conf'|ident_file = '$DATDIR/pg_ident.conf'|" \
 -e "s|include = '/etc/postgresql/logging.conf'|#&|" \
+-e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
 -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \

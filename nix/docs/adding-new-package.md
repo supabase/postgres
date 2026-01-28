@@ -56,7 +56,7 @@ Your build should produce all of the sql and control files needed for the instal
 1. Once you have created this file, you can add it to `nix/ext/<yourname>.nix` and edit `nix/packages/postgres.nix` and add it to the `ourExtensions` list.
 2. `git add .` as nix uses git to track changes 
 3. In your package file, temporarily empty the `hash = "sha256<...>=";` to `hash = "";` and save and `git add .`
-4. Run `nix build .#psql_15/exts/<yourname>`  to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15/exts/<yourname>`. 
+4. Run `nix build .#psql_15.exts.<yourname>`  to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15.exts.<yourname>`. 
 5. Add any needed migrations into the `supabase/postgres` migrations directory.
 6. You can then run tests locally to verify that the update of the package succeeded. 
 7. Now it's ready for PR review!
@@ -148,7 +148,7 @@ A few things about `buildPgrxExtension_x`:
 
 * It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
 * It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above 
-* It caclulates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15/exts/<yourname>` to build the extension
+* It calculates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
 
 
 ## Post Nix derivation release steps
@@ -157,7 +157,7 @@ A few things about `buildPgrxExtension_x`:
 1. You can add and run tests as described in https://github.com/supabase/postgres/blob/develop/nix/docs/adding-tests.md 
 2. You may need to add tests to our test.yml gh action workflow as well.
 3. You can add the package and name and version to `ansible/vars.yml` it is not necessary to add the sha256 hash here, as the package is already built and cached in our release process before these vars are ever run.
-4. to check that all your files will land in the overall build correctly, you can run `nix profile install .#psql_15/bin` on your machine, and check in `~/.nix-profile/bin, ~/.nix-profile/lib, ~/.nix-profile/share/postgresql/*` and you should see your lib, .control and sql files there. 
+4. to check that all your files will land in the overall build correctly, you can run `nix profile install .#psql_15.bin` on your machine, and check in `~/.nix-profile/bin, ~/.nix-profile/lib, ~/.nix-profile/share/postgresql/*` and you should see your lib, .control and sql files there. 
 5. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#star-client-and-migrate 15` and try to `CREATE EXTENSION <yourname>` and work with it there
 6. Check that your extension works with the `pg_upgrade` process (TODO documentation forthcoming)
 7. Now you are ready to PR the extension
