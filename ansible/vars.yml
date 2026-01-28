@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.031-orioledb-checksum-1"
-  postgres17: "17.6.1.074-checksum-1"
-  postgres15: "15.14.1.074-checksum-1"
+  postgresorioledb-17: "17.6.0.032"
+  postgres17: "17.6.1.075"
+  postgres15: "15.14.1.075"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
