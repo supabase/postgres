@@ -148,7 +148,7 @@ A few things about `buildPgrxExtension_x`:
 
 * It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
 * It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above 
-* It caclulates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
+* It calculates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
 
 
 ## Post Nix derivation release steps
