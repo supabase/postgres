@@ -171,7 +171,7 @@ let
     _: value: !builtins.elem pgVersion value.postgresql
   ) allVersions;
   unsupportedPackages =
-    if pgVersion == 15 then
+    if pgVersion == "15" then
       [ ]
     else
       # Include SQL-only packages for PG15 extension versions incompatible with current PG
