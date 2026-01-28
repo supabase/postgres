@@ -67,7 +67,12 @@
         ../ext/pg-safeupdate.nix
       ];
 
-      getPostgresqlPackage = version: pkgs."postgresql_${version}";
+      getPostgresqlPackage =
+        version: latestOnly:
+        let
+          base = pkgs."postgresql_${version}";
+        in
+        if latestOnly then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -110,7 +115,7 @@
           latestOnly ? false,
         }:
         let
-          postgresql = getPostgresqlPackage version;
+          postgresql = getPostgresqlPackage version latestOnly;
           extensionsToUse =
             if variant == "cli" then
               cliExtensions
@@ -171,10 +176,13 @@
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
           postgresql =
+            let
+              base = getPostgresqlPackage version latestOnly;
+            in
             if variant == "cli" then
-              (getPostgresqlPackage version).override { portable = true; }
+              base.override { portable = true; }
             else
-              getPostgresqlPackage version;
+              base;
           postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
           ourExts = map (ext: {
             name = ext.name;
@@ -216,7 +224,9 @@
         psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
       slimPackages = {
+        psql_15_slim = makePostgres "15" { latestOnly = true; };
         psql_17_slim = makePostgres "17" { latestOnly = true; };
+        psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
       };
 
       # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
