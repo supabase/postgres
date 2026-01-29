@@ -172,3 +172,6 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         test.check_upgrade_path("17")
     '';
 }
+# We don't use the generic test for this extension because:
+# pg_repack does not support upgrade as the extension doesn't provide the upgrade SQL scripts
+# and fails with ERROR:  extension "pg_repack" has no update path from version "1.4.8" to version "1.5.0"

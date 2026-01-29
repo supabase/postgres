@@ -242,3 +242,4 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       check_upgrade_path("orioledb-17")
     '';
 }
+# We don't use the generic test for this extension because: it requires postgis to be installed as well.

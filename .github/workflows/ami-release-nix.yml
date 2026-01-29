@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  actions: write
 
 jobs:
   prepare:
@@ -63,29 +64,48 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-      - name: Run checks if triggered manually
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Set PostgreSQL version environment variable
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
-          if [[ -z "$SUFFIX" ]] ; then
-            echo "Version must include non-numeric characters if built manually."
-            exit 1
-          fi
+          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
 
-      - name: Build AMI
-        id: build-ami
-        uses: ./.github/actions/build-ami
-        with:
-          postgres_version: ${{ matrix.postgres_version }}
-          region: us-east-1
-          ami_regions: '["us-east-1"]'
-          git_sha: ${{ github.sha }}
+      - name: Generate common-nix.vars.pkr.hcl
+        run: |
+          PG_VERSION="$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
+          BRANCH_NAME="$(echo "${{ github.ref }}" | sed 's|refs/heads/||')"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH_NAME" != "develop" && "$BRANCH_NAME" != release/* ]]; then
+             SUFFIX="${BRANCH_NAME//[^a-zA-Z0-9._-]/-}-${{ github.run_id }}"
+             PG_VERSION="${PG_VERSION}-${SUFFIX}"
+             echo "Added branch suffix to version: $SUFFIX"
+          fi
+          echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
+          # Ensure there's a newline at the end of the file
+          echo "" >> common-nix.vars.pkr.hcl
+
+      - name: Build AMI stage 1
+        env:
+          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
+        run: |
+          GIT_SHA=${{github.sha}}
+          nix  run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
+          # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
+          nix  run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
+
+      - name: Build AMI stage 2
+        env:
+          POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
+        run: |
+          GIT_SHA=${{github.sha}}
+          nix  run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
+          POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
+          nix  run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION="${{ steps.build-ami.outputs.postgres_release_version }}"
+          VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "::notice title=AMI Published::Postgres AMI version: $VERSION"
 
       - name: Create nix flake revision tarball
         run: |
@@ -191,6 +211,22 @@ jobs:
           tag_name: ${{ steps.process_release_version.outputs.version }}
           target_commitish: ${{github.sha}}
 
+      - name: Trigger pg_upgrade_scripts workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run publish-nix-pgupgrade-scripts.yml \
+            --ref "${{ github.ref_name }}" \
+            -f postgresVersion="${{ steps.process_release_version.outputs.version }}"
+
+      - name: Trigger pg_upgrade_bin flake version workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run publish-nix-pgupgrade-bin-flake-version.yml \
+            --ref "${{ github.ref_name }}" \
+            -f postgresVersion="${{ steps.process_release_version.outputs.version }}"
+
       - name: Slack Notification on Failure
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
@@ -204,11 +240,11 @@ jobs:
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
+          EXECUTION_ID="${{ env.EXECUTION_ID }}"
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
+          EXECUTION_ID="${{ env.EXECUTION_ID }}"
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids

@@ -15,11 +15,11 @@ upgrade mechanisms.
 For example:
 
 ```
-nix build .#psql_15/bin
+nix build .#psql_15.bin
 ```
 
 ```
-austin@GANON:~/work/nix-postgres$ nix build .#psql_15/bin
+austin@GANON:~/work/nix-postgres$ nix build .#psql_15.bin
 austin@GANON:~/work/nix-postgres$ ls result
 bin  include  lib  receipt.json  share
 ```
