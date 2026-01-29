@@ -176,12 +176,17 @@
               shell: |
                 sudo ln -s /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
 
+            - name: Get gatekeeper version
+              ansible.builtin.shell: |
+                sudo -u postgres bash -c "/nix/var/nix/profiles/default/bin/nix-store -q --requisites ~/.nix-profile | awk -F- '/gatekeeper/{print \$NF}'"
+              register: gatekeeper_version
+
             - name: Write version file
               ansible.builtin.copy:
                 dest: "/root/pam_jit_pg-version"
                 group: "root"
                 owner: "root"
-                content: "1.0.0"
+                content: "{{ gatekeeper_version.stdout }}"
 
     - name: Create symlinks for Nix files into /usr/lib/postgresql/bin
       ansible.builtin.file:
