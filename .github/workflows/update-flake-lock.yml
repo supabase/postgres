@@ -8,17 +8,26 @@ on:
 jobs:
   update-flake-lock:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Install Nix
         uses: ./.github/actions/nix-install-ephemeral
 
-      - name: Update flake.lock
-        uses: Mic92/update-flake-inputs@main
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          app-id: ${{ secrets.FLAKE_UPDATE_APP_ID }}
+          private-key: ${{ secrets.FLAKE_UPDATE_PRIVATE_KEY }}
+
+      - name: Update flake.lock
+        uses: Mic92/update-flake-inputs@73cb58f118541b956f5a061d12838ef1dd997867 # v1.0.3
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
           pr-labels: |
             dependencies
             automated
