@@ -217,3 +217,15 @@ jobs:
       (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
       (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
     uses: ./.github/workflows/test.yml
+
+  docker-image-test:
+    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux]
+    if: |
+      !cancelled() &&
+      needs.nix-eval.result == 'success' &&
+      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
+      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
+    uses: ./.github/workflows/docker-image-test.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
