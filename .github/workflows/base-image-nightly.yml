@@ -53,8 +53,8 @@ jobs:
           AWS_RETRY_MODE: adaptive
         run: |
           GIT_SHA=${{ github.sha }}
-          nix run nixpkgs#packer -- init amazon-arm64-nix.pkr.hcl
-          nix run nixpkgs#packer -- build \
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build \
             -var "git-head-version=${GIT_SHA}" \
             -var "packer-execution-id=${EXECUTION_ID}" \
             -var-file="development-arm.vars.pkr.hcl" \

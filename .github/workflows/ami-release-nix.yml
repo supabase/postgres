@@ -87,18 +87,18 @@ jobs:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           GIT_SHA=${{github.sha}}
-          nix run nixpkgs#packer -- init amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
           # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
-          nix run nixpkgs#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
 
       - name: Build AMI stage 2
         env:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           GIT_SHA=${{github.sha}}
-          nix run nixpkgs#packer -- init stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
           POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          nix run nixpkgs#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
