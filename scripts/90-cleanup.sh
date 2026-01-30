@@ -36,7 +36,9 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libgcc-9-dev \
  	ansible
 
-  add-apt-repository --yes --remove ppa:ansible/ansible
+  # Remove ansible PPA directly (software-properties-common may not be installed)
+  rm -f /etc/apt/sources.list.d/ansible-ubuntu-ansible-*.list \
+        /etc/apt/sources.list.d/ansible-ubuntu-ansible-*.sources 2>/dev/null || true
 
   source /etc/os-release
   
