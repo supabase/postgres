@@ -196,6 +196,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Wait for postgres to be ready
+# Requires PG_ISREADY_PATH to be set to the pg_isready binary
 wait_for_postgres() {
     local host="$1"
     local port="$2"
@@ -205,7 +206,7 @@ wait_for_postgres() {
     log_info "Waiting for PostgreSQL to be ready..."
 
     while [[ $attempt -le $max_attempts ]]; do
-        if pg_isready -h "$host" -p "$port" -U "$POSTGRES_USER" -q 2>/dev/null; then
+        if "$PG_ISREADY_PATH" -h "$host" -p "$port" -U "$POSTGRES_USER" -q 2>/dev/null; then
             log_info "PostgreSQL is ready"
             return 0
         fi
@@ -286,6 +287,43 @@ main() {
         fi
     fi
 
+    # Get psql, pg_isready, and pg_regress from Nix (needed before starting container)
+    log_info "Setting up Nix environment..."
+
+    # Determine psql binary path based on version
+    local nix_psql_attr
+    case "$VERSION" in
+        15) nix_psql_attr="psql_15/bin" ;;
+        17) nix_psql_attr="psql_17/bin" ;;
+        orioledb-17) nix_psql_attr="psql_orioledb-17/bin" ;;
+    esac
+
+    # Build the required Nix packages
+    local nix_bin_path
+    nix_bin_path=$(nix build --no-link --print-out-paths ".#${nix_psql_attr}")/bin
+    PSQL_PATH="${nix_bin_path}/psql"
+    PG_ISREADY_PATH="${nix_bin_path}/pg_isready"
+    PG_REGRESS_PATH=$(nix build --no-link --print-out-paths ".#pg_regress")/bin/pg_regress
+
+    if [[ ! -x "$PSQL_PATH" ]]; then
+        log_error "Failed to get psql from Nix"
+        exit 1
+    fi
+
+    if [[ ! -x "$PG_ISREADY_PATH" ]]; then
+        log_error "Failed to get pg_isready from Nix"
+        exit 1
+    fi
+
+    if [[ ! -x "$PG_REGRESS_PATH" ]]; then
+        log_error "Failed to get pg_regress from Nix"
+        exit 1
+    fi
+
+    log_info "Using psql: $PSQL_PATH"
+    log_info "Using pg_isready: $PG_ISREADY_PATH"
+    log_info "Using pg_regress: $PG_REGRESS_PATH"
+
     # Start container
     log_info "Starting container $CONTAINER_NAME..."
     docker run -d \
@@ -300,34 +338,6 @@ main() {
         docker logs "$CONTAINER_NAME"
         exit 1
     fi
-
-    # Get psql and pg_regress from Nix
-    log_info "Setting up Nix environment..."
-
-    # Determine psql binary path based on version
-    local nix_psql_attr
-    case "$VERSION" in
-        15) nix_psql_attr="psql_15/bin" ;;
-        17) nix_psql_attr="psql_17/bin" ;;
-        orioledb-17) nix_psql_attr="psql_orioledb-17/bin" ;;
-    esac
-
-    # Build the required Nix packages
-    PSQL_PATH=$(nix build --no-link --print-out-paths ".#${nix_psql_attr}")/bin/psql
-    PG_REGRESS_PATH=$(nix build --no-link --print-out-paths ".#pg_regress")/bin/pg_regress
-
-    if [[ ! -x "$PSQL_PATH" ]]; then
-        log_error "Failed to get psql from Nix"
-        exit 1
-    fi
-
-    if [[ ! -x "$PG_REGRESS_PATH" ]]; then
-        log_error "Failed to get pg_regress from Nix"
-        exit 1
-    fi
-
-    log_info "Using psql: $PSQL_PATH"
-    log_info "Using pg_regress: $PG_REGRESS_PATH"
 
     # Start HTTP mock server on host (accessible from container via host.docker.internal)
     log_info "Starting HTTP mock server on host..."
