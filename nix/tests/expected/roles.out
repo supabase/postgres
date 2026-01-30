@@ -62,7 +62,7 @@ order by rolname;
           rolname           |                                    rolconfig                                    
 ----------------------------+---------------------------------------------------------------------------------
  anon                       | {statement_timeout=3s}
- authenticated              | {statement_timeout=8s}
+ authenticated              | {statement_timeout=8s,session_preload_libraries=safeupdate}
  authenticator              | {session_preload_libraries=safeupdate,statement_timeout=8s,lock_timeout=8s}
  dashboard_user             | 
  pg_checkpoint              | 

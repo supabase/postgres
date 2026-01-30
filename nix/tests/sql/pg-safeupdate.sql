@@ -12,4 +12,12 @@ create table v.foo(
 update v.foo
   set val = 'bar';
 
+grant all on schema v to authenticated;
+set role authenticated;
+
+delete from v.foo;
+reset role;
 drop schema v cascade;
+
+
+

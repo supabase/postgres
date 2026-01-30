@@ -8,5 +8,10 @@ create table v.foo(
 update v.foo
   set val = 'bar';
 ERROR:  UPDATE requires a WHERE clause
+grant all on schema v to authenticated;
+set role authenticated;
+delete from v.foo;
+ERROR:  DELETE requires a WHERE clause
+reset role;
 drop schema v cascade;
 NOTICE:  drop cascades to table v.foo
