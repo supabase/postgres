@@ -218,22 +218,25 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf /etc/postgresql-custom/wal-g.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf /etc/postgresql-custom/read-replica.conf
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
 RUN sed -i \
+    -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
-    /etc/postgresql/postgresql.conf && \
+    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     usermod -aG postgres wal-g && \
     chown -R postgres:postgres /etc/postgresql-custom
 
     # Remove items from postgresql.conf
-RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf"
-    # As of pg 16.4+ db_user_namespace is totally deprecated and will break the server if setting is present
-RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf"
+RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
+    #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
+RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" 
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
 RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf"
 RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf"

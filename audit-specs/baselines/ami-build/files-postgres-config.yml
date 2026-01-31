@@ -55,13 +55,13 @@ file:
     owner: postgres
     group: postgres
     mode: '0775'
-  /etc/postgresql-custom/conf.d/wal-g.conf:
+  /etc/postgresql-custom/wal-g.conf:
     exists: true
     filetype: file
     owner: postgres
     group: postgres
     mode: '0664'
-  /etc/postgresql-custom/conf.d/read_replica.conf:
+  /etc/postgresql-custom/read-replica.conf:
     exists: true
     filetype: file
     owner: postgres

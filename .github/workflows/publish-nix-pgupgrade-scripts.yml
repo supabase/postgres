@@ -25,13 +25,16 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      
       - uses: ./.github/actions/nix-install-ephemeral
-
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
+            MAJOR_VERSION=$(echo "${{ inputs.postgresVersion }}" | cut -d'.' -f1)
+            VERSIONS="[\"$MAJOR_VERSION\"]"
+          else
+            VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          fi
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -50,10 +53,10 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION="${{ inputs.postgresVersion }}"
+          else
+            VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -101,10 +104,10 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
           if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
             VERSION="${{ inputs.postgresVersion }}"
+          else
+            VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
