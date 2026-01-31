@@ -7,6 +7,8 @@
     ];
   };
   inputs = {
+    devshell.url = "github:numtide/devshell";
+    devshell.inputs.nixpkgs.follows = "nixpkgs";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";

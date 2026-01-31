@@ -3,7 +3,6 @@
   perSystem =
     {
       self',
-      system,
       pkgs,
       lib,
       ...
@@ -434,12 +433,11 @@
           );
           inherit (self'.packages)
             wal-g-2
-            dbmate-tool
-            packer
             pg_regress
             goss
             supascan
             ;
+          devShell = self'.devShells.default;
         }
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (
           {
@@ -456,7 +454,6 @@
             inherit self;
             inherit pkgs;
           })
-        )
-        // pkgs.lib.optionalAttrs (system == "x86_64-linux") ({ devShell = self'.devShells.default; });
+        );
     };
 }

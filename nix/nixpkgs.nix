@@ -23,6 +23,7 @@
               v8_oldstable = oldstable.v8;
             }
           )
+          inputs.devshell.overlays.default
         ];
       };
     };
