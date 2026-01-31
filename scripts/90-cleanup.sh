@@ -41,9 +41,16 @@ elif [ -n "$(command -v apt-get)" ]; then
         /etc/apt/sources.list.d/ansible-ubuntu-ansible-*.sources 2>/dev/null || true
 
   source /etc/os-release
-  
+
   apt-get -y update
   apt-get -y upgrade
+
+  # Protect SSH and cloud-init dependencies from autoremove
+  # Without these, the AMI won't be accessible via SSH after boot
+  apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 \
+    python3-yaml python3-oauthlib python3-configobj python3-requests \
+    python3-urllib3 python3-certifi python3-chardet python3-idna || true
+
   apt-get -y autoremove
   apt-get -y autoclean
 fi
