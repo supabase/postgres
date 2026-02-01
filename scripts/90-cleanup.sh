@@ -45,6 +45,10 @@ elif [ -n "$(command -v apt-get)" ]; then
   apt-get -y update
   apt-get -y upgrade
 
+  # Ensure cloud-init and openssh-server are installed
+  # They may have been removed as dependencies during package cleanup
+  apt-get -y install --no-install-recommends cloud-init openssh-server
+
   # Protect SSH and cloud-init dependencies from autoremove
   # Without these, the AMI won't be accessible via SSH after boot
   apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 \

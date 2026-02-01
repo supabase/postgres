@@ -47,6 +47,10 @@ elif [ -n "$(command -v apt-get)" ]; then
   # Protect critical runtime packages from autoremove
   apt-mark manual libevent-2.1-7t64
 
+  # Ensure cloud-init and openssh-server are installed
+  # They may have been removed as dependencies during package cleanup
+  apt-get -y install --no-install-recommends cloud-init openssh-server
+
   # Protect SSH and cloud-init dependencies from autoremove
   # Without these, the image won't be accessible via SSH after boot
   apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 \
