@@ -1,13 +1,10 @@
-# Protect packages that SSH and cloud-init depend on from autoremove
-# These must be marked as manually installed BEFORE any autoremove runs
-- name: Mark SSH and cloud-init dependencies as manually installed
-  ansible.builtin.shell: |
-    apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 python3-yaml python3-oauthlib python3-configobj || true
-  changed_when: false
+# IMPORTANT: Do NOT use autoremove: true in these tasks!
+# Autoremove causes cascading removal of cloud-init and breaks SSH on the AMI.
+# Autoremove is handled safely in 90-cleanup.sh after apt-mark protection.
 
 - name: Remove build dependencies
   ansible.builtin.apt:
-    autoremove: true
+    autoremove: false
     pkg:
       - bison
       - build-essential
@@ -32,7 +29,6 @@
 # - Dev packages provide headers for building exploits
 # - salt-minion is a remote management agent (large attack surface)
 # - sshpass stores credentials in plaintext
-# NOTE: autoremove disabled here to prevent cascading removal of cloud-init deps
 - name: Remove high-security-risk packages
   ansible.builtin.apt:
     autoremove: false
@@ -64,10 +60,3 @@
       # Build tool leftovers
       - ansible-core
     state: 'absent'
-
-# Run a final autoremove to clean up any remaining orphaned packages
-# This runs after apt-mark manual, so cloud-init deps are protected
-- name: Clean up orphaned packages
-  ansible.builtin.apt:
-    autoremove: true
-  changed_when: false
