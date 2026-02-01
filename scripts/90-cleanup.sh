@@ -61,29 +61,16 @@ elif [ -n "$(command -v apt-get)" ]; then
   apt-get -y update
   apt-get -y upgrade
 fi
-
-# Set multi-user target (non-graphical) as default
-systemctl set-default multi-user.target
-systemctl disable getty@tty1.service
-systemctl mask getty@tty1.service
-systemctl mask graphical.target
-
 rm -rf /tmp/* /var/tmp/*
 history -c
 cat /dev/null > /root/.bash_history
 unset HISTFILE
-
-journalctl --rotate
-journalctl --vacuum-time=1s
 find /var/log -mtime -1 -type f -exec truncate -s 0 {} \;
 rm -rf /var/log/*.gz /var/log/*.[0-9] /var/log/*-????????
 rm -rf /var/lib/cloud/instances/*
 rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
-
-cat /dev/null > /var/log/lastlog
-cat /dev/null > /var/log/wtmp
 
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
@@ -103,5 +90,4 @@ dd if=/dev/zero of=/zerofile &
       sleep 5
     done
 sync; rm /zerofile; sync
-
-fstrim /
+cat /dev/null > /var/log/lastlog; cat /dev/null > /var/log/wtmp
