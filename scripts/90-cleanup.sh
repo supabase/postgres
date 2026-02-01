@@ -49,6 +49,9 @@ elif [ -n "$(command -v apt-get)" ]; then
   # They may have been removed as dependencies during package cleanup
   apt-get -y install --no-install-recommends cloud-init openssh-server
 
+  # Ensure cloud-init and SSH services are enabled (may not be re-enabled on reinstall)
+  systemctl enable cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service ssh.service || true
+
   # Protect SSH and cloud-init dependencies from autoremove
   # Without these, the AMI won't be accessible via SSH after boot
   apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 \
