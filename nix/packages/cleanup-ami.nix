@@ -1,35 +1,15 @@
-{ pkgs, runCommand }:
-runCommand "cleanup-ami"
-  {
-    buildInputs = with pkgs; [
-      awscli2
-      aws-vault
-    ];
-  }
-  ''
-    mkdir -p $out/bin
-    cat > $out/bin/cleanup-ami << 'EOL'
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    export PATH="${
-      pkgs.lib.makeBinPath (
-        with pkgs;
-        [
-          awscli2
-          aws-vault
-        ]
-      )
-    }:$PATH"
-
-    # Check for required tools
-    for cmd in aws-vault; do
-      if ! command -v $cmd &> /dev/null; then
-        echo "Error: $cmd is required but not found"
-        exit 1
-      fi
-    done
-
+{
+  writeShellApplication,
+  awscli2,
+  aws-vault,
+}:
+writeShellApplication {
+  name = "cleanup-ami";
+  runtimeInputs = [
+    awscli2
+    aws-vault
+  ];
+  text = ''
     # Check AWS Vault profile
     if [ -z "''${AWS_VAULT:-}" ]; then
       echo "Error: AWS_VAULT environment variable must be set with the profile name"
@@ -56,6 +36,5 @@ runCommand "cleanup-ami"
           aws ec2 deregister-image --region $REGION --image-id "$ami_id" || true
         done
     done
-    EOL
-    chmod +x $out/bin/cleanup-ami
-  ''
+  '';
+}
