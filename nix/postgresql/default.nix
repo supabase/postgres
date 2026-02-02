@@ -23,6 +23,7 @@ let
           inherit (config) version hash revision;
           jitSupport = jitSupport;
           self = pkgs;
+          portable = false; # Default to non-portable, can be overridden
         }
       )
     ) supportedVersions;

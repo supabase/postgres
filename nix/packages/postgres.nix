@@ -55,6 +55,18 @@
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
       dbExtensions17 = orioleFilteredExtensions;
+
+      # CLI extensions - minimal set for Supabase CLI with migration support
+      cliExtensions = [
+        ../ext/supautils.nix
+        ../ext/pg_graphql
+        ../ext/pgsodium.nix
+        ../ext/vault.nix
+        ../ext/pg_net.nix
+        ../ext/pg_cron
+        ../ext/pg-safeupdate.nix
+      ];
+
       getPostgresqlPackage = version: pkgs."postgresql_${version}";
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
@@ -93,10 +105,15 @@
 
       makeOurPostgresPkgs =
         version:
+        {
+          variant ? "full",
+        }:
         let
           postgresql = getPostgresqlPackage version;
           extensionsToUse =
-            if (builtins.elem version [ "orioledb-17" ]) then
+            if variant == "cli" then
+              cliExtensions
+            else if (builtins.elem version [ "orioledb-17" ]) then
               orioledbExtensions
             else if (builtins.elem version [ "17" ]) then
               dbExtensions17
@@ -116,8 +133,11 @@
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
+        {
+          variant ? "full",
+        }:
         let
-          pkgsList = makeOurPostgresPkgs version;
+          pkgsList = makeOurPostgresPkgs version { inherit variant; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -142,9 +162,17 @@
       # basis for building extensions, etc.
       makePostgresBin =
         version:
+        {
+          variant ? "full",
+        }:
         let
-          postgresql = getPostgresqlPackage version;
-          postgres-pkgs = makeOurPostgresPkgs version;
+          # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
+          postgresql =
+            if variant == "cli" then
+              (getPostgresqlPackage version).override { portable = true; }
+            else
+              getPostgresqlPackage version;
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -171,22 +199,31 @@
       #    package names.
       makePostgres =
         version:
+        {
+          variant ? "full",
+        }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version;
-          exts = makeOurPostgresPkgsSet version;
+          bin = makePostgresBin version { inherit variant; };
+          exts = makeOurPostgresPkgsSet version { inherit variant; };
         };
       basePackages = {
-        psql_15 = makePostgres "15";
-        psql_17 = makePostgres "17";
-        psql_orioledb-17 = makePostgres "orioledb-17";
+        psql_15 = makePostgres "15" { };
+        psql_17 = makePostgres "17" { };
+        psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
+
+      # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
+      cliPackages = {
+        psql_17_cli = makePostgres "17" { variant = "cli"; };
+      };
+
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) basePackages;
+      }) (basePackages // cliPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages;
+      legacyPackages = basePackages // cliPackages;
     };
 }

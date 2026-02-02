@@ -27,6 +27,9 @@
           # deadnix: skip
           makeCheckHarness =
             pgpkg:
+            {
+              isCliVariant ? false,
+            }:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
               inherit (self'.packages) pg_regress;
@@ -96,6 +99,45 @@
                   "5536"
                 else
                   "5537";
+
+              # Script to generate shared_preload_libraries dynamically based on receipt.json
+              generatePreloadLibs = pkgs.writeShellScript "generate-preload-libs" ''
+                RECEIPT_FILE="$1"
+
+                # Define which extensions should be preloaded (in order of priority)
+                WANTED_EXTS=(
+                  "pg_stat_statements"
+                  "pgaudit"
+                  "plpgsql"
+                  "plpgsql_check"
+                  "pg_cron"
+                  "pg_net"
+                  "pgsodium"
+                  "timescaledb"
+                  "auto_explain"
+                  "pg_tle"
+                  "plan_filter"
+                  "supabase_vault"
+                  "supautils"
+                )
+
+                # Extract available extensions from receipt
+                AVAILABLE_EXTS=$(${pkgs.jq}/bin/jq -r '.extensions[].name' "$RECEIPT_FILE")
+
+                # Build the preload list (comma-separated, no individual quotes)
+                PRELOAD_LIST=""
+                for ext in "''${WANTED_EXTS[@]}"; do
+                  if echo "$AVAILABLE_EXTS" | grep -q "^$ext\$"; then
+                    if [ -z "$PRELOAD_LIST" ]; then
+                      PRELOAD_LIST="$ext"
+                    else
+                      PRELOAD_LIST="$PRELOAD_LIST, $ext"
+                    fi
+                  fi
+                done
+
+                echo "$PRELOAD_LIST"
+              '';
 
               # Use the shared setup but with a test-specific name
               start-postgres-server-bin = pkgs-lib.makePostgresDevSetup {
@@ -170,11 +212,51 @@
               # Filter SQL test files
               filteredSqlTests = filterTestFiles majorVersion ./tests/sql;
 
+              # Tests to skip for CLI variants (require extensions not in CLI)
+              cliSkipTests = [
+                # Extension-specific tests
+                "evtrigs"
+                "http"
+                "hypopg"
+                "index_advisor"
+                "pg_hashids"
+                "pg_jsonschema"
+                "pg_partman"
+                "pg_repack"
+                "pg_tle"
+                "pgtap"
+                "pgmq"
+                "pgroonga"
+                "pgrouting"
+                "plpgsql-check"
+                "plv8"
+                "postgis"
+                "postgres_fdw"
+                # Tests that depend on extensions not in CLI
+                "security" # depends on various extensions
+                "extensions_schema" # tests extension loading
+                "roles" # includes roles/schemas from extensions not in CLI (pgtle, pgmq, repack, topology)
+                # Version-specific extension tests
+                "z_17_ext_interface"
+                "z_17_pg_stat_monitor"
+                "z_17_pgvector"
+                "z_17_rum"
+                "z_17_roles" # version-specific roles test, includes pgtle_admin
+              ];
+
               # Convert filtered tests to a sorted list of basenames (without extension)
               testList = pkgs.lib.mapAttrsToList (
                 name: _: builtins.substring 0 (pkgs.lib.stringLength name - 4) name
               ) filteredSqlTests;
-              sortedTestList = builtins.sort (a: b: a < b) testList;
+
+              # Filter out CLI-incompatible tests if this is a CLI variant
+              filteredTestList =
+                if isCliVariant then
+                  builtins.filter (test: !(builtins.elem test cliSkipTests)) testList
+                else
+                  testList;
+
+              sortedTestList = builtins.sort (a: b: a < b) filteredTestList;
             in
             pkgs.writeShellApplication rec {
               name = "postgres-${pgpkg.version}-check-harness";
@@ -283,19 +365,19 @@
                 PGTAP_CLUSTER=$(mktemp -d)
                 log info "Creating temporary PostgreSQL cluster at $PGTAP_CLUSTER"
                 log_cmd initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
+
+                # Generate preload libraries list dynamically from receipt.json
+                PRELOAD_LIBRARIES=$(${generatePreloadLibs} ${pgpkg}/receipt.json)
+                log info "Generated preload libraries: $PRELOAD_LIBRARIES"
+
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
-                  --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey"
+                  --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey" \
+                  --subst-var-by PRELOAD_LIBRARIES "$PRELOAD_LIBRARIES"
                 echo "listen_addresses = '127.0.0.1'" >> "$PGTAP_CLUSTER"/postgresql.conf
                 echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
                 echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
                 log info "Checking shared_preload_libraries setting:"
                 log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
-                # Remove timescaledb if running orioledb-17 check
-                log info "pgpkg.version is: ${pgpkg.version}"
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"17"* ]]; then
-                  perl -pi -e 's/ timescaledb,//g' "$PGTAP_CLUSTER/postgresql.conf"
-                fi
                 # Configure OrioleDB if running orioledb-17 check
                 #shellcheck disable=SC2193
                 if [[ "${pgpkg.version}" == *"_"* ]]; then
@@ -337,12 +419,23 @@
                   log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
 
-                log info "Loading prime SQL file"
-                if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
-                  log error "Error executing SQL file. PostgreSQL log content:"
-                  cat "$PGTAP_CLUSTER"/postgresql.log
-                  pg_ctl -D "$PGTAP_CLUSTER" stop
-                  exit 1
+                # Check if this is a CLI variant (passed as parameter)
+                if ${lib.boolToString isCliVariant}; then
+                  log info "CLI variant detected - loading CLI prime SQL file"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime-cli.sql}; then
+                    log error "Error executing CLI prime SQL file. PostgreSQL log content:"
+                    cat "$PGTAP_CLUSTER"/postgresql.log
+                    pg_ctl -D "$PGTAP_CLUSTER" stop
+                    exit 1
+                  fi
+                else
+                  log info "Loading prime SQL file (full extension set)"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                    log error "Error executing SQL file. PostgreSQL log content:"
+                    cat "$PGTAP_CLUSTER"/postgresql.log
+                    pg_ctl -D "$PGTAP_CLUSTER" stop
+                    exit 1
+                  fi
                 fi
 
                 # Create a table to store test configuration
@@ -383,10 +476,19 @@
                   log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
 
-                log info "Loading prime SQL file"
-                if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
-                  log error "Error executing SQL file"
-                  exit 1
+                # Check if this is a CLI variant (passed as parameter)
+                if ${lib.boolToString isCliVariant}; then
+                  log info "CLI variant detected - loading CLI prime SQL file"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime-cli.sql} 2>&1; then
+                    log error "Error executing CLI prime SQL file"
+                    exit 1
+                  fi
+                else
+                  log info "Loading prime SQL file (full extension set)"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
+                    log error "Error executing SQL file"
+                    exit 1
+                  fi
                 fi
 
                 # Create a table to store test configuration for pg_regress tests
@@ -399,7 +501,14 @@
 
                 #shellcheck disable=SC2154
                 mkdir -p "$out/regression_output"
-                log info "Running pg_regress tests"
+
+                # Check if this is a CLI variant and log appropriately
+                if ${lib.boolToString isCliVariant}; then
+                  log info "CLI variant detected - running subset of pg_regress tests (${builtins.toString (builtins.length sortedTestList)} tests)"
+                else
+                  log info "Running pg_regress tests (${builtins.toString (builtins.length sortedTestList)} tests)"
+                fi
+
                 if ! log_cmd pg_regress \
                   --use-existing \
                   --dbname=postgres \
@@ -415,22 +524,318 @@
                 fi
                 log info "pg_regress tests completed successfully"
 
-                log info "Running migrations tests"
-                log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
-                log info "Migrations tests completed successfully"
+                # Skip migrations tests for CLI variants (they may depend on extensions)
+                if ${lib.boolToString isCliVariant}; then
+                  log info "CLI variant detected - skipping migrations tests"
+                else
+                  log info "Running migrations tests"
+                  log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
+                  log info "Migrations tests completed successfully"
+                fi
               '';
             };
         in
         {
           psql_15 = pkgs.runCommand "run-check-harness-psql-15" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_15/bin")
+            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { })
           );
           psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17/bin")
+            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { })
           );
           psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin")
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin" { })
           );
+          # CLI variant checks
+          psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
+          );
+          # Portable CLI bundle portability checks
+          psql_17_cli_portable =
+            pkgs.runCommand "psql_17_cli_portable-portability-check"
+              {
+                nativeBuildInputs = [
+                  pkgs.file
+                ]
+                ++ (
+                  if pkgs.stdenv.isDarwin then
+                    [ pkgs.darwin.cctools ]
+                  else
+                    [
+                      pkgs.patchelf
+                      pkgs.binutils
+                    ]
+                );
+              }
+              ''
+                cd ${self'.packages.psql_17_cli_portable}
+
+                echo "=== Section 1: Checking binaries for /nix/store references ==="
+                for bin in bin/.*-wrapped; do
+                  if [ -f "$bin" ]; then
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if otool -L "$bin" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $bin:"
+                            otool -L "$bin"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if readelf -d "$bin" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $bin:"
+                            readelf -d "$bin"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $bin has no /nix/store references"
+                  fi
+                done
+
+                echo ""
+                echo "=== Section 2: Checking libraries for /nix/store references ==="
+                for lib in lib/*.${if pkgs.stdenv.isDarwin then "dylib*" else "so*"}; do
+                  if [ -f "$lib" ]; then
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if otool -L "$lib" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $lib:"
+                            otool -L "$lib"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if readelf -d "$lib" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $lib:"
+                            readelf -d "$lib"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $lib has no /nix/store references"
+                  fi
+                done
+
+                echo ""
+                echo "=== Section 3: Checking extension libraries for /nix/store references ==="
+                for extlib in lib/postgresql/*.${if pkgs.stdenv.isDarwin then "dylib" else "so"}; do
+                  if [ -f "$extlib" ]; then
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if otool -L "$extlib" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $extlib:"
+                            otool -L "$extlib"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if readelf -d "$extlib" 2>/dev/null | grep -q '/nix/store'; then
+                            echo "ERROR: Found /nix/store reference in $extlib:"
+                            readelf -d "$extlib"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $extlib has no /nix/store references"
+                  fi
+                done
+
+                echo ""
+                echo "=== Section 4: Verifying bundled libraries include transitive dependencies ==="
+                ${
+                  if pkgs.stdenv.isDarwin then
+                    ''
+                      # Check for ICU transitive dependencies
+                      if [ ! -f "lib/libicuuc.75.1.dylib" ]; then
+                        echo "ERROR: Missing transitive dependency libicuuc.75.1.dylib"
+                        exit 1
+                      fi
+                      echo "  ✓ Found lib/libicuuc.75.1.dylib"
+
+                      if [ ! -f "lib/libicudata.75.1.dylib" ]; then
+                        echo "ERROR: Missing transitive dependency libicudata.75.1.dylib"
+                        exit 1
+                      fi
+                      echo "  ✓ Found lib/libicudata.75.1.dylib"
+                    ''
+                  else
+                    ''
+                      # Check for ICU transitive dependencies (Linux uses .so.75 without patch version)
+                      if [ ! -f "lib/libicuuc.so.75" ]; then
+                        echo "ERROR: Missing transitive dependency libicuuc.so.75"
+                        exit 1
+                      fi
+                      echo "  ✓ Found lib/libicuuc.so.75"
+
+                      if [ ! -f "lib/libicudata.so.75" ]; then
+                        echo "ERROR: Missing transitive dependency libicudata.so.75"
+                        exit 1
+                      fi
+                      echo "  ✓ Found lib/libicudata.so.75"
+                    ''
+                }
+
+                echo ""
+                echo "=== Section 5: Checking binary RPATH configuration ==="
+                for bin in bin/.*-wrapped; do
+                  if [ -f "$bin" ]; then
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if ! otool -l "$bin" 2>/dev/null | grep -q '@executable_path/../lib'; then
+                            echo "ERROR: Binary $bin missing correct RPATH"
+                            otool -l "$bin"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if ! readelf -d "$bin" 2>/dev/null | grep -q 'ORIGIN/../lib'; then
+                            echo "ERROR: Binary $bin missing correct RPATH"
+                            readelf -d "$bin"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $bin has correct RPATH"
+                  fi
+                done
+
+                echo ""
+                echo "=== Section 6: Checking library RPATH configuration ==="
+                for lib in lib/*.${if pkgs.stdenv.isDarwin then "dylib*" else "so*"}; do
+                  if [ -f "$lib" ] && file "$lib" | grep -q "${
+                    if pkgs.stdenv.isDarwin then "Mach-O" else "ELF"
+                  }"; then
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if ! otool -l "$lib" 2>/dev/null | grep -q '@loader_path'; then
+                            echo "ERROR: Library $lib missing correct RPATH"
+                            otool -l "$lib"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if ! readelf -d "$lib" 2>/dev/null | grep -q 'ORIGIN'; then
+                            echo "ERROR: Library $lib missing correct RPATH"
+                            readelf -d "$lib"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $lib has correct RPATH"
+                  fi
+                done
+
+                echo ""
+                ${lib.optionalString pkgs.stdenv.isLinux ''
+                  echo "=== Section 7: Checking ELF interpreter for portability ==="
+
+                  # Determine expected interpreter based on architecture
+                  ARCH=$(uname -m)
+                  if [ "$ARCH" = "x86_64" ]; then
+                    EXPECTED_INTERP="/lib64/ld-linux-x86-64.so.2"
+                  elif [ "$ARCH" = "aarch64" ]; then
+                    EXPECTED_INTERP="/lib/ld-linux-aarch64.so.1"
+                  else
+                    echo "ERROR: Unsupported architecture $ARCH"
+                    exit 1
+                  fi
+
+                  for bin in bin/.*-wrapped; do
+                    if [ -f "$bin" ] && file "$bin" | grep -q ELF; then
+                      # Check that interpreter is set to system path, not Nix store
+                      INTERP=$(readelf -l "$bin" | grep "program interpreter" | sed -n 's/.*\[requesting: \(.*\)\]/\1/p' | tr -d ']')
+                      if [ -z "$INTERP" ]; then
+                        # Try alternative readelf output format
+                        INTERP=$(readelf -l "$bin" | grep "interpreter" | sed -n 's/.*interpreter: \(.*\)]/\1/p')
+                      fi
+
+                      if echo "$INTERP" | grep -q '/nix/store'; then
+                        echo "ERROR: Binary $bin has Nix store interpreter: $INTERP"
+                        readelf -l "$bin" | grep -A 2 "program interpreter"
+                        exit 1
+                      fi
+
+                      # Verify it's using the expected system dynamic linker for this architecture
+                      if [ "$INTERP" != "$EXPECTED_INTERP" ]; then
+                        echo "ERROR: Binary $bin has unexpected interpreter: $INTERP (expected: $EXPECTED_INTERP)"
+                        readelf -l "$bin" | grep -A 2 "program interpreter"
+                        exit 1
+                      fi
+
+                      echo "  ✓ $bin uses system interpreter: $INTERP"
+                    fi
+                  done
+                  echo ""
+                ''}
+                echo "=== Section 8: Verifying wrapper scripts ==="
+                for bin in bin/postgres bin/pg_config bin/pg_ctl bin/initdb bin/psql bin/pg_dump bin/pg_restore bin/createdb bin/dropdb; do
+                  if [ -f "$bin" ]; then
+                    if ! grep -q "#!/bin/bash" "$bin"; then
+                      echo "ERROR: Wrapper $bin missing proper shebang"
+                      head -n 1 "$bin"
+                      exit 1
+                    fi
+                    if ! grep -q "NIX_PGLIBDIR" "$bin"; then
+                      echo "ERROR: Wrapper $bin missing NIX_PGLIBDIR"
+                      cat "$bin"
+                      exit 1
+                    fi
+                    ${
+                      if pkgs.stdenv.isDarwin then
+                        ''
+                          if ! grep -q "DYLD_LIBRARY_PATH" "$bin"; then
+                            echo "ERROR: Wrapper $bin missing DYLD_LIBRARY_PATH"
+                            cat "$bin"
+                            exit 1
+                          fi
+                        ''
+                      else
+                        ''
+                          if ! grep -q "LD_LIBRARY_PATH" "$bin"; then
+                            echo "ERROR: Wrapper $bin missing LD_LIBRARY_PATH"
+                            cat "$bin"
+                            exit 1
+                          fi
+                        ''
+                    }
+                    echo "  ✓ $bin is a valid wrapper script"
+                  fi
+                done
+
+                echo ""
+                ${lib.optionalString pkgs.stdenv.isLinux ''
+                  echo "=== Section 9: Verify system libraries are NOT bundled ==="
+                  # Check that glibc and other core system libraries are NOT in lib/
+                  SYSTEM_LIBS="libc.so libc-2 ld-linux libdl.so libpthread.so libm.so libresolv.so librt.so"
+                  FOUND_SYSTEM_LIB=0
+                  for syslib in $SYSTEM_LIBS; do
+                    if find lib -name "$syslib*" 2>/dev/null | grep -q .; then
+                      echo "ERROR: System library $syslib should NOT be bundled"
+                      find lib -name "$syslib*" -ls
+                      FOUND_SYSTEM_LIB=1
+                    fi
+                  done
+
+                  if [ $FOUND_SYSTEM_LIB -eq 1 ]; then
+                    exit 1
+                  fi
+
+                  echo "  ✓ No system libraries bundled (glibc, libdl, libpthread, libm)"
+                  echo ""
+                ''}
+                echo "=== All portability checks passed! ==="
+                touch $out
+              '';
           inherit (self'.packages)
             wal-g-2
             pg_regress

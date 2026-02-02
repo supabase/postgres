@@ -62,6 +62,9 @@
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
             inherit (self.supabase) defaults;
           };
+          psql_17_cli_portable = pkgs.callPackage ./postgres-portable.nix {
+            psql_17_cli = self'.legacyPackages.psql_17_cli;
+          };
           start-replica = pkgs.callPackage ./start-replica.nix {
             psql_15 = self'.packages."psql_15/bin";
             inherit pgsqlSuperuser;
