@@ -1,0 +1,280 @@
+name: CLI Release
+
+on:
+  push:
+    tags:
+      - "v*-cli"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., v1.0.0-cli)"
+        required: true
+        type: string
+
+jobs:
+  build-native:
+    name: Build ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: aarch64-darwin
+            runner: macos-14
+            arch: darwin-arm64
+          - system: x86_64-linux
+            runner: ubuntu-latest
+            arch: linux-x64
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+            arch: linux-arm64
+    steps:
+      - name: Checkout repository
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install Nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Run portability check
+        run: |
+          nix build .#checks.${{ matrix.system }}.psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+
+      - name: Build portable CLI bundle
+        run: |
+          nix build .#psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${{ github.ref_name }}"
+          fi
+          # Sanitize version by replacing slashes with dashes
+          VERSION="${VERSION//\//-}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare build directory
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          BUILD_DIR="supabase-postgres-${VERSION}-${ARCH}"
+
+          mkdir -p "${BUILD_DIR}"
+          shopt -s dotglob
+          cp -rL result/* "${BUILD_DIR}/"
+          shopt -u dotglob
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-postgres-${{ matrix.arch }}
+          path: supabase-postgres-${{ steps.version.outputs.version }}-${{ matrix.arch }}
+          retention-days: 90
+          include-hidden-files: true
+
+  test-portability:
+    name: ${{ matrix.arch }} without Nix
+    needs: [build-native]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            arch: darwin-arm64
+          - runner: ubuntu-latest
+            arch: linux-x64
+          - runner: ubuntu-24.04-arm
+            arch: linux-arm64
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: supabase-postgres-${{ matrix.arch }}
+          path: .
+
+      - name: Test binaries work without Nix
+        run: |
+          cd bin
+          find . -maxdepth 1 -type f -exec chmod +x {} +
+          ls -la
+
+          echo "Testing postgres --version..."
+          ./postgres --version
+
+          echo "Testing pg_config --version..."
+          ./pg_config --version
+
+          echo "Testing psql --version..."
+          ./psql --version
+
+          echo "Testing initdb --version..."
+          ./initdb --version
+
+      - name: Test migrations with CLI variant
+        run: |
+          set -e
+
+          # Use bundled pgsodium getkey script
+          GETKEY_SCRIPT="$(pwd)/share/supabase-cli/config/pgsodium_getkey.sh"
+          chmod +x "$GETKEY_SCRIPT"
+
+          # Initialize test database
+          PGDATA="$(pwd)/pgdata-test"
+          ./bin/initdb -D "$PGDATA" -U supabase_admin --no-instructions
+
+          # Copy CLI config and add pgsodium/vault getkey scripts
+          cp share/supabase-cli/config/postgresql.conf.template "$PGDATA/postgresql.conf"
+          cat >> "$PGDATA/postgresql.conf" << EOF
+
+          # pgsodium and vault configuration for testing
+          pgsodium.getkey_script = '$GETKEY_SCRIPT'
+          vault.getkey_script = '$GETKEY_SCRIPT'
+          EOF
+
+          # Start PostgreSQL
+          ./bin/postgres -D "$PGDATA" -p 54322 > postgres.log 2>&1 &
+          PG_PID=$!
+
+          # Wait for PostgreSQL to be ready
+          for i in {1..30}; do
+            if ./bin/pg_isready -p 54322 -h 127.0.0.1 -U supabase_admin > /dev/null 2>&1; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "PostgreSQL failed to start"
+              cat postgres.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Run migrations
+          cd share/supabase-cli/migrations
+          chmod +x migrate.sh
+          echo "=========================================="
+          echo "Running migrations..."
+          echo "=========================================="
+          PATH="$(pwd)/../../../bin:$PATH" \
+          POSTGRES_PASSWORD=postgres \
+          POSTGRES_PORT=54322 \
+          POSTGRES_DB=postgres \
+          POSTGRES_USER=supabase_admin \
+          ./migrate.sh 2>&1 | tee migration.log
+          MIGRATION_STATUS=${PIPESTATUS[0]}
+
+          echo ""
+          echo "=========================================="
+          echo "Migration output complete"
+          echo "=========================================="
+
+          # Check migration results - all migrations must succeed
+          if [ $MIGRATION_STATUS -ne 0 ]; then
+            echo "Migrations failed"
+            cat migration.log
+            exit 1
+          fi
+
+          echo "All migrations applied successfully"
+
+          # Verify extensions are installed
+          cd ../../..
+          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -c "\dx" | tee extensions.log
+
+          # Check for required extensions
+          for ext in pg_graphql pgcrypto uuid-ossp supabase_vault; do
+            if ! grep -q "$ext" extensions.log; then
+              echo "Required extension $ext not found"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "Testing timezone functionality with bundled timezone data"
+          echo "=========================================="
+
+          cat > timezone_test.sql << 'EOF'
+          -- Test basic timezone conversion
+          SELECT now() AT TIME ZONE 'America/New_York' AS ny_time;
+          SELECT now() AT TIME ZONE 'Europe/London' AS london_time;
+          SELECT now() AT TIME ZONE 'Asia/Tokyo' AS tokyo_time;
+
+          -- Verify timezone database is accessible
+          SELECT COUNT(*) AS timezone_count FROM pg_timezone_names;
+
+          -- Test that we have reasonable number of timezones (should be 500+)
+          DO $$
+          DECLARE
+            tz_count INTEGER;
+          BEGIN
+            SELECT COUNT(*) INTO tz_count FROM pg_timezone_names;
+            IF tz_count < 500 THEN
+              RAISE EXCEPTION 'Insufficient timezones: found %, expected 500+', tz_count;
+            END IF;
+            RAISE NOTICE 'Timezone test passed: found % timezones', tz_count;
+          END $$;
+
+          -- Show current timezone setting
+          SHOW timezone;
+          EOF
+
+          # Run timezone tests from file
+          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -f timezone_test.sql | tee timezone.log
+
+          if [ $? -ne 0 ]; then
+            echo "Timezone tests failed"
+            cat timezone.log
+            exit 1
+          fi
+
+          echo "Timezone tests passed successfully"
+          echo ""
+
+          # Stop PostgreSQL
+          ./bin/pg_ctl -D "$PGDATA" stop -m fast
+
+          echo "Migration test completed successfully"
+
+  release:
+    name: Create GitHub Release
+    needs: [build-native, test-portability]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+
+          # Create tarballs from each artifact directory
+          for dir in artifacts/*/supabase-postgres-*; do
+            if [ -d "$dir" ]; then
+              basename=$(basename "$dir")
+              tarball="release/${basename}.tar.gz"
+
+              echo "Creating tarball: ${tarball}"
+              tar -czhf "${tarball}" -C "$(dirname "$dir")" "$(basename "$dir")"
+
+              # Generate checksum
+              sha256sum "${tarball}" > "${tarball}.sha256"
+            fi
+          done
+
+          ls -lh release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
