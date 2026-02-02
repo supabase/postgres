@@ -50,7 +50,16 @@ elif [ -n "$(command -v apt-get)" ]; then
   apt-get -y install --no-install-recommends cloud-init openssh-server
 
   # Ensure cloud-init and SSH services are enabled (may not be re-enabled on reinstall)
-  systemctl enable cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service ssh.service || true
+  # systemctl enable can fail silently in chroot - create symlinks manually
+  mkdir -p /etc/systemd/system/cloud-init.target.wants
+  mkdir -p /etc/systemd/system/multi-user.target.wants
+  ln -sf /usr/lib/systemd/system/cloud-init-local.service /etc/systemd/system/cloud-init.target.wants/ || true
+  ln -sf /usr/lib/systemd/system/cloud-init.service /etc/systemd/system/cloud-init.target.wants/ || true
+  ln -sf /usr/lib/systemd/system/cloud-config.service /etc/systemd/system/cloud-init.target.wants/ || true
+  ln -sf /usr/lib/systemd/system/cloud-final.service /etc/systemd/system/cloud-init.target.wants/ || true
+  ln -sf /usr/lib/systemd/system/cloud-init.target /etc/systemd/system/multi-user.target.wants/ || true
+  ln -sf /usr/lib/systemd/system/ssh.service /etc/systemd/system/multi-user.target.wants/ || true
+  echo "Created cloud-init and SSH service symlinks"
 
   # Protect SSH and cloud-init dependencies from autoremove
   # Without these, the AMI won't be accessible via SSH after boot
