@@ -40,6 +40,7 @@
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix { };
           docs = pkgs.callPackage ./docs.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
           github-matrix = pkgs.callPackage ./github-matrix {
