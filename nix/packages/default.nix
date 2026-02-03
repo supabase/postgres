@@ -23,6 +23,9 @@
         inherit (pkgs) lib;
         inherit inputs;
       };
+      pg-startup-profiler-pkgs = pkgs.callPackage ./pg-startup-profiler.nix {
+        inherit (pkgs) lib;
+      };
       pkgs-lib = pkgs.callPackage ./lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
@@ -83,6 +86,7 @@
           update-readme = pkgs.callPackage ./update-readme.nix { };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
           inherit (supascan-pkgs) goss supascan supascan-specs;
+          inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
           inherit (pkgs.cargo-pgrx)
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6

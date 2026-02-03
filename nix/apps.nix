@@ -29,6 +29,7 @@
         cleanup-ami = mkApp "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build";
         supascan = mkApp "supascan";
+        pg-startup-profiler = mkApp "pg-startup-profiler";
       };
     };
 }
