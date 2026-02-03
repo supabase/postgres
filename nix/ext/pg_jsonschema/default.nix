@@ -6,6 +6,7 @@
   fetchFromGitHub,
   postgresql,
   rust-bin,
+  latestOnly ? false,
 }:
 let
   pname = "pg_jsonschema";
@@ -131,10 +132,16 @@ let
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
   packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) supportedVersions
+    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) versionsToUse
   );
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
 in
 (pkgs.buildEnv {
   name = pname;
@@ -147,7 +154,7 @@ in
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
+         toString (numberOfVersionsBuilt + 1)
        }"
     )
 
@@ -171,9 +178,14 @@ in
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }).overrideAttrs
   (_: {
