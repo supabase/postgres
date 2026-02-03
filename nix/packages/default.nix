@@ -90,6 +90,18 @@
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
+          supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
+          docker-image-test = pkgs.callPackage ./docker-image-test.nix {
+            psql_15 = self'.packages."psql_15/bin";
+            psql_17 = self'.packages."psql_17/bin";
+            psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+            inherit (self'.packages) pg_regress;
+          };
+          cli-smoke-test = pkgs.callPackage ./cli-smoke-test.nix {
+            inherit (self'.packages) supabase-cli;
+            inherit (pkgs) yq;
+            postgresql_15 = self'.packages."postgresql_15";
+          };
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;

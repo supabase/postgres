@@ -74,81 +74,20 @@ jobs:
         run: |
           DOCKERFILE="Dockerfile-${{ matrix.pg_version }}"
           echo "Building $DOCKERFILE..."
-          docker build -f "$DOCKERFILE" -t "supabase/postgres:${{ matrix.pg_version }}" .
+          # Tag with ECR prefix since CLI uses public.ecr.aws/supabase/postgres as base
+          docker build -f "$DOCKERFILE" -t "public.ecr.aws/supabase/postgres:${{ matrix.pg_version }}" .
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
-        with:
-          version: latest
-
-      - name: Get component versions from ansible/vars.yml
-        id: versions
+      - name: Run CLI smoke test
         run: |
-          REST_VERSION=$(nix run nixpkgs#yq -- -r '.postgrest_release' ansible/vars.yml)
-          AUTH_VERSION=$(nix run nixpkgs#yq -- -r '.gotrue_release' ansible/vars.yml)
-          PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ matrix.pg_version }}"]' ansible/vars.yml)
-
-          echo "rest=$REST_VERSION" >> "$GITHUB_OUTPUT"
-          echo "auth=$AUTH_VERSION" >> "$GITHUB_OUTPUT"
-          echo "pg=$PG_VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Prepare Supabase CLI config
-        run: |
-          mkdir -p supabase/.temp
-
-          # Set version files for CLI
-          echo "v${{ steps.versions.outputs.rest }}" > supabase/.temp/rest-version
-          echo "v${{ steps.versions.outputs.auth }}" > supabase/.temp/gotrue-version
-          echo "${{ steps.versions.outputs.pg }}" > supabase/.temp/postgres-version
-
-          # Create minimal config.toml
-          cat > supabase/config.toml << EOF
-          [db]
-          major_version = ${{ matrix.pg_version }}
-
-          [db.settings]
-          # Use our locally built image
-          image = "supabase/postgres:${{ matrix.pg_version }}"
-          EOF
-
-      - name: Run supabase start
-        run: |
-          echo "Starting Supabase with PostgreSQL ${{ matrix.pg_version }}..."
-          supabase start --debug
+          echo "Running CLI smoke test for PostgreSQL ${{ matrix.pg_version }}..."
+          nix run --accept-flake-config .#cli-smoke-test -- --no-build ${{ matrix.pg_version }}
         timeout-minutes: 10
-
-      - name: Verify database is accessible
-        run: |
-          echo "Verifying database connection..."
-          supabase db reset --debug || true
-
-          # Basic connectivity check
-          PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "SELECT version();"
-
-      - name: Run basic health checks
-        run: |
-          echo "Running health checks..."
-
-          # Check that key extensions are available
-          PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres << 'EOF'
-          -- Check PostgREST schema exists
-          SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'extensions');
-
-          -- Check some key extensions
-          SELECT extname, extversion FROM pg_extension WHERE extname IN ('uuid-ossp', 'pgcrypto', 'pgjwt') ORDER BY extname;
-
-          -- Basic table creation test
-          CREATE TABLE IF NOT EXISTS smoke_test (id serial primary key, created_at timestamptz default now());
-          INSERT INTO smoke_test DEFAULT VALUES;
-          SELECT * FROM smoke_test;
-          DROP TABLE smoke_test;
-          EOF
 
       - name: Show logs on failure
         if: failure()
         run: |
           echo "=== Supabase Status ==="
-          supabase status || true
+          nix run --accept-flake-config .#supabase-cli -- status || true
 
           echo "=== Docker containers ==="
           docker ps -a
@@ -159,7 +98,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          supabase stop --no-backup || true
+          nix run --accept-flake-config .#supabase-cli -- stop --no-backup || true
 
   skip-notification:
     name: CLI Smoke Test (Skipped)
