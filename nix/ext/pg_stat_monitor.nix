@@ -4,6 +4,7 @@
   fetchFromGitHub,
   postgresql,
   buildEnv,
+  latestOnly ? false,
 }:
 let
   pname = "pg_stat_monitor";
@@ -19,9 +20,15 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
   packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.revision) supportedVersions
+    lib.mapAttrs (name: value: build name value.hash value.revision) versionsToUse
   );
 
   # Build function for individual versions
@@ -85,7 +92,7 @@ buildEnv {
 
   postBuild = ''
     # Verify all expected library files are present
-    expectedFiles=${toString (numberOfVersions + 1)}
+    expectedFiles=${toString (numberOfVersionsBuilt + 1)}
     actualFiles=$(ls -l $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
@@ -97,8 +104,13 @@ buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

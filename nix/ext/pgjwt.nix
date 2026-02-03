@@ -5,6 +5,7 @@
   fetchFromGitHub,
   postgresql,
   unstableGitUpdater,
+  latestOnly ? false,
 }:
 let
   pname = "pgjwt";
@@ -14,9 +15,13 @@ let
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.trace "Versions: ${toString (builtins.length versions)}" (
-    builtins.length versions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
   build =
     version: hash: revision:
     stdenv.mkDerivation {
@@ -68,7 +73,7 @@ let
       };
     };
   packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.revision) supportedVersions
+    lib.mapAttrs (name: value: build name value.hash value.revision) versionsToUse
   );
 in
 buildEnv {
@@ -77,8 +82,13 @@ buildEnv {
   pathsToLink = [ "/share/postgresql/extension" ];
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

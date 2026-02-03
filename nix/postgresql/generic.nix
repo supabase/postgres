@@ -132,7 +132,13 @@ let
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv'.isLinux [ linux-pam ]
-      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
+      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ];
+
+      nativeBuildInputs = [
+        makeWrapper
+        pkg-config
+      ]
+      # Build tools for PG17+ and OrioleDB - these are NOT runtime dependencies
       ++ lib.optionals (isOrioleDB || (lib.versionAtLeast version "17")) [
         perl
         bison
@@ -141,11 +147,6 @@ let
         docbook_xml_dtd_45
         docbook_xsl_ns
         libxslt
-      ];
-
-      nativeBuildInputs = [
-        makeWrapper
-        pkg-config
       ]
       ++ lib.optionals jitSupport [
         llvmPackages.llvm.dev
