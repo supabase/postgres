@@ -467,10 +467,16 @@
             )
           );
           inherit (self'.packages)
-            wal-g-2
-            pg_regress
+            cli-smoke-test
+            docker-image-inputs
+            docker-image-test
             goss
+            image-size-analyzer
+            pg_regress
+            pg-startup-profiler
+            supabase-cli
             supascan
+            wal-g-2
             ;
           devShell = self'.devShells.default;
         }
