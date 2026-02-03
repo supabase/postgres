@@ -40,7 +40,12 @@
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
-          docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix { };
+          docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
+            psql_15_slim = self'.packages."psql_15_slim/bin";
+            psql_17_slim = self'.packages."psql_17_slim/bin";
+            psql_orioledb-17_slim = self'.packages."psql_orioledb-17_slim/bin";
+            supabase-groonga = self'.packages.supabase-groonga;
+          };
           docs = pkgs.callPackage ./docs.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
           github-matrix = pkgs.callPackage ./github-matrix {
