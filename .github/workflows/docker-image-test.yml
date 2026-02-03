@@ -87,27 +87,23 @@ jobs:
       - name: Build Docker image
         run: |
           echo "Building ${{ matrix.dockerfile }}..."
-          docker build -f ${{ matrix.dockerfile }} -t supabase-postgres:${{ matrix.dockerfile }}-test .
+          VERSION="${{ matrix.dockerfile }}"
+          VERSION="${VERSION#Dockerfile-}"
+          # Build with tags expected by both tools
+          docker build -f ${{ matrix.dockerfile }} \
+            -t "pg-docker-test:${VERSION}" \
+            -t "supabase-postgres:${VERSION}-analyze" \
+            .
 
       - name: Run image size analysis
         run: |
           echo "=== Image Size Analysis for ${{ matrix.dockerfile }} ==="
-          # Build the analyzer tag expected by the tool
-          VERSION="${{ matrix.dockerfile }}"
-          VERSION="${VERSION#Dockerfile-}"
-          docker tag supabase-postgres:${{ matrix.dockerfile }}-test "supabase-postgres:${VERSION}-analyze"
-
           nix run --accept-flake-config .#image-size-analyzer -- --image ${{ matrix.dockerfile }} --no-build
 
       - name: Run Docker image tests
         run: |
           echo "=== Running tests for ${{ matrix.dockerfile }} ==="
-          # Tag with the expected name for test-docker-image.sh
-          VERSION="${{ matrix.dockerfile }}"
-          VERSION="${VERSION#Dockerfile-}"
-          docker tag supabase-postgres:${{ matrix.dockerfile }}-test "pg-docker-test:${VERSION}"
-
-          ./test-docker-image.sh --no-build ${{ matrix.dockerfile }}
+          nix run --accept-flake-config .#docker-image-test -- --no-build ${{ matrix.dockerfile }}
 
       - name: Show container logs on failure
         if: failure()
@@ -128,9 +124,8 @@ jobs:
           # Remove test containers
           docker ps -a --filter "name=pg-test-${VERSION}" -q | xargs -r docker rm -f || true
           # Remove test images
-          docker rmi "supabase-postgres:${{ matrix.dockerfile }}-test" || true
-          docker rmi "supabase-postgres:${VERSION}-analyze" || true
           docker rmi "pg-docker-test:${VERSION}" || true
+          docker rmi "supabase-postgres:${VERSION}-analyze" || true
 
   skip-notification:
     name: Docker Image Test (Skipped)

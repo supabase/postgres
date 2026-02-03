@@ -30,6 +30,8 @@
         trigger-nix-build = mkApp "trigger-nix-build";
         supascan = mkApp "supascan";
         pg-startup-profiler = mkApp "pg-startup-profiler";
+        docker-image-test = mkApp "docker-image-test";
+        cli-smoke-test = mkApp "cli-smoke-test";
       };
     };
 }
