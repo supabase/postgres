@@ -1,17 +1,17 @@
 {
-  runCommand,
+  writeShellApplication,
   jq,
   yq,
   nix-editor,
-  nixVersions,
+  nix,
 }:
-runCommand "sync-exts-versions" { } ''
-  mkdir -p $out/bin
-  substitute ${../tools/sync-exts-versions.sh.in} $out/bin/sync-exts-versions \
-    --subst-var-by 'YQ' '${yq}/bin/yq' \
-    --subst-var-by 'JQ' '${jq}/bin/jq' \
-    --subst-var-by 'NIX_EDITOR' '${nix-editor.packages.nix-editor}/bin/nix-editor' \
-    --subst-var-by 'NIXPREFETCHURL' '${nixVersions.nix_2_31}/bin/nix-prefetch-url' \
-    --subst-var-by 'NIX' '${nixVersions.nix_2_31}/bin/nix'
-  chmod +x $out/bin/sync-exts-versions
-''
+writeShellApplication {
+  name = "sync-exts-versions";
+  runtimeInputs = [
+    jq
+    yq
+    nix-editor.packages.nix-editor
+    nix
+  ];
+  text = builtins.readFile ../tools/sync-exts-versions.sh.in;
+}
