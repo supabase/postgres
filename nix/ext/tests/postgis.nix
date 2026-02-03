@@ -141,8 +141,7 @@ pkgs.testers.runNixOSTest {
         server.succeed("sudo -u postgres psql -c 'CREATE EXTENSION ${pname} CASCADE;'")
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension where extname = '${pname}';""")
         latestVersion = versions["15"][-1]
-        majMinVersion = ".".join(latestVersion.split('.')[:1])
-        assert f"${pname},{majMinVersion}" in installed_extensions, f"Expected ${pname} version {latestVersion}, but found {installed_extensions}"
+        assert f"${pname},{latestVersion}" in installed_extensions, f"Expected ${pname} version {latestVersion}, but found {installed_extensions}"
 
       with subtest("switch to postgresql 17"):
         server.succeed(
@@ -152,8 +151,7 @@ pkgs.testers.runNixOSTest {
       with subtest("Check ${pname} latest extension version after upgrade"):
         installed_extensions=run_sql(r"""SELECT extname, extversion FROM pg_extension;""")
         latestVersion = versions["17"][-1]
-        majMinVersion = ".".join(latestVersion.split('.')[:1])
-        assert f"${pname},{majMinVersion}" in installed_extensions
+        assert f"${pname},{latestVersion}" in installed_extensions
 
       check_upgrade_path("17")
     '';
