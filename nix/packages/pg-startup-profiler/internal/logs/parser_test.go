@@ -2,6 +2,7 @@ package logs
 
 import (
 	"testing"
+	"time"
 
 	"github.com/supabase/pg-startup-profiler/internal/rules"
 )
@@ -21,8 +22,9 @@ timestamp:
 	parser := NewParser(r)
 
 	events := make(chan Event, 10)
+	fallbackTime := time.Now()
 	go func() {
-		parser.ParseLine("2026-01-30 13:18:21.286 UTC [41] LOG:  database system is ready to accept connections", events)
+		parser.ParseLine("2026-01-30 13:18:21.286 UTC [41] LOG:  database system is ready to accept connections", fallbackTime, events)
 		close(events)
 	}()
 

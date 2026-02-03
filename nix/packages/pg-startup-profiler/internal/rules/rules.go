@@ -28,6 +28,10 @@ type TimestampConfig struct {
 type Rules struct {
 	Patterns  []*Pattern      `yaml:"patterns"`
 	Timestamp TimestampConfig `yaml:"timestamp"`
+
+	// regexCounts tracks how many times each unique regex has been seen
+	// This allows multiple patterns with the same regex but different occurrence values
+	regexCounts map[string]int
 }
 
 type Match struct {
@@ -42,6 +46,9 @@ func LoadFromYAML(data []byte) (*Rules, error) {
 	if err := yaml.Unmarshal(data, &rules); err != nil {
 		return nil, err
 	}
+
+	// Initialize regex counts map
+	rules.regexCounts = make(map[string]int)
 
 	// Compile patterns
 	for _, p := range rules.Patterns {
@@ -68,10 +75,18 @@ func LoadFromYAML(data []byte) (*Rules, error) {
 }
 
 func (r *Rules) Match(line string) *Match {
+	// Track which regexes matched in this line to only increment count once per regex
+	matchedRegexes := make(map[string]bool)
+
 	for _, p := range r.Patterns {
 		if p.compiled.MatchString(line) {
-			p.seen++
-			if p.seen == p.Occurrence {
+			// Only increment counter once per unique regex per line
+			if !matchedRegexes[p.Regex] {
+				matchedRegexes[p.Regex] = true
+				r.regexCounts[p.Regex]++
+			}
+
+			if r.regexCounts[p.Regex] == p.Occurrence {
 				match := &Match{
 					Pattern:  p,
 					Line:     line,
@@ -109,4 +124,6 @@ func (r *Rules) Reset() {
 	for _, p := range r.Patterns {
 		p.seen = 0
 	}
+	// Clear the shared regex counts
+	r.regexCounts = make(map[string]int)
 }
