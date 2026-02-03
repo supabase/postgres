@@ -1,0 +1,218 @@
+name: CLI Smoke Test
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - develop
+      - release/*
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-changes:
+    name: Check Docker Image Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      input_hash: ${{ steps.check.outputs.input_hash }}
+      base_hash: ${{ steps.check.outputs.base_hash }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'false'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Get current Docker image inputs hash
+        id: current
+        run: |
+          HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash)
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+          echo "Current Docker image inputs hash: $HASH"
+
+      - name: Get base branch Docker image inputs hash
+        id: base
+        if: github.event_name == 'pull_request'
+        run: |
+          # Fetch base branch
+          git fetch origin ${{ github.base_ref }} --depth=1
+
+          # Checkout base branch files temporarily
+          git checkout FETCH_HEAD -- . 2>/dev/null || true
+
+          # Get hash from base branch
+          BASE_HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash 2>/dev/null || echo "")
+
+          # Restore current branch
+          git checkout HEAD -- .
+
+          echo "hash=$BASE_HASH" >> "$GITHUB_OUTPUT"
+          echo "Base branch Docker image inputs hash: $BASE_HASH"
+
+      - name: Determine if tests should run
+        id: check
+        run: |
+          CURRENT_HASH="${{ steps.current.outputs.hash }}"
+          BASE_HASH="${{ steps.base.outputs.hash }}"
+
+          echo "input_hash=$CURRENT_HASH" >> "$GITHUB_OUTPUT"
+          echo "base_hash=$BASE_HASH" >> "$GITHUB_OUTPUT"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Workflow dispatch - running tests"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "Push to protected branch - running tests"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          elif [[ -z "$BASE_HASH" ]]; then
+            echo "Could not get base hash - running tests to be safe"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$CURRENT_HASH" != "$BASE_HASH" ]]; then
+            echo "Docker image inputs changed ($BASE_HASH -> $CURRENT_HASH) - running tests"
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Docker image inputs unchanged - skipping tests"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  cli-smoke-test:
+    name: CLI Smoke Test (PG ${{ matrix.pg_version }})
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true'
+    runs-on: large-linux-arm
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        pg_version: ['15', '17']
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'false'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Create Docker context
+        run: docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          endpoint: builders
+
+      - name: Build Docker image
+        run: |
+          DOCKERFILE="Dockerfile-${{ matrix.pg_version }}"
+          echo "Building $DOCKERFILE..."
+          docker build -f "$DOCKERFILE" -t "supabase/postgres:${{ matrix.pg_version }}" .
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51 # v1.6.0
+        with:
+          version: latest
+
+      - name: Get component versions from ansible/vars.yml
+        id: versions
+        run: |
+          REST_VERSION=$(nix run nixpkgs#yq -- -r '.postgrest_release' ansible/vars.yml)
+          AUTH_VERSION=$(nix run nixpkgs#yq -- -r '.gotrue_release' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ matrix.pg_version }}"]' ansible/vars.yml)
+
+          echo "rest=$REST_VERSION" >> "$GITHUB_OUTPUT"
+          echo "auth=$AUTH_VERSION" >> "$GITHUB_OUTPUT"
+          echo "pg=$PG_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Supabase CLI config
+        run: |
+          mkdir -p supabase/.temp
+
+          # Set version files for CLI
+          echo "v${{ steps.versions.outputs.rest }}" > supabase/.temp/rest-version
+          echo "v${{ steps.versions.outputs.auth }}" > supabase/.temp/gotrue-version
+          echo "${{ steps.versions.outputs.pg }}" > supabase/.temp/postgres-version
+
+          # Create minimal config.toml
+          cat > supabase/config.toml << EOF
+          [db]
+          major_version = ${{ matrix.pg_version }}
+
+          [db.settings]
+          # Use our locally built image
+          image = "supabase/postgres:${{ matrix.pg_version }}"
+          EOF
+
+      - name: Run supabase start
+        run: |
+          echo "Starting Supabase with PostgreSQL ${{ matrix.pg_version }}..."
+          supabase start --debug
+        timeout-minutes: 10
+
+      - name: Verify database is accessible
+        run: |
+          echo "Verifying database connection..."
+          supabase db reset --debug || true
+
+          # Basic connectivity check
+          PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres -c "SELECT version();"
+
+      - name: Run basic health checks
+        run: |
+          echo "Running health checks..."
+
+          # Check that key extensions are available
+          PGPASSWORD=postgres psql -h localhost -p 54322 -U postgres -d postgres << 'EOF'
+          -- Check PostgREST schema exists
+          SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'extensions');
+
+          -- Check some key extensions
+          SELECT extname, extversion FROM pg_extension WHERE extname IN ('uuid-ossp', 'pgcrypto', 'pgjwt') ORDER BY extname;
+
+          -- Basic table creation test
+          CREATE TABLE IF NOT EXISTS smoke_test (id serial primary key, created_at timestamptz default now());
+          INSERT INTO smoke_test DEFAULT VALUES;
+          SELECT * FROM smoke_test;
+          DROP TABLE smoke_test;
+          EOF
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Supabase Status ==="
+          supabase status || true
+
+          echo "=== Docker containers ==="
+          docker ps -a
+
+          echo "=== Database container logs ==="
+          docker logs supabase_db_postgres 2>&1 | tail -100 || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          supabase stop --no-backup || true
+
+  skip-notification:
+    name: CLI Smoke Test (Skipped)
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report skipped
+        run: |
+          echo "CLI smoke test skipped - Docker image inputs unchanged"
+          echo "Input hash: ${{ needs.check-changes.outputs.input_hash }}"
