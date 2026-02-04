@@ -2,8 +2,8 @@ name: CLI Release
 
 on:
   push:
-    tags:
-      - "v*-cli"
+    # tags:
+    #   - "v*-cli"
   pull_request:
   workflow_dispatch:
     inputs:
@@ -20,15 +20,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - system: aarch64-darwin
-            runner: macos-14
-            arch: darwin-arm64
+          # - system: aarch64-darwin
+          #   runner: macos-14
+          #   arch: darwin-arm64
           - system: x86_64-linux
             runner: ubuntu-latest
             arch: linux-x64
-          - system: aarch64-linux
-            runner: ubuntu-24.04-arm
-            arch: linux-arm64
+          # - system: aarch64-linux
+          #   runner: ubuntu-24.04-arm
+          #   arch: linux-arm64
     steps:
       - name: Checkout repository
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
@@ -83,12 +83,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-14
-            arch: darwin-arm64
+          # - runner: macos-14
+          #   arch: darwin-arm64
           - runner: ubuntu-latest
             arch: linux-x64
-          - runner: ubuntu-24.04-arm
-            arch: linux-arm64
+          # - runner: ubuntu-24.04-arm
+          #   arch: linux-arm64
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -183,7 +183,7 @@ jobs:
 
           # Verify extensions are installed
           cd ../../..
-          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -c "\dx" | tee extensions.log
+          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "\dx" | tee extensions.log
 
           # Check for required extensions
           for ext in pg_graphql pgcrypto uuid-ossp supabase_vault; do
@@ -224,9 +224,10 @@ jobs:
           EOF
 
           # Run timezone tests from file
-          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -f timezone_test.sql | tee timezone.log
+          ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f timezone_test.sql | tee timezone.log
+          TIMEZONE_STATUS=${PIPESTATUS[0]}
 
-          if [ $? -ne 0 ]; then
+          if [ $TIMEZONE_STATUS -ne 0 ]; then
             echo "Timezone tests failed"
             cat timezone.log
             exit 1

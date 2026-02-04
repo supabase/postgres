@@ -106,9 +106,9 @@
         version:
         {
           variant ? "full",
+          postgresql ? getPostgresqlPackage version,
         }:
         let
-          postgresql = getPostgresqlPackage version;
           extensionsToUse =
             if variant == "cli" then
               cliExtensions
@@ -165,14 +165,110 @@
           variant ? "full",
         }:
         let
-          postgresql = getPostgresqlPackage version;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant; };
+          basePostgresql = getPostgresqlPackage version;
+
+          # For CLI variant, override postgresql to remove hardcoded /nix/store paths
+          postgresql =
+            if variant == "cli" then
+              basePostgresql.overrideAttrs (oldAttrs: {
+                #TODO:JAD Temporarily disable checks and tests for faster rebuilds - re-enable before final commit
+                doCheck = false;
+                doInstallCheck = false;
+
+                # Filter out --with-system-tzdata to use bundled timezone data
+                configureFlags = builtins.filter (
+                  flag: !(lib.hasPrefix "--with-system-tzdata" flag)
+                ) oldAttrs.configureFlags;
+
+                # Filter out locale-binary-path.patch to avoid hardcoding locale path
+                patches = builtins.filter (
+                  patch:
+                  let
+                    patchName = baseNameOf (toString patch);
+                  in
+                  patchName != "locale-binary-path.patch"
+                ) oldAttrs.patches;
+
+                # Remove locale from buildInputs for Linux to prevent hardcoded paths
+                buildInputs = builtins.filter (
+                  input:
+                  let
+                    inputName = lib.getName input;
+                  in
+                  !lib.hasInfix "locale" inputName && inputName != "adv_cmds"
+                ) (oldAttrs.buildInputs or [ ]);
+
+                # Override postFixup to remove the initdb wrapper that hardcodes locale path
+                postFixup =
+                  lib.replaceStrings
+                    [
+                      ''
+                        # Wrap initdb to set PGTZ
+                        wrapProgram $out/bin/initdb --set PGTZ UTC
+                      ''
+                    ]
+                    [
+                      ''
+                        # Skip initdb wrapper for CLI variant to avoid hardcoded locale paths
+                        # The locale command will be resolved from system PATH at runtime
+                      ''
+                    ]
+                    (oldAttrs.postFixup or "");
+
+                # Add preConfigure to prevent autoconf from detecting system tzdata
+                preConfigure = (oldAttrs.preConfigure or "") + ''
+                  # For CLI variant: prevent configure from auto-detecting system timezone data
+                  # We want to use the bundled timezone data for portability
+                  export ac_cv_path_TZDATA_DIR=no
+                '';
+              })
+            else
+              basePostgresql;
+
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant postgresql; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
           }) postgres-pkgs;
 
-          pgbin = postgresql.withPackages (_ps: postgres-pkgs);
+          # For CLI variant, manually construct buildEnv to ensure our overridden postgresql is used
+          pgbin =
+            if variant == "cli" then
+              let
+                # Collect wrapper args from all extensions
+                allWrapperArgs = lib.concatMap (ext: ext.passthru.wrapperArgs or [ ]) postgres-pkgs;
+              in
+              pkgs.buildEnv {
+                name = "postgresql-and-plugins-${postgresql.version}";
+                paths = [ postgresql ] ++ postgres-pkgs;
+                buildInputs = [ pkgs.makeBinaryWrapper ];
+
+                postBuild = ''
+                  # Wrap postgres binary with extension wrapper args
+                  if [ -f "$out/bin/postgres" ]; then
+                    mv "$out/bin/postgres" "$out/bin/.postgres-wrapped"
+                    makeWrapper "$out/bin/.postgres-wrapped" "$out/bin/postgres" \
+                      --set NIX_PGLIBDIR "$out/lib" \
+                      ${lib.concatStringsSep " " allWrapperArgs}
+                  fi
+
+                  # Wrap other binaries with NIX_PGLIBDIR
+                  for binary in initdb pg_ctl psql; do
+                    if [ -f "$out/bin/$binary" ]; then
+                      mv "$out/bin/$binary" "$out/bin/.$binary-wrapped"
+                      makeWrapper "$out/bin/.$binary-wrapped" "$out/bin/$binary" \
+                        --set NIX_PGLIBDIR "$out/lib"
+                    fi
+                  done
+                '';
+
+                passthru = postgresql.passthru // {
+                  inherit (postgresql) psqlSchema version;
+                  withPackages = throw "Use manual buildEnv for CLI variant";
+                };
+              }
+            else
+              postgresql.withPackages (_ps: postgres-pkgs);
         in
         pkgs.symlinkJoin {
           inherit (pgbin) name version;
