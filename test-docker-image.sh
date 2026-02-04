@@ -24,6 +24,7 @@ POSTGRES_DB="postgres"
 POSTGRES_PASSWORD="postgres"
 OUTPUT_DIR=""
 HTTP_MOCK_PORT=""
+HTTP_MOCK_PID=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -167,9 +168,14 @@ get_test_list() {
 # Cleanup function
 cleanup() {
     # since this function is set as the trap for EXIT
-    # store the return code of the last command that 
+    # store the return code of the last command that
     # was executed before said EXIT
     local exit_code=$?
+
+    # Kill HTTP mock server if running on host
+    if [[ -n "$HTTP_MOCK_PID" ]]; then
+        kill "$HTTP_MOCK_PID" 2>/dev/null || true
+    fi
 
     if [[ -n "$CONTAINER_NAME" ]] && [[ "$KEEP_CONTAINER" != "true" ]]; then
         log_info "Cleaning up container $CONTAINER_NAME..."
@@ -323,19 +329,30 @@ main() {
     log_info "Using psql: $PSQL_PATH"
     log_info "Using pg_regress: $PG_REGRESS_PATH"
 
-    # Start HTTP mock server inside the container
-    log_info "Starting HTTP mock server inside container..."
-
-    # Copy mock server script into container
-    docker cp "$HTTP_MOCK_SERVER" "$CONTAINER_NAME:/tmp/http-mock-server.py"
-
-    # Start mock server in container background
+    # Start HTTP mock server on host (accessible from container via host.docker.internal)
+    log_info "Starting HTTP mock server on host..."
     HTTP_MOCK_PORT=8880
-    docker exec -d "$CONTAINER_NAME" python3 /tmp/http-mock-server.py $HTTP_MOCK_PORT
+
+    # Start mock server on host in background
+    python3 "$HTTP_MOCK_SERVER" $HTTP_MOCK_PORT &
+    HTTP_MOCK_PID=$!
 
     # Wait for mock server to be ready
     sleep 2
-    log_info "HTTP mock server started on port $HTTP_MOCK_PORT (inside container)"
+    if ! kill -0 "$HTTP_MOCK_PID" 2>/dev/null; then
+        log_error "HTTP mock server failed to start"
+        exit 1
+    fi
+    log_info "HTTP mock server started on host port $HTTP_MOCK_PORT (PID: $HTTP_MOCK_PID)"
+
+    # Determine host address accessible from container
+    # On Docker Desktop (macOS/Windows): host.docker.internal
+    # On Linux: use the gateway IP from docker network
+    HTTP_MOCK_HOST="host.docker.internal"
+    if [[ "$(uname)" == "Linux" ]]; then
+        HTTP_MOCK_HOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' "$CONTAINER_NAME")
+    fi
+    log_info "Container will access mock server at $HTTP_MOCK_HOST:$HTTP_MOCK_PORT"
 
     # Run prime.sql to enable extensions
     log_info "Running prime.sql to enable extensions..."
@@ -351,7 +368,7 @@ main() {
         exit 1
     fi
 
-    # Create test_config table with HTTP mock port
+    # Create test_config table with HTTP mock host and port
     log_info "Creating test_config table..."
     PGPASSWORD="$POSTGRES_PASSWORD" "$PSQL_PATH" \
         -h localhost \
@@ -360,6 +377,8 @@ main() {
         -d "$POSTGRES_DB" \
         -c "CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
             INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+            INSERT INTO test_config (key, value) VALUES ('http_mock_host', '$HTTP_MOCK_HOST')
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
 
     # Get filtered test list

@@ -367,6 +367,8 @@
                   CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
                   INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
                   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_host', 'localhost')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
                 "
                 SORTED_DIR=$(mktemp -d)
                 for t in $(printf "%s\n" ${builtins.concatStringsSep " " sortedTestList}); do
@@ -410,6 +412,8 @@
                 log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "
                   CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
                   INSERT INTO test_config (key, value) VALUES ('http_mock_port', '$HTTP_MOCK_PORT')
+                  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+                  INSERT INTO test_config (key, value) VALUES ('http_mock_host', 'localhost')
                   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
                 "
 

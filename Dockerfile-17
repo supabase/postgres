@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-# Alpine-based slim PostgreSQL image with Nix extensions
+# Alpine-based slim PostgreSQL 17 image with Nix extensions
 
 ####################
 # Stage 1: Nix builder
@@ -179,6 +179,8 @@ ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 ENV GRN_PLUGINS_DIR=/usr/lib/groonga/plugins
+# Point to minimal glibc locales included in slim Nix package for initdb locale support
+ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost

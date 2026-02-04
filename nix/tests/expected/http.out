@@ -1,7 +1,7 @@
 -- Test for http extension
 -- Basic HTTP functionality tests
 -- Test basic HTTP GET request
-SELECT status FROM http_get('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/get');
+SELECT status FROM http_get('http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/get');
  status 
 --------
     200
@@ -11,7 +11,7 @@ SELECT status FROM http_get('http://localhost:' || (SELECT value FROM test_confi
 SELECT status, content_type
 FROM http((
   'GET',
-  'http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/headers',
+  'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/headers',
   ARRAY[http_header('User-Agent', 'pg_http_test')],
   NULL,
   NULL
@@ -23,7 +23,7 @@ FROM http((
 
 -- Test HTTP POST request with JSON body
 SELECT status FROM http_post(
-  'http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/post',
+  'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/post',
   '{"test": "data"}',
   'application/json'
 );
@@ -34,7 +34,7 @@ SELECT status FROM http_post(
 
 -- Test HTTP PUT request
 SELECT status FROM http_put(
-  'http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/put',
+  'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/put',
   '{"update": "data"}',
   'application/json'
 );
@@ -44,7 +44,7 @@ SELECT status FROM http_put(
 (1 row)
 
 -- Test HTTP DELETE request
-SELECT status FROM http_delete('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/delete');
+SELECT status FROM http_delete('http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/delete');
  status 
 --------
     200
@@ -52,7 +52,7 @@ SELECT status FROM http_delete('http://localhost:' || (SELECT value FROM test_co
 
 -- Test HTTP PATCH request
 SELECT status FROM http_patch(
-  'http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/patch',
+  'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/patch',
   '{"patch": "data"}',
   'application/json'
 );
@@ -62,7 +62,7 @@ SELECT status FROM http_patch(
 (1 row)
 
 -- Test HTTP HEAD request
-SELECT status FROM http_head('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/get');
+SELECT status FROM http_head('http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/get');
  status 
 --------
     200
@@ -70,7 +70,7 @@ SELECT status FROM http_head('http://localhost:' || (SELECT value FROM test_conf
 
 -- Test response headers parsing
 WITH response AS (
-  SELECT * FROM http_get('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/response-headers?Content-Type=text/plain')
+  SELECT * FROM http_get('http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/response-headers?Content-Type=text/plain')
 )
 SELECT
   status,
@@ -86,7 +86,7 @@ FROM response;
 -- This should complete successfully with reasonable timeout
 SELECT status FROM http((
   'GET',
-  'http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/delay/1',
+  'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/delay/1',
   ARRAY[]::http_header[],
   'application/json',
   2000  -- 2 second timeout
@@ -97,7 +97,7 @@ SELECT status FROM http((
 (1 row)
 
 -- Test URL encoding
-SELECT status FROM http_get('http://localhost:' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/anything?param=value%20with%20spaces&another=123');
+SELECT status FROM http_get('http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':' || (SELECT value FROM test_config WHERE key = 'http_mock_port') || '/anything?param=value%20with%20spaces&another=123');
  status 
 --------
     200

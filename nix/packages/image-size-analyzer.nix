@@ -224,8 +224,8 @@ runCommand "image-size-analyzer"
         }' | jq -s '.' 2>/dev/null || echo "[]"
     }
 
-    # Get APT/APK package sizes (handles both Debian and Alpine)
-    get_apt_packages() {
+    # Get system package sizes (handles both Debian/Ubuntu and Alpine)
+    get_system_packages() {
       local tag=$1
       local result
 
@@ -234,14 +234,30 @@ runCommand "image-size-analyzer"
         if command -v dpkg-query >/dev/null 2>&1; then
           dpkg-query -W -f="''${Package}\t''${Installed-Size}\n" 2>/dev/null | sort -t"	" -k2 -rn | head -15 | awk -F"\t" "{printf \"{\\\"name\\\":\\\"%s\\\",\\\"size_bytes\\\":%d}\\n\", \$1, \$2 * 1024}"
         elif command -v apk >/dev/null 2>&1; then
-          apk info -s 2>/dev/null | paste - - | sort -t"	" -k2 -rn | head -15 | awk -F"\t" "{gsub(/ /, \"\", \$2); printf \"{\\\"name\\\":\\\"%s\\\",\\\"size_bytes\\\":%s}\\n\", \$1, \$2}"
+          # Get all installed packages and their sizes
+          # apk info -s outputs "pkg installed size:\nNNNN KiB" with warnings to stdout
+          for pkg in $(apk info 2>&1 | grep -v "^WARNING"); do
+            size_line=$(apk info -s "$pkg" 2>&1 | grep -E "^[0-9]+ [KMG]iB$")
+            # Extract number and unit (e.g., "3214 KiB" -> 3214 * 1024)
+            size_num=$(echo "$size_line" | awk "{print \$1}")
+            size_unit=$(echo "$size_line" | awk "{print \$2}")
+            if [ -n "$size_num" ] && [ "$size_num" -gt 0 ] 2>/dev/null; then
+              case "$size_unit" in
+                KiB) size_bytes=$((size_num * 1024)) ;;
+                MiB) size_bytes=$((size_num * 1024 * 1024)) ;;
+                GiB) size_bytes=$((size_num * 1024 * 1024 * 1024)) ;;
+                *) size_bytes=$size_num ;;
+              esac
+              printf "{\"name\":\"%s\",\"size_bytes\":%s}\n" "$pkg" "$size_bytes"
+            fi
+          done
         else
           echo ""
         fi
       ' 2>/dev/null)
 
       if [[ -n "$result" ]]; then
-        echo "$result" | jq -s '.' 2>/dev/null || echo "[]"
+        echo "$result" | jq -s 'sort_by(-.size_bytes) | .[0:15]' 2>/dev/null || echo "[]"
       else
         echo "[]"
       fi
@@ -269,9 +285,9 @@ runCommand "image-size-analyzer"
       nix_packages=$(get_nix_packages "$tag")
       [[ -z "$nix_packages" || "$nix_packages" == "" ]] && nix_packages="[]"
 
-      local apt_packages
-      apt_packages=$(get_apt_packages "$tag")
-      [[ -z "$apt_packages" || "$apt_packages" == "" ]] && apt_packages="[]"
+      local system_packages
+      system_packages=$(get_system_packages "$tag")
+      [[ -z "$system_packages" || "$system_packages" == "" ]] && system_packages="[]"
 
       # Build JSON result for this image
       jq -n \
@@ -280,14 +296,14 @@ runCommand "image-size-analyzer"
         --argjson layers "$layers" \
         --argjson directories "$directories" \
         --argjson nix_packages "$nix_packages" \
-        --argjson apt_packages "$apt_packages" \
+        --argjson system_packages "$system_packages" \
         '{
           dockerfile: $dockerfile,
           total_size_bytes: $total_size,
           layers: $layers,
           directories: $directories,
           nix_packages: $nix_packages,
-          apt_packages: $apt_packages
+          system_packages: $system_packages
         }'
     }
 
@@ -334,9 +350,9 @@ runCommand "image-size-analyzer"
         done
       echo ""
 
-      echo "APT PACKAGES (top 15 by size)"
+      echo "SYSTEM PACKAGES (top 15 by size)"
       echo "--------------------------------------------------------------------------------"
-      echo "$json" | jq -r '.apt_packages[] | "\(.name)\t\(.size_bytes)"' 2>/dev/null | \
+      echo "$json" | jq -r '.system_packages[] | "\(.name)\t\(.size_bytes)"' 2>/dev/null | \
         while IFS=$'\t' read -r name size; do
           printf "  %-45s %s\n" "$name" "$(format_bytes "$size")"
         done
