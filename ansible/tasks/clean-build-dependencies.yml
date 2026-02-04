@@ -6,6 +6,7 @@
   ansible.builtin.apt:
     autoremove: false
     pkg:
+      # Build tools installed by Ansible tasks
       - bison
       - build-essential
       - clang-11
@@ -13,49 +14,26 @@
       - cpp
       - flex
       - g++
-      - g++-10
       - g++-9
+      - g++-10
       - gcc-10
       - make
-      - manpages
-      - manpages-dev
       - ninja-build
       - patch
       - python2
-    state: 'absent'
-
-# Security hardening: remove packages that increase attack surface
-# - Compiler toolchain enables local exploit compilation
-# - Dev packages provide headers for building exploits
-# - salt-minion is a remote management agent (large attack surface)
-# - sshpass stores credentials in plaintext
-- name: Remove high-security-risk packages
-  ansible.builtin.apt:
-    autoremove: false
-    pkg:
-      # Compiler toolchain (gcc-14-base kept - libgcc-s1 runtime depends on it)
-      - binutils
-      - binutils-aarch64-linux-gnu
-      - binutils-common
-      # Dev/header packages
+      # Dev headers installed for compilation
       - libc6-dev
       - libcrypt-dev
       - libevent-dev
       - libpcre3-dev
       - libssl-dev
-      - libsystemd-dev
       - linux-headers-aws
       - linux-libc-dev
       - pkg-config
       - pkgconf
       - pkgconf-bin
-      - rpcsvc-proto
-      - systemd-dev
       - zlib1g-dev
-      # Remote management (if not used)
-      - salt-minion
-      - salt-common
-      # Credential handling
+      # Security: credential handling
       - sshpass
       # Build tool leftovers
       - ansible-core
