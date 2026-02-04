@@ -38,6 +38,9 @@ let
       enableSystemd ? null,
       gssSupport ? with stdenv.hostPlatform; !isWindows && !isStatic,
 
+      # Portable build variant - disables hardcoded system paths
+      portable ? false,
+
       # for postgresql.pkgs
       self,
       newScope,
@@ -170,11 +173,11 @@ let
         "--with-icu"
         "--sysconfdir=/etc"
         "--libdir=$(lib)/lib"
-        "--with-system-tzdata=${tzdata}/share/zoneinfo"
         "--enable-debug"
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
       ]
+      ++ lib.optionals (!portable) [ "--with-system-tzdata=${tzdata}/share/zoneinfo" ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
       ++ lib.optionals gssSupport [ "--with-gssapi" ]
@@ -193,7 +196,8 @@ let
         ./patches/paths-for-split-outputs.patch
         ./patches/specify_pkglibdir_at_runtime.patch
         ./patches/paths-with-postgresql-suffix.patch
-
+      ]
+      ++ lib.optionals (!portable) [
         (replaceVars ./patches/locale-binary-path.patch {
           locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
         })
@@ -268,10 +272,12 @@ let
         ''}
       '';
 
-      postFixup = lib.optionalString (!stdenv'.isDarwin && stdenv'.hostPlatform.libc == "glibc") ''
-        # initdb needs access to "locale" command from glibc.
-        wrapProgram $out/bin/initdb --prefix PATH ":" ${glibc.bin}/bin
-      '';
+      postFixup =
+        lib.optionalString (!portable && !stdenv'.isDarwin && stdenv'.hostPlatform.libc == "glibc")
+          ''
+            # initdb needs access to "locale" command from glibc.
+            wrapProgram $out/bin/initdb --prefix PATH ":" ${glibc.bin}/bin
+          '';
 
       doCheck = !stdenv'.isDarwin;
       # autodetection doesn't seem to able to find this, but it's there.

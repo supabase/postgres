@@ -165,7 +165,12 @@
           variant ? "full",
         }:
         let
-          postgresql = getPostgresqlPackage version;
+          # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
+          postgresql =
+            if variant == "cli" then
+              (getPostgresqlPackage version).override { portable = true; }
+            else
+              getPostgresqlPackage version;
           postgres-pkgs = makeOurPostgresPkgs version { inherit variant; };
           ourExts = map (ext: {
             name = ext.name;

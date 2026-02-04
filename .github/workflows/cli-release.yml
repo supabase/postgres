@@ -2,8 +2,8 @@ name: CLI Release
 
 on:
   push:
-    tags:
-      - "v*-cli"
+  #   tags:
+  #     - "v*-cli"
   pull_request:
   workflow_dispatch:
     inputs:
