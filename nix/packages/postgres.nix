@@ -3,6 +3,12 @@
   perSystem =
     { pkgs, lib, ... }:
     let
+      # Minimal glibc locales for slim images - only en_US.UTF-8 (~3MB vs ~200MB)
+      glibcLocalesMinimal = pkgs.glibcLocales.override {
+        allLocales = false;
+        locales = [ "en_US.UTF-8/UTF-8" ];
+      };
+
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
       # easier and more expedient, or because they may not be suitable, or are
@@ -190,13 +196,19 @@
           }) postgres-pkgs;
 
           pgbin = postgresql.withPackages (_ps: postgres-pkgs);
+
+          # For slim packages, include minimal glibc locales for initdb locale support
+          extraPaths = lib.optionals (latestOnly && pkgs.stdenv.isLinux) [
+            glibcLocalesMinimal
+          ];
         in
         pkgs.symlinkJoin {
           inherit (pgbin) name version;
           paths = [
             pgbin
             (makeReceipt pgbin ourExts)
-          ];
+          ]
+          ++ extraPaths;
         };
 
       # Create an attribute set, containing all the relevant packages for a

@@ -1,108 +1,27 @@
 # syntax=docker/dockerfile:1.6
-ARG postgresql_major=17-orioledb
-ARG postgresql_release=${postgresql_major}.1
+# Alpine-based slim PostgreSQL 17 with OrioleDB image using Nix extensions
 
-# Bump default build arg to build a package from source
-# Bump vars.yml to specify runtime package version
-ARG sfcgal_release=1.3.10
-ARG postgis_release=3.3.2
-ARG pgrouting_release=3.4.1
-ARG pgtap_release=1.2.0
-ARG pg_cron_release=1.6.2
-ARG pgaudit_release=1.7.0
-ARG pgjwt_release=9742dab1b2f297ad3811120db7b21451bca2d3c9
-ARG pgsql_http_release=1.5.0
-ARG plpgsql_check_release=2.2.5
-ARG pg_safeupdate_release=1.4
-ARG timescaledb_release=2.9.1
-ARG wal2json_release=2_5
-ARG pljava_release=1.6.4
-ARG plv8_release=3.1.5
-ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
-ARG pg_net_release=0.7.1
-ARG rum_release=1.3.13
-ARG pg_hashids_release=cd0e1b31d52b394a0df64079406a14a4f7387cd6
-ARG libsodium_release=1.0.18
-ARG pgsodium_release=3.1.6
-ARG pg_graphql_release=1.5.11
-ARG pg_stat_monitor_release=1.1.1
-ARG pg_jsonschema_release=0.1.4
-ARG pg_repack_release=1.4.8
-ARG vault_release=0.2.8
-ARG groonga_release=12.0.8
-ARG pgroonga_release=2.4.0
-ARG wrappers_release=0.5.7
-ARG hypopg_release=1.3.1
-ARG pgvector_release=0.4.0
-ARG pg_tle_release=1.3.2
-ARG index_advisor_release=0.2.0
-ARG supautils_release=2.2.0
-ARG wal_g_release=3.0.5
+####################
+# Stage 1: Nix builder
+####################
+FROM alpine:3.21 AS nix-builder
 
-FROM ubuntu:noble as base
-
-# Create reusable apt mirror fallback function
-RUN echo '#!/bin/bash\n\
-apt_update_with_fallback() {\n\
-    local sources_file="/etc/apt/sources.list.d/ubuntu.sources"\n\
-    local max_attempts=2\n\
-    local attempt=1\n\
-    local mirrors="archive.ubuntu.com us.archive.ubuntu.com"\n\
-    \n\
-    for mirror in $mirrors; do\n\
-        echo "========================================="\n\
-        echo "Attempting apt-get update with mirror: ${mirror}"\n\
-        echo "Attempt ${attempt} of ${max_attempts}"\n\
-        echo "========================================="\n\
-        \n\
-        if [ -f "${sources_file}" ]; then\n\
-            sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"\n\
-        fi\n\
-        \n\
-        if timeout 300 apt-get update 2>&1; then\n\
-            echo "========================================="\n\
-            echo "✓ Successfully updated apt cache using mirror: ${mirror}"\n\
-            echo "========================================="\n\
-            return 0\n\
-        else\n\
-            local exit_code=$?\n\
-            echo "========================================="\n\
-            echo "✗ Failed to update using mirror: ${mirror}"\n\
-            echo "Exit code: ${exit_code}"\n\
-            echo "========================================="\n\
-            \n\
-            apt-get clean\n\
-            rm -rf /var/lib/apt/lists/*\n\
-            \n\
-            if [ ${attempt} -lt ${max_attempts} ]; then\n\
-                local sleep_time=$((attempt * 5))\n\
-                echo "Waiting ${sleep_time} seconds before trying next mirror..."\n\
-                sleep ${sleep_time}\n\
-            fi\n\
-        fi\n\
-        \n\
-        attempt=$((attempt + 1))\n\
-    done\n\
-    \n\
-    echo "========================================="\n\
-    echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"\n\
-    echo "========================================="\n\
-    return 1\n\
-}' > /usr/local/bin/apt-update-fallback.sh && chmod +x /usr/local/bin/apt-update-fallback.sh
-
-RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt install -y \
+# Install dependencies for nix installer (coreutils for GNU cp, sudo for installer)
+RUN apk add --no-cache \
+    bash \
+    coreutils \
     curl \
-    gnupg \
-    lsb-release \
-    software-properties-common \
-    wget \
+    shadow \
     sudo \
-    tree \
-    && apt clean
+    xz
 
+# Create users (Alpine syntax)
+RUN addgroup -S postgres && \
+    adduser -S -h /var/lib/postgresql -s /bin/bash -G postgres postgres && \
+    addgroup -S wal-g && \
+    adduser -S -s /bin/bash -G wal-g wal-g
 
-RUN adduser --system  --home /var/lib/postgresql --no-create-home --shell /bin/bash --group --gecos "PostgreSQL administrator" postgres
-RUN adduser --system  --no-create-home --shell /bin/bash --group  wal-g
+# Create nix config
 RUN cat <<EOF > /tmp/extra-nix.conf
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
@@ -112,104 +31,100 @@ RUN curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --daemo
 
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 
-COPY . /nixpg
-
 WORKDIR /nixpg
+COPY . .
 
-RUN nix profile add path:.#psql_orioledb-17/bin 
+# Build PostgreSQL with extensions
+RUN nix profile add path:.#psql_orioledb-17_slim/bin
 
 RUN nix store gc
 
-WORKDIR /
-
-
-RUN mkdir -p /usr/lib/postgresql/bin \
-    /usr/lib/postgresql/share/postgresql \
-    /usr/share/postgresql \
-    /var/lib/postgresql \
-    && chown -R postgres:postgres /usr/lib/postgresql \
-    && chown -R postgres:postgres /var/lib/postgresql \
-    && chown -R postgres:postgres /usr/share/postgresql
-
-# Create symbolic links
-RUN ln -s /nix/var/nix/profiles/default/bin/* /usr/lib/postgresql/bin/ \
-    && ln -s /nix/var/nix/profiles/default/bin/* /usr/bin/ \
-    && chown -R postgres:postgres /usr/bin
-
-# Create symbolic links for PostgreSQL shares
-RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/share/postgresql/
-RUN ln -s /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/
-RUN chown -R postgres:postgres /usr/lib/postgresql/share/postgresql/
-RUN chown -R postgres:postgres /usr/share/postgresql/ 
-
-RUN tree /nix > /tmp/tree.txt && cat /tmp/tree.txt && cat /tmp/tree.txt >&2
-
-RUN chown -R postgres:postgres /usr/lib/postgresql
-
-RUN ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets
-
-
-RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
-    apt-get install -y --no-install-recommends tzdata
-
-RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
-
-RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    checkinstall \
-    cmake 
-
-ENV PGDATA=/var/lib/postgresql/data
-
-WORKDIR /
-####################
-# setup-groonga
-####################
-FROM base as groonga
-
-WORKDIR /nixpg
-
+# Build groonga and copy plugins
 RUN nix profile add path:.#supabase-groonga && \
     mkdir -p /tmp/groonga-plugins && \
     cp -r /nix/var/nix/profiles/default/lib/groonga/plugins /tmp/groonga-plugins/
 
 RUN nix store gc
 
-WORKDIR /
-# ####################
-# # Download gosu for easy step-down from root
-# ####################
-FROM base as gosu
+####################
+# Stage 2: Gosu builder
+####################
+FROM alpine:3.21 AS gosu-builder
+
 ARG TARGETARCH
-# Install dependencies
-RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
-   gnupg \
-   ca-certificates \
-   && rm -rf /var/lib/apt/lists/*
-# Download binary
 ARG GOSU_VERSION=1.16
-ARG GOSU_GPG_KEY=B42F6819007F00F88E364FD4036A9C25BF357DD4
-ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH \
-    /usr/local/bin/gosu
-ADD https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$TARGETARCH.asc \
-    /usr/local/bin/gosu.asc
-# Verify checksum
-RUN gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys $GOSU_GPG_KEY && \
+
+RUN apk add --no-cache gnupg curl
+
+# Download and verify gosu
+RUN curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}" -o /usr/local/bin/gosu && \
+    curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}.asc" -o /usr/local/bin/gosu.asc && \
+    GNUPGHOME="$(mktemp -d)" && \
+    export GNUPGHOME && \
+    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
     gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
-    gpgconf --kill all && \
+    rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc && \
     chmod +x /usr/local/bin/gosu
 
-# ####################
-# # Build final image
-# ####################
-FROM gosu as production
-RUN id postgres || (echo "postgres user does not exist" && exit 1)
-# # Setup extensions
-COPY --from=groonga /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
+####################
+# Stage 3: Final production image
+####################
+FROM alpine:3.21 AS production
 
-# # Initialise configs
+# Install minimal runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    shadow \
+    su-exec \
+    tzdata \
+    musl-locales \
+    musl-locales-lang \
+    && rm -rf /var/cache/apk/*
+
+# Create postgres user/group
+RUN addgroup -S postgres && \
+    adduser -S -G postgres -h /var/lib/postgresql -s /bin/bash postgres && \
+    addgroup -S wal-g && \
+    adduser -S -G wal-g -s /bin/bash wal-g && \
+    adduser postgres wal-g
+
+# Copy Nix store and profiles from builder (profile already created by nix profile install)
+COPY --from=nix-builder /nix /nix
+
+# Copy groonga plugins
+COPY --from=nix-builder /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
+
+# Copy gosu
+COPY --from=gosu-builder /usr/local/bin/gosu /usr/local/bin/gosu
+
+# Setup PostgreSQL directories
+RUN mkdir -p /usr/lib/postgresql/bin \
+    /usr/lib/postgresql/share/postgresql \
+    /usr/share/postgresql \
+    /var/lib/postgresql/data \
+    /var/run/postgresql \
+    && chown -R postgres:postgres /usr/lib/postgresql \
+    && chown -R postgres:postgres /var/lib/postgresql \
+    && chown -R postgres:postgres /usr/share/postgresql \
+    && chown -R postgres:postgres /var/run/postgresql
+
+# Create symbolic links for binaries
+RUN for f in /nix/var/nix/profiles/default/bin/*; do \
+        ln -sf "$f" /usr/lib/postgresql/bin/ 2>/dev/null || true; \
+        ln -sf "$f" /usr/bin/ 2>/dev/null || true; \
+    done
+
+# Create symbolic links for PostgreSQL shares
+RUN ln -sf /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/share/postgresql/ 2>/dev/null || true && \
+    ln -sf /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/ 2>/dev/null || true && \
+    ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets 2>/dev/null || true
+
+# Set permissions
+RUN chown -R postgres:postgres /usr/lib/postgresql && \
+    chown -R postgres:postgres /usr/share/postgresql
+
+# Setup configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
@@ -223,6 +138,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_repli
 COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
 COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
 
+# Configure PostgreSQL settings
 RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
@@ -230,16 +146,16 @@ RUN sed -i \
     -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
-    usermod -aG postgres wal-g && \
     chown -R postgres:postgres /etc/postgresql-custom
 
-    # Remove items from postgresql.conf
-RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" 
-    #as of pg 16.4 + this db_user_namespace totally deprecated and will break the server if setting is present
-RUN sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" 
-RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
-RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf"
-RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf"
+# Remove timescaledb, plv8, postgis, pgrouting references (not available in orioledb build)
+RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
+
+# OrioleDB configuration
+RUN sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "/etc/postgresql/postgresql.conf" && \
+    echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgresql.conf"
 
 # OrioleDB rewind configuration
 # Enables time-based rewind capability for up to 20 minutes (1200 seconds)
@@ -247,49 +163,44 @@ RUN echo "default_table_access_method = 'orioledb'" >> "/etc/postgresql/postgres
 RUN echo "orioledb.enable_rewind = true" >> "/etc/postgresql/postgresql.conf" && \
     echo "orioledb.rewind_max_time = 1200" >> "/etc/postgresql/postgresql.conf" && \
     echo "orioledb.rewind_max_transactions = 100000" >> "/etc/postgresql/postgresql.conf" && \
-    echo "orioledb.rewind_buffers = 1280" >> "/etc/postgresql/postgresql.conf" 
+    echo "orioledb.rewind_buffers = 1280" >> "/etc/postgresql/postgresql.conf"
 
-
-# # Include schema migrations
+# Include schema migrations
 COPY migrations/db /docker-entrypoint-initdb.d/
 COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
+
 # Enable orioledb extension first
 RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
-# # Add upstream entrypoint script pinned for now to last tested version
-COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+# Add entrypoint script
 ADD --chmod=0755 \
     https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/17/bullseye/docker-entrypoint.sh \
     /usr/local/bin/docker-entrypoint.sh
 
-RUN mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
-
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
-STOPSIGNAL SIGINT
-EXPOSE 5432
-
-ENV POSTGRES_HOST=/var/run/postgresql
-ENV POSTGRES_USER=supabase_admin
-ENV POSTGRES_DB=postgres
-ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
-RUN bash -c 'source /usr/local/bin/apt-update-fallback.sh && apt_update_with_fallback' && apt-get install -y --no-install-recommends \
-    locales \
-    && rm -rf /var/lib/apt/lists/* && \
-    localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
-    && localedef -i C -c -f UTF-8 -A /usr/share/locale/locale.alias C.UTF-8 
-RUN echo "C.UTF-8 UTF-8" > /etc/locale.gen && echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && locale-gen
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
-ENV LOCALE_ARCHIVE /usr/lib/locale/locale-archive
+# Setup pgsodium key script
 RUN mkdir -p /usr/share/postgresql/extension/ && \
     ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \
     chmod +x /usr/lib/postgresql/bin/pgsodium_getkey.sh
 
+# Environment variables
+ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
+ENV PGDATA=/var/lib/postgresql/data
+ENV POSTGRES_HOST=/var/run/postgresql
+ENV POSTGRES_USER=supabase_admin
+ENV POSTGRES_DB=postgres
+ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 ENV GRN_PLUGINS_DIR=/usr/lib/groonga/plugins
+# Point to minimal glibc locales included in slim Nix package for initdb locale support
+ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+STOPSIGNAL SIGINT
+EXPOSE 5432
 
 CMD ["postgres", "-D", "/etc/postgresql"]
