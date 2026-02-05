@@ -185,10 +185,7 @@
             let
               base = getPostgresqlPackage version latestOnly;
             in
-            if variant == "cli" then
-              base.override { portable = true; }
-            else
-              base;
+            if variant == "cli" then base.override { portable = true; } else base;
           postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
           ourExts = map (ext: {
             name = ext.name;

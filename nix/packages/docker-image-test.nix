@@ -352,6 +352,21 @@ writeShellApplication {
             rm -f "$PATCHED_TESTS_DIR/expected/roles.out.bak"
         fi
 
+        # Patch http.sql and http.out to use http_mock_host instead of localhost
+        # This is needed because localhost inside container doesn't reach host's mock server
+        if [[ -f "$PATCHED_TESTS_DIR/sql/http.sql" ]]; then
+            sed -i.bak \
+                -e "s@'http://localhost:'@'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':'@g" \
+                "$PATCHED_TESTS_DIR/sql/http.sql"
+            rm -f "$PATCHED_TESTS_DIR/sql/http.sql.bak"
+        fi
+        if [[ -f "$PATCHED_TESTS_DIR/expected/http.out" ]]; then
+            sed -i.bak \
+                -e "s@'http://localhost:'@'http://' || (SELECT value FROM test_config WHERE key = 'http_mock_host') || ':'@g" \
+                "$PATCHED_TESTS_DIR/expected/http.out"
+            rm -f "$PATCHED_TESTS_DIR/expected/http.out.bak"
+        fi
+
         log_info "Running pg_regress..."
         local regress_exit=0
 

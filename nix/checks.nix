@@ -27,14 +27,10 @@
           # deadnix: skip
           makeCheckHarness =
             pgpkg:
-<<<<<<< HEAD
-            {
-              isCliVariant ? false,
-=======
             # legacyPkgName: the name used in legacyPackages (e.g., "psql_17" or "psql_17_slim")
             {
+              isCliVariant ? false,
               legacyPkgName ? null,
->>>>>>> 40203ba5 (fix: deal with systemd in slim vs regular)
             }:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
@@ -559,15 +555,6 @@
         in
         {
           psql_15 = pkgs.runCommand "run-check-harness-psql-15" { } (
-<<<<<<< HEAD
-            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { })
-          );
-          psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { })
-          );
-          psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin" { })
-=======
             lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { legacyPkgName = "psql_15"; })
           );
           psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
@@ -590,7 +577,6 @@
                 legacyPkgName = "psql_orioledb-17_slim";
               }
             )
->>>>>>> 40203ba5 (fix: deal with systemd in slim vs regular)
           );
           # CLI variant checks
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
