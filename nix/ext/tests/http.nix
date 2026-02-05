@@ -284,6 +284,8 @@ pkgs.testers.runNixOSTest {
           CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
           INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+          INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_host'"'"', '"'"'localhost'"'"')
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
         '
       """)
 
@@ -317,6 +319,8 @@ pkgs.testers.runNixOSTest {
           sudo -u postgres psql -d postgres -c '
             INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+            INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_host'"'"', '"'"'localhost'"'"')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
           '
         """)
 
@@ -344,6 +348,8 @@ pkgs.testers.runNixOSTest {
         server.succeed(f"""
           sudo -u postgres psql -d postgres -c '
             INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+            INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_host'"'"', '"'"'localhost'"'"')
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
           '
         """)
