@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  self,
+  ...
+}:
 let
   start-linux-builder = pkgs.writeShellApplication {
     name = "start-linux-builder";
@@ -51,6 +56,7 @@ let
       fi
     '';
   };
+  verify-darwin-linux-builder = self.packages.aarch64-darwin.verify-darwin-linux-builder;
 in
 {
   nixpkgs.hostPlatform = "aarch64-darwin";
@@ -59,6 +65,7 @@ in
   environment.systemPackages = [
     start-linux-builder
     stop-linux-builder
+    verify-darwin-linux-builder
   ];
 
   nix.settings = {

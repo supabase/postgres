@@ -37,7 +37,29 @@ After setup completes, restart your shell to access the helper commands.
 
 ## Verify the setup
 
-Test that the linux-builder is working by building a simple package for Linux:
+The setup script runs verification automatically after configuration.
+You can also run verification manually at any time:
+
+```bash
+nix run .#verify-darwin-linux-builder
+```
+
+Or after setup, use the installed command:
+
+```bash
+verify-darwin-linux-builder
+```
+
+The verification script checks:
+
+1. Launchd service status (running vs loaded-but-stopped)
+2. Nix configuration via `nix config show` (substituters, trusted keys, experimental features)
+3. Builder features (`/etc/nix/machines` includes `nixos-test`)
+4. Builder responsiveness (test build of `nixpkgs#hello` for aarch64-linux)
+
+Each check reports pass/fail with actionable guidance on failures.
+
+You can also manually test that the linux-builder is working by building a simple package for Linux:
 
 ```bash
 nix build --system x86_64-linux nixpkgs#hello

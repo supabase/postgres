@@ -48,13 +48,27 @@ writeShellApplication {
     echo ""
     echo "Configuration complete!"
     echo ""
-    echo "The linux-builder is now configured. You can test it by:"
-    echo "  nix build --system x86_64-linux nixpkgs#hello"
-    echo "  nix build --system aarch64-linux nixpkgs#hello"
+
+    echo "Running verification..."
+    echo ""
+    if nix run ${self}#verify-darwin-linux-builder; then
+      echo ""
+      echo "Setup and verification successful!"
+    else
+      echo ""
+      echo "Setup completed but verification found issues."
+      echo "Review the failures above and try:"
+      echo "  nix run .#verify-darwin-linux-builder"
+      echo ""
+      echo "to re-run verification after addressing any issues."
+      exit 1
+    fi
+
     echo ""
     echo "To control the linux builder vm, you can use:"
-    echo "  stop-linux-builder  # to stop the linux builder vm"
-    echo "  start-linux-builder # to start the linux builder vm"
+    echo "  stop-linux-builder   # stop the linux builder vm"
+    echo "  start-linux-builder  # start the linux builder vm"
+    echo "  verify-darwin-linux-builder # verify the setup is working"
     echo ""
     echo "If this is the first install, you may need to restart your shell to use these scripts."
   '';
