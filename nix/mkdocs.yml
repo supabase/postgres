@@ -31,6 +31,7 @@ nav:
     - Adding Tests: adding-tests.md
     - Migration Tests: migration-tests.md
     - Testing PG Upgrade Scripts: testing-pg-upgrade-scripts.md
+    - NixOS Tests on macOS: nixos-tests-on-macos.md
   - References: references.md
 
 validation:
