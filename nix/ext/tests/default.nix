@@ -1,5 +1,6 @@
 { self, pkgs }:
 let
+  linuxPkgs = if pkgs.stdenv.isLinux then pkgs else pkgs.pkgsLinux;
   testsDir = ./.;
   testFiles = builtins.attrNames (builtins.readDir testsDir);
   nixFiles = builtins.filter (
@@ -16,7 +17,7 @@ let
 
       installedExtension =
         postgresMajorVersion:
-        self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+        self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
           pname
         }";
       versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -25,7 +26,7 @@ let
         let
           majorVersion =
             if postgresql.isOrioleDB then "orioledb-17" else lib.versions.major postgresql.version;
-          pkg = pkgs.pkgsLinux.buildEnv {
+          pkg = linuxPkgs.buildEnv {
             name = "postgresql-${majorVersion}-${pname}";
             paths = [
               postgresql
@@ -33,7 +34,7 @@ let
               (installedExtension majorVersion)
             ]
             ++ lib.optional (postgresql.isOrioleDB
-            ) self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
+            ) self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
             passthru = {
               inherit (postgresql) version psqlSchema;
               lib = pkg;
@@ -42,7 +43,7 @@ let
               withoutJIT = pkg;
               installedExtensions = [ (installedExtension majorVersion) ];
             };
-            nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
+            nativeBuildInputs = [ linuxPkgs.makeWrapper ];
             pathsToLink = [
               "/"
               "/bin"
@@ -58,13 +59,13 @@ let
         pkg;
       psql_15 =
         postgresqlWithExtension
-          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+          self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
       psql_17 =
         postgresqlWithExtension
-          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+          self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_17;
       orioledb_17 =
         postgresqlWithExtension
-          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+          self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
     in
     pkgs.testers.runNixOSTest {
       name = pname;
@@ -148,7 +149,7 @@ let
             services.postgresql = {
               package = lib.mkForce (
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
               );
               settings = lib.mkForce (
                 ((installedExtension "17").defaultSettings or { })
@@ -186,7 +187,7 @@ let
                 let
                   newPostgresql =
                     postgresqlWithExtension
-                      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+                      self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
                 in
                 ''
                   if [[ -z "${newPostgresql.psqlSchema}" ]]; then

@@ -1,10 +1,11 @@
 { self, pkgs }:
 let
+  linuxPkgs = if pkgs.stdenv.isLinux then pkgs else pkgs.pkgsLinux;
   pname = "pgrouting";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -12,17 +13,17 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
+      pkg = linuxPkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.postgis
+          (self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.postgis
           )
         ]
         ++ lib.optional (postgresql.isOrioleDB) (
-          self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb
+          self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb
         );
         passthru = {
           inherit (postgresql) version psqlSchema;
@@ -32,7 +33,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
+        nativeBuildInputs = [ linuxPkgs.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -47,7 +48,7 @@ let
     in
     pkg;
   pg_regress = pkgs.callPackage ../pg_regress.nix {
-    postgresql = self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+    postgresql = self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
   };
 in
 pkgs.testers.runNixOSTest {
@@ -66,13 +67,13 @@ pkgs.testers.runNixOSTest {
         enable = true;
         package =
           postgresqlWithExtension
-            self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+            self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
       };
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17
+            postgresqlWithExtension self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_17
           );
         };
 
@@ -89,10 +90,10 @@ pkgs.testers.runNixOSTest {
             let
               oldPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in
@@ -118,7 +119,7 @@ pkgs.testers.runNixOSTest {
         services.postgresql = {
           package = lib.mkForce (
             postgresqlWithExtension
-              self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
+              self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
           );
           settings = {
             shared_preload_libraries = "orioledb";
@@ -149,7 +150,7 @@ pkgs.testers.runNixOSTest {
             let
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
               set -x

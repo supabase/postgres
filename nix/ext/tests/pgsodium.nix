@@ -1,10 +1,11 @@
 { self, pkgs }:
 let
+  linuxPkgs = if pkgs.stdenv.isLinux then pkgs else pkgs.pkgsLinux;
   pname = "pgsodium";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -12,13 +13,13 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
+      pkg = linuxPkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.hypopg
+          (self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.hypopg
           )
         ];
         passthru = {
@@ -29,7 +30,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
+        nativeBuildInputs = [ linuxPkgs.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -58,7 +59,7 @@ pkgs.testers.runNixOSTest {
         enable = true;
         package =
           postgresqlWithExtension
-            self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+            self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
         settings = {
           "shared_preload_libraries" = pname;
           "pgsodium.getkey_script" = pgsodiumGetKey;
@@ -68,7 +69,7 @@ pkgs.testers.runNixOSTest {
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17
+            postgresqlWithExtension self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_17
           );
         };
 
@@ -85,10 +86,10 @@ pkgs.testers.runNixOSTest {
             let
               oldPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+                  self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in

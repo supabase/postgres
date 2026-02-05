@@ -1,10 +1,11 @@
 { self, pkgs }:
 let
+  linuxPkgs = if pkgs.stdenv.isLinux then pkgs else pkgs.pkgsLinux;
   pname = "timescaledb";
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${linuxPkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = (installedExtension "15").versions;
@@ -12,7 +13,7 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
+      pkg = linuxPkgs.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
@@ -27,7 +28,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
+        nativeBuildInputs = [ linuxPkgs.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -43,7 +44,7 @@ let
     pkg;
   psql_15 =
     postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+      self.packages.${linuxPkgs.stdenv.hostPlatform.system}.postgresql_15;
 in
 pkgs.testers.runNixOSTest {
   name = "timescaledb";
