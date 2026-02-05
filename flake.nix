@@ -13,6 +13,8 @@
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     git-hooks.url = "github:cachix/git-hooks.nix";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin.url = "github:nix-darwin/nix-darwin";
     nix-editor.inputs.nixpkgs.follows = "nixpkgs";
     nix-editor.inputs.utils.follows = "flake-utils";
     nix-editor.url = "github:snowfallorg/nix-editor";
@@ -47,6 +49,7 @@
         nix/devShells.nix
         nix/fmt.nix
         nix/hooks.nix
+        nix/hosts.nix
         nix/nixpkgs.nix
         nix/packages
         nix/overlays

@@ -2,9 +2,10 @@
 let
   pname = "http";
   inherit (pkgs) lib;
+  mockServer = ../../tests/http-mock-server.py;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -13,7 +14,7 @@ let
     let
       majorVersion =
         if postgresql.isOrioleDB then "orioledb-17" else lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
@@ -21,7 +22,7 @@ let
           (installedExtension majorVersion)
         ]
         ++ lib.optional (postgresql.isOrioleDB
-        ) self.legacyPackages.${pkgs.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
+        ) self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.psql_orioledb-17.exts.orioledb;
         passthru = {
           inherit (postgresql) version psqlSchema;
           installedExtensions = [ (installedExtension majorVersion) ];
@@ -30,7 +31,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -44,34 +45,30 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+  psql_15 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
   orioledb_17 =
     postgresqlWithExtension
-      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
       services.openssh = {
         enable = true;
       };
 
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+        package =
+          postgresqlWithExtension
+            self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
         settings = (installedExtension "15").defaultSettings or { };
         authentication = ''
           local all postgres peer map=postgres
@@ -89,24 +86,40 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         ];
         initialScript = pkgs.writeText "init-postgres" ''
           CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
-          INSERT INTO test_config (key, value) VALUES ('http_mock_port', '8880') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
         '';
       };
 
       systemd.services.http-mock-server = {
         wantedBy = [ "multi-user.target" ];
+        before = [ "postgresql.service" ];
         serviceConfig = {
           Type = "simple";
+          Restart = "on-failure";
+          RestartSec = "2";
+          TimeoutStartSec = "30";
+          User = "root";
+        };
+        environment = {
+          HTTP_MOCK_PORT_FILE = "/tmp/http-mock-port";
+          PYTHONUNBUFFERED = "1";
         };
         script = ''
-          ${pkgs.python3}/bin/python3 ${../../tests/http-mock-server.py}
+          # Ensure temp directory exists
+          mkdir -p /tmp
+
+          # Start the mock server
+          exec ${pkgs.pkgsLinux.python3}/bin/python3 ${mockServer}
         '';
+      };
+
+      systemd.services.postgresql = {
+        after = [ "http-mock-server.service" ];
       };
 
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
+            postgresqlWithExtension self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17
           );
           settings = ((installedExtension "17").defaultSettings or { });
         };
@@ -124,10 +137,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             let
               oldPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in
@@ -152,7 +165,8 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       specialisation.orioledb17.configuration = {
         services.postgresql = {
           package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17
+            postgresqlWithExtension
+              self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
           );
           settings = lib.mkForce (
             ((installedExtension "17").defaultSettings or { })
@@ -175,7 +189,6 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             pkgs.writeText "init-postgres-with-orioledb" ''
               CREATE EXTENSION orioledb CASCADE;
               CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
-              INSERT INTO test_config (key, value) VALUES ('http_mock_port', '8880') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
             ''
           );
         };
@@ -194,7 +207,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             let
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
             in
             ''
               if [[ -z "${newPostgresql.psqlSchema}" ]]; then
@@ -243,7 +256,36 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       start_all()
 
       server.wait_for_unit("multi-user.target")
+      server.wait_for_unit("http-mock-server.service")
       server.wait_for_unit("postgresql.service")
+
+      # Read the HTTP mock port and configure it in PostgreSQL
+      # Wait for the port file to be created with retry logic
+      server.succeed("""
+        for i in {1..30}; do
+          if [ -f /tmp/http-mock-port ]; then
+            break
+          fi
+          echo "Waiting for HTTP mock server port file... ($i/30)"
+          sleep 1
+        done
+        
+        if [ ! -f /tmp/http-mock-port ]; then
+          echo "ERROR: HTTP mock server port file not found after 30 seconds"
+          systemctl status http-mock-server.service || true
+          journalctl -u http-mock-server.service --no-pager || true
+          exit 1
+        fi
+      """)
+
+      http_port = server.succeed("cat /tmp/http-mock-port").strip()
+      server.succeed(f"""
+        sudo -u postgres psql -d postgres -c '
+          CREATE TABLE IF NOT EXISTS test_config (key TEXT PRIMARY KEY, value TEXT);
+          INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+        '
+      """)
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, ext_schema, lib_name)
       test.create_schema()
@@ -269,6 +311,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         server.succeed(
           "${pg17-configuration}/bin/switch-to-configuration test >&2"
         )
+        server.wait_for_unit("postgresql.service")
+        # Reconfigure the HTTP mock port after switching PostgreSQL version
+        server.succeed(f"""
+          sudo -u postgres psql -d postgres -c '
+            INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+          '
+        """)
 
       with subtest("Check last version of the extension after postgresql upgrade"):
         test.assert_version_matches(last_version)
@@ -289,6 +339,14 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         server.succeed(
           "${orioledb17-configuration}/bin/switch-to-configuration test >&2"
         )
+        server.wait_for_unit("postgresql.service")
+        # Reconfigure the HTTP mock port after switching to orioledb
+        server.succeed(f"""
+          sudo -u postgres psql -d postgres -c '
+            INSERT INTO test_config (key, value) VALUES ('"'"'http_mock_port'"'"', '"'"'{http_port}'"'"')
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+          '
+        """)
         installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")
         assert "orioledb" in installed_extensions
         test.create_schema()

@@ -86,6 +86,12 @@
             cargo-pgrx_0_14_3
             ;
         }
+        // lib.optionalAttrs pkgs.stdenv.isDarwin {
+          setup-darwin-linux-builder = pkgs.callPackage ./setup-darwin-linux-builder.nix {
+            inherit inputs self;
+          };
+          verify-darwin-linux-builder = pkgs.callPackage ./verify-darwin-linux-builder.nix { };
+        }
         // lib.filterAttrs (n: _v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
           pkgs.callPackage ../postgresql/default.nix {
             inherit self';

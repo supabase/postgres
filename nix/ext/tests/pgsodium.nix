@@ -4,7 +4,7 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -12,13 +12,14 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.hypopg)
+          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.hypopg
+          )
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
@@ -28,7 +29,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -48,25 +49,16 @@ let
     ''
   );
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
-
       services.postgresql = {
         enable = true;
-        package = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+        package =
+          postgresqlWithExtension
+            self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
         settings = {
           "shared_preload_libraries" = pname;
           "pgsodium.getkey_script" = pgsodiumGetKey;
@@ -76,7 +68,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       specialisation.postgresql17.configuration = {
         services.postgresql = {
           package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17
+            postgresqlWithExtension self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17
           );
         };
 
@@ -93,10 +85,10 @@ self.inputs.nixpkgs.lib.nixos.runTest {
             let
               oldPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
               newPostgresql =
                 postgresqlWithExtension
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
               oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
               newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
             in

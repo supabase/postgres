@@ -4,7 +4,7 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -12,13 +12,14 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
           (installedExtension majorVersion)
-          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.pgsodium) # dependency
+          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${majorVersion}".exts.pgsodium
+          ) # dependency
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
@@ -28,7 +29,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -47,25 +48,18 @@ let
       echo 0000000000000000000000000000000000000000000000000000000000000000
     ''
   );
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+  psql_15 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
-
       services.postgresql = {
         enable = true;
         package = psql_15;

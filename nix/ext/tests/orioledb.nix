@@ -6,24 +6,24 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
           postgresql.lib
-          (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
+          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
         ];
         passthru = {
           inherit (postgresql) version psqlSchema;
           installedExtensions = [
-            (self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
+            (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
           ];
           lib = pkg;
           withPackages = _: pkg;
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -39,23 +39,13 @@ let
     pkg;
   psql_orioledb =
     postgresqlWithExtension
-      self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
       services.openssh = {
         enable = true;
       };

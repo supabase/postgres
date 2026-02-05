@@ -24,12 +24,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            MAJOR_VERSION=$(echo "${{ inputs.postgresVersion }}" | cut -d'.' -f1)
-            VERSIONS="[\"$MAJOR_VERSION\"]"
-          else
-            VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
-          fi
+          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -48,11 +43,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION="${{ inputs.postgresVersion }}"
-          else
-            VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          fi
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
@@ -87,7 +78,7 @@ jobs:
 
   publish-prod:
     runs-on: large-linux-x86
-    if: github.ref_name == 'develop' || contains( github.ref, 'release' )
+    if: github.ref_name == 'develop' || startsWith(github.ref_name, 'release/')
     needs: prepare
     strategy:
       matrix:
@@ -100,11 +91,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION="${{ inputs.postgresVersion }}"
-          else
-            VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          fi
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 

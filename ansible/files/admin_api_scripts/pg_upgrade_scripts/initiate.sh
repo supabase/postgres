@@ -212,7 +212,7 @@ EOF
 
 function initiate_upgrade {
     mkdir -p "$MOUNT_POINT"
-    SHARED_PRELOAD_LIBRARIES=$(cat "$POSTGRES_CONFIG_PATH" | grep shared_preload_libraries | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
+    SHARED_PRELOAD_LIBRARIES=$(grep '^[[:space:]]*shared_preload_libraries' "$POSTGRES_CONFIG_PATH" | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
 
     # Wrappers officially launched in PG15; PG14 version is incompatible
     if [[ "$OLD_PGVERSION" =~ 14* ]]; then
@@ -241,7 +241,7 @@ function initiate_upgrade {
         SHARED_PRELOAD_LIBRARIES=$(echo "$SHARED_PRELOAD_LIBRARIES" | sed "s/.$//" | xargs)
     fi
 
-    PGDATAOLD=$(cat "$POSTGRES_CONFIG_PATH" | grep data_directory | sed "s/data_directory = '\(.*\)'.*/\1/")
+    PGDATAOLD=$(grep '^[[:space:]]*data_directory' "$POSTGRES_CONFIG_PATH" | sed "s/data_directory = '\(.*\)'.*/\1/")
 
     # Check if old cluster has data checksums enabled
     CHECKSUM_VERSION=$("$PGBINOLD/pg_controldata" "$PGDATAOLD" | grep -i checksum | awk '{print $NF}')
@@ -297,7 +297,7 @@ function initiate_upgrade {
                         --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
                     else
                         echo "1.1.1. Installing Nix using the official installer"
-                        sh <(curl -L https://releases.nixos.org/nix/nix-2.32.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+                        sh <(curl -L https://releases.nixos.org/nix/nix-2.33.1/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=

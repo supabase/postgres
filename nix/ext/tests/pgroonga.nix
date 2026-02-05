@@ -4,7 +4,7 @@ let
   inherit (pkgs) lib;
   installedExtension =
     postgresMajorVersion:
-    self.legacyPackages.${pkgs.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
+    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
       pname
     }";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
@@ -12,7 +12,7 @@ let
     postgresql:
     let
       majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.buildEnv {
+      pkg = pkgs.pkgsLinux.buildEnv {
         name = "postgresql-${majorVersion}-${pname}";
         paths = [
           postgresql
@@ -27,7 +27,7 @@ let
           withJIT = pkg;
           withoutJIT = pkg;
         };
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
         pathsToLink = [
           "/"
           "/bin"
@@ -41,24 +41,18 @@ let
       };
     in
     pkg;
-  psql_15 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_15;
-  psql_17 = postgresqlWithExtension self.packages.${pkgs.stdenv.hostPlatform.system}.postgresql_17;
+  psql_15 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
+  psql_17 =
+    postgresqlWithExtension
+      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
 in
-self.inputs.nixpkgs.lib.nixos.runTest {
+pkgs.testers.runNixOSTest {
   name = pname;
-  hostPkgs = pkgs;
   nodes.server =
     { config, ... }:
     {
-      virtualisation = {
-        forwardPorts = [
-          {
-            from = "host";
-            host.port = 13022;
-            guest.port = 22;
-          }
-        ];
-      };
       services.openssh = {
         enable = true;
       };
@@ -83,11 +77,11 @@ self.inputs.nixpkgs.lib.nixos.runTest {
         ];
       };
       systemd.services.postgresql.environment.MECAB_DICDIR = "${
-        self.packages.${pkgs.stdenv.hostPlatform.system}.mecab-naist-jdic
+        self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.mecab-naist-jdic
       }/lib/mecab/dic/naist-jdic";
-      systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.mecab}/bin/mecab-config";
+      systemd.services.postgresql.environment.MECAB_CONFIG = "${pkgs.pkgsLinux.mecab}/bin/mecab-config";
       systemd.services.postgresql.environment.GRN_PLUGINS_DIR = "${
-        self.packages.${pkgs.stdenv.hostPlatform.system}.supabase-groonga
+        self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.supabase-groonga
       }/lib/groonga/plugins";
 
       specialisation.postgresql17.configuration = {
