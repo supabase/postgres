@@ -108,7 +108,7 @@ extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EOF
-RUN curl -L https://releases.nixos.org/nix/nix-2.32.2/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
+RUN curl -L https://releases.nixos.org/nix/nix-2.33.1/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
 
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 
