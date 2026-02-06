@@ -2,122 +2,27 @@
 let
   pname = "pg_repack";
   inherit (pkgs) lib;
+  system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+  testLib = import ./lib.nix { inherit self pkgs; };
+
   installedExtension =
-    postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
-      pname
-    }";
+    postgresMajorVersion: self.legacyPackages.${system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
-  postgresqlWithExtension =
-    postgresql:
-    let
-      majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
-        name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (installedExtension majorVersion)
-        ];
-        passthru = {
-          inherit (postgresql) version psqlSchema;
-          installedExtensions = [ (installedExtension majorVersion) ];
-          lib = pkg;
-          withPackages = _: pkg;
-          withJIT = pkg;
-          withoutJIT = pkg;
-        };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
-        pathsToLink = [
-          "/"
-          "/bin"
-          "/lib"
-        ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
-      };
-    in
-    pkg;
 in
 pkgs.testers.runNixOSTest {
   name = pname;
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
-      services.openssh = {
-        enable = true;
-      };
+      imports = [
+        (testLib.makeSupabaseTestConfig {
+          majorVersion = "15";
+        })
+      ];
 
-      services.postgresql = {
-        enable = true;
-        package =
-          postgresqlWithExtension
-            self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
-        enableTCPIP = true;
-        authentication = ''
-          local all postgres peer map=postgres
-          local all all peer map=root
-        '';
-        identMap = ''
-          root root supabase_admin
-          postgres postgres postgres
-        '';
-        ensureUsers = [
-          {
-            name = "supabase_admin";
-            ensureClauses.superuser = true;
-          }
-        ];
-      };
-
-      networking.firewall.allowedTCPPorts = [ config.services.postgresql.settings.port ];
-
-      specialisation.postgresql17.configuration = {
-        services.postgresql = {
-          package = lib.mkForce (
-            postgresqlWithExtension self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17
-          );
-        };
-
-        systemd.services.postgresql-migrate = {
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = "postgres";
-            Group = "postgres";
-            StateDirectory = "postgresql";
-            WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
-          };
-          script =
-            let
-              oldPostgresql =
-                postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
-              newPostgresql =
-                postgresqlWithExtension
-                  self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
-              oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
-              newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
-            in
-            ''
-              if [[ ! -d ${newDataDir} ]]; then
-                install -d -m 0700 -o postgres -g postgres "${newDataDir}"
-                ${newPostgresql}/bin/initdb -D "${newDataDir}"
-                ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                  --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
-              else
-                echo "${newDataDir} already exists"
-              fi
-            '';
-        };
-
-        systemd.services.postgresql = {
-          after = [ "postgresql-migrate.service" ];
-          requires = [ "postgresql-migrate.service" ];
-        };
+      specialisation.postgresql17.configuration = testLib.makeUpgradeSpecialisation {
+        fromMajorVersion = "15";
+        toMajorVersion = "17";
       };
     };
   testScript =
@@ -140,8 +45,48 @@ pkgs.testers.runNixOSTest {
 
       start_all()
 
-      server.wait_for_unit("multi-user.target")
-      server.wait_for_unit("postgresql.service")
+      # Wait for full Supabase initialization (postgres + init-scripts + migrations)
+      server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("Verify PostgreSQL 15 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."15"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."15"}, got: {pg_version}"
+        )
+
+        postgres_path = server.succeed("readlink -f $(which postgres)").strip()
+        assert "postgresql-and-plugins-${testLib.expectedVersions."15"}" in postgres_path, (
+          f"Expected our custom build (${testLib.expectedVersions."15"}), got: {postgres_path}"
+        )
+
+      with subtest("Verify ansible config loaded"):
+        spl = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW shared_preload_libraries;\""
+        ).strip()
+        for ext in ["pg_stat_statements", "pgaudit", "pgsodium", "pg_cron", "pg_net"]:
+          assert ext in spl, f"Expected {ext} in shared_preload_libraries, got: {spl}"
+
+        session_pl = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW session_preload_libraries;\""
+        ).strip()
+        assert "supautils" in session_pl, (
+          f"Expected supautils in session_preload_libraries, got: {session_pl}"
+        )
+
+      with subtest("Verify init scripts and migrations ran"):
+        roles = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+        ).strip()
+        for role in ["anon", "authenticated", "authenticator", "dashboard_user", "pgbouncer", "service_role", "supabase_admin", "supabase_auth_admin", "supabase_storage_admin"]:
+          assert role in roles, f"Expected role {role} to exist, got: {roles}"
+
+        schemas = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT schema_name FROM information_schema.schemata ORDER BY schema_name;\""
+        ).strip()
+        for schema in ["auth", "storage", "extensions"]:
+          assert schema in schemas, f"Expected schema {schema} to exist, got: {schemas}"
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
@@ -156,6 +101,29 @@ pkgs.testers.runNixOSTest {
         server.succeed(
           f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
+        server.wait_for_unit("postgresql.service")
+
+      with subtest("Verify PostgreSQL 17 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."17"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."17"}, got: {pg_version}"
+        )
+
+        # After specialisation switch, 'which postgres' still resolves to PG 15
+        # (both packages in systemPackages; can't mkForce without breaking D-Bus).
+        # The postgres binary is also wrapped (.postgres-wrapped) so pgrep -ox fails.
+        # Instead, get the postmaster PID from the PG 17 data directory's pid file.
+        postgres_pid = server.succeed(
+          "head -1 /var/lib/postgresql/data-17/postmaster.pid"
+        ).strip()
+        postgres_path = server.succeed(
+          f"readlink -f /proc/{postgres_pid}/exe"
+        ).strip()
+        assert "postgresql-and-plugins-${testLib.expectedVersions."17"}" in postgres_path, (
+          f"Expected our custom build (${testLib.expectedVersions."17"}), got: {postgres_path}"
+        )
 
       with subtest("Check last version of the extension after upgrade"):
         test.assert_version_matches(last_version)
@@ -164,6 +132,5 @@ pkgs.testers.runNixOSTest {
         test.check_upgrade_path("17")
     '';
 }
-# We don't use the generic test for this extension because:
-# pg_repack does not support upgrade as the extension doesn't provide the upgrade SQL scripts
-# and fails with ERROR:  extension "pg_repack" has no update path from version "1.4.8" to version "1.5.0"
+# pg_repack does not support in-place upgrade as it doesn't provide the upgrade SQL scripts
+# and fails with ERROR: extension "pg_repack" has no update path from version "1.4.8" to version "1.5.0"

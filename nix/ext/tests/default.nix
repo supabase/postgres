@@ -3,7 +3,7 @@ let
   testsDir = ./.;
   testFiles = builtins.attrNames (builtins.readDir testsDir);
   nixFiles = builtins.filter (
-    name: builtins.match ".*\\.nix$" name != null && name != "default.nix"
+    name: builtins.match ".*\\.nix$" name != null && name != "default.nix" && name != "lib.nix"
   ) testFiles;
   extTest =
     extension_name:
@@ -11,8 +11,8 @@ let
       pname = extension_name;
       inherit (pkgs) lib;
 
-      support_upgrade = if pname == "pg_repack" then false else true;
-      run_pg_regress = if pname == "pg_repack" then false else true;
+      support_upgrade = true;
+      run_pg_regress = true;
 
       installedExtension =
         postgresMajorVersion:
@@ -359,7 +359,6 @@ builtins.listToAttrs (
       "pg_jsonschema"
       "pg_net"
       "pg_partman"
-      "pg_repack"
       "pg_stat_monitor"
       "pg_tle"
       "pgaudit"
