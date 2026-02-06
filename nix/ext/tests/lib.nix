@@ -161,7 +161,7 @@ let
         # Initialize database if it doesn't exist
         if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
           echo "Initializing database at $DATA_DIR"
-          ${postgresPackage}/bin/initdb -U supabase_admin -D "$DATA_DIR"
+          ${postgresPackage}/bin/initdb --allow-group-access --data-checksums -U supabase_admin -D "$DATA_DIR"
         fi
 
         # Deploy processed config files with @dataDir@ substituted
@@ -340,7 +340,7 @@ let
         mkdir -p -m 0700 "$NEW_DATA"
 
         # Initialize new cluster
-        ${newPkg}/bin/initdb -U supabase_admin -D "$NEW_DATA"
+        ${newPkg}/bin/initdb --allow-group-access --data-checksums -U supabase_admin -D "$NEW_DATA"
 
         # Deploy config files to new data directory
         for f in postgresql.conf pg_hba.conf pg_ident.conf supautils.conf read-replica.conf; do
@@ -412,12 +412,174 @@ let
       # breaks D-Bus policy during switch-to-configuration)
       environment.systemPackages = [ newPkg ];
     };
+  # Create a specialisation for OrioleDB — wipes data and reinitializes from scratch
+  # (no pg_upgrade path from regular PG to OrioleDB), then runs full Supabase init
+  makeOrioledbSpecialisation =
+    {
+      postgresPort ? defaultPort,
+    }:
+    let
+      orioledbPkg = self.packages.${system}."psql_orioledb-17/bin";
+      groongaPackage = self.packages.${system}.supabase-groonga;
+      newDataDir = "/var/lib/postgresql/data-orioledb-17";
+      processedConfig = processAnsibleConfig { majorVersion = "orioledb-17"; };
+      port = toString postgresPort;
+
+      # Wipe existing data — no upgrade path from regular PG to OrioleDB
+      migrateScript = pkgs.pkgsLinux.writeShellScript "postgresql-orioledb-migrate" ''
+        set -euo pipefail
+        NEW_DATA="${newDataDir}"
+        if [ -d "$NEW_DATA" ]; then
+          rm -rf "$NEW_DATA"
+        fi
+      '';
+
+      # Runs as root: ensure data directory exists with correct ownership
+      preStartRootScript = pkgs.pkgsLinux.writeShellScript "postgresql-orioledb-pre-start-root" ''
+        set -euo pipefail
+        DATA_DIR="${newDataDir}"
+        if [ ! -d "$DATA_DIR" ]; then
+          mkdir -p -m 0700 "$DATA_DIR"
+          chown postgres:postgres "$DATA_DIR"
+        fi
+      '';
+
+      # Runs as postgres: initdb with OrioleDB-specific args, config deployment, validation
+      initScript = pkgs.pkgsLinux.writeShellScript "postgresql-orioledb-init" ''
+        set -euo pipefail
+        DATA_DIR="${newDataDir}"
+
+        if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
+          echo "Initializing OrioleDB database at $DATA_DIR"
+          ${orioledbPkg}/bin/initdb \
+            --allow-group-access --data-checksums \
+            --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8 \
+            -U supabase_admin -D "$DATA_DIR"
+        fi
+
+        # Deploy processed config files with @dataDir@ substituted
+        for f in postgresql.conf pg_hba.conf pg_ident.conf supautils.conf read-replica.conf; do
+          sed "s|@dataDir@|$DATA_DIR|g" ${processedConfig}/$f > "$DATA_DIR/$f"
+        done
+
+        # Copy conf.d directory
+        rm -rf "$DATA_DIR/conf.d"
+        cp -r ${processedConfig}/conf.d "$DATA_DIR/conf.d"
+        chmod -R u+w "$DATA_DIR/conf.d"
+
+        # Copy extension-custom-scripts directory
+        rm -rf "$DATA_DIR/extension-custom-scripts"
+        cp -r ${processedConfig}/extension-custom-scripts "$DATA_DIR/extension-custom-scripts"
+        chmod -R u+w "$DATA_DIR/extension-custom-scripts"
+
+        # Validate config
+        echo "Validating PostgreSQL configuration..."
+        ${orioledbPkg}/bin/postgres -C shared_preload_libraries -D "$DATA_DIR"
+      '';
+
+      # Full db init: CREATE EXTENSION orioledb first, then init-scripts + migrations
+      dbInitScript = pkgs.pkgsLinux.writeShellScript "supabase-orioledb-db-init" ''
+        set -euo pipefail
+
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in $(seq 1 60); do
+          if ${orioledbPkg}/bin/pg_isready -h localhost -p ${port} -q; then
+            echo "PostgreSQL is ready"
+            break
+          fi
+          if [ "$i" -eq 60 ]; then
+            echo "PostgreSQL failed to become ready"
+            exit 1
+          fi
+          sleep 1
+        done
+
+        PSQL="${orioledbPkg}/bin/psql"
+
+        # Create orioledb extension first (before init-scripts, so tables use orioledb storage)
+        echo "Creating orioledb extension..."
+        $PSQL -h localhost -p ${port} -U supabase_admin -d postgres -c "CREATE EXTENSION orioledb CASCADE;"
+
+        # Create postgres role (matching run-server.sh.in)
+        echo "Creating postgres role..."
+        $PSQL -h localhost -p ${port} -U supabase_admin -d postgres -c "CREATE ROLE postgres SUPERUSER LOGIN;" || true
+        $PSQL -h localhost -p ${port} -U supabase_admin -d postgres -c "ALTER DATABASE postgres OWNER TO postgres;" || true
+
+        # Run init-scripts as postgres user (matching run-server.sh.in)
+        for sql in ${migrationsDir}/init-scripts/*.sql; do
+          echo "Running init-script: $sql"
+          $PSQL -v ON_ERROR_STOP=1 -h localhost -p ${port} -U postgres -f "$sql" postgres
+        done
+
+        # Run pgbouncer auth schema
+        echo "Running pgbouncer auth schema..."
+        $PSQL -v ON_ERROR_STOP=1 -h localhost -p ${port} -U postgres -d postgres -f ${pgbouncerAuthSchemaSql}
+
+        # Run stat extension
+        echo "Running stat extension..."
+        $PSQL -v ON_ERROR_STOP=1 -h localhost -p ${port} -U postgres -d postgres -f ${statExtensionSql}
+
+        # Run migrations as supabase_admin (matching run-server.sh.in)
+        for sql in ${migrationsDir}/migrations/*.sql; do
+          echo "Running migration: $sql"
+          $PSQL -v ON_ERROR_STOP=1 -h localhost -p ${port} -U supabase_admin -f "$sql" postgres
+        done
+
+        # Run postgresql schema
+        echo "Running postgresql schema..."
+        $PSQL -v ON_ERROR_STOP=1 -h localhost -p ${port} -U supabase_admin -f ${postgresqlSchemaSql} postgres
+
+        echo "OrioleDB database initialization complete"
+      '';
+    in
+    {
+      # Reinit service wipes data for fresh orioledb cluster
+      systemd.services.postgresql-migrate = {
+        description = "PostgreSQL OrioleDB Reinitialization";
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = "postgres";
+          Group = "postgres";
+          ExecStart = migrateScript;
+        };
+        environment = {
+          LANG = "en_US.UTF-8";
+        };
+      };
+
+      # Override postgresql: new package, new data dir, new ExecStartPre for orioledb initdb
+      systemd.services.postgresql = {
+        after = [ "postgresql-migrate.service" ];
+        requires = [ "postgresql-migrate.service" ];
+        serviceConfig = {
+          ExecStartPre = lib.mkForce [
+            ("+" + preStartRootScript)
+            initScript
+          ];
+          ExecStart = lib.mkForce "${orioledbPkg}/bin/postgres -D ${newDataDir}";
+        };
+        environment = {
+          GRN_PLUGINS_DIR = lib.mkForce "${groongaPackage}/lib/groonga/plugins";
+        };
+      };
+
+      # Override db-init with orioledb-aware version (creates orioledb ext + full init)
+      systemd.services.supabase-db-init = {
+        wantedBy = lib.mkForce [ "multi-user.target" ];
+        serviceConfig.ExecStart = lib.mkForce dbInitScript;
+      };
+
+      # Add orioledb package to system PATH
+      environment.systemPackages = [ orioledbPkg ];
+    };
 in
 {
   inherit
     processAnsibleConfig
     makeSupabaseTestConfig
     makeUpgradeSpecialisation
+    makeOrioledbSpecialisation
     expectedVersions
     defaultPort
     ;

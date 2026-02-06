@@ -8,6 +8,7 @@ let
   installedExtension =
     postgresMajorVersion: self.legacyPackages.${system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
+  orioledbVersions = self.legacyPackages.${system}."psql_orioledb-17".exts."${pname}".versions;
 in
 pkgs.testers.runNixOSTest {
   name = pname;
@@ -24,21 +25,26 @@ pkgs.testers.runNixOSTest {
         fromMajorVersion = "15";
         toMajorVersion = "17";
       };
+
+      specialisation.orioledb17.configuration = testLib.makeOrioledbSpecialisation { };
     };
   testScript =
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
       from pathlib import Path
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+        "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') orioledbVersions)}],
       }
       extension_name = "${pname}"
       support_upgrade = False
       pg17_configuration = "${pg17-configuration}"
+      orioledb17_configuration = "${orioledb17-configuration}"
       sql_test_directory = Path("${../../tests}")
 
       ${builtins.readFile ./lib.py}
@@ -130,6 +136,37 @@ pkgs.testers.runNixOSTest {
 
       with subtest("Check upgrade path with postgresql 17"):
         test.check_upgrade_path("17")
+
+      with subtest("switch to orioledb 17"):
+        server.succeed(
+          f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
+        )
+        server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("Verify OrioleDB is running"):
+        installed_extensions = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT extname FROM pg_extension WHERE extname = 'orioledb';\""
+        ).strip()
+        assert "orioledb" in installed_extensions, (
+          f"Expected orioledb extension to be installed, got: {installed_extensions}"
+        )
+
+        dam = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW default_table_access_method;\""
+        ).strip()
+        assert dam == "orioledb", (
+          f"Expected default_table_access_method = orioledb, got: {dam}"
+        )
+
+      with subtest("Verify OrioleDB init scripts and migrations ran"):
+        roles = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+        ).strip()
+        for role in ["anon", "authenticated", "authenticator", "supabase_admin"]:
+          assert role in roles, f"Expected role {role} to exist, got: {roles}"
+
+      with subtest("Check upgrade path with orioledb 17"):
+        test.check_upgrade_path("orioledb-17")
     '';
 }
 # pg_repack does not support in-place upgrade as it doesn't provide the upgrade SQL scripts
