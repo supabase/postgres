@@ -24,4 +24,4 @@ jobs:
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Run check-system-manager
-        run: nix run .#check-system-manager
+        run: nix build .#checks.x86_64-linux.check-system-manager -L

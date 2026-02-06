@@ -1,62 +1,32 @@
-{ self, ... }:
+{ self, inputs, ... }:
 {
   perSystem =
     {
       lib,
       pkgs,
-      self',
       ...
     }:
     {
-      packages = lib.optionalAttrs (pkgs.stdenv.hostPlatform.isLinux) {
+      checks = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         check-system-manager =
           let
-            lib = pkgs.lib;
-            systemManagerConfig = self.systemConfigs.${pkgs.system}.default;
-
-            dockerImageUbuntuWithTools =
-              let
-                tools = [ systemManagerConfig ];
-              in
-              pkgs.dockerTools.buildLayeredImage {
-                name = "ubuntu-cloudimg-with-tools";
-                tag = "0.2";
-                created = "now";
-                maxLayers = 30;
-                fromImage = self'.packages.docker-image-ubuntu;
-                compressor = "zstd";
-                config = {
-                  Env = [
-                    "PATH=${lib.makeBinPath tools}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-                  ];
-                  Cmd = [ "/lib/systemd/systemd" ];
-                };
-              };
+            toplevel = self.systemConfigs.${pkgs.system}.default;
           in
-          pkgs.writeShellApplication {
-            name = "system-manager-test";
-            passthru = {
-              inherit systemManagerConfig dockerImageUbuntuWithTools;
-            };
-            runtimeInputs = with pkgs; [
-              (python3.withPackages (
-                ps: with ps; [
-                  requests
-                  pytest
-                  pytest-testinfra
-                  rich
-                ]
-              ))
-            ];
-            text = ''
-              export DOCKER_IMAGE=${dockerImageUbuntuWithTools.imageName}:${dockerImageUbuntuWithTools.imageTag}
-              TEST_DIR=${./.}
-              pytest -p no:cacheprovider -s -v "$@" $TEST_DIR --image-name=$DOCKER_IMAGE --image-path=${dockerImageUbuntuWithTools}
+          inputs.system-manager.lib.containerTest.makeContainerTest {
+            hostPkgs = pkgs;
+            name = "check-system-manager";
+            inherit toplevel;
+            testScript = ''
+              start_all()
+
+              machine.wait_for_unit("multi-user.target")
+
+              machine.activate()
+              machine.wait_for_unit("system-manager.target")
+
+              with subtest("Verify nginx service"):
+                  assert machine.service("nginx").is_running, "nginx should be running"
             '';
-            meta = with pkgs.lib; {
-              description = "Test deployment with system-manager";
-              platforms = platforms.linux;
-            };
           };
       };
     };
