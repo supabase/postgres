@@ -82,7 +82,7 @@ writeShellApplication {
         echo "Usage: nix run .#dbmate-tool -- [options]"
         echo
         echo "Options:"
-        echo "  -v, --version [15|17|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
+        echo "  -v, --version [15|17|18|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
         echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
         echo "  -h, --help                         Show this help message"
         echo "  -f, --flake-url URL                Specify the flake URL to use (default: github:supabase/postgres)"
@@ -201,9 +201,9 @@ writeShellApplication {
             # Build the dump command
             local dump_cmd="''${PSQLBIN}/pg_dump -h localhost -p $PORTNO -U $PGSQL_SUPERUSER -d postgres --schema-only --no-owner --no-privileges"
 
-            # Only use --restrict-key for standard PostgreSQL 15 and 17 versions
+            # Only use --restrict-key for standard PostgreSQL 15, 17, and 18 versions
             # OrioleDB doesn't support this flag yet
-            if [ "$PSQL_VERSION" = "15" ] || [ "$PSQL_VERSION" = "17" ] || [ "$PSQL_VERSION" = "orioledb-17" ]; then
+            if [ "$PSQL_VERSION" = "15" ] || [ "$PSQL_VERSION" = "17" ] || [ "$PSQL_VERSION" = "18" ] || [ "$PSQL_VERSION" = "orioledb-17" ]; then
                 # Use a fixed restrict key for reproducible test dumps
                 # This is safe in testing contexts but should not be used in production
                 dump_cmd="$dump_cmd --restrict-key=SupabaseTestDumpKey123"

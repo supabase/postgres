@@ -30,7 +30,7 @@ Supabase Postgres follows these core principles:
 
 1. **Unmodified PostgreSQL** - We don't fork or modify PostgreSQL itself. You get standard PostgreSQL with extensions.
 2. **Curated Extensions** - We include well-maintained, production-tested extensions that solve real problems.
-3. **Multi-version Support** - Currently supporting PostgreSQL 15, 17, and OrioleDB-17.
+3. **Multi-version Support** - Currently supporting PostgreSQL 15, 17, 18, and OrioleDB-17.
 4. **Ready for Production** - Configured with sensible defaults for replication, security, and performance.
 5. **Open Source** - Everything is open source and can be self-hosted.
 

@@ -61,6 +61,7 @@
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
       dbExtensions17 = orioleFilteredExtensions;
+      dbExtensions18 = dbExtensions17;
 
       # CLI extensions - minimal set for Supabase CLI with migration support
       cliExtensions = [
@@ -127,6 +128,8 @@
               cliExtensions
             else if (builtins.elem version [ "orioledb-17" ]) then
               orioledbExtensions
+            else if (builtins.elem version [ "18" ]) then
+              dbExtensions18
             else if (builtins.elem version [ "17" ]) then
               dbExtensions17
             else

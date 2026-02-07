@@ -9,8 +9,7 @@
     "1.6.1": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-C8eqi0q1dnshUAZjIsZFwa5FTYc7vmATF3vv2CReWPM="
     }
@@ -25,8 +24,7 @@
     "1.4.1": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
     }
@@ -36,8 +34,7 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17",
-        "18"
+        "orioledb-17"
       ],
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
     }
@@ -378,7 +375,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-LK+z/0puUuNLz2ah/SDaxxyLS/On/cmCBhKNwTLa7Pk="
     }
@@ -523,7 +521,8 @@
     },
     "3.3.7": {
       "postgresql": [
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-UHJKDd5JrcJT5Z4CTYsY/va+ToU0GUPG1eHhuXTkP84="
     }

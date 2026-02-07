@@ -81,10 +81,13 @@
                 let
                   version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
                   isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
+                  isEighteenMatch = builtins.match "^18[.][0-9]+$" version != null;
                   isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
                   result =
                     if isOrioledbMatch then
                       "orioledb-17"
+                    else if isEighteenMatch then
+                      "18"
                     else if isSeventeenMatch then
                       "17"
                     else
