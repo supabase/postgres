@@ -52,8 +52,17 @@ let
       env.NIX_CFLAGS_COMPILE =
         if (lib.versionOlder version "0.19.1") then
           "-Wno-error"
-        else if (version == "0.19.5" && stdenv.isDarwin && stdenv.isAarch64) then
-          # Fix for dangling pointer warning in src/core.c:177 on aarch64-darwin with newer clang
+        else if
+          (
+            builtins.elem version [
+              "0.19.5"
+              "0.20.0"
+            ]
+            && stdenv.isDarwin
+          )
+        then
+          # Fix for dangling pointer warning on darwin with newer clang
+          # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
           "-Wno-error=dangling-assignment"
         else
           "";
