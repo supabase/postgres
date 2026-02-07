@@ -9,7 +9,8 @@
     "1.6.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-C8eqi0q1dnshUAZjIsZFwa5FTYc7vmATF3vv2CReWPM="
     }
@@ -24,7 +25,8 @@
     "1.4.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
     }
@@ -34,7 +36,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
     }
@@ -75,7 +78,8 @@
     "0.3.3": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-Au1mqatoFKVq9EzJrpu1FVq5a1kBb510sfC980mDlsU=",
       "pgrx": "0.12.6",
@@ -111,7 +115,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "rev": "v1.6.4",
       "hash": "sha256-t1DpFkPiSfdoGG2NgNT7g1lkvSooZoRoUrix6cBID40="
@@ -233,7 +238,8 @@
     "1.5.9": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-YpLN43FtLhp2cb7cyM+4gEx8GTwsRiKTfxaMq0b8hk0=",
       "pgrx": "0.12.6",
@@ -242,7 +248,8 @@
     "1.5.11": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-BMZc9ui+2J3U24HzZZVCU5+KWhz+5qeUsRGeptiqbek=",
       "pgrx": "0.12.9",
@@ -295,28 +302,32 @@
     "0.11.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-XN441jXK1q+I/LZRNwvzbSsebXHgZ8iYsslZvcPFlAs="
     },
     "0.13.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-FRaTZPCJQPYAFmsJg22hYJJ0+gH1tMdDQoCQgiqEnaA="
     },
     "0.14.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-c1pxhTyrE5j6dY+M5eKAboQNofIORS+Dccz+7HKEKQI="
     },
     "0.19.5": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-Cpi2iASi1QJoED0Qs1dANqg/BNZTsz5S+pw8iYyW03Y="
     },
@@ -349,13 +360,15 @@
     },
     "17.0": {
       "postgresql": [
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-3ksq09wiudQPuBQI3dhEQi8IkXKLVIsPFgBnwLiicro="
     },
     "17.1": {
       "postgresql": [
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-9St/ESPiFq2NiPKqbwHLwkIyATKUkOGxFcUrWgT+Iqo="
    }
@@ -380,7 +393,8 @@
       "1.5.1": {
         "postgresql": [
           "15",
-          "17"
+          "17",
+          "18"
         ],
         "hash": "sha256-IU+i6ONPwtgsFKdzya6E+222ualR66gkbb0lDr+7Rb8="
       }
@@ -395,7 +409,8 @@
     "3.2.5": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-GM9EOQty72hdE4Ecq8jpDudhZLiH3pP9ODLxs8DXcSY="
     }
@@ -404,7 +419,8 @@
     "3.4.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-QC77AnPGpPQGEWi6JtJdiNsB2su5+aV2pKg5ImR2B0k="
     }
@@ -414,35 +430,40 @@
     "3.0.4": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-GbUUkSbQe05x7JssSyCdMrP6Uk9ix0JmO+JB1MsFMSg="
     },
     "3.1.5": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-Rv7y0gPEDHeZ+KLD+M/pUQI8Ye5GdaV144Xq05z29Sk="
     },
     "3.1.6": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-D07r/yF50JNihvG/0X7R+1bXnlK1z0dt+/Xbic6W1Hs="
     },
     "3.1.7": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-0QOh21kKtoM1L38pvkVumr4dyMdINaaMLI6z1RE8540="
     },
     "3.1.8": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-j5F1PPdwfQRbV8XJ8Mloi8FvZF0MTl4eyIJcBYQy1E4="
     }
@@ -458,7 +479,8 @@
     "2.7": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-vR3MvfmUP2QEAtXFpq0NCCKck3wZPD+H3QleHtyVQJs=",
       "revision": "2.7.11"
@@ -510,7 +532,8 @@
     "1.3": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-VsfpxQqRBu9bIAP+TfMRXd+B3hSjuhU2NsutocNiCt8=",
       "revision": "1.3.14"
@@ -520,14 +543,16 @@
     "0.2.8": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-+QBd4/wj1n33ynt7Gopr6g3xT+TLJ9jMhLffdYeRy4k="
     },
     "0.3.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-MC87bqgtynnDhmNZAu96jvfCpsGDCPB0g5TZfRQHd30="
     }
@@ -556,42 +581,48 @@
     "0.5.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-ZNzq+dATZn9LUgeOczsaadr5hwdbt9y/+sAOPIdr77U="
     },
     "0.6.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-hXm+k0BZ9xZP1Tnek14jPoKCPQkA5ovscu9IX2mW7Kc="
     },
     "0.6.2": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-r+TpFJg6WrMn0L2B7RpmSRvw3XxpHzMRtpFWDCzLvgs="
     },
     "0.7.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-vFn7sNphOYyig6Jl1HILMaC2t9strFQBQ8ywL8Ibx1M="
     },
     "0.7.4": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-qwPaguQUdDHV8q6GDneLq5MuhVroPizpbqt7f08gKJI="
     },
     "0.8.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-JsZV+I4eRMypXTjGmjCtMBXDVpqTIPHQa28ogXncE/Q="
     }
@@ -632,7 +663,8 @@
     "0.4.4": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-QoGFJpq8PuvMM8SS+VZd7MlNl56uFivRjs1tCtwX+oE=",
       "pgrx": "0.12.6",
@@ -641,7 +673,8 @@
     "0.4.5": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-IgDfVFROMCHYLZ/Iqj12MsQjPPCdRoH+3oi3Ki/iaRI=",
       "pgrx": "0.12.9",
@@ -650,7 +683,8 @@
     "0.4.6": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-hthb3qEXT1Kf4yPoq0udEbQzlyLtI5tug6sK4YAPFjU=",
       "pgrx": "0.12.9",
@@ -659,7 +693,8 @@
     "0.5.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-FbRTUcpEHBa5DI6dutvBeahYM0RZVAXIzIAZWIaxvn0=",
       "pgrx": "0.12.9",
@@ -669,7 +704,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-iaJriPEa0iVLpmnuUk9R3HS545Jhz7aH1clYvHEuEvs=",
       "pgrx": "0.14.3",
@@ -679,7 +715,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-W1RokXH4Vfj2FIuEzGEP5SzzWsv2Pbzfa816nXKnSoc=",
       "pgrx": "0.14.3",
@@ -689,7 +726,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-tWa1XewJbbqarwWkJPfvCIev7Fn0hLJRzYiz0vuebyA=",
       "pgrx": "0.16.0",
@@ -699,7 +737,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-WanKlNY65KORzyCSV5hsYCVjQp/s23IUfzHMdpMhn1M=",
       "pgrx": "0.16.0",
@@ -709,7 +748,8 @@
       "postgresql": [
         "15",
         "17",
-        "orioledb-17"
+        "orioledb-17",
+        "18"
       ],
       "hash": "sha256-B46ie4qlfD1Wxd7QRv1fIuRmmSrb5s5A7KpQVwadazo=",
       "pgrx": "0.16.1",
@@ -730,7 +770,8 @@
     "1.2.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "revision": "v1.2.1",
       "hash": "sha256-2yQ0JrhwZF9dGEIydOviDpQ+3ZhJ8T16dQt6KIirAJ0="
@@ -738,7 +779,8 @@
     "1.3.0-cd0e1b31d52b394a0df64079406a14a4f7387cd6": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "revision": "cd0e1b31d52b394a0df64079406a14a4f7387cd6",
       "hash": "sha256-Nmb7XLqQflYZfqj0yrewfb1Hl5YgEB5wfjBunPwIuOU="
@@ -748,7 +790,8 @@
     "0.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "rev": "5081a7b5cb890876e67d8e7486b6a64c38c9a492",
       "hash": "sha256-YNeIfmccT/DtOrwDmpYFCuV2/P6k3Zj23VWBDkOh6sw="
@@ -759,7 +802,8 @@
       "revision": "f3d82fd30151e754e19ce5d6a06c71c20689ce3d",
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-nDZEDf5+sFc1HDcG2eBNQj+kGcdAYRXJseKi9oww+JU="
     }
@@ -768,28 +812,32 @@
     "1.4.8": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-Et8aMRzG7ez0uy9wG6qsg57/kPPZdUhb+/gFxW86D08="
     },
     "1.5.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-do80phyMxwcRIkYyUt9z02z7byNQhK+pbSaCUmzG+4c="
     },
     "1.5.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-wJwy4qIt6/kgWqT6HbckUVqDayDkixqHpYiC1liLERw="
     },
     "1.5.2": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
     }
@@ -805,7 +853,8 @@
     "2.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "revision": "2.1.0",
       "hash": "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s="
@@ -821,14 +870,16 @@
     "1.3.1": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-HOgCb1CCfsfbMbMMWuzFJ4B8CfVm9b0sI2zBY3/kqyI="
     },
     "1.3.3": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-YgvfLGF7pLVcCKD66NnWAydDxtoYHH1DpLiYTEKHJ0E="
     }
@@ -843,21 +894,24 @@
     "1.0.4": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-W/7pLy/27VatCdzUh1NZ4K2FRMD1erfHiFV2eY2x2W0="
     },
     "1.3.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-Q4D4+eYPBONd8IKlDVfQa8wI4PJyKHkMPPqONqEWFLE="
     },
     "1.4.0": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-crxj5R9jblIv0h8lpqddAoYe2UqgUlnvbOajKTzVces="
     }
@@ -866,7 +920,8 @@
     "1.4": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-1cyvVEC9MQGMr7Tg6EUbsVBrMc8ahdFS3+CmDkmAq4Y="
     }
@@ -875,7 +930,8 @@
     "2.6": {
       "postgresql": [
         "15",
-        "17"
+        "17",
+        "18"
       ],
       "hash": "sha256-+QoACPCKiFfuT2lJfSUmgfzC5MXf75KpSoc2PzPxKyM="
     }
