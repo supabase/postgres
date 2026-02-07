@@ -230,6 +230,7 @@
       basePackages = {
         psql_15 = makePostgres "15" { };
         psql_17 = makePostgres "17" { };
+        psql_18 = makePostgres "18" { };
         psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
       slimPackages = {
@@ -241,6 +242,7 @@
       # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
       cliPackages = {
         psql_17_cli = makePostgres "17" { variant = "cli"; };
+        psql_18_cli = makePostgres "18" { variant = "cli"; };
       };
 
       binPackages = lib.mapAttrs' (name: value: {

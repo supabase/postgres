@@ -11,6 +11,7 @@
       pkgs-lib = pkgs.callPackage ./packages/lib.nix {
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
+        psql_18 = self'.packages."psql_18/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         inherit (self.supabase) defaults;
       };
@@ -113,8 +114,10 @@
                   "5535"
                 else if (majorVersion == "15") then
                   "5536"
+                else if (majorVersion == "18") then
+                  "5537"
                 else
-                  "5537";
+                  "5538";
 
               # Script to generate shared_preload_libraries dynamically based on receipt.json
               generatePreloadLibs = pkgs.writeShellScript "generate-preload-libs" ''
@@ -177,6 +180,8 @@
                   "15"
                 else if builtins.match "17.*" name != null then
                   "17"
+                else if builtins.match "18.*" name != null then
+                  "18"
                 else
                   throw "Unsupported PostgreSQL version: ${name}";
 
@@ -212,6 +217,8 @@
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
+                          else if version == "18" then
+                            builtins.match "z_18_.*" name != null
                           else
                             builtins.match "z_15_.*" name != null
                         else
@@ -562,6 +569,9 @@
           psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { legacyPkgName = "psql_17"; })
           );
+          psql_18 = pkgs.runCommand "run-check-harness-psql-18" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_18/bin" { })
+          );
           psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
             lib.getExe (
               makeCheckHarness self'.packages."psql_orioledb-17/bin" { legacyPkgName = "psql_orioledb-17"; }
@@ -583,6 +593,9 @@
           # CLI variant checks
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
+          );
+          psql_18_cli = pkgs.runCommand "run-check-harness-psql-18-cli" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_18_cli/bin" { isCliVariant = true; })
           );
           # Portable CLI bundle portability checks
           psql_17_cli_portable =
@@ -897,6 +910,8 @@
             postgresql_orioledb-17_src
             postgresql_17_debug
             postgresql_17_src
+            postgresql_18_debug
+            postgresql_18_src
             ;
         };
     };
