@@ -35,7 +35,7 @@ runs:
         set -f
 
         export IFS=' '
-        /nix/var/nix/profiles/default/bin/nix copy --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
+        /nix/var/nix/profiles/default/bin/nix copy --max-jobs 5 --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
         EOF
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
