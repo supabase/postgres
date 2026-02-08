@@ -87,8 +87,8 @@
         "18"
       ],
       "hash": "sha256-Au1mqatoFKVq9EzJrpu1FVq5a1kBb510sfC980mDlsU=",
-      "pgrx": "0.12.6",
-      "rust": "1.80.0"
+      "pgrx": "0.16.1",
+      "rust": "1.88.0"
     }
   },
   "pg_cron": {
@@ -266,6 +266,8 @@
     },
     "1.5.12": {
       "postgresql": [
+        "15",
+        "17",
         "18"
       ],
       "hash": "sha256-mJBxen6Gg1LbzIF+WKThrs+wPD01a6WjZ+AHrGdWL4Q=",
