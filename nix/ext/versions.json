@@ -83,10 +83,17 @@
     "0.3.3": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-Au1mqatoFKVq9EzJrpu1FVq5a1kBb510sfC980mDlsU=",
+      "pgrx": "0.12.6",
+      "rust": "1.80.0"
+    },
+    "0.3.4": {
+      "postgresql": [
+        "18"
+      ],
+      "hash": "sha256-7lJgZI4hNL7jXb1mgmJAfsGHy83y3djIoHad/MN4Ddw=",
       "pgrx": "0.16.1",
       "rust": "1.88.0"
     }
