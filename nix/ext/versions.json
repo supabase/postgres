@@ -556,11 +556,17 @@
     },
     "3.3.7": {
       "postgresql": [
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-UHJKDd5JrcJT5Z4CTYsY/va+ToU0GUPG1eHhuXTkP84="
+    },
+    "3.6.1": {
+      "postgresql": [
+        "18"
+      ],
+      "hash": "sha256-7Az6q0dWMBBiEdGA1x30Z4LkHhC23/6R15yoGOzSy7Q="
     }
+
   },
   "rum": {
     "1.3": {
