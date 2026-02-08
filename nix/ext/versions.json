@@ -871,11 +871,17 @@
     "2.1": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "revision": "2.1.0",
       "hash": "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s="
+    },
+    "2.3.1": {
+      "postgresql": [      
+        "18"
+      ],
+      "revision": "2.3.1",
+      "hash": "sha256-sHCqAsZlUpyjyMFKBU9w/pdI1bwZqgj1vMofgo7JFag="
     }
   },
   "pgtap": {
