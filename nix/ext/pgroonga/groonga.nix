@@ -22,10 +22,10 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "supabase-groonga";
-  version = "14.0.5";
+  version = "15.2.5";
   src = fetchurl {
     url = "https://packages.groonga.org/source/groonga/groonga-${finalAttrs.version}.tar.gz";
-    hash = "sha256-y4UGnv8kK0z+br8wXpPf57NMXkdEJHcLCuTvYiubnIc=";
+    hash = "sha256-v6z8XYZ9xDrUi+9J5TAt19shCdZ8wimV3IxevFw93Vs=";
   };
   patches = [
     ./fix-cmake-install-path.patch
