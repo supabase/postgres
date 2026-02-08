@@ -2,7 +2,7 @@ Fix CMake install path
 
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -1141,11 +1141,11 @@
+@@ -2282,11 +2282,11 @@
  
  set(prefix "${CMAKE_INSTALL_PREFIX}")
  set(exec_prefix "\${prefix}")
