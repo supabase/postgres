@@ -249,8 +249,7 @@
     "1.5.9": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-YpLN43FtLhp2cb7cyM+4gEx8GTwsRiKTfxaMq0b8hk0=",
       "pgrx": "0.12.6",
@@ -259,10 +258,19 @@
     "1.5.11": {
       "postgresql": [
         "15",
+        "17"
+      ],
+      "hash": "sha256-BMZc9ui+2J3U24HzZZVCU5+KWhz+5qeUsRGeptiqbek=",
+      "pgrx": "0.12.9",
+      "rust": "1.81.0"
+    },
+    "1.5.12": {
+      "postgresql": [
+        "15",
         "17",
         "18"
       ],
-      "hash": "sha256-BMZc9ui+2J3U24HzZZVCU5+KWhz+5qeUsRGeptiqbek=",
+      "hash": "sha256-mJBxen6Gg1LbzIF+WKThrs+wPD01a6WjZ+AHrGdWL4Q=",
       "pgrx": "0.12.9",
       "rust": "1.81.0"
     }
