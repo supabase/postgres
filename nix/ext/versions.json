@@ -435,10 +435,15 @@
     "3.2.5": {
       "postgresql": [
         "15",
-        "17",
-        "18"
+        "17"
       ],
       "hash": "sha256-GM9EOQty72hdE4Ecq8jpDudhZLiH3pP9ODLxs8DXcSY="
+    },
+    "4.0.5": {
+      "postgresql": [
+        "18"
+      ],
+      "hash": "sha256-PwUnjwqnmoWQ9kKZuKsAVzVBRyKvT+aexrm5eeRiRIQ="
     }
   },
   "pgrouting": {
