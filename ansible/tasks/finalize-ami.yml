@@ -50,20 +50,6 @@
     policy: 'deny'
     state: 'enabled'
 
-- name: Move logrotate files to /etc/logrotate.d/
-  ansible.builtin.copy:
-    dest: "/etc/logrotate.d/{{ logrotate_item['file'] }}"
-    mode: '0700'
-    owner: 'root'
-    src: "files/logrotate_config/{{ logrotate_item['file'] }}"
-  loop:
-    - { file: 'logrotate-postgres.conf' }
-    - { file: 'logrotate-postgres-auth.conf' }
-    - { file: 'logrotate-postgres-csv.conf' }
-    - { file: 'logrotate-walg.conf' }
-  loop_control:
-    loop_var: 'logrotate_item'
-
 - name: Ensure default PostgreSQL logrotate config is removed
   ansible.builtin.file:
     path: '/etc/logrotate.d/postgresql-common'
@@ -73,36 +59,6 @@
   copy:
     dest: '/etc/cron.deny'
     src: 'files/cron.deny'
-
-- name: Create logrotate.timer.d overrides dir
-  become: true
-  ansible.builtin.file:
-    group: 'root'
-    mode: '0755'
-    owner: 'root'
-    path: '/etc/systemd/system/logrotate.timer.d'
-    state: 'directory'
-
-- name: Configure logrotate.timer.d overrides
-  become: true
-  community.general.ini_file:
-    group: 'root'
-    mode: '0644'
-    no_extra_spaces: true
-    option: 'OnCalendar'
-    owner: 'root'
-    path: '/etc/systemd/system/logrotate.timer.d/override.conf'
-    section: 'Timer'
-    state: 'present'
-    value: '*:0/5'
-
-- name: Reload systemd and start logrotate timer
-  become: true
-  ansible.builtin.systemd_service:
-    daemon_reload: true
-    enabled: true
-    name: 'logrotate.timer'
-    state: 'restarted'
 
 - name: import pgsodium_getkey script
   ansible.builtin.template:

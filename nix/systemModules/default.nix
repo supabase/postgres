@@ -18,6 +18,7 @@
           mode = "0644";
         };
       };
+      logrotate = ./logrotate.nix;
     };
   };
 }

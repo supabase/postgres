@@ -2,8 +2,10 @@
 let
   mkModules = system: [
     self.systemModules.ssh-config
+    self.systemModules.logrotate
     ({
       nixpkgs.hostPlatform = system;
+      supabase.services.logrotate.enable = true;
     })
   ];
 
