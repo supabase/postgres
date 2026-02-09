@@ -15,7 +15,7 @@ pkgs.writeShellApplication {
   text = ''
     echo "Running Ansible tests..."
     FLAKE_DIR=${self}
-    pytest -x -p no:cacheprovider -s -v $FLAKE_DIR/ansible/tests --flake-dir=$FLAKE_DIR --docker-image=supabase/ansible-test:latest "$@"
+    pytest -p no:cacheprovider -v -n auto $FLAKE_DIR/ansible/tests --flake-dir=$FLAKE_DIR --docker-image=supabase/ansible-test:latest "$@"
   '';
   meta = {
     description = "Ansible test runner";
