@@ -26,6 +26,9 @@
     - set_fact:
         parallel_jobs: 16
 
+    - name: Install tuned
+      import_tasks: tasks/setup-tuned.yml
+
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
