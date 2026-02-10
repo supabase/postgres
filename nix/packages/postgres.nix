@@ -54,7 +54,7 @@
       ) ourExtensions;
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
-      dbExtensions17 = orioleFilteredExtensions;
+      dbExtensions17 = orioleFilteredExtensions ++ [ ../ext/pg_textsearch.nix ];
 
       # CLI extensions - minimal set for Supabase CLI with migration support
       cliExtensions = [

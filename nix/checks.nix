@@ -241,6 +241,7 @@
                 "z_17_pg_stat_monitor"
                 "z_17_pgvector"
                 "z_17_rum"
+                "z_17_pg_textsearch"
                 "z_17_roles" # version-specific roles test, includes pgtle_admin
               ];
 

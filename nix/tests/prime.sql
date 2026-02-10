@@ -51,6 +51,7 @@ create extension if not exists pg_partman with schema partman;
 create extension if not exists pg_repack;
 create extension if not exists pg_stat_monitor;
 create extension if not exists pg_stat_statements;
+create extension if not exists pg_textsearch;
 create extension if not exists pg_surgery;
 create extension if not exists pg_tle;
 create extension if not exists pg_trgm;
