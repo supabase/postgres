@@ -146,7 +146,11 @@
       tags:
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
-      
+
+    - name: deploy system-manager
+      import_tasks: tasks/setup-system-manager.yml
+      when: debpkg_mode or stage2_nix
+
     - name: Enhance fail2ban
       import_tasks: tasks/setup-fail2ban.yml
       when: debpkg_mode or nixpkg_mode

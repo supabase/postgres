@@ -1,0 +1,11 @@
+---
+- name: Check if nix is installed
+  ansible.builtin.command: which nix
+  register: nix_installed
+  failed_when: nix_installed.rc != 0
+  ignore_errors: true
+
+- name: Install nix
+  ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf -L https://artifacts.nixos.org/experimental-installer | sh -s -- install --no-confirm --extra-conf 'substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com' --extra-conf 'trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=% cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY='
+  when: nix_installed.rc != 0
+  become: true
