@@ -88,7 +88,7 @@ extra-substituters =
 Run the following command to install Nix 2.33.1 (the version used in CI) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.33.1/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
 ```
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
