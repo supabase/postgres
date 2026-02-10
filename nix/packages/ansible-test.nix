@@ -1,4 +1,7 @@
-{ self, pkgs }:
+{
+  self,
+  pkgs,
+}:
 pkgs.writeShellApplication {
   name = "ansible-test";
   runtimeInputs = with pkgs; [

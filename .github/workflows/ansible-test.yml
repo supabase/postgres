@@ -1,0 +1,27 @@
+name: Ansible Test
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  ansible-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Run Ansible Test
+        run: nix run .#ansible-test

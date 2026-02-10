@@ -1,0 +1,8 @@
+---
+- name: Test nix setup and system-manager deployment
+  hosts: localhost
+  tasks:
+    - name: Setup nix
+      ansible.builtin.import_tasks: ../tasks/setup-nix.yml
+    - name: Setup system-manager
+      ansible.builtin.import_tasks: ../tasks/setup-system-manager.yml

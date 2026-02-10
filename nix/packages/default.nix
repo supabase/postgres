@@ -36,9 +36,9 @@
     {
       packages = (
         {
+          ansible-test = pkgs.callPackage ./ansible-test.nix { inherit self; };
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
-          ansible-test = pkgs.callPackage ./ansible-test.nix { inherit self; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
@@ -93,6 +93,7 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
+          system-manager = inputs'.system-manager.packages.default;
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
