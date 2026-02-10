@@ -51,8 +51,7 @@ order by rolname;
  supabase_read_only_user    | f             | t           | f        | t          | f           | f              |           -1 | t            | 
  supabase_replication_admin | f             | t           | f        | t          | f           | t              |           -1 | f            | 
  supabase_storage_admin     | t             | t           | f        | f          | f           | f              |           -1 | f            | 
- supabase_superuser         | f             | f           | f        | t          | f           | f              |           -1 | f            | 
-(31 rows)
+(30 rows)
 
 select
   rolname,
@@ -92,8 +91,7 @@ order by rolname;
  supabase_read_only_user    | {default_transaction_read_only=on}
  supabase_replication_admin | 
  supabase_storage_admin     | {search_path=storage,log_statement=none}
- supabase_superuser         | 
-(31 rows)
+(30 rows)
 
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
