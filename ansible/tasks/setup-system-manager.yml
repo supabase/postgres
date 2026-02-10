@@ -1,0 +1,7 @@
+---
+- name: Deploy system manager
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    cd /tmp
+    nix run --accept-flake-config /tmp/flake#system-manager -- switch --flake /tmp/flake 2>&1 | tee /tmp/system-manager-deploy.log
+  become: true

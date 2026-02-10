@@ -33,6 +33,8 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    system-manager.inputs.nixpkgs.follows = "nixpkgs";
+    system-manager.url = "github:numtide/system-manager";
   };
 
   outputs =
@@ -55,6 +57,8 @@
         nix/nixpkgs.nix
         nix/packages
         nix/overlays
+        nix/systemModules
+        nix/systemConfigs.nix
       ];
     });
 }
