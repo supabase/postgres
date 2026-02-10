@@ -27,6 +27,7 @@ runs:
         sudo -H aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
         sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
         sudo -H aws configure set aws_session_token $AWS_SESSION_TOKEN
+        sudo -H aws configure set region ${{ inputs.aws-region }}
         sudo mkdir -p /etc/nix
         sudo -E python -c "import os; file = open('/etc/nix/nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
         cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
