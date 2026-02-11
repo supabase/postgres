@@ -223,14 +223,17 @@ pkgs.testers.runNixOSTest {
       with subtest("Check upgrade path with postgresql 17"):
         test.check_upgrade_path("17")
 
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+      psql_17 = "${psql_17}"
+
       with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+        test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("Check the install of the last version of the extension"):
         test.check_install_last_version("17")
 
       with subtest("Check pg_regress with postgresql 17 after installing the last version"):
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+        test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("Test pg_upgrade from postgresql 15 to 17 with older extension version"):
         # Test that all extension versions from postgresql 15 can be upgraded to postgresql 17 using pg_upgrade
@@ -254,7 +257,7 @@ pkgs.testers.runNixOSTest {
             # If there was an update script, the last version should be installed
             test.assert_version_matches(versions["17"][-1])
             # With update script, the schema should match PG 17 expectations
-            test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+            test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
           else:
             # Otherwise, the version should match the version from postgresql 15
             test.assert_version_matches(version)

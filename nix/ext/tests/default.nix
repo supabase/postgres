@@ -129,8 +129,14 @@ let
                     ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
                       --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin" \
                       ${
+                        let
+                          oldLibs = oldSettings.shared_preload_libraries or "";
+                          newLibs = newSettings.shared_preload_libraries or "";
+                          oldLibsStr = if builtins.isList oldLibs then lib.concatStringsSep "," oldLibs else oldLibs;
+                          newLibsStr = if builtins.isList newLibs then lib.concatStringsSep "," newLibs else newLibs;
+                        in
                         if oldSettings ? shared_preload_libraries || newSettings ? shared_preload_libraries then
-                          " --old-options='-c shared_preload_libraries=${oldSettings.shared_preload_libraries or ""}' --new-options='-c shared_preload_libraries=${newSettings.shared_preload_libraries or ""}'"
+                          " --old-options='-c shared_preload_libraries=${oldLibsStr}' --new-options='-c shared_preload_libraries=${newLibsStr}'"
                         else
                           ""
                       }
@@ -314,14 +320,17 @@ let
           ${
             if run_pg_regress then
               ''
+                psql_17 = "${psql_17}"
+                orioledb_17 = "${orioledb_17}"
+
                 with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-                  test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
                 with subtest("Check the install of the last version of the extension"):
                   test.check_install_last_version("17")
 
                 with subtest("Check pg_regress with postgresql 17 after installing the last version"):
-                  test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
                 with subtest("switch to orioledb 17"):
                   server.succeed(
@@ -335,7 +344,7 @@ let
                   test.check_upgrade_path("orioledb-17")
 
                 with subtest("Check pg_regress with orioledb 17 after installing the last version"):
-                  test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
 
                 with subtest("Test pg_upgrade from postgresql 15 to 17 with older extension version"):
                   # Test that all extension versions from postgresql 15 can be upgraded to postgresql 17 using pg_upgrade
@@ -362,7 +371,7 @@ let
                       # Otherwise, the version should match the version from postgresql 15
                       test.assert_version_matches(version)
 
-                    test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                    test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
               ''
             else
               ""

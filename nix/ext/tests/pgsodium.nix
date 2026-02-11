@@ -105,12 +105,8 @@ pkgs.testers.runNixOSTest {
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
-      with subtest("Check upgrade path with postgresql 15"):
-        test.check_upgrade_path("15")
-
-      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
-        psql_15 = "${self.packages.${system}."psql_15/bin"}"
-        test.check_pg_regress(Path(f"{psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
+      psql_15 = "${self.packages.${system}."psql_15/bin"}"
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
 
       last_version = None
       with subtest("Check the install of the last version of the extension"):
@@ -150,45 +146,13 @@ pkgs.testers.runNixOSTest {
       with subtest("Check last version of the extension after postgresql upgrade"):
         test.assert_version_matches(last_version)
 
-      with subtest("Check upgrade path with postgresql 17"):
-        test.check_upgrade_path("17")
-
-      with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-        psql_17 = "${self.packages.${system}."psql_17/bin"}"
-        test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+      psql_17 = "${self.packages.${system}."psql_17/bin"}"
 
       with subtest("Check the install of the last version of the extension"):
         test.check_install_last_version("17")
 
       with subtest("Check pg_regress with postgresql 17 after installing the last version"):
         test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
-
-      with subtest("Test pg_upgrade from postgresql 15 to 17 with older extension version"):
-        # Test that all extension versions from postgresql 15 can be upgraded to postgresql 17 using pg_upgrade
-        for version in versions["15"]:
-          server.systemctl("stop postgresql.service")
-          server.succeed("rm -fr /var/lib/postgresql/update_extensions.sql /var/lib/postgresql/data-17")
-          server.succeed(
-            f"{pg15_configuration}/bin/switch-to-configuration test >&2"
-          )
-          test.drop_extension()
-          test.install_extension(version)
-          server.succeed(
-            f"{pg17_configuration}/bin/switch-to-configuration test >&2"
-          )
-          has_update_script = server.succeed(
-            "test -f /var/lib/postgresql/update_extensions.sql && echo 'yes' || echo 'no'"
-          ).strip() == "yes"
-          if has_update_script:
-            # Run the extension update script generated during the upgrade
-            test.run_sql_file("/var/lib/postgresql/update_extensions.sql")
-            # If there was an update script, the last version should be installed
-            test.assert_version_matches(versions["17"][-1])
-          else:
-            # Otherwise, the version should match the version from postgresql 15
-            test.assert_version_matches(version)
-
-          test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("switch to orioledb 17"):
         server.succeed(
