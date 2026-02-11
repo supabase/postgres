@@ -42,6 +42,7 @@
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
         ../ext/wrappers/default.nix
+        ../ext/supamonitor.nix
         ../ext/supautils.nix
         ../ext/plv8
       ];

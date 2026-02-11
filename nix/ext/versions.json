@@ -854,5 +854,21 @@
       ],
       "hash": "sha256-+QoACPCKiFfuT2lJfSUmgfzC5MXf75KpSoc2PzPxKyM="
     }
+  },
+  "supamonitor": {
+    "0.0.5": {
+      "postgresql": [
+        "14",
+        "15",
+        "16",
+        "17"
+      ],
+      "hashes": {
+        "14": "sha256:21d3df59c5655cc24672435c84aed8374bc34d17aa22f51019237f6758cadb4f",
+        "15": "sha256:47aa56cf83f6cb709a2f5aabd4c824400f4ee4b7df3a735936eb312af4778b9a",
+        "16": "sha256:fe180bbf7c941ed72dcb8a1eaae7c99ba77d0fa3bf6a1f2100b99911a4fef8d4",
+        "17": "sha256:d31d2850889b4f6289d7c263a1a7554ebbc1cd3e9a39626ece04a224a9ba7605"
+      }
+    }
   }
 }

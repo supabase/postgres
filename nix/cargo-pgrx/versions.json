@@ -113,6 +113,9 @@
     "rust": {
       "1.88.0": {
         "cargoHash": "sha256-95DHq5GLnAqb3bbKwwaeBeKEmkfRh81ZTRaJ7L59DAg="
+      },
+      "1.92.0": {
+        "cargoHash": "sha256-95DHq5GLnAqb3bbKwwaeBeKEmkfRh81ZTRaJ7L59DAg="
       }
     }
   }
