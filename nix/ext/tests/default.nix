@@ -363,7 +363,6 @@ builtins.listToAttrs (
       "pg_tle"
       "pgaudit"
       "pgtap"
-      "postgis"
       "vector"
       "wal2json"
       "wrappers"

@@ -2,185 +2,166 @@
 let
   pname = "pgmq";
   inherit (pkgs) lib;
+  system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+  testLib = import ./lib.nix { inherit self pkgs; };
+
   installedExtension =
-    postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
-      pname
-    }";
+    postgresMajorVersion: self.legacyPackages.${system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
-  postgresqlWithExtension =
-    postgresql:
-    let
-      majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
-        name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (installedExtension majorVersion)
-        ];
-        passthru = {
-          inherit (postgresql) version psqlSchema;
-          installedExtensions = [ (installedExtension majorVersion) ];
-          lib = pkg;
-          withPackages = _: pkg;
-          withJIT = pkg;
-          withoutJIT = pkg;
-        };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
-        pathsToLink = [
-          "/"
-          "/bin"
-          "/lib"
-        ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
-      };
-    in
-    pkg;
-  psql_15 =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
-  psql_17 =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+  orioledbVersions = self.legacyPackages.${system}."psql_orioledb-17".exts."${pname}".versions;
 in
 pkgs.testers.runNixOSTest {
-  name = "pgmq";
+  name = pname;
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
-      services.postgresql = {
-        enable = true;
-        package = psql_15;
-        authentication = ''
-          local all postgres peer map=postgres
-          local all all peer map=root
-        '';
-        identMap = ''
-          root root supabase_admin
-          postgres postgres postgres
-        '';
-        ensureUsers = [
-          {
-            name = "supabase_admin";
-            ensureClauses.superuser = true;
-          }
-        ];
-        settings = (installedExtension "15").defaultSettings or { };
+      imports = [
+        (testLib.makeSupabaseTestConfig {
+          majorVersion = "15";
+        })
+      ];
+
+      specialisation.postgresql17.configuration = testLib.makeUpgradeSpecialisation {
+        fromMajorVersion = "15";
+        toMajorVersion = "17";
       };
 
-      specialisation.postgresql17.configuration = {
-        services.postgresql = {
-          package = lib.mkForce psql_17;
-        };
-
-        systemd.services.postgresql-migrate = {
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = "postgres";
-            Group = "postgres";
-            StateDirectory = "postgresql";
-            WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
-          };
-          script =
-            let
-              oldPostgresql = psql_15;
-              newPostgresql = psql_17;
-              oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
-              newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
-            in
-            ''
-              if [[ ! -d ${newDataDir} ]]; then
-                install -d -m 0700 -o postgres -g postgres "${newDataDir}"
-                ${newPostgresql}/bin/initdb -D "${newDataDir}"
-                ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                  --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
-              else
-                echo "${newDataDir} already exists"
-              fi
-            '';
-        };
-
-        systemd.services.postgresql = {
-          after = [ "postgresql-migrate.service" ];
-          requires = [ "postgresql-migrate.service" ];
-        };
-      };
+      specialisation.orioledb17.configuration = testLib.makeOrioledbSpecialisation { };
     };
   testScript =
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
       from pathlib import Path
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
+        "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') orioledbVersions)}],
       }
       extension_name = "${pname}"
       support_upgrade = True
       pg17_configuration = "${pg17-configuration}"
-      ext_has_background_worker = ${
-        if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
-      }
+      orioledb17_configuration = "${orioledb17-configuration}"
       sql_test_directory = Path("${../../tests}")
-      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
 
       ${builtins.readFile ./lib.py}
 
       start_all()
 
-      server.wait_for_unit("multi-user.target")
-      server.wait_for_unit("postgresql.service")
+      # Wait for full Supabase initialization (postgres + init-scripts + migrations)
+      server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("Verify PostgreSQL 15 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."15"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."15"}, got: {pg_version}"
+        )
+
+        postgres_path = server.succeed("readlink -f $(which postgres)").strip()
+        assert "postgresql-and-plugins-${testLib.expectedVersions."15"}" in postgres_path, (
+          f"Expected our custom build (${testLib.expectedVersions."15"}), got: {postgres_path}"
+        )
+
+      with subtest("Verify ansible config loaded"):
+        spl = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW shared_preload_libraries;\""
+        ).strip()
+        for ext in ["pg_stat_statements", "pgaudit", "pgsodium", "pg_cron", "pg_net"]:
+          assert ext in spl, f"Expected {ext} in shared_preload_libraries, got: {spl}"
+
+        session_pl = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW session_preload_libraries;\""
+        ).strip()
+        assert "supautils" in session_pl, (
+          f"Expected supautils in session_preload_libraries, got: {session_pl}"
+        )
+
+      with subtest("Verify init scripts and migrations ran"):
+        roles = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+        ).strip()
+        for role in ["anon", "authenticated", "authenticator", "dashboard_user", "pgbouncer", "service_role", "supabase_admin", "supabase_auth_admin", "supabase_storage_admin"]:
+          assert role in roles, f"Expected role {role} to exist, got: {roles}"
+
+        schemas = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT schema_name FROM information_schema.schemata ORDER BY schema_name;\""
+        ).strip()
+        for schema in ["auth", "storage", "extensions"]:
+          assert schema in schemas, f"Expected schema {schema} to exist, got: {schemas}"
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
-        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql}")
-
-      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
-        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
       last_version = None
       with subtest("Check the install of the last version of the extension"):
         last_version = test.check_install_last_version("15")
-        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql}")
-
-      if ext_has_background_worker:
-        with subtest("Test switch_${pname}_version"):
-          test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/${pname}.so"), "15")
-
-      with subtest("Check pg_regress with postgresql 15 after installing the last version"):
-        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
       with subtest("switch to postgresql 17"):
         server.succeed(
           f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
+        server.wait_for_unit("postgresql.service")
 
-      with subtest("Check last version of the extension after postgresql upgrade"):
+      with subtest("Verify PostgreSQL 17 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."17"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."17"}, got: {pg_version}"
+        )
+
+        postgres_pid = server.succeed(
+          "head -1 /var/lib/postgresql/data-17/postmaster.pid"
+        ).strip()
+        postgres_path = server.succeed(
+          f"readlink -f /proc/{postgres_pid}/exe"
+        ).strip()
+        assert "postgresql-and-plugins-${testLib.expectedVersions."17"}" in postgres_path, (
+          f"Expected our custom build (${testLib.expectedVersions."17"}), got: {postgres_path}"
+        )
+
+      with subtest("Check last version of the extension after upgrade"):
         test.assert_version_matches(last_version)
-        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql}")
 
       with subtest("Check upgrade path with postgresql 17"):
         test.check_upgrade_path("17")
-        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql}")
 
-      with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+      with subtest("switch to orioledb 17"):
+        server.succeed(
+          f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
+        )
+        server.wait_for_unit("supabase-db-init.service")
 
-      with subtest("Check the install of the last version of the extension"):
-        test.check_install_last_version("17")
-        test.run_sql_file("${../../../ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql}")
+      with subtest("Verify OrioleDB is running"):
+        installed_extensions = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT extname FROM pg_extension WHERE extname = 'orioledb';\""
+        ).strip()
+        assert "orioledb" in installed_extensions, (
+          f"Expected orioledb extension to be installed, got: {installed_extensions}"
+        )
 
-      with subtest("Check pg_regress with postgresql 17 after installing the last version"):
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+        dam = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW default_table_access_method;\""
+        ).strip()
+        assert dam == "orioledb", (
+          f"Expected default_table_access_method = orioledb, got: {dam}"
+        )
+
+      with subtest("Verify OrioleDB init scripts and migrations ran"):
+        roles = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+        ).strip()
+        for role in ["anon", "authenticated", "authenticator", "supabase_admin"]:
+          assert role in roles, f"Expected role {role} to exist, got: {roles}"
+
+      with subtest("Check upgrade path with orioledb 17"):
+        test.check_upgrade_path("orioledb-17")
     '';
 }

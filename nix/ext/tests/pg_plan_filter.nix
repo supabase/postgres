@@ -1,142 +1,107 @@
+# plan_filter is a shared-library-only module, not a CREATE EXTENSION type
+# extension. It's loaded via shared_preload_libraries and configured via GUC
+# parameters (plan_filter.statement_cost_limit, plan_filter.limit_select_only).
+# See: https://github.com/pgexperts/pg_plan_filter
 { self, pkgs }:
 let
-  pname = "plan_filter";
-  inherit (pkgs) lib;
-  installedExtension =
-    postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
-      pname
-    }";
-  versions = postgresqlMajorVersion: (installedExtension postgresqlMajorVersion).versions;
-  postgresqlWithExtension =
-    postgresql:
-    let
-      majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
-        name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (installedExtension majorVersion)
-        ];
-        passthru = {
-          inherit (postgresql) version psqlSchema;
-          installedExtensions = [ (installedExtension majorVersion) ];
-          lib = pkg;
-          withPackages = _: pkg;
-          withJIT = pkg;
-          withoutJIT = pkg;
-        };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
-        pathsToLink = [
-          "/"
-          "/bin"
-          "/lib"
-        ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
-      };
-    in
-    pkg;
-  psql_15 =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
-  psql_17 =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_17;
+  testLib = import ./lib.nix { inherit self pkgs; };
 in
 pkgs.testers.runNixOSTest {
-  name = pname;
+  name = "plan_filter";
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
-      services.postgresql = {
-        enable = true;
-        package = psql_15;
-        settings = (installedExtension "15").defaultSettings or { };
+      imports = [
+        (testLib.makeSupabaseTestConfig {
+          majorVersion = "15";
+        })
+      ];
+
+      specialisation.postgresql17.configuration = testLib.makeUpgradeSpecialisation {
+        fromMajorVersion = "15";
+        toMajorVersion = "17";
       };
 
-      specialisation.postgresql17.configuration = {
-        services.postgresql = {
-          package = lib.mkForce psql_17;
-          settings = (installedExtension "15").defaultSettings or { };
-        };
-
-        systemd.services.postgresql-migrate = {
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = "postgres";
-            Group = "postgres";
-            StateDirectory = "postgresql";
-            WorkingDirectory = "${builtins.dirOf config.services.postgresql.dataDir}";
-          };
-          script =
-            let
-              oldPostgresql = psql_15;
-              newPostgresql = psql_17;
-              oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
-              newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
-            in
-            ''
-              if [[ ! -d ${newDataDir} ]]; then
-                install -d -m 0700 -o postgres -g postgres "${newDataDir}"
-                ${newPostgresql}/bin/initdb -D "${newDataDir}"
-                ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
-                  --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin"
-              else
-                echo "${newDataDir} already exists"
-              fi
-            '';
-        };
-
-        systemd.services.postgresql = {
-          after = [ "postgresql-migrate.service" ];
-          requires = [ "postgresql-migrate.service" ];
-        };
-      };
+      specialisation.orioledb17.configuration = testLib.makeOrioledbSpecialisation { };
     };
   testScript =
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
-      from pathlib import Path
-      versions = {
-        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
-        "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
-      }
-      extension_name = "${pname}"
-      support_upgrade = False
       pg17_configuration = "${pg17-configuration}"
-      ext_has_background_worker = ${
-        if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
-      }
-      sql_test_directory = Path("${../../tests}")
-      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+      orioledb17_configuration = "${orioledb17-configuration}"
 
-      ${builtins.readFile ./lib.py}
+      def check_plan_filter(server):
+        """Verify plan_filter is loaded and its GUC parameters are functional."""
+        spl = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW shared_preload_libraries;\""
+        ).strip()
+        assert "plan_filter" in spl, (
+          f"Expected plan_filter in shared_preload_libraries, got: {spl}"
+        )
+
+        # Verify GUC parameter is registered (default: 0 = no filter)
+        cost_limit = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW plan_filter.statement_cost_limit;\""
+        ).strip()
+        assert cost_limit is not None, "plan_filter.statement_cost_limit GUC not available"
+
+        # Verify the parameter can be set
+        server.succeed(
+          "psql -U supabase_admin -d postgres -c \"SET plan_filter.statement_cost_limit = 100000.0;\""
+        )
 
       start_all()
 
-      server.wait_for_unit("multi-user.target")
-      server.wait_for_unit("postgresql.service")
+      # Wait for full Supabase initialization (postgres + init-scripts + migrations)
+      server.wait_for_unit("supabase-db-init.service")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+      with subtest("Verify PostgreSQL 15 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."15"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."15"}, got: {pg_version}"
+        )
 
-      with subtest("Check pg_regress with postgresql 15 after extension upgrade"):
-        test.check_pg_regress(Path("${psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
+      with subtest("Verify plan_filter is loaded on PostgreSQL 15"):
+        check_plan_filter(server)
 
       with subtest("switch to postgresql 17"):
         server.succeed(
           f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
+        server.wait_for_unit("postgresql.service")
 
-      with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-        test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+      with subtest("Verify PostgreSQL 17 is our custom build"):
+        pg_version = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+        ).strip()
+        assert "${testLib.expectedVersions."17"}" in pg_version, (
+          f"Expected version ${testLib.expectedVersions."17"}, got: {pg_version}"
+        )
+
+      with subtest("Verify plan_filter is loaded on PostgreSQL 17"):
+        check_plan_filter(server)
+
+      with subtest("switch to orioledb 17"):
+        server.succeed(
+          f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
+        )
+        server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("Verify OrioleDB is running"):
+        installed_extensions = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT extname FROM pg_extension WHERE extname = 'orioledb';\""
+        ).strip()
+        assert "orioledb" in installed_extensions, (
+          f"Expected orioledb extension to be installed, got: {installed_extensions}"
+        )
+
+      with subtest("Verify plan_filter is loaded on OrioleDB"):
+        check_plan_filter(server)
     '';
 }

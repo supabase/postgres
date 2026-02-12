@@ -1,79 +1,60 @@
 { self, pkgs }:
 let
   pname = "orioledb";
-  inherit (pkgs) lib;
-  postgresqlWithExtension =
-    postgresql:
-    let
-      majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
-        name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
-        ];
-        passthru = {
-          inherit (postgresql) version psqlSchema;
-          installedExtensions = [
-            (self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_orioledb-17".exts.orioledb)
-          ];
-          lib = pkg;
-          withPackages = _: pkg;
-          withJIT = pkg;
-          withoutJIT = pkg;
-        };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
-        pathsToLink = [
-          "/"
-          "/bin"
-          "/lib"
-        ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
-      };
-    in
-    pkg;
-  psql_orioledb =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17;
+  testLib = import ./lib.nix { inherit self pkgs; };
 in
 pkgs.testers.runNixOSTest {
   name = pname;
   nodes.server =
     { ... }:
     {
-      services.openssh = {
-        enable = true;
-      };
+      imports = [
+        (testLib.makeSupabaseTestConfig {
+          majorVersion = "15";
+        })
+      ];
 
-      services.postgresql = {
-        enable = true;
-        package = psql_orioledb;
-        settings = {
-          shared_preload_libraries = "orioledb";
-          default_table_access_method = "orioledb";
-        };
-        initdbArgs = [
-          "--allow-group-access"
-          "--locale-provider=icu"
-          "--encoding=UTF-8"
-          "--icu-locale=en_US.UTF-8"
-        ];
-        initialScript = pkgs.writeText "init-postgres-with-orioledb" ''
-          CREATE EXTENSION orioledb CASCADE;
-        '';
-      };
+      specialisation.orioledb17.configuration = testLib.makeOrioledbSpecialisation { };
     };
   testScript =
-    { ... }:
+    { nodes, ... }:
+    let
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
+    in
     ''
+      orioledb17_configuration = "${orioledb17-configuration}"
+
       start_all()
 
-      server.wait_for_unit("multi-user.target")
-      server.wait_for_unit("postgresql.service")
+      # Wait for full Supabase initialization on PG 15
+      server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("switch to orioledb 17"):
+        server.succeed(
+          f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
+        )
+        server.wait_for_unit("supabase-db-init.service")
+
+      with subtest("Verify OrioleDB is running"):
+        installed_extensions = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT extname FROM pg_extension WHERE extname = 'orioledb';\""
+        ).strip()
+        assert "orioledb" in installed_extensions, (
+          f"Expected orioledb extension to be installed, got: {installed_extensions}"
+        )
+
+        dam = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SHOW default_table_access_method;\""
+        ).strip()
+        assert dam == "orioledb", (
+          f"Expected default_table_access_method = orioledb, got: {dam}"
+        )
+
+      with subtest("Verify OrioleDB init scripts and migrations ran"):
+        roles = server.succeed(
+          "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+        ).strip()
+        for role in ["anon", "authenticated", "authenticator", "supabase_admin"]:
+          assert role in roles, f"Expected role {role} to exist, got: {roles}"
     '';
 }

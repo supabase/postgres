@@ -1,102 +1,88 @@
+# timescaledb only supports PostgreSQL 15 (not PG 17 or OrioleDB)
 { self, pkgs }:
 let
   pname = "timescaledb";
   inherit (pkgs) lib;
+  system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+  testLib = import ./lib.nix { inherit self pkgs; };
+
   installedExtension =
-    postgresMajorVersion:
-    self.legacyPackages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}."psql_${postgresMajorVersion}".exts."${
-      pname
-    }";
+    postgresMajorVersion: self.legacyPackages.${system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = (installedExtension "15").versions;
-  postgresqlWithExtension =
-    postgresql:
-    let
-      majorVersion = lib.versions.major postgresql.version;
-      pkg = pkgs.pkgsLinux.buildEnv {
-        name = "postgresql-${majorVersion}-${pname}";
-        paths = [
-          postgresql
-          postgresql.lib
-          (installedExtension majorVersion)
-        ];
-        passthru = {
-          inherit (postgresql) version psqlSchema;
-          installedExtensions = [ (installedExtension majorVersion) ];
-          lib = pkg;
-          withPackages = _: pkg;
-          withJIT = pkg;
-          withoutJIT = pkg;
-        };
-        nativeBuildInputs = [ pkgs.pkgsLinux.makeWrapper ];
-        pathsToLink = [
-          "/"
-          "/bin"
-          "/lib"
-        ];
-        postBuild = ''
-          wrapProgram $out/bin/postgres --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_ctl --set NIX_PGLIBDIR $out/lib
-          wrapProgram $out/bin/pg_upgrade --set NIX_PGLIBDIR $out/lib
-        '';
-      };
-    in
-    pkg;
-  psql_15 =
-    postgresqlWithExtension
-      self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_15;
 in
 pkgs.testers.runNixOSTest {
-  name = "timescaledb";
+  name = pname;
   nodes.server =
     { ... }:
     {
-      services.postgresql = {
-        enable = true;
-        package = psql_15;
-        authentication = ''
-          local all postgres peer map=postgres
-          local all all peer map=root
-        '';
-        identMap = ''
-          root root supabase_admin
-          postgres postgres postgres
-        '';
-        ensureUsers = [
-          {
-            name = "supabase_admin";
-            ensureClauses.superuser = true;
-          }
-          { name = "service_role"; }
-        ];
-
-        settings = {
-          shared_preload_libraries = "timescaledb";
-        };
-      };
+      imports = [
+        (testLib.makeSupabaseTestConfig {
+          majorVersion = "15";
+        })
+      ];
     };
-  testScript =
-    { ... }:
-    ''
-      ${builtins.readFile ./lib.py}
+  testScript = ''
+    from pathlib import Path
+    versions = {
+      "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}],
+    }
+    extension_name = "${pname}"
+    support_upgrade = True
+    sql_test_directory = Path("${../../tests}")
 
-      start_all()
+    ${builtins.readFile ./lib.py}
 
-      server.wait_for_unit("multi-user.target")
-      server.wait_for_unit("postgresql.service")
+    start_all()
 
-      versions = {
-        "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}],
-      }
-      extension_name = "${pname}"
-      support_upgrade = True
-      sql_test_directory = Path("${../../tests}")
+    # Wait for full Supabase initialization (postgres + init-scripts + migrations)
+    server.wait_for_unit("supabase-db-init.service")
 
-      test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade, "public", "timescaledb-loader")
+    with subtest("Verify PostgreSQL 15 is our custom build"):
+      pg_version = server.succeed(
+        "psql -U supabase_admin -d postgres -t -A -c \"SELECT version();\""
+      ).strip()
+      assert "${testLib.expectedVersions."15"}" in pg_version, (
+        f"Expected version ${testLib.expectedVersions."15"}, got: {pg_version}"
+      )
 
-      with subtest("Check upgrade path with postgresql 15"):
-        test.check_upgrade_path("15")
+      postgres_path = server.succeed("readlink -f $(which postgres)").strip()
+      assert "postgresql-and-plugins-${testLib.expectedVersions."15"}" in postgres_path, (
+        f"Expected our custom build (${testLib.expectedVersions."15"}), got: {postgres_path}"
+      )
 
-      with subtest("Test switch_${pname}_version"):
-        test.check_switch_extension_with_background_worker(Path("${psql_15}/lib/timescaledb-loader.so"), "15")
-    '';
+    with subtest("Verify ansible config loaded"):
+      spl = server.succeed(
+        "psql -U supabase_admin -d postgres -t -A -c \"SHOW shared_preload_libraries;\""
+      ).strip()
+      for ext in ["pg_stat_statements", "pgaudit", "pgsodium", "pg_cron", "pg_net"]:
+        assert ext in spl, f"Expected {ext} in shared_preload_libraries, got: {spl}"
+
+      session_pl = server.succeed(
+        "psql -U supabase_admin -d postgres -t -A -c \"SHOW session_preload_libraries;\""
+      ).strip()
+      assert "supautils" in session_pl, (
+        f"Expected supautils in session_preload_libraries, got: {session_pl}"
+      )
+
+    with subtest("Verify init scripts and migrations ran"):
+      roles = server.succeed(
+        "psql -U supabase_admin -d postgres -t -A -c \"SELECT rolname FROM pg_roles ORDER BY rolname;\""
+      ).strip()
+      for role in ["anon", "authenticated", "authenticator", "dashboard_user", "pgbouncer", "service_role", "supabase_admin", "supabase_auth_admin", "supabase_storage_admin"]:
+        assert role in roles, f"Expected role {role} to exist, got: {roles}"
+
+      schemas = server.succeed(
+        "psql -U supabase_admin -d postgres -t -A -c \"SELECT schema_name FROM information_schema.schemata ORDER BY schema_name;\""
+      ).strip()
+      for schema in ["auth", "storage", "extensions"]:
+        assert schema in schemas, f"Expected schema {schema} to exist, got: {schemas}"
+
+    test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+
+    with subtest("Check upgrade path with postgresql 15"):
+      test.check_upgrade_path("15")
+
+    with subtest("Check the install of the last version of the extension"):
+      test.check_install_last_version("15")
+  '';
 }
