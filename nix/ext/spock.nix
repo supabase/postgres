@@ -9,6 +9,8 @@
   libkrb5,
   pam,
   zlib,
+  jansson,
+  pkg-config,
 }:
 
 let
@@ -25,7 +27,8 @@ let
         inherit hash;
       };
 
-      buildInputs = [ postgresql openssl libkrb5 pam zlib ];
+      nativeBuildInputs = [ pkg-config ];
+      buildInputs = [ postgresql openssl libkrb5 pam zlib jansson ];
 
       makeFlags = [ "USE_PGXS=1" ];
 
@@ -34,8 +37,13 @@ let
 
         mkdir -p $out/{lib,share/postgresql/extension}
 
-        # Install versioned library
+        # Install versioned main library
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+
+        # Install spock_output plugin (companion output plugin for Spock 5.x)
+        if [[ -f spock_output${postgresql.dlSuffix} ]]; then
+          install -Dm755 spock_output${postgresql.dlSuffix} $out/lib/spock_output-${version}${postgresql.dlSuffix}
+        fi
 
         # Install SQL files
         if [[ -d sql ]]; then
@@ -85,6 +93,11 @@ pkgs.buildEnv {
   ];
   postBuild = ''
     ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
+    # Create symlink for spock_output plugin
+    if [[ -f $out/lib/spock_output-${latestVersion}${postgresql.dlSuffix} ]]; then
+      ln -sfn spock_output-${latestVersion}${postgresql.dlSuffix} $out/lib/spock_output${postgresql.dlSuffix}
+    fi
 
     {
       echo "default_version = '${latestVersion}'"

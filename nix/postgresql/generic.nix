@@ -206,10 +206,12 @@ let
       ++ lib.optionals stdenv'.isLinux [
         (if atLeast "13" then ./patches/socketdir-in-run-13+.patch else ./patches/socketdir-in-run.patch)
       ]
-      # Spock 3.1.8 patches for bi-directional replication (PostgreSQL 15 only)
+      # Spock 5.0.4 patches for bi-directional replication (PostgreSQL 15 only)
       ++ lib.optionals (atLeast "15" && olderThan "16") [
-        ./patches/pg15-allow_logical_decoding_on_standbys.patch
-        ./patches/pg15-log_old_value-pg1514.diff
+        ./patches/pg15-010-allow_logical_decoding_on_standbys.diff
+        ./patches/pg15-015-attoptions.diff
+        ./patches/pg15-025-logical_commit_clock.diff
+        ./patches/pg15-030-per-subtrans-commit-ts.diff
       ];
 
       installTargets = [ "install-world-bin" ];
