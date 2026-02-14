@@ -1,0 +1,48 @@
+diff --git a/src/backend/access/transam/xlog.c b/src/backend/access/transam/xlog.c
+index 287339b7fae..fc2fb64d065 100644
+--- a/src/backend/access/transam/xlog.c
++++ b/src/backend/access/transam/xlog.c
+@@ -156,6 +156,12 @@ int			wal_segment_size = DEFAULT_XLOG_SEG_SIZE;
+  */
+ int			CheckPointSegments;
+ 
++/*
++ * Hook called during checkpoint processing, after buffers have been
++ * flushed, but before fsync/sync is done.
++ */
++Checkpoint_hook_type Checkpoint_hook = NULL;
++
+ /* Estimated distance between checkpoints, in bytes */
+ static double CheckPointDistanceEstimate = 0;
+ static double PrevCheckPointDistance = 0;
+@@ -7517,6 +7523,12 @@ CheckPointGuts(XLogRecPtr checkPointRedo, int flags)
+ 	CheckPointPredicate();
+ 	CheckPointBuffers(flags);
+ 
++	/*
++	 * Hook invoked between buffer flush and fsync/sync phase.
++	 */
++	if (Checkpoint_hook)
++		Checkpoint_hook(checkPointRedo, flags);
++
+ 	/* Perform all queued up fsyncs */
+ 	TRACE_POSTGRESQL_BUFFER_CHECKPOINT_SYNC_START();
+ 	CheckpointStats.ckpt_sync_t = GetCurrentTimestamp();
+diff --git a/src/include/access/xlog.h b/src/include/access/xlog.h
+index 2c507ea618c..88d65c01286 100644
+--- a/src/include/access/xlog.h
++++ b/src/include/access/xlog.h
+@@ -196,6 +196,13 @@ typedef enum WALAvailability
+ struct XLogRecData;
+ struct XLogReaderState;
+ 
++/*
++ * Hook called during checkpoint processing, after buffers have been
++ * flushed, but before fsync/sync is done.
++ */
++typedef void (*Checkpoint_hook_type)(XLogRecPtr checkPointRedo, int flags);
++extern PGDLLIMPORT Checkpoint_hook_type Checkpoint_hook;
++
+ extern XLogRecPtr XLogInsertRecord(struct XLogRecData *rdata,
+ 								   XLogRecPtr fpw_lsn,
+ 								   uint8 flags,

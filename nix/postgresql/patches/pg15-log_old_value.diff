@@ -1,0 +1,172 @@
+diff --git a/src/backend/access/common/reloptions.c b/src/backend/access/common/reloptions.c
+index 24211807ca..7e3f5219e0 100644
+--- a/src/backend/access/common/reloptions.c
++++ b/src/backend/access/common/reloptions.c
+@@ -168,6 +168,15 @@ static relopt_bool boolRelOpts[] =
+ 		},
+ 		true
+ 	},
++	{
++		{
++			"log_old_value",
++			"Add old value of attribute to WAL for logical decoding",
++			RELOPT_KIND_ATTRIBUTE,
++			ShareUpdateExclusiveLock
++		},
++		false
++	},
+ 	/* list terminator */
+ 	{{NULL}}
+ };
+@@ -2075,7 +2084,8 @@ attribute_reloptions(Datum reloptions, bool validate)
+ {
+ 	static const relopt_parse_elt tab[] = {
+ 		{"n_distinct", RELOPT_TYPE_REAL, offsetof(AttributeOpts, n_distinct)},
+-		{"n_distinct_inherited", RELOPT_TYPE_REAL, offsetof(AttributeOpts, n_distinct_inherited)}
++		{"n_distinct_inherited", RELOPT_TYPE_REAL, offsetof(AttributeOpts, n_distinct_inherited)},
++		{"log_old_value", RELOPT_TYPE_BOOL, offsetof(AttributeOpts, log_old_value)}
+ 	};
+ 
+ 	return (bytea *) build_reloptions(reloptions, validate,
+diff --git a/src/backend/access/heap/heapam.c b/src/backend/access/heap/heapam.c
+index c74fbd0104..3f4b2a902b 100644
+--- a/src/backend/access/heap/heapam.c
++++ b/src/backend/access/heap/heapam.c
+@@ -64,6 +64,7 @@
+ #include "storage/smgr.h"
+ #include "storage/spin.h"
+ #include "storage/standby.h"
++#include "utils/attoptcache.h"
+ #include "utils/datum.h"
+ #include "utils/inval.h"
+ #include "utils/lsyscache.h"
+@@ -78,6 +79,7 @@ static XLogRecPtr log_heap_update(Relation reln, Buffer oldbuf,
+ 								  Buffer newbuf, HeapTuple oldtup,
+ 								  HeapTuple newtup, HeapTuple old_key_tuple,
+ 								  bool all_visible_cleared, bool new_all_visible_cleared);
++static Bitmapset *HeapDetermineLogOldColumns(Relation relation);
+ static Bitmapset *HeapDetermineColumnsInfo(Relation relation,
+ 										   Bitmapset *interesting_cols,
+ 										   Bitmapset *external_cols,
+@@ -109,6 +111,7 @@ static void index_delete_sort(TM_IndexDeleteOp *delstate);
+ static int	bottomup_sort_and_shrink(TM_IndexDeleteOp *delstate);
+ static XLogRecPtr log_heap_new_cid(Relation relation, HeapTuple tup);
+ static HeapTuple ExtractReplicaIdentity(Relation rel, HeapTuple tup, bool key_required,
++										Bitmapset *logged_old_attrs,
+ 										bool *copy);
+ 
+ 
+@@ -2904,7 +2907,7 @@ l1:
+ 	 * Compute replica identity tuple before entering the critical section so
+ 	 * we don't PANIC upon a memory allocation failure.
+ 	 */
+-	old_key_tuple = ExtractReplicaIdentity(relation, &tp, true, &old_key_copied);
++	old_key_tuple = ExtractReplicaIdentity(relation, &tp, true, NULL, &old_key_copied);
+ 
+ 	/*
+ 	 * If this is the first possibly-multixact-able operation in the current
+@@ -3135,6 +3138,7 @@ heap_update(Relation relation, ItemPointer otid, HeapTuple newtup,
+ 	Bitmapset  *id_attrs;
+ 	Bitmapset  *interesting_attrs;
+ 	Bitmapset  *modified_attrs;
++	Bitmapset  *logged_old_attrs;
+ 	ItemId		lp;
+ 	HeapTupleData oldtup;
+ 	HeapTuple	heaptup;
+@@ -3248,6 +3252,7 @@ heap_update(Relation relation, ItemPointer otid, HeapTuple newtup,
+ 	modified_attrs = HeapDetermineColumnsInfo(relation, interesting_attrs,
+ 											  id_attrs, &oldtup,
+ 											  newtup, &id_has_external);
++	logged_old_attrs = HeapDetermineLogOldColumns(relation);
+ 
+ 	/*
+ 	 * If we're not updating any "key" column, we can grab a weaker lock type.
+@@ -3517,6 +3522,7 @@ l2:
+ 		bms_free(key_attrs);
+ 		bms_free(id_attrs);
+ 		bms_free(modified_attrs);
++		bms_free(logged_old_attrs);
+ 		bms_free(interesting_attrs);
+ 		return result;
+ 	}
+@@ -3853,6 +3859,7 @@ l2:
+ 	old_key_tuple = ExtractReplicaIdentity(relation, &oldtup,
+ 										   bms_overlap(modified_attrs, id_attrs) ||
+ 										   id_has_external,
++										   logged_old_attrs,
+ 										   &old_key_copied);
+ 
+ 	/* NO EREPORT(ERROR) from here till changes are logged */
+@@ -4002,6 +4009,7 @@ l2:
+ 	bms_free(key_attrs);
+ 	bms_free(id_attrs);
+ 	bms_free(modified_attrs);
++	bms_free(logged_old_attrs);
+ 	bms_free(interesting_attrs);
+ 
+ 	return TM_Ok;
+@@ -4052,6 +4060,26 @@ heap_attr_equals(TupleDesc tupdesc, int attrnum, Datum value1, Datum value2,
+ 	}
+ }
+ 
++static Bitmapset *
++HeapDetermineLogOldColumns(Relation relation)
++{
++	int				attnum;
++	Bitmapset	   *logged_cols = NULL;
++	TupleDesc		tupdesc = RelationGetDescr(relation);
++	AttributeOpts  *aopt;
++
++	for (attnum = 1; attnum <= tupdesc->natts; attnum++)
++	{
++		aopt = get_attribute_options(relation->rd_id, attnum);
++		if (aopt != NULL && aopt->log_old_value)
++			logged_cols = bms_add_member(logged_cols,
++										 attnum -
++										 FirstLowInvalidHeapAttributeNumber);
++	}
++
++	return logged_cols;
++}
++
+ /*
+  * Check which columns are being updated.
+  *
+@@ -8533,6 +8561,7 @@ log_heap_new_cid(Relation relation, HeapTuple tup)
+  */
+ static HeapTuple
+ ExtractReplicaIdentity(Relation relation, HeapTuple tp, bool key_required,
++					   Bitmapset *logged_old_attrs,
+ 					   bool *copy)
+ {
+ 	TupleDesc	desc = RelationGetDescr(relation);
+@@ -8565,13 +8594,16 @@ ExtractReplicaIdentity(Relation relation, HeapTuple tp, bool key_required,
+ 	}
+ 
+ 	/* if the key isn't required and we're only logging the key, we're done */
+-	if (!key_required)
++	if (!key_required && logged_old_attrs == NULL)
+ 		return NULL;
+ 
+ 	/* find out the replica identity columns */
+ 	idattrs = RelationGetIndexAttrBitmap(relation,
+ 										 INDEX_ATTR_BITMAP_IDENTITY_KEY);
+ 
++	/* merge the columns that are marked LOG_OLD_VALUE */
++	idattrs = bms_union(idattrs, logged_old_attrs);
++
+ 	/*
+ 	 * If there's no defined replica identity columns, treat as !key_required.
+ 	 * (This case should not be reachable from heap_update, since that should
+diff --git a/src/include/utils/attoptcache.h b/src/include/utils/attoptcache.h
+index ee37af9500..3410600d8f 100644
+--- a/src/include/utils/attoptcache.h
++++ b/src/include/utils/attoptcache.h
+@@ -21,6 +21,7 @@ typedef struct AttributeOpts
+ 	int32		vl_len_;		/* varlena header (do not touch directly!) */
+ 	float8		n_distinct;
+ 	float8		n_distinct_inherited;
++	bool		log_old_value;
+ } AttributeOpts;
+ 
+ extern AttributeOpts *get_attribute_options(Oid spcid, int attnum);
