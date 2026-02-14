@@ -62,7 +62,7 @@ listen_addresses = '*'		# what IP address(es) to listen on;
 #port = @PGSQL_DEFAULT_PORT@				# (change requires restart)
 max_connections = 100			# (change requires restart)
 #superuser_reserved_connections = 3	# (change requires restart)
-unix_socket_directories = '/var/run/postgresql'	# comma-separated list of directories
+unix_socket_directories = '/tmp'	# comma-separated list of directories
 					# (change requires restart)
 #unix_socket_group = ''			# (change requires restart)
 #unix_socket_permissions = 0777		# begin with 0 to use octal notation
@@ -718,7 +718,7 @@ default_text_search_config = 'pg_catalog.english'
 
 #local_preload_libraries = ''
 #session_preload_libraries = ''
-shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, pgsodium, timescaledb, auto_explain, pg_tle, plan_filter, supabase_vault'	# (change requires restart)
+shared_preload_libraries = '@PRELOAD_LIBRARIES@'	# (change requires restart)
 jit_provider = 'llvmjit'		# JIT library to use
 
 

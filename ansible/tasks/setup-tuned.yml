@@ -1,0 +1,10 @@
+- name: Install tuned
+  ansible.builtin.apt:
+    force_apt_get: true
+    name: tuned
+    policy_rc_d: 101
+    state: 'present'
+    update_cache: true
+  become: true
+  when:
+    - stage2_nix

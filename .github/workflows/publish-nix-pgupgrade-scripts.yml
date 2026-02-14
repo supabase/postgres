@@ -25,9 +25,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      
       - uses: ./.github/actions/nix-install-ephemeral
-
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
@@ -50,11 +48,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION="${{ inputs.postgresVersion }}"
-          fi
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -85,7 +79,7 @@ jobs:
   publish-prod:
     needs: prepare
     runs-on: large-linux-x86
-    if: github.ref_name == 'develop' || contains( github.ref, 'release' )
+    if: github.ref_name == 'develop' || startsWith(github.ref_name, 'release/')
 
     strategy:
       matrix:
@@ -101,11 +95,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION="${{ inputs.postgresVersion }}"
-          fi
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts

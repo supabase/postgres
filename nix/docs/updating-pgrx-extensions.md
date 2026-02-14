@@ -95,7 +95,7 @@ Use this when the extension has a new release but uses the same pgrx and Rust ve
 4. **Build to get the hash**:
 
    ```bash
-   nix build .#psql_17/exts/wrappers-all -L
+   nix build .#psql_17.exts.wrappers-all -L
    ```
 
    The build will fail and print the correct hash. Copy it to `versions.json`.
@@ -103,7 +103,7 @@ Use this when the extension has a new release but uses the same pgrx and Rust ve
 5. **Rebuild to verify**:
 
    ```bash
-   nix build .#psql_17/exts/wrappers-all -L
+   nix build .#psql_17.exts.wrappers-all -L
    ```
 
 ---
@@ -178,7 +178,7 @@ Use this when the extension requires a newer pgrx version.
 
    ```bash
    git add .
-   nix build .#psql_17/exts/wrappers-all -L
+   nix build .#psql_17.exts.wrappers-all -L
    ```
 
    You'll need to run this multiple times, updating hashes as they're calculated:
@@ -291,11 +291,11 @@ For faster iteration, test just your extension before running full checks:
 
 ```bash
 # Build for one PostgreSQL version
-nix build .#psql_17/exts/wrappers-all -L
+nix build .#psql_17.exts.wrappers-all -L
 
 # Build for all PostgreSQL versions
-nix build .#psql_15/exts/wrappers-all -L
-nix build .#psql_17/exts/wrappers-all -L
+nix build .#psql_15.exts.wrappers-all -L
+nix build .#psql_17.exts.wrappers-all -L
 ```
 
 ---
@@ -361,7 +361,7 @@ If the build still fails after updating hashes:
 
 1. **Stage all changes**: `git add .`
 2. **Clean Nix cache** (if necessary): `nix store gc`
-3. **Rebuild**: `nix build .#psql_17/exts/<extension> -L`
+3. **Rebuild**: `nix build .#psql_17.exts.<extension> -L`
 
 ### CargoLock outputHashes
 

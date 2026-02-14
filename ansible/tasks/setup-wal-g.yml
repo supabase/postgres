@@ -54,6 +54,14 @@
         path: '/etc/wal-g/config.json'
         state: 'touch'
 
+    - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
+      ansible.builtin.template:
+        dest: '/etc/postgresql-custom/wal-g.conf'
+        group: 'postgres'
+        mode: '0664'
+        owner: 'postgres'
+        src: 'files/postgresql_config/custom_walg.conf'
+
     - name: Add script to be run for restore_command
       ansible.builtin.template:
         dest: '/home/postgres/wal_fetch.sh'
@@ -69,18 +77,25 @@
         owner: 'root'
         src: 'files/walg_helper_scripts/wal_change_ownership.sh'
 
-    - name: Move custom wal-g.conf file to /etc/postgresql-custom/conf.d/wal-g.conf
+    - name: Include /etc/postgresql-custom/wal-g.conf in postgresql.conf
+      ansible.builtin.replace:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: "#include = '/etc/postgresql-custom/wal-g.conf'"
+        replace: "include = '/etc/postgresql-custom/wal-g.conf'"
+      become: true
+
+    - name: Move custom wal-g.conf file to /etc/postgresql-custom/wal-g.conf
       ansible.builtin.copy:
-        dest: '/etc/postgresql-custom/conf.d/wal-g.conf'
+        dest: '/etc/postgresql-custom/wal-g.conf'
         group: 'postgres'
         mode: '0664'
         owner: 'postgres'
-        src: 'files/postgresql_config/conf.d/wal-g.conf'
+        src: 'files/postgresql_config/custom_walg.conf'
 
-    - name: Create symlink for admin-mgr compatibility
-      ansible.builtin.file:
-        src: '/etc/postgresql-custom/conf.d/wal-g.conf'
-        dest: '/etc/postgresql-custom/wal-g.conf'
-        state: 'link'
-        owner: 'postgres'
-        group: 'postgres'
+    # - name: Create symlink for admin-mgr compatibility
+    #   ansible.builtin.file:
+    #     src: '/etc/postgresql-custom/conf.d/wal-g.conf'
+    #     dest: '/etc/postgresql-custom/wal-g.conf'
+    #     state: 'link'
+    #     owner: 'postgres'
+    #     group: 'postgres'

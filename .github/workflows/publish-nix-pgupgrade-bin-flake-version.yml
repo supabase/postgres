@@ -43,11 +43,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo "$VERSION" | tr -d '"')  # Remove any surrounding quotes
-          if [[ "${{ inputs.postgresVersion }}" != "" ]]; then
-            VERSION="${{ inputs.postgresVersion }}"
-          fi
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
@@ -82,7 +78,7 @@ jobs:
 
   publish-prod:
     runs-on: large-linux-x86
-    if: github.ref_name == 'develop' || contains( github.ref, 'release' )
+    if: github.ref_name == 'develop' || startsWith(github.ref_name, 'release/')
     needs: prepare
     strategy:
       matrix:
@@ -95,8 +91,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          VERSION=$(echo $VERSION | tr -d '"')  # Remove any surrounding quotes
+          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 

@@ -8,6 +8,7 @@
   makeWrapper,
   switch-ext-version,
   curl_8_6,
+  latestOnly ? false,
 }:
 
 let
@@ -52,8 +53,17 @@ let
       env.NIX_CFLAGS_COMPILE =
         if (lib.versionOlder version "0.19.1") then
           "-Wno-error"
-        else if (version == "0.19.5" && stdenv.isDarwin && stdenv.isAarch64) then
-          # Fix for dangling pointer warning in src/core.c:177 on aarch64-darwin with newer clang
+        else if
+          (
+            builtins.elem version [
+              "0.19.5"
+              "0.20.0"
+            ]
+            && stdenv.isDarwin
+          )
+        then
+          # Fix for dangling pointer warning on darwin with newer clang
+          # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
           "-Wno-error=dangling-assignment"
         else
           "";
@@ -98,15 +108,23 @@ let
   ) platformFilteredVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
 in
 pkgs.buildEnv {
   name = pname;
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
+  pathsToLink = [
+    "/lib"
+    "/share/postgresql/extension"
+  ];
   postBuild = ''
     {
       echo "default_version = '${latestVersion}'"
@@ -118,7 +136,7 @@ pkgs.buildEnv {
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
+         toString (numberOfVersionsBuilt + 1)
        }"
     )
 
@@ -127,12 +145,17 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     hasBackgroundWorker = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_net" ];
     };
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

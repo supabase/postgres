@@ -26,6 +26,9 @@
     - set_fact:
         parallel_jobs: 16
 
+    - name: Install tuned
+      import_tasks: tasks/setup-tuned.yml
+
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
@@ -39,6 +42,12 @@
     - name: Install WAL-G
       import_tasks: tasks/setup-wal-g.yml
       when: debpkg_mode or nixpkg_mode or stage2_nix
+
+    - name: Install pgBackRest
+      import_tasks: 
+        file: tasks/setup-pgbackrest.yml
+      when:
+        - debpkg_mode or nixpkg_mode or stage2_nix
 
     - name: Install Gotrue
       import_tasks: tasks/setup-gotrue.yml

@@ -1,0 +1,139 @@
+name: Docker Image Test
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  push:
+    branches:
+      - develop
+      - release/*
+  workflow_call:
+    secrets:
+      DEV_AWS_ROLE:
+        required: true
+      NIX_SIGN_SECRET_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'Specific Dockerfile to test (leave empty for all)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  check-changes:
+    name: Check Docker Image Changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      input_hash: ${{ steps.check.outputs.input_hash }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'false'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Check Docker image changes
+        id: check
+        uses: ./.github/actions/check-docker-image-changes
+        with:
+          event_name: ${{ github.event_name }}
+          base_ref: ${{ github.base_ref }}
+
+  docker-image-test:
+    name: Test ${{ matrix.dockerfile }}
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true'
+    runs-on: large-linux-arm
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          - Dockerfile-15
+          - Dockerfile-17
+          - Dockerfile-orioledb-17
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'false'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Create Docker context
+        run: docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          endpoint: builders
+
+      - name: Build Docker image
+        run: |
+          echo "Building ${{ matrix.dockerfile }}..."
+          VERSION="${{ matrix.dockerfile }}"
+          VERSION="${VERSION#Dockerfile-}"
+          # Build with tags expected by both tools
+          docker build -f ${{ matrix.dockerfile }} \
+            -t "pg-docker-test:${VERSION}" \
+            -t "supabase-postgres:${VERSION}-analyze" \
+            .
+
+      - name: Run image size analysis
+        run: |
+          echo "=== Image Size Analysis for ${{ matrix.dockerfile }} ==="
+          nix run --accept-flake-config .#image-size-analyzer -- --image ${{ matrix.dockerfile }} --no-build
+
+      - name: Run Docker image tests
+        run: |
+          echo "=== Running tests for ${{ matrix.dockerfile }} ==="
+          nix run --accept-flake-config .#docker-image-test -- --no-build ${{ matrix.dockerfile }}
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          VERSION="${{ matrix.dockerfile }}"
+          VERSION="${VERSION#Dockerfile-}"
+          CONTAINER_NAME=$(docker ps -a --filter "name=pg-test-${VERSION}" --format "{{.Names}}" | head -1)
+          if [[ -n "$CONTAINER_NAME" ]]; then
+            echo "=== Container logs for $CONTAINER_NAME ==="
+            docker logs "$CONTAINER_NAME" 2>&1 || true
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          VERSION="${{ matrix.dockerfile }}"
+          VERSION="${VERSION#Dockerfile-}"
+          # Remove test containers
+          docker ps -a --filter "name=pg-test-${VERSION}" -q | xargs -r docker rm -f || true
+          # Remove test images
+          docker rmi "pg-docker-test:${VERSION}" || true
+          docker rmi "supabase-postgres:${VERSION}-analyze" || true
+
+  skip-notification:
+    name: Docker Image Test (Skipped)
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report skipped
+        run: |
+          echo "Docker image tests skipped - inputs unchanged"
+          echo "Input hash: ${{ needs.check-changes.outputs.input_hash }}"

@@ -29,14 +29,12 @@ order by
  postgres                | pg_signal_backend      | f
  postgres                | pgtle_admin            | f
  postgres                | service_role           | f
- postgres                | supabase_superuser     | f
  supabase_etl_admin      | pg_monitor             | f
  supabase_etl_admin      | pg_read_all_data       | f
- supabase_etl_admin      | supabase_superuser     | f
  supabase_read_only_user | pg_monitor             | f
  supabase_read_only_user | pg_read_all_data       | f
  supabase_storage_admin  | authenticator          | f
-(23 rows)
+(21 rows)
 
 -- Check all privileges of non-superuser roles on functions
 select

@@ -3,6 +3,12 @@
   perSystem =
     { pkgs, lib, ... }:
     let
+      # Minimal glibc locales for slim images - only en_US.UTF-8 (~3MB vs ~200MB)
+      glibcLocalesMinimal = pkgs.glibcLocales.override {
+        allLocales = false;
+        locales = [ "en_US.UTF-8/UTF-8" ];
+      };
+
       # Custom extensions that exist in our repository. These aren't upstream
       # either because nobody has done the work, maintaining them here is
       # easier and more expedient, or because they may not be suitable, or are
@@ -57,7 +63,24 @@
 
       orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
       dbExtensions17 = orioleFilteredExtensions;
-      getPostgresqlPackage = version: pkgs."postgresql_${version}";
+
+      # CLI extensions - minimal set for Supabase CLI with migration support
+      cliExtensions = [
+        ../ext/supautils.nix
+        ../ext/pg_graphql
+        ../ext/pgsodium.nix
+        ../ext/vault.nix
+        ../ext/pg_net.nix
+        ../ext/pg_cron
+        ../ext/pg-safeupdate.nix
+      ];
+
+      getPostgresqlPackage =
+        version: latestOnly:
+        let
+          base = pkgs."postgresql_${version}";
+        in
+        if latestOnly then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -95,10 +118,16 @@
 
       makeOurPostgresPkgs =
         version:
+        {
+          variant ? "full",
+          latestOnly ? false,
+        }:
         let
-          postgresql = getPostgresqlPackage version;
+          postgresql = getPostgresqlPackage version latestOnly;
           extensionsToUse =
-            if (builtins.elem version [ "orioledb-17" ]) then
+            if variant == "cli" then
+              cliExtensions
+            else if (builtins.elem version [ "orioledb-17" ]) then
               orioledbExtensions
             else if (builtins.elem version [ "17" ]) then
               dbExtensions17
@@ -107,7 +136,7 @@
           extCallPackage = pkgs.lib.callPackageWith (
             pkgs
             // {
-              inherit postgresql;
+              inherit postgresql latestOnly;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
             }
@@ -118,8 +147,12 @@
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
+        {
+          variant ? "full",
+          latestOnly ? false,
+        }:
         let
-          pkgsList = makeOurPostgresPkgs version;
+          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -144,22 +177,37 @@
       # basis for building extensions, etc.
       makePostgresBin =
         version:
+        {
+          variant ? "full",
+          latestOnly ? false,
+        }:
         let
-          postgresql = getPostgresqlPackage version;
-          postgres-pkgs = makeOurPostgresPkgs version;
+          # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
+          postgresql =
+            let
+              base = getPostgresqlPackage version latestOnly;
+            in
+            if variant == "cli" then base.override { portable = true; } else base;
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
           }) postgres-pkgs;
 
           pgbin = postgresql.withPackages (_ps: postgres-pkgs);
+
+          # For slim packages, include minimal glibc locales for initdb locale support
+          extraPaths = lib.optionals (latestOnly && pkgs.stdenv.isLinux) [
+            glibcLocalesMinimal
+          ];
         in
         pkgs.symlinkJoin {
           inherit (pgbin) name version;
           paths = [
             pgbin
             (makeReceipt pgbin ourExts)
-          ];
+          ]
+          ++ extraPaths;
         };
 
       # Create an attribute set, containing all the relevant packages for a
@@ -173,22 +221,37 @@
       #    package names.
       makePostgres =
         version:
+        {
+          variant ? "full",
+          latestOnly ? false,
+        }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version;
-          exts = makeOurPostgresPkgsSet version;
+          bin = makePostgresBin version { inherit variant latestOnly; };
+          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
         };
       basePackages = {
-        psql_15 = makePostgres "15";
-        psql_17 = makePostgres "17";
-        psql_orioledb-17 = makePostgres "orioledb-17";
+        psql_15 = makePostgres "15" { };
+        psql_17 = makePostgres "17" { };
+        psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
+      slimPackages = {
+        psql_15_slim = makePostgres "15" { latestOnly = true; };
+        psql_17_slim = makePostgres "17" { latestOnly = true; };
+        psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
+      };
+
+      # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
+      cliPackages = {
+        psql_17_cli = makePostgres "17" { variant = "cli"; };
+      };
+
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) basePackages;
+      }) (basePackages // slimPackages // cliPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages;
+      legacyPackages = basePackages // slimPackages // cliPackages;
     };
 }

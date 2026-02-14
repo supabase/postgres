@@ -6,6 +6,7 @@
   libkrb5,
   openssl,
   postgresql,
+  latestOnly ? false,
 }:
 #adapted from https://github.com/NixOS/nixpkgs/blob/master/pkgs/servers/sql/postgresql/ext/pgaudit.nix
 let
@@ -24,12 +25,16 @@ let
   # Supported versions sorted (for libraries)
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
 
   # Build packages only for supported versions (with libraries)
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
 
   # Helper function to generate migration SQL file pairs
   # Returns a list of {from, to} pairs for sequential migrations
@@ -217,7 +222,7 @@ buildEnv {
     '') versions}
 
     # Verify all expected library files are present (one per version + symlink)
-    expectedFiles=${toString (numberOfVersions + 1)}
+    expectedFiles=${toString (numberOfVersionsBuilt + 1)}
     actualFiles=$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)
 
     if [[ "$actualFiles" != "$expectedFiles" ]]; then
@@ -229,9 +234,14 @@ buildEnv {
   '';
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     defaultSettings = {
       shared_preload_libraries = "pgaudit";
     };

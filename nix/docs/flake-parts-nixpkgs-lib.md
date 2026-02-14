@@ -448,9 +448,9 @@ packages = inputs.flake-utils.lib.flattenTree basePackages;
 
 # Result
 {
-  "psql_15/bin" = <derivation>;
-  "psql_15/exts/rum" = <derivation>;
-  "psql_15/exts/pgsodium" = <derivation>;
+  "psql_15.bin" = <derivation>;
+  "psql_15.exts.rum" = <derivation>;
+  "psql_15.exts.pgsodium" = <derivation>;
 }
 ```
 
@@ -462,8 +462,8 @@ packages = inputs.flake-utils.lib.flattenTree basePackages;
 checks =
   {
     # Explicit checks
-    psql_15 = makeCheckHarness self'.packages."psql_15/bin";
-    psql_17 = makeCheckHarness self'.packages."psql_17/bin";
+    psql_15 = makeCheckHarness self'.packages."psql_15.bin";
+    psql_17 = makeCheckHarness self'.packages."psql_17.bin";
   }
   // pkgs.lib.optionalAttrs (system == "x86_64-linux") {
     # Debug packages (Linux only)

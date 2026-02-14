@@ -9,6 +9,7 @@
   buildEnv,
   rust-bin,
   git,
+  latestOnly ? false,
 }:
 let
   pname = "wrappers";
@@ -207,6 +208,13 @@ let
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
   numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      lib.filterAttrs (n: _: n == latestVersion) supportedVersions
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
   # Filter out previously packaged versions that are actually built for this PG version
   # This prevents double-counting when a version appears in both lists
   previouslyPackagedVersions = builtins.filter (
@@ -216,7 +224,7 @@ let
   packagesAttrSet = lib.mapAttrs' (name: value: {
     name = lib.replaceStrings [ "." ] [ "_" ] name;
     value = build name value.hash value.rust value.pgrx;
-  }) supportedVersions;
+  }) versionsToUse;
   packages = builtins.attrValues packagesAttrSet;
 in
 (buildEnv {
@@ -240,69 +248,101 @@ in
       # Create main library symlink to latest version
       ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
-      # Create symlinks for all previously packaged versions to main library
-      for v in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
-        ln -sfn $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-$v${postgresql.dlSuffix}
-      done
+      ${
+        if latestOnly then
+          ''
+            # latestOnly mode: skip previouslyPackagedVersions symlinks
+          ''
+        else
+          ''
+            # Create symlinks for all previously packaged versions to main library
+            for v in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+              ln -sfn $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-$v${postgresql.dlSuffix}
+            done
+          ''
+      }
     }
 
-    create_migration_sql_files() {
+    ${
+      if latestOnly then
+        ''
+          # latestOnly mode: skip migration SQL files entirely
+        ''
+      else
+        ''
+          create_migration_sql_files() {
 
 
-      PREVIOUS_VERSION=""
-      while IFS= read -r i; do
-        FILENAME=$(basename "$i")
-        VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
-        if [[ "$PREVIOUS_VERSION" != "" ]]; then
-          # Always write to $out/share/postgresql/extension, not $DIRNAME
-          # because $DIRNAME might be a symlinked read-only path from the Nix store
-          # We use -L with cp to dereference symlinks (copy the actual file content, not the symlink)
-          MIGRATION_FILENAME="$out/share/postgresql/extension/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
-          cp -L "$i" "$MIGRATION_FILENAME"
-        fi
-        PREVIOUS_VERSION="$VERSION"
-      done < <(find $out -name '*.sql' | sort -V)
+            PREVIOUS_VERSION=""
+            while IFS= read -r i; do
+              FILENAME=$(basename "$i")
+              VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< $FILENAME)"
+              if [[ "$PREVIOUS_VERSION" != "" ]]; then
+                # Always write to $out/share/postgresql/extension, not $DIRNAME
+                # because $DIRNAME might be a symlinked read-only path from the Nix store
+                # We use -L with cp to dereference symlinks (copy the actual file content, not the symlink)
+                MIGRATION_FILENAME="$out/share/postgresql/extension/''${FILENAME/$VERSION/$PREVIOUS_VERSION--$VERSION}"
+                cp -L "$i" "$MIGRATION_FILENAME"
+              fi
+              PREVIOUS_VERSION="$VERSION"
+            done < <(find $out -name '*.sql' | sort -V)
 
-      # Create empty SQL files for previously packaged versions that don't exist
-      # This compensates for versions that failed to produce SQL files in the past
-      for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
-        sql_file="$out/share/postgresql/extension/wrappers--$prev_version.sql"
-        if [ ! -f "$sql_file" ]; then
-          echo "-- Empty migration file for previously packaged version $prev_version" > "$sql_file"
-        fi
-      done
+            # Create empty SQL files for previously packaged versions that don't exist
+            # This compensates for versions that failed to produce SQL files in the past
+            for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+              sql_file="$out/share/postgresql/extension/wrappers--$prev_version.sql"
+              if [ ! -f "$sql_file" ]; then
+                echo "-- Empty migration file for previously packaged version $prev_version" > "$sql_file"
+              fi
+            done
 
-      # Create migration SQL files from previous versions to newer versions
-      # Skip if the migration file already exists (to avoid conflicts with the first loop)
-      for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
-        for curr_version in ${lib.concatStringsSep " " versions}; do
-          if [[ "$(printf '%s\n%s' "$prev_version" "$curr_version" | sort -V | head -n1)" == "$prev_version" ]] && [[ "$prev_version" != "$curr_version" ]]; then
-            main_sql_file="$out/share/postgresql/extension/wrappers--$curr_version.sql"
-            new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
-            # Only create if it doesn't already exist (first loop may have created it)
-            if [ -f "$main_sql_file" ] && [ ! -f "$new_file" ]; then
-              cp "$main_sql_file" "$new_file"
-              sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
-            fi
-          fi
-        done
-      done
+            # Create migration SQL files from previous versions to newer versions
+            # Skip if the migration file already exists (to avoid conflicts with the first loop)
+            for prev_version in ${lib.concatStringsSep " " previouslyPackagedVersions}; do
+              for curr_version in ${lib.concatStringsSep " " versions}; do
+                if [[ "$(printf '%s\n%s' "$prev_version" "$curr_version" | sort -V | head -n1)" == "$prev_version" ]] && [[ "$prev_version" != "$curr_version" ]]; then
+                  main_sql_file="$out/share/postgresql/extension/wrappers--$curr_version.sql"
+                  new_file="$out/share/postgresql/extension/wrappers--$prev_version--$curr_version.sql"
+                  # Only create if it doesn't already exist (first loop may have created it)
+                  if [ -f "$main_sql_file" ] && [ ! -f "$new_file" ]; then
+                    cp "$main_sql_file" "$new_file"
+                    sed -i 's|$libdir/wrappers-[0-9.]*|$libdir/wrappers|g' "$new_file"
+                  fi
+                fi
+              done
+            done
+          }
+        ''
     }
 
     create_control_files
     create_lib_files
-    create_migration_sql_files
+    ${if latestOnly then "" else "create_migration_sql_files"}
 
     # Verify library count matches expected
-    (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-      toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
-    }")
+    ${
+      if latestOnly then
+        ''
+          (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "2")
+        ''
+      else
+        ''
+          (test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+            toString (numberOfVersions + numberOfPreviouslyPackagedVersions + 1)
+          }")
+        ''
+    }
   '';
   passthru = {
-    inherit versions numberOfVersions;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
     pname = "${pname}";
+    inherit latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     # Expose individual packages for CI to build separately
     packages = packagesAttrSet // {
       recurseForDerivations = true;

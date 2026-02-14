@@ -97,7 +97,7 @@ If the upgrade fails:
 4. If you see an error about missing Nix flake attributes, make sure the flake version includes the PostgreSQL version you're testing
 
 Common Errors:
-- `error: flake 'github:supabase/postgres/...' does not provide attribute 'packages.aarch64-linux.psql_17/bin'`
+- `error: flake 'github:supabase/postgres/...' does not provide attribute 'packages.aarch64-linux.psql_17.bin'`
   - This means the Nix flake version doesn't include PostgreSQL 17 binaries
   - You need to specify a flake version that includes your target version
   - You can find valid flake versions by looking at the commit history of the publish-nix-pgupgrade-bin-flake-version.yml workflow

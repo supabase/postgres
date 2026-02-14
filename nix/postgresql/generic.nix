@@ -38,6 +38,9 @@ let
       enableSystemd ? null,
       gssSupport ? with stdenv.hostPlatform; !isWindows && !isStatic,
 
+      # Portable build variant - disables hardcoded system paths
+      portable ? false,
+
       # for postgresql.pkgs
       self,
       newScope,
@@ -132,7 +135,13 @@ let
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv'.isLinux [ linux-pam ]
-      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ]
+      ++ lib.optionals (!stdenv'.isDarwin) [ libossp_uuid ];
+
+      nativeBuildInputs = [
+        makeWrapper
+        pkg-config
+      ]
+      # Build tools for PG17+ and OrioleDB - these are NOT runtime dependencies
       ++ lib.optionals (isOrioleDB || (lib.versionAtLeast version "17")) [
         perl
         bison
@@ -141,12 +150,6 @@ let
         docbook_xml_dtd_45
         docbook_xsl_ns
         libxslt
-      ];
-
-      nativeBuildInputs = [
-        makeWrapper
-        pkg-config
-        perl
       ]
       ++ lib.optionals jitSupport [
         llvmPackages.llvm.dev
@@ -171,11 +174,11 @@ let
         "--with-icu"
         "--sysconfdir=/etc"
         "--libdir=$(lib)/lib"
-        "--with-system-tzdata=${tzdata}/share/zoneinfo"
         "--enable-debug"
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv'.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
       ]
+      ++ lib.optionals (!portable) [ "--with-system-tzdata=${tzdata}/share/zoneinfo" ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
       ++ lib.optionals gssSupport [ "--with-gssapi" ]
@@ -194,7 +197,8 @@ let
         ./patches/paths-for-split-outputs.patch
         ./patches/specify_pkglibdir_at_runtime.patch
         ./patches/paths-with-postgresql-suffix.patch
-
+      ]
+      ++ lib.optionals (!portable) [
         (replaceVars ./patches/locale-binary-path.patch {
           locale = "${if stdenv.isDarwin then darwin.adv_cmds else lib.getBin stdenv.cc.libc}/bin/locale";
         })
@@ -276,10 +280,12 @@ let
         ''}
       '';
 
-      postFixup = lib.optionalString (!stdenv'.isDarwin && stdenv'.hostPlatform.libc == "glibc") ''
-        # initdb needs access to "locale" command from glibc.
-        wrapProgram $out/bin/initdb --prefix PATH ":" ${glibc.bin}/bin
-      '';
+      postFixup =
+        lib.optionalString (!portable && !stdenv'.isDarwin && stdenv'.hostPlatform.libc == "glibc")
+          ''
+            # initdb needs access to "locale" command from glibc.
+            wrapProgram $out/bin/initdb --prefix PATH ":" ${glibc.bin}/bin
+          '';
 
       doCheck = !stdenv'.isDarwin;
       # autodetection doesn't seem to able to find this, but it's there.
@@ -330,7 +336,7 @@ let
 
           tests = {
             postgresql-wal-receiver = import ../../../../nixos/tests/postgresql-wal-receiver.nix {
-              system = stdenv.hostPlatform.system;
+              inherit (stdenv.hostPlatform) system;
               pkgs = self;
               package = this;
             };
@@ -338,7 +344,7 @@ let
           }
           // lib.optionalAttrs jitSupport {
             postgresql-jit = import ../../../../nixos/tests/postgresql-jit.nix {
-              system = stdenv.hostPlatform.system;
+              inherit (stdenv.hostPlatform) system;
               pkgs = self;
               package = this;
             };

@@ -6,6 +6,7 @@
   buildEnv,
   makeWrapper,
   switch-ext-version,
+  latestOnly ? false,
 }:
 let
   pname = "pg_cron";
@@ -15,7 +16,13 @@ let
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
   build =
     version: versionData:
     stdenv.mkDerivation rec {
@@ -71,7 +78,7 @@ let
         license = licenses.postgresql;
       };
     };
-  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value) supportedVersions);
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value) versionsToUse);
 in
 buildEnv {
   name = pname;
@@ -93,7 +100,7 @@ buildEnv {
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersions + 1)
+         toString (numberOfVersionsBuilt + 1)
        }"
     )
 
@@ -109,13 +116,18 @@ buildEnv {
   };
 
   passthru = {
-    inherit versions numberOfVersions switch-ext-version;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit switch-ext-version latestOnly;
     hasBackgroundWorker = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_cron" ];
       "cron.database_name" = "postgres";
     };
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
