@@ -8,7 +8,7 @@
 
 | Component | PRIMARY | STANDBY | Notes |
 |-----------|---------|---------|-------|
-| Spock extension | ✅ 3.1.8 | ✅ 3.1.8 | |
+| Spock extension | ✅ 5.0.4 | ✅ 5.0.4 | Upgraded from 3.1.8 |
 | Node configured | ✅ primary_dev | ✅ standby_dev | |
 | Subscription status | ✅ replicating | ✅ replicating | sub_from_standby / sub_from_primary |
 | Replication slots | ✅ active | ✅ active | |

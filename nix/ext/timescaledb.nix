@@ -11,6 +11,7 @@
   switch-ext-version,
   coreutils,
   writeShellApplication,
+  latestOnly ? false,
 }:
 
 let
@@ -97,9 +98,15 @@ let
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
   packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash (value.revision or name)) supportedVersions
+    lib.mapAttrs (name: value: build name value.hash (value.revision or name)) versionsToUse
   );
   switch-timescaledb-loader = writeShellApplication {
     name = "switch_timescaledb_loader";
@@ -145,13 +152,18 @@ buildEnv {
   ];
 
   passthru = {
-    inherit versions numberOfVersions switch-ext-version;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit switch-ext-version latestOnly;
     hasBackgroundWorker = true;
     libName = "timescaledb-loader";
     defaultSettings = {
       shared_preload_libraries = [ "timescaledb" ];
     };
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }

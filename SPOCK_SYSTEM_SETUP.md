@@ -20,7 +20,7 @@ This document describes the complete infrastructure setup for the Spock bi-direc
 
 ### Topology
 
-Two-node bi-directional (multi-master) replication topology using Spock 3.1.8 on PostgreSQL 15.
+Two-node bi-directional (multi-master) replication topology using Spock 5.0.4 on PostgreSQL 15.
 
 | Role | Hostname | Database Container | Port |
 |------|----------|-------------------|------|
@@ -58,7 +58,7 @@ PRIMARY (beta.brainwires.net)          STANDBY (brainwires.net)
 
 | Container | Purpose | Port |
 |-----------|---------|------|
-| `supabase-dev-db` | PostgreSQL 15 with Spock 3.1.8 extension | 25432 (exposed) |
+| `supabase-dev-db` | PostgreSQL 15 with Spock 5.0.4 extension | 25432 (exposed) |
 | `cloudflared-pg-replication-dev` | Cloudflare tunnel connecting to standby | Tunnel to `pg-standby-dev.brainwires.net:45432` |
 | `spock-tunnel-proxy` | Socat proxy exposing tunnel port to host network | 45432 (internal) |
 
@@ -66,7 +66,7 @@ PRIMARY (beta.brainwires.net)          STANDBY (brainwires.net)
 
 | Container | Purpose | Port |
 |-----------|---------|------|
-| `supabase-dev-db` | PostgreSQL 15 with Spock 3.1.8 extension | 25432 (exposed) |
+| `supabase-dev-db` | PostgreSQL 15 with Spock 5.0.4 extension | 25432 (exposed) |
 | `cloudflared-pg-replication-dev` | Cloudflare tunnel connecting to primary | Tunnel to `pg-primary-dev.brainwires.net:45432` |
 
 ### Container Networking

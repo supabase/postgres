@@ -72,15 +72,7 @@ jobs:
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           PG_VERSION="$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
-          BRANCH_NAME="$(echo "${{ github.ref }}" | sed 's|refs/heads/||')"
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$BRANCH_NAME" != "develop" && "$BRANCH_NAME" != release/* ]]; then
-             SUFFIX="${BRANCH_NAME//[^a-zA-Z0-9._-]/-}-${{ github.run_id }}"
-             PG_VERSION="${PG_VERSION}-${SUFFIX}"
-             echo "Added branch suffix to version: $SUFFIX"
-          fi
           echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
-          echo "" >> common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1
         env:
@@ -89,13 +81,13 @@ jobs:
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
           # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}"  amazon-arm64-nix.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' amazon-arm64-nix.pkr.hcl
 
       - name: Find stage 1 AMI
         run: |
           GIT_SHA=${{github.sha}}
           PG_VERSION=$(sed -n 's/postgres-version = "\(.*\)"/\1/p' common-nix.vars.pkr.hcl)
-          REGION=$(grep '^region=' development-arm.vars.pkr.hcl | cut -d'=' -f2 | tr -d ' "')
+          REGION="us-east-1"
 
           echo "Looking for stage 1 AMI with postgresVersion=${PG_VERSION}-stage1 and sourceSha=${GIT_SHA} in region ${REGION}"
 
@@ -124,7 +116,7 @@ jobs:
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
           POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version

@@ -4,6 +4,7 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
+  latestOnly ? false,
 }:
 let
   pname = "vector";
@@ -19,10 +20,14 @@ let
   # Derived version information
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  numberOfVersions = builtins.length versions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash) supportedVersions
-  );
+  versionsToUse =
+    if latestOnly then
+      { "${latestVersion}" = supportedVersions.${latestVersion}; }
+    else
+      supportedVersions;
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
+  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
+  numberOfVersionsBuilt = builtins.length versionsBuilt;
 
   # Build function for individual versions
   build =
@@ -83,9 +88,14 @@ pkgs.buildEnv {
   ];
 
   passthru = {
-    inherit versions numberOfVersions pname;
+    versions = versionsBuilt;
+    numberOfVersions = numberOfVersionsBuilt;
+    inherit pname latestOnly;
     version =
-      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      if latestOnly then
+        latestVersion
+      else
+        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     pgRegressTestName = "pgvector";
   };
 }

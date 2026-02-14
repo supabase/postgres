@@ -42,7 +42,7 @@ let
           import (builtins.fetchTarball {
             url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
             sha256 = "1j7h75a9hwkkm97jicky5rhvzkdwxsv5v46473rl6agvq2sj97y1";
-          }) { system = stdenv.hostPlatform.system; }
+          }) { inherit (stdenv.hostPlatform) system; }
         );
       in
       rustPlatform.bindgenHook.overrideAttrs {

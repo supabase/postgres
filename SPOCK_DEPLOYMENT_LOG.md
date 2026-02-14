@@ -72,6 +72,24 @@ SELECT slot_name, active, restart_lsn FROM pg_replication_slots WHERE slot_name 
 
 ---
 
+## Spock Upgrade 3.1.8 → 5.0.4 - 2026-02-12
+
+- [x] Updated `nix/ext/versions.json`: replaced Spock 3.1.8 entry with 5.0.4
+- [x] Updated `nix/ext/spock.nix`: added spock_output plugin support for dual-module build
+- [x] Updated `nix/postgresql/generic.nix`: expanded patch list from 2 to 4 patches
+- [x] Added new patch: `pg15-015-attoptions.diff` (log_old_value + delta_apply_function)
+- [x] Verified existing patches match 5.0.4: pg15-010, pg15-025, pg15-030
+- [x] Removed superseded patches: pg15-log_old_value*.diff, pg15-allow_logical_decoding_on_standbys.patch, pg15-040-checkpoint-hook.diff
+- [x] Updated documentation (SPOCK_SYSTEM_SETUP.md, SPOCK_SCORECARD.md)
+
+### New in Spock 5.0.4
+- Delta apply functions for conflict avoidance (via `delta_apply_function` column attribute)
+- `log_old_value` column attribute for selective old-value WAL logging
+- `spock_output` companion output plugin
+- Improved conflict resolution
+
+---
+
 ## Completed (Dev) - 2026-01-25
 
 - [x] Steps 1-6: Spock configured on dev PRIMARY and STANDBY

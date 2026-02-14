@@ -237,10 +237,16 @@ def run_server(port=None):
 
         port_file = os.environ.get("HTTP_MOCK_PORT_FILE", "/tmp/http-mock-port")
         try:
+            # Ensure directory exists (if any)
+            port_dir = os.path.dirname(port_file)
+            if port_dir:
+                os.makedirs(port_dir, exist_ok=True)
             with open(port_file, "w") as f:
                 f.write(str(port))
-        except:
-            pass  # Ignore if we can't write the port file
+            print(f"Port file written to {port_file}")
+        except Exception as e:
+            print(f"ERROR: Failed to write port file {port_file}: {e}")
+            raise  # Don't ignore port file write errors
 
         server.serve_forever()
     except OSError as e:

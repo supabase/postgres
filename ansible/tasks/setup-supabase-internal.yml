@@ -33,9 +33,20 @@
   ansible.builtin.command:
     cmd: aws configure set default.s3.use_dualstack_endpoint true
 
+- name: download Vector package
+  ansible.builtin.get_url:
+    url: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
+    dest: /tmp/vector.deb
+    timeout: 120
+  become: true
+  retries: 3
+  delay: 10
+  register: vector_download
+  until: vector_download is success
+
 - name: install Vector for logging
   apt:
-    deb: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
+    deb: /tmp/vector.deb
   become: true
 
 - name: add Vector to postgres group

@@ -21,6 +21,7 @@
         pg-restore = mkApp "pg-restore";
         local-infra-bootstrap = mkApp "local-infra-bootstrap";
         dbmate-tool = mkApp "dbmate-tool";
+        image-size-analyzer = mkApp "image-size-analyzer";
         update-readme = mkApp "update-readme";
         show-commands = mkApp "show-commands";
         build-test-ami = mkApp "build-test-ami";
@@ -28,6 +29,9 @@
         cleanup-ami = mkApp "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build";
         supascan = mkApp "supascan";
+        pg-startup-profiler = mkApp "pg-startup-profiler";
+        docker-image-test = mkApp "docker-image-test";
+        cli-smoke-test = mkApp "cli-smoke-test";
       };
     };
 }
