@@ -7,8 +7,7 @@ We are using markdown for documentation in the `nix/docs` directory, which is re
 To generate the documentation locally, you can use the following command in a development shell:
 
 ```bash
-cd nix
-mkdocs serve
+serve-nix-doc
 ```
 
 This will start a local server at `http://localhost:8000` where you can view the documentation.
