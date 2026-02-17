@@ -1,4 +1,3 @@
-
 # Update an existing nix extension
 
 ## Overview
@@ -107,7 +106,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 
    Nix build will fail and print the correct hash. Update the `hash` field in `versions.json`.
 
-   If needed, you can access the extension name by running the command `nix flake show` 
+   If needed, you can access the extension name by running the command `nix flake show`
 
 4. **Update `previouslyPackagedVersions`** in the extension's `default.nix` file:
 
