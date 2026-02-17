@@ -64,6 +64,8 @@ jobs:
           - Dockerfile-15
           - Dockerfile-17
           - Dockerfile-orioledb-17
+          - Dockerfile-multigres-17
+          - Dockerfile-multigres-orioledb-17
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -96,14 +98,38 @@ jobs:
             .
 
       - name: Run image size analysis
+        if: ${{ !startsWith(matrix.dockerfile, 'Dockerfile-multigres-') }}
         run: |
           echo "=== Image Size Analysis for ${{ matrix.dockerfile }} ==="
           nix run --accept-flake-config .#image-size-analyzer -- --image ${{ matrix.dockerfile }} --no-build
 
       - name: Run Docker image tests
+        if: ${{ !startsWith(matrix.dockerfile, 'Dockerfile-multigres-') }}
         run: |
           echo "=== Running tests for ${{ matrix.dockerfile }} ==="
           nix run --accept-flake-config .#docker-image-test -- --no-build ${{ matrix.dockerfile }}
+
+      - name: Verify multigres image (build-only smoke test)
+        if: ${{ startsWith(matrix.dockerfile, 'Dockerfile-multigres-') }}
+        run: |
+          echo "=== Smoke test for ${{ matrix.dockerfile }} ==="
+          VERSION="${{ matrix.dockerfile }}"
+          VERSION="${VERSION#Dockerfile-}"
+          # --entrypoint "" overrides the tail entrypoint so we can run commands directly
+          echo "Verifying PostgreSQL binaries are available..."
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" which initdb
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" which pg_ctl
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" which pg_isready
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" which psql
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" initdb --version
+          echo "Verifying configs are present..."
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" test -f /etc/postgresql/postgresql.conf
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" test -f /etc/postgresql-custom/supautils.conf
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" test -f /usr/lib/postgresql/bin/pgsodium_getkey.sh
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" test -d /docker-entrypoint-initdb.d/migrations
+          echo "Verifying docker-entrypoint.sh is NOT present..."
+          docker run --rm --entrypoint "" "pg-docker-test:${VERSION}" sh -c '! test -f /usr/local/bin/docker-entrypoint.sh'
+          echo "Multigres smoke test passed."
 
       - name: Show container logs on failure
         if: failure()

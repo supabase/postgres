@@ -25,6 +25,8 @@ let
         (root + "/Dockerfile-15")
         (root + "/Dockerfile-17")
         (root + "/Dockerfile-orioledb-17")
+        (root + "/Dockerfile-multigres-17")
+        (root + "/Dockerfile-multigres-orioledb-17")
 
         # PostgreSQL configuration files (copied into images)
         (root + "/ansible/files/postgresql_config")
