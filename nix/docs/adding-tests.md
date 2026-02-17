@@ -5,13 +5,13 @@ There are basically two types of tests you can add:
 - Migration tests.
 
 In all cases, a number of extensions may be installed into the database for
-use; you can see those in both [postgresql.conf.in](../tests/postgresql.conf.in)
-and [prime.sql](../tests/prime.sql) (extensions may be enabled in either place.)
+use; you can see those in both `/nix/tests/postgresql.conf.in`
+and `/nix/tests/prime.sql` (extensions may be enabled in either place.)
 
 ## pg\_regress tests
 
-pg\_regress tests are in [tests/sql](./../tests/sql/) with output in [tests/expected](./../tests/expected/).
-To create a new test, create a new SQL file in [tests/sql](./../tests/sql/)
+pg\_regress tests are in `/nix/tests/sql/` with output in `/nix/tests/expected/`.
+To create a new test, create a new SQL file in `/nix/tests/sql/`.
 
 Next, for each current major version of postgres, we run a "flake check" build one at a time.
 
@@ -29,8 +29,8 @@ Next, review the logs to identify where the test output was written
 
 ```
 postgres> CREATE EXTENSION IF NOT EXISTS index_advisor;
-postgres> CREATE EXTENSION  
-postgres> (using postmaster on localhost, port 5432)    
+postgres> CREATE EXTENSION
+postgres> (using postmaster on localhost, port 5432)
 postgres> ============== running regression test queries        ==============
 postgres> test new_test                     ... diff: /nix/store/5gk419ddz7mzzwhc9j6yj5i8lkw67pdl-tests/expected/new_test.out: No such file or directory
 postgres> diff command failed with status 512: diff  "/nix/store/5gk419ddz7mzzwhc9j6yj5i8lkw67pdl-tests/expected/new_test.out" "/nix/store/2fbrvnnr7iz6yigyf0rb0vxnyqvrgxzp-postgres-15.6-check-harness/regression_output/results/new_test.out" > "/nix/store/2fbrvnnr7iz6yigyf0rb0vxnyqvrgxzp-postgres-15.6-check-harness/regression_output/results/new_test.out.diff
@@ -44,7 +44,7 @@ cp -r /nix/store/2fbrvnnr7iz6yigyf0rb0vxnyqvrgxzp-postgres-15.6-check-harness/re
 
 Then you can review the contents of `regression_output/results/new_test.out` to see if it matches what you expected.
 
-If it does match your expectations, copy the file to [tests/expected](./../tests/expected/) and the test will pass on the next run.
+If it does match your expectations, copy the file to `/nix/tests/expected/` and the test will pass on the next run.
 
 If the output does not match your expectations, update the `<new_test>.sql` file, re-run with `nix flake check -L` and try again
 
@@ -52,7 +52,7 @@ If the output does not match your expectations, update the `<new_test>.sql` file
 ## pgTAP tests
 
 These are super easy: simply add `.sql` files to the
-[tests/smoke](./../tests/smoke/) directory, then:
+`/nix/tests/smoke/` directory, then:
 
 ```
 nix flake check -L
@@ -100,7 +100,7 @@ extension authors), step 3 isn't guaranteed, so that's what the whole idea is
 designed to test.
 
 To add data into the database, modify the
-[data.sql](../nix/tests/migrations/data.sql) script and add whatever you want into
+`/nix/tests/migrations/data.sql` script and add whatever you want into
 it. This script gets loaded into the old version of the database at startup, and
 it's expected that the new version of the database can handle it.
 
