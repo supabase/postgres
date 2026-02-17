@@ -77,6 +77,8 @@ FROM alpine:3.21 AS production
 RUN apk add --no-cache \
     bash \
     curl \
+    openssh \
+    procps \
     shadow \
     su-exec \
     tzdata \
