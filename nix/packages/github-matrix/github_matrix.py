@@ -296,7 +296,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    max_workers: int = os.cpu_count() or 1
+    max_workers: int = int(os.cpu_count() / 2) or 1
 
     cmd = build_nix_eval_command(max_workers, args.max_memory_size, args.flake_outputs)
 
