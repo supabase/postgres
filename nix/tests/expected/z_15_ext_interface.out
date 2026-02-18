@@ -31,9 +31,10 @@ order by
 -----------------
  pg_cron
  pgjwt
+ safeupdate
  tsm_system_time
  wal2json
-(4 rows)
+(5 rows)
 
 /*
 

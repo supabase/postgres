@@ -32,6 +32,8 @@ let
         # Install versioned library
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
+        touch $out/share/postgresql/extension/${pname}--${version}.control
+        touch $out/share/postgresql/extension/${pname}--${version}.sql
         runHook postInstall
       '';
 
@@ -76,6 +78,21 @@ pkgs.buildEnv {
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    # Create empty upgrade files between consecutive versions
+    # plpgsql_check ships without upgrade scripts - extensions are backward-compatible
+    previous_version=""
+    for ver in ${lib.concatStringsSep " " versions}; do
+      if [[ -n "$previous_version" ]]; then
+        touch $out/share/postgresql/extension/${pname}--''${previous_version}--''${ver}.sql
+      fi
+      previous_version=$ver
+    done
+
+    {
+      echo "default_version = '${latestVersion}'"
+      cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+    } > $out/share/postgresql/extension/${pname}.control
   '';
 
   passthru = {
