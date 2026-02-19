@@ -85,7 +85,7 @@ stdenv.mkDerivation {
       # Exclude core system libraries that must come from the host system
       # These libraries are tightly coupled to the kernel and system configuration
       case "$libname" in
-        libc.so*|libc-*.so*|ld-linux*.so*|libdl.so*|libpthread.so*|libm.so*|libresolv.so*|librt.so*)
+        libc.so*|libc-*.so*|ld-linux*.so*|libdl.so*|libpthread.so*|libm.so*|libresolv.so*|librt.so*|libncurses*.so*|libtinfo*.so*)
           return 0  # Exclude
           ;;
         *)
