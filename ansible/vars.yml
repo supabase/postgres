@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.044-orioledb"
-  postgres17: "17.6.1.087"
-  postgres15: "15.14.1.087"
+  postgresorioledb-17: "17.6.0.045-orioledb"
+  postgres17: "17.6.1.088"
+  postgres15: "15.14.1.088"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
@@ -21,9 +21,9 @@ pgbouncer_release_checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7
 # The checksum can be found under "Assets", in the GitHub release page for each version.  
 # The binaries used are: ubuntu-aarch64 and linux-static.
 # https://github.com/PostgREST/postgrest/releases
-postgrest_release: 14.4
-postgrest_arm_release_checksum: sha256:5223ef63716590ea4aa7bd9f0fbec43903dad090612f4e753a8eafcba295c0a9
-postgrest_x86_release_checksum: sha256:3fc6e82c34a98a97df5ffafd86fbd7b9e21e03ef2d733d43e7ee6d0ce113568f
+postgrest_release: 14.5
+postgrest_arm_release_checksum: sha256:70c07ff875710538903c9b6b6de00e126250e335da25b0ff7d1b13bb4c94bf41
+postgrest_x86_release_checksum: sha256:ab5cc7e974d4940447991804588cfb8b3f7b2c57b691f0905df04d51ede69470
 
 gotrue_release: 2.186.0
 gotrue_release_checksum: sha1:94cd063227e01dcc71811aa63ecdd996d0c0419c
