@@ -41,6 +41,10 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Testing PG Upgrade Scripts](./testing-pg-upgrade-scripts.md)** - Testing PostgreSQL upgrades
 - **[Docker Image testing](./docker-testing.md)** - How to test the docker images against the pg_regress test suite.
 
+## CI
+
+- **[Nix Build Matrix](./nix-build-matrix-ci.md)** - Understand how the CI Nix build matrix works
+
 ## Reference
 
 - **[References](./references.md)** - Useful links and resources
