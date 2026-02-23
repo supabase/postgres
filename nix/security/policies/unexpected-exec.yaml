@@ -1,0 +1,26 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "unexpected-exec"
+spec:
+  kprobes:
+  - call: "sys_execve"
+    syscall: true
+    args:
+    - index: 0
+      type: "string"
+    selectors:
+    - matchBinaries:
+      - operator: "NotPrefix"
+        values:
+        - "/usr/lib/postgresql"
+        - "/usr/bin/pg_"
+        - "/opt/supabase"
+        - "/usr/sbin/cron"
+        - "/usr/bin/pgbouncer"
+        - "/usr/bin/postgrest"
+        - "/nix/store"
+      matchActions:
+      # Detection mode: log unexpected executions
+      # Change to "action: Sigkill" for enforcement mode
+      - action: Post

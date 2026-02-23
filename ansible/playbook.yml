@@ -172,6 +172,10 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: Apply system-manager security layer
+      import_tasks: tasks/setup-security-layer.yml
+      when: stage2_nix
+
     - name: Clean out build dependencies
       import_tasks: tasks/clean-build-dependencies.yml
 

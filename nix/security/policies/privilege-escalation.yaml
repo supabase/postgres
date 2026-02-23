@@ -1,0 +1,22 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "privilege-escalation"
+spec:
+  kprobes:
+  - call: "commit_creds"
+    syscall: false
+    args:
+    - index: 0
+      type: "cred"
+    selectors:
+    - matchActions:
+      - action: Post
+  - call: "sys_setuid"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    selectors:
+    - matchActions:
+      - action: Post

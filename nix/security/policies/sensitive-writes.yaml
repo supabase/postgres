@@ -1,0 +1,44 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "sensitive-writes"
+spec:
+  kprobes:
+  - call: "sys_openat"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "string"
+    - index: 2
+      type: "int"
+    selectors:
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/etc/passwd"
+        - "/etc/shadow"
+        - "/etc/ssh"
+        - "/root/.ssh"
+      - index: 2
+        operator: "Mask"
+        values:
+        - "1"
+        - "2"
+      matchActions:
+      - action: Post
+    - matchArgs:
+      - index: 1
+        operator: "Prefix"
+        values:
+        - "/etc/postgresql"
+        - "/var/lib/postgresql"
+      - index: 2
+        operator: "Mask"
+        values:
+        - "1"
+        - "2"
+      matchActions:
+      - action: Post

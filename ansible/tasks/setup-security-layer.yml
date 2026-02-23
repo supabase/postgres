@@ -1,0 +1,24 @@
+# Applies system-manager security profile based on instance memory size.
+# Instances >= 1024MB get tetragon + osquery (security-full).
+# Smaller instances get osquery only (security-lite).
+
+- name: Read instance memory size
+  shell: cat /etc/supabase/instance-memory-mb 2>/dev/null || echo "0"
+  register: instance_memory_raw
+  changed_when: false
+
+- name: Set security profile based on instance memory
+  set_fact:
+    security_profile: "{{ 'security-full' if (instance_memory_raw.stdout | int) >= 1024 else 'security-lite' }}"
+
+- name: Display selected security profile
+  debug:
+    msg: "Instance memory: {{ instance_memory_raw.stdout }}MB -> profile: {{ security_profile }}"
+
+- name: Apply system-manager security profile
+  become: yes
+  shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix run 'github:numtide/system-manager' -- switch --sudo --flake '/tmp/ansible-playbook#{{ security_profile }}'
+  environment:
+    NIX_CONFIG: "experimental-features = nix-command flakes"

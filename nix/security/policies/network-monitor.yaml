@@ -1,0 +1,22 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: "network-monitor"
+spec:
+  kprobes:
+  - call: "sys_connect"
+    syscall: true
+    args:
+    - index: 0
+      type: "int"
+    - index: 1
+      type: "sockaddr"
+    selectors:
+    - matchBinaries:
+      - operator: "NotIn"
+        values:
+        - "/usr/lib/postgresql/bin/postgres"
+        - "/usr/bin/pgbouncer"
+        - "/usr/bin/postgrest"
+      matchActions:
+      - action: Post
