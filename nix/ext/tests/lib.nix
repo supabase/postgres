@@ -120,6 +120,10 @@ let
             # OrioleDB: append orioledb to shared_preload_libraries
             sed -i "s/\(shared_preload_libraries.*\)'\(.*\)$/\1, orioledb'\2/" $out/postgresql.conf
             echo "default_table_access_method = 'orioledb'" >> $out/postgresql.conf
+            echo "orioledb.enable_rewind = true" >> $out/postgresql.conf
+            echo "orioledb.rewind_max_time = 1200" >> $out/postgresql.conf
+            echo "orioledb.rewind_max_transactions = 100000" >> $out/postgresql.conf
+            echo "orioledb.rewind_buffers = 1280" >> $out/postgresql.conf
           ''
         else
           ""
