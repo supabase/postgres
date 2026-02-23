@@ -9,43 +9,44 @@ let
 in
 {
   imports = [
-    # We use a dummmy sshd module to workaround this error when importing "/services/networking/ssh/sshd.nix":
-    #   error: The option `users' in module `/nix/store/...-source/nix/modules'
-    #   would be a parent of the following options, but its type `attribute set' does not support nested options.
-    #   - option(s) with prefix `users.users' in module `/nix/store/...-source/nixos/modules/services/networking/ssh/sshd.nix'
-    # FIXME: it would be better to rely on userborn in system-manager:
-    # https://github.com/numtide/system-manager/pull/266
-    ./dummy-sshd.nix
-  ]
-  ++ map (path: nixosModulesPath + path) [
-    # "/config/console.nix"
-    # "/config/shells-environment.nix"
-    # "/config/system-path.nix"
-    # "/programs/i3lock.nix"
-    # "/programs/ssh.nix"
-    # "/security/pam.nix"
-    # "/services/networking/firewall.nix"
-    # "/services/networking/ssh/sshd.nix"
-    "/services/security/fail2ban.nix"
-    # "/system/boot/kernel.nix" # ERROR: The option `boot' in module `/nix/store/...-source/nix/modules/upstream/nixpkgs'
-    # would be a parent of the following options, but its type `raw value' does not support nested options.
+    "${nixosModulesPath}/services/security/fail2ban.nix"
   ];
 
   options = {
+    # Create a dummy openssh option to unbreak the
+    # > The option `services.openssh.settings' does not exist.
+    # we face when importing the NixOS fail2ban.nix module.
+    #
+    # Note: the fail2ban module is trying to increase the log
+    # verbosity of the openssh daemon to simplify debug. We don't
+    # really need this feature: system-manager is not controlling the
+    # ssh daemon here.
+    #
+    # TOREMOVE if we end up provisionning openssh through
+    # systemmanager.
+    services.openssh.settings = lib.mkOption {
+      type = lib.types.attrs;
+    };
+    # Some goes for nftables
+    networking.nftables.enable = lib.mkEnableOption "dummy nftable module";
+
+    # TODO move to iptables
     supabase.services.fail2ban = {
       enable = lib.mkEnableOption "Fail2Ban";
     };
   };
 
   config = lib.mkIf cfg.enable {
+    # Dummy
+    networking.nftables.enable = true;
     # TODO: (last bit form Ansible task)
     # - name: Configure journald
     #   copy:
     #     src: files/fail2ban_config/jail-ssh.conf
     #     dest: /etc/fail2ban/jail.d/sshd.local
     #   when: debpkg_mode or nixpkg_mode
-    supabase.services.fail2ban = {
-      # enable = true; # TODO: don't use nixpkgs fail2ban
+    services.fail2ban = {
+      enable = true; # TODO: don't use nixpkgs fail2ban
       bantime = "3600";
       jails = {
         postgresql = {
@@ -74,12 +75,6 @@ in
     };
 
     environment.etc = {
-      "fail2ban/jail.local".text = ''
-        [DEFAULT]
-        banaction = nftables-multiport
-        banaction_allports = nftables-allports
-      '';
-
       "fail2ban/filter.d/postgresql.conf".text = ''
         [Definition]
         failregex = ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user.*$
