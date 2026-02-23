@@ -107,6 +107,12 @@
                   "5539"
                 else if (majorVersion == "orioledb-17" && isSlim) then
                   "5540"
+                else if (majorVersion == "17" && isCliVariant) then
+                  "5541"
+                else if (majorVersion == "15" && isCliVariant) then
+                  "5542"
+                else if (majorVersion == "orioledb-17" && isCliVariant) then
+                  "5543"
                 else if (majorVersion == "17") then
                   "5535"
                 else if (majorVersion == "15") then
