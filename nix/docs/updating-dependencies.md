@@ -1,4 +1,4 @@
-# Updating Dependencies
+# Update Nix Dependencies
 
 This document explains how to update various dependencies used in the nix configuration.
 
@@ -62,6 +62,7 @@ Packer is used for creating machine images and is defined in `nix/packages/packe
 ## Updating Other Dependencies
 
 Similar patterns can be followed for other dependencies defined in the nix packages. Always:
+
 1. Check for breaking changes in changelogs
 2. Update version numbers and hashes
 3. Run local tests

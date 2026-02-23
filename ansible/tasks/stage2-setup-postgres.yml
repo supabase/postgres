@@ -52,38 +52,6 @@
             path: '/etc/postgresql/postgresql.conf'
             state: 'present'
 
-        - name: Enable OrioleDB rewind feature
-          ansible.builtin.lineinfile:
-            path: /etc/postgresql/postgresql.conf
-            line: "orioledb.enable_rewind = true"
-            state: present
-          when: is_psql_oriole and stage2_nix
-          become: yes
-
-        - name: Set OrioleDB rewind max time (20 minutes)
-          ansible.builtin.lineinfile:
-            path: /etc/postgresql/postgresql.conf
-            line: "orioledb.rewind_max_time = 1200"
-            state: present
-          when: is_psql_oriole and stage2_nix
-          become: yes
-
-        - name: Set OrioleDB rewind max transactions
-          ansible.builtin.lineinfile:
-            path: /etc/postgresql/postgresql.conf
-            line: "orioledb.rewind_max_transactions = 100000"
-            state: present
-          when: is_psql_oriole and stage2_nix
-          become: yes
-
-        - name: Set OrioleDB rewind buffers (1280 buffers = 10MB)
-          ansible.builtin.lineinfile:
-            path: /etc/postgresql/postgresql.conf
-            line: "orioledb.rewind_buffers = 1280"
-            state: present
-          when: is_psql_oriole and stage2_nix
-          become: yes
-
         - name: Add ORIOLEDB_ENABLED environment variable
           ansible.builtin.lineinfile:
             line: 'ORIOLEDB_ENABLED=true'

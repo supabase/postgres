@@ -18,19 +18,25 @@ nav:
     - Build PostgreSQL: build-postgres.md
     - Start Client/Server: start-client-server.md
     - Docker: docker.md
+    - Docker Image Size Analyzer: image-size-analyzer-usage.md
     - Use direnv: use-direnv.md
     - Code Formatter: nix-formatter.md
     - Pre-commit Hooks: pre-commit-hooks.md
     - Documentation: documentation.md
+    - Create pgrx Extension: creating-pgrx-extension.md
+    - Update pgrx Extensions: updating-pgrx-extensions.md
+    - Receipt Files: receipt-files.md
   - Package Management:
     - Adding New Packages: adding-new-package.md
     - Update Extensions: update-extension.md
+    - Update Nix Dependencies: updating-dependencies.md
     - New Major PostgreSQL: new-major-postgres.md
     - Nix Overlays: nix-overlays.md
   - Testing:
     - Adding Tests: adding-tests.md
     - Migration Tests: migration-tests.md
     - Testing PG Upgrade Scripts: testing-pg-upgrade-scripts.md
+    - Test Docker Images: docker-testing.md
     - NixOS Tests on macOS: nixos-tests-on-macos.md
   - References: references.md
 

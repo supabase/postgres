@@ -7,20 +7,20 @@ This repository uses [treefmt](https://treefmt.com/) with [nixfmt](https://githu
 ### nixfmt-rfc-style
 
 - **Purpose**: Formats Nix code according to [RFC 166](https://github.com/NixOS/rfcs/blob/master/rfcs/0166-nix-formatting.md) style guidelines
-- **What it does**: 
+- **What it does**:
 
-  - Standardizes indentation and spacing
-  - Formats function calls and attribute sets consistently
-  - Ensures consistent line breaks and alignment
+    - Standardizes indentation and spacing
+    - Formats function calls and attribute sets consistently
+    - Ensures consistent line breaks and alignment
 
 ### deadnix
 
 - **Purpose**: Removes unused/dead code from Nix expressions
 - **What it does**:
 
-  - Identifies unused variables and bindings
-  - Removes unused function arguments
-  - Cleans up dead code paths
+    - Identifies unused variables and bindings
+    - Removes unused function arguments
+    - Cleans up dead code paths
 
 ## Usage
 

@@ -32,28 +32,28 @@
             export HISTFILE=.history
           '';
         };
+      docvenv = pkgs.python3.buildEnv.override {
+        extraLibs = self'.packages.docs.nativeBuildInputs;
+      };
     in
     {
       devShells = {
         default = pkgs.devshell.mkShell {
-          packages =
-            with pkgs;
-            [
-              coreutils
-              just
-              nix-update
-              #pg_prove
-              shellcheck
-              ansible
-              ansible-lint
-              aws-vault
-              packer
-              dbmate
-              nushell
-              pythonEnv
-              config.treefmt.build.wrapper
-            ]
-            ++ self'.packages.docs.nativeBuildInputs;
+          packages = with pkgs; [
+            coreutils
+            just
+            nix-update
+            #pg_prove
+            shellcheck
+            ansible
+            ansible-lint
+            aws-vault
+            packer
+            dbmate
+            nushell
+            pythonEnv
+            config.treefmt.build.wrapper
+          ];
           devshell.startup.pre-commit.text = config.pre-commit.installationScript;
           commands = [
             {
@@ -73,6 +73,12 @@
               help = "Lint code";
               command = "pre-commit run --all-files";
               category = "check";
+            }
+            {
+              name = "serve-nix-doc";
+              help = "Spin up a server exposing the nix documentation";
+              command = "pushd $(git rev-parse --show-toplevel)/nix && ${docvenv}/bin/mkdocs serve -o";
+              category = "doc";
             }
             {
               name = "watch";

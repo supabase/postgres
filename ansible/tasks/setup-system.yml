@@ -167,10 +167,11 @@
         state: 'present'
 
     # postgres_exporter runs on port 9187 and postgresT occasionlly chooses it as random srcport
-    - name: Set net.ipv4.ip_local_reserved_ports=9187
+    # adminapi for 8085
+    - name: Set net.ipv4.ip_local_reserved_ports
       ansible.builtin.sysctl:
         name: 'net.ipv4.ip_local_reserved_ports'
-        value: 9187
+        value: '9187,8085'
         state: 'present'
 
 - name: Execute tasks when (debpkg_mode or nixpkg_mode)
