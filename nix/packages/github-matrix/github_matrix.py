@@ -172,7 +172,7 @@ def run_nix_eval_jobs(
     Returns:
         Tuple of (packages, warnings_list, errors_list)
     """
-    debug(f"Running command: {' '.join(cmd)}")
+    print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 
     # Disable colors in nix output
     env = os.environ.copy()
