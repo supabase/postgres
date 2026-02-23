@@ -28,21 +28,21 @@ You can see the available runners and their associated labels on [this page](htt
 
 **A:** The evaluation can be quite costly memory-wise. [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs) is spinning up multiple nix evaluation in parallel to speed things up. The tradeoff is an increased memory consumption compared to a single-process eval.
 
-An easy way to go around a eval OOM issue is to reduce the number of parallel evals by overriding the `--nb-eval-jobs-workers` flag from the github_matrix call in the `github/workflows/nix-eval.yml` file.
+There are two ways to reduce memory consumption, both configurable from the `github_matrix` call in `github/workflows/nix-eval.yml`.
 
-IE. replace
-
-```terminal
-nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
-```
-
-with:
+**Reduce the number of parallel workers** by overriding `--nb-eval-jobs-workers`. By default, `github_matrix.py` spins up one eval instance per CPU. For a `blacksmith-32vcpu-ubuntu-2404` worker, that means 32 nix eval instances.
 
 ```terminal
-nix run --accept-flake-config .\#github-matrix -- --nb-eval-jobs-workers 30 checks legacyPackages
+nix run --accept-flake-config .\#github-matrix -- --nb-eval-jobs-workers 16 checks legacyPackages
 ```
 
-Note: by default, the `github_matrix.py` will spin up a eval instance per CPU. For a `blacksmith-32vcpu-ubuntu-2404` worker, it means it'll spin up 32 nix eval instances.
+**Reduce the per-worker memory limit** by overriding `--max-memory-size` (in MiB). The default is 3072 (3 GiB). Lowering this value causes nix-eval-jobs to restart workers that exceed the threshold, trading evaluation speed for lower peak memory usage.
+
+```terminal
+nix run --accept-flake-config .\#github-matrix -- --max-memory-size 2048 checks legacyPackages
+```
+
+Both flags can be combined for tighter control over total memory consumption.
 
 ## Walkthrough the CI
 
