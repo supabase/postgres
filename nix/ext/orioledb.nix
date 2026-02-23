@@ -19,6 +19,9 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-Vz3vfmTGRW+O9aXZxqixHC2CpqZJf/1UCQWoENbAak4=";
   };
   version = "982e11ae62c9e00c0d74f9f8de31d99ff383fd02";
+  patches = [
+    ./orioledb-remove-restart-on-rewind.patch
+  ];
   buildInputs = [
     curl
     libkrb5
