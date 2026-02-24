@@ -2,6 +2,7 @@
   lib,
   nixosModulesPath,
   config,
+  pkgs,
   ...
 }:
 let
@@ -39,22 +40,17 @@ in
   config = lib.mkIf cfg.enable {
     # Dummy
     networking.nftables.enable = true;
-    # TODO: (last bit form Ansible task)
-    # - name: Configure journald
-    #   copy:
-    #     src: files/fail2ban_config/jail-ssh.conf
-    #     dest: /etc/fail2ban/jail.d/sshd.local
-    #   when: debpkg_mode or nixpkg_mode
     services.fail2ban = {
-      enable = true; # TODO: don't use nixpkgs fail2ban
+      enable = true;
       bantime = "3600";
+      packageFirewall = pkgs.nftables;
       jails = {
         postgresql = {
           settings = {
             enabled = true;
             port = "5432";
             protocol = "tcp";
-            filter = "postgresql";
+            filter = "postgresql.service";
             logpath = "/var/log/postgresql/auth-failures.csv";
             maxretry = 3;
             ignoreip = "192.168.0.0/16 172.17.1.0/20";
@@ -71,35 +67,25 @@ in
           };
         };
       };
-      # TODO: extraPackages = [ pkgs.nftables ];
     };
 
-    environment.etc = {
-      "fail2ban/filter.d/postgresql.conf".text = ''
-        [Definition]
-        failregex = ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user.*$
-        ignoreregex = ^.*,.*,.*,.*,"127\.0\.0\.1.*password authentication failed for user.*$
-                      ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_admin".*$
-                      ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$
-                      ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$
-                      ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$
-                      ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""pgbouncer".*$
-      '';
-
-      "fail2ban/filter.d/pgbouncer.conf".text = ''
-        [Definition]
-        failregex = ^.+@<HOST>:.+password authentication failed$
-        journalmatch = _SYSTEMD_UNIT=pgbouncer.service
-      '';
-    };
+    # environment.etc = {
+    #   "fail2ban/filter.d/postgresql.conf".text = ''
+    #     [Definition]
+    #     failregex = ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user.*$
+    #     ignoreregex = ^.*,.*,.*,.*,"127\.0\.0\.1.*password authentication failed for user.*$
+    #                   ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_admin".*$
+    #                   ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_auth_admin".*$
+    #                   ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""supabase_storage_admin".*$
+    #                   ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""authenticator".*$
+    #                   ^.*,.*,.*,.*,"<HOST>:.*password authentication failed for user ""pgbouncer".*$
+    #   '';
+    # };
 
     systemd.services.fail2ban = {
       wantedBy = lib.mkForce [
         "system-manager.target"
       ];
-      # TODO:
-      # after = [ "nftables.service" ];
-      # wants = [ "nftables.service" ];
     };
   };
 }

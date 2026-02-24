@@ -20,12 +20,14 @@
               start_all()
 
               machine.wait_for_unit("multi-user.target")
-
               machine.activate()
+              print(machine.succeed("ls -l /etc/"))
               machine.wait_for_unit("system-manager.target")
 
               with subtest("Verify nginx service"):
                   assert machine.service("nginx").is_running, "nginx should be running"
+              with subtest("Verify fail2ban service"):
+                  print(machine.succeed("ls /etc/fail2ban"))
             '';
           };
       };
