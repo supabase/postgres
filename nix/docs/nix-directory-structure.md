@@ -22,7 +22,9 @@ nix/
  ├── ext/                     # PostgreSQL extensions
  ├── overlays/                # Nixpkgs overlays
  ├── packages/                # Custom packages
- └── postgresql/              # PostgreSQL packages
+ ├── postgresql/              # PostgreSQL packages
+ ├── systemConfigs.nix        # system-manager configuration definitions
+ └── systemModules/           # system-manager service modules
 ```
 
 ## Module Descriptions
@@ -149,6 +151,20 @@ Nixpkgs overlays for package customization:
 - `default.nix` - Main overlay that imports all others
 - `cargo-pgrx-0-11-3.nix` - PGRX toolchain overlay
 - `psql_16-oriole.nix` - OrioleDB PostgreSQL variant
+
+#### `nix/systemConfigs.nix`
+
+System configuration definitions for [system-manager](https://github.com/numtide/system-manager).
+Calls `system-manager.lib.makeSystemConfig` to produce a configuration for each supported architecture (`aarch64-linux`, `x86_64-linux`) from the enabled modules.
+See [System manager](./system-manager.md) for details.
+
+#### `nix/systemModules/`
+
+Service module definitions managed by system-manager:
+
+- `default.nix` - Module registry that exports modules under `flake.systemModules`
+- Individual `.nix` files - Service modules (e.g. nginx) loaded via `flake-parts-lib.importApply`
+- `tests/default.nix` - Container-based tests using `makeContainerTest`
 
 #### `nix/cargo-pgrx/`
 

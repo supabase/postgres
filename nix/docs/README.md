@@ -19,6 +19,7 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Start Client/Server](./start-client-server.md)** - Running PostgreSQL client and server
 - **[Docker](./docker.md)** - Docker integration and usage
 - **[Docker Image Size Analyzer](./image-size-analyzer-usage.md)** - Tool to analyze the Docker image sizes
+- **[System Manager](./system-manager.md)** - Declarative system configuration with system-manager
 - **[Use direnv](./use-direnv.md)** - Development environment with direnv
 - **[Pre-commit Hooks](./pre-commit-hooks.md)** - Automatic formatting and code checks before commits
 - **[Nix Formatter](./nix-formatter.md)** - Code formatting with treefmt
