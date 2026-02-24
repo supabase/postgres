@@ -6,14 +6,14 @@ user:
   root:
     exists: true
     home: /root
-    shell: /bin/bash
+    shell: /run/system-manager/sw/bin/bash
   ubuntu:
     exists: true
     home: /home/ubuntu
     shell: /bin/bash
   nobody:
     exists: true
-    shell: /usr/sbin/nologin
+    shell: /run/system-manager/sw/bin/nologin
 
   # PostgreSQL ecosystem
   postgres:
