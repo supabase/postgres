@@ -26,6 +26,7 @@ nav:
     - Create pgrx Extension: creating-pgrx-extension.md
     - Update pgrx Extensions: updating-pgrx-extensions.md
     - Receipt Files: receipt-files.md
+    - System manager: system-manager.md
   - Package Management:
     - Adding New Packages: adding-new-package.md
     - Update Extensions: update-extension.md
