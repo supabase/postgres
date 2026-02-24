@@ -1,0 +1,16 @@
+[Unit]
+Description=Fetch Sentry environment variables from AWS SSM
+Documentation=https://docs.sentry.io
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/fetch-sentry-env.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sentry-env
+
+[Install]
+WantedBy=multi-user.target

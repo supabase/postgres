@@ -1,0 +1,40 @@
+- name: sentry-env - install fetch script
+  ansible.builtin.copy:
+    src: files/fetch-sentry-env.sh
+    dest: /usr/local/bin/fetch-sentry-env.sh
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: sentry-env - install systemd unit
+  ansible.builtin.copy:
+    src: files/sentry-env.service
+    dest: /etc/systemd/system/sentry-env.service
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: sentry-env - create postgresql drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/postgresql.service.d
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: sentry-env - install postgresql drop-in
+  ansible.builtin.copy:
+    src: files/postgresql-sentry.conf
+    dest: /etc/systemd/system/postgresql.service.d/sentry.conf
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: sentry-env - reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: sentry-env - enable service
+  ansible.builtin.systemd_service:
+    name: sentry-env.service
+    enabled: true

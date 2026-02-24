@@ -11,7 +11,8 @@
     - vector
     - lvm2-monitor
     - salt-minion
-  when: debpkg_mode 
+    - sentry-env
+  when: debpkg_mode
 
 - name: ensure services are stopped and disabled for first boot nix build
   systemd:
@@ -25,6 +26,7 @@
     - motd-news
     - vector
     - salt-minion
+    - sentry-env
   when: stage2_nix
 
 - name: disable man-db

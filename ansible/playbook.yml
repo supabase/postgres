@@ -87,6 +87,13 @@
         - install-supabase-internal
       when: debpkg_mode or nixpkg_mode
 
+    - name: Install sentry-env boot integration
+      import_tasks: tasks/setup-sentry-env.yml
+      tags:
+        - install-supabase-internal
+        - aws-only
+      when: debpkg_mode or nixpkg_mode or stage2_nix
+
     - name: Fix IPv6 NDisc issues (disabled)
       import_tasks: tasks/fix-ipv6-ndisc.yml
       tags:
