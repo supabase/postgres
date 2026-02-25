@@ -235,11 +235,32 @@
         /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
       when: stage2_nix and qemu_mode is not defined
 
+    - name: Free disk space before SBOM generation
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+          nix-collect-garbage -d"
+      when: stage2_nix
+
+    - name: Install sbom-from-profiles
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+          nix profile install github:supabase/postgres/{{ git_commit_sha }}#sbom-from-profiles"
+      when: stage2_nix
+
     - name: Generate combined SBOM
       become: yes
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
-          nix run github:supabase/postgres/{{ git_commit_sha }}#sbom-from-profiles -- /tmp/nix-sbom.spdx.json"
+          sbom-from-profiles /tmp/nix-sbom.spdx.json"
+      when: stage2_nix
+
+    - name: Remove sbom-from-profiles
+      become: yes
+      shell: |
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && \
+          nix profile remove sbom-from-profiles"
       when: stage2_nix
 
     - name: Remove supascan after validation
