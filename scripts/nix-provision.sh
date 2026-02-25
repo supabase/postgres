@@ -64,22 +64,7 @@ function cleanup_packages {
     sudo add-apt-repository --yes --remove ppa:ansible/ansible
 }
 
-function generate_sbom {
-    echo "Generating combined SBOM from installed profiles..."
-
-    # Generate SBOM using the flake from GitHub at this exact commit
-    nix run "github:supabase/postgres/${GIT_SHA}#sbom-from-profiles" -- /tmp/nix-sbom.spdx.json
-
-    echo "SBOM generated at /tmp/nix-sbom.spdx.json"
-
-    # Clean up SBOM tooling and old generations from nix store
-    nix-collect-garbage -d
-
-    echo "Nix garbage collection complete"
-}
-
 install_packages
 install_nix
 execute_stage2_playbook
-generate_sbom
 cleanup_packages

@@ -125,7 +125,7 @@ build {
       "GIT_SHA=${var.git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
-     script = "scripts/nix-provision.sh"
+    script = "scripts/nix-provision.sh"
   }
 
   # Download SBOM from AMI to runner
