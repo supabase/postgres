@@ -334,7 +334,7 @@
     state: 'directory'
   become: true
 
-- name: Ensure PostgrfeSQL starts after tuned
+- name: Ensure PostgreSQL starts after tuned
   become: true
   community.general.ini_file:
     create: true
