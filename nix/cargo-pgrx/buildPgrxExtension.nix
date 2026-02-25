@@ -164,12 +164,29 @@ let
 
     buildPhase = ''
       runHook preBuild
-
+      echo "Platform: ${stdenv.system}"
+      echo "isDarwin: ${lib.boolToString stdenv.isDarwin}"
       if [[ -d "/nix/var/cache/sccache" && -w "/nix/var/cache/sccache" ]]; then
-        echo "sccache: cache directory available, enabling"
-        export RUSTC_WRAPPER="${sccache}/bin/sccache"
-        export SCCACHE_DIR="/nix/var/cache/sccache"
-        export SCCACHE_CACHE_SIZE="50G"
+        if touch "/nix/var/cache/sccache/.test" 2>/dev/null && rm -f "/nix/var/cache/sccache/.test" 2>/dev/null; then
+          echo "sccache: cache directory available and writable, enabling"
+          ${lib.optionalString stdenv.isDarwin ''
+            # Darwin: Use shared /tmp for TMPDIR to avoid sccache caching per-build temp paths
+            export TMPDIR=/tmp
+            export TEMP=/tmp
+            export TEMPDIR=/tmp
+            export TMP=/tmp
+          ''}
+          export RUSTC_WRAPPER="${sccache}/bin/sccache"
+          export SCCACHE_DIR="/nix/var/cache/sccache"
+          export SCCACHE_CACHE_SIZE="50G"
+          export SCCACHE_LOG=debug
+          export SCCACHE_IDLE_TIMEOUT=0
+          # Use unique port per user to isolate sccache servers
+          USER_ID=$(id -u)
+          export SCCACHE_SERVER_PORT=$((4226 + USER_ID % 100))
+        else
+          echo "sccache: cache directory not accessible in sandbox, skipping"
+        fi
       else
         echo "sccache: cache directory not available, skipping"
       fi

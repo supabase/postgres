@@ -59,8 +59,8 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
           # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
-          sudo chown -R 872415232 /nix/var/cache/sccache
-          sudo chmod -R 2777 /nix/var/cache/sccache
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -104,8 +104,8 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
           # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
-          sudo chown -R 872415232 /nix/var/cache/sccache
-          sudo chmod -R 2777 /nix/var/cache/sccache
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -126,9 +126,23 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Configure sccache cache directory
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        run: |
+          mkdir -p /nix/var/cache/sccache || true
+          # Stop any existing sccache daemon to avoid stale TMPDIR state
+          if command -v sccache &> /dev/null; then
+            sccache --stop-server 2>/dev/null || true
+          fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -149,9 +163,23 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Configure sccache cache directory
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        run: |
+          mkdir -p /nix/var/cache/sccache || true
+          # Stop any existing sccache daemon to avoid stale TMPDIR state
+          if command -v sccache &> /dev/null; then
+            sccache --stop-server 2>/dev/null || true
+          fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -192,8 +220,8 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
           # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
-          sudo chown -R 872415232 /nix/var/cache/sccache
-          sudo chmod -R 2777 /nix/var/cache/sccache
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -234,8 +262,8 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         run: |
           # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
-          sudo chown -R 872415232 /nix/var/cache/sccache
-          sudo chmod -R 2777 /nix/var/cache/sccache
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
