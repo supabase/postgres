@@ -120,10 +120,6 @@ let
             # OrioleDB: append orioledb to shared_preload_libraries
             sed -i "s/\(shared_preload_libraries.*\)'\(.*\)$/\1, orioledb'\2/" $out/postgresql.conf
             echo "default_table_access_method = 'orioledb'" >> $out/postgresql.conf
-            echo "orioledb.enable_rewind = true" >> $out/postgresql.conf
-            echo "orioledb.rewind_max_time = 1200" >> $out/postgresql.conf
-            echo "orioledb.rewind_max_transactions = 100000" >> $out/postgresql.conf
-            echo "orioledb.rewind_buffers = 1280" >> $out/postgresql.conf
           ''
         else
           ""
@@ -417,6 +413,7 @@ let
   makeOrioledbSpecialisation =
     {
       postgresPort ? defaultPort,
+      extraConfig ? "",
     }:
     let
       orioledbPkg = self.packages.${system}."psql_orioledb-17/bin";
@@ -446,35 +443,42 @@ let
 
       # Runs as postgres: initdb with OrioleDB-specific args, config deployment, validation
       initScript = pkgs.pkgsLinux.writeShellScript "postgresql-orioledb-init" ''
-        set -euo pipefail
-        DATA_DIR="${newDataDir}"
+                set -euo pipefail
+                DATA_DIR="${newDataDir}"
 
-        if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
-          echo "Initializing OrioleDB database at $DATA_DIR"
-          ${orioledbPkg}/bin/initdb \
-            --allow-group-access --data-checksums \
-            --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8 \
-            -U supabase_admin -D "$DATA_DIR"
-        fi
+                if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
+                  echo "Initializing OrioleDB database at $DATA_DIR"
+                  ${orioledbPkg}/bin/initdb \
+                    --allow-group-access --data-checksums \
+                    --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8 \
+                    -U supabase_admin -D "$DATA_DIR"
+                fi
 
-        # Deploy processed config files with @dataDir@ substituted
-        for f in postgresql.conf pg_hba.conf pg_ident.conf supautils.conf read-replica.conf; do
-          sed "s|@dataDir@|$DATA_DIR|g" ${processedConfig}/$f > "$DATA_DIR/$f"
-        done
+                # Deploy processed config files with @dataDir@ substituted
+                for f in postgresql.conf pg_hba.conf pg_ident.conf supautils.conf read-replica.conf; do
+                  sed "s|@dataDir@|$DATA_DIR|g" ${processedConfig}/$f > "$DATA_DIR/$f"
+                done
 
-        # Copy conf.d directory
-        rm -rf "$DATA_DIR/conf.d"
-        cp -r ${processedConfig}/conf.d "$DATA_DIR/conf.d"
-        chmod -R u+w "$DATA_DIR/conf.d"
+                # Append any extra configuration
+                if [ -n '${extraConfig}' ]; then
+                  cat >> "$DATA_DIR/postgresql.conf" << 'EXTRA_CONFIG_EOF'
+        ${extraConfig}
+        EXTRA_CONFIG_EOF
+                fi
 
-        # Copy extension-custom-scripts directory
-        rm -rf "$DATA_DIR/extension-custom-scripts"
-        cp -r ${processedConfig}/extension-custom-scripts "$DATA_DIR/extension-custom-scripts"
-        chmod -R u+w "$DATA_DIR/extension-custom-scripts"
+                # Copy conf.d directory
+                rm -rf "$DATA_DIR/conf.d"
+                cp -r ${processedConfig}/conf.d "$DATA_DIR/conf.d"
+                chmod -R u+w "$DATA_DIR/conf.d"
 
-        # Validate config
-        echo "Validating PostgreSQL configuration..."
-        ${orioledbPkg}/bin/postgres -C shared_preload_libraries -D "$DATA_DIR"
+                # Copy extension-custom-scripts directory
+                rm -rf "$DATA_DIR/extension-custom-scripts"
+                cp -r ${processedConfig}/extension-custom-scripts "$DATA_DIR/extension-custom-scripts"
+                chmod -R u+w "$DATA_DIR/extension-custom-scripts"
+
+                # Validate config
+                echo "Validating PostgreSQL configuration..."
+                ${orioledbPkg}/bin/postgres -C shared_preload_libraries -D "$DATA_DIR"
       '';
 
       # Full db init: CREATE EXTENSION orioledb first, then init-scripts + migrations
@@ -549,6 +553,7 @@ let
       };
 
       # Override postgresql: new package, new data dir, new ExecStartPre for orioledb initdb
+      # Restart settings match production: ansible/files/postgresql_config/postgresql.service
       systemd.services.postgresql = {
         after = [ "postgresql-migrate.service" ];
         requires = [ "postgresql-migrate.service" ];
@@ -558,6 +563,8 @@ let
             initScript
           ];
           ExecStart = lib.mkForce "${orioledbPkg}/bin/postgres -D ${newDataDir}";
+          Restart = "always";
+          RestartSec = "5";
         };
         environment = {
           GRN_PLUGINS_DIR = lib.mkForce "${groongaPackage}/lib/groonga/plugins";
