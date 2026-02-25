@@ -46,7 +46,7 @@
         value: "{{ thp_item['value'] }}"
       become: true
       loop:
-        - { section: 'bootloader', option: 'cmdline', value: 'transparent_hugepages=never' }
+        - { section: 'bootloader', option: 'cmdline', value: 'transparent_hugepage=never' }
         - { section: 'vm', option: 'transparent_hugepages', value: 'never' }
       loop_control:
         loop_var: 'thp_item'
