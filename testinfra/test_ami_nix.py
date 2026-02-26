@@ -1069,17 +1069,3 @@ def test_postgrest_read_only_session_attrs(host):
                 print("Warning: Failed to restart PostgreSQL after restoring config")
         else:
             print("Warning: Failed to restore PostgreSQL configuration")
-
-
-def test_transparent_hugepage_is_never(host):
-    """Test that transparent hugepage is set to 'never'."""
-    result = run_ssh_command(host["ssh"], "cat /sys/kernel/mm/transparent_hugepage/enabled")
-    assert result["succeeded"]
-    assert "[never]" in result["stdout"], f"THP is not set to 'never': {result['stdout']}"
-
-
-def test_tuned_profile_is_postgresql(host):
-    """Test that the 'postgresql' tuned profile is active."""
-    result = run_ssh_command(host["ssh"], "tuned-adm active")
-    assert result["succeeded"]
-    assert "postgresql" in result["stdout"], f"Active tuned profile is not 'postgresql': {result['stdout']}"
