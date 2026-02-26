@@ -706,6 +706,16 @@
       "hash": "sha256-B46ie4qlfD1Wxd7QRv1fIuRmmSrb5s5A7KpQVwadazo=",
       "pgrx": "0.16.1",
       "rust": "1.88.0"
+    },
+    "0.6.0": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-/ZkAk+yCgWfcsmr6BAP2x+yelfgx+NyvwXnYwUPHTek=",
+      "pgrx": "0.16.1",
+      "rust": "1.88.0"
     }
   },
   "pg_hashids": {
