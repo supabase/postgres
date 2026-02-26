@@ -126,6 +126,24 @@ class TestGetRunnerForPackage:
             "labels": ["aarch64-linux"],
         }
 
+    def test_nixos_test_aarch64_linux(self):
+        """NixOS VM tests have both kvm and nixos-test in requiredSystemFeatures.
+        They must be routed to self-hosted runners with KVM support."""
+        pkg: NixEvalJobsOutput = {
+            "attr": "checks.aarch64-linux.ext-index_advisor",
+            "attrPath": ["checks", "aarch64-linux", "ext-index_advisor"],
+            "cacheStatus": "notBuilt",
+            "drvPath": "/nix/store/test.drv",
+            "name": "vm-test-run-index_advisor",
+            "system": "aarch64-linux",
+            "requiredSystemFeatures": ["kvm", "nixos-test"],
+        }
+        result = get_runner_for_package(pkg)
+        assert result == {
+            "group": "self-hosted-runners-nix",
+            "labels": ["aarch64-linux"],
+        }
+
     def test_large_package_x86_64_linux(self):
         pkg: NixEvalJobsOutput = {
             "attr": "legacyPackages.x86_64-linux.psql_15.exts.postgis",
