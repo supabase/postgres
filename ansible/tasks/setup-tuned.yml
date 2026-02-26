@@ -21,6 +21,7 @@
       become: true
 
     - name: Create a tuned profile
+      become: true
       community.general.ini_file:
         create: true
         group: 'root'
@@ -31,9 +32,9 @@
         section: 'main'
         state: 'present'
         value: 'Tuned profile for PostgreSQL'
-      become: true
 
-    - name: Disable Transparent Huge Pages (THP)
+    - name: tuned - Disable Transparent Huge Pages (THP)
+      become: true
       community.general.ini_file:
         create: true
         group: 'root'
@@ -44,12 +45,30 @@
         section: "{{ thp_item['section'] }}"
         state: 'present'
         value: "{{ thp_item['value'] }}"
-      become: true
       loop:
-        - { section: 'bootloader', option: 'cmdline', value: 'transparent_hugepage=never' }
-        - { section: 'vm', option: 'transparent_hugepages', value: 'never' }
+        - { section: 'bootloader', option: 'cmdline',               value: 'transparent_hugepage=never' }
+        - { section: 'vm',         option: 'transparent_hugepages', value: 'never' }
       loop_control:
         loop_var: 'thp_item'
+
+    - name:  tuned - Configure CPUs for maximum performance
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: "{{ cpu_item['option'] }}"
+        path: '/etc/tuned/postgresql/tuned.conf'
+        section: "{{ cpu_item['section'] }}"
+        state: 'present'
+        value: "{{ cpu_item['value'] }}"
+      loop:
+        - '{ section: 'cpu', option: 'energy_perf_bias', value: 'performance' }'
+        - '{ section: 'cpu', option: 'governor',         value: 'performance' }'
+        - '{ section: 'cpu', option: 'min_pef_pct',      value: '100' }'
+      loop_control:
+        loop_var: 'cpu_item'
 
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
