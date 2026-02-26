@@ -108,7 +108,7 @@ writeShellApplication {
         "index_advisor"
     )
 
-    # Tests to skip for multigres images (pgsodium requires getkey script not present in multigres)
+    # Tests to skip for multigres images (pgsodium not installed; vault has z_multigres-17_ variant)
     MULTIGRES_SKIP_TESTS=(
         "pgsodium"
         "vault"
@@ -133,6 +133,17 @@ writeShellApplication {
                 variant_name=$(basename "$f" .sql)
                 local base_name="''${variant_name#z_orioledb-17_}"
                 orioledb_variants+=("$base_name")
+            fi
+        done
+
+        # Build list of multigres-17-specific test basenames
+        local multigres_17_variants=()
+        for f in "$TESTS_SQL_DIR"/z_multigres-17_*.sql; do
+            if [[ -f "$f" ]]; then
+                local variant_name
+                variant_name=$(basename "$f" .sql)
+                local base_name="''${variant_name#z_multigres-17_}"
+                multigres_17_variants+=("$base_name")
             fi
         done
 
@@ -192,10 +203,21 @@ writeShellApplication {
                     multigres-orioledb-17) [[ "$_basename" == z_multigres-orioledb-17_* ]] && tests+=("$_basename") ;;
                 esac
             else
-                # For orioledb-like versions, use z_ variants where they exist instead of the base test
+                # For variant versions, use z_ overrides where they exist instead of the base test
                 if [[ "$version" == "orioledb-17" ]]; then
                     local has_variant=false
                     for variant in "''${orioledb_variants[@]}"; do
+                        if [[ "$_basename" == "$variant" ]]; then
+                            has_variant=true
+                            break
+                        fi
+                    done
+                    if [[ "$has_variant" == "false" ]]; then
+                        tests+=("$_basename")
+                    fi
+                elif [[ "$version" == "multigres-17" ]]; then
+                    local has_variant=false
+                    for variant in "''${multigres_17_variants[@]}"; do
                         if [[ "$_basename" == "$variant" ]]; then
                             has_variant=true
                             break
@@ -277,21 +299,20 @@ writeShellApplication {
 
         log_info "Multigres: initializing PostgreSQL cluster..."
         docker exec -u postgres "$container" \
-            initdb \
-            -D /var/lib/postgresql/data \
-            --allow-group-access \
-            --locale-provider=icu \
-            --encoding=UTF-8 \
-            --icu-locale=en_US.UTF-8
+            bash -c "echo '$POSTGRES_PASSWORD' > /tmp/pgpwfile && \
+                initdb \
+                    -D /var/lib/postgresql/data \
+                    --username=supabase_admin \
+                    --pwfile=/tmp/pgpwfile \
+                    --allow-group-access \
+                    --locale-provider=icu \
+                    --encoding=UTF-8 \
+                    --icu-locale=en_US.UTF-8 && \
+                rm /tmp/pgpwfile"
 
         log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
         docker exec -u postgres "$container" \
             pg_ctl start -D /etc/postgresql -w -t 60
-
-        log_info "Multigres: bootstrapping supabase_admin role..."
-        docker exec -u postgres "$container" \
-            psql -U postgres -d postgres \
-            -c "CREATE ROLE supabase_admin WITH SUPERUSER LOGIN PASSWORD '$POSTGRES_PASSWORD'; ALTER DATABASE postgres OWNER TO supabase_admin;"
 
         log_info "Multigres: running schema migrations..."
         docker exec \
