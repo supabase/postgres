@@ -1,0 +1,3 @@
+-- TODO: run tests to generate expected output
+-- nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres
+-- then copy regression_output/results/z_multigres-orioledb-17_docs-partitioning.out to this file

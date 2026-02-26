@@ -30,22 +30,25 @@ jobs:
             if ($dockerfile | path exists) {
               {
                 version: $version,
-                dockerfile: $dockerfile
+                dockerfile: $dockerfile,
+                target: "production"
               }
             } else {
               null
             }
           } | compact)
 
-          # Also discover multigres variants for each base version
+          # Discover multigres variants by checking for matching targets in Dockerfile-multigres
           let multigres_matrix = ($versions | each { |ver|
             let version = ($ver | str trim)
             let mg_version = $"multigres-($version)"
-            let mg_dockerfile = $"Dockerfile-($mg_version)"
-            if ($mg_dockerfile | path exists) {
+            let mg_dockerfile = "Dockerfile-multigres"
+            let mg_target = $"variant-($version)"
+            if ($mg_dockerfile | path exists) and (open --raw $mg_dockerfile | str contains $"AS ($mg_target)") {
               {
                 version: $mg_version,
-                dockerfile: $mg_dockerfile
+                dockerfile: $mg_dockerfile,
+                target: $mg_target
               }
             } else {
               null
@@ -151,7 +154,7 @@ jobs:
           push: true
           build-args: |
             ${{ needs.build.outputs.build_args }}
-          target: production
+          target: ${{ matrix.postgres.target }}
           tags: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
