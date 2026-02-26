@@ -20,7 +20,7 @@
     nix-editor.url = "github:snowfallorg/nix-editor";
     nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
     nix-eval-jobs.inputs.treefmt-nix.follows = "treefmt-nix";
-    nix-eval-jobs.url = "github:jfroche/nix-eval-jobs/fix-warnings";
+    nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix2container.url = "github:nlewo/nix2container";
     # Pin to a specific nixpkgs version that has compatible v8 and curl versions

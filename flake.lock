@@ -118,16 +118,16 @@
     "nix": {
       "flake": false,
       "locked": {
-        "lastModified": 1756804961,
-        "narHash": "sha256-TUkkfeQnfI7569O7bWI/v01GJct0OPYydLwINC6ksRo=",
+        "lastModified": 1770968833,
+        "narHash": "sha256-Q4zfM7aGr7FnhV0UAu0hCS+bG3I/U1YAVRJY+ep8a1I=",
         "owner": "NixOS",
         "repo": "nix",
-        "rev": "e7540a269b3b711d67ae27b1bc2f93cc2d39eb21",
+        "rev": "eef8a1a5ff03aad775ec4df66ff98e980cc458bc",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "2.31-maintenance",
+        "ref": "2.33-maintenance",
         "repo": "nix",
         "type": "github"
       }
@@ -187,16 +187,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1768391686,
-        "narHash": "sha256-RQJz80jnTyX1Rria4ophU9JA1OXgQH2gI7KS+tt3tgc=",
-        "owner": "jfroche",
+        "lastModified": 1771004889,
+        "narHash": "sha256-ONA7ztgyE2CC3T45NiGxQgCBQevAJ1+pEJlMQpREjBA=",
+        "owner": "nix-community",
         "repo": "nix-eval-jobs",
-        "rev": "643e2ee809cf9131a1bea239e250a719f8723010",
+        "rev": "8c9a3da0f95770bfc74e7a05823e212ff2bf1522",
         "type": "github"
       },
       "original": {
-        "owner": "jfroche",
-        "ref": "fix-warnings",
+        "owner": "nix-community",
         "repo": "nix-eval-jobs",
         "type": "github"
       }
@@ -223,17 +222,15 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1752066716,
-        "narHash": "sha256-vMs55uRO/FmzFMWwVtXSnP1dxPC9u9M9I5jNVTqXVFA=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "303269b20fe8f5218f8112ff1cbd2a926b75c147",
-        "type": "github"
+        "lastModified": 1767026758,
+        "narHash": "sha256-OuZZ71OA/6fZePPqgVinI4QVu9j1QCt+Q9i5ZgmSGqI=",
+        "rev": "346dd96ad74dc4457a9db9de4f4f57dab2e5731d",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.05pre918255.346dd96ad74d/nixexprs.tar.xz"
       },
       "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "type": "github"
+        "type": "tarball",
+        "url": "https://nixos.org/channels/nixpkgs-unstable/nixexprs.tar.xz"
       }
     },
     "nixpkgs-lib": {
