@@ -22,6 +22,7 @@
 
     - name: Create a profile symlink for older tuned versions
       ansible.builtin.file:
+        force: true
         group: 'root'
         mode: '0755'
         owner: 'root'
@@ -61,7 +62,24 @@
       loop_control:
         loop_var: 'thp_item'
 
-    - name: tuned - Configure CPUs for maximum performance
+    - name: tuned - Configure all CPUs for maximum performance
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: "{{ cpu_item['option'] }}"
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: "{{ cpu_item['section'] }}"
+        state: 'present'
+        value: "{{ cpu_item['value'] }}"
+      loop:
+        - { section: 'cpu', option: 'governor', value: 'performance' }
+      loop_control:
+        loop_var: 'cpu_item'
+
+    - name: tuned - Configure Intel CPUs for maximum performance
       become: true
       community.general.ini_file:
         create: true
@@ -75,10 +93,11 @@
         value: "{{ cpu_item['value'] }}"
       loop:
         - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
-        - { section: 'cpu', option: 'governor',         value: 'performance' }
-        - { section: 'cpu', option: 'min_pef_pct',      value: '100' }
+        - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
       loop_control:
         loop_var: 'cpu_item'
+      when:
+        - ansible_facts['processor'][0] is search("GenuineIntel", ignorecase=True)
 
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
@@ -92,3 +111,4 @@
       ansible.builtin.command:
         cmd: tuned-adm profile postgresql
       become: true
+      changed_when: false
