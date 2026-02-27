@@ -51,7 +51,7 @@
       loop_control:
         loop_var: 'thp_item'
 
-    - name:  tuned - Configure CPUs for maximum performance
+    - name: tuned - Configure CPUs for maximum performance
       become: true
       community.general.ini_file:
         create: true
