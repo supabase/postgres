@@ -51,7 +51,7 @@
       loop_control:
         loop_var: 'thp_item'
 
-    - name:  tuned - Configure CPUs for maximum performance
+    - name: tuned - Configure CPUs for maximum performance
       become: true
       community.general.ini_file:
         create: true
@@ -64,9 +64,9 @@
         state: 'present'
         value: "{{ cpu_item['value'] }}"
       loop:
-        - '{ section: 'cpu', option: 'energy_perf_bias', value: 'performance' }'
-        - '{ section: 'cpu', option: 'governor',         value: 'performance' }'
-        - '{ section: 'cpu', option: 'min_pef_pct',      value: '100' }'
+        - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
+        - { section: 'cpu', option: 'governor',         value: 'performance' }
+        - { section: 'cpu', option: 'min_pef_pct',      value: '100' }
       loop_control:
         loop_var: 'cpu_item'
 
