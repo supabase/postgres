@@ -36,6 +36,7 @@ pkgs.testers.runNixOSTest {
     in
     ''
       from pathlib import Path
+
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
         "17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "17"))}],
