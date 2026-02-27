@@ -30,6 +30,9 @@
                   assert machine.file("/etc/ssh/sshd_config.d/local.conf").user == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
                   assert machine.file("/etc/ssh/sshd_config.d/local.conf").group == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
                   assert machine.file("/etc/ssh/sshd_config.d/local.conf").contains("Match Address"), "/etc/ssh/sshd_config.d/local.conf should contain 'Match Address'"
+              with subtest("Verify system manager config"):
+                  machine.wait_for_unit("fail2ban.service")
+
             '';
           };
       };

@@ -18,6 +18,7 @@
           mode = "0644";
         };
       };
+      fail2ban = ./fail2ban.nix;
     };
   };
 }

@@ -2,8 +2,10 @@
 let
   mkModules = system: [
     self.systemModules.ssh-config
+    self.systemModules.fail2ban
     ({
       nixpkgs.hostPlatform = system;
+      supabase.services.fail2ban.enable = true;
     })
   ];
 
