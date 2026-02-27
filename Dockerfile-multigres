@@ -35,7 +35,7 @@ ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 WORKDIR /nixpg
 COPY . .
 
-RUN nix profile add path:.#psql_17_slim/bin
+RUN nix profile add path:.#psql_17_slim/bin path:.#pg-backrest path:.#pgctld
 
 RUN nix store gc
 
