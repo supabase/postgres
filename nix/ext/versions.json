@@ -462,6 +462,14 @@
       ],
       "hash": "sha256-vR3MvfmUP2QEAtXFpq0NCCKck3wZPD+H3QleHtyVQJs=",
       "revision": "2.7.11"
+    },
+    "2.8": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-qeCC/rmd+qhAlpq7y5UhqDkFVGsDbBUAFWPizciPVaI=",
+      "revision": "2.8.11"
     }
   },
   "plv8": {
