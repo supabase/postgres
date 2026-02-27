@@ -24,8 +24,12 @@
               machine.activate()
               machine.wait_for_unit("system-manager.target")
 
-              with subtest("Verify nginx service"):
-                  assert machine.service("nginx").is_running, "nginx should be running"
+              with subtest("Verify ssh config"):
+                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").exists, "/etc/ssh/sshd_config.d/local.conf should exist"
+                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").mode == 0o644, "/etc/ssh/sshd_config.d/local.conf should have mode 0644"
+                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").user == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
+                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").group == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
+                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").contains("Match Address"), "/etc/ssh/sshd_config.d/local.conf should contain 'Match Address'"
             '';
           };
       };
