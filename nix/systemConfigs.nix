@@ -1,8 +1,8 @@
 { self, inputs, ... }:
 let
   mkModules = system: [
+    self.systemModules.ssh-config
     ({
-      services.nginx.enable = true;
       nixpkgs.hostPlatform = system;
     })
   ];
