@@ -170,6 +170,9 @@ let
           inherit (postgresql.meta) platforms;
         };
       }
+      // lib.optionalAttrs (version == "0.6.0") {
+        patches = [ ./0002-fix-duplicate-function-exception-on-upgrade.patch ];
+      }
       // lib.optionalAttrs (version == "0.3.0") {
         patches = [ ./0001-bump-pgrx-to-0.11.3.patch ];
 

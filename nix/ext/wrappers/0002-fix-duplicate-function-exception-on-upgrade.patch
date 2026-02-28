@@ -1,0 +1,35 @@
+From cbaf7b607270e855b8d459bbbe86d2fbe3adaa5c Mon Sep 17 00:00:00 2001
+From: Sam Rose <samuel@supabase.io>
+Date: Sat, 28 Feb 2026 07:50:14 -0500
+Subject: [PATCH] fix(s3vectors): use correct exception condition for duplicate
+ function on upgrade
+
+---
+ wrappers/build.rs | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/wrappers/build.rs b/wrappers/build.rs
+index da8bdd0..60ed9c6 100644
+--- a/wrappers/build.rs
++++ b/wrappers/build.rs
+@@ -42,7 +42,7 @@ BEGIN
+             IMMUTABLE PARALLEL SAFE
+             LANGUAGE c
+             AS '{lib_name}', 's3vec_in_wrapper';
+-    EXCEPTION WHEN duplicate_object THEN NULL;
++    EXCEPTION WHEN duplicate_function THEN NULL;
+     END;
+ 
+     -- 3. Output function
+@@ -52,7 +52,7 @@ BEGIN
+             IMMUTABLE STRICT PARALLEL SAFE
+             LANGUAGE c
+             AS '{lib_name}', 's3vec_out_wrapper';
+-    EXCEPTION WHEN duplicate_object THEN NULL;
++    EXCEPTION WHEN duplicate_function THEN NULL;
+     END;
+ 
+     -- 4. Complete type definition (must come after in/out functions)
+-- 
+2.39.5 (Apple Git-154)
+
