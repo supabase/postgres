@@ -1,12 +1,28 @@
 From cbaf7b607270e855b8d459bbbe86d2fbe3adaa5c Mon Sep 17 00:00:00 2001
 From: Sam Rose <samuel@supabase.io>
 Date: Sat, 28 Feb 2026 07:50:14 -0500
-Subject: [PATCH] fix(s3vectors): use correct exception condition for duplicate
- function on upgrade
+Subject: [PATCH] fix(s3vectors): handle duplicate objects idempotently on upgrade
 
+Fix two separate upgrade path issues:
+
+1. build.rs used `duplicate_object` (SQLSTATE 42710) instead of
+   `duplicate_function` (SQLSTATE 42723) for the s3vec_in/out
+   function guards. PostgreSQL raises different SQLSTATEs for
+   functions vs. other objects.
+
+2. The `<==>` operator (introduced in 0.5.7) is created by pgrx via
+   `#[pg_operator]` as a plain `CREATE OPERATOR` with no OR REPLACE
+   support in PostgreSQL. Upgrading from any 0.5.7 installation fails
+   with "operator <==> already exists".
+
+   Fix by converting both operator functions to `#[pg_extern]` (which
+   still generates idempotent `CREATE OR REPLACE FUNCTION`) and adding
+   a manual `extension_sql!` block that wraps `CREATE OPERATOR` in
+   DO/EXCEPTION guards.
 ---
- wrappers/build.rs | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ wrappers/build.rs                               |  4 +--
+ wrappers/src/fdw/s3vectors_fdw/s3vec.rs         | 42 ++++++++++++++++++++----
+ 2 files changed, 37 insertions(+), 9 deletions(-)
 
 diff --git a/wrappers/build.rs b/wrappers/build.rs
 index da8bdd0..60ed9c6 100644
@@ -19,7 +35,7 @@ index da8bdd0..60ed9c6 100644
 -    EXCEPTION WHEN duplicate_object THEN NULL;
 +    EXCEPTION WHEN duplicate_function THEN NULL;
      END;
- 
+
      -- 3. Output function
 @@ -52,7 +52,7 @@ BEGIN
              IMMUTABLE STRICT PARALLEL SAFE
@@ -28,8 +44,72 @@ index da8bdd0..60ed9c6 100644
 -    EXCEPTION WHEN duplicate_object THEN NULL;
 +    EXCEPTION WHEN duplicate_function THEN NULL;
      END;
- 
+
      -- 4. Complete type definition (must come after in/out functions)
--- 
+diff --git a/wrappers/src/fdw/s3vectors_fdw/s3vec.rs b/wrappers/src/fdw/s3vectors_fdw/s3vec.rs
+index 1234567..abcdef0 100644
+--- a/wrappers/src/fdw/s3vectors_fdw/s3vec.rs
++++ b/wrappers/src/fdw/s3vectors_fdw/s3vec.rs
+@@ -121,17 +121,53 @@ impl TryFrom<*mut bytea> for S3Vec {
+     }
+ }
+
+-#[pg_operator(create_or_replace, immutable, parallel_safe)]
+-#[opname(<==>)]
++#[pg_extern(create_or_replace, immutable, parallel_safe)]
+ fn s3vec_knn(_left: S3Vec, _right: S3Vec) -> bool {
+     // always return true here, actual calculation will be done in the wrapper
+     true
+ }
+
+-#[pg_operator(create_or_replace, immutable, parallel_safe)]
+-#[opname(<==>)]
++#[pg_extern(create_or_replace, immutable, parallel_safe)]
+ fn metadata_filter(_left: JsonB, _right: JsonB) -> bool {
+     // always return true here, actual calculation will be done in the wrapper
+     true
+ }
+
++// PostgreSQL has no CREATE OR REPLACE OPERATOR, so pgrx's `create_or_replace`
++// on `#[pg_operator]` only applies to the underlying function, not the operator
++// itself. When upgrading from wrappers 0.5.7 (which first introduced these
++// operators), a plain CREATE OPERATOR fails with "already exists".
++//
++// Solution: use #[pg_extern] above so pgrx emits idempotent CREATE OR REPLACE
++// FUNCTION for each operator function, and create the operators manually here
++// inside DO/EXCEPTION guards.
++pgrx::extension_sql!(
++    r#"DO $s3vec_operators_upgrade$
++BEGIN
++    -- <==> operator for S3Vec (KNN search)
++    BEGIN
++        CREATE OPERATOR <==> (
++            PROCEDURE = s3vec_knn,
++            LEFTARG = S3Vec,
++            RIGHTARG = S3Vec
++        );
++    EXCEPTION WHEN duplicate_object THEN NULL;
++    END;
++
++    -- <==> operator for jsonb (metadata filter)
++    BEGIN
++        CREATE OPERATOR <==> (
++            PROCEDURE = metadata_filter,
++            LEFTARG = jsonb,
++            RIGHTARG = jsonb
++        );
++    EXCEPTION WHEN duplicate_object THEN NULL;
++    END;
++END
++$s3vec_operators_upgrade$;
++"#,
++    name = "s3vec_operators",
++    requires = [s3vec_knn, metadata_filter],
++);
++
+ #[pg_extern(create_or_replace)]
+ fn s3vec_distance(s3vec: S3Vec) -> f32 {
+     s3vec.distance
+--
 2.39.5 (Apple Git-154)
 
