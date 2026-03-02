@@ -106,8 +106,7 @@
         params: 'zpool=zsmalloc compressor=zstd enabled=1'
         persistent: 'present'
         state: 'present'
-      when:
-        - ansible_facts['distribution'] == 'Ubuntu'  # AWS runners don't have this module
+      failed_when: false  # AWS runners don't have this module
 
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
