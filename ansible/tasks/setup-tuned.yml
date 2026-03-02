@@ -111,7 +111,8 @@
         section: 'bootloader'
         state: 'present'
         value: 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd'
-    - name: Activate the tuned service
+
+- name: Activate the tuned service
       ansible.builtin.systemd_service:
         daemon_reload: true
         enabled: true
