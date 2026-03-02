@@ -106,12 +106,11 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: 'zswap'
+        option: 'cmdline_zswap'
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: 'modules'
+        section: 'bootloader'
         state: 'present'
-        value: '+r,enabled=1,zpool=zsmalloc,compressor=zstd'
-    
+        value: 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd'
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
         daemon_reload: true
