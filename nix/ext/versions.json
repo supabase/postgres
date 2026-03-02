@@ -30,10 +30,17 @@
     "1.4.1": {
       "postgresql": [
         "15",
+        "17"
+      ],
+      "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
+    },
+    "1.4.2": {
+      "postgresql": [
+        "15",
         "17",
         "18"
       ],
-      "hash": "sha256-88uKPSnITRZ2VkelI56jZ9GWazG/Rn39QlyHKJKSKMM="
+      "hash": "sha256-J1ltvNHB2v2I9IbYjM8w2mhXvBX31NkMasCL0O7bV8w="
     }
   },
   "index_advisor": {
@@ -93,7 +100,7 @@
       "postgresql": [
         "18"
       ],
-      "hash": "sha256-7lJgZI4hNL7jXb1mgmJAfsGHy83y3djIoHad/MN4Ddw=",
+      "hash": "sha256-tM8XEHvnmN5KlwXOOdPJHUZBj5+tKJge7hxdqqgWlE8=",
       "pgrx": "0.16.1",
       "rust": "1.88.0"
     }
