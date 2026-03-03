@@ -380,8 +380,8 @@ EXTRA_NIX_CONF
     # Needed for PostGIS, since it's compiled with Protobuf-C support now
     echo "3. Installing libprotobuf-c1 and libicu66 if missing"
     if [[ ! "$(apt list --installed libprotobuf-c1 | grep "installed")" ]]; then
-        apt-get update -y
-        apt --fix-broken install -y libprotobuf-c1 libicu66 || true
+        apt-get -o DPkg::Lock::Timeout=600 update -y # wait up to 10 minutes for any dpkg locks to clear before updating package lists
+        apt --fix-broken install -y libprotobuf-c1 libicu66 || true # apt has builtin 2 minute wait lock
     fi
 
     echo "4. Setup locale if required"
@@ -400,8 +400,8 @@ EXTRA_NIX_CONF
         UBUNTU_VERSION=$(lsb_release -rs)
         # install amazon disk utilities if not present on 24.04
         if [ "${UBUNTU_VERSION}" = "24.04" ] && ! /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y amazon-ec2-utils || true
+            apt-get -o DPkg::Lock::Timeout=600 update
+            apt-get -o DPkg::Lock::Timeout=600 install -y amazon-ec2-utils || true
         fi
         if command -v ebsnvme-id >/dev/null 2>&1 && /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
             for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
