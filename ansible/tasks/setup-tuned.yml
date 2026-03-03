@@ -16,40 +16,88 @@
         group: 'root'
         mode: '0755'
         owner: 'root'
-        path: '/etc/tuned/postgresql'
+        path: '/etc/tuned/profiles/postgresql'
         state: 'directory'
       become: true
 
+    - name: Create a profile symlink for older tuned versions
+      ansible.builtin.file:
+        force: true
+        group: 'root'
+        mode: '0755'
+        owner: 'root'
+        path: '/etc/tuned/postgresql'
+        src: '/etc/tuned/profiles/postgresql'
+        state: 'link'
+      become: true
+
     - name: Create a tuned profile
+      become: true
       community.general.ini_file:
         create: true
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
         option: 'summary'
-        path: '/etc/tuned/postgresql/tuned.conf'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
         section: 'main'
         state: 'present'
         value: 'Tuned profile for PostgreSQL'
-      become: true
 
-    - name: Disable Transparent Huge Pages (THP)
+    - name: tuned - Disable Transparent Huge Pages (THP)
+      become: true
       community.general.ini_file:
         create: true
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
         option: "{{ thp_item['option'] }}"
-        path: '/etc/tuned/postgresql/tuned.conf'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
         section: "{{ thp_item['section'] }}"
         state: 'present'
         value: "{{ thp_item['value'] }}"
-      become: true
       loop:
-        - { section: 'bootloader', option: 'cmdline', value: 'transparent_hugepage=never' }
-        - { section: 'vm', option: 'transparent_hugepages', value: 'never' }
+        - { section: 'bootloader', option: 'cmdline',               value: 'transparent_hugepage=never' }
+        - { section: 'vm',         option: 'transparent_hugepages', value: 'never' }
       loop_control:
         loop_var: 'thp_item'
+
+    - name: tuned - Configure all CPUs for maximum performance
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: "{{ cpu_item['option'] }}"
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: "{{ cpu_item['section'] }}"
+        state: 'present'
+        value: "{{ cpu_item['value'] }}"
+      loop:
+        - { section: 'cpu', option: 'governor', value: 'performance' }
+      loop_control:
+        loop_var: 'cpu_item'
+
+    - name: tuned - Configure Intel CPUs for maximum performance
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: "{{ cpu_item['option'] }}"
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: "{{ cpu_item['section'] }}"
+        state: 'present'
+        value: "{{ cpu_item['value'] }}"
+      loop:
+        - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
+        - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
+      loop_control:
+        loop_var: 'cpu_item'
+      when:
+        - ansible_facts['processor'][0] is search("GenuineIntel", ignorecase=True)
 
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
@@ -63,3 +111,4 @@
       ansible.builtin.command:
         cmd: tuned-adm profile postgresql
       become: true
+      changed_when: false
