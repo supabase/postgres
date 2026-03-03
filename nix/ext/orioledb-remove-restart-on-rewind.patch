@@ -1,3 +1,65 @@
+diff --git a/include/rewind/rewind.h b/include/rewind/rewind.h
+index 354e9f82..4a4c080f 100644
+--- a/include/rewind/rewind.h
++++ b/include/rewind/rewind.h
+@@ -43,9 +43,6 @@ extern void log_print_rewind_queue(void);
+ #define SUBXIDS_PER_ITEM	(25)
+ 
+ 
+-#define PG_CTL_CMD_LEN (8)		/* Actually we only need 4 extra chars */
+-#define PG_CTL_MAX_CMD_LEN (MAXPGPATH + PG_CTL_CMD_LEN)
+-
+ /* RewindItem and SubxidsItem should have same size to be castable to each other */
+ /* Empty RewindItem and SubxidsItem have invalid oxid and tag */
+ typedef struct RewindItem
+diff --git a/src/orioledb.c b/src/orioledb.c
+index 872d56c0..ebdd03b4 100644
+--- a/src/orioledb.c
++++ b/src/orioledb.c
+@@ -270,32 +270,6 @@ static RmgrData rmgr =
+ 	.rm_decode = orioledb_decode
+ };
+ 
+-/*
+- * We currently do not support restarting PG instance from within the extension
+- * on certain systems. Refuse to enable rewind on those systems.
+- */
+-static bool
+-orioledb_enable_rewind_check_hook(bool *newval, void **extra, GucSource source)
+-{
+-#if defined(WIN32)
+-	if (*newval)
+-	{
+-		GUC_check_errcode(ERRCODE_FEATURE_NOT_SUPPORTED);
+-		GUC_check_errdetail("Rewind is not supported on Windows.");
+-		return false;
+-	}
+-#elif !defined(HAVE_SETSID)
+-	if (*newval)
+-	{
+-		GUC_check_errcode(ERRCODE_FEATURE_NOT_SUPPORTED);
+-		GUC_check_errdetail("Rewind is not supported on systems without setsid(2).");
+-		return false;
+-	}
+-#endif
+-	/* Supported system or newval == false */
+-	return true;
+-}
+-
+ void
+ _PG_init(void)
+ {
+@@ -853,7 +827,7 @@ _PG_init(void)
+ 							 false,
+ 							 PGC_POSTMASTER,
+ 							 0,
+-							 orioledb_enable_rewind_check_hook,
++							 NULL,
+ 							 NULL,
+ 							 NULL);
+ 
+diff --git a/src/rewind/rewind.c b/src/rewind/rewind.c
+index 606f0d3b..987279e4 100644
 --- a/src/rewind/rewind.c
 +++ b/src/rewind/rewind.c
 @@ -30,11 +30,9 @@
@@ -12,7 +74,7 @@
  #include "utils/memutils.h"
  #include "utils/snapmgr.h"
  #include "utils/syscache.h"
-@@ -81,9 +79,6 @@
+@@ -81,9 +79,6 @@ PG_FUNCTION_INFO_V1(orioledb_rewind_set_complete);
  #define	REWIND_MODE_XID	(3)
  
  static void orioledb_rewind_internal(int rewind_mode, int rewind_time, OXid rewind_oxid, TransactionId rewind_xid, TimestampTz rewind_timestamp);
@@ -22,19 +84,77 @@
  
  /* Interface functions */
  
-@@ -790,8 +785,9 @@
+@@ -761,26 +756,45 @@ orioledb_rewind_internal(int rewind_mode, int rewind_time, OXid rewind_oxid, Tra
+ 	rewindStartTimeStamp = GetCurrentTimestamp();
+ 	elog(LOG, "Rewind started");
  
+-	/* Terminate all other backends */
++	/*
++	 * Block all signals so that the SIGTERM the postmaster will send to us
++	 * during fast shutdown cannot interrupt do_rewind mid-execution.
++	 */
++	sigset_t	blocked_sigset,
++				old_sigset;
++
++	sigfillset(&blocked_sigset);
++	sigprocmask(SIG_BLOCK, &blocked_sigset, &old_sigset);
++
++	/*
++	 * Fast shutdown (SIGINT) tells the postmaster to kill existing backends
++	 * and stop accepting new connections.  Unlike smart shutdown (SIGTERM),
++	 * this prevents a connection pooler from reconnecting killed backends,
++	 * so the wait loop below will actually drain.
++	 */
++	(void) kill(PostmasterPid, SIGINT);
++
++	/*
++	 * Wait for other backends to exit.  Fast shutdown prevents new
++	 * connections, so this loop terminates — unlike the original
++	 * TerminateOtherDBBackends approach where poolers could refill the pool.
++	 *
++	 * We time out after 30 s (300 × 100 ms) because without a ceiling an
++	 * uninterruptible backend or a lock-deadlock on rewindEvictLock could
++	 * cause us to hang indefinitely while holding the exclusive lock.
++	 */
+ 	retry = 0;
+-	TerminateOtherDBBackends(InvalidOid);
+ 	while (CountOtherDBBackends(InvalidOid, &nbackends, &nprepared))
+ 	{
+ 		if (AutoVacuumingActive() && nbackends <= 1)
+ 			break;
+ 
+-		elog(WARNING, "%u backends left", nbackends);
+-		pg_usleep(1000000L);
++		pg_usleep(100000L);
+ 		retry++;
+-		if (retry >= 100)
+-
+-			/*
+-			 * Rewind worker already stopped and come transactions could be
+-			 * not in the buffer so we can't continue.
+-			 */
++		if (retry >= 300)
+ 			ereport(FATAL,
+ 					(errcode(ERRCODE_INTERNAL_ERROR),
+-					 errmsg("Backends couldn't stop in 100s, aborting rewind")));
++					 errmsg("Backends couldn't stop in 30s during fast shutdown, aborting rewind")));
+ 	}
+ 
+ 	rewindMeta->addToRewindQueueDisabled = true;
+@@ -791,7 +805,11 @@ orioledb_rewind_internal(int rewind_mode, int rewind_time, OXid rewind_oxid, Tra
  	LWLockRelease(&rewindMeta->rewindEvictLock);
  	elog(LOG, "Rewind complete");
--
+ 
 -	try_restart_pg();
-+	/* Shutdown Postgres */
-+	(void) kill(PostmasterPid, SIGTERM);
-+	return;
++	/*
++	 * Restore signal mask.  The pending SIGTERM from the postmaster's fast
++	 * shutdown is delivered here and our backend exits cleanly.
++	 */
++	sigprocmask(SIG_SETMASK, &old_sigset, NULL);
  }
  
  TransactionId
-@@ -1693,144 +1689,3 @@
+@@ -1693,144 +1711,3 @@ get_rewind_run_xmin(void)
  {
  	return pg_atomic_read_u64(&rewindMeta->runXmin);
  }
@@ -179,60 +299,3 @@
 -	pqsignal(SIGTERM, SIG_DFL);
 -	pqsignal(SIGQUIT, SIG_DFL);
 -}
---- a/include/rewind/rewind.h
-+++ b/include/rewind/rewind.h
-@@ -42,10 +42,6 @@
- 
- #define SUBXIDS_PER_ITEM	(25)
- 
--
--#define PG_CTL_CMD_LEN (8)		/* Actually we only need 4 extra chars */
--#define PG_CTL_MAX_CMD_LEN (MAXPGPATH + PG_CTL_CMD_LEN)
--
- /* RewindItem and SubxidsItem should have same size to be castable to each other */
- /* Empty RewindItem and SubxidsItem have invalid oxid and tag */
- typedef struct RewindItem
---- a/src/orioledb.c
-+++ b/src/orioledb.c
-@@ -269,32 +269,6 @@
- 	.rm_mask = NULL,
- 	.rm_decode = orioledb_decode
- };
--
--/*
-- * We currently do not support restarting PG instance from within the extension
-- * on certain systems. Refuse to enable rewind on those systems.
-- */
--static bool
--orioledb_enable_rewind_check_hook(bool *newval, void **extra, GucSource source)
--{
--#if defined(WIN32)
--	if (*newval)
--	{
--		GUC_check_errcode(ERRCODE_FEATURE_NOT_SUPPORTED);
--		GUC_check_errdetail("Rewind is not supported on Windows.");
--		return false;
--	}
--#elif !defined(HAVE_SETSID)
--	if (*newval)
--	{
--		GUC_check_errcode(ERRCODE_FEATURE_NOT_SUPPORTED);
--		GUC_check_errdetail("Rewind is not supported on systems without setsid(2).");
--		return false;
--	}
--#endif
--	/* Supported system or newval == false */
--	return true;
--}
- 
- void
- _PG_init(void)
-@@ -853,7 +827,7 @@
- 							 false,
- 							 PGC_POSTMASTER,
- 							 0,
--							 orioledb_enable_rewind_check_hook,
-+							 NULL,
- 							 NULL,
- 							 NULL);
- 
