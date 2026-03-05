@@ -209,6 +209,8 @@ RUN for f in /nix/var/nix/profiles/default/bin/*; do \
 RUN chown -R postgres:postgres /usr/lib/postgresql && \
     chown -R postgres:postgres /usr/share/postgresql
 
+RUN ln -sf /nix/var/nix/profiles/default/bin/pgctld /usr/local/bin/pgctld
+
 # Strip extensions absent from pg17 vanilla build
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.conf
 
@@ -218,6 +220,7 @@ ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD pg_isready -U postgres -h localhost || true
 STOPSIGNAL SIGINT
+USER postgres
 EXPOSE 5432
 
 ENTRYPOINT ["tail"]
@@ -260,12 +263,27 @@ RUN sed -i "s/\(shared_preload_libraries.*\)'/\1, orioledb'/" /etc/postgresql/po
 RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
+# pgctld calls initdb without locale flags, so it picks up LANG from the environment.
+# OrioleDB requires C, POSIX, or ICU collations; override the base stage's en_US.UTF-8.
+ENV LANG=C
+ENV LC_ALL=C
+ENV LANGUAGE=C
+
+COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld/orioledb-postgresql.conf.tmpl
+
+# Wrapper: injects --postgres-config-template on every pgctld call so the team's
+# unmodified k8s manifests and local provisioner commands work without extra flags.
+RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld/orioledb-postgresql.conf.tmpl "$@"\n' \
+    > /usr/local/bin/pgctld && \
+    chmod +x /usr/local/bin/pgctld
+
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD pg_isready -U postgres -h localhost || true
 STOPSIGNAL SIGINT
+USER postgres
 EXPOSE 5432
 
 ENTRYPOINT ["tail"]
