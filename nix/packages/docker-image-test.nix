@@ -292,6 +292,92 @@ writeShellApplication {
         return 1
     }
 
+    # Verify pgctld integration for multigres images.
+    # Runs a short-lived pgctld cluster in /tmp (separate from the SQL-test postgres).
+    # Tests: container user is postgres, /usr/local/bin/pgctld works, pgctld init+start
+    # succeeds with NO extra flags, and (orioledb variant) orioledb loads automatically.
+    verify_pgctld_integration() {
+        local container="$1"
+        local version="$2"
+        local pooler_dir="/tmp/pgctld-verify"
+
+        log_info "=== pgctld integration checks ==="
+
+        # 1. Container must run as postgres (not root) — initdb refuses root
+        local container_user
+        container_user=$(docker exec "$container" id -u -n)
+        if [[ "$container_user" != "postgres" ]]; then
+            log_error "Container user is '$container_user', expected 'postgres' — USER directive missing"
+            exit 1
+        fi
+        log_info "  ✓ container user: $container_user"
+
+        # 2. /usr/local/bin/pgctld must exist (k8s manifest hardcodes this path)
+        if ! docker exec "$container" test -e /usr/local/bin/pgctld; then
+            log_error "  /usr/local/bin/pgctld not found"
+            exit 1
+        fi
+        log_info "  ✓ /usr/local/bin/pgctld exists"
+
+        # 3. pgctld init must succeed with no extra flags (tests USER postgres fix)
+        local init_out
+        init_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$init_out" | grep -q "initialized successfully"; then
+            log_error "  pgctld init failed: $init_out"
+            exit 1
+        fi
+        log_info "  ✓ pgctld init --pooler-dir $pooler_dir"
+
+        # 4. pgctld start must succeed
+        local start_out
+        start_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$start_out" | grep -q "started successfully"; then
+            log_error "  pgctld start failed: $start_out"
+            exit 1
+        fi
+        log_info "  ✓ pgctld start --pooler-dir $pooler_dir"
+
+        if [[ "$version" == "multigres-orioledb-17" ]]; then
+            # 5. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            local first_line
+            first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
+            if [[ "$first_line" != "#!/bin/sh" ]]; then
+                log_error "  /usr/local/bin/pgctld is not a wrapper script (first line: $first_line)"
+                exit 1
+            fi
+            log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
+
+            # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            local spl
+            spl=$(docker exec "$container" sh -c "
+                psql -U postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW shared_preload_libraries;\" 2>&1")
+            if ! echo "$spl" | grep -q "orioledb"; then
+                log_error "  orioledb not in shared_preload_libraries (got: $spl)"
+                log_error "  Check that wrapper script injects --postgres-config-template"
+                exit 1
+            fi
+            log_info "  ✓ shared_preload_libraries contains orioledb"
+
+            # 7. default_table_access_method must be orioledb
+            local tam
+            tam=$(docker exec "$container" sh -c "
+                psql -U postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW default_table_access_method;\" 2>&1")
+            if ! echo "$tam" | grep -q "orioledb"; then
+                log_error "  default_table_access_method is not orioledb (got: $tam)"
+                exit 1
+            fi
+            log_info "  ✓ default_table_access_method = orioledb"
+        fi
+
+        # Shut down the pgctld test cluster so it doesn't hold the unix socket
+        docker exec "$container" sh -c "
+            pg_ctl stop -D $pooler_dir/pg_data -m immediate 2>/dev/null || true
+        "
+        log_info "=== pgctld integration checks passed ==="
+    }
+
     # Bootstrap a multigres container: initdb + pg_ctl start + create supabase_admin + run migrations
     # Multigres images use "tail -f /dev/null" as entrypoint so postgres must be started manually.
     start_multigres_postgres() {
@@ -408,6 +494,7 @@ writeShellApplication {
         # Multigres images use "tail -f /dev/null" as their entrypoint — postgres must be
         # started manually before we can run tests against them.
         if [[ "$VERSION" == multigres-* ]]; then
+            verify_pgctld_integration "$CONTAINER_NAME" "$VERSION"
             start_multigres_postgres "$CONTAINER_NAME"
         fi
 
