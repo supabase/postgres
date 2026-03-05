@@ -6,11 +6,11 @@ let
 
   upstream-gatekeeper = buildGoModule124 {
     pname = "jit-db-gatekeeper";
-    version = "1.0.1";
+    version = "1.0.2";
     src = pkgs.fetchFromGitHub {
       owner = "supabase";
       repo = "jit-db-gatekeeper";
-      rev = "v1.0.1";
+      rev = "v1.0.2";
       sha256 = "sha256-4xSqQnuBYPZU6kl2LVnZbCBLCPUMKyZkezq2mPYox6k";
     };
     vendorHash = null;
@@ -34,7 +34,7 @@ in
 
 pkgs.stdenv.mkDerivation {
   pname = "gatekeeper";
-  version = "1.0.1";
+  version = "1.0.2";
 
   buildInputs = [ upstream-gatekeeper ];
 
