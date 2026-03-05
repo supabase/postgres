@@ -1,4 +1,8 @@
-{ lib, buildGoModule, multigres-src }:
+{
+  lib,
+  buildGoModule,
+  multigres-src,
+}:
 buildGoModule {
   pname = "pgctld";
   version = "0.1.0";
