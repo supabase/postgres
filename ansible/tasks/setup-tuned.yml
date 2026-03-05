@@ -125,8 +125,8 @@
 
         - name: tuned - Configure and enable zswap
           ansible.builtin.copy:
-            content: "{{ zswap_item['value']' }}\n"
-            dest: "/sys/module/zswap/parameters/{{ zswap_item['param']' }}"
+            content: "{{ zswap_item['value'] }}\n"
+            dest: "/sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           become: true
           loop:
             - { param: 'compressor',       value: 'zstd' }
