@@ -124,20 +124,13 @@
             state: 'present'
 
         - name: tuned - Configure and enable zswap
-          ansible.builtin.lineinfile:
-            group: 'root'
-            line: "{{ zswap_item['value'] }}"
-            mode: '0644'
-            owner: 'root'
-            path: "/sys/module/zswap/parameters/{{ zswap_item['param'] }}"
-            search_string: "{{ zswap_item['orig_value'] }}"
-            state: 'present'
-          become: true
+          ansible.builtin.shell:
+            cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           loop:
-            - { param: 'compressor',       value: 'zstd',     orig_value: 'lzo' }
-            - { param: 'max_pool_percent', value: '10',       orig_value: 20 }
-            - { param: 'zpool',            value: 'zsmalloc', orig_value: 'zbud' }
-            - { param: 'enabled',          value: 'Y',        orig_value: 'N' }
+            - { param: 'compressor',       value: 'zstd' }
+            - { param: 'max_pool_percent', value: '10' }
+            - { param: 'zpool',            value: 'zsmalloc' }
+            - { param: 'enabled',          value: 'Y' }
           loop_control:
             loop_var: 'zswap_item'
 
