@@ -11,7 +11,7 @@ let
       owner = "supabase";
       repo = "jit-db-gatekeeper";
       rev = "v1.0.2";
-      sha256 = "sha256-4xSqQnuBYPZU6kl2LVnZbCBLCPUMKyZkezq2mPYox6k";
+      sha256 = "sha256-YMbWvE2GrtVB3N7aw+HGb4sO+oGiU0PML9qC42uO51Y=";
     };
     vendorHash = null;
 
