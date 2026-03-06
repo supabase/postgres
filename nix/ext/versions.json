@@ -896,7 +896,7 @@
       "revision": "2.1.0",
       "hash": "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s="
     },
-    "2.3.1": {
+    "2.3": {
       "postgresql": [
         "18"
       ],

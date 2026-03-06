@@ -100,7 +100,7 @@ let
 
       # Version-specific adjustments (mirroring run-server.sh.in:250-295)
       ${
-        if majorVersion == "17" || majorVersion == "orioledb-17" then
+        if majorVersion >= "17" || majorVersion >= "orioledb-17" then
           ''
             # PG 17+: remove timescaledb from shared_preload_libraries
             sed -i 's/ timescaledb,//g' $out/postgresql.conf

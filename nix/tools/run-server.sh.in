@@ -285,6 +285,11 @@ orioledb_config_items() {
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
+    elif [[ "$VERSION" == "18" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+        perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
+        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
+        perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
     fi
 }
 
