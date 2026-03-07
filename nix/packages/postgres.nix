@@ -50,6 +50,7 @@
         ../ext/wrappers/default.nix
         ../ext/supautils.nix
         ../ext/plv8
+        ../ext/pg_duckdb.nix
       ];
 
       #Where we import and build the orioledb extension, we add on our custom extensions
@@ -59,7 +60,11 @@
         x: x != ../ext/timescaledb.nix && x != ../ext/timescaledb-2.9.1.nix && x != ../ext/plv8
       ) ourExtensions;
 
-      orioledbExtensions = orioleFilteredExtensions ++ [ ../ext/orioledb.nix ];
+      # pg_duckdb is excluded from orioledb because orioledb's PostgreSQL fork
+      # modifies the TableAM API in ways that are incompatible with pg_duckdb v1.1.1.
+      orioledbExtensions = (builtins.filter (x: x != ../ext/pg_duckdb.nix) orioleFilteredExtensions) ++ [
+        ../ext/orioledb.nix
+      ];
       dbExtensions17 = orioleFilteredExtensions;
 
       # CLI extensions - minimal set for Supabase CLI with migration support
@@ -137,6 +142,7 @@
               inherit postgresql latestOnly;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
+              duckdb-lib = pkgs.callPackage ../ext/duckdb-lib.nix { };
             }
           );
         in

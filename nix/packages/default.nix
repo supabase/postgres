@@ -40,6 +40,7 @@
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          duckdb-lib = pkgs.callPackage ../ext/duckdb-lib.nix { };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
             psql_17_slim = self'.packages."psql_17_slim/bin";
