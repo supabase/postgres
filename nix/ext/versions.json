@@ -713,7 +713,7 @@
         "17",
         "orioledb-17"
       ],
-      "hash": "",
+      "hash": "sha256-z4mtEn//qMwPOIpPcUdeHuwmJP5IgVuGCaXJve/f3cg=",
       "pgrx": "0.16.1",
       "rust": "1.88.0"
     }
