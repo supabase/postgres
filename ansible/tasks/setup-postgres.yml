@@ -325,6 +325,42 @@
 
 
 # Reload
+- name: Create a SystemD override dir for PostgreSQL
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0755'
+    owner: 'root'
+    path: '/etc/systemd/system/postgresql.service.d'
+    state: 'directory'
+  become: true
+
+- name: Ensure PostgreSQL starts after tuned
+  become: true
+  community.general.ini_file:
+    create: true
+    group: 'root'
+    mode: '0644'
+    no_extra_spaces: true
+    option: 'After'
+    owner: 'root'
+    path: '/etc/systemd/system/postgresql.service.d/override.conf'
+    section: 'Unit'
+    state: 'present'
+    value: 'tuned.service'
+
+- name: Ensure PostgreSQL wants tuned
+  become: true
+  community.general.ini_file:
+    create: true
+    group: 'root'
+    mode: '0644'
+    no_extra_spaces: true
+    option: 'Wants'
+    owner: 'root'
+    path: '/etc/systemd/system/postgresql.service.d/overrides.conf'
+    section: 'Unit'
+    state: 'present'
+    value: 'tuned.service'
 - name: System - systemd reload
   ansible.builtin.systemd_service:
     daemon_reload: true
