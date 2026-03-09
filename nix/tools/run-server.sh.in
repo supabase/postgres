@@ -275,17 +275,12 @@ orioledb_config_items() {
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
         
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
-    elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
-        echo "non-macos pg 17 conf"
+    elif [[ "$VERSION" =~ ^(17|18)$ && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
+        echo "non-macos pg 17+ conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         sed -i 's/ timescaledb,//g; s/ plv8,//g;' "$DATDIR/supautils.conf"
-    elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
-        perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
-        perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
-        perl -pi -e 's/ plv8,//g;' "$DATDIR/supautils.conf"
-    elif [[ "$VERSION" == "18" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
+    elif [[ "$VERSION" =~ ^(17|18)$ && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
