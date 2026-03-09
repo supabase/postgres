@@ -178,7 +178,31 @@ When adding a new module, extend the `testScript` with an additional `subtest` b
 
 ### Running tests locally
 
-Run the system-manager check locally with:
+The container tests use `systemd-nspawn` which requires the `uid-range` nix feature. This in turn requires `auto-allocate-uids` and the `auto-allocate-uids` experimental feature to be enabled on the Linux machine running the tests.
+
+**On macOS:** These tests cannot run natively on macOS. You need to enter the shell of a Linux VM (e.g. an Ubuntu VM via OrbStack, UTM, or similar) and run the tests from there.
+
+Ensure your Linux machine's `/etc/nix/nix.conf` includes:
+
+```
+auto-allocate-uids = true
+extra-experimental-features = nix-command flakes auto-allocate-uids cgroups
+trusted-users = root @wheel @sudo
+```
+
+After updating the config, restart the nix daemon:
+
+```bash
+sudo systemctl restart nix-daemon
+```
+
+Then run the system-manager check:
+
+```bash
+nix build .#checks.aarch64-linux.check-system-manager -L
+```
+
+Or for x86_64:
 
 ```bash
 nix build .#checks.x86_64-linux.check-system-manager -L
