@@ -9,10 +9,7 @@ buildGoModule {
   src = multigres-src;
   subPackages = [ "go/cmd/pgctld" ];
   env.CGO_ENABLED = "0";
-  ldflags = [
-    "-s"
-    "-w"
-  ];
+  ldflags = [ ];
   # The Makefile copies pico CSS assets before go build; pgctld does not use web
   # templates so this is a no-op, but kept for safety in case of future imports.
   preBuild = ''

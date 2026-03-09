@@ -6,9 +6,9 @@
 #   docker build -f Dockerfile-multigres --target variant-orioledb-17 -t multigres-orioledb-17 .
 
 ####################
-# Stage 1a: Nix builder — PostgreSQL 17
+# Stage 0: Nix base — shared Alpine + Nix setup for all builders
 ####################
-FROM alpine:3.21 AS nix-builder-17
+FROM alpine:3.21 AS nix-base
 
 RUN apk add --no-cache \
     bash \
@@ -34,6 +34,11 @@ ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 
 WORKDIR /nixpg
 COPY . .
+
+####################
+# Stage 1a: Nix builder — PostgreSQL 17
+####################
+FROM nix-base AS nix-builder-17
 
 RUN nix profile add path:.#psql_17_slim/bin path:.#pg-backrest path:.#pgctld
 
@@ -48,32 +53,7 @@ RUN nix store gc
 ####################
 # Stage 1b: Nix builder — OrioleDB 17
 ####################
-FROM alpine:3.21 AS nix-builder-orioledb-17
-
-RUN apk add --no-cache \
-    bash \
-    coreutils \
-    curl \
-    shadow \
-    sudo \
-    xz
-
-RUN addgroup -S postgres && \
-    adduser -S -h /var/lib/postgresql -s /bin/bash -G postgres postgres && \
-    addgroup -S wal-g && \
-    adduser -S -s /bin/bash -G wal-g wal-g
-
-RUN cat <<EOF > /tmp/extra-nix.conf
-extra-experimental-features = nix-command flakes
-extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
-EOF
-RUN curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
-
-ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
-
-WORKDIR /nixpg
-COPY . .
+FROM nix-base AS nix-builder-orioledb-17
 
 RUN nix profile add path:.#psql_orioledb-17_slim/bin path:.#pg-backrest path:.#pgctld
 
