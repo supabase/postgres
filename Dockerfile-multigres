@@ -189,7 +189,13 @@ RUN for f in /nix/var/nix/profiles/default/bin/*; do \
 RUN chown -R postgres:postgres /usr/lib/postgresql && \
     chown -R postgres:postgres /usr/share/postgresql
 
-RUN ln -sf /nix/var/nix/profiles/default/bin/pgctld /usr/local/bin/pgctld
+COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld/postgresql.conf.tmpl
+
+# Wrapper: injects --postgres-config-template on every pgctld call so the team's
+# unmodified k8s manifests and local provisioner commands work without extra flags.
+RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld/postgresql.conf.tmpl "$@"\n' \
+    > /usr/local/bin/pgctld && \
+    chmod +x /usr/local/bin/pgctld
 
 # Strip extensions absent from pg17 vanilla build
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.conf

@@ -350,8 +350,8 @@ writeShellApplication {
             # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
             spl=$(docker exec "$container" sh -c "
-                psql -U postgres -h $pooler_dir/pg_sockets \
-                    -tAc \"SHOW shared_preload_libraries;\" 2>&1")
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW shared_preload_libraries;\" 2>&1") || true
             if ! echo "$spl" | grep -q "orioledb"; then
                 log_error "  orioledb not in shared_preload_libraries (got: $spl)"
                 log_error "  Check that wrapper script injects --postgres-config-template"
@@ -362,8 +362,8 @@ writeShellApplication {
             # 7. default_table_access_method must be orioledb
             local tam
             tam=$(docker exec "$container" sh -c "
-                psql -U postgres -h $pooler_dir/pg_sockets \
-                    -tAc \"SHOW default_table_access_method;\" 2>&1")
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW default_table_access_method;\" 2>&1") || true
             if ! echo "$tam" | grep -q "orioledb"; then
                 log_error "  default_table_access_method is not orioledb (got: $tam)"
                 exit 1

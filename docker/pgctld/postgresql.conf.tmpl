@@ -229,6 +229,8 @@ default_text_search_config = 'pg_catalog.english'
 
 # - Shared Library Preloading -
 
+shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault'
+
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
@@ -284,15 +286,3 @@ cron.database_name = 'postgres'
 pgsodium.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 vault.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 wal_log_hints = 'on'
-
-#------------------------------------------------------------------------------
-# ORIOLEDB
-# These settings activate OrioleDB as the default table storage engine.
-# Injected automatically by the /usr/local/bin/pgctld wrapper in variant-orioledb-17.
-#------------------------------------------------------------------------------
-shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault, orioledb'
-default_table_access_method = 'orioledb'
-orioledb.enable_rewind = true
-orioledb.rewind_max_time = 1200
-orioledb.rewind_max_transactions = 100000
-orioledb.rewind_buffers = 1280
