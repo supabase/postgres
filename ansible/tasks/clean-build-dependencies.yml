@@ -35,6 +35,4 @@
       - zlib1g-dev
       # Security: credential handling
       - sshpass
-      # Build tool leftovers
-      - ansible-core
     state: 'absent'
