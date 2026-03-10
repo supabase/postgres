@@ -128,6 +128,7 @@ function install_packages {
 	apt-get install -y \
 		gdisk \
 		e2fsprogs \
+		dosfstools \
 		debootstrap \
 		nvme-cli
 }
