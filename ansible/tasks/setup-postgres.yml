@@ -77,11 +77,12 @@
     # for the nix built version
     - name: create ssl-cert and postgres groups
       ansible.builtin.group:
-        name: "{{ group_item }}"
+        gid: "{{ group_item['gid'] }}"
+        name: "{{ group_item['grp'] }}"
         state: 'present'
       loop:
-        - 'ssl-cert'
-        - 'postgres'
+        - { grp: 'ssl-cert', gid: '1001' }
+        - { grp: 'postgres', gid: '1002' }
       loop_control:
         loop_var: 'group_item'
 
