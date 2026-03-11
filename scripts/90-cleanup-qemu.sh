@@ -38,11 +38,24 @@ elif [ -n "$(command -v apt-get)" ]; then
 	ansible \
         snapd
 
-  add-apt-repository --yes --remove ppa:ansible/ansible
+  # Remove ansible PPA directly (software-properties-common may not be installed)
+  rm -f /etc/apt/sources.list.d/ansible-ubuntu-ansible-*.list \
+        /etc/apt/sources.list.d/ansible-ubuntu-ansible-*.sources 2>/dev/null || true
 
   source /etc/os-release
 
+  # Protect critical runtime packages from autoremove
   apt-mark manual libevent-2.1-7t64
+
+  # Ensure cloud-init and openssh-server are installed
+  # They may have been removed as dependencies during package cleanup
+  apt-get -y install --no-install-recommends cloud-init openssh-server
+
+  # Protect SSH and cloud-init dependencies from autoremove
+  # Without these, the image won't be accessible via SSH after boot
+  apt-mark manual openssh-server cloud-init python3-systemd python3-jinja2 \
+    python3-yaml python3-oauthlib python3-configobj python3-requests \
+    python3-urllib3 python3-certifi python3-chardet python3-idna || true
 
   apt-get remove -y --purge ansible-core apport appstream bash-completion bcache-tools bind9-dnsutils bind9-host bind9-libs bolt btrfs-progs byobu command-not-found console-setup distro-info eject fonts-ubuntu-console friendly-recovery ftp fwupd gawk gdisk keyboard-configuration libvolume-key1 libssl-dev lvm2 lxd-agent-loader man-db mdadm modemmanager mtd-utils nano netcat-openbsd nfs-common ntfs-3g parted pastebinit screen strace thin-provisioning-tools tmux usb-modeswitch vim vim-runtime wget whiptail xfsprogs
 

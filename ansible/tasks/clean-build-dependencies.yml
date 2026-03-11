@@ -1,7 +1,12 @@
+# IMPORTANT: Do NOT use autoremove: true in these tasks!
+# Autoremove causes cascading removal of cloud-init and breaks SSH on the AMI.
+# Autoremove is handled safely in 90-cleanup.sh after apt-mark protection.
+
 - name: Remove build dependencies
   ansible.builtin.apt:
-    autoremove: true
+    autoremove: false
     pkg:
+      # Build tools installed by Ansible tasks
       - bison
       - build-essential
       - clang-11
@@ -9,13 +14,25 @@
       - cpp
       - flex
       - g++
-      - g++-10
       - g++-9
+      - g++-10
       - gcc-10
       - make
-      - manpages
-      - manpages-dev
       - ninja-build
       - patch
       - python2
+      # Dev headers installed for compilation
+      - libc6-dev
+      - libcrypt-dev
+      - libevent-dev
+      - libpcre3-dev
+      - libssl-dev
+      - linux-headers-aws
+      - linux-libc-dev
+      - pkg-config
+      - pkgconf
+      - pkgconf-bin
+      - zlib1g-dev
+      # Security: credential handling
+      - sshpass
     state: 'absent'
