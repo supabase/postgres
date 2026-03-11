@@ -115,6 +115,22 @@
         "type": "github"
       }
     },
+    "multigres": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773158276,
+        "narHash": "sha256-qKa6770V3FCznqj8lPB0dfXsytiw1l3ddJfuoQ1WlaE=",
+        "owner": "multigres",
+        "repo": "multigres",
+        "rev": "33528ddea63872fbd7047f7989a3d164d2dffeac",
+        "type": "github"
+      },
+      "original": {
+        "owner": "multigres",
+        "repo": "multigres",
+        "type": "github"
+      }
+    },
     "nix": {
       "flake": false,
       "locked": {
@@ -282,6 +298,7 @@
         "flake-parts": "flake-parts",
         "flake-utils": "flake-utils",
         "git-hooks": "git-hooks",
+        "multigres": "multigres",
         "nix-darwin": "nix-darwin",
         "nix-editor": "nix-editor",
         "nix-eval-jobs": "nix-eval-jobs",

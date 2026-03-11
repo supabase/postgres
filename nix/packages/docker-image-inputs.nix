@@ -25,12 +25,12 @@ let
         (root + "/Dockerfile-15")
         (root + "/Dockerfile-17")
         (root + "/Dockerfile-orioledb-17")
+        (root + "/Dockerfile-multigres")
 
         # PostgreSQL configuration files (copied into images)
         (root + "/ansible/files/postgresql_config")
         (root + "/ansible/files/pgbouncer_config")
         (root + "/ansible/files/stat_extension.sql")
-        (root + "/ansible/files/pgsodium_getkey_urandom.sh.j2")
         (root + "/ansible/files/postgresql_extension_custom_scripts")
         (root + "/ansible/files/walg_helper_scripts")
 
