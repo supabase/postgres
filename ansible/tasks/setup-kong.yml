@@ -23,8 +23,8 @@
     deb: '/tmp/kong.deb'
 
 - name: Kong - ensure it is NOT autoremoved
-  ansible.builtin.command:
-    cmd: apt-mark manual kong zlib1g*
+  ansible.builtin.shell:
+    cmd: apt-mark manual kong zlib1g libpcre3 openssl perl procps
 
 - name: Kong - configuration
   ansible.builtin.template:
