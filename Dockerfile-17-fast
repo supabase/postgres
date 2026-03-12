@@ -1,0 +1,210 @@
+# syntax=docker/dockerfile:1.6
+# Alpine-based slim PostgreSQL 17 image with Nix extensions
+# Fast build variant: uses a BuildKit cache mount to persist the Nix store between builds.
+# First build still downloads packages; subsequent builds skip downloads entirely.
+
+####################
+# Stage 1: Nix builder
+####################
+FROM alpine:3.21 AS nix-builder
+
+# Install dependencies for nix installer (coreutils for GNU cp, sudo for installer)
+RUN apk add --no-cache \
+    bash \
+    coreutils \
+    curl \
+    shadow \
+    sudo \
+    xz
+
+# Create users (Alpine syntax)
+RUN addgroup -S postgres && \
+    adduser -S -h /var/lib/postgresql -s /bin/bash -G postgres postgres && \
+    addgroup -S wal-g && \
+    adduser -S -s /bin/bash -G wal-g wal-g
+
+WORKDIR /nixpg
+COPY . .
+
+# Build PostgreSQL and groonga with extensions.
+#
+# --mount=type=cache persists /nix between builds on this machine so Nix does not
+# re-download or rebuild packages that are already in the store.  The cache is keyed
+# by id so it is shared across invalidated layers (e.g. when COPY . . changes).
+#
+# Because cache-mount contents are NOT committed to the image layer we copy the
+# finished store to /nix-output at the end; the production stage COPYs from there.
+#
+# Nix is installed in single-user (--no-daemon) mode so the entire store lives
+# under /nix (the cache mount) and needs no daemon process.
+RUN --mount=type=cache,id=psql17-nix-store,target=/nix,sharing=locked \
+    sh -c ' \
+        set -eu; \
+        \
+        # Write nix.conf every time (it lives in the writable layer, not the cache mount). \
+        # build-users-group must be empty so the single-user installer works as root; \
+        # sandbox=false is required inside Docker containers. \
+        mkdir -p /etc/nix; \
+        printf "build-users-group = \nsandbox = false\nextra-experimental-features = nix-command flakes\nextra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com\nextra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=\n" > /etc/nix/nix.conf; \
+        \
+        if [ ! -f /nix/var/nix/profiles/default/bin/nix ]; then \
+            curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --no-daemon --no-channel-add; \
+        fi; \
+        \
+        export PATH="/nix/var/nix/profiles/default/bin:$PATH"; \
+        \
+        nix profile add path:.#psql_17_slim/bin; \
+        nix store gc; \
+        \
+        nix profile add path:.#supabase-groonga; \
+        nix store gc; \
+        \
+        # Copy the store out of the cache mount so it is committed to the image layer. \
+        mkdir -p /nix-output; \
+        cp -a /nix/. /nix-output/; \
+    ' && \
+    mkdir -p /tmp/groonga-plugins && \
+    cp -r /nix-output/var/nix/profiles/default/lib/groonga/plugins /tmp/groonga-plugins/
+
+####################
+# Stage 2: Gosu builder
+####################
+FROM alpine:3.21 AS gosu-builder
+
+ARG TARGETARCH
+ARG GOSU_VERSION=1.16
+
+RUN apk add --no-cache gnupg curl
+
+# Download and verify gosu
+RUN curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}" -o /usr/local/bin/gosu && \
+    curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}.asc" -o /usr/local/bin/gosu.asc && \
+    GNUPGHOME="$(mktemp -d)" && \
+    export GNUPGHOME && \
+    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
+    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
+    rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc && \
+    chmod +x /usr/local/bin/gosu
+
+####################
+# Stage 3: Final production image
+####################
+FROM alpine:3.21 AS production
+
+# Install minimal runtime dependencies
+RUN apk add --no-cache \
+    bash \
+    curl \
+    shadow \
+    su-exec \
+    tzdata \
+    musl-locales \
+    musl-locales-lang \
+    && rm -rf /var/cache/apk/*
+
+# Create postgres user/group
+RUN addgroup -S postgres && \
+    adduser -S -G postgres -h /var/lib/postgresql -s /bin/bash postgres && \
+    addgroup -S wal-g && \
+    adduser -S -G wal-g -s /bin/bash wal-g && \
+    adduser postgres wal-g
+
+# Copy Nix store and profiles from builder (written to /nix-output to escape cache mount)
+COPY --from=nix-builder /nix-output /nix
+
+# Copy groonga plugins
+COPY --from=nix-builder /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
+
+# Copy gosu
+COPY --from=gosu-builder /usr/local/bin/gosu /usr/local/bin/gosu
+
+# Setup PostgreSQL directories
+RUN mkdir -p /usr/lib/postgresql/bin \
+    /usr/lib/postgresql/share/postgresql \
+    /usr/share/postgresql \
+    /var/lib/postgresql/data \
+    /var/run/postgresql \
+    && chown -R postgres:postgres /usr/lib/postgresql \
+    && chown -R postgres:postgres /var/lib/postgresql \
+    && chown -R postgres:postgres /usr/share/postgresql \
+    && chown -R postgres:postgres /var/run/postgresql
+
+# Create symbolic links for binaries
+RUN for f in /nix/var/nix/profiles/default/bin/*; do \
+        ln -sf "$f" /usr/lib/postgresql/bin/ 2>/dev/null || true; \
+        ln -sf "$f" /usr/bin/ 2>/dev/null || true; \
+    done
+
+# Create symbolic links for PostgreSQL shares
+RUN ln -sf /nix/var/nix/profiles/default/share/postgresql/* /usr/lib/postgresql/share/postgresql/ 2>/dev/null || true && \
+    ln -sf /nix/var/nix/profiles/default/share/postgresql/* /usr/share/postgresql/ 2>/dev/null || true && \
+    ln -sf /usr/lib/postgresql/share/postgresql/timezonesets /usr/share/postgresql/timezonesets 2>/dev/null || true
+
+# Set permissions
+RUN chown -R postgres:postgres /usr/lib/postgresql && \
+    chown -R postgres:postgres /usr/share/postgresql
+
+# Setup configs
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/conf.d
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
+COPY --chown=postgres:postgres ansible/files/pgsodium_getkey_urandom.sh.j2 /usr/lib/postgresql/bin/pgsodium_getkey.sh
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf /etc/postgresql-custom/wal-g.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_read_replica.conf /etc/postgresql-custom/read-replica.conf
+COPY --chown=postgres:postgres ansible/files/walg_helper_scripts/wal_fetch.sh /home/postgres/wal_fetch.sh
+COPY ansible/files/walg_helper_scripts/wal_change_ownership.sh /root/wal_change_ownership.sh
+
+# Configure PostgreSQL settings
+RUN sed -i \
+    -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
+    -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
+    -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
+    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" /etc/postgresql/postgresql.conf && \
+    echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
+    chown -R postgres:postgres /etc/postgresql-custom
+
+# Remove timescaledb and plv8 references (not in pg17)
+RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/ timescaledb,//g; s/ plv8,//g' "/etc/postgresql-custom/supautils.conf"
+
+# Include schema migrations
+COPY migrations/db /docker-entrypoint-initdb.d/
+COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint-initdb.d/init-scripts/00-schema.sql
+COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
+
+# Add entrypoint script
+ADD --chmod=0755 \
+    https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/17/bullseye/docker-entrypoint.sh \
+    /usr/local/bin/docker-entrypoint.sh
+
+# Setup pgsodium key script
+RUN mkdir -p /usr/share/postgresql/extension/ && \
+    ln -s /usr/lib/postgresql/bin/pgsodium_getkey.sh /usr/share/postgresql/extension/pgsodium_getkey && \
+    chmod +x /usr/lib/postgresql/bin/pgsodium_getkey.sh
+
+# Environment variables
+ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
+ENV PGDATA=/var/lib/postgresql/data
+ENV POSTGRES_HOST=/var/run/postgresql
+ENV POSTGRES_USER=supabase_admin
+ENV POSTGRES_DB=postgres
+ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+ENV GRN_PLUGINS_DIR=/usr/lib/groonga/plugins
+# Point to minimal glibc locales included in slim Nix package for initdb locale support
+ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+HEALTHCHECK --interval=2s --timeout=2s --retries=10 CMD pg_isready -U postgres -h localhost
+STOPSIGNAL SIGINT
+EXPOSE 5432
+
+CMD ["postgres", "-D", "/etc/postgresql"]

@@ -17,10 +17,10 @@ let
     inherit pname version;
 
     src = fetchFromGitHub {
-      owner = "duckdb";
+      owner = "TylerHillery";
       repo = "pg_duckdb";
-      rev = "v${version}";
-      hash = "sha256-0cNfDZkd6x45xpWyPMfFoYAklE+4lAjO02SjV+V/dxU=";
+      rev = "995fc34dd83659bed8f6ca3f2f66cc8eaa57fb14";
+      hash = "sha256-QCDgXbeSEEu927zr1ctvI3UeH+xJiUFnY/SVwEeRyjk=";
     };
 
     nativeBuildInputs = lib.optionals (!stdenv.isDarwin) [ patchelf ];
@@ -72,6 +72,8 @@ let
       # the pre-built library is already in place via the symlink above.
       printf '\n# Nix override: skip DuckDB cmake build\n$(FULL_DUCKDB_LIB):\n\t@:\n' >> Makefile
     '';
+
+    NIX_LDFLAGS = lib.optionalString stdenv.isDarwin "-headerpad_max_install_names";
 
     makeFlags = [
       "PG_CONFIG=${postgresql}/bin/pg_config"
