@@ -4,8 +4,8 @@ let
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
 
   expectedVersions = {
-    "15" = "15.14";
-    "17" = "17.6";
+    "15" = "15.17";
+    "17" = "17.9";
   };
 
   defaultPort = 5432;
