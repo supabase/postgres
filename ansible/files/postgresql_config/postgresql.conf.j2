@@ -688,6 +688,7 @@ default_text_search_config = 'pg_catalog.english'
 #session_preload_libraries = ''
 
 shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, pgsodium, timescaledb, auto_explain, pg_tle, plan_filter, supabase_vault, pg_duckdb'	# (change requires restart)
+duckdb.postgres_role = 'duckdb_role'	# (change requires restart)
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
