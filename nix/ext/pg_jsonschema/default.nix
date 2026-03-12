@@ -137,9 +137,11 @@ let
       { "${latestVersion}" = supportedVersions.${latestVersion}; }
     else
       supportedVersions;
-  packages = builtins.attrValues (
-    lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) versionsToUse
-  );
+  packagesAttrSet = lib.mapAttrs' (name: value: {
+    name = lib.replaceStrings [ "." ] [ "_" ] name;
+    value = build name value.hash value.rust value.pgrx;
+  }) versionsToUse;
+  packages = builtins.attrValues packagesAttrSet;
   versionsBuilt = if latestOnly then [ latestVersion ] else versions;
   numberOfVersionsBuilt = builtins.length versionsBuilt;
 in
@@ -186,6 +188,10 @@ in
         latestVersion
       else
         "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+    # Expose individual packages for CI to build separately
+    packages = packagesAttrSet // {
+      recurseForDerivations = true;
+    };
   };
 }).overrideAttrs
   (_: {

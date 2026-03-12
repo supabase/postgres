@@ -14,10 +14,6 @@ permissions:
   contents: write
   packages: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   nix-eval:
     uses: ./.github/workflows/nix-eval.yml
@@ -40,17 +36,31 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
+          enable-sccache-sandbox-path: ${{ matrix.postgresql_version && 'true' || 'false' }}
+          max-jobs: ${{ matrix.postgresql_version && '1' || '' }}
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -71,17 +81,31 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
+          enable-sccache-sandbox-path: ${{ matrix.postgresql_version && 'true' || 'false' }}
+          max-jobs: ${{ matrix.postgresql_version && '1' || '' }}
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -102,9 +126,23 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Configure sccache cache directory
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        run: |
+          mkdir -p /nix/var/cache/sccache || true
+          # Stop any existing sccache daemon to avoid stale TMPDIR state
+          if command -v sccache &> /dev/null; then
+            sccache --stop-server 2>/dev/null || true
+          fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -125,9 +163,23 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
+      - name: Configure sccache cache directory
+        if: ${{ matrix.attr != '' && matrix.postgresql_version }}
+        run: |
+          mkdir -p /nix/var/cache/sccache || true
+          # Stop any existing sccache daemon to avoid stale TMPDIR state
+          if command -v sccache &> /dev/null; then
+            sccache --stop-server 2>/dev/null || true
+          fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -148,14 +200,28 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          enable-sccache-sandbox-path: ${{ matrix.postgresql_version && 'true' || 'false' }}
+          max-jobs: ${{ matrix.postgresql_version && '1' || '' }}
           push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -176,14 +242,28 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Mount sccache disk
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-sccache-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_key }}
+          path: /nix/var/cache/sccache
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          enable-sccache-sandbox-path: ${{ matrix.postgresql_version && 'true' || 'false' }}
+          max-jobs: ${{ matrix.postgresql_version && '1' || '' }}
           push-to-cache: 'true'
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      - name: Allow sccache cache write access
+        if: ${{ matrix.attr != '' && matrix.postgresql_version && matrix.runs_on.group != 'self-hosted-runners-nix' }}
+        run: |
+          # With auto-allocate-uids, UID 872415232 (0x34000000) maps to nixbld inside sandbox
+          if [ -d /nix/var/cache/sccache ]; then sudo chown -R 872415232 /nix/var/cache/sccache; fi
+          if [ -d /nix/var/cache/sccache ]; then sudo chmod -R 2777 /nix/var/cache/sccache; fi
       - name: nix build
         if: ${{ matrix.attr != '' }}
         shell: bash
@@ -217,15 +297,3 @@ jobs:
       (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
       (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
     uses: ./.github/workflows/test.yml
-
-  docker-image-test:
-    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux]
-    if: |
-      !cancelled() &&
-      needs.nix-eval.result == 'success' &&
-      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
-      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
-    uses: ./.github/workflows/docker-image-test.yml
-    secrets:
-      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}

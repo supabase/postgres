@@ -34,6 +34,7 @@
   stdenv,
   writeShellScriptBin,
   defaultBindgenHook,
+  sccache,
 }:
 
 # The idea behind: Use it mostly like rustPlatform.buildRustPackage and so
@@ -55,7 +56,7 @@
   postgresql,
   # enable override to generate bindings using bindgenHook.
   # Some older versions of cargo-pgrx use a bindgenHook that is not compatible with the
-  # current clang version present in stdenv
+  # current clang version present in stdenv
   bindgenHook ? defaultBindgenHook,
   # cargo-pgrx calls rustfmt on generated bindings, this is not strictly necessary, so we avoid the
   # dependency here. Set to false and provide rustfmt in nativeBuildInputs, if you need it, e.g.
@@ -157,11 +158,38 @@ let
         postgresql
         pkg-config
         bindgenHook
+        sccache
       ]
       ++ lib.optionals useFakeRustfmt [ fakeRustfmt ];
 
     buildPhase = ''
       runHook preBuild
+      echo "Platform: ${stdenv.system}"
+      echo "isDarwin: ${lib.boolToString stdenv.isDarwin}"
+      if [[ -d "/nix/var/cache/sccache" && -w "/nix/var/cache/sccache" ]]; then
+        if touch "/nix/var/cache/sccache/.test" 2>/dev/null && rm -f "/nix/var/cache/sccache/.test" 2>/dev/null; then
+          echo "sccache: cache directory available and writable, enabling"
+          ${lib.optionalString stdenv.isDarwin ''
+            # Darwin: Use shared /tmp for TMPDIR to avoid sccache caching per-build temp paths
+            export TMPDIR=/tmp
+            export TEMP=/tmp
+            export TEMPDIR=/tmp
+            export TMP=/tmp
+          ''}
+          export RUSTC_WRAPPER="${sccache}/bin/sccache"
+          export SCCACHE_DIR="/nix/var/cache/sccache"
+          export SCCACHE_CACHE_SIZE="50G"
+          export SCCACHE_LOG=debug
+          export SCCACHE_IDLE_TIMEOUT=0
+          # Use unique port per user to isolate sccache servers
+          USER_ID=$(id -u)
+          export SCCACHE_SERVER_PORT=$((4226 + USER_ID % 100))
+        else
+          echo "sccache: cache directory not accessible in sandbox, skipping"
+        fi
+      else
+        echo "sccache: cache directory not available, skipping"
+      fi
 
       echo "Executing cargo-pgrx buildPhase"
       ${preBuildAndTest}
@@ -182,6 +210,11 @@ let
         ${maybeDebugFlag} \
         --features "${builtins.concatStringsSep " " buildFeatures}" \
         --out-dir "$out"
+
+      if [[ -n "''${RUSTC_WRAPPER:-}" ]]; then
+        echo "sccache stats:"
+        ${sccache}/bin/sccache --show-stats
+      fi
 
       ${maybeLeaveBuildAndTestSubdir}
 
