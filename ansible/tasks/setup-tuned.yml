@@ -192,7 +192,7 @@
         - { option: 'vm.dirty_expire_centisecs',        value: '3000' }
         - { option: 'vm.dirty_ratio',                   value: '40' }
         - { option: 'vm.dirty_writeback_centisecs',     value: '500' }
-        - { option: 'vm.overcommit_memory',             value: '2' }
+#        - { option: 'vm.overcommit_memory',             value: '2' }
         - { option: 'vm.panic_on_oom',                  value: '1' }
         - { option: 'vm.swappiness',                    value: '10' }
       loop_control:
