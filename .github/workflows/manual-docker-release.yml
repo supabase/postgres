@@ -24,18 +24,38 @@ jobs:
         id: set-matrix
         run: |
           nix run nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
-          let matrix = ($versions | each { |ver|
+          let base_matrix = ($versions | each { |ver|
             let version = ($ver | str trim)
             let dockerfile = $"Dockerfile-($version)"
             if ($dockerfile | path exists) {
               {
                 version: $version,
-                dockerfile: $dockerfile
+                dockerfile: $dockerfile,
+                target: "production"
               }
             } else {
               null
             }
           } | compact)
+
+          # Discover multigres variants by checking for matching targets in Dockerfile-multigres
+          let multigres_matrix = ($versions | each { |ver|
+            let version = ($ver | str trim)
+            let mg_version = $"multigres-($version)"
+            let mg_dockerfile = "Dockerfile-multigres"
+            let mg_target = $"variant-($version)"
+            if ($mg_dockerfile | path exists) and (open --raw $mg_dockerfile | str contains $"AS ($mg_target)") {
+              {
+                version: $mg_version,
+                dockerfile: $mg_dockerfile,
+                target: $mg_target
+              }
+            } else {
+              null
+            }
+          } | compact)
+
+          let matrix = ($base_matrix | append $multigres_matrix)
 
           let matrix_config = {
             include: $matrix
@@ -92,35 +112,39 @@ jobs:
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
             pg_version=$(nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
-              let release_key = if ($version | str contains "orioledb") {
+              let is_multigres = ($version | str starts-with "multigres-")
+              let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
+              let release_key = if ($base_version | str contains "orioledb") {
                 $"postgresorioledb-17"
               } else {
-                $"postgres($version)"
+                $"postgres($base_version)"
               }
-              let base_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
               let final_version = if "${{ inputs.postgresVersion }}" != "" {
                 "${{ inputs.postgresVersion }}"
               } else {
-                $base_version
+                $base_tag
               }
-              $final_version | str trim
+              if $is_multigres { $"($final_version)-multigres" | str trim } else { $final_version | str trim }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           else
             pg_version=$(nix run nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
-              let release_key = if ($version | str contains "orioledb") {
+              let is_multigres = ($version | str starts-with "multigres-")
+              let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
+              let release_key = if ($base_version | str contains "orioledb") {
                 $"postgresorioledb-17"
               } else {
-                $"postgres($version)"
+                $"postgres($base_version)"
               }
-              let base_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
               let final_version = if "${{ inputs.postgresVersion }}" != "" {
                 "${{ inputs.postgresVersion }}"
               } else {
-                $base_version
+                $base_tag
               }
-              $final_version | str trim
+              if $is_multigres { $"($final_version)-multigres" | str trim } else { $final_version | str trim }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           fi
@@ -130,7 +154,7 @@ jobs:
           push: true
           build-args: |
             ${{ needs.build.outputs.build_args }}
-          target: production
+          target: ${{ matrix.postgres.target }}
           tags: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
@@ -156,12 +180,15 @@ jobs:
         run: |
           nix run nixpkgs#nushell -- -c '
             let version = "${{ matrix.version }}"
-            let release_key = if ($version | str contains "orioledb") {
+            let is_multigres = ($version | str starts-with "multigres-")
+            let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
+            let release_key = if ($base_version | str contains "orioledb") {
               $"postgresorioledb-17"
             } else {
-              $"postgres($version)"
+              $"postgres($base_version)"
             }
-            let pg_version = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            let pg_version = if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
           '
       - name: Output version
@@ -258,5 +285,5 @@ jobs:
         matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
       uses: ./.github/workflows/mirror.yml
       with:
-        version: ${{ inputs.postgresVersion != '' && inputs.postgresVersion || matrix.version }}
+        version: ${{ inputs.postgresVersion != '' && (contains(matrix.version, '-multigres') && format('{0}-multigres', inputs.postgresVersion) || inputs.postgresVersion) || matrix.version }}
       secrets: inherit
