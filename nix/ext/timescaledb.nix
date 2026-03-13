@@ -13,7 +13,7 @@
   writeShellApplication,
   latestOnly ? false,
 }:
-# this extension is limited to Postgres 15 
+
 let
   pname = "timescaledb";
   build =
