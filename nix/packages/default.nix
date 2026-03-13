@@ -91,7 +91,6 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
-          system-manager = inputs'.system-manager.packages.default;
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
@@ -115,6 +114,9 @@
             cargo-pgrx_0_12_9
             cargo-pgrx_0_14_3
             ;
+        }
+        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          system-manager = inputs'.system-manager.packages.default;
         }
         // lib.optionalAttrs pkgs.stdenv.isDarwin {
           setup-darwin-linux-builder = pkgs.callPackage ./setup-darwin-linux-builder.nix {
