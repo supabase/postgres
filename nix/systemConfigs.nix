@@ -1,7 +1,7 @@
 { self, inputs, ... }:
 let
   mkModules = system: [
-    self.systemModules.ssh-config
+    self.systemModules.genesis
     ({
       nixpkgs.hostPlatform = system;
     })
