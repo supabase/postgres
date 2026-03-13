@@ -24,12 +24,11 @@
               machine.activate()
               machine.wait_for_unit("system-manager.target")
 
-              with subtest("Verify ssh config"):
-                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").exists, "/etc/ssh/sshd_config.d/local.conf should exist"
-                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").mode == 0o644, "/etc/ssh/sshd_config.d/local.conf should have mode 0644"
-                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").user == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
-                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").group == "root", "/etc/ssh/sshd_config.d/local.conf should be owned by root"
-                  assert machine.file("/etc/ssh/sshd_config.d/local.conf").contains("Match Address"), "/etc/ssh/sshd_config.d/local.conf should contain 'Match Address'"
+              with subtest("Verify genesis file"):
+                  assert machine.file("/etc/system-manager-genesis").exists, "/etc/system-manager-genesis should exist"
+                  assert machine.file("/etc/system-manager-genesis").mode == 0o644, "/etc/system-manager-genesis should have mode 0644"
+                  assert machine.file("/etc/system-manager-genesis").user == "root", "/etc/system-manager-genesis should be owned by root"
+                  assert machine.file("/etc/system-manager-genesis").group == "root", "/etc/system-manager-genesis should be owned by root"
             '';
           };
       };
