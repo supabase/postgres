@@ -148,10 +148,9 @@ def parse_nix_eval_line(
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
             return Ok(None)
-        if (
-            "nixos-test" in data.get("requiredSystemFeatures", [])
-            and data["system"] == "x86_64-linux"
-        ):
+        if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
+            "system"
+        ] in ("x86_64-linux", "aarch64-darwin"):
             return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)
