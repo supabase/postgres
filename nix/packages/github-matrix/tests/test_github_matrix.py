@@ -120,7 +120,7 @@ class TestGetRunnerForPackage:
         }
         result = get_runner_for_package(pkg)
         assert result == {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
+            "labels": ["blacksmith-16vcpu-ubuntu-2404-arm"],
         }
 
     def test_large_package_x86_64_linux(self):
@@ -210,7 +210,7 @@ class TestGetRunnerForPackage:
             "system": "aarch64-linux",
         }
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]}
+        assert result == {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
 
 
 class TestSortPkgsByClosures:

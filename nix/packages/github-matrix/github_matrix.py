@@ -70,7 +70,7 @@ class NixEvalError(TypedDict):
 BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
     "ephemeral": {
         "aarch64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
+            "labels": ["blacksmith-16vcpu-ubuntu-2404-arm"],
         },
         "x86_64-linux": {
             "labels": ["blacksmith-8vcpu-ubuntu-2404"],

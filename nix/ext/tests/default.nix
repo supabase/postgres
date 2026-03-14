@@ -71,6 +71,10 @@ let
       nodes.server =
         { config, ... }:
         {
+          # VM resources — sized for nested virtualisation on ephemeral CI runners
+          virtualisation.memorySize = 4096;
+          virtualisation.cores = 2;
+
           services.openssh = {
             enable = true;
           };
