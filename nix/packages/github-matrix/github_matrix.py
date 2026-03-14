@@ -70,7 +70,7 @@ class NixEvalError(TypedDict):
 BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
     "ephemeral": {
         "aarch64-linux": {
-            "labels": ["blacksmith-16vcpu-ubuntu-2404-arm"],
+            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
         },
         "x86_64-linux": {
             "labels": ["blacksmith-8vcpu-ubuntu-2404"],
@@ -262,6 +262,8 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     if is_kvm_pkg(pkg):
         if system == "aarch64-darwin":
             return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+        if system == "aarch64-linux":
+            return {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
         runConfig = BUILD_RUNNER_MAP["ephemeral"].get(system)
         if runConfig is None:
             raise ValueError(
