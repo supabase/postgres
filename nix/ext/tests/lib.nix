@@ -233,6 +233,10 @@ let
     in
     { ... }:
     {
+      # VM resources — sized for nested virtualisation on ephemeral CI runners
+      virtualisation.memorySize = 4096;
+      virtualisation.cores = 2;
+
       # System users
       users.users.postgres = {
         isSystemUser = true;
