@@ -285,6 +285,7 @@ let
         environment = {
           GRN_PLUGINS_DIR = "${groongaPackage}/lib/groonga/plugins";
           LANG = "en_US.UTF-8";
+          BLACKSMITH_MIGRATION = "1";
         };
       };
 
