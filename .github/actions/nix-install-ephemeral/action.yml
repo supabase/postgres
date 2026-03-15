@@ -49,3 +49,14 @@ runs:
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
           max-jobs = 4
+          extra-system-features = kvm
+    - name: Setup KVM permissions
+      shell: bash
+      run: |
+        if [ -e /dev/kvm ]; then
+          sudo chown runner /dev/kvm
+          sudo chmod 666 /dev/kvm
+          echo "KVM configured: $(ls -l /dev/kvm)"
+        else
+          echo "KVM device not available"
+        fi

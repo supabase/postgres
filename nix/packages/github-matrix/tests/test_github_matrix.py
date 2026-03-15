@@ -103,11 +103,10 @@ class TestGetRunnerForPackage:
             "system": "x86_64-linux",
             "requiredSystemFeatures": ["kvm"],
         }
-        with pytest.raises(
-            ValueError,
-            match=r"No self-hosted with kvm support available for system: x86_64-linux",
-        ):
-            get_runner_for_package(pkg)
+        result = get_runner_for_package(pkg)
+        assert result == {
+            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
+        }
 
     def test_kvm_package_aarch64_linux(self):
         pkg: NixEvalJobsOutput = {
@@ -121,8 +120,7 @@ class TestGetRunnerForPackage:
         }
         result = get_runner_for_package(pkg)
         assert result == {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-linux"],
+            "labels": ["blacksmith-16vcpu-ubuntu-2404-arm"],
         }
 
     def test_large_package_x86_64_linux(self):
