@@ -27,7 +27,7 @@ concurrency:
 jobs:
   dependency-analysis:
     name: Package Dependency Analysis
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
     steps:
       - name: Checkout repository
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD

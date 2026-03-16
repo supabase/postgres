@@ -164,16 +164,16 @@ ensure_repo_at_commit "$NEW_DIR" "$PR_BRANCH" "$PR_COMMIT"
 # Build all variants in both directories
 echo "Building in $OLD_DIR..."
 cd "$OLD_DIR"
-nix build ".#psql_15/bin" -o result-psql_15
-nix build ".#psql_17/bin" -o result-psql_17
-nix build ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
+nix build --accept-flake-config ".#psql_15/bin" -o result-psql_15
+nix build --accept-flake-config ".#psql_17/bin" -o result-psql_17
+nix build --accept-flake-config ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
 
 echo ""
 echo "Building in $NEW_DIR..."
 cd "$NEW_DIR"
-nix build ".#psql_15/bin" -o result-psql_15
-nix build ".#psql_17/bin" -o result-psql_17
-nix build ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
+nix build --accept-flake-config ".#psql_15/bin" -o result-psql_15
+nix build --accept-flake-config ".#psql_17/bin" -o result-psql_17
+nix build --accept-flake-config ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
 
 echo ""
 
@@ -312,16 +312,57 @@ analyze_variant_deps() {
 		fi
 	done
 
-	echo ""
+	# Closure size comparison
+	old_closure_bytes=$(nix path-info -S "$OLD_DIR/result-$result_suffix" --json 2>/dev/null | jq -r '.[].closureSize')
+	new_closure_bytes=$(nix path-info -S "$NEW_DIR/result-$result_suffix" --json 2>/dev/null | jq -r '.[].closureSize')
+
+	if [ -n "$old_closure_bytes" ] && [ -n "$new_closure_bytes" ]; then
+		old_closure_mb=$(numfmt --to-unit=1000000 --format='%.1f' <<<"$old_closure_bytes")
+		new_closure_mb=$(numfmt --to-unit=1000000 --format='%.1f' <<<"$new_closure_bytes")
+		diff_bytes=$((new_closure_bytes - old_closure_bytes))
+		if [ "$diff_bytes" -ge 0 ]; then
+			diff_sign="+"
+		else
+			diff_sign=""
+		fi
+		diff_mb=$(numfmt --to-unit=1000000 --format='%.1f' <<<"${diff_bytes#-}")
+		[ "$diff_bytes" -lt 0 ] && diff_mb="-$diff_mb"
+
+		echo "### Runtime Closure Size"
+		echo ""
+		echo "| | Size |"
+		echo "|--|------|"
+		echo "| Old | ${old_closure_mb} MB |"
+		echo "| New | ${new_closure_mb} MB |"
+		echo "| Delta | ${diff_sign}${diff_mb} MB |"
+		echo ""
+	fi
+
 	echo "<details>"
 	echo "<summary>Raw Dependency Closure</summary>"
 	echo ""
 	echo "\`\`\`"
-	echo "Old Dependencies:"
-	cat "/tmp/old-$variant-deps-$$.txt"
+	echo "Old Dependencies (closure: ${old_closure_mb:-?} MB):"
+	while read -r path; do
+		dep_size=$(nix path-info -S "$path" --json 2>/dev/null | jq -r '.[].narSize' 2>/dev/null || echo "")
+		if [ -n "$dep_size" ]; then
+			dep_size_hr=$(numfmt --to-unit=1000000 --format='%.1f' <<<"$dep_size")
+			printf "  %6s MB  %s\n" "$dep_size_hr" "$path"
+		else
+			echo "  $path"
+		fi
+	done <"/tmp/old-$variant-deps-$$.txt"
 	echo ""
-	echo "New Dependencies:"
-	cat "/tmp/new-$variant-deps-$$.txt"
+	echo "New Dependencies (closure: ${new_closure_mb:-?} MB):"
+	while read -r path; do
+		dep_size=$(nix path-info -S "$path" --json 2>/dev/null | jq -r '.[].narSize' 2>/dev/null || echo "")
+		if [ -n "$dep_size" ]; then
+			dep_size_hr=$(numfmt --to-unit=1000000 --format='%.1f' <<<"$dep_size")
+			printf "  %6s MB  %s\n" "$dep_size_hr" "$path"
+		else
+			echo "  $path"
+		fi
+	done <"/tmp/new-$variant-deps-$$.txt"
 	echo "\`\`\`"
 	echo ""
 	echo "</details>"
@@ -370,28 +411,13 @@ SUMMARY_CONTENT=$(generate_summary)
 
 # Insert summary after the header but before PostgreSQL version sections
 # We need to insert it after the header (line with "Analysis Date") and before first "##" heading
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	# macOS - create temp file with proper structure
-	{
-		# Read header (including bullet point lines)
-		sed -n '1,/^- \*\*Analysis Date:/p' "$OUTPUT_FILE"
-		echo ""
-		# Insert summary
-		echo "$SUMMARY_CONTENT"
-		# Append rest of file (everything after the header)
-		sed -n '/^- \*\*Analysis Date:/,$p' "$OUTPUT_FILE" | tail -n +2
-	} >"$OUTPUT_FILE.tmp"
-	mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
-else
-	# GNU/Linux - similar approach
-	{
-		sed -n '1,/^- \*\*Analysis Date:/p' "$OUTPUT_FILE"
-		echo ""
-		echo "$SUMMARY_CONTENT"
-		sed -n '/^- \*\*Analysis Date:/,$p' "$OUTPUT_FILE" | tail -n +2
-	} >"$OUTPUT_FILE.tmp"
-	mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
-fi
+{
+	sed -n '1,/^- \*\*Analysis Date:/p' "$OUTPUT_FILE"
+	echo ""
+	echo "$SUMMARY_CONTENT"
+	sed -n '/^- \*\*Analysis Date:/,$p' "$OUTPUT_FILE" | tail -n +2
+} >"$OUTPUT_FILE.tmp"
+mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
 
 echo "Analysis complete!"
 echo "Results written to: $OUTPUT_FILE"
