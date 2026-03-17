@@ -216,3 +216,25 @@ cp /tmp/tmp.<id>/regression_output/results/z_multigres-orioledb-17_*.out nix/tes
 > `pgmq.out`, `http.out`) from multigres test runs back to `nix/tests/expected/`.
 > Those files are patched at runtime by the test harness and will break other
 > image tests if overwritten with patched content.
+
+
+## Updating multigres
+
+1. run `nix flake update multigres` from root of repo (it should only change `flake.lock` file)
+2. `git add flake.lock`
+3. `nix build .#pgctld` and update `nix/packages/pgctld.nix`  `vendorHash` with returned value
+   example `vendorHash = "sha256-cqSd6Dv0WYOVwg7AE1tZPh9uzsjDG32gF6eJzARsHo8=";`
+4. `git add nix/packages/pgctld.nix`
+5. run the tests locally with 
+  a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
+  b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
+6. release the images by incrementing these values in `ansible/vars.yaml` by 1 
+
+# Full version strings for each major version
+```
+postgres_release:
+  postgresorioledb-17: "17.6.0.054-orioledb"
+  postgres17: "17.6.1.097"
+  postgres15: "15.14.1.097"     
+```
+Then you can push the changes if the images pass those tests
