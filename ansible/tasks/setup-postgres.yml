@@ -286,6 +286,18 @@
       when:
         - (is_psql_oriole or is_psql_17)
 
+- name: copy PG apparmor profile
+  ansible.builtin.copy:
+    dest: '/etc/apparmor.d/sbpostgres'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+    src: 'files/postgresql_config/sbpostgres_apparmor'
+
+- name: reload apparmor with sbpostgres profile
+  ansible.builtin.command:
+    cmd: '/usr/sbin/apparmor_parser -r /etc/apparmor.d/sbpostgres && /usr/sbin/aa-enforce sbpostgres'
+
 - name: copy PG and optimizations systemd units
   ansible.builtin.template:
     dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
@@ -376,7 +388,7 @@
     dest: '/var/lib/postgresql/.bashrc'
     line: "{{ lang_item }}"
   become: true
-  loop: 
+  loop:
     - 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
     - 'export LANG="en_US.UTF-8"'
     - 'export LANGUAGE="en_US.UTF-8"'
