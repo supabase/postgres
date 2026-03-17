@@ -294,9 +294,13 @@
     group: 'root'
     src: 'files/postgresql_config/sbpostgres_apparmor'
 
+- name: parse apparmor sbpostgres profile
+  ansible.builtin.command:
+    cmd: '/usr/sbin/apparmor_parser -r /etc/apparmor.d/sbpostgres'
+
 - name: reload apparmor with sbpostgres profile
   ansible.builtin.command:
-    cmd: '/usr/sbin/apparmor_parser -r /etc/apparmor.d/sbpostgres && /usr/sbin/aa-enforce sbpostgres'
+    cmd: '/usr/sbin/aa-enforce sbpostgres'
 
 - name: copy PG and optimizations systemd units
   ansible.builtin.template:
