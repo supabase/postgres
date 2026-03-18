@@ -131,7 +131,7 @@ source "amazon-ebssurrogate" "source" {
   launch_block_device_mappings {
     device_name = "/dev/xvdh"
     delete_on_termination = true
-    volume_size = 8
+    volume_size = 1
     volume_type = "gp3"
    }
 
