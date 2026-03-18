@@ -289,9 +289,9 @@
 - name: copy PG apparmor profile
   ansible.builtin.copy:
     dest: '/etc/apparmor.d/sbpostgres'
-    mode: '0644'
-    owner: 'root'
     group: 'root'
+    mode: '0644'
+	owner: 'root'
     src: 'files/postgresql_config/sbpostgres_apparmor'
 
 - name: parse apparmor sbpostgres profile
