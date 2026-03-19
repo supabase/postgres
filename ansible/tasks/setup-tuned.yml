@@ -211,7 +211,7 @@
             path: '/etc/tuned/profiles/postgresql/tuned.conf'
             section: 'sysctl'
             state: 'present'
-            value: "{{ (shared_buffers * overhead) / hugepagesize | round | int }}"
+            value: "{{ ((shared_buffers * overhead) / hugepagesize) | round | int }}"
           vars:
             hugepagesize: 2048  # assumes a 2MB page
             shared_buffers: 131072  # we use 128MB (128 * 1024) of shared_buffers by default
