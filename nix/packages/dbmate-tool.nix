@@ -25,17 +25,30 @@ writeShellApplication {
   ];
   text = ''
     # Default values
-    PSQL_VERSION="ALL"
+    PSQL_VERSION="all"
     PORTNO="${defaults.port}"
     PGSQL_SUPERUSER="${defaults.superuser}"
     PGPASSWORD="''${PGPASSWORD:-postgres}"
     PGSQL_USER="postgres"
-    FLAKE_URL="github:supabase/postgres"
+    DEFAULT_FLAKE_URL="github:supabase/postgres"
+    FLAKE_URL=""
     MIGRATIONS_DIR="${migrationsDir}"
     CURRENT_SYSTEM="${system}"
     ANSIBLE_VARS="${ansibleVars}"
     PGBOUNCER_AUTH_SCHEMA_SQL="${pgbouncerAuthSchemaSql}"
     STAT_EXTENSION_SQL="${statExtensionSql}"
+
+    resolve_flake_url() {
+        if [ -n "$FLAKE_URL" ]; then
+            return
+        fi
+
+        if [ -f "./flake.nix" ]; then
+            FLAKE_URL="."
+        else
+            FLAKE_URL="$DEFAULT_FLAKE_URL"
+        fi
+    }
 
     # Start PostgreSQL using nix
     start_postgres() {
@@ -82,10 +95,11 @@ writeShellApplication {
         echo "Usage: nix run .#dbmate-tool -- [options]"
         echo
         echo "Options:"
-        echo "  -v, --version [15|17|18|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)"
+        echo "  -v, --version [15|17|18|orioledb-17|all]  Specify the PostgreSQL version to use (defaults to all)"
         echo "  -p, --port PORT                    Specify the port number to use (default: 5435)"
+        echo "  -u, --user USER                    Specify the PostgreSQL user to use (default: postgres)"
         echo "  -h, --help                         Show this help message"
-        echo "  -f, --flake-url URL                Specify the flake URL to use (default: github:supabase/postgres)"
+        echo "  -f, --flake-url URL                Specify the flake URL to use (default: current repo if available, otherwise github:supabase/postgres)"
         echo "Description:"
         echo "  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions."
         echo "  NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file."
@@ -93,8 +107,8 @@ writeShellApplication {
         echo "Examples:"
         echo "  nix run .#dbmate-tool"
         echo "  nix run .#dbmate-tool -- --version 15"
-        echo "  nix run .#dbmate-tool -- --version 16 --port 5433"
-        echo "  nix run .#dbmate-tool -- --version 16 --port 5433 --flake-url github:supabase/postgres/<commithash>"
+        echo "  nix run .#dbmate-tool -- --version 18 --port 5433"
+        echo "  nix run .#dbmate-tool -- --version 18 --port 5433 --flake-url github:supabase/postgres/<commithash>"
     }
 
     # Parse arguments
@@ -105,7 +119,7 @@ writeShellApplication {
                     PSQL_VERSION="$2"
                     shift 2
                 else
-                    echo "Error: --version requires an argument (15, 16, or orioledb-17)"
+                    echo "Error: --version requires an argument (15, 17, 18, or orioledb-17)"
                     exit 1
                 fi
                 ;;
@@ -147,6 +161,8 @@ writeShellApplication {
                 ;;
         esac
     done
+
+    resolve_flake_url
 
     # Function to wait for PostgreSQL to be ready
     wait_for_postgres() {
@@ -227,6 +243,7 @@ writeShellApplication {
 
     migrate_version() {
         echo "PSQL_VERSION: $PSQL_VERSION"
+        echo "Using flake URL: $FLAKE_URL"
         #pkill -f "postgres" || true  # Ensure PostgreSQL is stopped before starting
         PSQLBIN=$(nix build --no-link "$FLAKE_URL#psql_$PSQL_VERSION/bin" --json | jq -r '.[].outputs.out + "/bin"')
         echo "Using PostgreSQL version $PSQL_VERSION from $PSQLBIN"

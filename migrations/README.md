@@ -7,9 +7,11 @@ from the root of the `supabase/postgres` project, you can run the following comm
 Usage: nix run .#dbmate-tool -- [options]
 
 Options:
-  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)
+  -v, --version [15|17|18|orioledb-17|all]  Specify the PostgreSQL version to use (defaults to all)
   -p, --port PORT                    Specify the port number to use (default: 5435)
+  -u, --user USER                    Specify the PostgreSQL user to use (default: postgres)
   -h, --help                         Show this help message
+  -f, --flake-url URL                Specify the flake URL to use (default: current repo if available, otherwise github:supabase/postgres)
 
 Description:
   Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions.
@@ -18,7 +20,7 @@ Description:
 Examples:
   nix run .#dbmate-tool
   nix run .#dbmate-tool -- --version 15
-  nix run .#dbmate-tool -- --version 16 --port 5433
+  nix run .#dbmate-tool -- --version 18 --port 5433
 
 ```
 
@@ -29,7 +31,7 @@ nix run github:supabase/postgres#dbmate-tool -- --version 15
 
 or
 
-nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
+nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 18
 ```
 # supabase/migrations
 
