@@ -291,7 +291,7 @@
     dest: '/etc/apparmor.d/sbpostgres'
     group: 'root'
     mode: '0644'
-	owner: 'root'
+    owner: 'root'
     src: 'files/postgresql_config/sbpostgres_apparmor'
 
 - name: parse apparmor sbpostgres profile
