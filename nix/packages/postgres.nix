@@ -239,6 +239,7 @@
       slimPackages = {
         psql_15_slim = makePostgres "15" { latestOnly = true; };
         psql_17_slim = makePostgres "17" { latestOnly = true; };
+        psql_18_slim = makePostgres "18" { latestOnly = true; };
         psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
       };
 

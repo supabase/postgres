@@ -136,7 +136,7 @@ let
         sed -i 's@/usr/bin/file@${file}/bin/file@' configure
         configureFlags="--datadir=$out/share/postgresql --datarootdir=$out/share/postgresql --bindir=$out/bin --docdir=$doc/share/doc/${pname} --with-gdalconfig=${gdal}/bin/gdal-config --with-jsondir=${json_c.dev} --with-sfcgal"
 
-        makeFlags="PERL=${perl}/bin/perl datadir=$out/share/postgresql pkglibdir=$out/lib bindir=$out/bin docdir=$doc/share/doc/${pname} PG_SHAREDIR=$out/share/postgresql PG_SHAREDIR=$out/share/postgresql"
+        makeFlags="PERL=${perl}/bin/perl datadir=$out/share/postgresql pkglibdir=$out/lib bindir=$out/bin docdir=$doc/share/doc/${pname} PG_SHAREDIR=$out/share/postgresql"
       '';
 
       postConfigure = ''

@@ -44,6 +44,7 @@
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
             psql_17_slim = self'.packages."psql_17_slim/bin";
+            psql_18_slim = self'.packages."psql_18_slim/bin";
             psql_orioledb-17_slim = self'.packages."psql_orioledb-17_slim/bin";
             supabase-groonga = self'.packages.supabase-groonga;
           };

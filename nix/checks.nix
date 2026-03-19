@@ -586,6 +586,9 @@
           psql_17_slim = pkgs.runCommand "run-check-harness-psql-17-slim" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_slim/bin" { legacyPkgName = "psql_17_slim"; })
           );
+          psql_18_slim = pkgs.runCommand "run-check-harness-psql-18-slim" { } (
+            lib.getExe (makeCheckHarness self'.packages."psql_18_slim/bin" { legacyPkgName = "psql_18_slim"; })
+          );
           psql_orioledb-17_slim = pkgs.runCommand "run-check-harness-psql-orioledb-17-slim" { } (
             lib.getExe (
               makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" {
