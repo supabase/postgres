@@ -30,7 +30,7 @@ pkgs.testers.runNixOSTest {
       server.wait_for_unit("supabase-db-init.service")
 
       with subtest("switch to orioledb 17"):
-        server.succeed(
+        server.execute(
           f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
         )
         server.wait_for_unit("supabase-db-init.service")

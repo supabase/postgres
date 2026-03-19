@@ -233,6 +233,10 @@ let
     in
     { ... }:
     {
+      # VM resources — sized for nested virtualisation on ephemeral CI runners
+      virtualisation.memorySize = 4096;
+      virtualisation.cores = 2;
+
       # System users
       users.users.postgres = {
         isSystemUser = true;
@@ -281,6 +285,7 @@ let
         environment = {
           GRN_PLUGINS_DIR = "${groongaPackage}/lib/groonga/plugins";
           LANG = "en_US.UTF-8";
+          BLACKSMITH_MIGRATION = "1";
         };
       };
 

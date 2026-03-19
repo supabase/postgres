@@ -5,7 +5,7 @@
 }:
 buildGoModule {
   pname = "pgctld";
-  version = "0.1.0";
+  version = multigres-src.rev;
   src = multigres-src;
   subPackages = [ "go/cmd/pgctld" ];
   env.CGO_ENABLED = "0";
@@ -17,7 +17,7 @@ buildGoModule {
   '';
   # Tests require a running PostgreSQL instance (integration tests); skip in sandbox.
   doCheck = false;
-  vendorHash = "sha256-HesmA96WVxnBvspLc9FZ5M4m5J/T5r6ymaui8g58yMM=";
+  vendorHash = "sha256-cqSd6Dv0WYOVwg7AE1tZPh9uzsjDG32gF6eJzARsHo8=";
 
   meta = {
     description = "PostgreSQL control daemon for Multigres cluster lifecycle management";

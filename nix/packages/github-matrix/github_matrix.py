@@ -81,10 +81,6 @@ BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
             "group": "self-hosted-runners-nix",
             "labels": ["aarch64-darwin"],
         },
-        "aarch64-linux": {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-linux"],
-        },
     },
 }
 
@@ -152,10 +148,9 @@ def parse_nix_eval_line(
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
             return Ok(None)
-        if (
-            "nixos-test" in data.get("requiredSystemFeatures", [])
-            and data["system"] == "x86_64-linux"
-        ):
+        if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
+            "system"
+        ] in ("x86_64-linux", "aarch64-darwin"):
             return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)
@@ -255,18 +250,23 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. KVM packages → self-hosted runners
-    2. Large packages on Linux → 32vcpu ephemeral runners
-    3. Darwin packages → self-hosted runners
-    4. Default → ephemeral runners
+    1. KVM packages on Darwin → self-hosted runners
+    2. KVM packages on Linux → ephemeral runners
+    3. Large packages on Linux → 32vcpu ephemeral runners
+    4. Darwin packages → self-hosted runners
+    5. Default → ephemeral runners
     """
     system = pkg["system"]
 
     if is_kvm_pkg(pkg):
-        runConfig = BUILD_RUNNER_MAP["self-hosted"].get(system)
+        if system == "aarch64-darwin":
+            return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+        if system == "aarch64-linux":
+            return {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
+        runConfig = BUILD_RUNNER_MAP["ephemeral"].get(system)
         if runConfig is None:
             raise ValueError(
-                f"No self-hosted with kvm support available for system: {system}"
+                f"No ephemeral runner with kvm support available for system: {system}"
             )
         return runConfig
 
