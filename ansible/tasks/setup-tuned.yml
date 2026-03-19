@@ -1,6 +1,6 @@
 - name: tuned - Install and configure tuned when stage2_nix
   when:
-    - (stage2_nix or nixpkg_mode)
+    - (stage2_nix or nixpkg_mode or debpkg_mode)
   block:
     - name: tuned - Install tuned
       ansible.builtin.apt:
