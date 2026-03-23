@@ -147,87 +147,87 @@
         state: 'present'
         value: 'throughput-performance'
 
-    - name: tuned - Add Supabase-specific tunings and overrides
-      become: true
-      community.general.ini_file:
-        create: true
-        group: 'root'
-        mode: '0644'
-        no_extra_spaces: true
-        option: "{{ supa_item['option'] }}"
-        path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: 'sysctl'
-        state: 'present'
-        value: "{{ supa_item['value'] }}"
-      loop:
-        - { option: 'fs.file-max',                      value: '312139770' }
-        - { option: 'fs.aio-max-nr',                    value: '1048576' }
-        - { option: 'kernel.numa_balancing',            value: '0' }
-        - { option: 'kernel.shmmax',                    value: '18446744073692700000' }
-        - { option: 'kernel.shmall',                    value: '18446744073692700000' }
-        - { option: 'kernel.shmmni',                    value: '4096' }
-        - { option: 'kernel.sem',                       value: '250 512000 100 2048' }
-        - { option: 'kernel.panic',                     value: '10' }
-        - { option: 'kernel.panic_on_oom',              value: '1' }
-        - { option: 'kernel.panic_on_oops',             value: '1' }
-        - { option: 'net.core.netdev_budget',           value: '1024' }
-        - { option: 'net.core.netdev_max_backlog',      value: '10000' }
-        - { option: 'net.core.rmem_default',            value: '262144' }
-        - { option: 'net.core.rmem_max',                value: '104857600' }
-        - { option: 'net.core.somaxconn',               value: '16384' }
-        - { option: 'net.core.wmem_default',            value: '262144' }
-        - { option: 'net.core.wmem_max',                value: '104857600' }
-        - { option: 'net.ipv4.ip_local_port_range',     value: '1025 65499' }
-        - { option: 'net.ipv4.ip_local_reserved_ports', value: '3000,3001,8085,9122,9187,9999' }
-        - { option: 'net.ipv4.tcp_keepalive_intvl',     value: '60' }
-        - { option: 'net.ipv4.tcp_keepalive_time',      value: '1800' }
-        - { option: 'net.ipv4.tcp_max_syn_backlog',     value: '4096' }
-        - { option: 'net.ipv4.tcp_rmem',                value: '4096 87380 16777216' }
-        - { option: 'net.ipv4.tcp_timestamps',          value: '0' }
-        - { option: 'net.ipv4.tcp_tw_reuse',            value: '1' }
-        - { option: 'net.ipv4.tcp_window_scaling',      value: '1' }
-        - { option: 'net.ipv4.tcp_wmem',                value: '4096 65536 16777216' }
-        - { option: 'net.netfilter.nf_conntrack_max',   value: '250000' }
-        - { option: 'vm.dirty_background_ratio',        value: '10' }
-        - { option: 'vm.dirty_expire_centisecs',        value: '3000' }
-        - { option: 'vm.dirty_ratio',                   value: '40' }
-        - { option: 'vm.dirty_writeback_centisecs',     value: '500' }
-#        - { option: 'vm.overcommit_memory',             value: '2' }
-        - { option: 'vm.panic_on_oom',                  value: '1' }
-        - { option: 'vm.swappiness',                    value: '10' }
-      loop_control:
-        loop_var: 'supa_item'
-
-    - name: tuned - Configure explicit HugePages for Postgresql
-      become: true
-      block:
-        - name: tuned - Compute the necessary HugePages
-          become: true
-          community.general.ini_file:
-            create: true
-            group: 'root'
-            mode: '0644'
-            option: 'vm.nr_hugepages'
-            path: '/etc/tuned/profiles/postgresql/tuned.conf'
-            section: 'sysctl'
-            state: 'present'
-            value: "{{ ((shared_buffers * overhead) / hugepagesize) | round | int }}"
-          vars:
-            hugepagesize: 2048  # assumes a 2MB page
-            shared_buffers: 131072  # we use 128MB (128 * 1024) of shared_buffers by default
-            overhead: 1.05
-
-        - name: tuned - Add the postgres group to the HugePages access
-          become: true
-          community.general.ini_file:
-            create: true
-            group: 'root'
-            mode: '0644'
-            option: 'vm.hugetlb_shm_group'
-            path: '/etc/tuned/profiles/postgresql/tuned.conf'
-            section: 'sysctl'
-            state: 'present'
-            value: '1002'
+#     - name: tuned - Add Supabase-specific tunings and overrides
+#       become: true
+#       community.general.ini_file:
+#         create: true
+#         group: 'root'
+#         mode: '0644'
+#         no_extra_spaces: true
+#         option: "{{ supa_item['option'] }}"
+#         path: '/etc/tuned/profiles/postgresql/tuned.conf'
+#         section: 'sysctl'
+#         state: 'present'
+#         value: "{{ supa_item['value'] }}"
+#       loop:
+#         - { option: 'fs.file-max',                      value: '312139770' }
+#         - { option: 'fs.aio-max-nr',                    value: '1048576' }
+#         - { option: 'kernel.numa_balancing',            value: '0' }
+#         - { option: 'kernel.shmmax',                    value: '18446744073692700000' }
+#         - { option: 'kernel.shmall',                    value: '18446744073692700000' }
+#         - { option: 'kernel.shmmni',                    value: '4096' }
+#         - { option: 'kernel.sem',                       value: '250 512000 100 2048' }
+#         - { option: 'kernel.panic',                     value: '10' }
+#         - { option: 'kernel.panic_on_oom',              value: '1' }
+#         - { option: 'kernel.panic_on_oops',             value: '1' }
+#         - { option: 'net.core.netdev_budget',           value: '1024' }
+#         - { option: 'net.core.netdev_max_backlog',      value: '10000' }
+#         - { option: 'net.core.rmem_default',            value: '262144' }
+#         - { option: 'net.core.rmem_max',                value: '104857600' }
+#         - { option: 'net.core.somaxconn',               value: '16384' }
+#         - { option: 'net.core.wmem_default',            value: '262144' }
+#         - { option: 'net.core.wmem_max',                value: '104857600' }
+#         - { option: 'net.ipv4.ip_local_port_range',     value: '1025 65499' }
+#         - { option: 'net.ipv4.ip_local_reserved_ports', value: '3000,3001,8085,9122,9187,9999' }
+#         - { option: 'net.ipv4.tcp_keepalive_intvl',     value: '60' }
+#         - { option: 'net.ipv4.tcp_keepalive_time',      value: '1800' }
+#         - { option: 'net.ipv4.tcp_max_syn_backlog',     value: '4096' }
+#         - { option: 'net.ipv4.tcp_rmem',                value: '4096 87380 16777216' }
+#         - { option: 'net.ipv4.tcp_timestamps',          value: '0' }
+#         - { option: 'net.ipv4.tcp_tw_reuse',            value: '1' }
+#         - { option: 'net.ipv4.tcp_window_scaling',      value: '1' }
+#         - { option: 'net.ipv4.tcp_wmem',                value: '4096 65536 16777216' }
+#         - { option: 'net.netfilter.nf_conntrack_max',   value: '250000' }
+#         - { option: 'vm.dirty_background_ratio',        value: '10' }
+#         - { option: 'vm.dirty_expire_centisecs',        value: '3000' }
+#         - { option: 'vm.dirty_ratio',                   value: '40' }
+#         - { option: 'vm.dirty_writeback_centisecs',     value: '500' }
+# #        - { option: 'vm.overcommit_memory',             value: '2' }
+#         - { option: 'vm.panic_on_oom',                  value: '1' }
+#         - { option: 'vm.swappiness',                    value: '10' }
+#       loop_control:
+#         loop_var: 'supa_item'
+#
+    # - name: tuned - Configure explicit HugePages for Postgresql
+    #   become: true
+    #   block:
+    #     - name: tuned - Compute the necessary HugePages
+    #       become: true
+    #       community.general.ini_file:
+    #         create: true
+    #         group: 'root'
+    #         mode: '0644'
+    #         option: 'vm.nr_hugepages'
+    #         path: '/etc/tuned/profiles/postgresql/tuned.conf'
+    #         section: 'sysctl'
+    #         state: 'present'
+    #         value: "{{ ((shared_buffers * overhead) / hugepagesize) | round | int }}"
+    #       vars:
+    #         hugepagesize: 2048  # assumes a 2MB page
+    #         shared_buffers: 131072  # we use 128MB (128 * 1024) of shared_buffers by default
+    #         overhead: 1.05
+    #
+    #     - name: tuned - Add the postgres group to the HugePages access
+    #       become: true
+    #       community.general.ini_file:
+    #         create: true
+    #         group: 'root'
+    #         mode: '0644'
+    #         option: 'vm.hugetlb_shm_group'
+    #         path: '/etc/tuned/profiles/postgresql/tuned.conf'
+    #         section: 'sysctl'
+    #         state: 'present'
+    #         value: '1002'
 
     - name: tuned - Activate the tuned service
       ansible.builtin.systemd_service:
