@@ -8,7 +8,7 @@
 ####################
 # Stage 0: Nix base — shared Alpine + Nix setup for all builders
 ####################
-FROM alpine:3.21 AS nix-base
+FROM alpine:3.23 AS nix-base
 
 RUN apk add --no-cache \
     bash \
@@ -68,27 +68,29 @@ RUN nix store gc
 ####################
 # Stage 2: Gosu builder
 ####################
-FROM alpine:3.21 AS gosu-builder
+FROM alpine:3.23 AS gosu-builder
 
 ARG TARGETARCH
-ARG GOSU_VERSION=1.16
+ARG GOSU_VERSION=1.19
+ARG GO_VERSION=1.26.1
 
-RUN apk add --no-cache gnupg curl
+RUN apk add --no-cache curl git
 
-RUN curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}" -o /usr/local/bin/gosu && \
-    curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}.asc" -o /usr/local/bin/gosu.asc && \
-    GNUPGHOME="$(mktemp -d)" && \
-    export GNUPGHOME && \
-    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
-    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
-    rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc && \
+# Install Go
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# Build gosu from source
+RUN git clone --depth 1 --branch "${GOSU_VERSION}" https://github.com/tianon/gosu.git /gosu && \
+    cd /gosu && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /usr/local/bin/gosu . && \
     chmod +x /usr/local/bin/gosu
 
 ####################
 # Stage 3: Shared base — runtime Alpine + config + migrations
 # Both variants inherit from this stage. No /nix dependency here.
 ####################
-FROM alpine:3.21 AS base
+FROM alpine:3.23 AS base
 
 RUN apk add --no-cache \
     bash \
