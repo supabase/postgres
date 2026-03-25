@@ -120,11 +120,6 @@ build {
     destination = "/tmp/ansible-playbook"
   }
 
-  provisioner "file" {
-    source = "${abspath(path.root)}"
-    destination = "/tmp/flake"
-  }
-
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
