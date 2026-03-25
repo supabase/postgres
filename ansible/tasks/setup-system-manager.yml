@@ -1,7 +1,14 @@
 ---
-- name: Deploy system manager
+- name: Install system-manager from binary cache
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    cd /tmp
-    nix run --accept-flake-config /tmp/flake#system-manager -- switch --flake /tmp/flake 2>&1 | tee /tmp/system-manager-deploy.log
+    nix profile install --accept-flake-config "github:supabase/postgres/{{ git_commit_sha }}#system-manager"
+  become: true
+
+- name: Build and activate system-manager config
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    STORE_PATH=$(nix build --accept-flake-config --no-link --print-out-paths "github:supabase/postgres/{{ git_commit_sha }}#systemConfigs.$(nix eval --raw nixpkgs#system).default")
+    system-manager register --store-path "$STORE_PATH" --sudo
+    system-manager activate --store-path "$STORE_PATH" --sudo
   become: true
