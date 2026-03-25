@@ -19,8 +19,8 @@ let
     src = fetchFromGitHub {
       owner = "TylerHillery";
       repo = "pg_duckdb";
-      rev = "995fc34dd83659bed8f6ca3f2f66cc8eaa57fb14";
-      hash = "sha256-QCDgXbeSEEu927zr1ctvI3UeH+xJiUFnY/SVwEeRyjk=";
+      rev = "eb7af6ede232f951c78192c79109c6d0be73b7b2";
+      hash = "sha256-nhnxaesR9IOZWkfUFJ5ds+2OpcstMQ9OpUvsHGqnN7Y=";
     };
 
     nativeBuildInputs = lib.optionals (!stdenv.isDarwin) [ patchelf ];
