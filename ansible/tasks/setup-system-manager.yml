@@ -2,7 +2,7 @@
 - name: Install system-manager from binary cache
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix profile install --accept-flake-config "github:supabase/postgres/{{ git_commit_sha }}#system-manager"
+    nix profile add --accept-flake-config "github:supabase/postgres/{{ git_commit_sha }}#system-manager"
   become: true
 
 - name: Build and activate system-manager config

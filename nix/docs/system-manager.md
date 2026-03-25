@@ -7,29 +7,72 @@ It replaces imperative service setup with reproducible Nix module definitions, b
 
 The AMI build uses a two-stage pipeline orchestrated by Packer and Ansible.
 Stage 1 installs Nix itself, while stage 2 uses Nix to build and deploy all services.
-system-manager is deployed during stage 2 via the Ansible task `ansible/tasks/setup-system-manager.yml`:
+system-manager is deployed during stage 2 via the Ansible task `ansible/tasks/setup-system-manager.yml`.
+
+### Installation
+
+The `system-manager` binary is installed from the binary cache using the remote flake URL, pinned to the current git SHA:
 
 ```yaml
-- name: Deploy system manager
+- name: Install system-manager from binary cache
   ansible.builtin.shell: |
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    cd /tmp
-    nix run --accept-flake-config /tmp/flake#system-manager -- switch --flake /tmp/flake 2>&1 | tee /tmp/system-manager-deploy.log
+    nix profile add --accept-flake-config "github:supabase/postgres/{{ git_commit_sha }}#system-manager"
   become: true
 ```
 
-This sources the Nix daemon profile, then runs `system-manager switch` against the flake to apply the declared system configuration.
+### Activation
+
+The system configuration is built from the remote flake URL (pulled from the binary cache), then registered and activated:
+
+```yaml
+- name: Build and activate system-manager config
+  ansible.builtin.shell: |
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    STORE_PATH=$(nix build --accept-flake-config --no-link --print-out-paths "github:supabase/postgres/{{ git_commit_sha }}#systemConfigs.$(nix eval --raw nixpkgs#system).default")
+    system-manager register --store-path "$STORE_PATH" --sudo
+    system-manager activate --store-path "$STORE_PATH" --sudo
+  become: true
+```
+
+No source tree is uploaded to the build instance. Both the `system-manager` binary and the system configuration are fetched as pre-built artifacts from the `nix-postgres-artifacts` S3 binary cache.
+
+## Updating system-manager on a running instance
+
+system-manager can be updated on a running instance without rebuilding the AMI. To apply a new configuration:
+
+```bash
+# Build the new config (fetched from binary cache)
+STORE_PATH=$(nix build --accept-flake-config --no-link --print-out-paths \
+  "github:supabase/postgres/<new-sha>#systemConfigs.$(uname -m)-linux.default")
+
+# Register and activate
+system-manager register --store-path "$STORE_PATH" --sudo
+system-manager activate --store-path "$STORE_PATH" --sudo
+```
+
+This pulls the pre-built configuration from the binary cache and activates it. system-manager diffs the old and new state and reconciles — starting, stopping, or restarting services and updating `/etc` entries as needed. No explicit deactivation is required.
+
+To also update the `system-manager` binary itself (if the upstream version changed in `flake.lock`):
+
+```bash
+nix profile upgrade --accept-flake-config system-manager
+```
+
+Changes applied this way include anything modified in `nix/systemModules/` between the old and new SHA: new or removed systemd services, `environment.etc` entries, packages under `/run/system-manager/sw/`, etc.
 
 ## Nix configuration walkthrough
 
 ### Flake input
 
-The system-manager flake input is declared in `flake.nix` (lines 34-35), pinned to the upstream repository with nixpkgs following the main input:
+The system-manager flake input is declared in `flake.nix`, pinned to the upstream repository with nixpkgs following the main input:
 
 ```nix
 system-manager.inputs.nixpkgs.follows = "nixpkgs";
 system-manager.url = "github:numtide/system-manager";
 ```
+
+The `system-manager` binary is also re-exported as a package in `nix/packages/default.nix` (Linux only), making it available as `nix profile add .#system-manager` or via the remote flake URL.
 
 The flake outputs import both the module registry and the system configurations:
 
@@ -60,12 +103,12 @@ mkSystemConfig = system: {
 ```
 
 The `mkModules` function returns the list of modules to enable.
-Currently it enables the nginx service and sets the host platform:
+Currently it includes the genesis placeholder module and sets the host platform:
 
 ```nix
 mkModules = system: [
+  self.systemModules.genesis
   ({
-    services.nginx.enable = true;
     nixpkgs.hostPlatform = system;
   })
 ];
@@ -83,13 +126,20 @@ It is a flake-parts module that exports individual system modules under `flake.s
   imports = [ ./tests ];
   flake = {
     systemModules = {
-      nginx = flake-parts-lib.importApply ./nginx.nix { inherit withSystem self; };
+      genesis = {
+        #this file is just a placeholder to bootstrap
+        #the system manager, it will be replaced by real configurations
+        environment.etc."system-manager-genesis" = {
+          text = "";
+          user = "root";
+          group = "root";
+          mode = "0644";
+        };
+      };
     };
   };
 }
 ```
-
-Each module is loaded with `flake-parts-lib.importApply`, which passes `withSystem` and `self` as arguments to the module file.
 
 ## Adding a new system module
 
@@ -134,7 +184,6 @@ To add a new system module:
     mkModules = system: [
       self.systemModules.my-service
       ({
-        services.nginx.enable = true;
         supabase.services.my-service.enable = true;
         nixpkgs.hostPlatform = system;
       })
@@ -167,13 +216,16 @@ check-system-manager =
       machine.activate()
       machine.wait_for_unit("system-manager.target")
 
-      with subtest("Verify nginx service"):
-          assert machine.service("nginx").is_running, "nginx should be running"
+      with subtest("Verify genesis file"):
+          assert machine.file("/etc/system-manager-genesis").exists, "/etc/system-manager-genesis should exist"
+          assert machine.file("/etc/system-manager-genesis").mode == 0o644, "/etc/system-manager-genesis should have mode 0644"
+          assert machine.file("/etc/system-manager-genesis").user == "root", "/etc/system-manager-genesis should be owned by root"
+          assert machine.file("/etc/system-manager-genesis").group == "root", "/etc/system-manager-genesis should be owned by root"
     '';
   };
 ```
 
-The test script starts the container, waits for systemd to reach `multi-user.target`, activates the system-manager configuration, then verifies that managed services are running.
+The test script starts the container, waits for systemd to reach `multi-user.target`, activates the system-manager configuration, then verifies that managed services and files are present.
 When adding a new module, extend the `testScript` with an additional `subtest` block that asserts the new service is running.
 
 ### Running tests locally
@@ -217,7 +269,7 @@ The `check-system-manager` derivation is part of the flake's `checks` output, so
 
 ## Runtime effects
 
-After `system-manager switch` runs, managed software is available under `/run/system-manager/sw/`.
+After `system-manager activate` runs, managed software is available under `/run/system-manager/sw/`.
 This affects paths throughout the system.
 For example, the audit baseline `audit-specs/baselines/ami-build/user.yml` references these paths for user shells:
 
