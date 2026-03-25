@@ -10,13 +10,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "duckdb";
-  version = "1.4.3";
+  version = "1.5.1";
 
   src = fetchFromGitHub {
     owner = "duckdb";
     repo = "duckdb";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-zYiyY/8mYCyKuSQYNxepGbZPVgdCgULLmhZlWAAW0QA=";
+    hash = "sha256-FygBpfhvezvUbI969Dta+vZOPt6BnSW2d5gO4I4oB2A=";
   };
 
   outputs = [
