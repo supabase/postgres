@@ -4,7 +4,7 @@
 ####################
 # Stage 1: Nix builder
 ####################
-FROM alpine:3.21 AS nix-builder
+FROM alpine:3.23 AS nix-builder
 
 # Install dependencies for nix installer (coreutils for GNU cp, sudo for installer)
 RUN apk add --no-cache \
@@ -49,27 +49,28 @@ RUN nix store gc
 ####################
 # Stage 2: Gosu builder
 ####################
-FROM alpine:3.21 AS gosu-builder
+FROM alpine:3.23 AS gosu-builder
 
 ARG TARGETARCH
-ARG GOSU_VERSION=1.16
+ARG GOSU_VERSION=1.19
+ARG GO_VERSION=1.26.1
 
-RUN apk add --no-cache gnupg curl
+RUN apk add --no-cache curl git
 
-# Download and verify gosu
-RUN curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}" -o /usr/local/bin/gosu && \
-    curl -fsSL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${TARGETARCH}.asc" -o /usr/local/bin/gosu.asc && \
-    GNUPGHOME="$(mktemp -d)" && \
-    export GNUPGHOME && \
-    gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
-    gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu && \
-    rm -rf "$GNUPGHOME" /usr/local/bin/gosu.asc && \
+# Install Go
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# Build gosu from source
+RUN git clone --depth 1 --branch "${GOSU_VERSION}" https://github.com/tianon/gosu.git /gosu && \
+    cd /gosu && \
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o /usr/local/bin/gosu . && \
     chmod +x /usr/local/bin/gosu
 
 ####################
 # Stage 3: Final production image
 ####################
-FROM alpine:3.21 AS production
+FROM alpine:3.23 AS production
 
 # Install minimal runtime dependencies
 RUN apk add --no-cache \
@@ -160,7 +161,7 @@ COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-
 
 # Add entrypoint script
 ADD --chmod=0755 \
-    https://github.com/docker-library/postgres/raw/889f9447cd2dfe21cccfbe9bb7945e3b037e02d8/17/bullseye/docker-entrypoint.sh \
+    https://raw.githubusercontent.com/docker-library/postgres/6edb0a8c4def40c371514b34aef9037ec82d9110/17/alpine3.23/docker-entrypoint.sh \
     /usr/local/bin/docker-entrypoint.sh
 
 # Setup pgsodium key script
