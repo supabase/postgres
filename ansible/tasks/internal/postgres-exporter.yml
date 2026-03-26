@@ -35,6 +35,15 @@
     extra_opts: [--strip-components=1]
   become: yes
 
+- name: deploy queries.yml for custom metrics
+  copy:
+    src: files/queries.yml
+    dest: /opt/postgres_exporter/queries.yml
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
 - name: exporter create a service
   template:
     src: files/postgres_exporter.service.j2
