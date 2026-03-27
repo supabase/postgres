@@ -198,36 +198,36 @@
 #       loop_control:
 #         loop_var: 'supa_item'
 #
-    # - name: tuned - Configure explicit HugePages for Postgresql
-    #   become: true
-    #   block:
-    #     - name: tuned - Compute the necessary HugePages
-    #       become: true
-    #       community.general.ini_file:
-    #         create: true
-    #         group: 'root'
-    #         mode: '0644'
-    #         option: 'vm.nr_hugepages'
-    #         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-    #         section: 'sysctl'
-    #         state: 'present'
-    #         value: "{{ ((shared_buffers * overhead) / hugepagesize) | round | int }}"
-    #       vars:
-    #         hugepagesize: 2048  # assumes a 2MB page
-    #         shared_buffers: 131072  # we use 128MB (128 * 1024) of shared_buffers by default
-    #         overhead: 1.05
-    #
-    #     - name: tuned - Add the postgres group to the HugePages access
-    #       become: true
-    #       community.general.ini_file:
-    #         create: true
-    #         group: 'root'
-    #         mode: '0644'
-    #         option: 'vm.hugetlb_shm_group'
-    #         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-    #         section: 'sysctl'
-    #         state: 'present'
-    #         value: '1002'
+    - name: tuned - Configure explicit HugePages for Postgresql
+      become: true
+      block:
+        - name: tuned - Compute the necessary HugePages
+          become: true
+          community.general.ini_file:
+            create: true
+            group: 'root'
+            mode: '0644'
+            option: 'vm.nr_hugepages'
+            path: '/etc/tuned/profiles/postgresql/tuned.conf'
+            section: 'sysctl'
+            state: 'present'
+            value: "{{ ((shared_buffers * overhead) / hugepagesize) | round | int }}"
+          vars:
+            hugepagesize: 2048  # assumes a 2MB page
+            shared_buffers: 131072  # we use 128MB (128 * 1024) of shared_buffers by default
+            overhead: 1.05
+
+        - name: tuned - Add the postgres group to the HugePages access
+          become: true
+          community.general.ini_file:
+            create: true
+            group: 'root'
+            mode: '0644'
+            option: 'vm.hugetlb_shm_group'
+            path: '/etc/tuned/profiles/postgresql/tuned.conf'
+            section: 'sysctl'
+            state: 'present'
+            value: '1002'
 
     - name: tuned - Activate the tuned service
       ansible.builtin.systemd_service:
