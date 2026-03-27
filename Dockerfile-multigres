@@ -191,11 +191,12 @@ RUN for f in /nix/var/nix/profiles/default/bin/*; do \
 RUN chown -R postgres:postgres /usr/lib/postgresql && \
     chown -R postgres:postgres /usr/share/postgresql
 
-COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld/postgresql.conf.tmpl
+# Can't use /etc/pgctld because it's a mount point
+COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld-custom/postgresql.conf.tmpl
 
 # Wrapper: injects --postgres-config-template on every pgctld call so the team's
 # unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld/postgresql.conf.tmpl "$@"\n' \
+RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/postgresql.conf.tmpl "$@"\n' \
     > /usr/local/bin/pgctld && \
     chmod +x /usr/local/bin/pgctld
 
@@ -257,11 +258,12 @@ ENV LANG=C
 ENV LC_ALL=C
 ENV LANGUAGE=C
 
-COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld/orioledb-postgresql.conf.tmpl
+# Can't use /etc/pgctld because it's a mount point
+COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
 # Wrapper: injects --postgres-config-template on every pgctld call so the team's
 # unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld/orioledb-postgresql.conf.tmpl "$@"\n' \
+RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/orioledb-postgresql.conf.tmpl "$@"\n' \
     > /usr/local/bin/pgctld && \
     chmod +x /usr/local/bin/pgctld
 
