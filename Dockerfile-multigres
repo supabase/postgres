@@ -162,7 +162,6 @@ COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 ENV PGDATA=/var/lib/postgresql/data
-ENV POSTGRES_HOST=/var/run/postgresql
 ENV POSTGRES_USER=supabase_admin
 ENV POSTGRES_DB=postgres
 ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"

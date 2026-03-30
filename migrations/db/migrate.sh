@@ -5,7 +5,6 @@ set -eu
 # Used by both ami and docker builds to initialise database schema.
 # Env vars:
 #   POSTGRES_DB        defaults to postgres
-#   POSTGRES_HOST      defaults to localhost
 #   POSTGRES_PORT      defaults to 5432
 #   POSTGRES_PASSWORD  defaults to ""
 #   USE_DBMATE         defaults to ""
@@ -14,7 +13,7 @@ set -eu
 #######################################
 
 export PGDATABASE="${POSTGRES_DB:-postgres}"
-export PGHOST="${POSTGRES_HOST:-localhost}"
+export PGHOST=/var/run/postgresql
 export PGPORT="${POSTGRES_PORT:-5432}"
 export PGPASSWORD="${POSTGRES_PASSWORD:-}"
 

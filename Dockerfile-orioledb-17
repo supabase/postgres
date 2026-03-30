@@ -180,7 +180,6 @@ RUN mkdir -p /usr/share/postgresql/extension/ && \
 # Environment variables
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV PGDATA=/var/lib/postgresql/data
-ENV POSTGRES_HOST=/var/run/postgresql
 ENV POSTGRES_USER=supabase_admin
 ENV POSTGRES_DB=postgres
 ENV POSTGRES_INITDB_ARGS="--allow-group-access --locale-provider=icu --encoding=UTF-8 --icu-locale=en_US.UTF-8"

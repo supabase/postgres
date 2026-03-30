@@ -95,7 +95,6 @@ writeShellApplication {
     # Set up environment for psql
     export PATH="$BINDIR/bin:$PATH"
     export POSTGRES_DB=postgres
-    export POSTGRES_HOST=localhost
 
     # Start interactive psql session
     exec psql -U "$PSQL_USER" -p "$PORTNO" -h localhost postgres

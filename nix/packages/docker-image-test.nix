@@ -404,7 +404,6 @@ writeShellApplication {
         docker exec \
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             -e POSTGRES_DB="$POSTGRES_DB" \
-            -e POSTGRES_HOST=/var/run/postgresql \
             -e POSTGRES_PORT=5432 \
             "$container" \
             sh /docker-entrypoint-initdb.d/migrate.sh
