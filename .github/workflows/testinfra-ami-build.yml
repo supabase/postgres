@@ -146,8 +146,17 @@ jobs:
 
           if [ -n "$STAGE2_AMI_IDS" ]; then
             for ami_id in $STAGE2_AMI_IDS; do
+              SNAPSHOT_IDS=$(aws ec2 describe-images \
+                --region ap-southeast-1 \
+                --image-ids "$ami_id" \
+                --query 'Images[*].BlockDeviceMappings[*].Ebs.SnapshotId' \
+                --output text)
               echo "Deregistering stage 2 AMI: $ami_id"
               aws ec2 deregister-image --region ap-southeast-1 --image-id "$ami_id" || true
+              for snap_id in $SNAPSHOT_IDS; do
+                echo "Deleting snapshot: $snap_id"
+                aws ec2 delete-snapshot --region ap-southeast-1 --snapshot-id "$snap_id" || true
+              done
             done
           else
             echo "No stage 2 AMI to clean up"
