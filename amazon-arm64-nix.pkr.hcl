@@ -128,10 +128,13 @@ source "amazon-ebssurrogate" "source" {
     volume_type = "gp3"
    }
 
+  # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
+  # is a minimal default for this AMI; consumers should override this volume
+  # size at launch.
   launch_block_device_mappings {
     device_name = "/dev/xvdh"
     delete_on_termination = true
-    volume_size = 8
+    volume_size = 1
     volume_type = "gp3"
    }
 

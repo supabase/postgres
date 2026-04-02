@@ -21,6 +21,8 @@ writeShellApplication {
     # Usage:
     #   nix run .#docker-image-test -- Dockerfile-17
     #   nix run .#docker-image-test -- --no-build Dockerfile-15
+    #   nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres
+    #   nix run .#docker-image-test -- --no-build --target variant-orioledb-17 Dockerfile-multigres
 
     set -euo pipefail
 
@@ -38,6 +40,7 @@ writeShellApplication {
     HTTP_MOCK_PORT=""
     HTTP_MOCK_PID=""
     KEEP_CONTAINER=false
+    TARGET=""
 
     # Colors for output
     RED='\033[0;31m'
@@ -59,15 +62,20 @@ writeShellApplication {
       DOCKERFILE    The Dockerfile to build and test (e.g., Dockerfile-17)
 
     Options:
-      -h, --help    Show this help message
-      --no-build    Skip building the image (use existing)
-      --keep        Keep the container running after tests (for debugging)
+      -h, --help         Show this help message
+      --no-build         Skip building the image (use existing)
+      --keep             Keep the container running after tests (for debugging)
+      --target TARGET    Build target (required for Dockerfile-multigres)
+                         Values: variant-17, variant-orioledb-17
 
     Examples:
       nix run .#docker-image-test -- Dockerfile-17
       nix run .#docker-image-test -- Dockerfile-15
       nix run .#docker-image-test -- Dockerfile-orioledb-17
       nix run .#docker-image-test -- --no-build Dockerfile-17
+      nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres
+      nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres
+      nix run .#docker-image-test -- --no-build --target variant-17 Dockerfile-multigres
     EOF
     }
 
@@ -77,9 +85,19 @@ writeShellApplication {
             Dockerfile-15) echo "15 5436" ;;
             Dockerfile-17) echo "17 5435" ;;
             Dockerfile-orioledb-17) echo "orioledb-17 5437" ;;
+            Dockerfile-multigres)
+                case "''${TARGET}" in
+                    variant-17)          echo "multigres-17 5438" ;;
+                    variant-orioledb-17) echo "multigres-orioledb-17 5439" ;;
+                    *)
+                        log_error "Dockerfile-multigres requires --target (variant-17 or variant-orioledb-17)"
+                        exit 1
+                        ;;
+                esac
+                ;;
             *)
                 log_error "Unknown Dockerfile: $dockerfile"
-                log_error "Supported: Dockerfile-15, Dockerfile-17, Dockerfile-orioledb-17"
+                log_error "Supported: Dockerfile-15, Dockerfile-17, Dockerfile-orioledb-17, Dockerfile-multigres"
                 exit 1
                 ;;
         esac
@@ -90,11 +108,24 @@ writeShellApplication {
         "index_advisor"
     )
 
+    # Tests to skip for multigres images (pgsodium not installed; vault has z_multigres-17_ variant)
+    MULTIGRES_SKIP_TESTS=(
+        "pgsodium"
+        "vault"
+    )
+
+    # Tests to skip for multigres-orioledb-17 (superset of multigres skips)
+    MULTIGRES_ORIOLEDB_SKIP_TESTS=(
+        "pgsodium"
+        "vault"
+        "index_advisor"
+    )
+
     get_test_list() {
         local version="$1"
         local tests=()
 
-        # Build list of OrioleDB-specific test basenames
+        # Build list of OrioleDB-specific test basenames (these override non-z_ tests)
         local orioledb_variants=()
         for f in "$TESTS_SQL_DIR"/z_orioledb-17_*.sql; do
             if [[ -f "$f" ]]; then
@@ -105,33 +136,99 @@ writeShellApplication {
             fi
         done
 
+        # Build list of multigres-17-specific test basenames
+        local multigres_17_variants=()
+        for f in "$TESTS_SQL_DIR"/z_multigres-17_*.sql; do
+            if [[ -f "$f" ]]; then
+                local variant_name
+                variant_name=$(basename "$f" .sql)
+                local base_name="''${variant_name#z_multigres-17_}"
+                multigres_17_variants+=("$base_name")
+            fi
+        done
+
+        # Build list of multigres-orioledb-17-specific test basenames
+        local multigres_orioledb_variants=()
+        for f in "$TESTS_SQL_DIR"/z_multigres-orioledb-17_*.sql; do
+            if [[ -f "$f" ]]; then
+                local variant_name
+                variant_name=$(basename "$f" .sql)
+                local base_name="''${variant_name#z_multigres-orioledb-17_}"
+                multigres_orioledb_variants+=("$base_name")
+            fi
+        done
+
         for f in "$TESTS_SQL_DIR"/*.sql; do
             local _basename
             _basename=$(basename "$f" .sql)
 
-            if [[ "$version" == "orioledb-17" ]]; then
-                local should_skip=false
-                for skip_test in "''${ORIOLEDB_SKIP_TESTS[@]}"; do
-                    if [[ "$_basename" == "$skip_test" ]]; then
-                        should_skip=true
-                        break
-                    fi
-                done
-                if [[ "$should_skip" == "true" ]]; then
-                    continue
-                fi
+            # Apply skip list for the current version
+            local should_skip=false
+            case "$version" in
+                orioledb-17)
+                    for skip_test in "''${ORIOLEDB_SKIP_TESTS[@]}"; do
+                        if [[ "$_basename" == "$skip_test" ]]; then
+                            should_skip=true
+                            break
+                        fi
+                    done
+                    ;;
+                multigres-17)
+                    for skip_test in "''${MULTIGRES_SKIP_TESTS[@]}"; do
+                        if [[ "$_basename" == "$skip_test" ]]; then
+                            should_skip=true
+                            break
+                        fi
+                    done
+                    ;;
+                multigres-orioledb-17)
+                    for skip_test in "''${MULTIGRES_ORIOLEDB_SKIP_TESTS[@]}"; do
+                        if [[ "$_basename" == "$skip_test" ]]; then
+                            should_skip=true
+                            break
+                        fi
+                    done
+                    ;;
+            esac
+            if [[ "$should_skip" == "true" ]]; then
+                continue
             fi
 
             if [[ "$_basename" == z_* ]]; then
                 case "$version" in
-                    15) [[ "$_basename" == z_15_* ]] && tests+=("$_basename") ;;
-                    17) [[ "$_basename" == z_17_* ]] && tests+=("$_basename") ;;
-                    orioledb-17) [[ "$_basename" == z_orioledb-17_* ]] && tests+=("$_basename") ;;
+                    15)                    [[ "$_basename" == z_15_* ]]                    && tests+=("$_basename") ;;
+                    17)                    [[ "$_basename" == z_17_* ]]                    && tests+=("$_basename") ;;
+                    orioledb-17)           [[ "$_basename" == z_orioledb-17_* ]]           && tests+=("$_basename") ;;
+                    multigres-17)          [[ "$_basename" == z_multigres-17_* ]]          && tests+=("$_basename") ;;
+                    multigres-orioledb-17) [[ "$_basename" == z_multigres-orioledb-17_* ]] && tests+=("$_basename") ;;
                 esac
             else
+                # For variant versions, use z_ overrides where they exist instead of the base test
                 if [[ "$version" == "orioledb-17" ]]; then
                     local has_variant=false
                     for variant in "''${orioledb_variants[@]}"; do
+                        if [[ "$_basename" == "$variant" ]]; then
+                            has_variant=true
+                            break
+                        fi
+                    done
+                    if [[ "$has_variant" == "false" ]]; then
+                        tests+=("$_basename")
+                    fi
+                elif [[ "$version" == "multigres-17" ]]; then
+                    local has_variant=false
+                    for variant in "''${multigres_17_variants[@]}"; do
+                        if [[ "$_basename" == "$variant" ]]; then
+                            has_variant=true
+                            break
+                        fi
+                    done
+                    if [[ "$has_variant" == "false" ]]; then
+                        tests+=("$_basename")
+                    fi
+                elif [[ "$version" == "multigres-orioledb-17" ]]; then
+                    local has_variant=false
+                    for variant in "''${multigres_orioledb_variants[@]}"; do
                         if [[ "$_basename" == "$variant" ]]; then
                             has_variant=true
                             break
@@ -195,6 +292,124 @@ writeShellApplication {
         return 1
     }
 
+    # Verify pgctld integration for multigres images.
+    # Runs a short-lived pgctld cluster in /tmp (separate from the SQL-test postgres).
+    # Tests: container user is postgres, /usr/local/bin/pgctld works, pgctld init+start
+    # succeeds with NO extra flags, and (orioledb variant) orioledb loads automatically.
+    verify_pgctld_integration() {
+        local container="$1"
+        local version="$2"
+        local pooler_dir="/tmp/pgctld-verify"
+
+        log_info "=== pgctld integration checks ==="
+
+        # 1. Container must run as postgres (not root) — initdb refuses root
+        local container_user
+        container_user=$(docker exec "$container" id -u -n)
+        if [[ "$container_user" != "postgres" ]]; then
+            log_error "Container user is '$container_user', expected 'postgres' — USER directive missing"
+            exit 1
+        fi
+        log_info "  ✓ container user: $container_user"
+
+        # 2. /usr/local/bin/pgctld must exist (k8s manifest hardcodes this path)
+        if ! docker exec "$container" test -e /usr/local/bin/pgctld; then
+            log_error "  /usr/local/bin/pgctld not found"
+            exit 1
+        fi
+        log_info "  ✓ /usr/local/bin/pgctld exists"
+
+        # 3. pgctld init must succeed with no extra flags (tests USER postgres fix)
+        local init_out
+        init_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$init_out" | grep -q "initialized successfully"; then
+            log_error "  pgctld init failed: $init_out"
+            exit 1
+        fi
+        log_info "  ✓ pgctld init --pooler-dir $pooler_dir"
+
+        # 4. pgctld start must succeed
+        local start_out
+        start_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$start_out" | grep -q "started successfully"; then
+            log_error "  pgctld start failed: $start_out"
+            exit 1
+        fi
+        log_info "  ✓ pgctld start --pooler-dir $pooler_dir"
+
+        if [[ "$version" == "multigres-orioledb-17" ]]; then
+            # 5. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            local first_line
+            first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
+            if [[ "$first_line" != "#!/bin/sh" ]]; then
+                log_error "  /usr/local/bin/pgctld is not a wrapper script (first line: $first_line)"
+                exit 1
+            fi
+            log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
+
+            # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            local spl
+            spl=$(docker exec "$container" sh -c "
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW shared_preload_libraries;\" 2>&1") || true
+            if ! echo "$spl" | grep -q "orioledb"; then
+                log_error "  orioledb not in shared_preload_libraries (got: $spl)"
+                log_error "  Check that wrapper script injects --postgres-config-template"
+                exit 1
+            fi
+            log_info "  ✓ shared_preload_libraries contains orioledb"
+
+            # 7. default_table_access_method must be orioledb
+            local tam
+            tam=$(docker exec "$container" sh -c "
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW default_table_access_method;\" 2>&1") || true
+            if ! echo "$tam" | grep -q "orioledb"; then
+                log_error "  default_table_access_method is not orioledb (got: $tam)"
+                exit 1
+            fi
+            log_info "  ✓ default_table_access_method = orioledb"
+        fi
+
+        # Shut down the pgctld test cluster so it doesn't hold the unix socket
+        docker exec "$container" sh -c "
+            pg_ctl stop -D $pooler_dir/pg_data -m immediate 2>/dev/null || true
+        "
+        log_info "=== pgctld integration checks passed ==="
+    }
+
+    # Bootstrap a multigres container: initdb + pg_ctl start + create supabase_admin + run migrations
+    # Multigres images use "tail -f /dev/null" as entrypoint so postgres must be started manually.
+    start_multigres_postgres() {
+        local container="$1"
+
+        log_info "Multigres: initializing PostgreSQL cluster..."
+        docker exec -u postgres "$container" \
+            bash -c "echo '$POSTGRES_PASSWORD' > /tmp/pgpwfile && \
+                initdb \
+                    -D /var/lib/postgresql/data \
+                    --username=supabase_admin \
+                    --pwfile=/tmp/pgpwfile \
+                    --allow-group-access \
+                    --locale-provider=icu \
+                    --encoding=UTF-8 \
+                    --icu-locale=en_US.UTF-8 && \
+                rm /tmp/pgpwfile"
+
+        log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
+        docker exec -u postgres "$container" \
+            pg_ctl start -D /etc/postgresql -w -t 60
+
+        log_info "Multigres: running schema migrations..."
+        docker exec \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_DB="$POSTGRES_DB" \
+            -e POSTGRES_HOST=/var/run/postgresql \
+            -e POSTGRES_PORT=5432 \
+            "$container" \
+            sh /docker-entrypoint-initdb.d/migrate.sh
+    }
+
     main() {
         local dockerfile=""
         local skip_build=false
@@ -204,6 +419,7 @@ writeShellApplication {
                 -h|--help) print_help; exit 0 ;;
                 --no-build) skip_build=true; shift ;;
                 --keep) KEEP_CONTAINER=true; shift ;;
+                --target) TARGET="$2"; shift; shift ;;
                 -*) log_error "Unknown option: $1"; print_help; exit 1 ;;
                 *) dockerfile="$1"; shift ;;
             esac
@@ -230,7 +446,12 @@ writeShellApplication {
 
         if [[ "$skip_build" != "true" ]]; then
             log_info "Building image from $dockerfile..."
-            if ! docker build -f "$REPO_ROOT/$dockerfile" -t "$IMAGE_TAG" "$REPO_ROOT"; then
+            local target_arg=""
+            if [[ -n "$TARGET" ]]; then
+                target_arg="--target $TARGET"
+            fi
+            # shellcheck disable=SC2086
+            if ! docker build -f "$REPO_ROOT/$dockerfile" $target_arg -t "$IMAGE_TAG" "$REPO_ROOT"; then
                 log_error "Failed to build image"
                 exit 1
             fi
@@ -248,11 +469,11 @@ writeShellApplication {
                 PSQL_PATH="${psql_15}/bin/psql"
                 PG_ISREADY_PATH="${psql_15}/bin/pg_isready"
                 ;;
-            17)
+            17|multigres-17)
                 PSQL_PATH="${psql_17}/bin/psql"
                 PG_ISREADY_PATH="${psql_17}/bin/pg_isready"
                 ;;
-            orioledb-17)
+            orioledb-17|multigres-orioledb-17)
                 PSQL_PATH="${psql_orioledb-17}/bin/psql"
                 PG_ISREADY_PATH="${psql_orioledb-17}/bin/pg_isready"
                 ;;
@@ -269,6 +490,13 @@ writeShellApplication {
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             -p "$PORT:5432" \
             "$IMAGE_TAG"
+
+        # Multigres images use "tail -f /dev/null" as their entrypoint — postgres must be
+        # started manually before we can run tests against them.
+        if [[ "$VERSION" == multigres-* ]]; then
+            verify_pgctld_integration "$CONTAINER_NAME" "$VERSION"
+            start_multigres_postgres "$CONTAINER_NAME"
+        fi
 
         if ! wait_for_postgres "localhost" "$PORT"; then
             log_error "Container logs:"
@@ -295,6 +523,12 @@ writeShellApplication {
         fi
         log_info "Container will access mock server at $HTTP_MOCK_HOST:$HTTP_MOCK_PORT"
 
+        # Select the appropriate prime.sql for this image variant
+        local prime_sql="$TESTS_DIR/prime.sql"
+        if [[ "$VERSION" == multigres-* ]]; then
+            prime_sql="$TESTS_DIR/prime-multigres.sql"
+        fi
+
         log_info "Running prime.sql to enable extensions..."
         if ! PGPASSWORD="$POSTGRES_PASSWORD" "$PSQL_PATH" \
             -h localhost \
@@ -303,7 +537,7 @@ writeShellApplication {
             -d "$POSTGRES_DB" \
             -v ON_ERROR_STOP=1 \
             -X \
-            -f "$TESTS_DIR/prime.sql" 2>&1; then
+            -f "$prime_sql" 2>&1; then
             log_error "Failed to run prime.sql"
             exit 1
         fi

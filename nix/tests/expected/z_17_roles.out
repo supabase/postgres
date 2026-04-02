@@ -46,32 +46,34 @@ left join
     pg_roles g on m.roleid = g.oid
 order by
     r.rolname, g.rolname;
-         member          | member_of (can become) | admin_option 
--------------------------+------------------------+--------------
- authenticator           | anon                   | f
- authenticator           | authenticated          | f
- authenticator           | service_role           | f
- pg_monitor              | pg_read_all_settings   | f
- pg_monitor              | pg_read_all_stats      | f
- pg_monitor              | pg_stat_scan_tables    | f
- pgsodium_keyholder      | pgsodium_keyiduser     | f
- pgsodium_keymaker       | pgsodium_keyholder     | f
- pgsodium_keymaker       | pgsodium_keyiduser     | f
- postgres                | anon                   | t
- postgres                | authenticated          | t
- postgres                | authenticator          | t
- postgres                | pg_create_subscription | t
- postgres                | pg_monitor             | t
- postgres                | pg_read_all_data       | t
- postgres                | pg_signal_backend      | t
- postgres                | pgtle_admin            | f
- postgres                | service_role           | t
- supabase_etl_admin      | pg_monitor             | f
- supabase_etl_admin      | pg_read_all_data       | f
- supabase_read_only_user | pg_monitor             | f
- supabase_read_only_user | pg_read_all_data       | f
- supabase_storage_admin  | authenticator          | f
-(23 rows)
+         member          |  member_of (can become)  | admin_option 
+-------------------------+--------------------------+--------------
+ authenticator           | anon                     | f
+ authenticator           | authenticated            | f
+ authenticator           | service_role             | f
+ pg_monitor              | pg_read_all_settings     | f
+ pg_monitor              | pg_read_all_stats        | f
+ pg_monitor              | pg_stat_scan_tables      | f
+ pgsodium_keyholder      | pgsodium_keyiduser       | f
+ pgsodium_keymaker       | pgsodium_keyholder       | f
+ pgsodium_keymaker       | pgsodium_keyiduser       | f
+ postgres                | anon                     | t
+ postgres                | authenticated            | t
+ postgres                | authenticator            | t
+ postgres                | pg_create_subscription   | t
+ postgres                | pg_monitor               | t
+ postgres                | pg_read_all_data         | t
+ postgres                | pg_signal_backend        | t
+ postgres                | pgtle_admin              | f
+ postgres                | service_role             | t
+ postgres                | supabase_privileged_role | f
+ supabase_etl_admin      | pg_monitor               | f
+ supabase_etl_admin      | pg_read_all_data         | f
+ supabase_etl_admin      | supabase_privileged_role | f
+ supabase_read_only_user | pg_monitor               | f
+ supabase_read_only_user | pg_read_all_data         | f
+ supabase_storage_admin  | authenticator            | f
+(25 rows)
 
 -- Check version-specific privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
@@ -141,31 +143,33 @@ where r.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserve
 and g.rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by
     r.rolname, g.rolname;
-         member          | member_of (can become) | admin_option 
--------------------------+------------------------+--------------
- authenticator           | anon                   | f
- authenticator           | authenticated          | f
- authenticator           | service_role           | f
- pg_monitor              | pg_read_all_settings   | f
- pg_monitor              | pg_read_all_stats      | f
- pg_monitor              | pg_stat_scan_tables    | f
- pgsodium_keyholder      | pgsodium_keyiduser     | f
- pgsodium_keymaker       | pgsodium_keyholder     | f
- pgsodium_keymaker       | pgsodium_keyiduser     | f
- postgres                | anon                   | t
- postgres                | authenticated          | t
- postgres                | authenticator          | t
- postgres                | pg_monitor             | t
- postgres                | pg_read_all_data       | t
- postgres                | pg_signal_backend      | t
- postgres                | pgtle_admin            | f
- postgres                | service_role           | t
- supabase_etl_admin      | pg_monitor             | f
- supabase_etl_admin      | pg_read_all_data       | f
- supabase_read_only_user | pg_monitor             | f
- supabase_read_only_user | pg_read_all_data       | f
- supabase_storage_admin  | authenticator          | f
-(22 rows)
+         member          |  member_of (can become)  | admin_option 
+-------------------------+--------------------------+--------------
+ authenticator           | anon                     | f
+ authenticator           | authenticated            | f
+ authenticator           | service_role             | f
+ pg_monitor              | pg_read_all_settings     | f
+ pg_monitor              | pg_read_all_stats        | f
+ pg_monitor              | pg_stat_scan_tables      | f
+ pgsodium_keyholder      | pgsodium_keyiduser       | f
+ pgsodium_keymaker       | pgsodium_keyholder       | f
+ pgsodium_keymaker       | pgsodium_keyiduser       | f
+ postgres                | anon                     | t
+ postgres                | authenticated            | t
+ postgres                | authenticator            | t
+ postgres                | pg_monitor               | t
+ postgres                | pg_read_all_data         | t
+ postgres                | pg_signal_backend        | t
+ postgres                | pgtle_admin              | f
+ postgres                | service_role             | t
+ postgres                | supabase_privileged_role | f
+ supabase_etl_admin      | pg_monitor               | f
+ supabase_etl_admin      | pg_read_all_data         | f
+ supabase_etl_admin      | supabase_privileged_role | f
+ supabase_read_only_user | pg_monitor               | f
+ supabase_read_only_user | pg_read_all_data         | f
+ supabase_storage_admin  | authenticator            | f
+(24 rows)
 
 -- Check all privileges of non-superuser roles on functions
 select

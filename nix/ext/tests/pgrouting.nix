@@ -104,7 +104,7 @@ pkgs.testers.runNixOSTest {
         last_version = test.check_install_last_version("15")
 
       with subtest("switch to postgresql 17"):
-        server.succeed(
+        server.execute(
           f"{pg17_configuration}/bin/switch-to-configuration test >&2"
         )
         server.wait_for_unit("postgresql.service")
@@ -138,7 +138,7 @@ pkgs.testers.runNixOSTest {
         test.check_upgrade_path("17")
 
       with subtest("switch to orioledb 17"):
-        server.succeed(
+        server.execute(
           f"{orioledb17_configuration}/bin/switch-to-configuration test >&2"
         )
         server.wait_for_unit("supabase-db-init.service")

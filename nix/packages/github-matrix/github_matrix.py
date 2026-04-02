@@ -81,15 +81,13 @@ BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
             "group": "self-hosted-runners-nix",
             "labels": ["aarch64-darwin"],
         },
-        "aarch64-linux": {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-linux"],
-        },
     },
 }
 
 
-def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[str]:
+def build_nix_eval_command(
+    max_workers: int, max_memory_size: int, flake_outputs: List[str]
+) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
     nix_eval_cmd = [
         "nix-eval-jobs",
@@ -104,6 +102,8 @@ def build_nix_eval_command(max_workers: int, flake_outputs: List[str]) -> List[s
         "--option",
         "accept-flake-config",
         "true",
+        "--max-memory-size",
+        str(max_memory_size),
         "--workers",
         str(max_workers),
         "--select",
@@ -148,10 +148,9 @@ def parse_nix_eval_line(
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
             return Ok(None)
-        if (
-            "nixos-test" in data.get("requiredSystemFeatures", [])
-            and data["system"] == "x86_64-linux"
-        ):
+        if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
+            "system"
+        ] in ("x86_64-linux", "aarch64-darwin"):
             return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)
@@ -168,7 +167,7 @@ def run_nix_eval_jobs(
     Returns:
         Tuple of (packages, warnings_list, errors_list)
     """
-    debug(f"Running command: {' '.join(cmd)}")
+    print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 
     # Disable colors in nix output
     env = os.environ.copy()
@@ -251,18 +250,23 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. KVM packages → self-hosted runners
-    2. Large packages on Linux → 32vcpu ephemeral runners
-    3. Darwin packages → self-hosted runners
-    4. Default → ephemeral runners
+    1. KVM packages on Darwin → self-hosted runners
+    2. KVM packages on Linux → ephemeral runners
+    3. Large packages on Linux → 32vcpu ephemeral runners
+    4. Darwin packages → self-hosted runners
+    5. Default → ephemeral runners
     """
     system = pkg["system"]
 
     if is_kvm_pkg(pkg):
-        runConfig = BUILD_RUNNER_MAP["self-hosted"].get(system)
+        if system == "aarch64-darwin":
+            return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+        if system == "aarch64-linux":
+            return {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
+        runConfig = BUILD_RUNNER_MAP["ephemeral"].get(system)
         if runConfig is None:
             raise ValueError(
-                f"No self-hosted with kvm support available for system: {system}"
+                f"No ephemeral runner with kvm support available for system: {system}"
             )
         return runConfig
 
@@ -281,6 +285,12 @@ def main() -> None:
         description="Generate GitHub Actions matrix for Nix builds"
     )
     parser.add_argument(
+        "--max-memory-size",
+        default=3072,
+        type=int,
+        help="Maximum memory per eval worker in MiB. Defaults to 3072 (3 GiB).",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
@@ -288,7 +298,7 @@ def main() -> None:
 
     max_workers: int = os.cpu_count() or 1
 
-    cmd = build_nix_eval_command(max_workers, args.flake_outputs)
+    cmd = build_nix_eval_command(max_workers, args.max_memory_size, args.flake_outputs)
 
     # Run evaluation and collect packages, warnings, and errors
     packages, warnings_list, errors_list = run_nix_eval_jobs(cmd)

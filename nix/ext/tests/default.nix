@@ -71,6 +71,10 @@ let
       nodes.server =
         { config, ... }:
         {
+          # VM resources — sized for nested virtualisation on ephemeral CI runners
+          virtualisation.memorySize = 4096;
+          virtualisation.cores = 2;
+
           services.openssh = {
             enable = true;
           };
@@ -278,7 +282,7 @@ let
 
           has_update_script = False
           with subtest("switch to postgresql 17"):
-            server.succeed(
+            server.execute(
               "${pg17-configuration}/bin/switch-to-configuration test >&2"
             )
             server.wait_for_unit("postgresql.service")
@@ -320,7 +324,7 @@ let
                   test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
                 with subtest("switch to orioledb 17"):
-                  server.succeed(
+                  server.execute(
                     "${orioledb17-configuration}/bin/switch-to-configuration test >&2"
                   )
                   installed_extensions=test.run_sql("""SELECT extname FROM pg_extension WHERE extname = 'orioledb';""")

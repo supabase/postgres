@@ -48,10 +48,11 @@ order by rolname;
  supabase_auth_admin        | t             | t           | f        | f          | f           | f              |           -1 | f            | 
  supabase_etl_admin         | f             | t           | f        | t          | f           | t              |           -1 | t            | 
  supabase_functions_admin   | t             | t           | f        | f          | f           | f              |           -1 | f            | 
+ supabase_privileged_role   | f             | f           | f        | t          | f           | f              |           -1 | f            | 
  supabase_read_only_user    | f             | t           | f        | t          | f           | f              |           -1 | t            | 
  supabase_replication_admin | f             | t           | f        | t          | f           | t              |           -1 | f            | 
  supabase_storage_admin     | t             | t           | f        | f          | f           | f              |           -1 | f            | 
-(30 rows)
+(31 rows)
 
 select
   rolname,
@@ -88,10 +89,11 @@ order by rolname;
  supabase_auth_admin        | {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
  supabase_etl_admin         | 
  supabase_functions_admin   | 
+ supabase_privileged_role   | 
  supabase_read_only_user    | {default_transaction_read_only=on}
  supabase_replication_admin | 
  supabase_storage_admin     | {search_path=storage,log_statement=none}
-(30 rows)
+(31 rows)
 
 -- Check all privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for

@@ -13,6 +13,8 @@
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     git-hooks.url = "github:cachix/git-hooks.nix";
+    multigres.url = "github:multigres/multigres";
+    multigres.flake = false;
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-darwin.url = "github:nix-darwin/nix-darwin";
     nix-editor.inputs.nixpkgs.follows = "nixpkgs";
