@@ -32,6 +32,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
     { nodes, ... }:
     let
       pg17-configuration = "${nodes.server.system.build.toplevel}/specialisation/postgresql17";
+      orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
       from pathlib import Path
@@ -43,6 +44,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       extension_name = "${pname}"
       support_upgrade = False
       pg17_configuration = "${pg17-configuration}"
+      orioledb17_configuration = "${orioledb17-configuration}"
       ext_has_background_worker = ${
         if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
       }
