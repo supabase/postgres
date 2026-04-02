@@ -89,18 +89,20 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
           # DELETE without WHERE should fail when safeupdate is loaded
           server.fail(
-              """psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "LOAD 'safeupdate'" -c "DELETE FROM _test_safeupdate" """
+              """psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "DELETE FROM _test_safeupdate" """
           )
 
           # DELETE with WHERE should succeed
           server.succeed(
-              """psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "LOAD 'safeupdate'" -c "DELETE FROM _test_safeupdate WHERE id = 2" """
+              """psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "SET safeupdate.enabled=1" -c "DELETE FROM _test_safeupdate WHERE id = 2" """
           )
 
           cleanup_test_table()
 
       def check_postgres_not_blocked():
           """Verify postgres is not blocked by default (safeupdate not in their session_preload_libraries)."""
+          test.run_sql("ALTER ROLE postgres SET session_preload_libraries = 'safeupdate'")
+          test.run_sql("ALTER ROLE postgres SET safeupdate.enabled = 1")
           setup_test_table()
 
           server.succeed(
@@ -115,16 +117,18 @@ self.inputs.nixpkgs.lib.nixos.runTest {
       def check_postgres_can_enable():
           """Verify postgres can opt-in to safeupdate for their role."""
           test.run_sql("ALTER ROLE postgres SET session_preload_libraries = 'safeupdate'")
+          test.run_sql("ALTER ROLE postgres SET safeupdate.enabled = 1")
 
           setup_test_table()
 
           # Now postgres should be blocked (new session picks up role setting)
           server.fail(
-              """psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "UPDATE _test_safeupdate SET id = 2" """
+              """psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "LOAD 'safeupdate'" -c "UPDATE _test_safeupdate SET id = 2" """
           )
 
           # Clean up
           test.run_sql("ALTER ROLE postgres RESET session_preload_libraries")
+          test.run_sql("ALTER ROLE postgres RESET safeupdate.enabled")
           cleanup_test_table()
 
       start_all()
