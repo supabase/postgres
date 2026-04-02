@@ -13,7 +13,7 @@ self.inputs.nixpkgs.lib.nixos.runTest {
   name = pname;
   hostPkgs = pkgs;
   nodes.server =
-   { ... }:
+    { ... }:
     {
       imports = [
         (testLib.makeSupabaseTestConfig {
@@ -165,5 +165,5 @@ self.inputs.nixpkgs.lib.nixos.runTest {
 
       with subtest("Check upgrade path with orioledb 17"):
         test.check_upgrade_path("orioledb-17")
-      ''
+    '';
 }

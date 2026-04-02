@@ -62,7 +62,7 @@ where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_
 order by rolname;
           rolname           |                                    rolconfig                                    
 ----------------------------+---------------------------------------------------------------------------------
- anon                       | {statement_timeout=3s}
+ anon                       | {statement_timeout=3s,session_preload_libraries=safeupdate}
  authenticated              | {statement_timeout=8s,session_preload_libraries=safeupdate}
  authenticator              | {session_preload_libraries=safeupdate,statement_timeout=8s,lock_timeout=8s}
  dashboard_user             | 
