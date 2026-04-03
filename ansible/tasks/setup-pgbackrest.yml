@@ -30,6 +30,7 @@
     - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
     - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/nix'
     - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
+    - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
 
 - name: Install pgBackRest
   ansible.builtin.shell: |
@@ -54,6 +55,22 @@
     - {dir: /var/log/pgbackrest}
   loop_control:
     loop_var: backrest_dir
+  when:
+    - nixpkg_mode
+
+- name: Pre-create pgBackRest SAA log files
+  ansible.builtin.file:
+    access_time: preserve
+    group: postgres
+    mode: '0660'
+    modification_time: preserve
+    owner: pgbackrest
+    path: "{{ item }}"
+    state: touch
+  loop:
+    - /var/log/pgbackrest/saa-pgb.log
+    - /var/log/pgbackrest/wal-push.log
+    - /var/log/pgbackrest/wal-fetch.log
   when:
     - nixpkg_mode
 
