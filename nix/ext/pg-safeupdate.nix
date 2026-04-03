@@ -5,6 +5,7 @@
   fetchFromGitHub,
   postgresql,
   makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 
@@ -76,6 +77,9 @@ pkgs.buildEnv {
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {
