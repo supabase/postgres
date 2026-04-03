@@ -42,9 +42,14 @@ pkgs.testers.runNixOSTest {
         "orioledb-17": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') orioledbVersions)}],
       }
       extension_name = "${pname}"
-      support_upgrade = True
+      system = "${nodes.server.system.build.toplevel}"
+      pg15_configuration = system
       pg17_configuration = "${pg17-configuration}"
       orioledb17_configuration = "${orioledb17-configuration}"
+      support_upgrade = True
+      ext_has_background_worker = ${
+        if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
+      }
       sql_test_directory = Path("${../../tests}")
 
       ${builtins.readFile ./lib.py}
@@ -163,5 +168,7 @@ pkgs.testers.runNixOSTest {
 
       with subtest("Check upgrade path with orioledb 17"):
         test.check_upgrade_path("orioledb-17")
+
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
     '';
 }

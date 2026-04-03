@@ -80,7 +80,7 @@ let
 
         preCheck = ''
           export PGRX_HOME="$(mktemp -d)"
-          export PG_VERSION="${lib.versions.major postgresql.version}"
+          export PG_VERSION="${pgVersion}"
           export NIX_PGLIBDIR="$PGRX_HOME/$PG_VERSION/lib"
           export PATH="$PGRX_HOME/$PG_VERSION/bin:$PATH"
           ${lib.getExe rsync} --chmod=ugo+w -a ${postgresql}/ ${postgresql.lib}/ "$PGRX_HOME/$PG_VERSION/"
@@ -120,8 +120,9 @@ let
       }
     );
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).pg_graphql;
+  pgVersion = lib.versions.major postgresql.version;
   supportedVersions = lib.filterAttrs (
-    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+    _: value: builtins.elem pgVersion value.postgresql
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
@@ -135,10 +136,54 @@ let
   packages = builtins.attrValues (
     lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) versionsToUse
   );
+  buildUnsupported =
+    # Build SQL-only packages for unsupported versions needed by pg_upgrade.
+    # When upgrading PostgreSQL, pg_upgrade requires old extension versions to exist
+    # even if they can't compile against the new PostgreSQL version.
+    version: hash: _rustVersion: _pgrxVersion:
+    stdenv.mkDerivation {
+      inherit pname version;
+      src = fetchFromGitHub {
+        owner = "supabase";
+        repo = pname;
+        rev = "v${version}";
+        inherit hash;
+      };
+      phases = [ "installPhase" ];
+      installPhase = ''
+        mkdir -p $out/share/postgresql/extension
+        for file in $src/sql/*.sql; do
+          filename=$(basename "$file")
+          if [[ "$filename" != "load_sql_config.sql" && "$filename" != "load_sql_context.sql" ]]; then
+            cat "$file"
+            echo ";"
+          fi
+        done > $out/share/postgresql/extension/${pname}--${version}.sql
+      '';
+      meta = with lib; {
+        description = "GraphQL support for PostreSQL";
+        homepage = "https://github.com/supabase/${pname}";
+        license = licenses.postgresql;
+        inherit (postgresql.meta) platforms;
+      };
+    };
+  unsupportedVersions = lib.filterAttrs (
+    _: value: !builtins.elem pgVersion value.postgresql
+  ) allVersions;
+  unsupportedPackages =
+    if pgVersion == "15" then
+      [ ]
+    else
+      # Include SQL-only packages for PG15 extension versions incompatible with current PG
+      builtins.attrValues (
+        lib.mapAttrs (
+          name: value: buildUnsupported name value.hash value.rust value.pgrx
+        ) unsupportedVersions
+      );
 in
 (buildEnv {
   name = pname;
-  paths = packages;
+  paths = packages ++ unsupportedPackages;
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"

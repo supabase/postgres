@@ -76,9 +76,9 @@ let
 
       preCheck = ''
         export PGRX_HOME=$(mktemp -d)
-        export NIX_PGLIBDIR=$PGRX_HOME/${lib.versions.major postgresql.version}/lib
-        ${lib.getExe pkgs.rsync} --chmod=ugo+w -a ${postgresql}/ ${postgresql.lib}/ $PGRX_HOME/${lib.versions.major postgresql.version}/
-        cargo pgrx init --pg${lib.versions.major postgresql.version} $PGRX_HOME/${lib.versions.major postgresql.version}/bin/pg_config
+        export NIX_PGLIBDIR=$PGRX_HOME/${pgVersion}/lib
+        ${lib.getExe pkgs.rsync} --chmod=ugo+w -a ${postgresql}/ ${postgresql.lib}/ $PGRX_HOME/${pgVersion}/
+        cargo pgrx init --pg${pgVersion} $PGRX_HOME/${pgVersion}/bin/pg_config
       '';
 
       # Tests are disabled for specific versions because pgrx tests require
@@ -92,11 +92,6 @@ let
           "0.3.1"
           "0.3.3"
         ]);
-
-      preBuild = ''
-        echo "Processing git tags..."
-        echo '${builtins.concatStringsSep "," previousVersions}' | sed 's/,/\n/g' > git_tags.txt
-      '';
 
       postInstall = ''
         mv $out/lib/${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
@@ -127,8 +122,9 @@ let
       };
     };
   allVersions = (builtins.fromJSON (builtins.readFile ../versions.json)).pg_jsonschema;
+  pgVersion = lib.versions.major postgresql.version;
   supportedVersions = lib.filterAttrs (
-    _: value: builtins.elem (lib.versions.major postgresql.version) value.postgresql
+    _: value: builtins.elem pgVersion value.postgresql
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
@@ -142,6 +138,8 @@ let
   );
   versionsBuilt = if latestOnly then [ latestVersion ] else versions;
   numberOfVersionsBuilt = builtins.length versionsBuilt;
+  unsupportedVersionsItems = lib.filterAttrs (_: value: value.postgresql == [ "15" ]) allVersions;
+  unsupportedVersions = if pgVersion == "17" then lib.attrNames unsupportedVersionsItems else [ ];
 in
 (pkgs.buildEnv {
   name = pname;
@@ -157,6 +155,10 @@ in
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    for v in ${lib.concatStringsSep " " unsupportedVersions}; do
+      cp $out/share/postgresql/extension/${pname}--${lib.head versions}.sql $out/share/postgresql/extension/${pname}--$v.sql
+    done
 
     create_sql_files() {
       PREVIOUS_VERSION=""

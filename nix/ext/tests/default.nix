@@ -123,6 +123,8 @@ let
                   newPostgresql = psql_17;
                   oldDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${oldPostgresql.psqlSchema}";
                   newDataDir = "${builtins.dirOf config.services.postgresql.dataDir}/${newPostgresql.psqlSchema}";
+                  oldSettings = (installedExtension "15").defaultSettings or { };
+                  newSettings = (installedExtension "17").defaultSettings or { };
                 in
                 ''
                   if [[ ! -d ${newDataDir} ]]; then
@@ -131,8 +133,14 @@ let
                     ${newPostgresql}/bin/pg_upgrade --old-datadir "${oldDataDir}" --new-datadir "${newDataDir}" \
                       --old-bindir "${oldPostgresql}/bin" --new-bindir "${newPostgresql}/bin" \
                       ${
-                        if config.services.postgresql.settings.shared_preload_libraries != null then
-                          " --old-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}' --new-options='-c shared_preload_libraries=${config.services.postgresql.settings.shared_preload_libraries}'"
+                        let
+                          oldLibs = oldSettings.shared_preload_libraries or "";
+                          newLibs = newSettings.shared_preload_libraries or "";
+                          oldLibsStr = if builtins.isList oldLibs then lib.concatStringsSep "," oldLibs else oldLibs;
+                          newLibsStr = if builtins.isList newLibs then lib.concatStringsSep "," newLibs else newLibs;
+                        in
+                        if oldSettings ? shared_preload_libraries || newSettings ? shared_preload_libraries then
+                          " --old-options='-c shared_preload_libraries=${oldLibsStr}' --new-options='-c shared_preload_libraries=${newLibsStr}'"
                         else
                           ""
                       }
@@ -222,7 +230,9 @@ let
           }
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
-          pg17_configuration = "${pg17-configuration}"
+          system = "${nodes.server.system.build.toplevel}"
+          pg15_configuration = system
+          pg17_configuration = f"{system}/specialisation/postgresql17"
           ext_has_background_worker = ${
             if support_upgrade && (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
           }
@@ -314,14 +324,17 @@ let
           ${
             if run_pg_regress then
               ''
+                psql_17 = "${psql_17}"
+                orioledb_17 = "${orioledb_17}"
+
                 with subtest("Check pg_regress with postgresql 17 after extension upgrade"):
-                  test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
                 with subtest("Check the install of the last version of the extension"):
                   test.check_install_last_version("17")
 
                 with subtest("Check pg_regress with postgresql 17 after installing the last version"):
-                  test.check_pg_regress(Path("${psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
                 with subtest("switch to orioledb 17"):
                   server.execute(
@@ -335,7 +348,34 @@ let
                   test.check_upgrade_path("orioledb-17")
 
                 with subtest("Check pg_regress with orioledb 17 after installing the last version"):
-                  test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
+                  test.check_pg_regress(Path(f"{orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
+
+                with subtest("Test pg_upgrade from postgresql 15 to 17 with older extension version"):
+                  # Test that all extension versions from postgresql 15 can be upgraded to postgresql 17 using pg_upgrade
+                  for version in versions["15"]:
+                    server.systemctl("stop postgresql.service")
+                    server.succeed("rm -fr /var/lib/postgresql/update_extensions.sql /var/lib/postgresql/17")
+                    server.succeed(
+                      f"{pg15_configuration}/bin/switch-to-configuration test >&2"
+                    )
+                    test.drop_extension()
+                    test.install_extension(version)
+                    server.succeed(
+                      f"{pg17_configuration}/bin/switch-to-configuration test >&2"
+                    )
+                    has_update_script = server.succeed(
+                      "test -f /var/lib/postgresql/update_extensions.sql && echo 'yes' || echo 'no'"
+                    ).strip() == "yes"
+                    if has_update_script:
+                      # Run the extension update script generated during the upgrade
+                      test.run_sql_file("/var/lib/postgresql/update_extensions.sql")
+                      # If there was an update script, the last version should be installed
+                      test.assert_version_matches(versions["17"][-1])
+                    else:
+                      # Otherwise, the version should match the version from postgresql 15
+                      test.assert_version_matches(version)
+
+                    test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
               ''
             else
               ""
@@ -363,7 +403,6 @@ builtins.listToAttrs (
       "pg_jsonschema"
       "pg_net"
       "pg_partman"
-      "pg_stat_monitor"
       "pg_tle"
       "pgaudit"
       "pgtap"

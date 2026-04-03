@@ -46,9 +46,15 @@ pkgs.testers.runNixOSTest {
       }
       extension_name = "${pname}"
       support_upgrade = False
+      system = "${nodes.server.system.build.toplevel}"
+      pg15_configuration = system
       pg17_configuration = "${pg17-configuration}"
       orioledb17_configuration = "${orioledb17-configuration}"
+      ext_has_background_worker = ${
+        if (installedExtension "15") ? hasBackgroundWorker then "True" else "False"
+      }
       sql_test_directory = Path("${../../tests}")
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
 
       ${builtins.readFile ./lib.py}
 
@@ -99,9 +105,19 @@ pkgs.testers.runNixOSTest {
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
+      psql_15 = "${self.packages.${system}."psql_15/bin"}"
+      pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
+
       last_version = None
       with subtest("Check the install of the last version of the extension"):
         last_version = test.check_install_last_version("15")
+
+      if ext_has_background_worker:
+        with subtest("Test switch_${pname}_version"):
+          test.check_switch_extension_with_background_worker(Path(f"{psql_15}/lib/${pname}.so"), "15")
+
+      with subtest("Check pg_regress with postgresql 15 after installing the last version"):
+        test.check_pg_regress(Path(f"{psql_15}/lib/pgxs/src/test/regress/pg_regress"), "15", pg_regress_test_name)
 
       with subtest("switch to postgresql 17"):
         server.execute(
@@ -127,8 +143,16 @@ pkgs.testers.runNixOSTest {
           f"Expected our custom build (${testLib.expectedVersions."17"}), got: {postgres_path}"
         )
 
-      with subtest("Check last version of the extension after upgrade"):
+      with subtest("Check last version of the extension after postgresql upgrade"):
         test.assert_version_matches(last_version)
+
+      psql_17 = "${self.packages.${system}."psql_17/bin"}"
+
+      with subtest("Check the install of the last version of the extension"):
+        test.check_install_last_version("17")
+
+      with subtest("Check pg_regress with postgresql 17 after installing the last version"):
+        test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
 
       with subtest("switch to orioledb 17"):
         server.execute(
@@ -157,6 +181,5 @@ pkgs.testers.runNixOSTest {
         ).strip()
         for role in ["anon", "authenticated", "authenticator", "supabase_admin"]:
           assert role in roles, f"Expected role {role} to exist, got: {roles}"
-
     '';
 }

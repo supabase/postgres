@@ -800,7 +800,8 @@
         "15"
       ],
       "revision": "1.0.1",
-      "hash": "sha256-sQEpIknAFOmvNTX2G23X4BvMdy3Ms7sXx7hLZt8jyUk="
+      "hash": "sha256-sQEpIknAFOmvNTX2G23X4BvMdy3Ms7sXx7hLZt8jyUk=",
+      "pgUpgradeCompatible": false
     },
     "2.1": {
       "postgresql": [
