@@ -7,6 +7,8 @@
   pkg-config,
   postgresql,
   buildEnv,
+  makeWrapper,
+  switch-ext-version,
   rust-bin,
   git,
   latestOnly ? false,
@@ -246,6 +248,7 @@ in
 (buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -334,6 +337,9 @@ in
     create_control_files
     create_lib_files
     ${if latestOnly then "" else "create_migration_sql_files"}
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
 
     # Verify library count matches expected
     ${
