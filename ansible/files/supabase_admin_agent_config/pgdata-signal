@@ -27,8 +27,7 @@ ACTION="$1"
 SIGNAL_TYPE="$2"
 
 case "$SIGNAL_TYPE" in
-  recovery) FILE="/data/pgdata/recovery.signal" ;;
-  standby)  FILE="/data/pgdata/standby.signal"  ;;
+  recovery|standby) FILE="/data/pgdata/${SIGNAL_TYPE}.signal" ;;
   *)
     echo "error: unknown signal type '${SIGNAL_TYPE}'; expected recovery or standby" >&2
     exit 1
