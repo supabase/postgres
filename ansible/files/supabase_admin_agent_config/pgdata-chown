@@ -24,11 +24,8 @@ if [[ "$REAL" != "/data/pgdata" && "$REAL" != /data/pgdata/* ]]; then
 fi
 
 case "$ACTION" in
-  to-pgbackrest)
-    exec /usr/bin/chown -R pgbackrest:pgbackrest "$REAL"
-    ;;
-  to-postgres)
-    exec /usr/bin/chown -R postgres:postgres "$REAL"
+  to-pgbackrest|to-postgres)
+    exec /usr/bin/chown -R "${ACTION:3}:postgres" "$REAL"
     ;;
   *)
     echo "error: unknown action '${ACTION}'; expected to-pgbackrest or to-postgres" >&2
