@@ -43,26 +43,17 @@
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
     group: postgres
-    mode: '0770'
+    mode: "{{ backrest_dir['mode'] | default('0770', true) }}"
     owner: pgbackrest
-    path: "{{ backrest_dir }}"
+    path: "{{ backrest_dir['dir'] }}"
     state: directory
   loop:
-    - /var/lib/pgbackrest
-    - /var/spool/pgbackrest
-    - /var/log/pgbackrest
+    - {dir: /etc/pgbackrest/conf.d, mode: '02770'}
+    - {dir: /var/lib/pgbackrest}
+    - {dir: /var/spool/pgbackrest}
+    - {dir: /var/log/pgbackrest}
   loop_control:
     loop_var: backrest_dir
-  when:
-    - nixpkg_mode
-
-- name: Create pgBackRest conf.d directory with setgid
-  ansible.legacy.file:
-    group: postgres
-    mode: '02770'
-    owner: pgbackrest
-    path: /etc/pgbackrest/conf.d
-    state: directory
   when:
     - nixpkg_mode
 
@@ -93,11 +84,11 @@
 
 - name: pgBackRest - logrotate config
   ansible.legacy.copy:
-    src: files/pgbackrest_config/pgbackrest.logrotate
     dest: /etc/logrotate.d/pgbackrest
-    owner: root
     group: root
     mode: '0644'
+    owner: root
+    src: files/pgbackrest_config/pgbackrest.logrotate
 
 - name: Create pgBackRest wrapper script
   ansible.builtin.copy:
