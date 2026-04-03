@@ -7,6 +7,8 @@
   flex,
   openssl,
   libkrb5,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -91,6 +93,7 @@ in
 buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -102,6 +105,9 @@ buildEnv {
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {

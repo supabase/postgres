@@ -4,6 +4,8 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -82,10 +84,16 @@ in
 pkgs.buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
   ];
+
+  postBuild = ''
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_vector_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
+  '';
 
   passthru = {
     versions = versionsBuilt;

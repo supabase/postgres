@@ -5,6 +5,8 @@
   fetchFromGitHub,
   postgresql,
   libsodium,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -87,6 +89,7 @@ in
 pkgs.buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -103,6 +106,9 @@ pkgs.buildEnv {
       ls -la $out/lib/${pname}*${postgresql.dlSuffix} || true
       exit 1
     fi
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {
