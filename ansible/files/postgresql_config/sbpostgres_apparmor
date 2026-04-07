@@ -66,6 +66,7 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/bin/admin-mgr Pix -> postgres_shell,
     /nix/store/*/bin/wal-g-2 Pix -> postgres_shell,
     /nix/store/*/bin/pgbackrest Pix -> postgres_shell,
+    /nix/store/*/bin/pg_dump ix,
     /usr/bin/pgbackrest Pix -> pgbackrest_shell,
     /usr/bin/nix Pix -> pgbackrest_shell,
     /usr/bin/sudo Pix -> pgbackrest_shell,
@@ -83,12 +84,8 @@ profile sbpostgres flags=(attach_disconnected) {
         /nix/store/*/bin/bash mr,
 
         # Only allow specific commands to be executed from shell
-        /usr/bin/gzip ix,
         /usr/bin/cat ix,
-        /usr/bin/pg_dump ix,
-        /bin/echo ix,
-        /bin/bash ix,
-        /bin/cat ix,
+
         # pgbackrest needs nix and sudo
         /usr/bin/nix ix,
         /usr/bin/sudo ix,
@@ -99,6 +96,7 @@ profile sbpostgres flags=(attach_disconnected) {
         /nix/store/*/bin/.postgres-wrapped ix,
         /nix/store/*/bin/wal-g-2 ix,
         /nix/store/*/bin/pgbackrest ix,
+        /nix/store/*/bin/pg_dump ix,
 
         # file path permissions
         /** r,
