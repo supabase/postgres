@@ -1097,7 +1097,7 @@ def test_apparmor_blocks_disallowed_shell_commands(host):
     """
     result = run_ssh_command(
         host["ssh"],
-        "sudo -u postgres psql -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/id';\" 2>&1 || true",
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/id';\" 2>&1 || true",
     )
     combined = result["stdout"] + result["stderr"]
     assert "command not executable" in combined, (
@@ -1115,7 +1115,7 @@ def test_apparmor_permits_allowlisted_commands(host):
     """
     result = run_ssh_command(
         host["ssh"],
-        "sudo -u postgres psql -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/cat';\"",
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/cat';\"",
     )
     assert result["succeeded"], (
         f"AppArmor unexpectedly blocked /usr/bin/cat.\n"
