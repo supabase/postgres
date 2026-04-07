@@ -34,10 +34,10 @@ start_postgres() {
         # Start the server
         pg_ctl start -D "$DATDIR" -l "$LOG_FILE" \
             -o "--config-file=$DATDIR/postgresql.conf -p $PORTNO -k $DATDIR/tmp"
-            
+
         # Give it a moment to write logs
         sleep 1
-        
+
         # Check server status and logs
         if ! pg_ctl status -D "$DATDIR"; then
             echo "PostgreSQL failed to start. Full logs:"
@@ -192,7 +192,7 @@ export LC_CTYPE=en_US.UTF-8
 export KEY_FILE="$DATDIR/pgsodium.key"
 echo "KEY_FILE: $KEY_FILE"
 echo "KEY_FILE contents:"
-cat "$KEY_FILE" 
+cat "$KEY_FILE"
 
 echo "PGSODIUM_GETKEY_SCRIPT: $PGSODIUM_GETKEY_SCRIPT"
 echo "NOTE: using port $PORTNO for server"
@@ -213,7 +213,17 @@ fi
 
 # Copy configuration files
 echo "NOTE: patching postgresql.conf files"
-cp "$PG_HBA_FILE" "$DATDIR/pg_hba.conf"
+if [ "$VERSION" = "15" ]; then
+    cp $(dirname "$PG_HBA_FILE")/pg_hba.conf_15* "$DATDIR/pg_hba.conf"
+else
+    cp "${PG_HBA_FILE}" "$DATDIR/pg_hba.conf"
+    # copy extra hba_*.conf files over
+    extra_hba_files=( ${PG_HBA_FILE%pg_hba.conf}pg_hba_*.conf* )
+    for f in "${extra_hba_files[@]}"; do
+        base=$(basename "$f")
+        cp "$f" "$DATDIR/${base%%.conf*}.conf"
+    done
+fi
 cp "$PG_IDENT_FILE" "$DATDIR/pg_ident.conf"
 # Copy entire conf.d directory from postgresql_config
 POSTGRESQL_CONFIG_DIR="@POSTGRESQL_CONFIG_DIR@"
@@ -260,16 +270,16 @@ orioledb_config_items() {
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
         ls -la "$DATDIR"
-        
+
         # Use perl instead of sed for macOS
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g' "$DATDIR/postgresql.conf"
-        
+
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ plv8,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ pgjwt,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
-        
+
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         echo "non-macos pg 17 conf"
@@ -297,7 +307,7 @@ export GRN_PLUGINS_DIR=$GROONGA/lib/groonga/plugins
 
 # Start postgres
 mkdir -p "$DATDIR/tmp"
-chmod 1777 "$DATDIR/tmp"  
+chmod 1777 "$DATDIR/tmp"
 start_postgres "daemon"
 
 # Wait for PostgreSQL to start
@@ -377,6 +387,6 @@ stop_postgres
 # Step 4: Restart PostgreSQL in the foreground (with log output visible) or as a daemon
 if [ "$DAEMONIZE" = true ]; then
     start_postgres "daemon"
-else 
+else
     start_postgres "foreground"
 fi

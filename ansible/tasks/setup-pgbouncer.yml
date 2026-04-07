@@ -96,7 +96,7 @@
     owner: 'pgbouncer'
     path: '/etc/pgbouncer/userlist.txt'
     state: 'touch'
-      
+
 - name: import /etc/tmpfiles.d/pgbouncer.conf
   ansible.builtin.template:
     dest: '/etc/tmpfiles.d/pgbouncer.conf'
@@ -116,6 +116,8 @@
   loop:
     - /etc/pgbouncer-custom/ssl-config.ini
     - /etc/postgresql/pg_hba.conf
+    - /etc/postgresql/pg_hba_users_public.conf
+    - /etc/postgresql/pg_hba_public.conf
   loop_control:
     loop_var: 'pgbouncer_group_item'
 
