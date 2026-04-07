@@ -1075,7 +1075,7 @@ def test_postgrest_read_only_session_attrs(host):
 def test_apparmor_postgresql_service_uses_profile(host):
     """Verify the PostgreSQL systemd service is running under the sbpostgres AppArmor profile."""
     result = run_ssh_command(
-        host["ssh"], "systemctl status postgresql | grep -i apparmor"
+        host["ssh"], "systemctl show postgresql | grep -i apparmor"
     )
     assert result["succeeded"], (
         f"Could not find AppArmor info in postgresql service status.\n"
