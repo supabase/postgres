@@ -35,7 +35,7 @@ case "$SIGNAL_TYPE" in
 esac
 
 case "$ACTION" in
-  create) exec /usr/bin/touch "$FILE" ;;
+  create) exec /usr/bin/touch "${FILE}" ;;
   remove) exec /usr/bin/rm -f "$FILE" ;;
   *)
     echo "error: unknown action '${ACTION}'; expected create or remove" >&2
