@@ -1,16 +1,17 @@
 import base64
-import boto3
 import gzip
 import logging
 import os
+import socket
+from pathlib import Path
+from time import sleep
+
+import boto3
+import paramiko
 import pytest
 import requests
-import socket
-from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
-from time import sleep
-import paramiko
-from pathlib import Path
+from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 
 # if EXECUTION_ID is not set, use a default value that includes the user and hostname
 RUN_ID = os.environ.get(
@@ -1069,3 +1070,54 @@ def test_postgrest_read_only_session_attrs(host):
                 print("Warning: Failed to restart PostgreSQL after restoring config")
         else:
             print("Warning: Failed to restore PostgreSQL configuration")
+
+
+def test_apparmor_sbpostgres_profile_enforced(host):
+    """Verify the sbpostgres AppArmor profile is loaded and in enforce mode."""
+    import json
+
+    result = run_ssh_command(host["ssh"], "sudo aa-status --json")
+    assert result["succeeded"], f"aa-status failed: {result['stderr']}"
+    status = json.loads(result["stdout"])
+    enforced = status.get("profiles", {})
+    assert "sbpostgres" in enforced, "sbpostgres profile not found in AppArmor"
+    assert enforced["sbpostgres"] == "enforce", (
+        f"sbpostgres profile is not in enforce mode: {enforced['sbpostgres']}"
+    )
+
+
+def test_apparmor_blocks_disallowed_shell_commands(host):
+    """Verify AppArmor's postgres_shell sub-profile blocks execution of
+    commands not on the allowlist (e.g. /usr/bin/id).
+
+    COPY TO PROGRAM causes postgres to fork /bin/sh, which transitions to the
+    postgres_shell sub-profile via the 'Pix -> postgres_shell' rule. /usr/bin/id
+    is not on the allowlist so AppArmor denies the exec, and PostgreSQL surfaces
+    this as 'command not executable'.
+    """
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres psql -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/id';\" 2>&1 || true",
+    )
+    combined = result["stdout"] + result["stderr"]
+    assert "command not executable" in combined, (
+        f"Expected AppArmor to block /usr/bin/id with 'command not executable' "
+        f"but got:\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
+    )
+
+
+def test_apparmor_permits_allowlisted_commands(host):
+    """Verify allowlisted commands are not blocked by the postgres_shell profile.
+
+    /usr/bin/cat is explicitly listed as 'ix' in postgres_shell with a canonical
+    path (avoiding the /bin -> /usr/bin symlink issue on Ubuntu 22.04+), and
+    writes only to the pipe so no file-write permissions are needed.
+    """
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres psql -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/cat';\"",
+    )
+    assert result["succeeded"], (
+        f"AppArmor unexpectedly blocked /usr/bin/cat.\n"
+        f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
+    )
