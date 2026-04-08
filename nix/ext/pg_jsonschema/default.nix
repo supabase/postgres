@@ -6,6 +6,8 @@
   fetchFromGitHub,
   postgresql,
   rust-bin,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -146,6 +148,7 @@ in
 (pkgs.buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -175,6 +178,9 @@ in
     }
 
     create_sql_files
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {

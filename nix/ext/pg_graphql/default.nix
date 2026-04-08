@@ -7,6 +7,8 @@
   postgresql,
   rust-bin,
   rsync,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 
@@ -139,6 +141,7 @@ in
 (buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -177,6 +180,9 @@ in
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
   passthru = {
     versions = versionsBuilt;

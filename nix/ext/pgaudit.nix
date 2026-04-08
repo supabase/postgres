@@ -6,6 +6,8 @@
   libkrb5,
   openssl,
   postgresql,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 #adapted from https://github.com/NixOS/nixpkgs/blob/master/pkgs/servers/sql/postgresql/ext/pgaudit.nix
@@ -138,6 +140,7 @@ in
 buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -231,6 +234,9 @@ buildEnv {
       ls -la $out/lib/${pname}*${postgresql.dlSuffix} || true
       exit 1
     fi
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {
