@@ -15,9 +15,8 @@
       become: true
       become_user: 'postgres'
       loop:
-        - { in: "^(shared_preload_libraries = '.*)pgsodium(.*')", out: '\1\2' }
-        - { in: "^(shared_preload_libraries = '.*)supabase_vault(.*')", out: '\1\2' }
-        - { in: "^(shared_preload_libraries = '.*)*supabase_vault(.*')", out: '\1\2' }
+        - { in: "^(shared_preload_libraries = '[^']*),\\s*pgsodium", out: '\1' }
+        - { in: "^(shared_preload_libraries = '[^']*),\\s*supabase_vault", out: '\1' }
         - { in: '^(pgsodium\.getkey_script=)', out: '#\1' }
       loop_control:
         loop_var: 'regx'
