@@ -108,7 +108,7 @@
       block:
         - name: Check if psql_version is psql_15
           ansible.builtin.set_fact:
-            is_psql_15: "{{ psql_version in ['psql_15'] }}"
+            is_psql_15: "{{ psql_version == 'psql_15' or postgresql_major | int == 15 }}"
 
         - name: create placeholder pam config
           when: not is_psql_15
