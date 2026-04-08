@@ -43,7 +43,7 @@ runs:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
     - uses: NixOS/nix-installer-action@d6ef7ecd8f685af89869e5aca0580a33e3e3150c
       with:
-        installer-version: 2.33.2
+        installer-version: 2.33.4
         extra-conf: |
           substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
           trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
