@@ -57,6 +57,11 @@ runs:
         fi
 
         curl -L https://releases.nixos.org/nix/nix-2.33.4/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
+
+        # Add nix to PATH for subsequent steps
+        echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
+        # Source the daemon profile so nix works in this step too
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
     - name: Print Nix version
       shell: bash
       run: nix --version
