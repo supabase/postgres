@@ -18,8 +18,8 @@ RUN apk add --no-cache \
     sudo \
     xz
 
-RUN addgroup -S postgres && \
-    adduser -S -h /var/lib/postgresql -s /bin/bash -G postgres postgres && \
+RUN addgroup -S -g 999 postgres && \
+    adduser -S -u 999 -h /var/lib/postgresql -s /bin/bash -G postgres postgres && \
     addgroup -S wal-g && \
     adduser -S -s /bin/bash -G wal-g wal-g
 
@@ -104,8 +104,8 @@ RUN apk add --no-cache \
     musl-locales-lang \
     && rm -rf /var/cache/apk/*
 
-RUN addgroup -S postgres && \
-    adduser -S -G postgres -h /var/lib/postgresql -s /bin/bash postgres && \
+RUN addgroup -S -g 999 postgres && \
+    adduser -S -u 999 -G postgres -h /var/lib/postgresql -s /bin/bash postgres && \
     addgroup -S wal-g && \
     adduser -S -G wal-g -s /bin/bash wal-g && \
     adduser postgres wal-g
