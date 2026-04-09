@@ -110,14 +110,6 @@
   when:
     - stage2_nix
 
-- name: pgBackRest - logrotate config
-  ansible.legacy.copy:
-    dest: /etc/logrotate.d/pgbackrest
-    group: root
-    mode: '0644'
-    owner: root
-    src: files/pgbackrest_config/pgbackrest.logrotate
-
 - name: Create pgBackRest wrapper script
   ansible.builtin.copy:
     content: |
