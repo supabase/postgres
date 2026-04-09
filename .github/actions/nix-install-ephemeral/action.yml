@@ -41,21 +41,22 @@ runs:
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
-    - name: Set Nix package URL
+    - name: Install Nix
       shell: bash
       run: |
-        ARCH="$(uname -m)"
-        OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-        echo "NIX_INSTALLER_NIX_PACKAGE_URL=https://releases.nixos.org/nix/nix-2.33.4/nix-2.33.4-${ARCH}-${OS}.tar.xz" >> "$GITHUB_ENV"
-    - uses: NixOS/nix-installer-action@d6ef7ecd8f685af89869e5aca0580a33e3e3150c
-      with:
-        installer-version: 2.33.3
-        extra-conf: |
-          substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-          trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-          ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
-          max-jobs = 4
-          extra-system-features = kvm
+        sudo tee /tmp/nix-extra.conf > /dev/null <<'NIXCONF'
+        extra-experimental-features = nix-command flakes
+        substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+        trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+        max-jobs = 4
+        extra-system-features = kvm
+        NIXCONF
+
+        if [ "${{ inputs.push-to-cache }}" = "true" ]; then
+          echo "post-build-hook = /etc/nix/upload-to-cache.sh" | sudo tee -a /tmp/nix-extra.conf > /dev/null
+        fi
+
+        curl -L https://releases.nixos.org/nix/nix-2.33.4/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
     - name: Print Nix version
       shell: bash
       run: nix --version
