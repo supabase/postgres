@@ -53,7 +53,7 @@
     dest: /usr/local/lib/supabase-admin-agent/pgdata-signal
     owner: root
     group: root
-    mode: "0700"
+    mode: "0755"
 
 - name: Setting arch (amd64)
   set_fact:
