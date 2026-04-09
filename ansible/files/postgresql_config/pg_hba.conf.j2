@@ -79,7 +79,7 @@
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 
 # trust local connections
-local all  supabase_admin     peer map=saa_map
+local all  supabase_admin     trust
 local all  all                peer map=supabase_map
 host  all  all  127.0.0.1/32  trust
 host  all  all  ::1/128       trust
