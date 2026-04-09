@@ -61,6 +61,7 @@
     - { file: 'logrotate-postgres-auth.conf' }
     - { file: 'logrotate-postgres-csv.conf' }
     - { file: 'logrotate-walg.conf' }
+    - { file: 'logrotate-pgbackrest.conf' }
   loop_control:
     loop_var: 'logrotate_item'
 
