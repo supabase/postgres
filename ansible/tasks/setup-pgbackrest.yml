@@ -30,6 +30,10 @@
     - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
     - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/nix'
     - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
+    # Required for the NewRunnerAs() path: supabase-admin-agent runs the
+    # /usr/bin/pgbackrest wrapper as the pgbackrest user, but the wrapper
+    # internally calls "sudo -u pgbackrest <real_binary>". Without this entry
+    # that inner sudo fails even though the outer caller is already pgbackrest.
     - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
 
 - name: Install pgBackRest
@@ -49,6 +53,9 @@
     path: "{{ backrest_dir['dir'] }}"
     state: directory
   loop:
+    # conf.d is setgid (02770) so files written by adminapi (postgres group)
+    # automatically inherit the postgres group. Without setgid, pgbackrest
+    # (running as the pgbackrest user) cannot read conf files created by adminapi.
     - {dir: /etc/pgbackrest/conf.d, mode: '02770'}
     - {dir: /var/lib/pgbackrest}
     - {dir: /var/spool/pgbackrest}
@@ -58,6 +65,10 @@
   when:
     - nixpkg_mode
 
+# supabase-admin-agent opens these log files with O_APPEND|O_WRONLY (no
+# O_CREATE). They must exist before SAA runs; a missing file causes the
+# pgBackRest enable command to fail before any backup work is attempted.
+# access_time/modification_time: preserve keeps this task idempotent.
 - name: Pre-create pgBackRest SAA log files
   ansible.builtin.file:
     access_time: preserve

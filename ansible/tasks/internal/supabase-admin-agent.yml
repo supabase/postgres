@@ -45,6 +45,7 @@
     dest: /usr/local/lib/supabase-admin-agent/pgdata-chown
     owner: root
     group: root
+    # 0700: always invoked via "sudo" (as root); no other user needs execute.
     mode: "0700"
 
 - name: supabase-admin-agent - pgdata-signal script
@@ -53,6 +54,8 @@
     dest: /usr/local/lib/supabase-admin-agent/pgdata-signal
     owner: root
     group: root
+    # 0755: invoked via "sudo -u postgres"; the postgres OS user needs the
+    # world-execute bit since it is neither owner nor group member.
     mode: "0755"
 
 - name: Setting arch (amd64)
