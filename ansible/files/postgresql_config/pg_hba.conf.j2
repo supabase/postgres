@@ -79,6 +79,9 @@
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 
 # trust local connections
+# supabase_admin: trust over Unix socket only — no network exposure. Access
+# requires OS-level shell access to the host, which is already a stronger
+# security boundary than a database password.
 local all  supabase_admin     trust
 local all  all                peer map=supabase_map
 host  all  all  127.0.0.1/32  trust
