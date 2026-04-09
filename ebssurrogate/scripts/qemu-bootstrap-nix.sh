@@ -89,6 +89,7 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 EXTRA_NIX_CONF" -s /bin/bash root
     #shellcheck disable=SC1091
     . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    nix --version
 }
 
 function execute_stage2_playbook {

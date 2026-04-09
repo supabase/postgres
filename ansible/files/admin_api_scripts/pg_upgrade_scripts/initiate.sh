@@ -312,6 +312,7 @@ EXTRA_NIX_CONF
         echo "1.2. Fetching store path for flake revision: $NIX_FLAKE_VERSION"
         # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        nix --version
         nix-collect-garbage -d > /tmp/pg_upgrade-nix-gc.log 2>&1 || true
 
         # Determine system architecture

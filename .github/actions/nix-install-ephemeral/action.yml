@@ -56,6 +56,9 @@ runs:
           ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
           max-jobs = 4
           extra-system-features = kvm
+    - name: Print Nix version
+      shell: bash
+      run: nix --version
     - name: Setup KVM permissions
       shell: bash
       run: |
