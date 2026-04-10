@@ -20,7 +20,7 @@
 
 - name: gotrue - download commit archive
   ansible.builtin.get_url:
-    checksum: "{{ gotrue_release_checksum }}"
+    checksum: "{{ gotrue_arm_release_checksum if platform == 'arm64' else gotrue_x86_release_checksum }}"
     dest: '/tmp/gotrue.tar.gz'
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
 
