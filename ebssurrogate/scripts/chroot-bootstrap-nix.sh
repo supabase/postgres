@@ -250,6 +250,11 @@ function update_install_packages {
 			echo "FATAL: Failed to install arm64 boot packages"
 			exit 1
 		fi
+	else
+		if ! apt_install_with_fallback $APT_OPTIONS --yes install initramfs-tools; then
+			echo "FATAL: Failed to install amd64 boot packages"
+			exit 1
+		fi
 	fi
 }
 
@@ -308,7 +313,7 @@ function setup_apparmor {
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
 }
 
-function setup_grub_conf_arm64 {
+function setup_grub_conf {
 cat << EOF > /etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
@@ -320,12 +325,12 @@ EOF
 
 # Install GRUB
 function install_configure_grub {
+	setup_grub_conf
 	if [ "${ARCH}" = "arm64" ]; then
 		if ! apt_install_with_fallback $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr; then
 			echo "FATAL: Failed to install grub packages for arm64"
 			exit 1
 		fi
-		setup_grub_conf_arm64
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1
 	fi
