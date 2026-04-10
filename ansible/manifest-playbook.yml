@@ -7,6 +7,7 @@
   vars:
     arch: "{{ arch | default('arm64') }}"
     arch_alt: "{{ 'aarch64' if arch == 'arm64' else 'x86_64' }}"
+    gotrue_arch: "{{ 'arm64' if arch == 'arm64' else 'x86' }}"
     gotrue_checksum: "{{ gotrue_arm_release_checksum if arch == 'arm64' else gotrue_x86_release_checksum }}"
     postgrest_checksum: "{{ postgrest_arm_release_checksum if arch == 'arm64' else postgrest_x86_release_checksum }}"
 
@@ -23,8 +24,8 @@
     # currently, we upload gotrue, adminapi, postgrest
     - name: gotrue - download commit archive
       get_url:
-        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz"
-        dest: /tmp/auth-v{{ gotrue_release }}-{{ arch }}.tar.gz
+        url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-{{ gotrue_arch }}.tar.gz"
+        dest: /tmp/auth-v{{ gotrue_release }}-{{ gotrue_arch }}.tar.gz
         checksum: "{{ gotrue_checksum }}"
         timeout: 60
 
@@ -88,7 +89,7 @@
         aws s3 cp /tmp/{{ item.file }} s3://{{ internal_artifacts_bucket }}/upgrades/{{ item.service }}/{{ item.file }}
       with_items:
         - service: gotrue
-          file: auth-v{{ gotrue_release }}-{{ arch }}.tar.gz
+          file: auth-v{{ gotrue_release }}-{{ gotrue_arch }}.tar.gz
         - service: postgrest
           file: postgrest-{{ postgrest_release }}-{{ arch }}.tar.xz
         - service: supabase-admin-api
