@@ -37,6 +37,11 @@ variable "source_ami" {
   description = "Source AMI ID from stage 1"
 }
 
+variable "instance_type" {
+  type    = string
+  default = "c6g.4xlarge"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -48,7 +53,7 @@ packer {
 
 source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
-  instance_type = "c6g.4xlarge"
+  instance_type = var.instance_type
   region        = "${var.region}"
   source_ami    = "${var.source_ami}"
 
