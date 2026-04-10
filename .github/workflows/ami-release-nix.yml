@@ -144,11 +144,15 @@ jobs:
         run: |
           VERSION="${{ steps.process_release_version.outputs.version }}"
           if [ "${{ matrix.arch.name }}" = "amd64" ]; then
-            echo "s3_version=${VERSION}-x86" >> "$GITHUB_OUTPUT"
-            echo "release_tag=${VERSION}-x86" >> "$GITHUB_OUTPUT"
+            {
+              echo "s3_version=${VERSION}-x86"
+              echo "release_tag=${VERSION}-x86"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "s3_version=${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "release_tag=${VERSION}" >> "$GITHUB_OUTPUT"
+            {
+              echo "s3_version=${VERSION}"
+              echo "release_tag=${VERSION}"
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create nix flake revision tarball
