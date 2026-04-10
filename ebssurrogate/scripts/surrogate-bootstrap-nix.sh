@@ -226,13 +226,23 @@ function pull_docker {
 # Create fstab
 function create_fstab {
 	FMT="%-42s %-11s %-5s %-17s %-5s %s"
-cat > "/mnt/etc/fstab" << EOF
-$(printf "${FMT}" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK")
-$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
-$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
-$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
-$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
-EOF
+
+	local ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
+	local DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
+	local SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
+
+	local EFI_LINE=""
+	if [ "${ARCH}" = "arm64" ]; then
+		EFI_LINE=$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
+	fi
+
+	{
+		printf "${FMT}\n" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK"
+		echo "${ROOT_LINE}"
+		[ -n "${EFI_LINE}" ] && echo "${EFI_LINE}"
+		echo "${DATA_LINE}"
+		echo "${SWAP_LINE}"
+	} > "/mnt/etc/fstab"
 	unset FMT
 }
 
@@ -247,9 +257,7 @@ function setup_chroot_environment {
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
 
-	if [ "${ARCH}" = "arm64" ]; then
-		create_fstab
-	fi
+	create_fstab
 
 	# Create mount points and mount the filesystem
 	mkdir -p /mnt/{dev,proc,sys}
