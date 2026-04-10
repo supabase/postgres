@@ -51,7 +51,7 @@
 
 - name: PostgREST - download ubuntu binary archive (arm)
   ansible.builtin.get_url:
-    checksum: "{{ postgrest_arm_release_checksum }}"
+    checksum: "{{ postgrest_arm_release_checksum if platform == 'arm64' else postgrest_x86_release_checksum }}"
     dest: '/tmp/postgrest.tar.xz'
     timeout: 60
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-{{ download_binary }}.tar.xz"
