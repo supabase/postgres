@@ -54,15 +54,19 @@ jobs:
         run: |
           ARCH="${{ github.event.inputs.arch }}"
           if [ "$ARCH" = "amd64" ]; then
-            echo "packer_template=amazon-amd64-nix.pkr.hcl" >> "$GITHUB_OUTPUT"
-            echo "instance_type=c6i.4xlarge" >> "$GITHUB_OUTPUT"
-            echo "ami_name_prefix=supabase-postgres-x86" >> "$GITHUB_OUTPUT"
-            echo "version_suffix=-x86" >> "$GITHUB_OUTPUT"
+            {
+              echo "packer_template=amazon-amd64-nix.pkr.hcl"
+              echo "instance_type=c6i.4xlarge"
+              echo "ami_name_prefix=supabase-postgres-x86"
+              echo "version_suffix=-x86"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "packer_template=amazon-arm64-nix.pkr.hcl" >> "$GITHUB_OUTPUT"
-            echo "instance_type=c6g.4xlarge" >> "$GITHUB_OUTPUT"
-            echo "ami_name_prefix=supabase-postgres" >> "$GITHUB_OUTPUT"
-            echo "version_suffix=" >> "$GITHUB_OUTPUT"
+            {
+              echo "packer_template=amazon-arm64-nix.pkr.hcl"
+              echo "instance_type=c6g.4xlarge"
+              echo "ami_name_prefix=supabase-postgres"
+              echo "version_suffix="
+            } >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install nix
