@@ -31,9 +31,9 @@
     dest: /etc/sudoers.d/supabase-admin-agent
     mode: "0440"
 
-- name: Setting arch (x86)
+- name: Setting arch (amd64)
   set_fact:
-    arch: "x86"
+    arch: "amd64"
   when: platform == "amd64"
 
 - name: Setting arch (arm)
