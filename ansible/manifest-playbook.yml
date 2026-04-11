@@ -6,7 +6,7 @@
 
   vars:
     arch: "{{ arch | default('arm64') }}"
-    arch_alt: "{{ 'aarch64' if arch == 'arm64' else 'x86_64' }}"
+    postgrest_binary: "{{ 'ubuntu-aarch64' if arch == 'arm64' else 'linux-static-x86-64' }}"
     gotrue_arch: "{{ 'arm64' if arch == 'arm64' else 'x86' }}"
     gotrue_checksum: "{{ gotrue_arm_release_checksum if arch == 'arm64' else gotrue_x86_release_checksum }}"
     postgrest_checksum: "{{ postgrest_arm_release_checksum if arch == 'arm64' else postgrest_x86_release_checksum }}"
@@ -31,7 +31,7 @@
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
-        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-{{ arch_alt }}.tar.xz"
+        url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-{{ postgrest_binary }}.tar.xz"
         dest: /tmp/postgrest-{{ postgrest_release }}-{{ arch }}.tar.xz
         checksum: "{{ postgrest_checksum }}"
         timeout: 60
