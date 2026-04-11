@@ -9,6 +9,12 @@
     force: true
     mode: '0644'
     url: 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
+    timeout: 60
+    validate_certs: true
+  register: pgdg_key_download
+  retries: 6
+  delay: 10
+  until: pgdg_key_download is succeeded
 
 - name: PostgREST - add Postgres PPA main
   ansible.builtin.apt_repository:
