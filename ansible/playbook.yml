@@ -236,7 +236,7 @@
       become: yes
       shell: |
         /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
-      when: stage2_nix and qemu_mode is not defined
+      when: stage2_nix and qemu_mode is not defined and ansible_architecture != "x86_64"
 
     - name: Remove supascan after validation
       become: yes
