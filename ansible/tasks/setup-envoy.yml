@@ -5,13 +5,13 @@
 
 - name: Envoy - download binary
   ansible.builtin.get_url:
-    checksum: "{{ envoy_release_checksum }}"
+    checksum: "{{ envoy_arm_release_checksum if platform == 'arm64' else envoy_x86_release_checksum }}"
     dest: '/opt/envoy'
     group: 'envoy'
     mode: '0700'
     owner: 'envoy'
     # yamllint disable-line rule:line-length
-    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-{{ 'aarch_64' if platform == 'arm64' else 'x86_64' }}"
 
 - name: Envoy - download hot restarter script
   ansible.builtin.get_url:
