@@ -163,13 +163,14 @@
         - { option: 'fs.file-max',                      value: '312139770' }
 #         - { option: 'fs.aio-max-nr',                    value: '1048576' }
 #         - { option: 'kernel.numa_balancing',            value: '0' }
-#         - { option: 'kernel.shmmax',                    value: '18446744073692700000' }
-#         - { option: 'kernel.shmall',                    value: '18446744073692700000' }
-#         - { option: 'kernel.shmmni',                    value: '4096' }
-#         - { option: 'kernel.sem',                       value: '250 512000 100 2048' }
 #         - { option: 'kernel.panic',                     value: '10' }
 #         - { option: 'kernel.panic_on_oom',              value: '1' }
 #         - { option: 'kernel.panic_on_oops',             value: '1' }
+#         - { option: 'kernel.sched_autogroup_enabled',   value: '0' }
+#         - { option: 'kernel.shmall',                    value: '18446744073692700000' }
+#         - { option: 'kernel.shmmax',                    value: '18446744073692700000' }
+#         - { option: 'kernel.shmmni',                    value: '4096' }
+#         - { option: 'kernel.sem',                       value: '250 512000 100 2048' }
 #         - { option: 'net.core.netdev_budget',           value: '1024' }
 #         - { option: 'net.core.netdev_max_backlog',      value: '10000' }
 #         - { option: 'net.core.rmem_default',            value: '262144' }
