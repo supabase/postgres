@@ -275,6 +275,10 @@ function setup_chroot_environment {
 	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
 	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/root/supabase-release
 
+	# Copy the AMI version into the /etc/supabase-release file
+	echo "${POSTGRES_SUPABASE_VERSION}" > /mnt/etc/supabase-release
+	chmod 644 /mnt/etc/supabase-release
+
 	# Copy the nvme identification script into /sbin inside the chroot
 	mkdir -p /mnt/sbin
 	cp /tmp/ebsnvme-id /mnt/sbin/ebsnvme-id

@@ -4,6 +4,8 @@
   fetchFromGitHub,
   postgresql,
   buildEnv,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -84,6 +86,7 @@ in
 buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
 
   pathsToLink = [
     "/lib"
@@ -101,6 +104,9 @@ buildEnv {
       ls -la $out/lib/*${postgresql.dlSuffix} || true
       exit 1
     fi
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {
