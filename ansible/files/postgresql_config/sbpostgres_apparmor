@@ -23,6 +23,8 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/local r,
     # lock permission for pgroonga
     /data/pgdata/pgroonga.log k,
+    # lock permission for pg_duckdb extension installation
+    /data/pgdata/pg_duckdb/** rwk,
 
     # Systemd notification socket (for Type=notify services)
     /run/systemd/notify w,
