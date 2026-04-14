@@ -62,8 +62,8 @@ where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_
 order by rolname;
           rolname           |                                                             rolconfig                                                             
 ----------------------------+-----------------------------------------------------------------------------------------------------------------------------------
- anon                       | {statement_timeout=3s,"session_preload_libraries=\"$libdir/plugins/safeupdate\"",safeupdate.enabled=1}
- authenticated              | {statement_timeout=8s,"session_preload_libraries=\"$libdir/plugins/safeupdate\"",safeupdate.enabled=1}
+ anon                       | {statement_timeout=3s,safeupdate.enabled=1}
+ authenticated              | {statement_timeout=8s,safeupdate.enabled=1}
  authenticator              | {"session_preload_libraries=\"supautils, $libdir/plugins/safeupdate\"",statement_timeout=8s,lock_timeout=8s,safeupdate.enabled=1}
  dashboard_user             | 
  pg_checkpoint              | 
