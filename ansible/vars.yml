@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.064-orioledb-duckdbv1.5.2"
-  postgres17: "17.6.1.107-duckdbv1.5.2"
-  postgres15: "15.14.1.107-duckdbv1.5.2"
+  postgresorioledb-17: "17.6.0.064-orioledb-duckdbv1.5.2v2"
+  postgres17: "17.6.1.107-duckdbv1.5.2v2"
+  postgres15: "15.14.1.107-duckdbv1.5.2v2"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
