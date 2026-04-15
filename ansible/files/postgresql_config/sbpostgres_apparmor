@@ -50,6 +50,8 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/bin/false ix,
     # kill needed for postgresql to reload itself
     /bin/kill ix,
+    /usr/bin/kill ix,
+    signal (send) set=(hup) peer=unconfined,
 
     # When parent executes shell, transition to restricted profile
     # This accounts for popen, which postgres uses for any child process
