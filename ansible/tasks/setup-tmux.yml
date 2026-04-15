@@ -23,7 +23,7 @@ esac
     group: 'root'
     mode: '0644'
     owner: 'root'
-    src: 'tmux.conf.j2'
+    src: 'files/tmux.conf.j2'
   become: true
 
 - name: tmux - Auto-launch tmux as needed
