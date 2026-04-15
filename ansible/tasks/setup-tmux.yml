@@ -7,7 +7,10 @@
 
 - name: tmux - Configure shell auto-logout
   ansible.builtin.copy:
-    content: 'export TMOUT=600'
+    content: |
+case "$-" in
+  *i*) export TMOUT=600 ;;
+esac
     dest: '/etc/profile.d/11-shell_timeout.sh'
     group: 'root'
     mode: '0644'
@@ -25,7 +28,15 @@
 
 - name: tmux - Auto-launch tmux as needed
   ansible.builtin.copy:
-    content: '[[ $- == *i* ]] && [[ $TERM == tmux* ]] || tmux'
+    content: |
+case "$-" in
+  *i*)
+    case "$TERM" in
+      tmux*) ;;
+      *) tmux new-session -A -s supa ;;
+    esac
+    ;;
+esac
     dest: '/etc/profile.d/12-tmux.sh'
     group: 'root'
     mode: '0644'
