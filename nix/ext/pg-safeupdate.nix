@@ -32,7 +32,6 @@ let
         mkdir -p $out/lib/plugins
         # Install versioned library
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/plugins/${pname}-${version}${postgresql.dlSuffix}
-        ln -sfn plugins/${pname}-${version}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
         runHook postInstall
       '';
@@ -71,6 +70,7 @@ pkgs.buildEnv {
   ];
   postBuild = ''
     ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/plugins/${pname}${postgresql.dlSuffix}
+    ln -sfn plugins/${pname}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
     # checks
     (set -x
