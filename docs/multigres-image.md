@@ -108,12 +108,12 @@ extra-substituters =
 
 **Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
 
-### Step 2: Install Nix 2.33.4
+### Step 2: Install Nix 2.34.6
 
-Run the following command to install Nix 2.33.4 (the version used in CI) with the custom configuration:
+Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.33.4/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
 ```
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
@@ -128,7 +128,7 @@ same commands on your machine:
 
 ```
 $ nix --version
-nix (Nix) 2.33.1
+nix (Nix) 2.34.6
 ```
 
 

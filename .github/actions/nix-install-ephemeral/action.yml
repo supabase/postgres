@@ -56,7 +56,7 @@ runs:
           echo "post-build-hook = /etc/nix/upload-to-cache.sh" | sudo tee -a /tmp/nix-extra.conf > /dev/null
         fi
 
-        curl -L https://releases.nixos.org/nix/nix-2.33.4/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
+        curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
 
         # Add nix to PATH for subsequent steps
         echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
