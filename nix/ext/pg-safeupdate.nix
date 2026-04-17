@@ -88,7 +88,7 @@ pkgs.buildEnv {
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;
     defaultSettings = {
-      shared_preload_libraries = ["safeupdate"];
+      shared_preload_libraries = [ "safeupdate" ];
       local_preload_libraries = [ "safeupdate" ];
     };
     pgRegressTestName = "pg-safeupdate";
