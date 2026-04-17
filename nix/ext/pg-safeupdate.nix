@@ -31,6 +31,7 @@ let
         mkdir -p $out/share/postgresql/extension
         mkdir -p $out/lib/plugins
         # Install versioned library
+        # we use the plugins path because loading libraries with `local_preload_libraries` is restricted to this path only, see https://postgresqlco.nf/doc/en/param/local_preload_libraries/
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/plugins/${pname}-${version}${postgresql.dlSuffix}
 
         runHook postInstall
