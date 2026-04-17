@@ -32,6 +32,7 @@ let
         mkdir -p $out/lib/plugins
         # Install versioned library
         install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/plugins/${pname}-${version}${postgresql.dlSuffix}
+        ln -sfn plugins/${pname}-${version}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
         runHook postInstall
       '';
@@ -87,6 +88,7 @@ pkgs.buildEnv {
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;
     defaultSettings = {
+      shared_preload_libraries = ["safeupdate"];
       local_preload_libraries = [ "safeupdate" ];
     };
     pgRegressTestName = "pg-safeupdate";
