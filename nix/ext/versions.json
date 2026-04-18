@@ -794,6 +794,15 @@
       "hash": "sha256-wfjiLkx+S3zVrAynisX1GdazueVJ3EOwQEPcgUQt7eA="
     }
   },
+  "pg_rsa": {
+    "1.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": ""
+    }
+  },
   "pg_stat_monitor": {
     "1.0": {
       "postgresql": [
