@@ -37,7 +37,7 @@ let
     stdenv.mkDerivation rec {
       inherit pname version;
 
-      buildInputs = [ pkgs.postgresql pkgs.openssl ];
+      buildInputs = [ postgresql pkgs.openssl ];
 
       src = fetchFromGitHub {
         owner = "barrownicholas";
