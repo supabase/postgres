@@ -37,7 +37,7 @@ let
     stdenv.mkDerivation rec {
       inherit pname version;
 
-      buildInputs = [ postgresql ];
+      buildInputs = [ pkgs.postgresql pkgs.openssl ];
 
       src = fetchFromGitHub {
         owner = "barrownicholas";
@@ -50,7 +50,7 @@ let
         mkdir -p $out/{lib,share/postgresql/extension}
 
         # Install shared library with version suffix
-        mv dist/${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        mv ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
 
         # Create version-specific control file
         sed -e "/^default_version =/d" \
