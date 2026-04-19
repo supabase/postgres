@@ -205,6 +205,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [pg_net]() | [0.8.0]() |  |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter/archive/5081a7b5cb890876e67d8e7486b6a64c38c9a492.tar.gz) | [5081a7b5cb890876e67d8e7486b6a64c38c9a492](https://github.com/pgexperts/pg_plan_filter/archive/5081a7b5cb890876e67d8e7486b6a64c38c9a492.tar.gz) | Filter PostgreSQL statements by execution plans |
 | [pg_repack](https://github.com/reorg/pg_repack/archive/ver_1.5.2.tar.gz) | [1.5.2](https://github.com/reorg/pg_repack/archive/ver_1.5.2.tar.gz) | Reorganize tables in PostgreSQL databases with minimal locks |
+| [pg_rsa](https://github.com/barrownicholas/pg_rsa) | [1.0](https://github.com/barrownicholas/pg_rsa) | RSA signing and verifying in PostgreSQL |
 | [pg_stat_monitor](https://github.com/percona/pg_stat_monitor/archive/refs/tags/2.1.0.tar.gz) | [2.1.0](https://github.com/percona/pg_stat_monitor/archive/refs/tags/2.1.0.tar.gz) | Query Performance Monitoring Tool for PostgreSQL |
 | [pg_tle](https://github.com/aws/pg_tle/archive/refs/tags/v1.4.0.tar.gz) | [1.4.0](https://github.com/aws/pg_tle/archive/refs/tags/v1.4.0.tar.gz) | Framework for 'Trusted Language Extensions' in PostgreSQL |
 | [pgaudit](https://github.com/pgaudit/pgaudit/archive/1.7.0.tar.gz) | [1.7.0](https://github.com/pgaudit/pgaudit/archive/1.7.0.tar.gz) | Open Source PostgreSQL Audit Logging |
@@ -239,6 +240,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [pg_net]() | [0.19.5]() |  |
 | [pg_plan_filter](https://github.com/pgexperts/pg_plan_filter/archive/5081a7b5cb890876e67d8e7486b6a64c38c9a492.tar.gz) | [5081a7b5cb890876e67d8e7486b6a64c38c9a492](https://github.com/pgexperts/pg_plan_filter/archive/5081a7b5cb890876e67d8e7486b6a64c38c9a492.tar.gz) | Filter PostgreSQL statements by execution plans |
 | [pg_repack](https://github.com/reorg/pg_repack/archive/ver_1.5.2.tar.gz) | [1.5.2](https://github.com/reorg/pg_repack/archive/ver_1.5.2.tar.gz) | Reorganize tables in PostgreSQL databases with minimal locks |
+| [pg_rsa](https://github.com/barrownicholas/pg_rsa) | [1.0](https://github.com/barrownicholas/pg_rsa/releases/tag/v1.0) | RSA signing and verifying in PostgreSQL |
 | [pg_stat_monitor](https://github.com/percona/pg_stat_monitor/archive/refs/tags/2.1.0.tar.gz) | [2.1.0](https://github.com/percona/pg_stat_monitor/archive/refs/tags/2.1.0.tar.gz) | Query Performance Monitoring Tool for PostgreSQL |
 | [pg_tle](https://github.com/aws/pg_tle/archive/refs/tags/v1.4.0.tar.gz) | [1.4.0](https://github.com/aws/pg_tle/archive/refs/tags/v1.4.0.tar.gz) | Framework for 'Trusted Language Extensions' in PostgreSQL |
 | [pgaudit](https://github.com/pgaudit/pgaudit/archive/17.0.tar.gz) | [17.0](https://github.com/pgaudit/pgaudit/archive/17.0.tar.gz) | Open Source PostgreSQL Audit Logging |
