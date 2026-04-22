@@ -242,8 +242,8 @@ function setup_chroot_environment {
 	# Update ec2-region
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
 
-	# Bootstrap Ubuntu into /mnt using the regional EC2 mirror (avoids global ports.ubuntu.com stalls)
-	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.ec2.ports.ubuntu.com/ubuntu-ports"
+	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global ports.ubuntu.com stalls)
+	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
 
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
