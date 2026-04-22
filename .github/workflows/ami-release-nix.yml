@@ -31,7 +31,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   build:
@@ -71,7 +71,7 @@ jobs:
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION="$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
+          PG_VERSION="$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)"
           echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
 
       - name: Build AMI stage 1

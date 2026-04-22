@@ -19,7 +19,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
   build:
     needs: prepare
@@ -48,7 +48,7 @@ jobs:
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
       - name: Generate common-nix.vars.pkr.hcl
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq-go -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo "" >> common-nix.vars.pkr.hcl
@@ -57,7 +57,7 @@ jobs:
       - name: Generate args
         id: args
         run: |
-          ARGS=$(nix run nixpkgs#yq -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
+          ARGS=$(nix run nixpkgs#yq-go -- 'to_entries | map(select(.value|type == "!!str")) | map(.key + "=" + .value) | join("\n")' ansible/vars.yml)
           echo "result<<EOF" >> $GITHUB_OUTPUT
           echo "$ARGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

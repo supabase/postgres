@@ -45,7 +45,7 @@ runs:
       id: generate-vars
       shell: bash
       run: |
-        PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
+        PG_VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
         echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
         echo "" >> common-nix.vars.pkr.hcl
         git add -f common-nix.vars.pkr.hcl
