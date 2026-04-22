@@ -294,6 +294,10 @@
     owner: 'root'
     src: 'files/postgresql_config/sbpostgres_apparmor'
 
+- name: ensure apparmor-utils are installed
+  ansible.builtin.apt:
+    name: apparmor-utils
+
 - name: parse apparmor sbpostgres profile
   ansible.builtin.command:
     cmd: '/usr/sbin/apparmor_parser -r /etc/apparmor.d/sbpostgres'
