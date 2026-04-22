@@ -29,7 +29,7 @@ jobs:
       - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(yq '.postgres_major[1]' ansible/vars.yml | jq -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(yq -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
