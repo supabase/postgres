@@ -141,7 +141,7 @@ function create_partition_table {
 	                 mkpart UEFI 1MiB 100MiB \
         	         mkpart ROOT 100MiB 100%
 			 set 1 esp on \
-			 set 1 boot on 
+			 set 1 boot on
 		parted --script /dev/xvdf print
 	else
 		sgdisk -Zg -n1:0:4095 -t1:EF02 -c1:GRUB -n2:0:0 -t2:8300 -c2:EXT4 /dev/xvdf
@@ -193,11 +193,11 @@ function format_and_mount_rootfs {
 	mount -o noatime,nodiratime /dev/xvdf2 /mnt
 	if [ "${ARCH}" = "arm64" ]; then
 		mkfs.fat -F32 /dev/xvdf1
-		mkdir -p /mnt/boot/efi 
+		mkdir -p /mnt/boot/efi
 		sleep 2
 		mount /dev/xvdf1 /mnt/boot/efi
 	fi
-	
+
 	mkfs.ext4 /dev/xvdh
 
 	# Explicitly reserving 100MiB worth of blocks for the data volume
@@ -230,7 +230,7 @@ cat > "/mnt/etc/fstab" << EOF
 $(printf "${FMT}" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK")
 $(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
 $(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
-$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
+$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard,nofail,x-systemd.device-timeout=5s", "0", "2" ) }')
 $(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
 EOF
 	unset FMT
@@ -239,11 +239,12 @@ EOF
 function setup_chroot_environment {
 	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
 
-	# Bootstrap Ubuntu into /mnt
-	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt
-
 	# Update ec2-region
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
+
+	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global ports.ubuntu.com stalls)
+	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
 
@@ -257,7 +258,7 @@ function setup_chroot_environment {
 	mount --rbind /proc /mnt/proc
 	mount --rbind /sys /mnt/sys
 
-        # Create build mount point and mount 
+        # Create build mount point and mount
 	mkdir -p /mnt/tmp
 	mount /dev/xvdc /mnt/tmp
 	chmod 777 /mnt/tmp
@@ -307,7 +308,7 @@ tee /etc/ansible/ansible.cfg <<EOF
 callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
-	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp 
+	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
 	--extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false} ' \
@@ -381,7 +382,7 @@ function upload_ccache {
 	docker cp /mnt/tmp/ccache/. ccachedata:/build/ccache
 	docker stop ccachedata
 	docker commit ccachedata "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}"
-	echo ${DOCKER_PASSWD} | docker login --username ${DOCKER_USER} --password-stdin 
+	echo ${DOCKER_PASSWD} | docker login --username ${DOCKER_USER} --password-stdin
 	docker push  "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}"
 }
 
