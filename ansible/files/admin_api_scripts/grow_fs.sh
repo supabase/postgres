@@ -54,6 +54,12 @@ if [ -b "${XVDH_DEVICE}" ] ; then
     if [[ "${VOLUME_TYPE}" == "data" ]]; then
         resize2fs "${XVDH_DEVICE}"
 
+        # Explicitly reserving 100MiB worth of blocks for the data volume
+        #
+        # This is owned in $GIT_DIR/ebssurrogate/scripts/surrogate-bootstrap-nix.sh
+        RESERVED_DATA_VOLUME_BLOCK_COUNT=$((100 * 1024 * 1024 / 4096))
+        tune2fs -r $RESERVED_DATA_VOLUME_BLOCK_COUNT "${XVDH_DEVICE}"
+
     elif [[ "${VOLUME_TYPE}" == "root" ]] ; then
         PLACEHOLDER_FL=/home/ubuntu/50M_PLACEHOLDER
         rm -f "${PLACEHOLDER_FL}" || true

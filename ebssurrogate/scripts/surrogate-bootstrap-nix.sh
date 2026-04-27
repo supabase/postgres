@@ -201,6 +201,8 @@ function format_and_mount_rootfs {
 	mkfs.ext4 /dev/xvdh
 
 	# Explicitly reserving 100MiB worth of blocks for the data volume
+	#
+	# Any changes here should be propagated to $GIT_DATA_DIR/ansible/files/admin_api_scripts/grow_fs.sh
 	RESERVED_DATA_VOLUME_BLOCK_COUNT=$((100 * 1024 * 1024 / 4096))
 	tune2fs -r $RESERVED_DATA_VOLUME_BLOCK_COUNT /dev/xvdh
 
