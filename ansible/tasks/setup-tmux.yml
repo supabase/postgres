@@ -5,13 +5,13 @@
     update_cache: true
   become: true
 
-- name: tmux - Configure shell auto-logout
+- name: tmux - Configure tmux alias
   ansible.builtin.copy:
     content: |
       case "$-" in
-        *i*) export TMOUT=600 ;;
+        *i*) alias tmux='tmux new-session -A -s supa' ;;
       esac
-    dest: '/etc/profile.d/11-shell_timeout.sh'
+    dest: '/etc/profile.d/11-tmux_alias.sh'
     group: 'root'
     mode: '0644'
     owner: 'root'
@@ -26,18 +26,17 @@
     src: 'files/tmux.conf.j2'
   become: true
 
-- name: tmux - Auto-launch tmux as needed
+- name: tmux - Auto-logout from stale tmux
   ansible.builtin.copy:
     content: |
       case "$-" in
         *i*)
           case "$TERM" in
-            tmux*) ;;
-            *) tmux new-session -A -s supa ;;
+            tmux*) export TMOUT=1200 ;;
           esac
           ;;
       esac
-    dest: '/etc/profile.d/12-tmux.sh'
+    dest: '/etc/profile.d/12-tmux_logout.sh'
     group: 'root'
     mode: '0644'
     owner: 'root'
