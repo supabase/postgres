@@ -18,6 +18,9 @@ runs:
         role-session-name: gha-oidc-${{ github.run_id }}
         role-duration-seconds: ${{ inputs.aws-role-duration }}
 
+    - name: Print Nix version
+      shell: bash
+      run: nix --version
     - name: Write creds files
       shell: bash
       run: |

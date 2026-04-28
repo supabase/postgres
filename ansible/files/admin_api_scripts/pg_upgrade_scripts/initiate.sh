@@ -297,7 +297,7 @@ function initiate_upgrade {
                         --extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
                     else
                         echo "1.1.1. Installing Nix using the official installer"
-                        sh <(curl -L https://releases.nixos.org/nix/nix-2.33.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+                        sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
@@ -312,6 +312,7 @@ EXTRA_NIX_CONF
         echo "1.2. Fetching store path for flake revision: $NIX_FLAKE_VERSION"
         # shellcheck disable=SC1091
         source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        nix --version
         nix-collect-garbage -d > /tmp/pg_upgrade-nix-gc.log 2>&1 || true
 
         # Determine system architecture

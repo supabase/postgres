@@ -1,0 +1,44 @@
+- name: tmux - Install tmux
+  ansible.builtin.apt:
+    name: 'tmux'
+    state: 'present'
+    update_cache: true
+  become: true
+
+- name: tmux - Configure shell auto-logout
+  ansible.builtin.copy:
+    content: |
+      case "$-" in
+        *i*) export TMOUT=600 ;;
+      esac
+    dest: '/etc/profile.d/11-shell_timeout.sh'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+  become: true
+
+- name: tmux - Configure tmux
+  ansible.builtin.template:
+    dest: '/etc/tmux.conf'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: 'files/tmux.conf.j2'
+  become: true
+
+- name: tmux - Auto-launch tmux as needed
+  ansible.builtin.copy:
+    content: |
+      case "$-" in
+        *i*)
+          case "$TERM" in
+            tmux*) ;;
+            *) tmux new-session -A -s supa ;;
+          esac
+          ;;
+      esac
+    dest: '/etc/profile.d/12-tmux.sh'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+  become: true
