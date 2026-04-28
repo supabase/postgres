@@ -152,11 +152,11 @@
         # these shouldn't exist on psql_15
         ${lib.optionalString (paths ? pgHbaUsersPublicConfigFile) ''
           cp ${paths.pgHbaUsersPublicConfigFile} $out/etc/postgresql/pg_hba_users_public.conf || { echo "Failed to copy pg_hba_users_public.conf"; exit 1; }
-          chmod 644 $out/etc/postgresql/pg_hba_users_public.conf
+          chmod 664 $out/etc/postgresql/pg_hba_users_public.conf
         ''}
         ${lib.optionalString (paths ? pgHbaPublicConfigFile) ''
           cp ${paths.pgHbaPublicConfigFile} $out/etc/postgresql/pg_hba_public.conf || { echo "Failed to copy pg_hba_public.conf"; exit 1; }
-          chmod 644 $out/etc/postgresql/pg_hba_public.conf
+          chmod 664 $out/etc/postgresql/pg_hba_public.conf
         ''}
 
         cp ${paths.pgIdentConfigFile} $out/etc/postgresql/pg_ident.conf || { echo "Failed to copy pg_ident.conf"; exit 1; }
@@ -166,7 +166,7 @@
         chmod 644 $out/etc/postgresql-custom/supautils.conf
         chmod 644 $out/etc/postgresql/postgresql.conf
         chmod 644 $out/etc/postgresql-custom/logging.conf
-        chmod 644 $out/etc/postgresql/pg_hba.conf
+        chmod 664 $out/etc/postgresql/pg_hba.conf
 
         substitute ${../tools/run-server.sh.in} $out/bin/start-postgres-server \
           ${builtins.concatStringsSep " " (
