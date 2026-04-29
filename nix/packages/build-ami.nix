@@ -111,7 +111,7 @@ writeShellApplication {
       echo "No cached AMI found"
 
       cd "$PACKER_SOURCES"
-      packer init amazon-arm64-nix.pkr.hcl
+      packer init "$@"
       packer build \
         -var-file="development-arm.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \

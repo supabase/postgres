@@ -17,7 +17,7 @@
 
     - name: Upload image manifest
       shell: |
-        aws s3 cp ./image-manifest-{{ ami_release_version }}.json s3://{{ internal_artifacts_bucket }}/manifests/postgres-{{ ami_release_version }}/software-manifest.json
+        aws s3 cp ./image-manifest-{{ ami_release_version }}.json s3://{{ internal_artifacts_bucket }}/manifests/postgres-{{ ami_release_version }}/software-manifest-{{ arch }}.json
 
     # upload software artifacts of interest
     # Generally - download, extract, repack as xz archive, upload
