@@ -145,12 +145,14 @@ jobs:
           VERSION="${{ steps.process_release_version.outputs.version }}"
           if [ "${{ matrix.arch.name }}" = "amd64" ]; then
             {
-              echo "s3_version=${VERSION}-x86"
+              echo "version=${VERSION}"
+              echo "arch_suffix=-x86"
               echo "release_tag=${VERSION}-x86"
             } >> "$GITHUB_OUTPUT"
           else
             {
-              echo "s3_version=${VERSION}"
+              echo "version=${VERSION}"
+              echo "arch_suffix="
               echo "release_tag=${VERSION}"
             } >> "$GITHUB_OUTPUT"
           fi
@@ -174,7 +176,7 @@ jobs:
         run: |
           cd ansible
           ansible-playbook -i localhost \
-            -e "ami_release_version=${{ steps.arch_version.outputs.s3_version }}" \
+            -e "ami_release_version=${{ steps.arch_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ matrix.postgres_version }}" \
             -e "arch=${{ matrix.arch.name }}" \
@@ -182,9 +184,9 @@ jobs:
 
       - name: Upload nix flake revision to s3 staging
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
@@ -196,7 +198,7 @@ jobs:
         run: |
           cd ansible
           ansible-playbook -i localhost \
-            -e "ami_release_version=${{ steps.arch_version.outputs.s3_version }}" \
+            -e "ami_release_version=${{ steps.arch_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ matrix.postgres_version }}" \
             -e "arch=${{ matrix.arch.name }}" \
@@ -204,9 +206,9 @@ jobs:
 
       - name: Upload nix flake revision to s3 prod
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.arch_version.outputs.s3_version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: GitHub OIDC Auth
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
