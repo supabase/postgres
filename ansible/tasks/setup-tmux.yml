@@ -32,7 +32,7 @@
       case "$-" in
         *i*)
           case "$TERM" in
-            tmux*) export TMOUT=1200 ;;
+            tmux*) export TMOUT=86400 ;;
           esac
           ;;
       esac
