@@ -17,6 +17,10 @@
     checksum: "{{ nginx_release_checksum }}"
     dest: '/tmp/nginx-{{ nginx_release }}.tar.gz'
     url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 - name: nginx - unpack archive
   ansible.builtin.unarchive:
