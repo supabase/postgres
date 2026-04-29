@@ -177,11 +177,11 @@ source "amazon-ebssurrogate" "source" {
   ssh_timeout = "5m"
 
   ami_root_device {
-    source_device_name = "/dev/xvdf"
-    device_name = "/dev/xvda"
+    source_device_name    = "/dev/xvdf"
+    device_name           = "/dev/xvda"
     delete_on_termination = true
-    volume_size = 10
-    volume_type = "gp3"
+    volume_size           = 10
+    volume_type           = "gp3"
   }
 
   associate_public_ip_address = true
