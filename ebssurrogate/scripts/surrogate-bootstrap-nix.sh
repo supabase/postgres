@@ -119,12 +119,6 @@ function install_packages {
 	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 
-	# Update apt and install required packages
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists before installing tools"
-		exit 1
-	fi
-
 	apt-get install -y \
 		gdisk \
 		e2fsprogs \
