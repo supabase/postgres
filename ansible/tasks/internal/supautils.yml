@@ -13,6 +13,10 @@
     dest: /tmp/supautils-{{ supautils_release }}.tar.gz
     checksum: "{{ supautils_release_checksum }}"
     timeout: 60
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 - name: supautils - unpack archive
   unarchive:

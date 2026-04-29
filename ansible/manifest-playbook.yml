@@ -28,6 +28,10 @@
         dest: /tmp/auth-v{{ gotrue_release }}-{{ gotrue_arch }}.tar.gz
         checksum: "{{ gotrue_checksum }}"
         timeout: 60
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 2
 
     - name: PostgREST - download ubuntu binary archive (arm)
       get_url:
@@ -35,12 +39,20 @@
         dest: /tmp/postgrest-{{ postgrest_release }}-{{ arch }}.tar.xz
         checksum: "{{ postgrest_checksum }}"
         timeout: 60
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 2
 
     - name: Download adminapi archive
       get_url:
         url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
         dest: "/tmp/adminapi.tar.gz"
         timeout: 90
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 2
 
     - name: adminapi - unpack archive in /tmp
       unarchive:
@@ -57,6 +69,10 @@
         url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_{{ arch }}.tar.gz"
         dest: "/tmp/admin-mgr.tar.gz"
         timeout: 90
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 2
 
     - name: admin-mgr - unpack archive in /tmp
       unarchive:
@@ -73,6 +89,10 @@
         url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
         dest: "/tmp/supabase-admin-agent.tar.gz"
         timeout: 90
+      register: download_result
+      until: download_result is succeeded
+      retries: 3
+      delay: 2
 
     - name: supabase-admin-agent - unpack archive in /tmp
       unarchive:

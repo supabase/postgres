@@ -13,7 +13,7 @@
     validate_certs: true
   register: pgdg_key_download
   retries: 6
-  delay: 10
+  delay: 2
   until: pgdg_key_download is succeeded
 
 - name: PostgREST - add Postgres PPA main
@@ -61,6 +61,10 @@
     dest: '/tmp/postgrest.tar.xz'
     timeout: 60
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-{{ download_binary }}.tar.xz"
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
   vars:
     download_binary: >-
       {%- if platform == "arm64" -%}

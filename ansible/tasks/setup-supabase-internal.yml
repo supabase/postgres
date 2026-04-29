@@ -10,6 +10,10 @@
     dest: '/tmp/awscliv2.zip'
     timeout: 60
     url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ 'aarch64' if platform == 'arm64' else 'x86_64' }}-{{ aws_cli_release }}.zip"
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 
 - name: AWS CLI - expand
@@ -40,7 +44,7 @@
     timeout: 120
   become: true
   retries: 3
-  delay: 10
+  delay: 2
   register: vector_download
   until: vector_download is success
 
