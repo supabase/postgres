@@ -243,6 +243,15 @@ function create_fstab {
 function setup_chroot_environment {
 	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
 
+        # sometimes debootstrap will get stuck on a download for a long time
+        # the default read timeout in wget is 900s, which can cause a ~15min increase in build time
+        # this forces the process to fail-fast and retry
+	cat <<EOF > ~/.wgetrc
+read_timeout = 15
+timeout = 15
+tries = 5
+EOF
+
 	# Bootstrap Ubuntu into /mnt
 	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt
 
