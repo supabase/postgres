@@ -94,12 +94,7 @@ jobs:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=${{ matrix.arch.ami_name }}" ${{ matrix.arch.packer_template }}
 
-      - name: Find stage 1 AMI
-        run: |
-          GIT_SHA=${{github.sha}}
           PG_VERSION=$(sed -n 's/postgres-version = "\(.*\)"/\1/p' common-nix.vars.pkr.hcl)
           REGION="us-east-1"
 
@@ -117,12 +112,28 @@ jobs:
             --output text)
 
           if [ -z "$STAGE1_AMI_ID" ] || [ "$STAGE1_AMI_ID" = "None" ]; then
-            echo "ERROR: Failed to find stage 1 AMI"
-            exit 1
+            echo "Did not find stage1 AMI - building it"
+            nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
+            nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=${{ matrix.arch.ami_name }}-${{ matrix.arch.name }}" ${{ matrix.arch.packer_template }}
+            STAGE1_AMI_ID=$(aws ec2 describe-images \
+              --region "$REGION" \
+              --owners self \
+              --filters \
+                "Name=tag:postgresVersion,Values=${PG_VERSION}-stage1" \
+                "Name=tag:sourceSha,Values=${GIT_SHA}" \
+                "Name=state,Values=available" \
+                "Name=architecture,Values=${{ matrix.arch.ami_arch_filter }}" \
+              --query 'Images[0].ImageId' \
+              --output text)
+            if [ -z "$STAGE1_AMI_ID" ] || [ "$STAGE1_AMI_ID" = "None" ]; then
+              echo "Failed to find stage1 AMI right after building it"
+              exit 1
+            fi
           fi
 
           echo "Found stage 1 AMI: $STAGE1_AMI_ID"
           echo "STAGE1_AMI_ID=$STAGE1_AMI_ID" >> "$GITHUB_ENV"
+          exit 0
 
       - name: Build AMI stage 2
         env:
