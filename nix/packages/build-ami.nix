@@ -19,6 +19,7 @@ let
         (root + "/ansible")
         (root + "/migrations")
         (root + "/scripts")
+        (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
         (root + "/development-arm.vars.pkr.hcl")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
