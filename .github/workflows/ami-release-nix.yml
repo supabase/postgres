@@ -46,7 +46,6 @@ jobs:
             vars_file: development-arm.vars.pkr.hcl
             instance_type: c6g.4xlarge
             nix_system: aarch64-linux
-            ami_name: supabase-postgres
             ami_arch_filter: arm64
           - name: amd64
             runner: blacksmith-2vcpu-ubuntu-2404
@@ -54,7 +53,6 @@ jobs:
             vars_file: development-x86.vars.pkr.hcl
             instance_type: c6i.4xlarge
             nix_system: x86_64-linux
-            ami_name: supabase-postgres-x86
             ami_arch_filter: x86_64
     runs-on: ${{ matrix.arch.runner }}
     timeout-minutes: 150
@@ -114,7 +112,7 @@ jobs:
           if [ -z "$STAGE1_AMI_ID" ] || [ "$STAGE1_AMI_ID" = "None" ]; then
             echo "Did not find stage1 AMI - building it"
             nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
-            nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=${{ matrix.arch.ami_name }}-${{ matrix.arch.name }}" ${{ matrix.arch.packer_template }}
+            nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=supabase-postgres-${{ matrix.arch.name }}" ${{ matrix.arch.packer_template }}
             STAGE1_AMI_ID=$(aws ec2 describe-images \
               --region "$REGION" \
               --owners self \
@@ -141,7 +139,7 @@ jobs:
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=${{ matrix.arch.ami_name }}" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=supabase-postgres" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
