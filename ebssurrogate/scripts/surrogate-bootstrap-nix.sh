@@ -248,8 +248,8 @@ function setup_chroot_environment {
         # the default read timeout in wget is 900s, which can cause a ~15min increase in build time
         # this forces the process to fail-fast and retry
 	cat <<EOF > ~/.wgetrc
-read_timeout = 15
-timeout = 15
+read_timeout = 30
+timeout = 35
 tries = 5
 EOF
 
