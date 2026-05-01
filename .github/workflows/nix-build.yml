@@ -53,8 +53,9 @@ jobs:
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   nix-build-checks-aarch64-linux:
     name: >-
@@ -84,8 +85,9 @@ jobs:
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   nix-build-packages-aarch64-darwin:
     name: >-
@@ -107,8 +109,9 @@ jobs:
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   nix-build-checks-aarch64-darwin:
     name: >-
@@ -130,8 +133,9 @@ jobs:
         uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   nix-build-packages-x86_64-linux:
     name: >-
@@ -158,8 +162,9 @@ jobs:
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   nix-build-checks-x86_64-linux:
     name: >-
@@ -186,8 +191,9 @@ jobs:
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
-        shell: bash
-        run: nix build --accept-flake-config -L .#${{ matrix.attr }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
 
   run-testinfra:
     needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
