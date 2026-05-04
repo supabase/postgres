@@ -38,6 +38,7 @@
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
+          ansible-test = pkgs.callPackage ./ansible-test.nix { inherit self; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
@@ -46,6 +47,10 @@
             psql_orioledb-17_slim = self'.packages."psql_orioledb-17_slim/bin";
             supabase-groonga = self'.packages.supabase-groonga;
           };
+          docker-ansible-test = pkgs.callPackage ./docker-ansible-test.nix {
+            inherit (self'.packages) docker-image-ubuntu;
+          };
+          docker-image-ubuntu = pkgs.callPackage ./docker-ubuntu.nix { };
           docs = pkgs.callPackage ./docs.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
           github-matrix = pkgs.callPackage ./github-matrix {

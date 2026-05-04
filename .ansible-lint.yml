@@ -1,0 +1,44 @@
+---
+profile: production
+
+# exclude_paths included in this file are parsed relative to this file's location
+# and not relative to the CWD of execution. CLI arguments passed to the --exclude
+# option are parsed relative to the CWD of execution.
+exclude_paths:
+  - .cache/  # implicit unless exclude_paths is defined in config
+  - .github/
+  - ansible/files/
+  - ansible/manifest-playbook.yml
+  - ansible/playbook.yml
+  - ansible/tasks/
+  - audit-specs/
+  - nix/mkdocs.yml
+
+use_default_rules: true
+enable_list:
+  - args
+  - empty-string-compare
+  - no-log-password
+  - no-same-owner
+warn_list:
+  - experimental
+skip_list:
+  - name[casing]
+  - name[prefix]
+  - yaml[line-length]
+  - var-naming[no-role-prefix]
+
+# Offline mode disables installation of requirements.yml
+offline: false
+
+# Make the output more readable
+parseable: true
+
+# Define required Ansible's variables to satisfy syntax check
+# extra_vars:
+
+# List of additional kind:pattern to be added at the top of the default
+# match list, first match determines the file kind.
+kinds:
+  - tasks: "ansible/tasks/*.yml"
+  - vars: "ansible/vars.yml"

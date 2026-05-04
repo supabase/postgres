@@ -1,0 +1,16 @@
+---
+- name: Setup Nginx Server
+  hosts: localhost
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.apt:
+        pkg:
+          - build-essential
+        update_cache: true
+    - name: Setup Nginx using existing task file
+      ansible.builtin.import_tasks: ../tasks/setup-nginx.yml
+    - name: Start Nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
