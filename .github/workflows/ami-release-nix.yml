@@ -41,13 +41,13 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         arch:
-          - name: arm64
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
-            packer_template: amazon-arm64-nix.pkr.hcl
-            vars_file: development-arm.vars.pkr.hcl
-            instance_type: c6g.4xlarge
-            nix_system: aarch64-linux
-            ami_arch_filter: arm64
+          # - name: arm64
+          #   runner: blacksmith-2vcpu-ubuntu-2404-arm
+          #   packer_template: amazon-arm64-nix.pkr.hcl
+          #   vars_file: development-arm.vars.pkr.hcl
+          #   instance_type: c6g.4xlarge
+          #   nix_system: aarch64-linux
+          #   ami_arch_filter: arm64
           - name: amd64
             runner: blacksmith-2vcpu-ubuntu-2404
             packer_template: amazon-amd64-nix.pkr.hcl
