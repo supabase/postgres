@@ -35,7 +35,6 @@ pkgs.testers.runNixOSTest {
       orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
     in
     ''
-      # cache-bust 2026-04-22: force rebuild to exercise x86 VM test in CI
       from pathlib import Path
       versions = {
         "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
