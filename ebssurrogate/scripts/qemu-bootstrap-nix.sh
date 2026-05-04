@@ -30,7 +30,7 @@ unction install_packages {
 }
 
 function execute_playbook {
-
+	sudo mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
@@ -95,6 +95,7 @@ EXTRA_NIX_CONF" -s /bin/bash root
 }
 
 function execute_stage2_playbook {
+	sudo mkdir -p /etc/ansible
 	sudo tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
