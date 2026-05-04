@@ -37,6 +37,7 @@ jobs:
   build:
     needs: prepare
     strategy:
+      fail-fast: false
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         arch:
