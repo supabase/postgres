@@ -21,7 +21,7 @@ function waitfor_boot_finished {
 	done
 }
 
-unction install_packages {
+function install_packages {
 	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
 	# add-apt-repository --yes --update ppa:ansible/ansible &&
