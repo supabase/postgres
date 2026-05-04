@@ -38,7 +38,7 @@ elif [ -n "$(command -v apt-get)" ]; then
 	ansible \
         snapd
 
-  add-apt-repository --yes --remove ppa:ansible/ansible
+  # add-apt-repository --yes --remove ppa:ansible/ansible
 
   source /etc/os-release
 

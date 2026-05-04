@@ -2,7 +2,8 @@
   shell:
     cmd: |
       apt install -y software-properties-common
-      add-apt-repository --yes --update ppa:ansible/ansible
+      # TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+      # add-apt-repository --yes --update ppa:ansible/ansible
       apt install -y ansible
       sed -i -e 's/#callback_whitelist.*/callback_whitelist = profile_tasks/' /etc/ansible/ansible.cfg
 

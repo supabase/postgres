@@ -18,8 +18,9 @@ function install_packages {
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
 
     # Add repository and install
-    sudo add-apt-repository --yes ppa:ansible/ansible
-    sudo apt-get update
+    # TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+    # sudo add-apt-repository --yes ppa:ansible/ansible
+    # sudo apt-get update
     sudo apt-get install -y ansible
 
     ansible-galaxy collection install community.general
@@ -62,7 +63,7 @@ EOF
 
 function cleanup_packages {
     sudo apt-get -y remove --purge ansible
-    sudo add-apt-repository --yes --remove ppa:ansible/ansible
+    # sudo add-apt-repository --yes --remove ppa:ansible/ansible
 }
 
 install_packages
