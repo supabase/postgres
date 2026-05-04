@@ -109,7 +109,8 @@ function install_packages {
 	fi
 
 	sudo apt-get install software-properties-common -y
-	add-apt-repository --yes --update ppa:ansible/ansible
+	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+	# add-apt-repository --yes --update ppa:ansible/ansible
 
 	if ! apt_update_with_fallback; then
 		echo "FATAL: Failed to update package lists after adding Ansible PPA"
