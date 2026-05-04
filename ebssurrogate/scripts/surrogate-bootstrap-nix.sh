@@ -29,14 +29,22 @@ function apt_update_with_fallback {
 	fi
 
 	# Define mirror tiers (in priority order)
-	local -a mirror_tiers=(
-		"${REGION}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN
-		"ports.ubuntu.com"                     # Tier 2: Global pool
-	)
+	local -a mirror_tiers=()
+	if [ "${ARCH}" = "amd64" ]; then
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.ec2.archive.ubuntu.com")
+		fi
+		mirror_tiers+=("archive.ubuntu.com")
+	else
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.clouds.ports.ubuntu.com")
+		fi
+		mirror_tiers+=("ports.ubuntu.com")
+	fi
 
 	# If we couldn't get REGION, skip tier 1
 	if [ -z "${REGION}" ]; then
-		echo "Warning: Could not determine EC2 region, skipping regional CDN"
+		echo "Warning: Could not determine EC2 region, skipping regional mirror"
 		mirror_tiers=("${mirror_tiers[@]:1}")  # Remove first element
 	fi
 
@@ -47,10 +55,12 @@ function apt_update_with_fallback {
 		echo "========================================="
 
 		# Update sources.list to use current mirror
-		# Replace the region-specific mirror URL
-		sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
-		# Also update any security sources
-		sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+		if [ "${ARCH}" = "amd64" ]; then
+			sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"
+		else
+			sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
+			sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+		fi
 
 		# Show what we're using
 		echo "Current sources.list configuration:"
@@ -257,8 +267,12 @@ EOF
 	# Update ec2-region
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
 
-	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global ports.ubuntu.com stalls)
-	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global mirror stalls)
+	if [ "${ARCH}" = "amd64" ]; then
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.ec2.archive.ubuntu.com/ubuntu"
+	else
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+	fi
 
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
