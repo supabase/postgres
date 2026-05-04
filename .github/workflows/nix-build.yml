@@ -34,7 +34,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
@@ -66,7 +66,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
@@ -98,7 +98,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin }}
     steps:
       - name: Checkout Repo
@@ -122,7 +122,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin }}
     steps:
       - name: Checkout Repo
@@ -146,7 +146,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux }}
     steps:
       - name: Checkout Repo
@@ -175,7 +175,7 @@ jobs:
     if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 25
       matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux }}
     steps:
       - name: Checkout Repo
