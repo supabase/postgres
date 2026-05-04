@@ -31,7 +31,11 @@ fi
 
 # Get current mirror from sources.list
 function get_current_mirror {
-	grep -oP 'http://[^/]+(?=/ubuntu-ports/)' /etc/apt/sources.list | head -1 || echo ""
+	if [ "${ARCH}" = "amd64" ]; then
+		grep -oP 'https?://[^/]+(?=/ubuntu/)' /etc/apt/sources.list | head -1 || echo ""
+	else
+		grep -oP 'http://[^/]+(?=/ubuntu-ports/)' /etc/apt/sources.list | head -1 || echo ""
+	fi
 }
 
 # Switch to a different mirror
@@ -40,7 +44,11 @@ function switch_mirror {
 	local sources_file="/etc/apt/sources.list"
 
 	echo "Switching to mirror: ${new_mirror}"
-	sed -i "s|http://[^/]*/ubuntu-ports/|http://${new_mirror}/ubuntu-ports/|g" "${sources_file}"
+	if [ "${ARCH}" = "amd64" ]; then
+		sed -i "s|http://[^/]*/ubuntu/|http://${new_mirror}/ubuntu/|g" "${sources_file}"
+	else
+		sed -i "s|http://[^/]*/ubuntu-ports/|http://${new_mirror}/ubuntu-ports/|g" "${sources_file}"
+	fi
 
 	# Show what we're using
 	echo "Current sources.list configuration:"
@@ -50,8 +58,6 @@ function switch_mirror {
 # Get list of mirrors to try
 function get_mirror_list {
 	local sources_file="/etc/apt/sources.list"
-	local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
-
 	local -a mirrors=()
 
 	# Priority order:
@@ -59,16 +65,28 @@ function get_mirror_list {
 	# 2. Regional CDN (can be inconsistent)
 	# 3. Global fallback
 
-	# Singapore country mirror for ap-southeast-1
-	if [ "${current_region}" = "ap-southeast-1" ]; then
-		mirrors+=("sg.ports.ubuntu.com")
-	fi
+	if [ "${ARCH}" = "amd64" ]; then
+		local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.ec2\.archive\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
 
-	if [ -n "${current_region}" ]; then
-		mirrors+=("${current_region}.clouds.ports.ubuntu.com")
-	fi
+		if [ -n "${current_region}" ]; then
+			mirrors+=("${current_region}.ec2.archive.ubuntu.com")
+		fi
 
-	mirrors+=("ports.ubuntu.com")
+		mirrors+=("archive.ubuntu.com")
+	else
+		local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
+
+		# Singapore country mirror for ap-southeast-1
+		if [ "${current_region}" = "ap-southeast-1" ]; then
+			mirrors+=("sg.ports.ubuntu.com")
+		fi
+
+		if [ -n "${current_region}" ]; then
+			mirrors+=("${current_region}.clouds.ports.ubuntu.com")
+		fi
+
+		mirrors+=("ports.ubuntu.com")
+	fi
 
 	echo "${mirrors[@]}"
 }
