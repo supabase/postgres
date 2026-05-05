@@ -10,7 +10,6 @@ on:
       - 'flake.lock'
       - 'nix/**'
       - 'ansible/files/**'
-      - 'ansible/vars.yml'
       - 'migrations/**'
       - 'audit-specs/**'
       - 'Dockerfile-*'
