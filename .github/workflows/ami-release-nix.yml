@@ -95,7 +95,7 @@ jobs:
           GIT_SHA=${{github.sha}}
 
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=supabase-postgres-${{ matrix.arch.name }}" ${{ matrix.arch.packer_template }}
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" ${{ matrix.arch.packer_template }}
 
       - name: Find stage 1 AMI
         run: |
@@ -131,7 +131,7 @@ jobs:
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=supabase-postgres" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
