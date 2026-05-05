@@ -31,9 +31,9 @@
     dest: /etc/sudoers.d/supabase-admin-agent
     mode: "0440"
 
-- name: Setting arch (x86)
+- name: Setting arch (amd64)
   set_fact:
-    arch: "x86"
+    arch: "amd64"
   when: platform == "amd64"
 
 - name: Setting arch (arm)
@@ -53,6 +53,10 @@
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
     dest: "/tmp/supabase-admin-agent.tar.gz"
     timeout: 90
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 - name: supabase-admin-agent - unpack archive in /opt
   unarchive:

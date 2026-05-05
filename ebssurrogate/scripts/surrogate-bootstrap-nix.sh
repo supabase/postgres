@@ -29,14 +29,22 @@ function apt_update_with_fallback {
 	fi
 
 	# Define mirror tiers (in priority order)
-	local -a mirror_tiers=(
-		"${REGION}.clouds.ports.ubuntu.com"  # Tier 1: Regional CDN
-		"ports.ubuntu.com"                     # Tier 2: Global pool
-	)
+	local -a mirror_tiers=()
+	if [ "${ARCH}" = "amd64" ]; then
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.ec2.archive.ubuntu.com")
+		fi
+		mirror_tiers+=("archive.ubuntu.com")
+	else
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.clouds.ports.ubuntu.com")
+		fi
+		mirror_tiers+=("ports.ubuntu.com")
+	fi
 
 	# If we couldn't get REGION, skip tier 1
 	if [ -z "${REGION}" ]; then
-		echo "Warning: Could not determine EC2 region, skipping regional CDN"
+		echo "Warning: Could not determine EC2 region, skipping regional mirror"
 		mirror_tiers=("${mirror_tiers[@]:1}")  # Remove first element
 	fi
 
@@ -47,10 +55,12 @@ function apt_update_with_fallback {
 		echo "========================================="
 
 		# Update sources.list to use current mirror
-		# Replace the region-specific mirror URL
-		sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
-		# Also update any security sources
-		sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+		if [ "${ARCH}" = "amd64" ]; then
+			sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"
+		else
+			sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
+			sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+		fi
 
 		# Show what we're using
 		echo "Current sources.list configuration:"
@@ -109,7 +119,8 @@ function install_packages {
 	fi
 
 	sudo apt-get install software-properties-common -y
-	add-apt-repository --yes --update ppa:ansible/ansible
+	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+	# add-apt-repository --yes --update ppa:ansible/ansible
 
 	if ! apt_update_with_fallback; then
 		echo "FATAL: Failed to update package lists after adding Ansible PPA"
@@ -118,12 +129,6 @@ function install_packages {
 
 	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
-
-	# Update apt and install required packages
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists before installing tools"
-		exit 1
-	fi
 
 	apt-get install -y \
 		gdisk \
@@ -228,31 +233,51 @@ function pull_docker {
 # Create fstab
 function create_fstab {
 	FMT="%-42s %-11s %-5s %-17s %-5s %s"
-cat > "/mnt/etc/fstab" << EOF
-$(printf "${FMT}" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK")
-$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
-$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
-$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard,nofail,x-systemd.device-timeout=5s", "0", "2" ) }')
-$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
-EOF
+	local ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
+	local DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard,nofail,x-systemd.device-timeout=5s", "0", "2" ) }')
+	local SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
+
+	local EFI_LINE=""
+	if [ "${ARCH}" = "arm64" ]; then
+		EFI_LINE=$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
+	fi
+
+	{
+		printf "${FMT}\n" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK"
+		echo "${ROOT_LINE}"
+		[ -n "${EFI_LINE}" ] && echo "${EFI_LINE}"
+		echo "${DATA_LINE}"
+		echo "${SWAP_LINE}"
+	} > "/mnt/etc/fstab"
 	unset FMT
 }
 
 function setup_chroot_environment {
 	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
 
+        # sometimes debootstrap will get stuck on a download for a long time
+        # the default read timeout in wget is 900s, which can cause a ~15min increase in build time
+        # this forces the process to fail-fast and retry
+	cat <<EOF > ~/.wgetrc
+read_timeout = 30
+timeout = 35
+tries = 5
+EOF
+
 	# Update ec2-region
 	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
 
-	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global ports.ubuntu.com stalls)
-	debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global mirror stalls)
+	if [ "${ARCH}" = "amd64" ]; then
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.ec2.archive.ubuntu.com/ubuntu"
+	else
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+	fi
 
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
 	cp /tmp/sources.list /mnt/etc/apt/sources.list
 
-	if [ "${ARCH}" = "arm64" ]; then
-		create_fstab
-	fi
+	create_fstab
 
 	# Create mount points and mount the filesystem
 	mkdir -p /mnt/{dev,proc,sys}
@@ -304,10 +329,11 @@ function download_ccache {
 }
 
 function execute_playbook {
-
+	sudo mkdir -p /etc/ansible
 tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
+pipelining = True
 EOF
 	# Run Ansible playbook
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
