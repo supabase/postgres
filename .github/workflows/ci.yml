@@ -2,6 +2,9 @@ name: Check merge requirements
 
 on:
   pull_request:
+    paths:
+      - 'ansible/vars.yml'
+      - '.github/workflows/ci.yml'
   merge_group:
 
 permissions:

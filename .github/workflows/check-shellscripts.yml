@@ -2,6 +2,9 @@ name: Check shell scripts
 
 on:
   pull_request:
+    paths:
+      - 'ansible/files/admin_api_scripts/**'
+      - '.github/workflows/check-shellscripts.yml'
   merge_group:
   workflow_dispatch:
 
