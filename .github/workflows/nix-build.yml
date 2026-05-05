@@ -17,10 +17,9 @@ on:
       - 'docker/**'
       - '.github/workflows/nix-build.yml'
       - '.github/workflows/nix-eval.yml'
-      - '.github/workflows/test.yml'
-      - '.github/workflows/testinfra-ami-build.yml'
-      - '.github/workflows/docker-image-test.yml'
-      - '.github/actions/**'
+      - '.github/actions/nix-install-ephemeral/**'
+      - '.github/actions/nix-install-self-hosted/**'
+      - '.github/actions/nix-build-retry/**'
   merge_group:
   workflow_dispatch:
 
