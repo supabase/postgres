@@ -6,7 +6,7 @@ let
 
     src = ./pg-startup-profiler;
 
-    vendorHash = "sha256-HAyyFdu/lgNISlv+vf+fpP3nMZ+aIE7dVRpzBnsaPC8=";
+    vendorHash = "sha256-l2GzYzHuMHVX9BsFKwxMEE2/hqBBnC/GZx6z9sUfqBU=";
 
     subPackages = [ "cmd/pg-startup-profiler" ];
 
