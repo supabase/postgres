@@ -358,7 +358,7 @@
         "17"
       ],
       "hash": "sha256-9St/ESPiFq2NiPKqbwHLwkIyATKUkOGxFcUrWgT+Iqo="
-   }
+    }
   },
   "pg_partman": {
     "5.3.1": {
@@ -370,21 +370,31 @@
       "hash": "sha256-LK+z/0puUuNLz2ah/SDaxxyLS/On/cmCBhKNwTLa7Pk="
     }
   },
-    "pgmq": {
-      "1.4.4": {
-        "postgresql": [
-          "15"
-        ],
-        "hash": "sha256-z+8/BqIlHwlMnuIzMz6eylmYbSmhtsNt7TJf/CxbdVw="
-      },
-      "1.5.1": {
-        "postgresql": [
-          "15",
-          "17"
-        ],
-        "hash": "sha256-IU+i6ONPwtgsFKdzya6E+222ualR66gkbb0lDr+7Rb8="
-      }
+  "pgmq": {
+    "1.10.0": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-sNOFr3tiZATFBvRBm4pSsn8YR62zqN06VBOBnvdXgts="
     },
+    "1.11.0": {
+      "postgresql": [
+        "15",
+        "17",
+        "18"
+      ],
+      "hash": "sha256-fJWINP7Dvc79blpfYbGfTEKZtcA/S8KAjmX5uPhmXBM="
+    },
+    "1.11.1": {
+      "postgresql": [
+        "15",
+        "17",
+        "18"
+      ],
+      "hash": "sha256-BPOrQ7HcgTaTJIRzWUCG3iJN3mUjwIxa/wPxvJ1l4o4="
+    }
+  },
   "pgroonga": {
     "3.0.7": {
       "postgresql": [
@@ -409,7 +419,6 @@
       "hash": "sha256-QC77AnPGpPQGEWi6JtJdiNsB2su5+aV2pKg5ImR2B0k="
     }
   },
-
   "pgsodium": {
     "3.0.4": {
       "postgresql": [
