@@ -5,6 +5,20 @@ on:
     branches:
       - release/*
   pull_request:
+    paths:
+      - 'flake.nix'
+      - 'flake.lock'
+      - 'nix/**'
+      - 'ansible/files/**'
+      - 'migrations/**'
+      - 'audit-specs/**'
+      - 'Dockerfile-*'
+      - 'docker/**'
+      - '.github/workflows/nix-build.yml'
+      - '.github/workflows/nix-eval.yml'
+      - '.github/actions/nix-install-ephemeral/**'
+      - '.github/actions/nix-install-self-hosted/**'
+      - '.github/actions/nix-build-retry/**'
   merge_group:
   workflow_dispatch:
 
