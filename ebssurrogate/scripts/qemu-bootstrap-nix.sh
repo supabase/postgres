@@ -22,13 +22,15 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-  apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
-	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
+	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
+	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+	# add-apt-repository --yes --update ppa:ansible/ansible &&
+	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
 
 function execute_playbook {
-
+	sudo mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
@@ -93,6 +95,7 @@ EXTRA_NIX_CONF" -s /bin/bash root
 }
 
 function execute_stage2_playbook {
+	sudo mkdir -p /etc/ansible
 	sudo tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles

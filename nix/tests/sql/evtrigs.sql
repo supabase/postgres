@@ -9,4 +9,5 @@ join pg_proc p
   on e.evtfoid = p.oid
 join pg_namespace n_func
   on p.pronamespace = n_func.oid
-where p.prorettype = 'event_trigger'::regtype;
+where p.prorettype = 'event_trigger'::regtype
+order by e.evtname;

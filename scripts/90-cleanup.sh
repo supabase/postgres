@@ -36,7 +36,7 @@ elif [ -n "$(command -v apt-get)" ]; then
 	libgcc-9-dev \
  	ansible
 
-  add-apt-repository --yes --remove ppa:ansible/ansible
+  # add-apt-repository --yes --remove ppa:ansible/ansible
 
   source /etc/os-release
   

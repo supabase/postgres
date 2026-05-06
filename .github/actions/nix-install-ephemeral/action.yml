@@ -62,6 +62,13 @@ runs:
         echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
         # Source the daemon profile so nix works in this step too
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    - name: Configure Nix with GitHub token
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        echo "access-tokens = github.com=$GH_TOKEN" | sudo tee -a /etc/nix/nix.conf > /dev/null
+        sudo systemctl restart nix-daemon || true
     - name: Print Nix version
       shell: bash
       run: nix --version

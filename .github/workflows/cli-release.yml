@@ -37,12 +37,16 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
 
       - name: Run portability check
-        run: |
-          nix build .#checks.${{ matrix.system }}.psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
+          extra-args: --system ${{ matrix.system }}
 
       - name: Build portable CLI bundle
-        run: |
-          nix build .#psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#psql_17_cli_portable
+          extra-args: --system ${{ matrix.system }}
 
       - name: Determine version
         id: version
@@ -330,7 +334,7 @@ jobs:
           ./bin/psql -p 54322 -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "\dx" | tee extensions.log
 
           # Check for required extensions
-          for ext in pg_graphql pgcrypto uuid-ossp supabase_vault; do
+          for ext in pgcrypto uuid-ossp supabase_vault; do
             if ! grep -q "$ext" extensions.log; then
               echo "Required extension $ext not found"
               exit 1

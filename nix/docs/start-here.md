@@ -25,14 +25,10 @@ builders-use-substitutes = true
 cores = 0
 experimental-features = nix-command flakes
 max-jobs = auto
-netrc-file =
 require-sigs = true
 substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
 trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-substituters =
 trusted-users = YOUR_USERNAME root
-extra-sandbox-paths =
-extra-substituters =
 ```
 
 **Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
@@ -71,14 +67,10 @@ builders-use-substitutes = true
 cores = 0
 experimental-features = nix-command flakes
 max-jobs = auto
-netrc-file =
 require-sigs = true
 substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
 trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-substituters =
 trusted-users = YOUR_USERNAME root
-extra-sandbox-paths =
-extra-substituters =
 ```
 
 **Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.

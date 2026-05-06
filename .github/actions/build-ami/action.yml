@@ -18,6 +18,14 @@ inputs:
     description: 'Prefix for the AMI name'
     required: false
     default: 'supabase-postgres'
+  packer_template:
+    description: 'Packer template for stage 1 (e.g., amazon-arm64-nix.pkr.hcl)'
+    required: false
+    default: 'amazon-arm64-nix.pkr.hcl'
+  instance_type:
+    description: 'EC2 instance type for the build'
+    required: false
+    default: 'c6g.4xlarge'
 
 outputs:
   stage2_ami_id:
@@ -45,7 +53,7 @@ runs:
       id: generate-vars
       shell: bash
       run: |
-        PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
+        PG_VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
         echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
         echo "" >> common-nix.vars.pkr.hcl
         git add -f common-nix.vars.pkr.hcl
@@ -65,7 +73,7 @@ runs:
           -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
           -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
-          amazon-arm64-nix.pkr.hcl
+          ${{ inputs.packer_template }}
 
     - name: Build AMI stage 2
       id: build-stage2
@@ -84,4 +92,5 @@ runs:
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var "git_sha=${{ inputs.git_sha }}" \
+          -var "instance_type=${{ inputs.instance_type }}" \
           stage2-nix-psql.pkr.hcl
