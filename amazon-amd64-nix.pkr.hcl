@@ -1,6 +1,6 @@
 variable "ami" {
   type    = string
-  default = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"
+  default = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"
 }
 
 variable "profile" {
@@ -97,9 +97,9 @@ source "amazon-ebssurrogate" "source" {
   profile = "${var.profile}"
   ami_name = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
-  ami_architecture = "arm64"
+  ami_architecture = "x86_64"
   ami_regions   = "${var.ami_regions}"
-  instance_type = "c6g.4xlarge"
+  instance_type = "c6i.4xlarge"
   region       = "${var.region}"
   force_deregister = var.force-deregister
 
@@ -192,7 +192,7 @@ build {
   sources = ["source.amazon-ebssurrogate.source"]
 
   provisioner "file" {
-    source = "ebssurrogate/files/sources-arm64.cfg"
+    source = "ebssurrogate/files/sources.cfg"
     destination = "/tmp/sources.list"
   }
 

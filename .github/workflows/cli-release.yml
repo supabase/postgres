@@ -37,12 +37,16 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
 
       - name: Run portability check
-        run: |
-          nix build .#checks.${{ matrix.system }}.psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
+          extra-args: --system ${{ matrix.system }}
 
       - name: Build portable CLI bundle
-        run: |
-          nix build .#psql_17_cli_portable --system ${{ matrix.system }} -L --accept-flake-config
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#psql_17_cli_portable
+          extra-args: --system ${{ matrix.system }}
 
       - name: Determine version
         id: version

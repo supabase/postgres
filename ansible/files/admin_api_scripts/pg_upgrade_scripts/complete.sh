@@ -14,6 +14,29 @@ source "$SCRIPT_DIR/common.sh"
 IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
+
+# Wait for the volume mapped to /data to appear before attempting to mount it
+function wait_for_data_device {
+    local fstab_src dev=""
+    fstab_src=$(awk '$2 == "/data" {print $1}' /etc/fstab)
+    if [ -z "$fstab_src" ]; then
+        echo "No /data entry in /etc/fstab"
+        return 1
+    fi
+
+    echo "Waiting for /data device ($fstab_src) to appear"
+    for _ in $(seq 1 60); do
+        dev=$(findfs "$fstab_src" 2>/dev/null) || dev=""
+        if [ -n "$dev" ] && [ -b "$dev" ]; then
+            echo "/data device ($dev) is available"
+            return 0
+        fi
+        sleep 1
+    done
+    echo "Timed out waiting for /data device ($fstab_src)"
+    return 1
+}
+
 function cleanup {
     UPGRADE_STATUS=${1:-"failed"}
     EXIT_CODE=${?:-0}
@@ -221,7 +244,18 @@ function complete_pg_upgrade {
 
     echo "1. Mounting data disk"
     if [ -z "$IS_CI" ]; then
+        # Let udev finish detecting the vollume before mounting
+        udevadm settle --timeout=60 || true
+        wait_for_data_device
+
         retry 8 mount -a -v
+
+        # `nofail` in /etc/fstab makes `mount -a` exit with a code of 0 even when the volume is absent
+        # In the offchance of the volume not being mounted or detected, explicitly fail here
+        if ! mountpoint -q /data; then
+            echo "FATAL: /data is not a mountpoint"
+            exit 1
+        fi
     else
         echo "Skipping mount -a -v"
     fi
@@ -262,11 +296,11 @@ function complete_pg_upgrade {
     echo "5. Restarting postgresql"
     if [ -z "$IS_CI" ]; then
         retry 3 service postgresql restart
-        
+
         echo "5.1. Restarting gotrue and postgrest"
         retry 3 service gotrue restart
         retry 3 service postgrest restart
-        
+
     else
         retry 3 CI_stop_postgres || true
         retry 3 CI_start_postgres
@@ -327,7 +361,7 @@ locale-gen
 
 if [ -z "$IS_CI" ]; then
     complete_pg_upgrade >> $LOG_FILE 2>&1 &
-else 
+else
     CI_stop_postgres || true
 
     rm -f /tmp/pg-upgrade-status
