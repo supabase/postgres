@@ -398,7 +398,9 @@ writeShellApplication {
 
         log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
         docker exec -u postgres "$container" \
-            pg_ctl start -D /etc/postgresql -w -t 60
+            pg_ctl start -D /var/lib/postgresql/data \
+                -o "-c config_file=/etc/postgresql/postgresql.conf" \
+                -w -t 60
 
         log_info "Multigres: running schema migrations..."
         docker exec \
