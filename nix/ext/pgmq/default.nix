@@ -35,15 +35,14 @@ let
     stdenv.mkDerivation rec {
       inherit pname version;
       buildInputs = [ postgresql ];
+
       src = fetchFromGitHub {
-        owner = "pgmq";          
+        owner = "pgmq";
         repo = pname;
         rev = "v${version}";
         inherit hash;
       };
 
-      # Only apply patches to versions that still need them
-      # Check if the drop_queue patch is still needed for your versions
       patches = lib.optionals (version == latestVersion) [
         ./0001-fix-replace-drop_queue-function-if-exists.patch
       ];
@@ -65,14 +64,13 @@ let
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
-        # For the latest version, create default control file and copy SQL upgrade scripts
+        # For the latest version, create default control file and symlink + copy upgrade scripts
         if [[ "${version}" == "${latestVersion}" ]]; then
           {
             echo "default_version = '${version}'"
             cat $out/share/postgresql/extension/${pname}--${version}.control
           } > $out/share/postgresql/extension/${pname}.control
 
-          # Copy all SQL upgrade scripts
           cp sql/*.sql $out/share/postgresql/extension
         fi
 
@@ -81,7 +79,8 @@ let
 
       meta = with lib; {
         description = "A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.";
-        homepage = "https://pgmq.github.io/pgmq/";
+        homepage = "https://github.com/pgmq/pgmq";
+        maintainers = with maintainers; [ olirice ];
         inherit (postgresql.meta) platforms;
         license = licenses.postgresql;
       };
