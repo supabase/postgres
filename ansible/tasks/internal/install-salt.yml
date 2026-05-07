@@ -50,6 +50,8 @@
 
 - name: Salt minion install
   apt:
-    name: salt-minion={{ salt_minion_version }}
+    name:
+      - salt-common={{ salt_version }}
+      - salt-minion={{ salt_version }}
     state: present
     update_cache: yes

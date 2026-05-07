@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.075-orioledb"
-  postgres17: "17.6.1.118"
-  postgres15: "15.14.1.118"
+  postgresorioledb-17: "17.6.0.076-orioledb"
+  postgres17: "17.6.1.119"
+  postgres15: "15.14.1.119"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
@@ -32,7 +32,7 @@ gotrue_x86_release_checksum: sha1:b7a6d2c3cb32358710db919f1178569ec19590f0
 
 aws_cli_release: 2.23.11
 
-salt_minion_version: 3007.14
+salt_version: 3007.14
 
 golang_version: 1.22.11
 golang_version_checksum:
