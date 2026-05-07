@@ -247,6 +247,15 @@
       "hash": "sha256-BMZc9ui+2J3U24HzZZVCU5+KWhz+5qeUsRGeptiqbek=",
       "pgrx": "0.12.9",
       "rust": "1.81.0"
+    },
+    "1.6.1": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-DOmxdLuYlRoQRprN4tni6JyXZ3nWaEqVQU0DNSYRYTc=",
+      "pgrx": "0.16.1",
+      "rust": "1.88.0"
     }
   },
   "pg_net": {
