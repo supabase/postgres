@@ -248,12 +248,10 @@ function complete_pg_upgrade {
         udevadm settle --timeout=60 || true
         wait_for_data_device
 
-        retry 8 mount -a -v
-
-        # `nofail` in /etc/fstab makes `mount -a` exit with a code of 0 even when the volume is absent
-        # In the offchance of the volume not being mounted or detected, explicitly fail here
-        if ! mountpoint -q /data; then
-            echo "FATAL: /data is not a mountpoint"
+        # `mount -a` skips systemd-managed mounts (x-systemd.device-timeout in fstab)
+        systemctl start data.mount
+        if ! retry 8 mountpoint -q /data; then
+            echo "FATAL: /data is not a mountpoint after systemctl start data.mount"
             exit 1
         fi
     else
