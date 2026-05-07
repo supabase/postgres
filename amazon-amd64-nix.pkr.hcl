@@ -124,10 +124,8 @@ source "amazon-ebssurrogate" "source" {
   launch_block_device_mappings {
     device_name           = "/dev/xvdf"
     delete_on_termination = true
-    volume_size           = 20
+    volume_size           = 10
     volume_type           = "gp3"
-    iops                  = 10000
-    throughput            = 1000
    }
 
   # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
@@ -143,11 +141,9 @@ source "amazon-ebssurrogate" "source" {
   launch_block_device_mappings {
     device_name           = "/dev/${var.build-vol}"
     delete_on_termination = true
-    volume_size           = 20
+    volume_size           = 16
     volume_type           = "gp3"
     omit_from_artifact    = true
-    iops                  = 10000       # Added for build performance
-    throughput            = 1000        # Added for build performance
   }
 
   run_tags = {
