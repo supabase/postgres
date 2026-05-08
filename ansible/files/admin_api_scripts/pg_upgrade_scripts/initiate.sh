@@ -328,8 +328,8 @@ EXTRA_NIX_CONF
 
         # Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
         # Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
-        CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
-        CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}.json"
+        CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
+        CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
         echo "Fetching catalog from: $CATALOG_S3"
 
         if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
