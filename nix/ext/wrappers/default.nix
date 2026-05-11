@@ -106,7 +106,7 @@ let
               }
             else if builtins.compareVersions "0.6.1" version == 0 then
               {
-                "clickhouse-rs-1.1.0-alpha.1" = "sha256-nKiGzdsAgJej8NgyVOqHaD1sZLrNF1RPfEhu2pRwZ6o=";
+                "clickhouse-rs-1.1.0-alpha.1" = "sha256-3CIKx0/imCCXl1VGUAX0E9TqbsZSTEdCpe4ps5p6Ax4=";
               }
             else
               {
