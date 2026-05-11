@@ -14,3 +14,108 @@ FROM
  supabase_realtime | postgres | f            | t         | t         | t         | t
 (1 row)
 
+-- realtime schema owner
+select
+  n.nspname as schema_name,
+  r.rolname as owner
+from
+  pg_namespace n
+join
+  pg_roles r on n.nspowner = r.oid
+where
+  n.nspname = 'realtime';
+ schema_name |     owner      
+-------------+----------------
+ realtime    | supabase_admin
+(1 row)
+
+-- realtime schema acl
+select
+  n.nspname as schema_name,
+  a.privilege_type,
+  r.rolname as grantee,
+  a.is_grantable
+from
+  pg_namespace n
+cross join lateral
+  aclexplode(n.nspacl) as a
+join
+  pg_roles r on a.grantee = r.oid
+where
+  n.nspname = 'realtime'
+order by
+  a.privilege_type, r.rolname;
+ schema_name | privilege_type |         grantee         | is_grantable 
+-------------+----------------+-------------------------+--------------
+ realtime    | CREATE         | supabase_admin          | f
+ realtime    | CREATE         | supabase_realtime_admin | t
+ realtime    | USAGE          | anon                    | f
+ realtime    | USAGE          | authenticated           | f
+ realtime    | USAGE          | postgres                | t
+ realtime    | USAGE          | service_role            | f
+ realtime    | USAGE          | supabase_admin          | f
+ realtime    | USAGE          | supabase_realtime_admin | t
+(8 rows)
+
+-- supabase_realtime_admin role attributes
+select
+  rolname,
+  rolsuper,
+  rolinherit,
+  rolcreaterole,
+  rolcreatedb,
+  rolcanlogin,
+  rolreplication,
+  rolbypassrls,
+  rolconfig
+from pg_roles
+where rolname = 'supabase_realtime_admin';
+         rolname         | rolsuper | rolinherit | rolcreaterole | rolcreatedb | rolcanlogin | rolreplication | rolbypassrls |       rolconfig        
+-------------------------+----------+------------+---------------+-------------+-------------+----------------+--------------+------------------------
+ supabase_realtime_admin | f        | f          | t             | f           | t           | t              | f            | {search_path=realtime}
+(1 row)
+
+-- postgres must not be a member of supabase_realtime_admin (SEC-562)
+select
+  r.rolname as role,
+  m.rolname as member
+from pg_auth_members am
+join pg_roles r on r.oid = am.roleid
+join pg_roles m on m.oid = am.member
+where r.rolname = 'supabase_realtime_admin';
+ role | member 
+------+--------
+(0 rows)
+
+-- postgres must not have CREATE on realtime schema (SEC-562)
+select
+  has_schema_privilege('postgres', 'realtime', 'CREATE') as postgres_can_create,
+  has_schema_privilege('postgres', 'realtime', 'USAGE')  as postgres_can_use;
+ postgres_can_create | postgres_can_use 
+---------------------+------------------
+ f                   | t
+(1 row)
+
+-- postgres can grant realtime usage to custom roles
+create role r;
+CREATE ROLE
+grant r to postgres with admin option;
+GRANT ROLE
+set role postgres;
+SET
+grant usage on schema realtime to r;
+GRANT
+select pg_catalog.has_schema_privilege('r', 'realtime', 'usage');
+ has_schema_privilege 
+----------------------
+ t
+(1 row)
+
+set role postgres;
+SET
+drop owned by r cascade;
+DROP OWNED
+drop role r;
+DROP ROLE
+reset role;
+RESET

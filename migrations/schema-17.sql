@@ -761,6 +761,20 @@ CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id);
 
 CREATE PUBLICATION supabase_realtime WITH (publish = 'insert, update, delete, truncate');
 
+--
+-- Name: schema_migrations; Type: TABLE; Schema: realtime; Owner: -
+--
+
+CREATE TABLE realtime.schema_migrations (
+    version bigint NOT NULL,
+    inserted_at timestamp(0) without time zone
+);
+
+--
+-- Name: TABLE schema_migrations; Type: COMMENT; Schema: realtime; Owner: -
+--
+
+COMMENT ON TABLE realtime.schema_migrations IS 'Realtime: Manages updates to the realtime system.';
 
 --
 -- Name: issue_graphql_placeholder; Type: EVENT TRIGGER; Schema: -; Owner: -

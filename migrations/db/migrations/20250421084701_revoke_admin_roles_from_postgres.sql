@@ -22,4 +22,17 @@ begin
   end if;
 end $$;
 
+revoke supabase_realtime_admin from postgres;
+do $$
+begin
+  if exists (select from pg_namespace where nspname = 'realtime') then
+    revoke create on schema realtime from postgres;
+  end if;
+end $$;
+do $$
+begin
+  if exists (select from pg_class where relnamespace = 'realtime'::regnamespace and relname = 'schema_migrations') then
+    revoke all on realtime.schema_migrations from anon, authenticated, service_role, postgres;
+  end if;
+end $$;
 -- migrate:down
