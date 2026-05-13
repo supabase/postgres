@@ -66,6 +66,7 @@ jobs:
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -113,6 +114,7 @@ jobs:
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
