@@ -37,11 +37,25 @@ jobs:
   build:
     needs: prepare
     strategy:
+      fail-fast: false
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-        include:
-          - runner: blacksmith-2vcpu-ubuntu-2404-arm
-    runs-on: ${{ matrix.runner }}
+        arch:
+          - name: arm64
+            runner: blacksmith-2vcpu-ubuntu-2404-arm
+            packer_template: amazon-arm64-nix.pkr.hcl
+            vars_file: development-arm.vars.pkr.hcl
+            instance_type: c6g.4xlarge
+            nix_system: aarch64-linux
+            ami_arch_filter: arm64
+          - name: amd64
+            runner: blacksmith-2vcpu-ubuntu-2404
+            packer_template: amazon-amd64-nix.pkr.hcl
+            vars_file: development-x86.vars.pkr.hcl
+            instance_type: c6i.4xlarge
+            nix_system: x86_64-linux
+            ami_arch_filter: x86_64
+    runs-on: ${{ matrix.arch.runner }}
     timeout-minutes: 150
 
     steps:
@@ -67,7 +81,7 @@ jobs:
       - name: Set PostgreSQL version environment variable
         run: |
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
+          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}-${{ matrix.arch.name }}" >> "$GITHUB_ENV"
 
       - name: Generate common-nix.vars.pkr.hcl
         run: |
@@ -79,13 +93,14 @@ jobs:
           POSTGRES_MAJOR_VERSION: ${{ env.POSTGRES_MAJOR_VERSION }}
         run: |
           GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init amazon-arm64-nix.pkr.hcl
-          # why is postgresql_major defined here instead of where the _three_ other postgresql_* variables are defined?
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}"  -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' amazon-arm64-nix.pkr.hcl
+
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" ${{ matrix.arch.packer_template }}
 
       - name: Find stage 1 AMI
         run: |
           GIT_SHA=${{github.sha}}
+
           PG_VERSION=$(sed -n 's/postgres-version = "\(.*\)"/\1/p' common-nix.vars.pkr.hcl)
           REGION="us-east-1"
 
@@ -98,6 +113,7 @@ jobs:
               "Name=tag:postgresVersion,Values=${PG_VERSION}-stage1" \
               "Name=tag:sourceSha,Values=${GIT_SHA}" \
               "Name=state,Values=available" \
+              "Name=architecture,Values=${{ matrix.arch.ami_arch_filter }}" \
             --query 'Images[0].ImageId' \
             --output text)
 
@@ -115,8 +131,7 @@ jobs:
         run: |
           GIT_SHA=${{github.sha}}
           nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          POSTGRES_MAJOR_VERSION=${{ env.POSTGRES_MAJOR_VERSION }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="development-arm.vars.pkr.hcl" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" stage2-nix-psql.pkr.hcl
+          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" stage2-nix-psql.pkr.hcl
 
       - name: Grab release version
         id: process_release_version
@@ -124,6 +139,24 @@ jobs:
           VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' common-nix.vars.pkr.hcl)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "::notice title=AMI Published::Postgres AMI version: $VERSION"
+
+      - name: Set arch-qualified version
+        id: arch_version
+        run: |
+          VERSION="${{ steps.process_release_version.outputs.version }}"
+          if [ "${{ matrix.arch.name }}" = "amd64" ]; then
+            {
+              echo "version=${VERSION}"
+              echo "arch_suffix=-x86"
+              echo "release_tag=${VERSION}-x86"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "version=${VERSION}"
+              echo "arch_suffix="
+              echo "release_tag=${VERSION}"
+            } >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create nix flake revision tarball
         run: |
@@ -144,16 +177,17 @@ jobs:
         run: |
           cd ansible
           ansible-playbook -i localhost \
-            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "ami_release_version=${{ steps.arch_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ matrix.postgres_version }}" \
+            -e "arch=${{ matrix.arch.name }}" \
             manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 staging
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
@@ -165,16 +199,17 @@ jobs:
         run: |
           cd ansible
           ansible-playbook -i localhost \
-            -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
+            -e "ami_release_version=${{ steps.arch_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ matrix.postgres_version }}" \
+            -e "arch=${{ matrix.arch.name }}" \
             manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 prod
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_version.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.arch_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: GitHub OIDC Auth
         uses: aws-actions/configure-aws-credentials@ececac1a45f3b08a01d2dd070d28d111c5fe6722 # v4.1.0
@@ -197,13 +232,13 @@ jobs:
           VERSION="${{ steps.process_release_version.outputs.version }}"
           GIT_SHA="${{ github.sha }}"
           PG_VERSION="${{ matrix.postgres_version }}"
-          SYSTEM="aarch64-linux"
+          SYSTEM="${{ matrix.arch.nix_system }}"
 
           # Get store path for this build
           STORE_PATH=$(nix eval --raw ".#psql_${PG_VERSION}/bin.outPath")
 
           # Each postgres version gets its own catalog file (no race conditions)
-          CATALOG_S3="s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-psql_${PG_VERSION}.json"
+          CATALOG_S3="s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-psql_${PG_VERSION}-${SYSTEM}.json"
 
           # Create catalog JSON for this version
           jq -n \
@@ -225,12 +260,12 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          name: ${{ steps.process_release_version.outputs.version }}
-          tag_name: ${{ steps.process_release_version.outputs.version }}
+          name: ${{ steps.arch_version.outputs.release_tag }}
+          tag_name: ${{ steps.arch_version.outputs.release_tag }}
           target_commitish: ${{github.sha}}
 
       - name: Create CLI tag for PG 17
-        if: matrix.postgres_version == '17' && github.event_name != 'workflow_dispatch'
+        if: matrix.postgres_version == '17' && matrix.arch.name == 'arm64' && github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -240,7 +275,19 @@ jobs:
           git tag "${CLI_TAG}" "${{ github.sha }}"
           git push origin "${CLI_TAG}"
 
+      - name: Trigger CLI release workflow for PG 17
+        if: matrix.postgres_version == '17' && github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.process_release_version.outputs.version }}"
+          CLI_TAG="v${VERSION}-cli"
+          gh workflow run cli-release.yml \
+            --ref "${CLI_TAG}" \
+            -f version="${CLI_TAG}"
+
       - name: Trigger pg_upgrade_scripts workflow
+        if: matrix.arch.name == 'arm64'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -249,6 +296,7 @@ jobs:
             -f postgresVersion="${{ steps.process_release_version.outputs.version }}"
 
       - name: Trigger pg_upgrade_bin flake version workflow
+        if: matrix.arch.name == 'arm64'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

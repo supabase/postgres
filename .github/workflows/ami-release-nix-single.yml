@@ -12,6 +12,14 @@ on:
         required: true
         type: string
         default: 'main'
+      arch:
+        description: 'Architecture to build'
+        required: true
+        type: choice
+        options:
+          - arm64
+          - amd64
+        default: arm64
 
 permissions:
   contents: write
@@ -19,7 +27,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: large-linux-arm
+    runs-on: ${{ github.event.inputs.arch == 'amd64' && 'blacksmith-2vcpu-ubuntu-2404' || 'large-linux-arm' }}
     timeout-minutes: 150
 
     steps:
@@ -41,6 +49,26 @@ jobs:
         run: |
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Set arch-specific variables
+        id: arch_vars
+        run: |
+          ARCH="${{ github.event.inputs.arch }}"
+          if [ "$ARCH" = "amd64" ]; then
+            {
+              echo "packer_template=amazon-amd64-nix.pkr.hcl"
+              echo "instance_type=c6i.4xlarge"
+              echo "ami_name_prefix=supabase-postgres-x86"
+              echo "arch_suffix=-x86"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "packer_template=amazon-arm64-nix.pkr.hcl"
+              echo "instance_type=c6g.4xlarge"
+              echo "ami_name_prefix=supabase-postgres"
+              echo "arch_suffix="
+            } >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
@@ -57,6 +85,9 @@ jobs:
           region: us-east-1
           ami_regions: '["us-east-1"]'
           git_sha: ${{ steps.get_sha.outputs.sha }}
+          packer_template: ${{ steps.arch_vars.outputs.packer_template }}
+          instance_type: ${{ steps.arch_vars.outputs.instance_type }}
+          ami_name_prefix: ${{ steps.arch_vars.outputs.ami_name_prefix }}
 
       - name: Grab release version
         id: process_release_version
@@ -86,13 +117,14 @@ jobs:
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ github.event.inputs.postgres_version }}" \
+            -e "arch=${{ github.event.inputs.arch }}" \
             manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 staging
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}${{ steps.arch_vars.outputs.arch_suffix }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}${{ steps.arch_vars.outputs.arch_suffix }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}${{ steps.arch_vars.outputs.arch_suffix }}/upgrade_bundle.tar.gz
 
       - name: configure aws credentials - prod
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
@@ -107,19 +139,20 @@ jobs:
             -e "ami_release_version=${{ steps.process_release_version.outputs.version }}" \
             -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
             -e "postgres_major_version=${{ github.event.inputs.postgres_version }}" \
+            -e "arch=${{ github.event.inputs.arch }}" \
             manifest-playbook.yml
     
       - name: Upload nix flake revision to s3 prod
         run: |
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
-          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_vars.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/20.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_vars.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/24.04.tar.gz
+          aws s3 cp /tmp/pg_binaries.tar.gz s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades${{ steps.arch_vars.outputs.arch_suffix }}/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/upgrade_bundle.tar.gz
 
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          name: ${{ steps.process_release_version.outputs.version }}
-          tag_name: ${{ steps.process_release_version.outputs.version }}
+          name: ${{ steps.process_release_version.outputs.version }}${{ steps.arch_vars.outputs.arch_suffix }}
+          tag_name: ${{ steps.process_release_version.outputs.version }}${{ steps.arch_vars.outputs.arch_suffix }}
           target_commitish: ${{ steps.get_sha.outputs.sha }}
 
       - name: Slack Notification on Failure

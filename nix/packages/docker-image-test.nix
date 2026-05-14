@@ -321,7 +321,7 @@ writeShellApplication {
 
         # 3. pgctld init must succeed with no extra flags (tests USER postgres fix)
         local init_out
-        init_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
+        init_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
         if ! echo "$init_out" | grep -q "initialized successfully"; then
             log_error "  pgctld init failed: $init_out"
             exit 1
@@ -330,7 +330,7 @@ writeShellApplication {
 
         # 4. pgctld start must succeed
         local start_out
-        start_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
+        start_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
         if ! echo "$start_out" | grep -q "started successfully"; then
             log_error "  pgctld start failed: $start_out"
             exit 1
@@ -398,7 +398,9 @@ writeShellApplication {
 
         log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
         docker exec -u postgres "$container" \
-            pg_ctl start -D /etc/postgresql -w -t 60
+            pg_ctl start -D /var/lib/postgresql/data \
+                -o "-c config_file=/etc/postgresql/postgresql.conf" \
+                -w -t 60
 
         log_info "Multigres: running schema migrations..."
         docker exec \

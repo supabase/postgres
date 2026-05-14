@@ -17,6 +17,10 @@
     dest: "/tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz"
     timeout: 60
     url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 - name: PgBouncer - unpack archive
   ansible.builtin.unarchive:
