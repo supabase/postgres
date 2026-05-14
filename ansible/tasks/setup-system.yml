@@ -17,6 +17,7 @@
           - fail2ban
           - htop
           - linux-libc-dev
+          - ncdu
           - net-tools
           - nftables
           - ngrep
