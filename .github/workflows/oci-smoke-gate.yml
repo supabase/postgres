@@ -1,0 +1,130 @@
+name: OCI smoke gate
+
+# Builds the AMI as an OCI image via supabox's support/ami/Dockerfile,
+# brings up the supabox platform stack, and runs supadev-smoke as a
+# fast pre-flight check before the more expensive testinfra/EC2 path.
+#
+# Intent: catch service-level, migration, and contract regressions in
+# ~5-10 min on a GH runner, so that PRs touching ansible/nix/migrations
+# fail fast and never burn EC2 minutes on broken builds.
+#
+# pause-restore.yaml coverage will be added in a follow-up once the
+# upstream test/pause-restore.yaml YAML parse fix lands.
+#
+# Tracked under RELENG-31.
+
+on:
+  pull_request:
+    paths:
+      - 'ansible/**'
+      - 'nix/**'
+      - 'migrations/**'
+      - 'flake.nix'
+      - 'flake.lock'
+      - 'Dockerfile-15'
+      - 'Dockerfile-17'
+      - 'Dockerfile-orioledb-17'
+      - 'Dockerfile-multigres'
+      - 'Dockerfile-kubernetes'
+      - '.github/workflows/oci-smoke-gate.yml'
+  workflow_dispatch:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oci-smoke-gate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 60
+
+    env:
+      # Pinned supabox commit. Bump deliberately; tracks supabox `main`.
+      # Verified locally against this ref on 2026-05-15.
+      SUPABOX_REF: a0fe25c
+
+    steps:
+      - name: Checkout postgres at PR commit
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        with:
+          path: postgres
+
+      - name: Checkout supabox at pinned ref
+        uses: actions/checkout@v4
+        with:
+          repository: supabase/supabox
+          ref: ${{ env.SUPABOX_REF }}
+          path: supabox
+
+      - name: Use this postgres commit from this PR in supabox/repos/postgres
+        run: |
+          set -euo pipefail
+          rm -rf supabox/repos/postgres
+          cp -a postgres supabox/repos/postgres
+          echo "PR postgres SHA inside supabox is: $(git -C supabox/repos/postgres rev-parse HEAD)"
+
+      - name: Install Nix
+        uses: ./postgres/.github/actions/nix-install-ephemeral
+
+      - name: Configure Nix substituter for postgres binary cache
+        run: |
+          sudo tee -a /etc/nix/nix.conf > /dev/null <<'EOF'
+          extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+          extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+          EOF
+          sudo systemctl restart nix-daemon || true
+
+      - name: Initialize supabox in systemd mode
+        working-directory: supabox
+        run: |
+          ./supabox clean  # unnecessary here being a fresh runner, but useful if copied/pasted to a running env
+          ./supabox init systemd,pg17
+
+      - name: Build AMI-as-OCI image
+        working-directory: supabox
+        run: |
+          docker compose build supabase-postgres-17
+
+      - name: Bring platform stack up
+        working-directory: supabox
+        run: |
+          docker compose up -d --wait --wait-timeout 300
+
+      - name: Run supadev-smoke
+        working-directory: supabox
+        run: |
+          mkdir -p diagnostics
+          ./dctest test/supadev-smoke.yaml \
+            --results-file diagnostics/dctest-smoke-results.json \
+            --results-verbose
+
+      - name: Capture supabox state (always)
+        if: always()
+        working-directory: supabox
+        run: |
+          mkdir -p diagnostics/state
+          docker compose ps --all > diagnostics/state/compose-ps.txt 2>&1 || true
+          docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' \
+            > diagnostics/state/docker-ps.txt 2>&1 || true
+
+      - name: Dump container logs on failure
+        if: failure()
+        working-directory: supabox
+        run: |
+          mkdir -p diagnostics/logs
+          for c in $(docker ps -a --format '{{.Names}}'); do
+            docker logs --tail 500 "$c" > "diagnostics/logs/${c}.log" 2>&1 || true
+          done
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oci-smoke-diagnostics-${{ github.run_id }}
+          path: supabox/diagnostics/
+          retention-days: 14
+          if-no-files-found: warn
