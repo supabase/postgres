@@ -87,6 +87,15 @@ let
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
+
+        # For the latest version, create default control file and symlink
+        if [[ "${version}" == "${latestVersion}" ]]; then
+          {
+            echo "default_version = '${version}'"
+            cat $out/share/postgresql/extension/${pname}--${version}.control
+          } > $out/share/postgresql/extension/${pname}.control
+          ln -sfn ${pname}-${version}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+        fi
       '';
 
       meta = with lib; {
@@ -120,19 +129,13 @@ in
 pkgs.buildEnv {
   name = pname;
   paths = packages;
+
   nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
   ];
   postBuild = ''
-    {
-      echo "default_version = '${latestVersion}'"
-      cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
-    } > $out/share/postgresql/extension/${pname}.control
-    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
-
-
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${

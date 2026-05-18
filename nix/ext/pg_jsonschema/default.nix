@@ -49,6 +49,7 @@ let
       # update the following array when the pg_jsonschema version is updated
       # required to ensure that extensions update scripts from previous versions are generated
       previousVersions = [
+        "0.3.3"
         "0.3.1"
         "0.3.0"
         "0.2.0"
@@ -93,6 +94,7 @@ let
           "0.2.0"
           "0.3.1"
           "0.3.3"
+          "0.3.4"
         ]);
 
       preBuild = ''

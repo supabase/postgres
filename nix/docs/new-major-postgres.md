@@ -1,31 +1,158 @@
+# Adding a new major PostgreSQL version
+
+This guide walks through every file that needs to change when adding a new major
+PostgreSQL version (e.g. 18) to the repository. The PostgreSQL 18 branch
+(`feat/pg-18`) is a good reference for the full set of changes.
+
+## 1. Upstream nixpkgs
+
 PostgreSQL versions are managed in upstream nixpkgs.
+[See this example PR](https://github.com/NixOS/nixpkgs/pull/249030) for adding
+a version to nixpkgs. Once the version lands upstream, run `nix flake update` in
+this repository to pull it in.
 
-[See this example PR](https://github.com/NixOS/nixpkgs/pull/249030) to add a
-new version of PostgreSQL; this version is for 16 beta3, but any version is
-roughly the same. In short, you need to:
+## 2. Nix configuration (`nix/config.nix`)
 
-- Add a new version and hash to `nix/config.nix`
-- Possibly patch the source code for minor refactorings
-  - In this example, an old patch had to be rewritten because a function was
-    split into two different functions; the patch is functionally equivalent but
-    textually different
-- Add the changes to `all-packages.nix`
-- Integrate inside the CI and get code review
-- Run `nix flake update` to get a new version, once it's ready
+Add a new entry under `postgresql` with the major version, full version string,
+and source hash:
 
-## Adding the major version to this repository
+```nix
+"18" = {
+  version = "18.3";
+  hash = "sha256-...";
+};
+```
 
-It isn't well abstracted, unfortunately. In short: look for the strings `14` and
-`15` under the nix configuration files. More specifically:
+## 3. Packages (`nix/packages/`)
 
-- Add `psql_XX` to `basePackages` in `nix/packages/postgres.nix`
-- Ditto with `checks` in `nix/checks.nix`
-- Modify the tools under `nix/packages/` to understand the new major version
-- Make sure the CI is integrated under the GitHub Actions.
+Several files need to reference the new version:
 
-The third step and fourth steps are the most annoying, really. The first two are
-easy and by that point you can run `nix flake check` in order to test the build,
-at least.
+### `nix/packages/postgres.nix`
+
+- Define a `dbExtensionsXX` list (can reuse the previous version's if identical,
+  e.g. `dbExtensions18 = dbExtensions17;`).
+- Add an `else if` branch to select those extensions for the new version.
+- Add `psql_XX = makePostgres "XX" { };` to `basePackages`.
+- Add `psql_XX_cli = makePostgres "XX" { variant = "cli"; };` to `cliPackages`.
+
+### `nix/packages/default.nix`
+
+- Pass `psql_XX` to the `lib.nix` and `start-client.nix` callPackage sites.
+
+### `nix/packages/lib.nix`
+
+- Add `psql_XX` to the function arguments and expose `PSQLXX_BINDIR` in the
+  environment.
+
+### `nix/packages/start-client.nix`
+
+- Add `psql_XX` to the inputs and wire it into the version dispatch logic.
+
+### `nix/packages/dbmate-tool.nix`
+
+- Add the new version to the help text and `--restrict-key` conditional.
+
+## 4. Overlays (`nix/overlays/default.nix`)
+
+Add `postgresql_XX` to the `inherit` list so the package is available as an
+overlay.
+
+## 5. Checks (`nix/checks.nix`)
+
+This file has several places that need updating:
+
+- Pass `psql_XX` to `pkgs-lib`.
+- Add version-matching regex (`isXXMatch`) and dispatch branch in the version
+  detection logic.
+- Assign a unique port number for the new version's test server.
+- Add version regex matching for test file filtering (e.g. `builtins.match
+  "18.*" name`).
+- Add version-specific test output filtering (`z_18_.*`).
+- Add `psql_XX` and `psql_XX_cli` check harness entries.
+- Add `postgresql_XX_debug` and `postgresql_XX_src` to the exported packages.
+
+## 6. Extension versions (`nix/ext/versions.json`)
+
+For each extension, either:
+
+- **Add the new major version to an existing version entry's `postgresql` list**
+  if the extension already works with the new PostgreSQL without changes.
+- **Add a new version entry** if the extension needed to be upgraded for
+  compatibility. Include the new hash and any extra fields like `pgrx`/`rust`
+  versions for Rust-based extensions.
+
+Some extensions may need upstream updates to compile against new PostgreSQL
+C API changes. Common examples from the PG 18 effort:
+
+- `pg_cron`, `pgsql-http`, `supautils`, `pg_tle`, `pgaudit` — bumped due to
+  internal PostgreSQL C API changes.
+- `pg_graphql`, `pg_jsonschema` — bumped for pgrx compatibility with the new
+  major version (pgrx version and Rust toolchain may need updating).
+- `pgroonga` / `groonga` — patches may need amending due to line number changes.
+- `pgvector`, `pgtap`, `plpgsql_check`, `rum`, `pg_stat_monitor`, `postgis` —
+  bumped to versions that added PG 18 support.
+
+## 7. Extension nix files (`nix/ext/*.nix`)
+
+Each extension's `.nix` file uses `versions.json` to select a compatible
+version. No per-extension `.nix` changes are needed in most cases — the
+`versions.json` entry is sufficient. However, if an extension fails to build for
+any major version (i.e. no entry in `versions.json` matches), the build will
+fail with an assertion error.
+
+## 8. Test infrastructure
+
+### `nix/ext/tests/lib.nix`
+
+Update version comparisons so the new version gets the correct config
+adjustments (e.g. removing `timescaledb` from `shared_preload_libraries` for
+versions ≥ 17).
+
+### `nix/tools/run-server.sh.in`
+
+- Add an `elif` branch to handle the new version, setting `BINDIR` to the
+  corresponding `@PSQLXX_BINDIR@` substitution.
+- Update help text to list the new version.
+- Add any version-specific config overrides (e.g. disabling `db_user_namespace`,
+  removing unsupported extensions from preload libraries on certain platforms).
+
+### Test expected outputs (`nix/tests/expected/`)
+
+Some tests produce version-specific output. You may need to add new
+`z_XX_*.out` files or alternative expected output files for tests where the
+output differs from previous versions.
+
+## 9. Migration schema (`migrations/`)
+
+Add a `schema-XX.sql` dump generated by running `pg_dump --schema-only` against
+a freshly initialized database of the new version. This is used by the dbmate
+migration tooling.
+
+## 10. Dockerfile
+
+Add a `Dockerfile-XX` for the new version. This can generally be copied from the
+previous version's Dockerfile with the `postgresql_major` build arg updated.
+
+## 11. Ansible (AMI builds)
+
+If the new version will ship in AMI builds:
+
+- Add the version to the `postgres_major` list in `ansible/vars.yml`.
+- Add the full release string to `postgres_release`.
+- Update any version-specific Ansible tasks in `ansible/tasks/setup-postgres.yml`
+  (e.g. config file differences, `supautils.conf` adjustments).
+
+## 12. Verification
+
+After making all changes, run:
+
+```bash
+nix flake check
+```
+
+This builds all packages and runs the test harnesses. Fix any failures
+iteratively — extension build failures are the most common issue and usually
+require bumping the extension version or adjusting patches.
 
 ## Other notes
 

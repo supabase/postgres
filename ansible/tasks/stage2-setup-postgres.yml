@@ -1,15 +1,16 @@
 - name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
-    - name: Check if psql_version is psql_orioledb-17 and if psql_version is psql_15 or psql_17
+    - name: Check if psql_version is psql_orioledb-17 and if psql_version is psql_15 or psql_17 or psql_18
       ansible.builtin.set_fact:
         is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
         is_psql_17: "{{ psql_version in ['psql_17'] }}"
+        is_psql_18: "{{ psql_version in ['psql_18'] }}"
         is_psql_15: "{{ psql_version in ['psql_15'] }}"
 
     - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2_nix
       become: true
       when:
-        - (is_psql_oriole or is_psql_17)
+        - (is_psql_oriole or is_psql_17 or is_psql_18)
         - stage2_nix
       block:
         - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build

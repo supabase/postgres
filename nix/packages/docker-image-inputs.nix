@@ -7,6 +7,7 @@
   # Slim packages used in Docker images
   psql_15_slim,
   psql_17_slim,
+  psql_18_slim,
   psql_orioledb-17_slim,
   # Groonga is also installed in images
   supabase-groonga,
@@ -24,6 +25,7 @@ let
         # Dockerfiles
         (root + "/Dockerfile-15")
         (root + "/Dockerfile-17")
+        (root + "/Dockerfile-18")
         (root + "/Dockerfile-orioledb-17")
         (root + "/Dockerfile-multigres")
 
@@ -55,6 +57,7 @@ let
     # Slim PostgreSQL packages installed in Docker images
     psql_15_slim=${psql_15_slim}
     psql_17_slim=${psql_17_slim}
+    psql_18_slim=${psql_18_slim}
     psql_orioledb-17_slim=${psql_orioledb-17_slim}
 
     # Groonga (installed in all images)
@@ -73,6 +76,7 @@ let
       dockerSources
       psql_15_slim
       psql_17_slim
+      psql_18_slim
       psql_orioledb-17_slim
       supabase-groonga
     ];
@@ -92,6 +96,7 @@ let
       echo "${dockerSources}" >> $out/manifest
       echo "${psql_15_slim}" >> $out/manifest
       echo "${psql_17_slim}" >> $out/manifest
+      echo "${psql_18_slim}" >> $out/manifest
       echo "${psql_orioledb-17_slim}" >> $out/manifest
       echo "${supabase-groonga}" >> $out/manifest
     '';
@@ -125,6 +130,7 @@ writeShellApplication {
           --arg sources "${dockerSources}" \
           --arg psql_15_slim "${psql_15_slim}" \
           --arg psql_17_slim "${psql_17_slim}" \
+          --arg psql_18_slim "${psql_18_slim}" \
           --arg psql_orioledb_17_slim "${psql_orioledb-17_slim}" \
           --arg supabase_groonga "${supabase-groonga}" \
           '{
@@ -134,6 +140,7 @@ writeShellApplication {
             packages: {
               psql_15_slim: $psql_15_slim,
               psql_17_slim: $psql_17_slim,
+              psql_18_slim: $psql_18_slim,
               "psql_orioledb-17_slim": $psql_orioledb_17_slim,
               "supabase-groonga": $supabase_groonga
             }

@@ -3,7 +3,8 @@
 -- (z_<ver>_roles.sql).
 --
 -- Currently those roles are:
--- pg_create_subscription, pg_maintain, pg_use_reserved_connections
+-- pg_create_subscription, pg_maintain, pg_use_reserved_connections,
+-- pg_signal_autovacuum_worker
 
 -- all roles and attributes
 select
@@ -18,14 +19,14 @@ select
   rolbypassrls   ,
   rolvaliduntil
 from pg_roles r
-where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
+where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections', 'pg_signal_autovacuum_worker')
 order by rolname;
 
 select
   rolname,
   rolconfig
 from pg_roles r
-where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
+where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections', 'pg_signal_autovacuum_worker')
 order by rolname;
 
 -- Check all privileges of the roles on the schemas
