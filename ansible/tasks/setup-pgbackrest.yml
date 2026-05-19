@@ -63,7 +63,7 @@
   loop_control:
     loop_var: backrest_dir
   when:
-    - nixpkg_mode
+    - nixpkg_mode or stage2_nix
 
 # supabase-admin-agent opens these log files with O_APPEND|O_WRONLY (no
 # O_CREATE). They must exist before SAA runs; a missing file causes the
@@ -83,7 +83,7 @@
     - /var/log/pgbackrest/wal-push.log
     - /var/log/pgbackrest/wal-fetch.log
   when:
-    - nixpkg_mode
+    - nixpkg_mode or stage2_nix
 
 - name: Symlink pgbackrest.conf
   ansible.legacy.file:
