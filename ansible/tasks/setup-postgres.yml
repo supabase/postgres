@@ -167,6 +167,12 @@
       loop_control:
         loop_var: 'pg_config_item'
 
+    - name: Set data_directory to canonical path on data volume
+      ansible.builtin.lineinfile:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: "^data_directory = '/var/lib/postgresql/data'"
+        line: "data_directory = '/data/pgdata'"
+
     - name: Move read-replica.conf file to /etc/postgresql-custom/read-replica.conf
       ansible.builtin.copy:
         dest: '/etc/postgresql-custom/read-replica.conf'
