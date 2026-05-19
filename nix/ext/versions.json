@@ -326,6 +326,13 @@
         "17"
       ],
       "hash": "sha256-xMYS6VOWxUVErx6bXTvad6Gj7WTudxmiI9k9HzSvMDQ="
+    },
+    "0.20.3": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-uOy/ESRKXngAyDTLHEQ81ZxZCfdtqoP9OxsqzyQJdEY="
     }
   },
   "pgaudit": {
