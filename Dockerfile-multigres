@@ -115,6 +115,7 @@ RUN mkdir -p \
     /usr/lib/postgresql/share/postgresql \
     /usr/share/postgresql \
     /var/lib/postgresql/data \
+    /var/log/postgresql \
     /var/run/postgresql \
     /etc/postgresql \
     /etc/postgresql-custom \
@@ -122,6 +123,7 @@ RUN mkdir -p \
         /usr/lib/postgresql \
         /var/lib/postgresql \
         /usr/share/postgresql \
+        /var/log/postgresql \
         /var/run/postgresql \
         /etc/postgresql \
         /etc/postgresql-custom
@@ -130,7 +132,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/conf.d
-COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-jsonlog.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf /etc/postgresql-custom/wal-g.conf
@@ -197,11 +199,11 @@ RUN chown -R postgres:postgres /usr/lib/postgresql && \
 # Can't use /etc/pgctld because it's a mount point
 COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld-custom/postgresql.conf.tmpl
 
-# Wrapper: injects --postgres-config-template on every pgctld call so the team's
-# unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/postgresql.conf.tmpl "$@"\n' \
-    > /usr/local/bin/pgctld && \
-    chmod +x /usr/local/bin/pgctld
+# Wrapper: injects --postgres-config-template on every pgctld call AND bridges
+# postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
+# kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
+COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/postgresql.conf.tmpl
 
 # Strip extensions absent from pg17 vanilla build
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.conf
@@ -283,11 +285,11 @@ ENV LANGUAGE=C
 # Can't use /etc/pgctld because it's a mount point
 COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
-# Wrapper: injects --postgres-config-template on every pgctld call so the team's
-# unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/orioledb-postgresql.conf.tmpl "$@"\n' \
-    > /usr/local/bin/pgctld && \
-    chmod +x /usr/local/bin/pgctld
+# Wrapper: injects --postgres-config-template on every pgctld call AND bridges
+# postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
+# kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
+COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
 # Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/
 RUN set -e && \
