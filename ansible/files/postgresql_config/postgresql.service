@@ -18,7 +18,7 @@ TimeoutStopSec=90
 TimeoutStartSec=86400
 Restart=always
 RestartSec=5
-OOMScoreAdjust=-1000
+OOMScoreAdjust=0
 EnvironmentFile=-/etc/environment.d/postgresql.env
 LimitNOFILE=16384
 {% if supabase_internal is defined %}
