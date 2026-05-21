@@ -19,7 +19,7 @@
     - name: salt apt repo
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=arm64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
-        filename: "salt.list"
+        filename: "salt"
         state: present
   when: platform == "arm64"
 
@@ -44,7 +44,7 @@
     - name: salt apt repo
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=amd64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
-        filename: "salt.list"
+        filename: "salt"
         state: present
   when: platform == "amd64"
 
