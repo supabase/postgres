@@ -156,6 +156,10 @@ function clean_system {
 	rm -rf /root/.vpython*
 	rm -rf /root/go
 	rm -rf /mnt/usr/share/doc
+
+	# remove passwords in user-data-cloudimg.img (required for Packer login)
+	usermod -p '*' ubuntu
+	usermod -p '*' root
 }
 
 install_nix
