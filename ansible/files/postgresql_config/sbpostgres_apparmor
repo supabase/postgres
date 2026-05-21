@@ -71,6 +71,14 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/bin/nix Pix -> pgbackrest_shell,
     /usr/bin/sudo Pix -> pgbackrest_shell,
 
+    # nix-built postgres popen() may use a nix store sh instead of /bin/sh
+    /nix/store/*/bin/sh Pix -> postgres_shell,
+
+    # SAA called directly from sbpostgres context (e.g. shell Pix fallback)
+    /opt/supabase-admin-agent/supabase-admin-agent Pix -> postgres_shell,
+    /opt/supabase-admin-agent/supabase-admin-agent-linux-arm64 Pix -> postgres_shell,
+    /opt/supabase-admin-agent/supabase-admin-agent-linux-amd64 Pix -> postgres_shell,
+
     profile postgres_shell {
         #include <abstractions/base>
 
@@ -93,6 +101,9 @@ profile sbpostgres flags=(attach_disconnected) {
         # backup things
         /usr/lib/postgresql/bin/pgsodium_getkey.sh ix,
         /usr/bin/admin-mgr ix,
+        /opt/supabase-admin-agent/supabase-admin-agent ix,
+        /opt/supabase-admin-agent/supabase-admin-agent-linux-arm64 ix,
+        /opt/supabase-admin-agent/supabase-admin-agent-linux-amd64 ix,
         /nix/store/*/bin/.postgres-wrapped ix,
         /nix/store/*/bin/wal-g-2 ix,
         /nix/store/*/bin/pgbackrest ix,
@@ -136,8 +147,6 @@ profile sbpostgres flags=(attach_disconnected) {
         # tools have network access
         network,
 
-        # Block everything else
-        deny /** x,
     }
 
     profile pgbackrest_shell {
@@ -196,7 +205,5 @@ profile sbpostgres flags=(attach_disconnected) {
         # tools have network access
         network,
 
-        # Block everything else
-        deny /** x,
     }
 }
