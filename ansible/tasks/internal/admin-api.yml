@@ -97,3 +97,10 @@
 
 - name: adminapi - grant extra priviliges to user
   shell: chmod 775 /etc && chmod 775 /etc/kong
+
+- name: Move placeholder customer metadata file into /etc
+  copy:
+    src: "files/customer-meta.json"
+    dest: "/etc/customer-meta.json"
+    mode: "0644"
+    owner: root
