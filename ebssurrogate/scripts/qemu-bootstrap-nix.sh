@@ -156,6 +156,19 @@ function clean_system {
 	rm -rf /root/.vpython*
 	rm -rf /root/go
 	rm -rf /mnt/usr/share/doc
+
+	# remove passwords in user-data-cloudimg.img (required for Packer login)
+	usermod -p '*' ubuntu
+	usermod -p '*' root
+
+  # Ensure that PasswordAuthentication is off
+  # From chroot-boostrap-nix.sh
+  sed -i -E \
+    -e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
+    -e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+    /etc/ssh/sshd_config
+  grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config \
+    || { echo "ERROR: PasswordAuthentication is not disabled in sshd_config"; exit 1; }
 }
 
 install_nix
