@@ -51,8 +51,6 @@ jobs:
         working-directory: /tmp/
         run: |
           mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
-          # TODO (darora): temporary to test .121
-          GITHUB_SHA=ed0c0e626a75b4f0a1d9678e8cf4040a6ca7f716
           echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
           tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
@@ -103,8 +101,6 @@ jobs:
         working-directory: /tmp/
         run: |
           mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
-          # TODO (darora): temporary to test .121
-          GITHUB_SHA=ed0c0e626a75b4f0a1d9678e8cf4040a6ca7f716
           echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
           tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
