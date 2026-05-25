@@ -120,6 +120,13 @@ jobs:
           else
             echo "No packer build instances to clean up"
           fi
+          VOLUME_IDS=$(aws ec2 --region ap-southeast-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
+          if [ -n "$VOLUME_IDS" ]; then
+            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
+            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region ap-southeast-1 delete-volume --volume-id
+          else
+            echo "No orphaned packer volumes to clean up"
+          fi
 
       - name: Cleanup resources after build
         if: ${{ always() }}
@@ -131,6 +138,13 @@ jobs:
             echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
           else
             echo "No testinfra instances to clean up"
+          fi
+          VOLUME_IDS=$(aws ec2 --region ap-southeast-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
+          if [ -n "$VOLUME_IDS" ]; then
+            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
+            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region ap-southeast-1 delete-volume --volume-id || true
+          else
+            echo "No orphaned packer volumes to clean up"
           fi
 
       - name: Cleanup stage 2 AMI

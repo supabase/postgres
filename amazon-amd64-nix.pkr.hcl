@@ -152,8 +152,9 @@ source "amazon-ebssurrogate" "source" {
     packerExecutionId = "${var.packer-execution-id}"
   }
   run_volume_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
     creator = "packer"

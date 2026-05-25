@@ -165,15 +165,24 @@ jobs:
           SLACK_MESSAGE: 'Building Postgres AMI failed'
           SLACK_FOOTER: ''
 
+      - name: configure aws credentials for cleanup
+        if: ${{ always() }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: "us-east-1"
+
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
           EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
+          aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
+          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
           EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids 
+          aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
+          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id
 
