@@ -8,7 +8,7 @@ on:
 
 jobs:
   cleanup:
-    name: Delete stale supadevci EC2 instances
+    name: Delete stale packer EC2 instances
     runs-on: ubuntu-latest
     strategy:
       matrix:
