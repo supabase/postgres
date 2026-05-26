@@ -183,8 +183,8 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 
 
 ## Primary Features
-- ✅ Postgres [postgresql-15.14](https://www.postgresql.org/docs/15/index.html)
-- ✅ Postgres [postgresql-17.6](https://www.postgresql.org/docs/17/index.html)
+- ✅ Postgres [postgresql-15.18](https://www.postgresql.org/docs/15/index.html)
+- ✅ Postgres [postgresql-17.10](https://www.postgresql.org/docs/17/index.html)
 - ✅ Postgres [orioledb-postgresql-17_11](https://github.com/orioledb/orioledb)
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
