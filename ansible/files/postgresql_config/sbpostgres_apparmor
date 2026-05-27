@@ -24,13 +24,12 @@ profile sbpostgres flags=(attach_disconnected) {
     # lock permission for pgroonga
     /data/pgdata/pgroonga.log k,
 
-    # Systemd notification socket (for Type=notify services)
-    /run/systemd/notify w,
-    /{,var/}run/systemd/notify w,
+    # WAL directory - needs link permission for segment recycling
+    /data/pgdata/pg_wal/** rwkl,
+    /data/pgdata/pg_wal/  rw,
 
-    # Allow disconnected paths (for mount namespaces)
-    @{run}/systemd/notify w,
-    /run/systemd/notify w,
+    # Systemd notification socket (for Type=notify services)
+    /{,var/}run/systemd/notify w,
 
     # Full network access
     network inet stream,
@@ -50,6 +49,8 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/bin/false ix,
     # kill needed for postgresql to reload itself
     /bin/kill ix,
+    /usr/bin/kill ix,
+    signal (send) set=(hup) peer=unconfined,
 
     # When parent executes shell, transition to restricted profile
     # This accounts for popen, which postgres uses for any child process
@@ -71,7 +72,15 @@ profile sbpostgres flags=(attach_disconnected) {
     /usr/bin/nix Pix -> pgbackrest_shell,
     /usr/bin/sudo Pix -> pgbackrest_shell,
 
-    profile postgres_shell {
+    # nix-built postgres popen() may use a nix store sh instead of /bin/sh
+    /nix/store/*/bin/sh Pix -> postgres_shell,
+
+    # SAA called directly from sbpostgres context (e.g. shell Pix fallback)
+    /opt/supabase-admin-agent/supabase-admin-agent Pix -> postgres_shell,
+    /opt/supabase-admin-agent/supabase-admin-agent-linux-arm64 Pix -> postgres_shell,
+    /opt/supabase-admin-agent/supabase-admin-agent-linux-amd64 Pix -> postgres_shell,
+
+  profile postgres_shell {
         #include <abstractions/base>
 
         /usr/bin/* m,
@@ -93,10 +102,14 @@ profile sbpostgres flags=(attach_disconnected) {
         # backup things
         /usr/lib/postgresql/bin/pgsodium_getkey.sh ix,
         /usr/bin/admin-mgr ix,
+        /opt/supabase-admin-agent/supabase-admin-agent ix,
+        /opt/supabase-admin-agent/supabase-admin-agent-linux-arm64 ix,
+        /opt/supabase-admin-agent/supabase-admin-agent-linux-amd64 ix,
         /nix/store/*/bin/.postgres-wrapped ix,
         /nix/store/*/bin/wal-g-2 ix,
         /nix/store/*/bin/pgbackrest ix,
         /nix/store/*/bin/pg_dump ix,
+        /nix/store/*/bin/pg_archivecleanup ix,
 
         # file path permissions
         /** r,
@@ -104,6 +117,8 @@ profile sbpostgres flags=(attach_disconnected) {
         /tmp/wal_fetch_dir/ rw,
         /var/lib/postgresql/data rw,
         /data/pgdata rw,
+        /data/pgdata/pg_wal/** rwkl,
+        /data/pgdata/pg_wal/  rw,
         /data/latest-lsn-checkpoint-v2 rw,
         /data/previous-lsn-checkpoint-v2 rw,
         /var/lib/postgresql/data/recovery.signal rw,
@@ -136,11 +151,9 @@ profile sbpostgres flags=(attach_disconnected) {
         # tools have network access
         network,
 
-        # Block everything else
-        deny /** x,
     }
 
-    profile pgbackrest_shell {
+  profile pgbackrest_shell {
         #include <abstractions/base>
 
         /usr/bin/* m,
@@ -167,6 +180,8 @@ profile sbpostgres flags=(attach_disconnected) {
         /tmp/wal_fetch_dir/ rw,
         /var/lib/postgresql/data rw,
         /data/pgdata rw,
+        /data/pgdata/pg_wal/** rwkl,
+        /data/pgdata/pg_wal/  rw,
         /data/latest-lsn-checkpoint-v2 rw,
         /data/previous-lsn-checkpoint-v2 rw,
         /var/lib/postgresql/data/recovery.signal rw,
@@ -196,7 +211,5 @@ profile sbpostgres flags=(attach_disconnected) {
         # tools have network access
         network,
 
-        # Block everything else
-        deny /** x,
     }
 }
