@@ -349,7 +349,7 @@ writeShellApplication {
 
             # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
-            spl=$(docker exec "$container" sh -c "
+            spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
                     -tAc \"SHOW shared_preload_libraries;\" 2>&1") || true
             if ! echo "$spl" | grep -q "orioledb"; then
@@ -361,7 +361,7 @@ writeShellApplication {
 
             # 7. default_table_access_method must be orioledb
             local tam
-            tam=$(docker exec "$container" sh -c "
+            tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
                     -tAc \"SHOW default_table_access_method;\" 2>&1") || true
             if ! echo "$tam" | grep -q "orioledb"; then
