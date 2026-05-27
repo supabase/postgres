@@ -559,3 +559,29 @@ drop role supabase_tmp;
 commit;
 EOSQL
 }
+
+function guard_for_state() {
+  local service_name="$1"
+  if [ -d /opt/supabase-state ]; then
+    echo "$service_name" >> /opt/supabase-state/guard
+  fi
+}
+
+function unguard_for_state() {
+  if [ -f /opt/supabase-state/guard ]; then
+    rm -f /opt/supabase-state/guard
+  fi
+}
+
+function stop_service_if_exists() {
+  local service_name="$1"
+  if systemctl cat "$service_name" >/dev/null 2>&1; then
+    systemctl stop "$service_name"
+  fi
+}
+
+function setup_state() {
+  if [ -f /opt/supabase-state/supabase-state ]; then
+    /opt/supabase-state/supabase-state setup --fix-perms --start-services
+  fi
+}

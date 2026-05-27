@@ -9,7 +9,16 @@
 
 set -euo pipefail
 
+SCRIPT_DIR=$(dirname -- "$0";)
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/common.sh"
+
 systemctl stop postgresql
 
 cp /etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+
+guard_for_state "adminapi"
+guard_for_state "envoy"
+stop_service_if_exists supabase-state.service
+
 umount /data

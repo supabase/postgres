@@ -242,6 +242,8 @@ function complete_pg_upgrade {
 
     echo "running" > /tmp/pg-upgrade-status
 
+    guard_for_state "postgresql"
+
     echo "1. Mounting data disk"
     if [ -z "$IS_CI" ]; then
         # Let udev finish detecting the vollume before mounting
@@ -260,6 +262,7 @@ function complete_pg_upgrade {
         echo "Skipping mount -a -v"
     fi
 
+    setup_state
     # copying custom configurations
     echo "2. Copying custom configurations"
     retry 3 copy_configs
@@ -308,6 +311,8 @@ function complete_pg_upgrade {
 
     echo "6. Starting vacuum analyze"
     retry 3 start_vacuum_analyze
+
+    unguard_for_state
 }
 
 function copy_configs {
