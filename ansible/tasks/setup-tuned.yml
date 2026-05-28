@@ -51,7 +51,7 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: 'transparent_hugepafges'
+        option: 'transparent_hugepages'
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
         section: vm
         state: 'present'
