@@ -525,10 +525,16 @@ writeShellApplication {
         fi
         log_info "Container will access mock server at $HTTP_MOCK_HOST:$HTTP_MOCK_PORT"
 
-        # Select the appropriate prime.sql for this image variant
+        # Select the appropriate prime.sql for this image variant.
+        # The multigres variant bundles its own complete prime file
+        # (prime-multigres.sql); the standard variant needs prime.sql plus
+        # prime-superuser.sql for the extensions excluded from supautils'
+        # privileged_extensions list.
         local prime_sql="$TESTS_DIR/prime.sql"
+        local prime_superuser_sql="$TESTS_DIR/prime-superuser.sql"
         if [[ "$VERSION" == multigres-* ]]; then
             prime_sql="$TESTS_DIR/prime-multigres.sql"
+            prime_superuser_sql=""
         fi
 
         log_info "Running prime.sql to enable extensions..."
@@ -542,6 +548,21 @@ writeShellApplication {
             -f "$prime_sql" 2>&1; then
             log_error "Failed to run prime.sql"
             exit 1
+        fi
+
+        if [[ -n "$prime_superuser_sql" ]]; then
+            log_info "Running prime-superuser.sql for supautils-gated extensions..."
+            if ! PGPASSWORD="$POSTGRES_PASSWORD" "$PSQL_PATH" \
+                -h localhost \
+                -p "$PORT" \
+                -U "$POSTGRES_USER" \
+                -d "$POSTGRES_DB" \
+                -v ON_ERROR_STOP=1 \
+                -X \
+                -f "$prime_superuser_sql" 2>&1; then
+                log_error "Failed to run prime-superuser.sql"
+                exit 1
+            fi
         fi
 
         log_info "Creating test_config table..."
