@@ -144,7 +144,7 @@
       vars:
         cmdline_thp: 'transparent_hugepage=never'
         cmdline_zswap: "{{ 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10' if ansible_facts['swaptotal_mb'] > 0 else '' }}"
-        final_cmdline: "{{ cmdline_thp }} {{ cmdline_zswap }}"
+        final_cmdline: "{{ [cmdline_thp, cmdline_zswap] | reject('equalto', '') | list | join(' ') }}"
         
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
