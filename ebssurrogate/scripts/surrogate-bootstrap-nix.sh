@@ -364,7 +364,21 @@ function clean_system {
 	# Copy cleanup scripts
 	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/90-cleanup.sh
+	set +e
 	chroot /mnt /tmp/90-cleanup.sh
+	cleanup_rc=$?
+	set -e
+	echo "=============================================="
+	echo "[diagnostic] 90-cleanup.sh exit code: ${cleanup_rc}"
+	echo "[diagnostic] Last 300 lines of /mnt/tmp/90-cleanup.log:"
+	echo "=============================================="
+	tail -n 300 /mnt/tmp/90-cleanup.log 2>/dev/null || echo "[diagnostic] no log file present"
+	echo "=============================================="
+	echo "[diagnostic] end of 90-cleanup.log tail"
+	echo "=============================================="
+	if [ "${cleanup_rc}" -ne 0 ]; then
+		exit "${cleanup_rc}"
+	fi
 
 	# Cleanup logs
 	rm -rf /mnt/var/log/*
