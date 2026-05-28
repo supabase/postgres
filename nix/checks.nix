@@ -452,6 +452,13 @@
                     pg_ctl -D "$PGTAP_CLUSTER" stop
                     exit 1
                   fi
+                  log info "Loading prime-superuser SQL file (extensions excluded from supautils privileged list)"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime-superuser.sql}; then
+                    log error "Error executing prime-superuser SQL file. PostgreSQL log content:"
+                    cat "$PGTAP_CLUSTER"/postgresql.log
+                    pg_ctl -D "$PGTAP_CLUSTER" stop
+                    exit 1
+                  fi
                 fi
 
                 # Create a table to store test configuration
@@ -505,6 +512,11 @@
                   log info "Loading prime SQL file (full extension set)"
                   if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
                     log error "Error executing SQL file"
+                    exit 1
+                  fi
+                  log info "Loading prime-superuser SQL file (extensions excluded from supautils privileged list)"
+                  if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime-superuser.sql} 2>&1; then
+                    log error "Error executing prime-superuser SQL file"
                     exit 1
                   fi
                 fi
