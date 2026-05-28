@@ -141,7 +141,7 @@
             group: 'root'
             mode: '0644'
             no_extra_spaces: true
-            option: 'cmdline_zswap'
+            option: 'cmdline'
             path: '/etc/tuned/profiles/postgresql/tuned.conf'
             section: 'bootloader'
             state: 'present'
