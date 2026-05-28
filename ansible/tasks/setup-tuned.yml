@@ -145,7 +145,7 @@
             path: '/etc/tuned/profiles/postgresql/tuned.conf'
             section: 'bootloader'
             state: 'present'
-            value: 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10'
+            value: 'transparent_hugepage=never zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10'
 
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
