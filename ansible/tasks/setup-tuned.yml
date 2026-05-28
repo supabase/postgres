@@ -129,7 +129,7 @@
           loop_control:
             loop_var: 'zswap_item'
 
-    - name: tuned - Adjust the bootload cmdline options
+    - name: tuned - Adjust the bootloader cmdline options
       become: true
       community.general.ini_file:
         create: true
