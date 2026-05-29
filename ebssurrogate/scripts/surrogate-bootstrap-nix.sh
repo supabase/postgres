@@ -544,12 +544,12 @@ create_swapfile
 format_build_partition
 #pull_docker
 setup_chroot_environment
-enable_amd64_build_diagnostics
 start_amd64_watchdog
 #download_ccache
 amd64_phase "before execute_playbook"
 execute_playbook
 amd64_phase "after execute_playbook"
+enable_amd64_build_diagnostics
 amd64_phase "before update_systemd_services"
 update_systemd_services
 amd64_phase "after update_systemd_services"
