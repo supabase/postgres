@@ -364,6 +364,29 @@ function clean_system {
 	# Copy cleanup scripts
 	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/90-cleanup.sh
+
+	# [diagnostic] pre-chroot isolation test for `chmod 1777 /tmp`
+	# The full 90-cleanup.sh wraps stdout/stderr through `tee` via process
+	# substitution, which may itself be hiding or perturbing the failure.
+	# Run the suspect command in a plain chroot bash with no wrapping so we
+	# can tell whether chmod itself is failing or our instrumentation is.
+	echo "==[diag pre-chroot]== inspect /tmp and run chmod 1777 /tmp directly"
+	set +e
+	chroot /mnt /bin/bash -c '
+		set -x
+		uname -a || true
+		type chmod || true
+		ls -lad /tmp || true
+		stat -f -c "fs=%T mountpoint=%n" /tmp 2>/dev/null || stat -f /tmp 2>/dev/null || true
+		mount | grep " on /tmp" || true
+		/bin/chmod 1777 /tmp
+		echo "chmod_rc=$?"
+		ls -lad /tmp || true
+	'
+	pre_rc=$?
+	set -e
+	echo "==[diag pre-chroot]== returned ${pre_rc}"
+
 	set +e
 	chroot /mnt /tmp/90-cleanup.sh
 	cleanup_rc=$?
