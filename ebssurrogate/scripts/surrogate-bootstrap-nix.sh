@@ -55,10 +55,14 @@ function enable_amd64_build_diagnostics {
 
 	echo "==[amd64-diagnostic]== enabling build-time swap"
 	if ! swapon --show=NAME --noheadings | grep -qx "/mnt/tmp/build-swapfile"; then
-		fallocate -l 16G /mnt/tmp/build-swapfile
-		chmod 600 /mnt/tmp/build-swapfile
-		mkswap /mnt/tmp/build-swapfile
-		swapon /mnt/tmp/build-swapfile
+		if fallocate -l 4G /mnt/tmp/build-swapfile; then
+			chmod 600 /mnt/tmp/build-swapfile
+			mkswap /mnt/tmp/build-swapfile
+			swapon /mnt/tmp/build-swapfile
+		else
+			echo "==[amd64-diagnostic]== unable to allocate build swap; continuing without it"
+			rm -f /mnt/tmp/build-swapfile
+		fi
 	fi
 	swapon --show
 	free -h
