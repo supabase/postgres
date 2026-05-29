@@ -18,6 +18,10 @@ set -o xtrace
 dump_diag_on_exit() {
 	rc=$?
 	set +e +o pipefail +x
+	if [ "${ARCH:-}" != "amd64" ]; then
+		return 0
+	fi
+
 	echo "===================================================================="
 	echo "[exit-trap] bash exiting with code $rc"
 	echo "===================================================================="
@@ -27,12 +31,10 @@ dump_diag_on_exit() {
 	df -h 2>&1 || true
 	echo "[exit-trap] --- df -i (inodes) ---"
 	df -i 2>&1 || true
-	echo "[exit-trap] --- dmesg tail (kernel OOM-kill, ENOSPC, panics) ---"
-	dmesg 2>&1 | tail -n 100 || true
-	echo "[exit-trap] --- /tmp/ansible.log tail (last 200 lines) ---"
-	tail -n 200 /tmp/ansible.log 2>&1 || echo "(no /tmp/ansible.log)"
-	echo "[exit-trap] --- /mnt/tmp/90-cleanup.log tail (last 200 lines) ---"
-	tail -n 200 /mnt/tmp/90-cleanup.log 2>&1 || echo "(no /mnt/tmp/90-cleanup.log)"
+	echo "[exit-trap] --- top memory processes (command names only) ---"
+	ps -eo pid,ppid,comm,%mem,rss --sort=-rss | head -20 || true
+	echo "[exit-trap] --- sanitized kernel signal counts ---"
+	dmesg 2>/dev/null | grep -Eic 'out of memory|oom|killed process|kernel panic|panic|ext4|i/o error|no space left' || true
 	echo "===================================================================="
 	echo "[exit-trap] end. final code: $rc"
 	echo "===================================================================="
@@ -45,6 +47,58 @@ then
 else
 	ARCH="arm64";
 fi
+
+function enable_amd64_build_diagnostics {
+	if [ "${ARCH}" != "amd64" ]; then
+		return 0
+	fi
+
+	echo "==[amd64-diagnostic]== enabling build-time swap"
+	if ! swapon --show=NAME --noheadings | grep -qx "/mnt/tmp/build-swapfile"; then
+		fallocate -l 16G /mnt/tmp/build-swapfile
+		chmod 600 /mnt/tmp/build-swapfile
+		mkswap /mnt/tmp/build-swapfile
+		swapon /mnt/tmp/build-swapfile
+	fi
+	swapon --show
+	free -h
+
+	echo "==[amd64-diagnostic]== disabling OOM panic for diagnostic run"
+	sysctl -w vm.panic_on_oom=0 || true
+	sysctl -w kernel.panic=0 || true
+}
+
+function start_amd64_watchdog {
+	if [ "${ARCH}" != "amd64" ]; then
+		return 0
+	fi
+
+	(
+		set +e +o pipefail +x
+		while true; do
+			echo "==[amd64-watchdog $(date -Is)]=="
+			free -h || true
+			swapon --show || true
+			df -h / /mnt /mnt/tmp /mnt/data 2>&1 || true
+			df -i / /mnt /mnt/tmp /mnt/data 2>&1 || true
+			ps -eo pid,ppid,comm,%mem,rss --sort=-rss | head -20 || true
+			sleep 15
+		done
+	) &
+	WATCHDOG_PID=$!
+}
+
+function stop_amd64_watchdog {
+	if [ -n "${WATCHDOG_PID:-}" ]; then
+		kill "${WATCHDOG_PID}" 2>/dev/null || true
+	fi
+}
+
+function amd64_phase {
+	if [ "${ARCH}" = "amd64" ]; then
+		echo "==[phase] $1 $(date -Is)=="
+	fi
+}
 
 # Mirror fallback function for resilient apt-get update
 function apt_update_with_fallback {
@@ -486,9 +540,18 @@ create_swapfile
 format_build_partition
 #pull_docker
 setup_chroot_environment
+enable_amd64_build_diagnostics
+start_amd64_watchdog
 #download_ccache
+amd64_phase "before execute_playbook"
 execute_playbook
+amd64_phase "after execute_playbook"
+amd64_phase "before update_systemd_services"
 update_systemd_services
+amd64_phase "after update_systemd_services"
 #upload_ccache
+amd64_phase "before clean_system"
 clean_system
+amd64_phase "after clean_system"
+stop_amd64_watchdog
 umount_reset_mappings
