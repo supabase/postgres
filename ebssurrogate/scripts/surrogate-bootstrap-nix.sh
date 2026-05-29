@@ -8,7 +8,6 @@
 
 set -o errexit
 set -o pipefail
-set -o xtrace
 
 # [diagnostic exit-trap] capture state at exit regardless of where bash dies.
 # Fires on success and failure. No behavior change on success.
@@ -80,13 +79,12 @@ function start_amd64_watchdog {
 	(
 		set +e +o pipefail +x
 		while true; do
-			echo "==[amd64-watchdog $(date -Is)]=="
-			free -h || true
-			swapon --show || true
-			df -h / /mnt /mnt/tmp /mnt/data 2>&1 || true
-			df -i / /mnt /mnt/tmp /mnt/data 2>&1 || true
-			ps -eo pid,ppid,comm,%mem,rss --sort=-rss | head -20 || true
-			sleep 15
+			mem_available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo unknown)
+			root_used=$(df -P / 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
+			mnt_used=$(df -P /mnt 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
+			tmp_used=$(df -P /mnt/tmp 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
+			echo "==[amd64-watchdog $(date -Is)] mem_available_kb=${mem_available_kb} root=${root_used} mnt=${mnt_used} tmp=${tmp_used}=="
+			sleep 60
 		done
 	) &
 	WATCHDOG_PID=$!
