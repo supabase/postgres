@@ -10,6 +10,35 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+# [diagnostic exit-trap] capture state at exit regardless of where bash dies.
+# Fires on success and failure. No behavior change on success.
+# Goal: identify which command exits 123 by capturing resource state,
+# kernel dmesg (OOM-kill / ENOSPC), and the tail of ansible.log + 90-cleanup.log
+# at the exact moment of exit.
+dump_diag_on_exit() {
+	rc=$?
+	set +e +o pipefail +x
+	echo "===================================================================="
+	echo "[exit-trap] bash exiting with code $rc"
+	echo "===================================================================="
+	echo "[exit-trap] --- free -h ---"
+	free -h 2>&1 || true
+	echo "[exit-trap] --- df -h ---"
+	df -h 2>&1 || true
+	echo "[exit-trap] --- df -i (inodes) ---"
+	df -i 2>&1 || true
+	echo "[exit-trap] --- dmesg tail (kernel OOM-kill, ENOSPC, panics) ---"
+	dmesg 2>&1 | tail -n 100 || true
+	echo "[exit-trap] --- /tmp/ansible.log tail (last 200 lines) ---"
+	tail -n 200 /tmp/ansible.log 2>&1 || echo "(no /tmp/ansible.log)"
+	echo "[exit-trap] --- /mnt/tmp/90-cleanup.log tail (last 200 lines) ---"
+	tail -n 200 /mnt/tmp/90-cleanup.log 2>&1 || echo "(no /mnt/tmp/90-cleanup.log)"
+	echo "===================================================================="
+	echo "[exit-trap] end. final code: $rc"
+	echo "===================================================================="
+}
+trap dump_diag_on_exit EXIT
+
 if [ $(dpkg --print-architecture) = "amd64" ];
 then
 	ARCH="amd64";
@@ -364,76 +393,6 @@ function clean_system {
 	# Copy cleanup scripts
 	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/90-cleanup.sh
-
-	# [diagnostic micro-tests] isolate which dimension of the failing chroot
-	# call is actually broken. Each tests one variable; output is also captured
-	# to host-side files so we can `cat` them after, even if the SSH output
-	# stream is severing.
-
-	echo "==[diag A]== /mnt rootfs inspection"
-	ls -la /mnt/bin/bash /mnt/usr/bin/chmod /mnt/bin/chmod /mnt/usr/bin/uname 2>&1 || true
-	mount | grep -E "/mnt(/|$)" || true
-	echo "==[diag A]== done"
-
-	echo "==[diag B]== chroot /bin/echo (most minimal possible)"
-	set +e
-	chroot /mnt /bin/echo "hello-from-echo-no-bash" 2>&1
-	echo "==[diag B]== rc=$?"
-	set -e
-
-	echo "==[diag C]== chroot bash via script file (mirrors line 302 form)"
-	cat > /mnt/tmp/diag-c.sh <<'SCRIPT'
-#!/bin/bash
-echo "diag-c-line-1"
-echo "diag-c-line-2"
-SCRIPT
-	chmod +x /mnt/tmp/diag-c.sh
-	set +e
-	chroot /mnt /tmp/diag-c.sh 2>&1
-	echo "==[diag C]== rc=$?"
-	set -e
-
-	echo "==[diag D]== chroot bash -c with a SINGLE-line arg"
-	set +e
-	chroot /mnt /bin/bash -c 'echo single-line-arg-works; exit 0' 2>&1
-	echo "==[diag D]== rc=$?"
-	set -e
-
-	echo "==[diag E]== chroot bash -c with multi-line arg, redirected to host-side file"
-	set +e
-	chroot /mnt /bin/bash -c '
-echo multi-line-start
-uname -a
-echo multi-line-end
-' > /mnt/tmp/diag-e.log 2>&1
-	e_rc=$?
-	echo "==[diag E]== rc=${e_rc}"
-	echo "==[diag E]== /mnt/tmp/diag-e.log contents:"
-	cat /mnt/tmp/diag-e.log 2>&1 || echo "no log"
-	echo "==[diag E]== end of log"
-	set -e
-
-	# [diagnostic] pre-chroot isolation test for `chmod 1777 /tmp`
-	# The full 90-cleanup.sh wraps stdout/stderr through `tee` via process
-	# substitution, which may itself be hiding or perturbing the failure.
-	# Run the suspect command in a plain chroot bash with no wrapping so we
-	# can tell whether chmod itself is failing or our instrumentation is.
-	echo "==[diag pre-chroot]== inspect /tmp and run chmod 1777 /tmp directly"
-	set +e
-	chroot /mnt /bin/bash -c '
-		set -x
-		uname -a || true
-		type chmod || true
-		ls -lad /tmp || true
-		stat -f -c "fs=%T mountpoint=%n" /tmp 2>/dev/null || stat -f /tmp 2>/dev/null || true
-		mount | grep " on /tmp" || true
-		/bin/chmod 1777 /tmp
-		echo "chmod_rc=$?"
-		ls -lad /tmp || true
-	'
-	pre_rc=$?
-	set -e
-	echo "==[diag pre-chroot]== returned ${pre_rc}"
 
 	set +e
 	chroot /mnt /tmp/90-cleanup.sh
