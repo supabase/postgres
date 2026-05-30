@@ -16,15 +16,5 @@
       ;
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
-
-    cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
-      inherit (final) lib;
-      inherit (final) fetchCrate;
-      inherit (final) openssl;
-      inherit (final) pkg-config;
-      inherit (final) makeRustPlatform;
-      inherit (final) stdenv;
-      inherit (final) rust-bin;
-    };
   };
 }

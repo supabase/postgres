@@ -108,7 +108,7 @@
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
-          inherit (pkgs.cargo-pgrx)
+          inherit (pkgs.callPackages ../cargo-pgrx { })
             cargo-pgrx_0_11_3
             cargo-pgrx_0_12_6
             cargo-pgrx_0_12_9

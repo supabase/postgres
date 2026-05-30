@@ -148,7 +148,7 @@ Use this when the extension requires a newer pgrx version.
 3. **Add cargo-pgrx entry** in `nix/cargo-pgrx/default.nix`:
 
    ```nix
-   cargo-pgrx_0_16_1 = mkCargoPgrx {
+   cargo-pgrx_0_16_1 = {
      version = "0.16.1";
      hash = "";
      cargoHash = "";
