@@ -71,6 +71,16 @@ function enable_amd64_build_diagnostics {
 	sysctl -w kernel.panic=0 || true
 }
 
+function disable_amd64_build_diagnostics {
+	if [ "${ARCH}" != "amd64" ]; then
+		return 0
+	fi
+
+	echo "==[amd64-diagnostic]== disabling build-time swap"
+	swapoff /mnt/tmp/build-swapfile 2>/dev/null || true
+	rm -f /mnt/tmp/build-swapfile
+}
+
 function start_amd64_watchdog {
 	if [ "${ARCH}" != "amd64" ]; then
 		return 0
@@ -552,6 +562,7 @@ amd64_phase "before update_systemd_services"
 update_systemd_services
 amd64_phase "after update_systemd_services"
 #upload_ccache
+disable_amd64_build_diagnostics
 amd64_phase "before clean_system"
 clean_system
 amd64_phase "after clean_system"
