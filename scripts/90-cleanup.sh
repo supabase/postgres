@@ -5,8 +5,6 @@
 # This code is licensed under Apache 2.0 license (see LICENSE.md for details)
 
 set -o errexit
-exec > >(tee -a /tmp/90-cleanup.log) 2>&1
-trap 'echo "[90-cleanup] EXIT $? at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 # Ensure /tmp exists and has the proper permissions before
 # checking for security updates

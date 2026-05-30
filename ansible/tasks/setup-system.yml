@@ -183,14 +183,14 @@
     - name: Set vm.panic_on_oom=1
       ansible.builtin.sysctl:
         name: 'vm.panic_on_oom'
-        reload: false
+        reload: true
         state: 'present'
         value: '1'
 
     - name: Set kernel.panic=10
       ansible.builtin.sysctl:
         name: 'kernel.panic'
-        reload: false
+        reload: true
         state: 'present'
         value: '10'
 
