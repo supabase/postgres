@@ -168,7 +168,7 @@ source "amazon-ebssurrogate" "source" {
   }
 
   communicator = "ssh"
-  ssh_pty = true
+  ssh_pty = false
   ssh_username = "ubuntu"
   ssh_timeout = "5m"
 
