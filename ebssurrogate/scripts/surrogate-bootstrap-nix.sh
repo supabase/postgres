@@ -8,37 +8,7 @@
 
 set -o errexit
 set -o pipefail
-
-# [diagnostic exit-trap] capture state at exit regardless of where bash dies.
-# Fires on success and failure. No behavior change on success.
-# Goal: identify which command exits 123 by capturing resource state,
-# kernel dmesg (OOM-kill / ENOSPC), and the tail of ansible.log + 90-cleanup.log
-# at the exact moment of exit.
-dump_diag_on_exit() {
-	rc=$?
-	set +e +o pipefail +x
-	if [ "${ARCH:-}" != "amd64" ]; then
-		return 0
-	fi
-
-	echo "===================================================================="
-	echo "[exit-trap] bash exiting with code $rc"
-	echo "===================================================================="
-	echo "[exit-trap] --- free -h ---"
-	free -h 2>&1 || true
-	echo "[exit-trap] --- df -h ---"
-	df -h 2>&1 || true
-	echo "[exit-trap] --- df -i (inodes) ---"
-	df -i 2>&1 || true
-	echo "[exit-trap] --- top memory processes (command names only) ---"
-	ps -eo pid,ppid,comm,%mem,rss --sort=-rss | head -20 || true
-	echo "[exit-trap] --- sanitized kernel signal counts ---"
-	dmesg 2>/dev/null | grep -Eic 'out of memory|oom|killed process|kernel panic|panic|ext4|i/o error|no space left' || true
-	echo "===================================================================="
-	echo "[exit-trap] end. final code: $rc"
-	echo "===================================================================="
-}
-trap dump_diag_on_exit EXIT
+set -o xtrace
 
 if [ $(dpkg --print-architecture) = "amd64" ];
 then
@@ -46,71 +16,6 @@ then
 else
 	ARCH="arm64";
 fi
-
-function enable_amd64_build_diagnostics {
-	if [ "${ARCH}" != "amd64" ]; then
-		return 0
-	fi
-
-	echo "==[amd64-diagnostic]== enabling build-time swap"
-	if ! swapon --show=NAME --noheadings | grep -qx "/mnt/tmp/build-swapfile"; then
-		if fallocate -l 4G /mnt/tmp/build-swapfile; then
-			chmod 600 /mnt/tmp/build-swapfile
-			mkswap /mnt/tmp/build-swapfile
-			swapon /mnt/tmp/build-swapfile
-		else
-			echo "==[amd64-diagnostic]== unable to allocate build swap; continuing without it"
-			rm -f /mnt/tmp/build-swapfile
-		fi
-	fi
-	swapon --show
-	free -h
-
-	echo "==[amd64-diagnostic]== disabling OOM panic for diagnostic run"
-	sysctl -w vm.panic_on_oom=0 || true
-	sysctl -w kernel.panic=0 || true
-}
-
-function disable_amd64_build_diagnostics {
-	if [ "${ARCH}" != "amd64" ]; then
-		return 0
-	fi
-
-	echo "==[amd64-diagnostic]== disabling build-time swap"
-	swapoff /mnt/tmp/build-swapfile 2>/dev/null || true
-	rm -f /mnt/tmp/build-swapfile
-}
-
-function start_amd64_watchdog {
-	if [ "${ARCH}" != "amd64" ]; then
-		return 0
-	fi
-
-	(
-		set +e +o pipefail +x
-		while true; do
-			mem_available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo unknown)
-			root_used=$(df -P / 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
-			mnt_used=$(df -P /mnt 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
-			tmp_used=$(df -P /mnt/tmp 2>/dev/null | awk 'NR==2 {print $5}' || echo unknown)
-			echo "==[amd64-watchdog $(date -Is)] mem_available_kb=${mem_available_kb} root=${root_used} mnt=${mnt_used} tmp=${tmp_used}=="
-			sleep 60
-		done
-	) &
-	WATCHDOG_PID=$!
-}
-
-function stop_amd64_watchdog {
-	if [ -n "${WATCHDOG_PID:-}" ]; then
-		kill "${WATCHDOG_PID}" 2>/dev/null || true
-	fi
-}
-
-function amd64_phase {
-	if [ "${ARCH}" = "amd64" ]; then
-		echo "==[phase] $1 $(date -Is)=="
-	fi
-}
 
 # Mirror fallback function for resilient apt-get update
 function apt_update_with_fallback {
@@ -459,22 +364,7 @@ function clean_system {
 	# Copy cleanup scripts
 	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/90-cleanup.sh
-
-	set +e
 	chroot /mnt /tmp/90-cleanup.sh
-	cleanup_rc=$?
-	set -e
-	echo "=============================================="
-	echo "[diagnostic] 90-cleanup.sh exit code: ${cleanup_rc}"
-	echo "[diagnostic] Last 300 lines of /mnt/tmp/90-cleanup.log:"
-	echo "=============================================="
-	tail -n 300 /mnt/tmp/90-cleanup.log 2>/dev/null || echo "[diagnostic] no log file present"
-	echo "=============================================="
-	echo "[diagnostic] end of 90-cleanup.log tail"
-	echo "=============================================="
-	if [ "${cleanup_rc}" -ne 0 ]; then
-		exit "${cleanup_rc}"
-	fi
 
 	# Cleanup logs
 	rm -rf /mnt/var/log/*
@@ -552,19 +442,9 @@ create_swapfile
 format_build_partition
 #pull_docker
 setup_chroot_environment
-start_amd64_watchdog
 #download_ccache
-amd64_phase "before execute_playbook"
 execute_playbook
-amd64_phase "after execute_playbook"
-enable_amd64_build_diagnostics
-amd64_phase "before update_systemd_services"
 update_systemd_services
-amd64_phase "after update_systemd_services"
 #upload_ccache
-disable_amd64_build_diagnostics
-amd64_phase "before clean_system"
 clean_system
-amd64_phase "after clean_system"
-stop_amd64_watchdog
 umount_reset_mappings
