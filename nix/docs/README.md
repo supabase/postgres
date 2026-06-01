@@ -1,5 +1,7 @@
 # Documentation
 
+<!-- Cosmetic no-op marker (PSQL-1230): smoke-test baseline against develop. -->
+
 This directory contains most of the "runbooks" and documentation on how to use
 this repository.
 
