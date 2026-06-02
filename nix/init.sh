@@ -11,10 +11,10 @@ export PGDATABASE=testdb
 export DATABASE_URL="postgresql:///$PGDATABASE?host=$PGHOST&port=$PGPORT"
 mkdir -p $PGHOST
 if [ ! -d $PGDATA ]; then
-    echo 'Initializing postgresql database...'
-    initdb $PGDATA --locale=C --username $PGUSER -A md5 --pwfile=<(echo $PGPASS) --auth=trust
-    echo "listen_addresses='*'" >> $PGDATA/postgresql.conf
-    echo "unix_socket_directories='$PGHOST'" >> $PGDATA/postgresql.conf
-    echo "unix_socket_permissions=0700" >> $PGDATA/postgresql.conf
+	echo 'Initializing postgresql database...'
+	initdb $PGDATA --locale=C --username $PGUSER -A md5 --pwfile=<(echo $PGPASS) --auth=trust
+	echo "listen_addresses='*'" >>$PGDATA/postgresql.conf
+	echo "unix_socket_directories='$PGHOST'" >>$PGDATA/postgresql.conf
+	echo "unix_socket_permissions=0700" >>$PGDATA/postgresql.conf
 fi
 chmod o-rwx $PGDATA
