@@ -18,14 +18,14 @@ fi
 FSTAB_FILE="/etc/fstab"
 BACKUP_FILE="/etc/fstab.bak"
 
+UUID=$(findmnt -no UUID "$MOUNT_POINT" 2>/dev/null || true)
+
 if mountpoint -q "$MOUNT_POINT"; then
   echo "Unmounting $MOUNT_POINT"
   umount "$MOUNT_POINT"
 else
   echo "$MOUNT_POINT is not currently mounted — skipping umount"
 fi
-
-UUID=$(findmnt -no UUID "$MOUNT_POINT" 2>/dev/null || true)
 
 if [[ -n "$UUID" ]]; then
   echo "Removing UUID=$UUID from $FSTAB_FILE"
