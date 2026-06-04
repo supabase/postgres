@@ -4,7 +4,7 @@
 # © 2021 DigitalOcean LLC.
 # This code is licensed under Apache 2.0 license (see LICENSE.md for details)
 
-set -o errexit
+set -ex
 
 # Ensure /tmp exists and has the proper permissions before
 # checking for security updates
