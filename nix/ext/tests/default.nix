@@ -230,6 +230,12 @@ let
           pg_regress_test_name = "${(installedExtension "15").pgRegressTestName or pname}"
           ext_schema = "${(installedExtension "15").defaultSchema or "public"}"
           lib_name = "${(installedExtension "15").libName or pname}"
+          test_all_upgrade_edges = ${
+            if (installedExtension "15").testAllUpgradeEdges or false then "True" else "False"
+          }
+          ext_dir_15 = "${psql_15}/share/postgresql/extension"
+          ext_dir_17 = "${psql_17}/share/postgresql/extension"
+          ext_dir_orioledb = "${orioledb_17}/share/postgresql/extension"
           print(f"Running tests for extension: {lib_name}")
 
           ${builtins.readFile ./lib.py}
@@ -247,6 +253,10 @@ let
               ''
                 with subtest("Check upgrade path with postgresql 15"):
                   test.check_upgrade_path("15")
+
+                if test_all_upgrade_edges:
+                  with subtest("Check all upgrade edges (incl. legacy aliases) with postgresql 15"):
+                    test.check_all_upgrade_edges("15", ext_dir_15)
               ''
             else
               ""
@@ -306,6 +316,10 @@ let
               ''
                 with subtest("Check upgrade path with postgresql 17"):
                   test.check_upgrade_path("17")
+
+                if test_all_upgrade_edges:
+                  with subtest("Check all upgrade edges (incl. legacy aliases) with postgresql 17"):
+                    test.check_all_upgrade_edges("17", ext_dir_17)
               ''
             else
               ""
@@ -333,6 +347,10 @@ let
 
                 with subtest("Check upgrade path with orioledb 17"):
                   test.check_upgrade_path("orioledb-17")
+
+                if test_all_upgrade_edges:
+                  with subtest("Check all upgrade edges (incl. legacy aliases) with orioledb 17"):
+                    test.check_all_upgrade_edges("orioledb-17", ext_dir_orioledb)
 
                 with subtest("Check pg_regress with orioledb 17 after installing the last version"):
                   test.check_pg_regress(Path("${orioledb_17}/lib/pgxs/src/test/regress/pg_regress"), "orioledb-17", pg_regress_test_name)
