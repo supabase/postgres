@@ -10,6 +10,8 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+exec 1>&2
+
 if [ $(dpkg --print-architecture) = "amd64" ]; then
 	ARCH="amd64"
 else
