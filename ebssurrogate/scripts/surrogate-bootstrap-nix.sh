@@ -417,6 +417,10 @@ function upload_ccache {
 
 # Unmount bind mounts
 function umount_reset_mappings {
+	fuser -vm /mnt || true
+	lsof +f -- /mnt || true
+	ls -l /proc/*/root | grep /mnt || true
+
 	umount -l /mnt/dev
 	umount -l /mnt/proc
 	umount -l /mnt/sys
