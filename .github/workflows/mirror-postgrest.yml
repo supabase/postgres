@@ -27,11 +27,28 @@ jobs:
   mirror:
     needs:
       - version
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
-    uses: supabase/cli/.github/workflows/mirror-image.yml@main
-    with:
-      image: postgrest/postgrest:v${{ needs.version.outputs.postgrest_release }}
-    secrets: inherit
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        with:
+          role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
+          aws-region: us-east-1
+      - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        with:
+          registry: public.ecr.aws
+      - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: akhilerm/tag-push-action@85bf542f43f5f2060ef76262a67ee3607cb6db37 # v2.1.0
+        with:
+          src: docker.io/postgrest/postgrest:v${{ needs.version.outputs.postgrest_release }}
+          dst: |
+            public.ecr.aws/supabase/postgrest:v${{ needs.version.outputs.postgrest_release }}
+            ghcr.io/supabase/postgrest:v${{ needs.version.outputs.postgrest_release }}
