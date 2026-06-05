@@ -18,6 +18,13 @@
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
+      # Function to create the pg_isolation_regress package
+      makePgIsolationRegress =
+        version:
+        let
+          postgresqlPackage = self'.packages."postgresql_${version}";
+        in
+        pkgs.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       supascan-pkgs = pkgs.callPackage ./supascan.nix {
         inherit (pkgs) lib;
@@ -67,6 +74,7 @@
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
+          pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {

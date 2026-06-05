@@ -34,7 +34,7 @@
             }:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
-              inherit (self'.packages) pg_regress;
+              inherit (self'.packages) pg_regress pg_isolation_regress;
               getkey-script = pkgs.stdenv.mkDerivation {
                 name = "pgsodium-getkey";
                 buildCommand = ''
@@ -273,6 +273,11 @@
                   testList;
 
               sortedTestList = builtins.sort (a: b: a < b) filteredTestList;
+
+              # Concurrency/isolation specs run via pg_isolation_regress (the stock
+              # PostgreSQL isolation tester). Specs live in tests/isolation/specs/,
+              # expected output in tests/isolation/expected/. Add new spec names here.
+              isolationSpecList = [ "sample_isolation" ];
             in
             pkgs.writeShellApplication rec {
               name = "postgres-${pgpkg.version}-check-harness";
@@ -287,6 +292,7 @@
                 pgpkg
                 pg_prove
                 pg_regress
+                pg_isolation_regress
                 procps
                 start-postgres-server-bin
                 which
@@ -555,6 +561,37 @@
                   exit 1
                 fi
                 log info "pg_regress tests completed successfully"
+
+                # Isolation (concurrency) tests via pg_isolation_regress -- the stock
+                # PostgreSQL isolation tester shipped in the build. Reuses the same
+                # running server as pg_regress (--use-existing). These specs target
+                # core/heap + contrib concurrency behaviour. Skipped on:
+                #   - CLI variants: portable build runs only a test subset.
+                #   - orioledb ships its own isolation suite for its storage-engine 
+                #     concurrency semantics.
+                #shellcheck disable=SC2193
+                if ${lib.boolToString isCliVariant}; then
+                  log info "CLI variant detected - skipping isolation tests"
+                elif [[ "${pgpkg.version}" == *"_"* ]]; then
+                  log info "orioledb variant detected - skipping isolation tests (orioledb has its own isolation suite)"
+                else
+                  log info "Running pg_isolation_regress tests (${builtins.toString (builtins.length isolationSpecList)} specs)"
+                  mkdir -p "$out/isolation_output"
+                  if ! log_cmd pg_isolation_regress \
+                    --use-existing \
+                    --dbname=postgres \
+                    --inputdir=${./tests/isolation} \
+                    --outputdir="$out/isolation_output" \
+                    --host=localhost \
+                    --port=${pgPort} \
+                    --user=supabase_admin \
+                    ${builtins.concatStringsSep " " isolationSpecList} 2>&1; then
+                    log error "pg_isolation_regress tests failed"
+                    cat "$out/isolation_output/output_iso/regression.diffs" 2>/dev/null || cat "$out/isolation_output/regression.diffs" 2>/dev/null || true
+                    exit 1
+                  fi
+                  log info "pg_isolation_regress tests completed successfully"
+                fi
 
                 # Skip migrations tests for CLI variants (they may depend on extensions)
                 if ${lib.boolToString isCliVariant}; then
@@ -890,6 +927,7 @@
             goss
             image-size-analyzer
             pg_regress
+            pg_isolation_regress
             pg-startup-profiler
             supabase-cli
             supascan
