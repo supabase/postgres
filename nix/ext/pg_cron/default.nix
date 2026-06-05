@@ -144,6 +144,11 @@ buildEnv {
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;
     hasBackgroundWorker = true;
+    # pg_cron ships symlinked alias scripts and an empty 1.6 -> 1.6.4
+    # alignment migration to cover legacy/non-canonical extversion strings.
+    # Opt in to scanning and exercising every upgrade edge, not just the
+    # canonical chain from versions.json.
+    testAllUpgradeEdges = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_cron" ];
       "cron.database_name" = "postgres";

@@ -133,6 +133,115 @@ class PostgresExtensionTest(object):
                 self.drop_extension()
                 self.install_extension(version)
 
+    def discover_upgrade_scripts(self, extension_dir: str):
+        """Discover the install scripts and upgrade edges in extension_dir.
+
+        Lists all ``<ext>--*.sql`` scripts, including symlinked alias scripts
+        (without resolving them), and classifies each:
+
+        - ``<ext>--V.sql`` is a base install script for version ``V``.
+        - ``<ext>--A--B.sql`` is an upgrade edge from ``A`` to ``B``.
+
+        Version strings use single dashes and the separator between versions is
+        a double dash, so splitting the filename's version portion on ``--`` is
+        unambiguous (``1.4-1`` stays intact).
+
+        Args:
+            extension_dir: Directory holding the extension's SQL scripts
+
+        Returns:
+            Tuple of (set of base versions, sorted list of (from, to) edges)
+        """
+        listing = self.vm.succeed(
+            f"ls -1 {extension_dir}/{self.extension_name}--*.sql 2>/dev/null || true"
+        ).strip()
+        prefix = f"{self.extension_name}--"
+        suffix = ".sql"
+        bases = set()
+        edges = set()
+        for line in listing.splitlines():
+            name = Path(line).name
+            if not (name.startswith(prefix) and name.endswith(suffix)):
+                continue
+            core = name[len(prefix) : -len(suffix)]
+            parts = core.split("--")
+            if len(parts) == 1 and parts[0]:
+                bases.add(parts[0])
+            elif len(parts) == 2 and parts[0] and parts[1]:
+                edges.add((parts[0], parts[1]))
+        return bases, sorted(edges)
+
+    @staticmethod
+    def _reachable_versions(bases, edges):
+        """Versions installable via ``CREATE EXTENSION ... VERSION 'V'``.
+
+        Postgres can only create a version it can reach from a base install
+        script by following upgrade edges. A version that only ever appears as
+        an edge *source* (e.g. pg_cron ``1.0``, which has no base script and no
+        incoming edge in this packaging) is not installable on a fresh cluster.
+        """
+        reachable = set(bases)
+        changed = True
+        while changed:
+            changed = False
+            for frm, to in edges:
+                if frm in reachable and to not in reachable:
+                    reachable.add(to)
+                    changed = True
+        return reachable
+
+    def check_all_upgrade_edges(self, pg_version: str, extension_dir: str):
+        """Exercise every reachable upgrade edge, canonical and legacy.
+
+        For each ``<ext>--A--B.sql`` script whose source version ``A`` is
+        installable, create version A from scratch and run
+        ``ALTER EXTENSION ... UPDATE TO 'B'``, asserting the resulting version.
+        This covers symlinked alias scripts and empty version-alignment
+        migrations (e.g. the pg_cron 1.6 -> 1.6.4 no-op) that the canonical
+        check_upgrade_path never reaches because they are absent from
+        versions.json.
+
+        Edges whose source version is unreachable (no base script and no
+        incoming edge, so no fresh cluster can sit at it) are skipped and
+        logged. These never lose script coverage: every such script is a
+        symlink to, or shares its body with, a reachable alias edge that does
+        run (pg_cron ``1.0--1.1`` aliases ``1.0.0--1.1.0``; ``1.4.0--1.4.1``
+        shares its body with the reachable ``1.4--1.4-1`` alias).
+
+        The extension is restored to the latest canonical version on exit so
+        the subtests that follow see the expected state.
+
+        Args:
+            pg_version: PostgreSQL version under test (e.g. "15")
+            extension_dir: Directory holding the extension's SQL scripts
+        """
+        bases, edges = self.discover_upgrade_scripts(extension_dir)
+        if not edges:
+            return
+
+        reachable = self._reachable_versions(bases, edges)
+        testable = [edge for edge in edges if edge[0] in reachable]
+        skipped = [edge for edge in edges if edge[0] not in reachable]
+        if skipped:
+            # Surface, never hide, what was not exercised: a source version
+            # with no install path. If a base script is ever added for one of
+            # these, this line is the cue to start covering it directly.
+            print(
+                f"check_all_upgrade_edges: skipping {len(skipped)} edge(s) "
+                f"with unreachable source version: {skipped}"
+            )
+
+        for from_version, to_version in testable:
+            self.drop_extension()
+            self.install_extension(from_version)
+            self.update_extension(to_version)
+
+        # Restore canonical latest so following subtests have expected state
+        self.drop_extension()
+        available = self.versions.get(pg_version, [])
+        if available:
+            self.install_extension(available[-1])
+
     def check_install_last_version(self, pg_version: str) -> str:
         """Test if the install of the last version of the extension works for a given PostgreSQL version.
 
