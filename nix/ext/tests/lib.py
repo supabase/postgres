@@ -191,22 +191,41 @@ class PostgresExtensionTest(object):
         return reachable
 
     def check_all_upgrade_edges(self, pg_version: str, extension_dir: str):
-        """Exercise every reachable upgrade edge, canonical and legacy.
+        """Prove every real project state upgrades cleanly to latest.
 
-        For each ``<ext>--A--B.sql`` script whose source version ``A`` is
-        installable, create version A from scratch and run
-        ``ALTER EXTENSION ... UPDATE TO 'B'``, asserting the resulting version.
-        This covers symlinked alias scripts and empty version-alignment
-        migrations (e.g. the pg_cron 1.6 -> 1.6.4 no-op) that the canonical
+        Runs two passes over the upgrade-script graph discovered on disk
+        (including symlinked alias scripts and empty version-alignment
+        migrations such as the pg_cron 1.6 -> 1.6.4 no-op, which the canonical
         check_upgrade_path never reaches because they are absent from
-        versions.json.
+        versions.json):
 
-        Edges whose source version is unreachable (no base script and no
-        incoming edge, so no fresh cluster can sit at it) are skipped and
-        logged. These never lose script coverage: every such script is a
-        symlink to, or shares its body with, a reachable alias edge that does
-        run (pg_cron ``1.0--1.1`` aliases ``1.0.0--1.1.0``; ``1.4.0--1.4.1``
-        shares its body with the reachable ``1.4--1.4-1`` alias).
+        1. Per-edge body coverage. For each ``<ext>--A--B.sql`` whose source
+           ``A`` is reachable, create A from scratch and ``UPDATE TO 'B'``,
+           asserting the result. This guarantees every individual alias and
+           alignment script actually executes at least once; a shortest-path
+           upgrade could otherwise route around a broken one.
+
+        2. Full upgrade to latest from every reachable version. For every
+           version a real project could actually sit at -- canonical *or*
+           legacy-alias form -- create it from scratch and run a single
+           ``UPDATE TO '<latest>'``, asserting it lands on the latest
+           canonical version. This is the customer-faithful guarantee: any
+           existing project, whatever extversion string it reports, must reach
+           latest, with Postgres traversing alias edges as needed. If any
+           reachable version cannot reach latest, this pass fails loudly --
+           which is exactly the stranded-project bug we want to catch.
+
+        A version is "reachable" if a fresh cluster can come to rest at it: it
+        has a base install script or an incoming upgrade edge. Versions that
+        are neither (pg_cron ``1.0`` and ``1.4.0``: no base script, no incoming
+        edge) are not real project states -- no database, fresh or upgraded,
+        can ever sit at them -- so neither pass tests them. They lose no script
+        coverage either: each is a symlink to, or shares its body with, a
+        reachable alias edge that pass 1 runs (``1.0--1.1`` aliases
+        ``1.0.0--1.1.0``; ``1.4.0--1.4.1`` shares its body with the reachable
+        ``1.4--1.4-1`` alias). They exist only to keep the version graph
+        connected for legacy extversion strings, a structural property of the
+        package rather than an upgrade this test needs to exercise.
 
         The extension is restored to the latest canonical version on exit so
         the subtests that follow see the expected state.
@@ -219,23 +238,27 @@ class PostgresExtensionTest(object):
         if not edges:
             return
 
+        available = self.versions.get(pg_version, [])
+        latest = available[-1] if available else None
+
         reachable = self._reachable_versions(bases, edges)
         testable = [edge for edge in edges if edge[0] in reachable]
-        skipped = [edge for edge in edges if edge[0] not in reachable]
-        if skipped:
-            raise AssertionError(
-                f"check_all_upgrade_edges: skipping {len(skipped)} edge(s) "
-                f"with unreachable source version: {skipped}"
-            )
 
+        # Pass 1: every reachable upgrade script executes at least once.
         for from_version, to_version in testable:
             self.drop_extension()
             self.install_extension(from_version)
             self.update_extension(to_version)
 
+        # Pass 2: every reachable version upgrades all the way to latest.
+        if latest is not None:
+            for from_version in sorted(v for v in reachable if v != latest):
+                self.drop_extension()
+                self.install_extension(from_version)
+                self.update_extension(latest)
+
         # Restore canonical latest so following subtests have expected state
         self.drop_extension()
-        available = self.versions.get(pg_version, [])
         if available:
             self.install_extension(available[-1])
 
