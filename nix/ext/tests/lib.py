@@ -223,10 +223,7 @@ class PostgresExtensionTest(object):
         testable = [edge for edge in edges if edge[0] in reachable]
         skipped = [edge for edge in edges if edge[0] not in reachable]
         if skipped:
-            # Surface, never hide, what was not exercised: a source version
-            # with no install path. If a base script is ever added for one of
-            # these, this line is the cue to start covering it directly.
-            print(
+            raise AssertionError(
                 f"check_all_upgrade_edges: skipping {len(skipped)} edge(s) "
                 f"with unreachable source version: {skipped}"
             )
