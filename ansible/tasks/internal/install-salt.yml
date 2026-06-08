@@ -55,3 +55,14 @@
       - salt-minion={{ salt_version }}
     state: present
     update_cache: yes
+
+- name: Pin salt packages at configured major version
+  ansible.builtin.copy:
+    content: |
+      Package: salt-common salt-minion
+      Pin: version {{ salt_version.split('.')[0] }}.*
+      Pin-Priority: 1001
+    dest: /etc/apt/preferences.d/saltstack-pin
+    owner: root
+    group: root
+    mode: "0644"
