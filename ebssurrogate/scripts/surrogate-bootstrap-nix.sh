@@ -7,8 +7,33 @@
 # Adapted from: https://github.com/jen20/packer-ubuntu-zfs
 
 set -o errexit
+set -o errtrace
 set -o pipefail
 set -o xtrace
+
+DIAGNOSTIC_LOG=/tmp/surrogate-diagnostic.log
+
+function record_event {
+	local event=$1
+	local status=$2
+	local line=$3
+	local step=${4:-}
+
+	printf '[%s] event=%s status=%s line=%s elapsed=%ss step=%s functions=%s\n' \
+		"$(date --iso-8601=ns)" "${event}" "${status}" "${line}" "${SECONDS}" "${step}" "${FUNCNAME[*]}" >>"${DIAGNOSTIC_LOG}"
+}
+
+function run_step {
+	local step=$1
+	shift
+
+	record_event START 0 "${LINENO}" "${step}"
+	"$@"
+	record_event END 0 "${LINENO}" "${step}"
+}
+
+trap 'status=$?; record_event ERR "${status}" "${LINENO}"' ERR
+trap 'status=$?; record_event EXIT "${status}" "${LINENO}"' EXIT
 
 if [ $(dpkg --print-architecture) = "amd64" ]; then
 	ARCH="amd64"
@@ -433,17 +458,17 @@ function umount_reset_mappings {
 	done
 }
 
-waitfor_boot_finished
-install_packages
-device_partition_mappings
-format_and_mount_rootfs
-create_swapfile
-format_build_partition
+run_step waitfor_boot_finished waitfor_boot_finished
+run_step install_packages install_packages
+run_step device_partition_mappings device_partition_mappings
+run_step format_and_mount_rootfs format_and_mount_rootfs
+run_step create_swapfile create_swapfile
+run_step format_build_partition format_build_partition
 #pull_docker
-setup_chroot_environment
+run_step setup_chroot_environment setup_chroot_environment
 #download_ccache
-execute_playbook
-update_systemd_services
+run_step execute_playbook execute_playbook
+run_step update_systemd_services update_systemd_services
 #upload_ccache
-clean_system
-umount_reset_mappings
+run_step clean_system clean_system
+run_step umount_reset_mappings umount_reset_mappings

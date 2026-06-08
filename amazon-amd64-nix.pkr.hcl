@@ -268,4 +268,11 @@ build {
     destination = "/tmp/ansible.log"
     direction = "download"
   }
+
+  error-cleanup-provisioner "shell" {
+    inline = [
+      "echo '===== /tmp/surrogate-diagnostic.log ====='",
+      "sudo test -f /tmp/surrogate-diagnostic.log && sudo cat /tmp/surrogate-diagnostic.log || echo 'surrogate diagnostic log not found'"
+    ]
+  }
 }
