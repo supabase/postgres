@@ -22,7 +22,7 @@ reviews:
     - label: "nix"
       instructions: "Apply when PR modifies Nix packaging: flake.nix, flake.lock, nix/*.nix, overlays, or postgresql derivations."
     - label: "docker"
-      instructions: "Apply when PR changes Dockerfiles (Dockerfile-*), docker/ directory, or container build configuration."
+      instructions: "Apply when PR changes Dockerfiles (Dockerfile-*), or container build configuration."
     - label: "ami"
       instructions: "Apply when PR modifies Packer templates (*.pkr.hcl), AMI builds, QEMU image configuration, or ebssurrogate/."
     - label: "security"
