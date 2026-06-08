@@ -4,7 +4,8 @@
 # © 2021 DigitalOcean LLC.
 # This code is licensed under Apache 2.0 license (see LICENSE.md for details)
 
-set -ex
+set -o errexit
+trap 'status=$?; echo "[90-cleanup] failed at line ${LINENO}: ${BASH_COMMAND} (exit ${status})" >&2' ERR
 
 # Ensure /tmp exists and has the proper permissions before
 # checking for security updates
