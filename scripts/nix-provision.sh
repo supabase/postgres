@@ -5,6 +5,8 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+exec 1>&2
+
 function install_packages {
 	# Setup Ansible on host VM
 	sudo apt-get update && sudo apt-get install -y software-properties-common
