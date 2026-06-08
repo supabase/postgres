@@ -40,6 +40,9 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         target:
+          - arch: amd64
+            instance_type: c6i.4xlarge
+            runner: blacksmith-2vcpu-ubuntu-2404
           - arch: arm64
             instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
