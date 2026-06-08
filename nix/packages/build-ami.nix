@@ -21,6 +21,7 @@ let
         (root + "/scripts")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
+        (root + "/development-amd64.vars.pkr.hcl")
         (root + "/development-arm64.vars.pkr.hcl")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
@@ -53,6 +54,13 @@ writeShellApplication {
     # Parse stage parameter
     STAGE="''${1:-stage1}"
     shift || true  # Remove first arg, ignore error if no args
+
+    ARCH=''${1:-arm64}
+    case $ARCH in
+    amd64 | arm64) shift ;;
+    *) echo "unknown arch passed as second arg, expected (amd64|arm64) got: $ARCH, defaulting to arm64" >&2
+       ARCH=arm64;;
+    esac
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
     PACKER_SOURCES="${packerSources}"
@@ -114,7 +122,7 @@ writeShellApplication {
       cd "$PACKER_SOURCES"
       packer init "$@"
       packer build \
-        -var-file="development-arm64.vars.pkr.hcl" \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
@@ -147,7 +155,7 @@ writeShellApplication {
 
       packer init stage2-nix-psql.pkr.hcl
       packer build \
-        -var-file="development-arm64.vars.pkr.hcl" \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
         -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
