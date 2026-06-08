@@ -397,7 +397,7 @@ function clean_system {
 	mkdir /mnt/var/log/audit
 
 	# unwanted files
-	find /mnt/var/lib/apt/lists -mindepth 1 -delete
+	rm -rf /mnt/var/lib/apt/lists/*
 	rm -rf /mnt/root/.cache
 	rm -rf /mnt/root/.vpython*
 	rm -rf /mnt/root/go
