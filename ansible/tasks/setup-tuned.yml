@@ -51,16 +51,11 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: "{{ thp_item['option'] }}"
+        option: 'transparent_hugepages'
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: "{{ thp_item['section'] }}"
+        section: 'vm'
         state: 'present'
-        value: "{{ thp_item['value'] }}"
-      loop:
-        - { section: 'bootloader', option: 'cmdline',               value: 'transparent_hugepage=never' }
-        - { section: 'vm',         option: 'transparent_hugepages', value: 'never' }
-      loop_control:
-        loop_var: 'thp_item'
+        value: 'never'
 
     - name: tuned - Configure all CPUs for maximum performance
       become: true
@@ -134,19 +129,23 @@
           loop_control:
             loop_var: 'zswap_item'
 
-        - name: tuned - Enable zswap at boot
-          become: true
-          community.general.ini_file:
-            create: true
-            group: 'root'
-            mode: '0644'
-            no_extra_spaces: true
-            option: 'cmdline_zswap'
-            path: '/etc/tuned/profiles/postgresql/tuned.conf'
-            section: 'bootloader'
-            state: 'present'
-            value: 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10'
-
+    - name: tuned - Adjust the bootloader cmdline options
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'cmdline'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'bootloader'
+        state: 'present'
+        value: "{{ final_cmdline }}"
+      vars:
+        cmdline_thp: 'transparent_hugepage=never'
+        cmdline_zswap: "{{ 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10' if ansible_facts['swaptotal_mb'] > 0 else '' }}"
+        final_cmdline: "{{ [cmdline_thp, cmdline_zswap] | reject('equalto', '') | list | join(' ') }}"
+        
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
         daemon_reload: true

@@ -10,25 +10,25 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-  echo "usage: pgdata-chown <to-pgbackrest|to-postgres> <path>" >&2
-  exit 1
+	echo "usage: pgdata-chown <to-pgbackrest|to-postgres> <path>" >&2
+	exit 1
 fi
 
 ACTION="$1"
 TARGET="$2"
 
 REAL=$(realpath "$TARGET")
-if [[ "$REAL" != "/data/pgdata" && "$REAL" != /data/pgdata/* ]]; then
-  echo "error: '${TARGET}' resolves to '${REAL}', which is not under /data/pgdata" >&2
-  exit 1
+if [[ $REAL != "/data/pgdata" && $REAL != /data/pgdata/* ]]; then
+	echo "error: '${TARGET}' resolves to '${REAL}', which is not under /data/pgdata" >&2
+	exit 1
 fi
 
 case "$ACTION" in
-  to-pgbackrest|to-postgres)
-    exec /usr/bin/chown -R "${ACTION:3}:postgres" "$REAL"
-    ;;
-  *)
-    echo "error: unknown action '${ACTION}'; expected to-pgbackrest or to-postgres" >&2
-    exit 1
-    ;;
+to-pgbackrest | to-postgres)
+	exec /usr/bin/chown -R "${ACTION:3}:postgres" "$REAL"
+	;;
+*)
+	echo "error: unknown action '${ACTION}'; expected to-pgbackrest or to-postgres" >&2
+	exit 1
+	;;
 esac

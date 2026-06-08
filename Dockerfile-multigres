@@ -202,7 +202,7 @@ COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld-custom/postgresql.conf.tmpl
 # Wrapper: injects --postgres-config-template on every pgctld call AND bridges
 # postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
 # kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
-COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
 ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/postgresql.conf.tmpl
 
 # Strip extensions absent from pg17 vanilla build
@@ -288,7 +288,7 @@ COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld-custom/orioledb-pos
 # Wrapper: injects --postgres-config-template on every pgctld call AND bridges
 # postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
 # kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
-COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
 ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
 # Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/
