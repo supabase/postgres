@@ -207,7 +207,7 @@ def get_ssh_connection(instance_ip, ssh_identity_file, max_retries=10):
         try:
             # Create SSH client
             ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # codeql[py/paramiko-missing-host-key-validation] - intentional: ephemeral EC2 instances always have unknown host keys in test infra
 
             # Connect with our working parameters
             ssh.connect(
