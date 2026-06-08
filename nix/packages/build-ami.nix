@@ -51,16 +51,19 @@ writeShellApplication {
 
     set -x
 
-    # Parse stage parameter
-    STAGE="''${1:-stage1}"
-    shift || true  # Remove first arg, ignore error if no args
-
-    ARCH=''${1:-arm64}
-    case $ARCH in
-    amd64 | arm64) shift ;;
-    *) echo "unknown arch passed as second arg, expected (amd64|arm64) got: $ARCH, defaulting to arm64" >&2
-       ARCH=arm64;;
+    # Parse required parameters
+    STAGE=''${1:-stage1}
+    case $STAGE in
+    stage1 | stage2) ;;
+    *) echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'" >&2 && exit 1 ;;
     esac
+
+    ARCH=$2
+    case $ARCH in
+    amd64 | arm64) ;;
+    *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
+    esac
+    shift 2
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
     PACKER_SOURCES="${packerSources}"
@@ -189,9 +192,6 @@ writeShellApplication {
           fi
         fi
       fi
-    else
-      echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'"
-      exit 1
     fi
   '';
 
