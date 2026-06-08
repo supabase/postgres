@@ -411,7 +411,7 @@ users:
 
     def is_healthy(ssh) -> bool:
         health_checks = [
-            ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
+            ("postgresql", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
             (
                 "adminapi",
                 f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'",
