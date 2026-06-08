@@ -21,7 +21,7 @@ let
         (root + "/scripts")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
-        (root + "/development-arm.vars.pkr.hcl")
+        (root + "/development-arm64.vars.pkr.hcl")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
     };
@@ -114,7 +114,7 @@ writeShellApplication {
       cd "$PACKER_SOURCES"
       packer init "$@"
       packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+        -var-file="development-arm64.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
@@ -147,7 +147,7 @@ writeShellApplication {
 
       packer init stage2-nix-psql.pkr.hcl
       packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+        -var-file="development-arm64.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
         -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
