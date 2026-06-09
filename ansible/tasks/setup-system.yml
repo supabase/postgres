@@ -161,14 +161,6 @@
         value: 1800
         state: 'present'
 
-    - name: Set net.ipv4.tcp_keepalive_intvl=60
-      ansible.builtin.sysctl:
-        name: 'net.ipv4.tcp_keepalive_intvl'
-        value: 60
-        state: 'present'
-
-    # postgres_exporter runs on port 9187 and postgresT occasionlly chooses it as random srcport
-    # adminapi for 8085
     - name: Set net.ipv4.ip_local_reserved_ports
       ansible.builtin.sysctl:
         name: 'net.ipv4.ip_local_reserved_ports'
