@@ -271,7 +271,7 @@ EOF
 	if [ "${ARCH}" = "amd64" ]; then
 		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.ec2.archive.ubuntu.com/ubuntu"
 	else
-		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://ports.ubuntu.com/ubuntu-ports"
 	fi
 
 	sed -i "s/REGION/${REGION}/g" /tmp/sources.list

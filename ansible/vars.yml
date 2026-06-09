@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.089-orioledb-pgcron-10"
-  postgres17: "17.6.1.132-pgcron-10"
-  postgres15: "15.14.1.132-pgcron-10"
+  postgresorioledb-17: "17.6.0.089-orioledb-pgcron-11"
+  postgres17: "17.6.1.132-pgcron-11"
+  postgres15: "15.14.1.132-pgcron-11"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
