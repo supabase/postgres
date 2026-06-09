@@ -262,7 +262,7 @@ build {
     ]
     use_env_var_file = true
     script = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
-    execute_command = "sudo -S sh -c 'umask 077; exec >/tmp/surrogate-bootstrap.log 2>&1; . {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
+    execute_command = "sudo -S sh -c 'umask 077; exec >/tmp/surrogate-bootstrap.log 2>&1; . {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}; status=$?; test ! -f /tmp/ansible.log || chown ubuntu:ubuntu /tmp/ansible.log; exit $status'"
     start_retry_timeout = "5m"
     skip_clean = true
   }
