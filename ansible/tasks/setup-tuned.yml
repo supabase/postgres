@@ -111,6 +111,19 @@
             state: 'present'
             value: 10
 
+
+        - name: tuned - Set tcp_keepalive_time
+          become: true
+          community.general.ini_file:
+            create: true
+            group: 'root'
+            mode: '0644'
+            no_extra_spaces: true
+            option: 'net.ipv4.tcp_keepalive_time'
+            path: '/etc/tuned/profiles/postgresql/tuned.conf'
+            section: 'sysctl'
+            state: 'present'
+            value: 1800
         - name: tuned - Load zstd compressor module
           become: true
           community.general.modprobe:
