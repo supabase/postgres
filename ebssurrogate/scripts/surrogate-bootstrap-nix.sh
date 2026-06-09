@@ -7,7 +7,6 @@
 # Adapted from: https://github.com/jen20/packer-ubuntu-zfs
 
 set -o errexit
-set -o errtrace
 set -o pipefail
 set -o xtrace
 
@@ -440,17 +439,17 @@ function umount_reset_mappings {
 	done
 }
 
-run_step waitfor_boot_finished waitfor_boot_finished
-run_step install_packages install_packages
-run_step device_partition_mappings device_partition_mappings
-run_step format_and_mount_rootfs format_and_mount_rootfs
-run_step create_swapfile create_swapfile
-run_step format_build_partition format_build_partition
+waitfor_boot_finished
+install_packages
+device_partition_mappings
+format_and_mount_rootfs
+create_swapfile
+format_build_partition
 #pull_docker
-run_step setup_chroot_environment setup_chroot_environment
+setup_chroot_environment
 #download_ccache
-run_step execute_playbook execute_playbook
-run_step update_systemd_services update_systemd_services
+execute_playbook
+update_systemd_services
 #upload_ccache
-run_step clean_system clean_system
-run_step umount_reset_mappings umount_reset_mappings
+clean_system
+umount_reset_mappings
