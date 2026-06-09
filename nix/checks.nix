@@ -300,7 +300,10 @@
               # Concurrency/isolation specs run via pg_isolation_regress (the stock
               # PostgreSQL isolation tester). Specs live in tests/isolation/specs/,
               # expected output in tests/isolation/expected/. Add new spec names here.
-              isolationSpecList = [ "sample_isolation" ];
+              isolationSpecList = [
+                "merge_serialization"
+                "sample_isolation"
+              ];
             in
             pkgs.writeShellApplication rec {
               name = "postgres-${pgpkg.version}-check-harness";
