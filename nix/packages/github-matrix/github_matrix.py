@@ -291,14 +291,21 @@ def main() -> None:
         help="Maximum memory per eval worker in MiB. Defaults to 3072 (3 GiB).",
     )
     parser.add_argument(
+        "-j",
+        "--nb-eval-jobs-workers",
+        default=os.cpu_count() or 1,
+        type=int,
+        help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
     args = parser.parse_args()
 
-    max_workers: int = os.cpu_count() or 1
-
-    cmd = build_nix_eval_command(max_workers, args.max_memory_size, args.flake_outputs)
+    cmd = build_nix_eval_command(
+        args.nb_eval_jobs_workers, args.max_memory_size, args.flake_outputs
+    )
 
     # Run evaluation and collect packages, warnings, and errors
     packages, warnings_list, errors_list = run_nix_eval_jobs(cmd)

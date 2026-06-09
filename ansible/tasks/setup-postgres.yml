@@ -168,6 +168,12 @@
       loop_control:
         loop_var: 'pg_config_item'
 
+    - name: Set data_directory to canonical path on data volume
+      ansible.builtin.lineinfile:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: "^data_directory = '/var/lib/postgresql/data'"
+        line: "data_directory = '/data/pgdata'"
+
     - name: Move read-replica.conf file to /etc/postgresql-custom/read-replica.conf
       ansible.builtin.copy:
         dest: '/etc/postgresql-custom/read-replica.conf'
@@ -287,6 +293,26 @@
       when:
         - (is_psql_oriole or is_psql_17)
 
+- name: copy PG apparmor profile
+  ansible.builtin.copy:
+    dest: '/etc/apparmor.d/sbpostgres'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: 'files/postgresql_config/sbpostgres_apparmor'
+
+- name: ensure apparmor-utils are installed
+  ansible.builtin.apt:
+    name: apparmor-utils
+
+- name: parse apparmor sbpostgres profile
+  ansible.builtin.command:
+    cmd: '/usr/sbin/apparmor_parser -r /etc/apparmor.d/sbpostgres'
+
+- name: reload apparmor with sbpostgres profile
+  ansible.builtin.command:
+    cmd: '/usr/sbin/aa-enforce sbpostgres'
+
 - name: copy PG and optimizations systemd units
   ansible.builtin.template:
     dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
@@ -377,7 +403,7 @@
     dest: '/var/lib/postgresql/.bashrc'
     line: "{{ lang_item }}"
   become: true
-  loop: 
+  loop:
     - 'export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive'
     - 'export LANG="en_US.UTF-8"'
     - 'export LANGUAGE="en_US.UTF-8"'

@@ -16,22 +16,25 @@ export APT_OPTIONS="-oAPT::Install-Recommends=false \
 
 # Prevent services from starting during package installation in chroot
 # This avoids hangs from cloud-init, dbus, etc. trying to start services
-cat > /usr/sbin/policy-rc.d <<'EOF'
+cat >/usr/sbin/policy-rc.d <<'EOF'
 #!/bin/sh
 exit 101
 EOF
 chmod +x /usr/sbin/policy-rc.d
 
-if [ $(dpkg --print-architecture) = "amd64" ];
-then
-	ARCH="amd64";
+if [ $(dpkg --print-architecture) = "amd64" ]; then
+	ARCH="amd64"
 else
-	ARCH="arm64";
+	ARCH="arm64"
 fi
 
 # Get current mirror from sources.list
 function get_current_mirror {
-	grep -oP 'http://[^/]+(?=/ubuntu-ports/)' /etc/apt/sources.list | head -1 || echo ""
+	if [ "${ARCH}" = "amd64" ]; then
+		grep -oP 'https?://[^/]+(?=/ubuntu/)' /etc/apt/sources.list | head -1 || echo ""
+	else
+		grep -oP 'http://[^/]+(?=/ubuntu-ports/)' /etc/apt/sources.list | head -1 || echo ""
+	fi
 }
 
 # Switch to a different mirror
@@ -40,7 +43,11 @@ function switch_mirror {
 	local sources_file="/etc/apt/sources.list"
 
 	echo "Switching to mirror: ${new_mirror}"
-	sed -i "s|http://[^/]*/ubuntu-ports/|http://${new_mirror}/ubuntu-ports/|g" "${sources_file}"
+	if [ "${ARCH}" = "amd64" ]; then
+		sed -i "s|http://[^/]*/ubuntu/|http://${new_mirror}/ubuntu/|g" "${sources_file}"
+	else
+		sed -i "s|http://[^/]*/ubuntu-ports/|http://${new_mirror}/ubuntu-ports/|g" "${sources_file}"
+	fi
 
 	# Show what we're using
 	echo "Current sources.list configuration:"
@@ -50,8 +57,6 @@ function switch_mirror {
 # Get list of mirrors to try
 function get_mirror_list {
 	local sources_file="/etc/apt/sources.list"
-	local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
-
 	local -a mirrors=()
 
 	# Priority order:
@@ -59,16 +64,28 @@ function get_mirror_list {
 	# 2. Regional CDN (can be inconsistent)
 	# 3. Global fallback
 
-	# Singapore country mirror for ap-southeast-1
-	if [ "${current_region}" = "ap-southeast-1" ]; then
-		mirrors+=("sg.ports.ubuntu.com")
-	fi
+	if [ "${ARCH}" = "amd64" ]; then
+		local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.ec2\.archive\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
 
-	if [ -n "${current_region}" ]; then
-		mirrors+=("${current_region}.clouds.ports.ubuntu.com")
-	fi
+		if [ -n "${current_region}" ]; then
+			mirrors+=("${current_region}.ec2.archive.ubuntu.com")
+		fi
 
-	mirrors+=("ports.ubuntu.com")
+		mirrors+=("archive.ubuntu.com")
+	else
+		local current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "${sources_file}" | head -1 || echo "")
+
+		# Singapore country mirror for ap-southeast-1
+		if [ "${current_region}" = "ap-southeast-1" ]; then
+			mirrors+=("sg.ports.ubuntu.com")
+		fi
+
+		if [ -n "${current_region}" ]; then
+			mirrors+=("${current_region}.clouds.ports.ubuntu.com")
+		fi
+
+		mirrors+=("ports.ubuntu.com")
+	fi
 
 	echo "${mirrors[@]}"
 }
@@ -178,8 +195,6 @@ function apt_install_with_fallback {
 	return 1
 }
 
-
-
 function update_install_packages {
 	source /etc/os-release
 
@@ -195,7 +210,7 @@ function update_install_packages {
 	if [ "${ARCH}" = "amd64" ]; then
 		echo 'grub-pc grub-pc/install_devices_empty select true' | debconf-set-selections
 		echo 'grub-pc grub-pc/install_devices select' | debconf-set-selections
-	# Install various packages needed for a booting system (with mirror fallback)
+		# Install various packages needed for a booting system (with mirror fallback)
 		if ! apt_install_with_fallback install -y linux-aws grub-pc e2fsprogs; then
 			echo "FATAL: Failed to install boot packages"
 			exit 1
@@ -250,15 +265,20 @@ function update_install_packages {
 			echo "FATAL: Failed to install arm64 boot packages"
 			exit 1
 		fi
+	else
+		if ! apt_install_with_fallback $APT_OPTIONS --yes install initramfs-tools; then
+			echo "FATAL: Failed to install amd64 boot packages"
+			exit 1
+		fi
 	fi
 }
 
 function setup_locale {
-cat << EOF >> /etc/locale.gen
+	cat <<EOF >>/etc/locale.gen
 en_US.UTF-8 UTF-8
 EOF
 
-cat << EOF > /etc/default/locale
+	cat <<EOF >/etc/default/locale
 LANG="C.UTF-8"
 LC_CTYPE="C.UTF-8"
 EOF
@@ -266,11 +286,11 @@ EOF
 }
 
 function setup_postgesql_env {
-	    # Create the directory if it doesn't exist
-    sudo mkdir -p /etc/environment.d
-    
-    # Define the contents of the PostgreSQL environment file
-    cat <<EOF | sudo tee /etc/environment.d/postgresql.env >/dev/null
+	# Create the directory if it doesn't exist
+	sudo mkdir -p /etc/environment.d
+
+	# Define the contents of the PostgreSQL environment file
+	cat <<EOF | sudo tee /etc/environment.d/postgresql.env >/dev/null
 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
 LANG="en_US.UTF-8"
 LANGUAGE="en_US.UTF-8"
@@ -281,15 +301,15 @@ EOF
 
 function install_packages_for_build {
 	apt-get install -y --no-install-recommends linux-libc-dev \
-	 acl \
-	 magic-wormhole sysstat \
-	 build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libsystemd-dev libpq-dev libxml2-utils uuid-dev xsltproc ssl-cert \
-	 gcc-10 g++-10 \
-	 libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
-	 libkrb5-dev \
-	 maven default-jre default-jdk \
-	 curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
-	 liblzo2-dev
+		acl \
+		magic-wormhole sysstat \
+		build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libsystemd-dev libpq-dev libxml2-utils uuid-dev xsltproc ssl-cert \
+		gcc-10 g++-10 \
+		libgeos-dev libproj-dev libgdal-dev libjson-c-dev libboost-all-dev libcgal-dev libmpfr-dev libgmp-dev cmake \
+		libkrb5-dev \
+		maven default-jre default-jdk \
+		curl gpp apt-transport-https cmake libc++-dev libc++abi-dev libc++1 libglib2.0-dev libtinfo5 libc++abi1 ninja-build python \
+		liblzo2-dev
 
 	source /etc/os-release
 
@@ -308,8 +328,8 @@ function setup_apparmor {
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
 }
 
-function setup_grub_conf_arm64 {
-cat << EOF > /etc/default/grub
+function setup_grub_conf {
+	cat <<EOF >/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
 GRUB_TIMEOUT_STYLE="hidden"
@@ -320,12 +340,12 @@ EOF
 
 # Install GRUB
 function install_configure_grub {
+	setup_grub_conf
 	if [ "${ARCH}" = "arm64" ]; then
 		if ! apt_install_with_fallback $APT_OPTIONS --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr; then
 			echo "FATAL: Failed to install grub packages for arm64"
 			exit 1
 		fi
-		setup_grub_conf_arm64
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1
 	fi
@@ -340,10 +360,10 @@ function disable_fsck {
 # Don't request hostname during boot but set hostname
 function setup_hostname {
 	# Set the static hostname
-	echo "ubuntu" > /etc/hostname
+	echo "ubuntu" >/etc/hostname
 	chmod 644 /etc/hostname
 	# Update netplan configuration to not send hostname
-	cat << EOF > /etc/netplan/01-hostname.yaml
+	cat <<EOF >/etc/netplan/01-hostname.yaml
 network:
   version: 2
   ethernets:
@@ -358,7 +378,7 @@ EOF
 
 # Set options for the default interface
 function setup_eth0_interface {
-cat << EOF > /etc/netplan/eth0.yaml
+	cat <<EOF >/etc/netplan/eth0.yaml
 network:
   version: 2
   ethernets:
@@ -371,8 +391,8 @@ EOF
 
 function disable_sshd_passwd_auth {
 	sed -i -E -e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
-	  -e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
-	 /etc/ssh/sshd_config
+		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+		/etc/ssh/sshd_config
 }
 
 function create_admin_account {
@@ -390,7 +410,7 @@ function setup_ccache {
 	apt-get install ccache -y
 	mkdir -p /tmp/ccache
 	export PATH=/usr/lib/ccache:$PATH
-	echo "PATH=$PATH" >> /etc/environment
+	echo "PATH=$PATH" >>/etc/environment
 }
 
 # Clear apt caches

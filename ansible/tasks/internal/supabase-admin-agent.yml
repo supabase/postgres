@@ -31,9 +31,36 @@
     dest: /etc/sudoers.d/supabase-admin-agent
     mode: "0440"
 
-- name: Setting arch (x86)
+- name: supabase-admin-agent - pgbackrest helper scripts dir
+  file:
+    path: /usr/local/lib/supabase-admin-agent
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: supabase-admin-agent - pgdata-chown script
+  copy:
+    src: files/supabase_admin_agent_config/pgdata-chown.sh
+    dest: /usr/local/lib/supabase-admin-agent/pgdata-chown
+    owner: root
+    group: root
+    # 0700: always invoked via "sudo" (as root); no other user needs execute.
+    mode: "0700"
+
+- name: supabase-admin-agent - pgdata-signal script
+  copy:
+    src: files/supabase_admin_agent_config/pgdata-signal.sh
+    dest: /usr/local/lib/supabase-admin-agent/pgdata-signal
+    owner: root
+    group: root
+    # 0755: invoked via "sudo -u postgres"; the postgres OS user needs the
+    # world-execute bit since it is neither owner nor group member.
+    mode: "0755"
+
+- name: Setting arch (amd64)
   set_fact:
-    arch: "x86"
+    arch: "amd64"
   when: platform == "amd64"
 
 - name: Setting arch (arm)
@@ -53,6 +80,10 @@
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
     dest: "/tmp/supabase-admin-agent.tar.gz"
     timeout: 90
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
 
 - name: supabase-admin-agent - unpack archive in /opt
   unarchive:

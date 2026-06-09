@@ -28,9 +28,9 @@ extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EOF
-RUN curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
-
+RUN curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
+RUN nix --version
 
 WORKDIR /nixpg
 COPY . .
@@ -115,6 +115,7 @@ RUN mkdir -p \
     /usr/lib/postgresql/share/postgresql \
     /usr/share/postgresql \
     /var/lib/postgresql/data \
+    /var/log/postgresql \
     /var/run/postgresql \
     /etc/postgresql \
     /etc/postgresql-custom \
@@ -122,6 +123,7 @@ RUN mkdir -p \
         /usr/lib/postgresql \
         /var/lib/postgresql \
         /usr/share/postgresql \
+        /var/log/postgresql \
         /var/run/postgresql \
         /etc/postgresql \
         /etc/postgresql-custom
@@ -130,7 +132,7 @@ COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql-custom/conf.d
-COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-jsonlog.conf /etc/postgresql/logging.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/supautils.conf.j2 /etc/postgresql-custom/supautils.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_extension_custom_scripts /etc/postgresql-custom/extension-custom-scripts
 COPY --chown=postgres:postgres ansible/files/postgresql_config/custom_walg.conf /etc/postgresql-custom/wal-g.conf
@@ -145,10 +147,13 @@ RUN sed -i \
     -e "s|#unix_socket_directories = '/tmp'|unix_socket_directories = '/var/run/postgresql'|g" \
     -e "s|#session_preload_libraries = ''|session_preload_libraries = 'supautils'|g" \
     -e "s|#include = '/etc/postgresql-custom/supautils.conf'|include = '/etc/postgresql-custom/supautils.conf'|g" \
-    -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
+    # skip wal-g - unused by multigres
+    # -e "s|#include = '/etc/postgresql-custom/wal-g.conf'|include = '/etc/postgresql-custom/wal-g.conf'|g" \
     -e "s/ timescaledb,//g" \
     -e "s/ pgsodium,//g" \
     -e "s/db_user_namespace = off/#db_user_namespace = off/g" \
+    # skip - managed by pgctld
+    -e "s|^data_directory |#data_directory |g" \
     /etc/postgresql/postgresql.conf && \
     echo "pgsodium.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
     echo "vault.getkey_script= '/usr/lib/postgresql/bin/pgsodium_getkey.sh'" >> /etc/postgresql/postgresql.conf && \
@@ -194,15 +199,34 @@ RUN chown -R postgres:postgres /usr/lib/postgresql && \
 # Can't use /etc/pgctld because it's a mount point
 COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld-custom/postgresql.conf.tmpl
 
-# Wrapper: injects --postgres-config-template on every pgctld call so the team's
-# unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/postgresql.conf.tmpl "$@"\n' \
-    > /usr/local/bin/pgctld && \
-    chmod +x /usr/local/bin/pgctld
+# Wrapper: injects --postgres-config-template on every pgctld call AND bridges
+# postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
+# kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
+ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/postgresql.conf.tmpl
 
 # Strip extensions absent from pg17 vanilla build
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.conf
 
+# Generate a single SQL manifest that pgctld runs via --init-db-sql-file after initdb.
+# Creates the postgres role, runs init-scripts as postgres (matching migrate.sh),
+# then runs migrations as supabase_admin.
+RUN set -e && \
+    manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
+    printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
+    printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN\n    CREATE ROLE postgres SUPERUSER LOGIN;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
+    printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
+    for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
+        printf '\\ir init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
+    done && \
+    printf "\nRESET SESSION AUTHORIZATION;\n\n" >> "$manifest" && \
+    for f in $(ls /docker-entrypoint-initdb.d/migrations/*.sql 2>/dev/null | sort); do \
+        printf '\\ir migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
+    done && \
+    chown postgres:postgres "$manifest"
+
+ENV POSTGRES_INITDB_SQL_FILES=/docker-entrypoint-initdb.d/multigres-init.sql
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 
@@ -261,12 +285,29 @@ ENV LANGUAGE=C
 # Can't use /etc/pgctld because it's a mount point
 COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
-# Wrapper: injects --postgres-config-template on every pgctld call so the team's
-# unmodified k8s manifests and local provisioner commands work without extra flags.
-RUN printf '#!/bin/sh\nexec /nix/var/nix/profiles/default/bin/pgctld --postgres-config-template /etc/pgctld-custom/orioledb-postgresql.conf.tmpl "$@"\n' \
-    > /usr/local/bin/pgctld && \
-    chmod +x /usr/local/bin/pgctld
+# Wrapper: injects --postgres-config-template on every pgctld call AND bridges
+# postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
+# kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
+ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
+# Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/
+RUN set -e && \
+    manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
+    printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
+    printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN\n    CREATE ROLE postgres SUPERUSER LOGIN;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
+    printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
+    for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
+        printf '\\ir init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
+    done && \
+    printf "\nRESET SESSION AUTHORIZATION;\n\n" >> "$manifest" && \
+    for f in $(ls /docker-entrypoint-initdb.d/migrations/*.sql 2>/dev/null | sort); do \
+        printf '\\ir migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
+    done && \
+    chown postgres:postgres "$manifest"
+
+ENV POSTGRES_INITDB_SQL_FILES=/docker-entrypoint-initdb.d/multigres-init.sql
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 

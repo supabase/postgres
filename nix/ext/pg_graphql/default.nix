@@ -7,6 +7,8 @@
   postgresql,
   rust-bin,
   rsync,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 
@@ -63,14 +65,6 @@ let
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
               ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
             rm $out/share/postgresql/extension/${pname}.control
-
-            if [[ "${version}" == "${latestVersion}" ]]; then
-              {
-                echo "default_version = '${latestVersion}'"
-                cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
-              } > $out/share/postgresql/extension/${pname}.control
-              ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
-            fi
           }
 
           create_control_files
@@ -139,6 +133,7 @@ in
 (buildEnv {
   name = pname;
   paths = packages;
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -171,12 +166,22 @@ in
 
     create_sql_files
 
+    # Set latest version
+    {
+      echo "default_version = '${latestVersion}'"
+      cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
+    } >$out/share/postgresql/extension/${pname}.control
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
          toString (numberOfVersionsBuilt + 1)
        }"
     )
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
   passthru = {
     versions = versionsBuilt;

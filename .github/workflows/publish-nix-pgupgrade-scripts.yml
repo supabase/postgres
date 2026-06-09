@@ -16,7 +16,7 @@ on:
 
 permissions:
   id-token: write
-    
+
 jobs:
   prepare:
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -29,7 +29,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq --  '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq -- -R -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -48,7 +48,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -66,6 +66,7 @@ jobs:
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -95,7 +96,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -109,10 +110,11 @@ jobs:
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
-  
+
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

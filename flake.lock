@@ -118,11 +118,11 @@
     "multigres": {
       "flake": false,
       "locked": {
-        "lastModified": 1773763606,
-        "narHash": "sha256-ceShYR1Ocgt+glEzipF/l6Bje+sxuxDbDttaUfUAe44=",
+        "lastModified": 1779407344,
+        "narHash": "sha256-UQE/2Ru4V1ip5WI+03NqaceTf2KqVV1xEzQWMtqDc6k=",
         "owner": "multigres",
         "repo": "multigres",
-        "rev": "2a0b08680a95e5108bd7d33fe55c832bef3b90bb",
+        "rev": "96303016e56f172d7bed2450f98cf7466f770b5f",
         "type": "github"
       },
       "original": {

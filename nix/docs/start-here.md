@@ -25,14 +25,10 @@ builders-use-substitutes = true
 cores = 0
 experimental-features = nix-command flakes
 max-jobs = auto
-netrc-file =
 require-sigs = true
 substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
 trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-substituters =
 trusted-users = YOUR_USERNAME root
-extra-sandbox-paths =
-extra-substituters =
 ```
 
 **Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
@@ -71,24 +67,20 @@ builders-use-substitutes = true
 cores = 0
 experimental-features = nix-command flakes
 max-jobs = auto
-netrc-file =
 require-sigs = true
 substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
 trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-substituters =
 trusted-users = YOUR_USERNAME root
-extra-sandbox-paths =
-extra-substituters =
 ```
 
 **Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
 
-### Step 2: Install Nix 2.33.1
+### Step 2: Install Nix 2.34.6
 
-Run the following command to install Nix 2.33.1 (the version used in CI) with the custom configuration:
+Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.33.2/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
 ```
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
@@ -103,7 +95,7 @@ same commands on your machine:
 
 ```
 $ nix --version
-nix (Nix) 2.33.1
+nix (Nix) 2.34.6
 ```
 
 ```
@@ -112,7 +104,7 @@ $ nix run nixpkgs#nix-info -- -m
  - host os: `Linux 5.15.90.1-microsoft-standard-WSL2, Ubuntu, 22.04.2 LTS (Jammy Jellyfish), nobuild`
  - multi-user?: `yes`
  - sandbox: `yes`
- - version: `nix-env (Nix) 2.33.1`
+ - version: `nix-env (Nix) 2.34.6`
  - channels(root): `"nixpkgs"`
  - nixpkgs: `/nix/var/nix/profiles/per-user/root/channels/nixpkgs`
 ```
