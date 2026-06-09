@@ -49,7 +49,7 @@ jobs:
           nix run github:supabase/postgres/${GIT_SHA}#packer -- build \
             -var "git-head-version=${GIT_SHA}" \
             -var "packer-execution-id=${EXECUTION_ID}" \
-            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="development-arm64.vars.pkr.hcl" \
             -var "base-image-nightly=true" \
             -var "build-timestamp=${BUILD_TIMESTAMP}" \
             -var "region=us-east-1" \

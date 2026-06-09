@@ -2,30 +2,27 @@ name: Build AMI
 description: Build both stage 1 and stage 2 AMIs
 
 inputs:
+  ami_name_prefix:
+    description: 'Prefix for the AMI name'
+    required: true
+  ami_regions:
+    description: 'AMI regions as JSON array (e.g., ["us-east-1"])'
+    required: true
+  arch:
+    description: Architecture to build AMI for (amd64|arm64)
+    required: true
+  git_sha:
+    description: 'Git SHA for this build'
+    required: true
+  instance_type:
+    description: 'EC2 instance type for the build'
+    required: true
   postgres_version:
     description: 'PostgreSQL major version (e.g., 15)'
     required: true
   region:
     description: 'AWS region'
     required: true
-  ami_regions:
-    description: 'AMI regions as JSON array (e.g., ["us-east-1"])'
-    required: true
-  git_sha:
-    description: 'Git SHA for this build'
-    required: true
-  ami_name_prefix:
-    description: 'Prefix for the AMI name'
-    required: false
-    default: 'supabase-postgres'
-  packer_template:
-    description: 'Packer template for stage 1 (e.g., amazon-arm64-nix.pkr.hcl)'
-    required: false
-    default: 'amazon-arm64-nix.pkr.hcl'
-  instance_type:
-    description: 'EC2 instance type for the build'
-    required: false
-    default: 'c6g.4xlarge'
 
 outputs:
   stage2_ami_id:
@@ -41,6 +38,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Verify arch
+      shell: bash
+      run: |
+        case ${{ inputs.arch }} in
+        amd64 | arm64) ;;
+        *) echo "Unknown arch input, expected:(amd64|arm64) got:${{ inputs.arch }}" >&2 && exit 1 ;;
+        esac
     - name: Set execution ID
       id: set-execution-id
       shell: bash
@@ -68,12 +72,12 @@ runs:
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
       run: |
-        nix run .#build-ami -- stage1 \
+        nix run .#build-ami -- stage1 ${{ inputs.arch }} \
           -var "git-head-version=${{ inputs.git_sha }}" \
           -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
           -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
-          ${{ inputs.packer_template }}
+          amazon-${{ inputs.arch }}-nix.pkr.hcl
 
     - name: Build AMI stage 2
       id: build-stage2
@@ -86,7 +90,7 @@ runs:
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
       run: |
-        nix run .#build-ami -- stage2 \
+        nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "git-head-version=${{ inputs.git_sha }}" \
           -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \

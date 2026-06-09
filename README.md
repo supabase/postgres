@@ -87,7 +87,7 @@ Here's a comprehensive overview of the project's directory structure:
 | ansible.cfg | Ansible configuration |
 | amazon-arm64-nix.pkr.hcl | Packer configuration for AWS ARM64 builds |
 | common-nix.vars.pkr.hcl | Common Packer variables |
-| development-arm.vars.pkr.hcl | ARM development environment variables |
+| development-arm64.vars.pkr.hcl | ARM development environment variables |
 | CONTRIBUTING.md | Contribution guidelines |
 | README.md | Main project documentation |
 
