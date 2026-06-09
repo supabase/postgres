@@ -41,7 +41,7 @@
 
 - name: supabase-admin-agent - pgdata-chown script
   copy:
-    src: files/supabase_admin_agent_config/pgdata-chown
+    src: files/supabase_admin_agent_config/pgdata-chown.sh
     dest: /usr/local/lib/supabase-admin-agent/pgdata-chown
     owner: root
     group: root
@@ -50,7 +50,7 @@
 
 - name: supabase-admin-agent - pgdata-signal script
   copy:
-    src: files/supabase_admin_agent_config/pgdata-signal
+    src: files/supabase_admin_agent_config/pgdata-signal.sh
     dest: /usr/local/lib/supabase-admin-agent/pgdata-signal
     owner: root
     group: root

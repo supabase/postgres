@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -e 
+set -e
 
-SCRIPT_DIR=$(dirname -- "$0";)
+SCRIPT_DIR=$(dirname -- "$0")
 
 ls -la "$SCRIPT_DIR"
 
@@ -21,5 +21,5 @@ su postgres -c "$(pg_config --bindir)/pg_ctl start -o '-c config_file=/etc/postg
 RECEIVED_EXIT_SIGNAL=false
 trap 'RECEIVED_EXIT_SIGNAL=true' SIGINT SIGTERM SIGUSR1
 while ! ((RECEIVED_EXIT_SIGNAL)); do
-    sleep 5
+	sleep 5
 done

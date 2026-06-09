@@ -42,7 +42,7 @@ EOF
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
-                --extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
@@ -84,14 +84,14 @@ execute_playbook
 ####################
 
 function install_nix() {
-    sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+	sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EXTRA_NIX_CONF" -s /bin/bash root
-    #shellcheck disable=SC1091
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    nix --version
+	#shellcheck disable=SC1091
+	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+	nix --version
 }
 
 function execute_stage2_playbook {
@@ -109,14 +109,14 @@ EOF
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
-                --extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars @./ansible/qemu-vars.yaml
 }
 
 function clean_legacy_things {
-    # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
-    apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
-    apt-get -y purge kong
-    apt-get autoremove -y
+	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
+	apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+	apt-get -y purge kong
+	apt-get autoremove -y
 }
 
 function clean_system {
@@ -161,14 +161,17 @@ function clean_system {
 	usermod -p '*' ubuntu
 	usermod -p '*' root
 
-  # Ensure that PasswordAuthentication is off
-  # From chroot-boostrap-nix.sh
-  sed -i -E \
-    -e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
-    -e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
-    /etc/ssh/sshd_config
-  grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config \
-    || { echo "ERROR: PasswordAuthentication is not disabled in sshd_config"; exit 1; }
+	# Ensure that PasswordAuthentication is off
+	# From chroot-boostrap-nix.sh
+	sed -i -E \
+		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
+		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+		/etc/ssh/sshd_config
+	grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config ||
+		{
+			echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
+			exit 1
+		}
 }
 
 install_nix
