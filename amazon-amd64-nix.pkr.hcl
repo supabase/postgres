@@ -262,7 +262,7 @@ build {
     ]
     use_env_var_file = true
     script = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
-    execute_command = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}} >/dev/null 2>&1'"
+    execute_command = "sudo -S sh -c 'umask 077; exec >/tmp/surrogate-bootstrap.log 2>&1; . {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean = true
   }
@@ -275,6 +275,8 @@ build {
 
   error-cleanup-provisioner "shell" {
     inline = [
+      "echo '===== /tmp/surrogate-bootstrap.log metadata (contents withheld) ====='",
+      "sudo test -f /tmp/surrogate-bootstrap.log && sudo stat --format='size_bytes=%s mode=%a owner=%U group=%G' /tmp/surrogate-bootstrap.log || echo 'surrogate bootstrap log not found'",
       "echo '===== /tmp/surrogate-diagnostic.log ====='",
       "sudo test -f /tmp/surrogate-diagnostic.log && sudo cat /tmp/surrogate-diagnostic.log || echo 'surrogate diagnostic log not found'"
     ]
