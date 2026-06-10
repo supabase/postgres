@@ -44,14 +44,14 @@ jobs:
           - name: arm64
             runner: blacksmith-2vcpu-ubuntu-2404-arm
             packer_template: amazon-arm64-nix.pkr.hcl
-            vars_file: development-arm.vars.pkr.hcl
+            vars_file: development-arm64.vars.pkr.hcl
             instance_type: c6g.4xlarge
             nix_system: aarch64-linux
             ami_arch_filter: arm64
           - name: amd64
             runner: blacksmith-2vcpu-ubuntu-2404
             packer_template: amazon-amd64-nix.pkr.hcl
-            vars_file: development-x86.vars.pkr.hcl
+            vars_file: development-amd64.vars.pkr.hcl
             instance_type: c6i.4xlarge
             nix_system: x86_64-linux
             ami_arch_filter: x86_64

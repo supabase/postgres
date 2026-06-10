@@ -19,7 +19,6 @@ on:
         options:
           - arm64
           - amd64
-        default: arm64
 
 permissions:
   contents: write
@@ -53,19 +52,18 @@ jobs:
         id: arch_vars
         run: |
           ARCH="${{ github.event.inputs.arch }}"
+          echo "arch=$ARCH" >>"$GITHUB_OUTPUT"
           if [ "$ARCH" = "amd64" ]; then
             {
-              echo "packer_template=amazon-amd64-nix.pkr.hcl"
-              echo "instance_type=c6i.4xlarge"
               echo "ami_name_prefix=supabase-postgres-x86"
               echo "arch_suffix=-x86"
+              echo "instance_type=c6i.4xlarge"
             } >> "$GITHUB_OUTPUT"
           else
             {
-              echo "packer_template=amazon-arm64-nix.pkr.hcl"
-              echo "instance_type=c6g.4xlarge"
               echo "ami_name_prefix=supabase-postgres"
               echo "arch_suffix="
+              echo "instance_type=c6g.4xlarge"
             } >> "$GITHUB_OUTPUT"
           fi
 
@@ -83,11 +81,11 @@ jobs:
         with:
           postgres_version: ${{ github.event.inputs.postgres_version }}
           region: us-east-1
-          ami_regions: '["us-east-1"]'
-          git_sha: ${{ steps.get_sha.outputs.sha }}
-          packer_template: ${{ steps.arch_vars.outputs.packer_template }}
-          instance_type: ${{ steps.arch_vars.outputs.instance_type }}
           ami_name_prefix: ${{ steps.arch_vars.outputs.ami_name_prefix }}
+          ami_regions: '["us-east-1"]'
+          arch: ${{ steps.arch_vars.outputs.arch }}
+          git_sha: ${{ steps.get_sha.outputs.sha }}
+          instance_type: ${{ steps.arch_vars.outputs.instance_type }}
 
       - name: Grab release version
         id: process_release_version
