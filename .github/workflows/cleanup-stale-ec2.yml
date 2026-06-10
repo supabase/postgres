@@ -22,7 +22,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.SUPADEV_AWS_ROLE }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ matrix.region }}
 
       - name: Find and terminate stale instances
