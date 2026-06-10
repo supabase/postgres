@@ -49,7 +49,7 @@ runs:
       id: set-execution-id
       shell: bash
       run: |
-        EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}"
+        EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}-${{ inputs.arch }}"
         echo "EXECUTION_ID=$EXECUTION_ID" >> $GITHUB_ENV
         echo "execution_id=$EXECUTION_ID" >> $GITHUB_OUTPUT
 
