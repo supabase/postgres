@@ -291,7 +291,7 @@ def host():
                 "HttpEndpoint": "enabled",
             },
             IamInstanceProfile={"Name": "pg-ap-southeast-1"},
-            InstanceType="t4g.micro",
+            InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.micro",
             MinCount=1,
             MaxCount=1,
             ImageId=image.id,

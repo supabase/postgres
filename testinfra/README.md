@@ -52,7 +52,7 @@ done
 
 # build AMI
 AWS_PROFILE=supabase-dev packer build \
-  -var-file=development-arm.vars.pkr.hcl \
+  -var-file=development-arm64.vars.pkr.hcl \
   -var-file=common.vars.pkr.hcl \
   -var "ansible_arguments=" \
   -var "postgres-version=ci-ami-test" \
