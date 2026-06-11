@@ -3,6 +3,7 @@ let
   configFile = ../tests/postgresql.conf.in;
   getkeyScript = ../tests/util/pgsodium_getkey.sh;
   primingScript = ../tests/prime.sql;
+  primingSuperuserScript = ../tests/prime-superuser.sql;
   migrationData = ../tests/migrations/data.sql;
 in
 writeShellApplication {
@@ -79,9 +80,11 @@ writeShellApplication {
     "$OLDVER/bin/pg_ctl" start -D "$DATDIR"
 
     PRIMING_SCRIPT="${primingScript}"
+    PRIMING_SUPERUSER_SCRIPT="${primingSuperuserScript}"
     MIGRATION_DATA="${migrationData}"
 
     "$OLDVER/bin/psql" -h localhost -d postgres -Xf "$PRIMING_SCRIPT"
+    "$OLDVER/bin/psql" -h localhost -d postgres -Xf "$PRIMING_SUPERUSER_SCRIPT"
     "$OLDVER/bin/psql" -h localhost -d postgres -Xf "$MIGRATION_DATA"
 
     if [ "$UPGRADE_METHOD" == "pg_upgrade" ]; then

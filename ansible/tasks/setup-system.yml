@@ -154,13 +154,6 @@
         owner: 'root'
         group: 'root'
 
-    # Set Sysctl params specific to keepalives
-    - name: Set net.ipv4.tcp_keepalive_time=1800
-      ansible.builtin.sysctl:
-        name: 'net.ipv4.tcp_keepalive_time'
-        value: 1800
-        state: 'present'
-
     - name: Set net.ipv4.tcp_keepalive_intvl=60
       ansible.builtin.sysctl:
         name: 'net.ipv4.tcp_keepalive_intvl'
