@@ -1,10 +1,11 @@
 {
   lib,
   stdenv,
-  writeShellApplication,
-  packer,
   awscli2,
+  coreutils,
   jq,
+  packer,
+  writeShellApplication,
   ...
 }:
 
@@ -41,14 +42,13 @@ writeShellApplication {
   name = "build-ami";
 
   runtimeInputs = [
-    packer
     awscli2
+    coreutils
     jq
+    packer
   ];
 
   text = ''
-    set -euo pipefail
-
     set -x
 
     # Parse required parameters
@@ -63,11 +63,17 @@ writeShellApplication {
     amd64 | arm64) ;;
     *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
     esac
+
+    if [[ $0 != "''${BASH_SOURCE[0]}" ]]; then
+      echo "This file is not to be sourced" >&2
+      exit 1
+    fi
+    INPUT_HASH=$(realpath "$0")
+    INPUT_HASH=''${INPUT_HASH#/nix/store/}
+    INPUT_HASH=''${INPUT_HASH%%-*}
     shift 2
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
-    PACKER_SOURCES="${packerSources}"
-    INPUT_HASH=$(basename "$PACKER_SOURCES" | cut -d- -f1)
 
     find_stage1_ami() {
       set +e
@@ -122,7 +128,7 @@ writeShellApplication {
 
       echo "No cached AMI found"
 
-      cd "$PACKER_SOURCES"
+      cd ${packerSources}
       packer init "$@"
       packer build \
         -var-file="development-$ARCH.vars.pkr.hcl" \
