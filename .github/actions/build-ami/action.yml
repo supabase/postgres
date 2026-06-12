@@ -98,3 +98,47 @@ runs:
           -var "git_sha=${{ inputs.git_sha }}" \
           -var "instance_type=${{ inputs.instance_type }}" \
           stage2-nix-psql.pkr.hcl
+
+    - name: Cleanup resources after build
+      if: always()
+      shell: bash
+      run: |
+        aws ec2 describe-instances \
+          --region us-east-1 \
+          --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" \
+          --query "Reservations[].Instances[].InstanceId" \
+          --output text | \
+        xargs -r aws ec2 terminate-instances \
+          --region us-east-1 \
+          --instance-ids
+
+        aws ec2 describe-volumes \
+          --region us-east-1 \
+          --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" \
+          --query "Volumes[*].VolumeId" \
+          --output text | \
+        xargs -r -n1 aws ec2 \
+          --region us-east-1 delete-volume \
+          --volume-id
+
+    - name: Cleanup resources on build cancellation
+      if: cancelled()
+      shell: bash
+      run: |
+        aws ec2 describe-instances \
+          --region us-east-1 \
+          --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" \
+          --query "Reservations[].Instances[].InstanceId" \
+          --output text | \
+        xargs -r aws ec2 terminate-instances \
+          --region us-east-1 \
+          --instance-ids
+
+        aws ec2 describe-volumes \
+          --region us-east-1 \
+          --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" \
+          --query "Volumes[*].VolumeId" \
+          --output text | \
+        xargs -r -n1 aws ec2 \
+          --region us-east-1 delete-volume \
+          --volume-id
