@@ -291,7 +291,7 @@ def host():
                 "HttpEndpoint": "enabled",
             },
             IamInstanceProfile={"Name": "pg-ap-southeast-1"},
-            InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.micro",
+            InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
             MinCount=1,
             MaxCount=1,
             ImageId=image.id,
@@ -411,7 +411,7 @@ users:
 
     def is_healthy(ssh) -> bool:
         health_checks = [
-            ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
+            ("postgresql", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
             (
                 "adminapi",
                 f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'",
