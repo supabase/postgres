@@ -94,6 +94,32 @@
       when:
         - ansible_facts['processor'][0] is search("GenuineIntel", ignorecase=True)
 
+    - name: tuned - Set tcp_keepalive_intvl
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'net.ipv4.tcp_keepalive_intvl'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: 60
+
+    - name: tuned - Set tcp_keepalive_time
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'net.ipv4.tcp_keepalive_time'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: 1800
+
     - name: tuned - Enable zswap if swap is present
       when:
         - ansible_facts['swaptotal_mb'] > 0
@@ -111,19 +137,6 @@
             state: 'present'
             value: 10
 
-
-        - name: tuned - Set tcp_keepalive_time
-          become: true
-          community.general.ini_file:
-            create: true
-            group: 'root'
-            mode: '0644'
-            no_extra_spaces: true
-            option: 'net.ipv4.tcp_keepalive_time'
-            path: '/etc/tuned/profiles/postgresql/tuned.conf'
-            section: 'sysctl'
-            state: 'present'
-            value: 1800
         - name: tuned - Load zstd compressor module
           become: true
           community.general.modprobe:
@@ -142,29 +155,12 @@
           loop_control:
             loop_var: 'zswap_item'
 
-    - name: tuned - Adjust the bootloader cmdline options
-      become: true
-      community.general.ini_file:
-        create: true
-        group: 'root'
-        mode: '0644'
-        no_extra_spaces: true
-        option: 'cmdline'
-        path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: 'bootloader'
-        state: 'present'
-        value: "{{ final_cmdline }}"
-      vars:
-        cmdline_thp: 'transparent_hugepage=never'
-        cmdline_zswap: "{{ 'zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10' if ansible_facts['swaptotal_mb'] > 0 else '' }}"
-        final_cmdline: "{{ [cmdline_thp, cmdline_zswap] | reject('equalto', '') | list | join(' ') }}"
-        
     - name: Activate the tuned service
       ansible.builtin.systemd_service:
         daemon_reload: true
         enabled: true
         name: 'tuned'
-        state: 'restarted'
+        state: "{{ 'restarted' if stage2_nix else 'stopped' }}"
       become: true
 
     - name: Activate the PostgreSQL tuned profile
@@ -172,3 +168,4 @@
         cmd: tuned-adm profile postgresql
       become: true
       changed_when: false
+      when: stage2_nix

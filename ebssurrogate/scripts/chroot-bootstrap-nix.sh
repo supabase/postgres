@@ -329,12 +329,15 @@ function setup_apparmor {
 }
 
 function setup_grub_conf {
+	# Note: Unknown kernel parameters (like zswap settings on kernels without zswap support)
+	# are safely ignored by the kernel and passed to user-space. This allows us to
+	# include them here without risking boot failures on older or incompatible kernels.
 	cat <<EOF >/etc/default/grub
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=0
 GRUB_TIMEOUT_STYLE="hidden"
 GRUB_DISTRIBUTOR="Supabase postgresql"
-GRUB_CMDLINE_LINUX_DEFAULT="nomodeset console=tty1 console=ttyS0 ipv6.disable=0"
+GRUB_CMDLINE_LINUX_DEFAULT="nomodeset console=tty1 console=ttyS0 ipv6.disable=0 transparent_hugepage=never zswap.enabled=1 zswap.zpool=zsmalloc zswap.compressor=zstd zswap.max_pool_percent=10"
 EOF
 }
 
