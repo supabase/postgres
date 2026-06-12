@@ -37,7 +37,7 @@
 
     # Pin to a specific nixpkgs version that has compatible v8 and curl versions
     # for extensions that require older package versions
-    nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
+    nixpkgs-oldstable.url = "https://releases.nixos.org/nixpkgs/nixpkgs-24.05pre609661.a76c4553d7e7/nixexprs.tar.xz";
 
     # Uncomment nix-eval-jobs...nixpkgs.follows when this gets bumped
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
