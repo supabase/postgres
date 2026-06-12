@@ -5,7 +5,7 @@ tested across multiple PostgreSQL versions and extension versions. It handles
 installation, upgrades, and version verification of PostgreSQL extensions.
 """
 
-from typing import Sequence, Mapping, Optional
+from typing import Sequence, Mapping
 from pathlib import Path
 from test_driver.machine import Machine
 
@@ -20,8 +20,6 @@ class PostgresExtensionTest(object):
         versions: Versions,
         sql_test_dir: Path,
         support_upgrade: bool = True,
-        schema: str = "public",
-        lib_name: Optional[str] = None,
     ):
         """Initialize the PostgreSQL extension test framework.
 
@@ -31,18 +29,12 @@ class PostgresExtensionTest(object):
             versions: Mapping of PostgreSQL versions to available extension versions
             sql_test_dir: Directory containing SQL test files for pg_regress
             support_upgrade: Whether the extension supports in-place upgrades
-            lib_name: Name of the shared library (defaults to extension_name)
         """
         self.vm = vm
         self.extension_name = extension_name
         self.versions = versions
         self.support_upgrade = support_upgrade
         self.sql_test_dir = sql_test_dir
-        self.schema = schema
-        self.lib_name = lib_name or extension_name
-
-    def create_schema(self):
-        self.run_sql(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
 
     def run_sql(self, query: str) -> str:
         return self.vm.succeed(
@@ -58,12 +50,8 @@ class PostgresExtensionTest(object):
         self.run_sql(f"DROP EXTENSION IF EXISTS {self.extension_name};")
 
     def install_extension(self, version: str):
-        if self.schema != "public":
-            ext_schema = f"SCHEMA {self.schema} "
-        else:
-            ext_schema = ""
         self.run_sql(
-            f"""CREATE EXTENSION {self.extension_name} WITH {ext_schema}VERSION '{version}' CASCADE;"""
+            f"""CREATE EXTENSION {self.extension_name} WITH VERSION '{version}' CASCADE;"""
         )
         # Verify version was installed correctly
         self.assert_version_matches(version)
@@ -166,7 +154,7 @@ class PostgresExtensionTest(object):
                 f"No versions available for PostgreSQL version {pg_version}"
             )
         last_version = available_versions[-1]
-        assert ext_version.endswith(f"{self.lib_name}-{last_version}.so"), (
+        assert ext_version.endswith(f"{last_version}.so"), (
             f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
         )
 
@@ -176,7 +164,7 @@ class PostgresExtensionTest(object):
 
         # Check that we are using the first version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
-        assert ext_version.endswith(f"{self.lib_name}-{first_version}.so"), (
+        assert ext_version.endswith(f"{first_version}.so"), (
             f"Expected {self.extension_name} version {first_version}, but found {ext_version}"
         )
 
@@ -184,7 +172,7 @@ class PostgresExtensionTest(object):
         self.vm.succeed(f"switch_{self.extension_name}_version {last_version}")
         # Check that we are using the last version now
         ext_version = self.vm.succeed(f"readlink -f {extension_lib_path}").strip()
-        assert ext_version.endswith(f"{self.lib_name}-{last_version}.so"), (
+        assert ext_version.endswith(f"{last_version}.so"), (
             f"Expected {self.extension_name} version {last_version}, but found {ext_version}"
         )
 

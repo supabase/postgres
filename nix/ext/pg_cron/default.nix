@@ -6,7 +6,6 @@
   buildEnv,
   makeWrapper,
   switch-ext-version,
-  latestOnly ? false,
 }:
 let
   pname = "pg_cron";
@@ -16,13 +15,7 @@ let
   ) allVersions;
   versions = lib.naturalSort (lib.attrNames supportedVersions);
   latestVersion = lib.last versions;
-  versionsToUse =
-    if latestOnly then
-      { "${latestVersion}" = supportedVersions.${latestVersion}; }
-    else
-      supportedVersions;
-  versionsBuilt = if latestOnly then [ latestVersion ] else versions;
-  numberOfVersionsBuilt = builtins.length versionsBuilt;
+  numberOfVersions = builtins.length versions;
   build =
     version: versionData:
     stdenv.mkDerivation rec {
@@ -61,7 +54,31 @@ let
           mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
           mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
           mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
+          ln -s pg_cron--1.0.0--1.1.0.sql $out/share/postgresql/extension/pg_cron--1.0--1.1.sql
+          ln -s pg_cron--1.0.0--1.1.0.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1--1.2.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.sql
+          ln -s pg_cron--1.1.0--1.2.0.sql $out/share/postgresql/extension/pg_cron--1.1--1.2.0.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2--1.3.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.sql
+          ln -s pg_cron--1.2.0--1.3.1.sql $out/share/postgresql/extension/pg_cron--1.2--1.3.1.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3--1.4.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.sql
+          ln -s pg_cron--1.3.1--1.4.2.sql $out/share/postgresql/extension/pg_cron--1.3--1.4.2.sql
+          ln -s pg_cron--1.4.0--1.4.1.sql $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.sql
+          ln -s pg_cron--1.4.2--1.5.2.sql $out/share/postgresql/extension/pg_cron--1.4-1--1.5.2.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5--1.6.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.sql
+          ln -s pg_cron--1.5.2--1.6.4.sql $out/share/postgresql/extension/pg_cron--1.5--1.6.4.sql
+          cat > $out/share/postgresql/extension/pg_cron--1.6--1.6.4.sql << 'EOF'
+        -- Version alignment migration
+        -- Both 1.6 and 1.6.4 are actually the same version (1.6.4)
+        -- This file exists only to allow smooth transition from the old naming scheme
+        EOF
         fi
+
 
         # Create versioned control file with modified module path
         sed -e "/^default_version =/d" \
@@ -78,7 +95,7 @@ let
         license = licenses.postgresql;
       };
     };
-  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value) versionsToUse);
+  packages = builtins.attrValues (lib.mapAttrs (name: value: build name value) supportedVersions);
 in
 buildEnv {
   name = pname;
@@ -100,7 +117,7 @@ buildEnv {
     # checks
     (set -x
        test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
-         toString (numberOfVersionsBuilt + 1)
+         toString (numberOfVersions + 1)
        }"
     )
 
@@ -116,18 +133,14 @@ buildEnv {
   };
 
   passthru = {
-    versions = versionsBuilt;
-    numberOfVersions = numberOfVersionsBuilt;
-    inherit switch-ext-version latestOnly;
+    inherit versions numberOfVersions switch-ext-version;
+    pname = "${pname}-all";
     hasBackgroundWorker = true;
     defaultSettings = {
       shared_preload_libraries = [ "pg_cron" ];
       "cron.database_name" = "postgres";
     };
     version =
-      if latestOnly then
-        latestVersion
-      else
-        "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
+      "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
 }
