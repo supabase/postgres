@@ -49,9 +49,9 @@ runs:
       id: set-execution-id
       shell: bash
       run: |
-        EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}-${{ inputs.arch }}"
-        echo "EXECUTION_ID=$EXECUTION_ID" >> $GITHUB_ENV
-        echo "execution_id=$EXECUTION_ID" >> $GITHUB_OUTPUT
+        PACKER_EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}-${{ inputs.arch }}"
+        echo "PACKER_EXECUTION_ID=$PACKER_EXECUTION_ID" >> $GITHUB_ENV
+        echo "execution_id=$PACKER_EXECUTION_ID" >> $GITHUB_OUTPUT
 
     - name: Generate common-nix.vars.pkr.hcl
       id: generate-vars
@@ -73,10 +73,11 @@ runs:
         AWS_REGION: ${{ inputs.region }}
       run: |
         nix run .#build-ami -- stage1 ${{ inputs.arch }} \
-          -var "git-head-version=${{ inputs.git_sha }}" \
-          -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
-          -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
+          -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
+          -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
+          -var "git-head-version=${{ inputs.git_sha }}" \
+          -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           amazon-${{ inputs.arch }}-nix.pkr.hcl
 
     - name: Build AMI stage 2
@@ -85,16 +86,15 @@ runs:
       env:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
         POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
-        PACKER_EXECUTION_ID: ${{ env.EXECUTION_ID }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
       run: |
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
-          -var "git-head-version=${{ inputs.git_sha }}" \
-          -var "packer-execution-id=${{ env.EXECUTION_ID }}" \
-          -var "postgres_major_version=${{ inputs.postgres_version }}" \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
+          -var "git-head-version=${{ inputs.git_sha }}" \
           -var "git_sha=${{ inputs.git_sha }}" \
           -var "instance_type=${{ inputs.instance_type }}" \
+          -var "packer-execution-id=$PACKER_EXECUTION_ID" \
+          -var "postgres_major_version=${{ inputs.postgres_version }}" \
           stage2-nix-psql.pkr.hcl
