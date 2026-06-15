@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
@@ -71,7 +71,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
@@ -103,7 +103,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
@@ -127,7 +127,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-self-hosted
@@ -151,7 +151,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
@@ -180,7 +180,7 @@ jobs:
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
