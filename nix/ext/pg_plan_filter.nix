@@ -20,7 +20,7 @@ let
 
       src = fetchFromGitHub {
         owner = "pgexperts";
-        repo = pname;
+        repo = "pg_plan_filter";
         inherit rev hash;
       };
 
@@ -41,7 +41,7 @@ let
 
       meta = with lib; {
         description = "Filter PostgreSQL statements by execution plans";
-        homepage = "https://github.com/pgexperts/${pname}";
+        homepage = "https://github.com/pgexperts/pg_plan_filter";
         platforms = postgresql.meta.platforms;
         license = licenses.postgresql;
       };
