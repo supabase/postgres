@@ -29,6 +29,7 @@
 
     nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
     nix-eval-jobs.inputs.flake-parts.follows = "flake-parts";
+    # nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs"; Uncomment when *our* nixpkgs is bumped again
     nix-eval-jobs.inputs.treefmt-nix.follows = "treefmt-nix";
 
     nix2container.url = "github:nlewo/nix2container";
@@ -38,6 +39,7 @@
     # for extensions that require older package versions
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
 
+    # Uncomment nix-eval-jobs...nixpkgs.follows when this gets bumped
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
 
     rust-overlay.url = "github:oxalica/rust-overlay";
