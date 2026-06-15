@@ -11,6 +11,9 @@ inputs:
   arch:
     description: Architecture to build AMI for (amd64|arm64)
     required: true
+  force:
+    description: Force building stage1 AMI
+    required: false
   git_sha:
     description: 'Git SHA for this build'
     required: true
@@ -71,7 +74,12 @@ runs:
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
+        GIT_SHA: ${{ inputs.git_sha }}
       run: |
+        if [[ -n "${{ inputs.force }}" ]]; then
+          export BUILD_AMI_NIX_FORCE_BUILD="${{ inputs.force }}"
+        fi
+
         nix run .#build-ami -- stage1 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var 'ami_regions=${{ inputs.ami_regions }}' \
@@ -89,6 +97,7 @@ runs:
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
+        GIT_SHA: ${{ inputs.git_sha }}
       run: |
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
