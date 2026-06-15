@@ -6,9 +6,11 @@ on:
       - develop
       - release/*
     paths:
-      - '.github/workflows/ami-release-nix.yml'
-      - 'common-nix.vars.pkr.hcl'
-      - 'ansible/vars.yml'
+      - .github/workflows/ami-release-nix.yml
+      - ansible/vars.yml
+      - flake.lock
+      - flake.nix
+      - nix/packages/build-ami.nix
   workflow_dispatch:
 
 permissions:
@@ -43,18 +45,10 @@ jobs:
         target:
           - arch: arm64
             runner: blacksmith-2vcpu-ubuntu-2404-arm
-            packer_template: amazon-arm64-nix.pkr.hcl
-            vars_file: development-arm64.vars.pkr.hcl
             instance_type: c6g.4xlarge
-            nix_system: aarch64-linux
-            ami_arch_filter: arm64
           - arch: amd64
             runner: blacksmith-2vcpu-ubuntu-2404
-            packer_template: amazon-amd64-nix.pkr.hcl
-            vars_file: development-amd64.vars.pkr.hcl
             instance_type: c6i.4xlarge
-            nix_system: x86_64-linux
-            ami_arch_filter: x86_64
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
@@ -78,59 +72,29 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-      - name: Setup pre build env vars
-        run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> "$GITHUB_ENV"
-          echo "PACKER_EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}-${{ matrix.arch.name }}" >> "$GITHUB_ENV"
-
-      - name: Generate common-nix.vars.pkr.hcl
-        run: |
-          POSTGRES_SUPABASE_VERSION="$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'"$POSTGRES_MAJOR_VERSION"'"]' ansible/vars.yml)"
-          echo "postgres-version = \"$POSTGRES_SUPABASE_VERSION\"" > common-nix.vars.pkr.hcl
-
-      - name: Build AMI stage 1
-        run: |
-          GIT_SHA=${{github.sha}}
-
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init ${{ matrix.arch.packer_template }}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${PACKER_EXECUTION_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "ansible_arguments=-e postgresql_major=${POSTGRES_MAJOR_VERSION}" -var "region=us-east-1" -var 'ami_regions=["us-east-1"]' -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" ${{ matrix.arch.packer_template }}
-
-      - name: Find stage 1 AMI
-        run: |
-          GIT_SHA=${{github.sha}}
-          REGION="us-east-1"
-
-          echo "Looking for stage 1 AMI with postgresVersion=${POSTGRES_SUPABASE_VERSION}-stage1 and sourceSha=${GIT_SHA} in region ${REGION}"
-
-          STAGE1_AMI_ID=$(aws ec2 describe-images \
-            --region "$REGION" \
-            --owners self \
-            --filters \
-              "Name=tag:postgresVersion,Values=${POSTGRES_SUPABASE_VERSION}-stage1" \
-              "Name=tag:sourceSha,Values=${GIT_SHA}" \
-              "Name=state,Values=available" \
-              "Name=architecture,Values=${{ matrix.arch.ami_arch_filter }}" \
-            --query 'Images[0].ImageId' \
-            --output text)
-
-          if [ -z "$STAGE1_AMI_ID" ] || [ "$STAGE1_AMI_ID" = "None" ]; then
-            echo "ERROR: Failed to find stage 1 AMI"
-            exit 1
-          fi
-
-          echo "Found stage 1 AMI: $STAGE1_AMI_ID"
-          echo "STAGE1_AMI_ID=$STAGE1_AMI_ID" >> "$GITHUB_ENV"
-
-      - name: Build AMI stage 2
-        run: |
-          GIT_SHA=${{github.sha}}
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- init stage2-nix-psql.pkr.hcl
-          nix run github:supabase/postgres/${GIT_SHA}#packer -- build -var "git_sha=${GIT_SHA}" -var "git-head-version=${GIT_SHA}" -var "packer-execution-id=${PACKER_EXECUTION_ID}" -var "postgres_major_version=${POSTGRES_MAJOR_VERSION}" -var "source_ami=${STAGE1_AMI_ID}" -var-file="${{ matrix.arch.vars_file }}" -var-file="common-nix.vars.pkr.hcl" -var "region=us-east-1" -var "instance_type=${{ matrix.arch.instance_type }}" -var "ami_name=supabase-postgres-${{ matrix.arch.ami_arch_filter }}" stage2-nix-psql.pkr.hcl
-
-          echo "::notice title=AMI Published::Postgres AMI version: $POSTGRES_SUPABASE_VERSION"
+      - name: Build AMI
+        id: build-ami
+        uses: ./.github/actions/build-ami
+        with:
+          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
+          ami_regions: '["us-east-1"]'
+          arch: ${{ matrix.target.arch }}
+          force: "true"
+          git_sha: ${{ github.sha }}
+          instance_type: ${{ matrix.target.instance_type }}
+          postgres_version: ${{ matrix.postgres_version }}
+          region: us-east-1
 
       - name: Setup post build env vars
         run: |
+          POSTGRES_SUPABASE_VERSION=${{ steps.build-ami.outputs.postgres_release_version }}
+          echo "::notice title=AMI Published::Postgres AMI version: $POSTGRES_SUPABASE_VERSION"
+          {
+            echo "PACKER_EXECUTION_ID=${{ steps.build-ami.outputs.execution_id }}"
+            echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}"
+            echo "POSTGRES_SUPABASE_VERSION=$POSTGRES_SUPABASE_VERSION"
+          } >>"$GITHUB_ENV"
+
           if [ "${{ matrix.target.arch }}" = "amd64" ]; then
             {
               echo "ARCH_SUFFIX=-x86"
@@ -214,7 +178,7 @@ jobs:
       - name: Update nix store path catalog
         run: |
           GIT_SHA="${{ github.sha }}"
-          SYSTEM="${{ matrix.target.nix_system }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
 
           # Get store path for this build
           STORE_PATH=$(nix eval --raw ".#psql_${POSTGRES_MAJOR_VERSION}/bin.outPath")
