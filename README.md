@@ -67,8 +67,6 @@ Here's a comprehensive overview of the project's directory structure:
 | migrations/tests/database/ | Database-specific migration tests |
 | migrations/tests/storage/ | Storage-related migration tests |
 | migrations/tests/extensions/ | Extension migration tests |
-| **docker/** | Container definitions and Docker-related files |
-| docker/nix/ | Nix-based Docker build configurations |
 | Dockerfile-15 | Docker image definition for PostgreSQL 15 |
 | Dockerfile-17 | Docker image definition for PostgreSQL 17 |
 | **tests/** | Integration and system tests |
