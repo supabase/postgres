@@ -77,14 +77,24 @@ writeShellApplication {
 
     find_stage1_ami() {
       set +e
+      local arch
+      case $ARCH in
+      amd64) arch=x86_64 ;;
+      arm64) arch=arm64 ;;
+      esac
+      local filters=(
+        "Name=architecture,Values=$arch"
+        "Name=state,Values=available"
+        "Name=tag:inputHash,Values=$INPUT_HASH"
+        "Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1"
+        "Name=tag:sourceSha,Values=$GIT_SHA" # This is set by packer via the git-head-version var which is always passed in by the build-ami action
+      )
+
       local ami_output
       ami_output=$(aws ec2 describe-images \
         --region "$REGION" \
         --owners self \
-        --filters \
-          "Name=tag:inputHash,Values=$INPUT_HASH" \
-          "Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1" \
-          "Name=state,Values=available" \
+        --filters "''${filters[@]}" \
         --query 'Images[0].ImageId' \
         --output text 2>&1)
       local exit_code=$?
@@ -105,6 +115,17 @@ writeShellApplication {
     if [ "$STAGE" = "stage1" ]; then
       echo "Building stage 1..."
       echo "Checking for existing AMI..."
+
+      if [ -n "''${BUILD_AMI_NIX_FORCE_BUILD:-}" ]; then
+        if [ "''${BUILD_AMI_NIX_FORCE_BUILD:-}" == true ]; then
+          echo 'BUILD_AMI_NIX_FORCE_STAGE1 == true ... skip search for stage1 AMI' >&2
+          find_stage1_ami() {
+            return
+          }
+        else
+          echo 'BUILD_AMI_NIX_FORCE_STAGE1 != true ... will search for stage1 AMI' >&2
+        fi
+      fi
 
       AMI_ID=$(find_stage1_ami)
       if [ -n "$AMI_ID" ]; then
@@ -166,8 +187,8 @@ writeShellApplication {
       packer build \
         -var-file="development-$ARCH.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
-        -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
+        -var "source_ami=$STAGE1_AMI_ID" \
         "$@"
 
       if [ -n "''${PACKER_EXECUTION_ID:-}" ]; then
