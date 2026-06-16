@@ -18,6 +18,9 @@ permissions:
   id-token: write
   actions: write
 
+env:
+  AWS_REGION: us-east-1
+
 jobs:
   prepare:
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -43,12 +46,12 @@ jobs:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         target:
-          - arch: arm64
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
-            instance_type: c6g.4xlarge
           - arch: amd64
-            runner: blacksmith-2vcpu-ubuntu-2404
             instance_type: c6i.4xlarge
+            runner: blacksmith-2vcpu-ubuntu-2404
+          - arch: arm64
+            instance_type: c6g.4xlarge
+            runner: blacksmith-2vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
@@ -56,11 +59,20 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: aws-creds
+      - name: Debug AWS role secret
+        run: |
+          echo "Checking DEV_AWS_ROLE secret availability..."
+          if [ -z "${{ secrets.DEV_AWS_ROLE }}" ]; then
+            echo "❌ DEV_AWS_ROLE is empty or not available"
+          else
+            echo "✅ DEV_AWS_ROLE is available"
+          fi
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
+          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
@@ -68,6 +80,7 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: 'true'
+          aws-region: ${{ env.AWS_REGION }}
         env:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -77,13 +90,13 @@ jobs:
         uses: ./.github/actions/build-ami
         with:
           ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
-          ami_regions: '["us-east-1"]'
+          ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           force: "true"
           git_sha: ${{ github.sha }}
           instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
-          region: us-east-1
+          region: ${{ env.AWS_REGION }}
 
       - name: Setup post build env vars
         run: |
@@ -119,7 +132,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload software manifest to s3 staging
         run: |
@@ -141,7 +154,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: "us-east-1"
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload software manifest to s3 prod
         run: |
@@ -263,16 +276,16 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: "us-east-1"
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup resources after build
         if: ${{ always() }}
         run: |
-          aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
-          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id
+          aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids
+          aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
-          aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
-          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id
+          aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids
+          aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id
