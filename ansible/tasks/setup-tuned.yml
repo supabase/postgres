@@ -120,6 +120,21 @@
         state: 'present'
         value: 1800
 
+    # Reserve ports to prevent they are used as random srcports:
+    # 3000: postgrest, 3001: postgrest-admin, 8085: adminapi, 9122: pgbouncer_exporter, 9187: postgres_exporter, 9999: vector
+    - name: tuned - Set ip_local_reserved_ports
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'net.ipv4.ip_local_reserved_ports'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: '3000,3001,8085,9122,9187,9999'
+
     - name: tuned - Enable zswap if swap is present
       when:
         - ansible_facts['swaptotal_mb'] > 0
