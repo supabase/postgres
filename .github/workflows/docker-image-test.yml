@@ -34,7 +34,7 @@ jobs:
       input_hash: ${{ steps.check.outputs.input_hash }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
@@ -68,7 +68,7 @@ jobs:
           - { dockerfile: Dockerfile-multigres,   target: variant-orioledb-17, name: multigres-orioledb-17   }
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral

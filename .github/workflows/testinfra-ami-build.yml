@@ -30,7 +30,7 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq -- -r '.postgres_major[]' ansible/vars.yml | nix run nixpkgs#jq --  -R -r -s -c 'split("\n")[:-1]')
+          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
   test-ami-nix:
@@ -39,13 +39,14 @@ jobs:
       fail-fast: false
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-        include:
-          - runner: blacksmith-2vcpu-ubuntu-2404-arm
-            arch: arm64
-            ubuntu_release: noble
-            ubuntu_version: 24.04
-            mcpu: neoverse-n1
-    runs-on: ${{ matrix.runner }}
+        target:
+          - arch: amd64
+            instance_type: c6i.4xlarge
+            runner: blacksmith-2vcpu-ubuntu-2404
+          - arch: arm64
+            instance_type: c6g.4xlarge
+            runner: blacksmith-2vcpu-ubuntu-2404-arm
+    runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
     steps:
@@ -93,11 +94,13 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
+          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
+          ami_regions: '["ap-southeast-1"]'
+          arch: ${{ matrix.target.arch }}
+          git_sha: ${{ github.sha }}
+          instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ap-southeast-1
-          ami_regions: '["ap-southeast-1"]'
-          git_sha: ${{ github.sha }}
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}"
 
       - name: Run tests
         timeout-minutes: 10
@@ -120,6 +123,13 @@ jobs:
           else
             echo "No packer build instances to clean up"
           fi
+          VOLUME_IDS=$(aws ec2 --region ap-southeast-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
+          if [ -n "$VOLUME_IDS" ]; then
+            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
+            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region ap-southeast-1 delete-volume --volume-id
+          else
+            echo "No orphaned packer volumes to clean up"
+          fi
 
       - name: Cleanup resources after build
         if: ${{ always() }}
@@ -131,6 +141,13 @@ jobs:
             echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region ap-southeast-1 --instance-ids || true
           else
             echo "No testinfra instances to clean up"
+          fi
+          VOLUME_IDS=$(aws ec2 --region ap-southeast-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
+          if [ -n "$VOLUME_IDS" ]; then
+            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
+            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region ap-southeast-1 delete-volume --volume-id || true
+          else
+            echo "No orphaned packer volumes to clean up"
           fi
 
       - name: Cleanup stage 2 AMI

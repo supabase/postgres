@@ -22,13 +22,15 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-  apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
-	add-apt-repository --yes --update ppa:ansible/ansible && sudo apt-get install ansible -y
+	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
+	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+	# add-apt-repository --yes --update ppa:ansible/ansible &&
+	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
 
 function execute_playbook {
-
+	sudo mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
@@ -40,7 +42,7 @@ EOF
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
-                --extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
@@ -82,16 +84,18 @@ execute_playbook
 ####################
 
 function install_nix() {
-    sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.33.2/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+	sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EXTRA_NIX_CONF" -s /bin/bash root
-    #shellcheck disable=SC1091
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+	#shellcheck disable=SC1091
+	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+	nix --version
 }
 
 function execute_stage2_playbook {
+	sudo mkdir -p /etc/ansible
 	sudo tee /etc/ansible/ansible.cfg <<EOF
 [defaults]
 callbacks_enabled = timer, profile_tasks, profile_roles
@@ -105,14 +109,14 @@ EOF
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
-                --extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars @./ansible/qemu-vars.yaml
 }
 
 function clean_legacy_things {
-    # removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
-    apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
-    apt-get -y purge kong
-    apt-get autoremove -y
+	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
+	apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
+	apt-get -y purge kong
+	apt-get autoremove -y
 }
 
 function clean_system {
@@ -152,6 +156,22 @@ function clean_system {
 	rm -rf /root/.vpython*
 	rm -rf /root/go
 	rm -rf /mnt/usr/share/doc
+
+	# remove passwords in user-data-cloudimg.img (required for Packer login)
+	usermod -p '*' ubuntu
+	usermod -p '*' root
+
+	# Ensure that PasswordAuthentication is off
+	# From chroot-boostrap-nix.sh
+	sed -i -E \
+		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
+		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+		/etc/ssh/sshd_config
+	grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config ||
+		{
+			echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
+			exit 1
+		}
 }
 
 install_nix

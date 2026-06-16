@@ -5,6 +5,8 @@
   fetchFromGitHub,
   postgresql,
   curl,
+  makeWrapper,
+  switch-ext-version,
   latestOnly ? false,
 }:
 let
@@ -55,8 +57,8 @@ let
 
         mkdir -p $out/{lib,share/postgresql/extension}
 
-        # Install versioned library
-        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}--${fileVersion}${postgresql.dlSuffix}
+        # Install versioned library (single dash for switch-ext-version compatibility)
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${fileVersion}${postgresql.dlSuffix}
 
         cp ${pname}--${fileVersion}.sql $out/share/postgresql/extension/${pname}--${fileVersion}.sql
 
@@ -71,7 +73,7 @@ let
             echo "default_version = '${fileVersion}'"
             cat $out/share/postgresql/extension/${pname}--${fileVersion}.control
           } > $out/share/postgresql/extension/${pname}.control
-          ln -sfn ${pname}--${fileVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+          ln -sfn ${pname}-${fileVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
           cp *.sql $out/share/postgresql/extension
         fi
 
@@ -89,7 +91,7 @@ in
 pkgs.buildEnv {
   name = pname;
   paths = packages;
-
+  nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
@@ -105,6 +107,9 @@ pkgs.buildEnv {
       ls -la $out/lib/${pname}*${postgresql.dlSuffix} || true
       exit 1
     fi
+
+    makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
+      --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
 
   passthru = {

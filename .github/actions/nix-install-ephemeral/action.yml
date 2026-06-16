@@ -41,15 +41,40 @@ runs:
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
         NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
-    - uses: NixOS/nix-installer-action@d6ef7ecd8f685af89869e5aca0580a33e3e3150c
-      with:
-        installer-version: 2.33.2
-        extra-conf: |
-          substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-          trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-          ${{ inputs.push-to-cache == 'true' && 'post-build-hook = /etc/nix/upload-to-cache.sh' || '' }}
-          max-jobs = 4
-          extra-system-features = kvm
+    - name: Install Nix
+      shell: bash
+      run: |
+        sudo tee /tmp/nix-extra.conf > /dev/null <<'NIXCONF'
+        always-allow-substitutes = true
+        extra-experimental-features = nix-command flakes
+        extra-system-features = kvm
+        max-jobs = 4
+        substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
+        trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+        NIXCONF
+
+        if [ "${{ inputs.push-to-cache }}" = "true" ]; then
+          echo "post-build-hook = /etc/nix/upload-to-cache.sh" | sudo tee -a /tmp/nix-extra.conf > /dev/null
+        fi
+
+        curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
+
+        cat /etc/nix/nix.conf
+
+        # Add nix to PATH for subsequent steps
+        echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
+        # Source the daemon profile so nix works in this step too
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    - name: Configure Nix with GitHub token
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        echo "access-tokens = github.com=$GH_TOKEN" | sudo tee -a /etc/nix/nix.conf > /dev/null
+        sudo systemctl restart nix-daemon || true
+    - name: Print Nix version
+      shell: bash
+      run: nix --version
     - name: Setup KVM permissions
       shell: bash
       run: |

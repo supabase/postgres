@@ -122,24 +122,27 @@ source "amazon-ebssurrogate" "source" {
 
   ena_support = true
   launch_block_device_mappings {
-    device_name = "/dev/xvdf"
+    device_name           = "/dev/xvdf"
     delete_on_termination = true
-    volume_size = 10
-    volume_type = "gp3"
+    volume_size           = 10
+    volume_type           = "gp3"
    }
 
+  # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
+  # is a minimal default for this AMI; consumers should override this volume
+  # size at launch.
   launch_block_device_mappings {
-    device_name = "/dev/xvdh"
+    device_name           = "/dev/xvdh"
     delete_on_termination = true
-    volume_size = 8
-    volume_type = "gp3"
+    volume_size           = 1
+    volume_type           = "gp3"
    }
 
   launch_block_device_mappings {
     device_name           = "/dev/${var.build-vol}"
     delete_on_termination = true
     volume_size           = 16
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     omit_from_artifact    = true
   }
 
@@ -149,8 +152,9 @@ source "amazon-ebssurrogate" "source" {
     packerExecutionId = "${var.packer-execution-id}"
   }
   run_volume_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
     creator = "packer"
@@ -170,11 +174,11 @@ source "amazon-ebssurrogate" "source" {
   ssh_timeout = "5m"
 
   ami_root_device {
-    source_device_name = "/dev/xvdf"
-    device_name = "/dev/xvda"
+    source_device_name    = "/dev/xvdf"
+    device_name           = "/dev/xvda"
     delete_on_termination = true
-    volume_size = 10
-    volume_type = "gp2"
+    volume_size           = 10
+    volume_type           = "gp3"
   }
 
   associate_public_ip_address = true

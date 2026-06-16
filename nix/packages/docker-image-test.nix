@@ -321,7 +321,7 @@ writeShellApplication {
 
         # 3. pgctld init must succeed with no extra flags (tests USER postgres fix)
         local init_out
-        init_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
+        init_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
         if ! echo "$init_out" | grep -q "initialized successfully"; then
             log_error "  pgctld init failed: $init_out"
             exit 1
@@ -330,7 +330,7 @@ writeShellApplication {
 
         # 4. pgctld start must succeed
         local start_out
-        start_out=$(docker exec "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
+        start_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
         if ! echo "$start_out" | grep -q "started successfully"; then
             log_error "  pgctld start failed: $start_out"
             exit 1
@@ -349,7 +349,7 @@ writeShellApplication {
 
             # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
-            spl=$(docker exec "$container" sh -c "
+            spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
                     -tAc \"SHOW shared_preload_libraries;\" 2>&1") || true
             if ! echo "$spl" | grep -q "orioledb"; then
@@ -361,7 +361,7 @@ writeShellApplication {
 
             # 7. default_table_access_method must be orioledb
             local tam
-            tam=$(docker exec "$container" sh -c "
+            tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
                     -tAc \"SHOW default_table_access_method;\" 2>&1") || true
             if ! echo "$tam" | grep -q "orioledb"; then
@@ -398,7 +398,9 @@ writeShellApplication {
 
         log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
         docker exec -u postgres "$container" \
-            pg_ctl start -D /etc/postgresql -w -t 60
+            pg_ctl start -D /var/lib/postgresql/data \
+                -o "-c config_file=/etc/postgresql/postgresql.conf" \
+                -w -t 60
 
         log_info "Multigres: running schema migrations..."
         docker exec \
@@ -523,10 +525,16 @@ writeShellApplication {
         fi
         log_info "Container will access mock server at $HTTP_MOCK_HOST:$HTTP_MOCK_PORT"
 
-        # Select the appropriate prime.sql for this image variant
+        # Select the appropriate prime.sql for this image variant.
+        # The multigres variant bundles its own complete prime file
+        # (prime-multigres.sql); the standard variant needs prime.sql plus
+        # prime-superuser.sql for the extensions excluded from supautils'
+        # privileged_extensions list.
         local prime_sql="$TESTS_DIR/prime.sql"
+        local prime_superuser_sql="$TESTS_DIR/prime-superuser.sql"
         if [[ "$VERSION" == multigres-* ]]; then
             prime_sql="$TESTS_DIR/prime-multigres.sql"
+            prime_superuser_sql=""
         fi
 
         log_info "Running prime.sql to enable extensions..."
@@ -540,6 +548,21 @@ writeShellApplication {
             -f "$prime_sql" 2>&1; then
             log_error "Failed to run prime.sql"
             exit 1
+        fi
+
+        if [[ -n "$prime_superuser_sql" ]]; then
+            log_info "Running prime-superuser.sql for supautils-gated extensions..."
+            if ! PGPASSWORD="$POSTGRES_PASSWORD" "$PSQL_PATH" \
+                -h localhost \
+                -p "$PORT" \
+                -U "$POSTGRES_USER" \
+                -d "$POSTGRES_DB" \
+                -v ON_ERROR_STOP=1 \
+                -X \
+                -f "$prime_superuser_sql" 2>&1; then
+                log_error "Failed to run prime-superuser.sql"
+                exit 1
+            fi
         fi
 
         log_info "Creating test_config table..."

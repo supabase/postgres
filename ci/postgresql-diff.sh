@@ -341,7 +341,7 @@ analyze_variant_deps() {
 	echo "<details>"
 	echo "<summary>Raw Dependency Closure</summary>"
 	echo ""
-	echo "\`\`\`"
+	echo '```'
 	echo "Old Dependencies (closure: ${old_closure_mb:-?} MB):"
 	while read -r path; do
 		dep_size=$(nix path-info -S "$path" --json 2>/dev/null | jq -r '.[].narSize' 2>/dev/null || echo "")
@@ -363,7 +363,7 @@ analyze_variant_deps() {
 			echo "  $path"
 		fi
 	done <"/tmp/new-$variant-deps-$$.txt"
-	echo "\`\`\`"
+	echo '```'
 	echo ""
 	echo "</details>"
 	echo ""

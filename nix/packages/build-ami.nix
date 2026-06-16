@@ -19,8 +19,10 @@ let
         (root + "/ansible")
         (root + "/migrations")
         (root + "/scripts")
+        (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
-        (root + "/development-arm.vars.pkr.hcl")
+        (root + "/development-amd64.vars.pkr.hcl")
+        (root + "/development-arm64.vars.pkr.hcl")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
     };
@@ -49,9 +51,19 @@ writeShellApplication {
 
     set -x
 
-    # Parse stage parameter
-    STAGE="''${1:-stage1}"
-    shift || true  # Remove first arg, ignore error if no args
+    # Parse required parameters
+    STAGE=''${1:-stage1}
+    case $STAGE in
+    stage1 | stage2) ;;
+    *) echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'" >&2 && exit 1 ;;
+    esac
+
+    ARCH=$2
+    case $ARCH in
+    amd64 | arm64) ;;
+    *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
+    esac
+    shift 2
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
     PACKER_SOURCES="${packerSources}"
@@ -111,9 +123,9 @@ writeShellApplication {
       echo "No cached AMI found"
 
       cd "$PACKER_SOURCES"
-      packer init amazon-arm64-nix.pkr.hcl
+      packer init "$@"
       packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
@@ -146,7 +158,7 @@ writeShellApplication {
 
       packer init stage2-nix-psql.pkr.hcl
       packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
         -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
@@ -180,9 +192,6 @@ writeShellApplication {
           fi
         fi
       fi
-    else
-      echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'"
-      exit 1
     fi
   '';
 
