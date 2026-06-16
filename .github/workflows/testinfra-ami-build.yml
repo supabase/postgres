@@ -79,11 +79,6 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-      - id: args
-        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
-        with:
-          cmd: yq 'to_entries | map(select(.value|type == "!!str")) |  map(.key + "=" + .value) | join("\n")' 'ansible/vars.yml'
-
       - run: docker context create builders
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
