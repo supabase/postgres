@@ -76,6 +76,8 @@ runs:
         AWS_REGION: ${{ inputs.region }}
         GIT_SHA: ${{ inputs.git_sha }}
       run: |
+        echo "::group::AMI Build: Stage 1"
+
         if [[ -n "${{ inputs.force }}" ]]; then
           export BUILD_AMI_NIX_FORCE_BUILD="${{ inputs.force }}"
         fi
@@ -88,6 +90,8 @@ runs:
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           amazon-${{ inputs.arch }}-nix.pkr.hcl
 
+        echo "::endgroup::"
+
     - name: Build AMI stage 2
       id: build-stage2
       shell: bash
@@ -99,6 +103,8 @@ runs:
         AWS_REGION: ${{ inputs.region }}
         GIT_SHA: ${{ inputs.git_sha }}
       run: |
+        echo "::group::AMI Build: Stage 2"
+
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var "git-head-version=${{ inputs.git_sha }}" \
@@ -107,3 +113,5 @@ runs:
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
           stage2-nix-psql.pkr.hcl
+
+        echo "::endgroup::"
