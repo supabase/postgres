@@ -348,8 +348,27 @@ EXTRA_NIX_CONF
 
 		echo "Store path: $STORE_PATH"
 
-		# Realize from binary cache (no nix evaluation needed!)
-		nix-store -r "$STORE_PATH"
+		# Realize the closure from the binary cache.
+		#
+		# nix-store -r can stall indefinitely on a dropped S3 connection without
+		# erroring out (its own download timeout doesn't reliably fire), so guard each
+		# attempt with a timeout and retry. Each path downloads atomically: already-
+		# registered paths are skipped on retry but an in-flight NAR restarts from
+		# 0%. Failing as a normal command (not exit 1) lets the ERR trap run cleanup
+		# and record "failed" instead of hanging.
+		nix_store_ok="false"
+		for attempt in 1 2 3; do
+			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
+				nix_store_ok="true"
+				break
+			fi
+			if [ "$attempt" -lt 3 ]; then
+				echo "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
+			else
+				echo "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
+			fi
+		done
+		[ "$nix_store_ok" = "true" ]
 
 		PG_UPGRADE_BIN_DIR="$STORE_PATH"
 		PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
