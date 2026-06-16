@@ -1,6 +1,6 @@
-- name: Install and configure tuned when stage2_nix
+- name: Install and configure tuned
   when:
-    - (stage2_nix or nixpkg_mode)
+    - (stage2_nix or nixpkg_mode or debpkg_mode)
   block:
     - name: Install tuned
       ansible.builtin.apt:
@@ -134,6 +134,19 @@
         section: 'sysctl'
         state: 'present'
         value: '3000,3001,8085,9122,9187,9999'
+
+    - name: tuned - Set vm.panic_on_oom
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'vm.panic_on_oom'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: 1
 
     - name: tuned - Enable zswap if swap is present
       when:

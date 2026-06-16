@@ -158,14 +158,6 @@
   when:
     - (debpkg_mode or nixpkg_mode)
   block:
-    # Set Sysctl params for restarting the OS on OOM after 10
-    - name: Set vm.panic_on_oom=1
-      ansible.builtin.sysctl:
-        name: 'vm.panic_on_oom'
-        reload: true
-        state: 'present'
-        value: '1'
-
     - name: Set kernel.panic=10
       ansible.builtin.sysctl:
         name: 'kernel.panic'
