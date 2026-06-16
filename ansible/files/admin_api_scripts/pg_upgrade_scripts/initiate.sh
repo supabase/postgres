@@ -358,12 +358,12 @@ EXTRA_NIX_CONF
 		# and record "failed" instead of hanging.
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10 120 nix-store -r "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi
 			if [ "$attempt" -lt 3 ]; then
-				echo "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>120s); retrying"
+				echo "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
 			else
 				echo "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
 			fi
