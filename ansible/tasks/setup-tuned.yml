@@ -38,11 +38,11 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: "{{ item.option }}"
+        option: "{{ tuned_item.option }}"
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: "{{ item.section }}"
+        section: "{{ tuned_item.section }}"
         state: 'present'
-        value: "{{ item.value }}"
+        value: "{{ tuned_item.value }}"
       loop:
         - { section: 'cpu',    option: 'governor',                       value: 'performance' }
         - { section: 'main',   option: 'summary',                        value: 'Tuned profile for PostgreSQL' }
@@ -53,6 +53,8 @@
         - { section: 'sysctl', option: 'net.ipv4.tcp_keepalive_time',    value: 1800 }
         - { section: 'sysctl', option: 'vm.panic_on_oom',                value: 1 }
         - { section: 'vm',     option: 'transparent_hugepages',           value: 'never' }
+      loop_control:
+        loop_var: tuned_item
 
     - name: tuned - configure Intel CPUs for maximum performance
       become: true
@@ -61,14 +63,16 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: "{{ item.option }}"
+        option: "{{ intel_item.option }}"
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: "{{ item.section }}"
+        section: "{{ intel_item.section }}"
         state: 'present'
-        value: "{{ item.value }}"
+        value: "{{ intel_item.value }}"
       loop:
         - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
         - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
+      loop_control:
+        loop_var: intel_item
       when:
         - ansible_facts['processor'][0] is search("GenuineIntel", ignorecase=True)
 
@@ -113,12 +117,14 @@
 
         - name: tuned - configure and enable zswap
           ansible.builtin.shell:
-            cmd: "echo {{ item.value }}  > /sys/module/zswap/parameters/{{ item.param }}"
+            cmd: "echo {{ zswap_item.value }}  > /sys/module/zswap/parameters/{{ zswap_item.param }}"
           loop:
             - { param: 'compressor',       value: 'zstd' }
             - { param: 'max_pool_percent', value: '10' }
             - { param: 'zpool',            value: 'zsmalloc' }
             - { param: 'enabled',          value: 'Y' }
+          loop_control:
+            loop_var: zswap_item
 
     - name: tuned - activate service
       ansible.builtin.systemd_service:
