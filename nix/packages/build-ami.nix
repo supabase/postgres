@@ -73,6 +73,16 @@ writeShellApplication {
     INPUT_HASH=''${INPUT_HASH%%-*}
     shift 2
 
+    export PACKER_LOG=''${PACKER_LOG:-''${RUNNER_DEBUG:-0}}
+    on_error=ask
+    if ''${CI:-false}; then
+      echo "::notice::Setting packer build -on-error=abort since this is CI, this is different than non-CI runs!"
+      on_error=abort
+    elif ! [[ -t 0 ]]; then
+      echo "stdin is not a tty, so running packer build -on-error=cleanup (default) since there's no one to ask!" >&2
+      on_error=cleanup
+    fi
+
     REGION="''${AWS_REGION:-ap-southeast-1}"
 
     find_stage1_ami() {
@@ -116,14 +126,14 @@ writeShellApplication {
       echo "Building stage 1..."
       echo "Checking for existing AMI..."
 
-      if [ -n "''${BUILD_AMI_NIX_FORCE_BUILD:-}" ]; then
-        if [ "''${BUILD_AMI_NIX_FORCE_BUILD:-}" == true ]; then
-          echo 'BUILD_AMI_NIX_FORCE_STAGE1 == true ... skip search for stage1 AMI' >&2
+      if [ -n "''${BUILD_AMI_NIX_FORCE_BUILD_STAGE1:-}" ]; then
+        if [ "''${BUILD_AMI_NIX_FORCE_BUILD_STAGE1:-}" == true ]; then
+          echo 'BUILD_AMI_NIX_FORCE_BUILD_STAGE1 == true ... skip search for stage1 AMI' >&2
           find_stage1_ami() {
             return
           }
         else
-          echo 'BUILD_AMI_NIX_FORCE_STAGE1 != true ... will search for stage1 AMI' >&2
+          echo 'BUILD_AMI_NIX_FORCE_BUILD_STAGE1 != true ... will search for stage1 AMI' >&2
         fi
       fi
 
@@ -151,7 +161,7 @@ writeShellApplication {
 
       cd ${packerSources}
       packer init "$@"
-      packer build \
+      packer build -on-error=$on_error \
         -var-file="development-$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
@@ -184,7 +194,7 @@ writeShellApplication {
       echo "Found stage 1 AMI: $STAGE1_AMI_ID"
 
       packer init stage2-nix-psql.pkr.hcl
-      packer build \
+      packer build -on-error=$on_error \
         -var-file="development-$ARCH.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
         -var "region=$REGION" \

@@ -79,7 +79,7 @@ runs:
         echo "::group::AMI Build: Stage 1"
 
         if [[ -n "${{ inputs.force }}" ]]; then
-          export BUILD_AMI_NIX_FORCE_BUILD="${{ inputs.force }}"
+          export BUILD_AMI_NIX_FORCE_BUILD_STAGE1="${{ inputs.force }}"
         fi
 
         nix run .#build-ami -- stage1 ${{ inputs.arch }} \
