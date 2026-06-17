@@ -54,7 +54,7 @@
         - { section: 'sysctl', option: 'vm.panic_on_oom',                value: 1 }
         - { section: 'vm',     option: 'transparent_hugepages',           value: 'never' }
       loop_control:
-        loop_var: tuned_item
+        loop_var: 'tuned_item'
 
     - name: 'tuned - configure Intel CPUs for maximum performance'
       become: true
@@ -72,7 +72,7 @@
         - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
         - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
       loop_control:
-        loop_var: intel_item
+        loop_var: 'intel_item'
       when:
         - ansible_facts['processor'][0] is search('GenuineIntel', ignorecase=True)
 
@@ -124,7 +124,7 @@
             - { param: 'zpool',            value: 'zsmalloc' }
             - { param: 'enabled',          value: 'Y' }
           loop_control:
-            loop_var: zswap_item
+            loop_var: 'zswap_item'
 
     - name: 'tuned - activate service'
       ansible.builtin.systemd_service:
