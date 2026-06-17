@@ -1,6 +1,8 @@
 - name: 'tuned - install and configure'
   when:
-    - (stage2_nix or nixpkg_mode or debpkg_mode)
+    - stage2_nix
+    - nixpkg_mode
+    - debpkg_mode
   block:
     - name: 'tuned - install package'
       ansible.builtin.apt:
@@ -44,15 +46,33 @@
         state: 'present'
         value: "{{ tuned_item['value'] }}"
       loop:
-        - { section: 'cpu',    option: 'governor',                       value: 'performance' }
-        - { section: 'main',   option: 'summary',                        value: 'Tuned profile for PostgreSQL' }
-        - { section: 'sysctl', option: 'net.core.somaxconn',             value: 16834 }
-        - { section: 'sysctl', option: 'net.ipv4.ip_local_port_range',    value: '1025 65000' }
-        - { section: 'sysctl', option: 'net.ipv4.ip_local_reserved_ports', value: '3000,3001,8085,9122,9187,9999' }
-        - { section: 'sysctl', option: 'net.ipv4.tcp_keepalive_intvl',   value: 60 }
-        - { section: 'sysctl', option: 'net.ipv4.tcp_keepalive_time',    value: 1800 }
-        - { section: 'sysctl', option: 'vm.panic_on_oom',                value: 1 }
-        - { section: 'vm',     option: 'transparent_hugepages',           value: 'never' }
+        - section: 'cpu'
+          option: 'governor'
+          value: 'performance'
+        - section: 'main'
+          option: 'summary'
+          value: 'Tuned profile for PostgreSQL'
+        - section: 'sysctl'
+          option: 'net.core.somaxconn'
+          value: 16834
+        - section: 'sysctl'
+          option: 'net.ipv4.ip_local_port_range'
+          value: '1025 65000'
+        - section: 'sysctl'
+          option: 'net.ipv4.ip_local_reserved_ports'
+          value: '3000,3001,8085,9122,9187,9999'
+        - section: 'sysctl'
+          option: 'net.ipv4.tcp_keepalive_intvl'
+          value: 60
+        - section: 'sysctl'
+          option: 'net.ipv4.tcp_keepalive_time'
+          value: 1800
+        - section: 'sysctl'
+          option: 'vm.panic_on_oom'
+          value: 1
+        - section: 'vm'
+          option: 'transparent_hugepages'
+          value: 'never'
       loop_control:
         loop_var: 'tuned_item'
 
@@ -69,8 +89,12 @@
         state: 'present'
         value: "{{ intel_item['value'] }}"
       loop:
-        - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
-        - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
+        - section: 'cpu'
+          option: 'energy_perf_bias'
+          value: 'performance'
+        - section: 'cpu'
+          option: 'min_perf_pct'
+          value: '100'
       loop_control:
         loop_var: 'intel_item'
       when:
@@ -89,7 +113,8 @@
         state: 'present'
         value: 10
       when:
-        - (debpkg_mode or nixpkg_mode)
+        - debpkg_mode
+        - nixpkg_mode
 
     - name: 'tuned - enable zswap if swap is present'
       when:
@@ -119,10 +144,14 @@
           ansible.builtin.shell:
             cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           loop:
-            - { param: 'compressor',       value: 'zstd' }
-            - { param: 'max_pool_percent', value: '10' }
-            - { param: 'zpool',            value: 'zsmalloc' }
-            - { param: 'enabled',          value: 'Y' }
+            - param: 'compressor'
+              value: 'zstd'
+            - param: 'max_pool_percent'
+              value: '10'
+            - param: 'zpool'
+              value: 'zsmalloc'
+            - param: 'enabled'
+              value: 'Y'
           loop_control:
             loop_var: 'zswap_item'
 
