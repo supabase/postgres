@@ -135,6 +135,19 @@
         state: 'present'
         value: '3000,3001,8085,9122,9187,9999'
 
+    - name: tuned - Set ip_local_port_range
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'net.ipv4.ip_local_port_range'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: '1025 65000'
+
     - name: tuned - Set vm.panic_on_oom
       become: true
       community.general.ini_file:
