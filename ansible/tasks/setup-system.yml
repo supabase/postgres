@@ -154,17 +154,6 @@
         owner: 'root'
         group: 'root'
 
-- name: Execute tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
-  block:
-    - name: Set kernel.panic=10
-      ansible.builtin.sysctl:
-        name: 'kernel.panic'
-        reload: true
-        state: 'present'
-        value: '10'
-
 - name: set hosts file
   ansible.builtin.copy:
     content: |
