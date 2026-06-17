@@ -1,8 +1,9 @@
-- name: tuned - install and configure
+- name: 'tuned - install and configure'
   when:
-    - stage2_nix or nixpkg_mode or debpkg_mode
+    - stage2_nix
+    - debpkg_mode or nixpkg_mode
   block:
-    - name: tuned - install package
+    - name: 'tuned - install package'
       ansible.builtin.apt:
         force_apt_get: true
         name: 'tuned'
@@ -11,7 +12,7 @@
         update_cache: true
       become: true
 
-    - name: tuned - create profile directory
+    - name: 'tuned - create profile directory'
       ansible.builtin.file:
         group: 'root'
         mode: '0755'
@@ -20,7 +21,7 @@
         state: 'directory'
       become: true
 
-    - name: tuned - create profile symlink
+    - name: 'tuned - create profile symlink'
       ansible.builtin.file:
         force: true
         group: 'root'
@@ -31,7 +32,7 @@
         state: 'link'
       become: true
 
-    - name: tuned - configure profile
+    - name: 'tuned - configure profile'
       become: true
       community.general.ini_file:
         create: true
@@ -74,7 +75,7 @@
       loop_control:
         loop_var: 'tuned_item'
 
-    - name: tuned - configure Intel CPUs for maximum performance
+    - name: 'tuned - configure Intel CPUs for maximum performance'
       become: true
       community.general.ini_file:
         create: true
@@ -98,7 +99,7 @@
       when:
         - ansible_facts['processor'][0] is search('GenuineIntel', ignorecase=True)
 
-    - name: tuned - set kernel.panic
+    - name: 'tuned - set kernel.panic'
       become: true
       community.general.ini_file:
         create: true
@@ -113,11 +114,11 @@
       when:
         - debpkg_mode or nixpkg_mode
 
-    - name: tuned - enable zswap if swap is present
+    - name: 'tuned - enable zswap if swap is present'
       when:
         - ansible_facts['swaptotal_mb'] > 0
       block:
-        - name: tuned - decrease kernel swappiness
+        - name: 'tuned - decrease kernel swappiness'
           become: true
           community.general.ini_file:
             create: true
@@ -130,14 +131,14 @@
             state: 'present'
             value: 10
 
-        - name: tuned - load zstd compressor module
+        - name: 'tuned - load zstd compressor module'
           become: true
           community.general.modprobe:
             name: 'zstd'
             persistent: 'present'
             state: 'present'
 
-        - name: tuned - configure and enable zswap
+        - name: 'tuned - configure and enable zswap'
           ansible.builtin.shell:
             cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           loop:
@@ -152,7 +153,7 @@
           loop_control:
             loop_var: 'zswap_item'
 
-    - name: tuned - activate service
+    - name: 'tuned - activate service'
       ansible.builtin.systemd_service:
         daemon_reload: true
         enabled: true
@@ -160,7 +161,7 @@
         state: "{{ 'restarted' if stage2_nix else 'stopped' }}"
       become: true
 
-    - name: tuned - activate postgresql profile
+    - name: 'tuned - activate postgresql profile'
       ansible.builtin.command:
         cmd: 'tuned-adm profile postgresql'
       become: true
