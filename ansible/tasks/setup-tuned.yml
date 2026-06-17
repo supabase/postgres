@@ -176,6 +176,19 @@
       when:
         - (debpkg_mode or nixpkg_mode)
 
+    - name: tuned - Set net.core.somaxconn
+      become: true
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'net.core.somaxconn'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: 16834
+
     - name: tuned - Enable zswap if swap is present
       when:
         - ansible_facts['swaptotal_mb'] > 0
