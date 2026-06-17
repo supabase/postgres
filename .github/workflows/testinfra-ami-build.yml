@@ -79,12 +79,6 @@ jobs:
           DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-      - run: docker context create builders
-
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-        with:
-          endpoint: builders
-
       - name: Build AMI
         id: build-ami
         uses: ./.github/actions/build-ami
@@ -96,6 +90,12 @@ jobs:
           instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ap-southeast-1
+
+      - run: docker context create builders
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          endpoint: builders
 
       - name: Run tests
         timeout-minutes: 10
