@@ -38,11 +38,11 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: "{{ tuned_item.option }}"
+        option: "{{ tuned_item['option'] }}"
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: "{{ tuned_item.section }}"
+        section: "{{ tuned_item['section'] }}"
         state: 'present'
-        value: "{{ tuned_item.value }}"
+        value: "{{ tuned_item['value'] }}"
       loop:
         - { section: 'cpu',    option: 'governor',                       value: 'performance' }
         - { section: 'main',   option: 'summary',                        value: 'Tuned profile for PostgreSQL' }
@@ -63,11 +63,11 @@
         group: 'root'
         mode: '0644'
         no_extra_spaces: true
-        option: "{{ intel_item.option }}"
+        option: "{{ intel_item['option'] }}"
         path: '/etc/tuned/profiles/postgresql/tuned.conf'
-        section: "{{ intel_item.section }}"
+        section: "{{ intel_item['section'] }}"
         state: 'present'
-        value: "{{ intel_item.value }}"
+        value: "{{ intel_item['value'] }}"
       loop:
         - { section: 'cpu', option: 'energy_perf_bias', value: 'performance' }
         - { section: 'cpu', option: 'min_perf_pct',     value: '100' }
@@ -117,7 +117,7 @@
 
         - name: tuned - configure and enable zswap
           ansible.builtin.shell:
-            cmd: "echo {{ zswap_item.value }}  > /sys/module/zswap/parameters/{{ zswap_item.param }}"
+            cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           loop:
             - { param: 'compressor',       value: 'zstd' }
             - { param: 'max_pool_percent', value: '10' }
