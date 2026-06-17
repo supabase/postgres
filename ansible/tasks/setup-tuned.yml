@@ -1,8 +1,7 @@
 - name: 'tuned - install and configure'
   when:
     - stage2_nix
-    - nixpkg_mode
-    - debpkg_mode
+    - debpkg_mode or nixpkg_mode
   block:
     - name: 'tuned - install package'
       ansible.builtin.apt:
@@ -113,8 +112,7 @@
         state: 'present'
         value: 10
       when:
-        - debpkg_mode
-        - nixpkg_mode
+        - debpkg_mode or nixpkg_mode
 
     - name: 'tuned - enable zswap if swap is present'
       when:
