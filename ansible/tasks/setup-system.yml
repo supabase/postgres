@@ -165,8 +165,3 @@
     group: 'root'
   when:
     - (debpkg_mode or stage2_nix)
-
-- name: configure system
-  ansible.posix.sysctl:
-    name: 'net.core.somaxconn'
-    value: 16834
