@@ -215,10 +215,9 @@ EOF
 # other changes.
 function handle_upgrade_prerequisites {
 
-	# INDATA-757: pg_net's net.http_request_queue was created UNLOGGED on PG14.
-	# Newer pg_net defines it as LOGGED, so the persistence mismatch breaks
-	# pg_upgrade. Convert it to LOGGED before making any other changes to the
-	# source server.
+	# pg_net's net.http_request_queue was created UNLOGGED on PG14. Newer pg_net
+	# defines it as LOGGED, so the persistence mismatch breaks pg_upgrade.
+	# Convert it to LOGGED before making any other changes to the source server.
 	if [[ $OLD_PGVERSION =~ ^14.* ]]; then
 		PG_NET_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'pg_net');")
 		if [ "$PG_NET_ENABLED" = "t" ]; then
