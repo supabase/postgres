@@ -755,7 +755,7 @@
         "17",
         "orioledb-17"
       ],
-      "hash": "",
+      "hash": "sha256-nsblgWURnYkeE4OodhT7lnXM5+2PN4MnLeESnYudm+w=",
       "pgrx": "0.16.1",
       "rust": "1.88.0"
     }
