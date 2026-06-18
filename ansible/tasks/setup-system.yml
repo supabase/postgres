@@ -154,17 +154,6 @@
         owner: 'root'
         group: 'root'
 
-- name: Execute tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
-  block:
-    - name: Set kernel.panic=10
-      ansible.builtin.sysctl:
-        name: 'kernel.panic'
-        reload: true
-        state: 'present'
-        value: '10'
-
 - name: set hosts file
   ansible.builtin.copy:
     content: |
@@ -176,13 +165,3 @@
     group: 'root'
   when:
     - (debpkg_mode or stage2_nix)
-
-- name: configure system
-  ansible.posix.sysctl:
-    name: 'net.core.somaxconn'
-    value: 16834
-
-- name: configure system
-  ansible.posix.sysctl:
-    name: 'net.ipv4.ip_local_port_range'
-    value: '1025 65000'
