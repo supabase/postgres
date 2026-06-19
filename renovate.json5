@@ -1,0 +1,12 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "security:only-security-updates"],
+  packageRules: [
+    {
+      description: "GitHub Actions: regular updates after a cool-off (pins are tracked in .github/workflows/actions.lock)",
+      enabled: true,
+      matchManagers: ["github-actions"],
+      minimumReleaseAge: "7 days",
+    },
+  ],
+}
