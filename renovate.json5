@@ -1,7 +1,69 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended", "security:only-security-updates"],
+  customManagers: [
+    {
+      customType: "regex",
+      depNameTemplate: "tzdata",
+      description: "tzdata override version in nix/nixpkgs.nix annotated with a '# renovate:' comment",
+      managerFilePatterns: ["/^nix/nixpkgs\\.nix$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) packageName=(?<packageName>\\S+)\\n\\s*version = "(?<currentValue>[^"]+)";',
+      ],
+    },
+    {
+      customType: "regex",
+      description: "Versions in ansible/vars.yml annotated with a '# renovate:' comment",
+      extractVersionTemplate: "^v?(?<version>.+)$",
+      managerFilePatterns: ["/^ansible/vars\\.yml$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) packageName=(?<packageName>\\S+)\\n(?<depName>\\w+)_release: "?(?<currentValue>[^"\\s#]+)"?',
+      ],
+    },
+  ],
   packageRules: [
+    {
+      allowedVersions: "/^2\\./",
+      description: "Only the v2 line of the AWS CLI is installed",
+      matchDepNames: ["aws_cli"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      allowedVersions: "/^2\\.8\\./",
+      description: "Kong download URLs are pinned to the gateway-28 (2.8.x) repo",
+      matchDepNames: ["kong"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      allowedVersions: "/^3007\\./",
+      description: "Salt ships security releases in minor updates and does not do micro/patch. Stay on the 3007 major.",
+      enabled: true,
+      matchDepNames: ["salt"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      description: "tzdata overlay in nix/nixpkgs.nix: allow regular updates and refresh the tarball hashes",
+      enabled: true,
+      matchDepNames: ["tzdata"],
+      matchFileNames: ["nix/nixpkgs.nix"],
+      postUpgradeTasks: {
+        commands: [
+          'for k in tzdata tzcode; do h=$(nix store prefetch-file --json https://data.iana.org/time-zones/releases/${k}{{{newVersion}}}.tar.gz | jq -r .hash); sed -i "/releases\\/${k}\\${version}/{n;s|hash = \\".*\\"|hash = \\"$h\\"|}" nix/nixpkgs.nix; done',
+        ],
+        executionMode: "update",
+        fileFilters: ["nix/nixpkgs.nix"],
+      },
+    },
+    {
+      description: "ansible/vars.yml artifacts: allow regular (non-security) updates and refresh checksums",
+      enabled: true,
+      matchFileNames: ["ansible/vars.yml"],
+      postUpgradeTasks: {
+        commands: ["nix run .#update-ansible-artifacts -- {{{depName}}} {{{newVersion}}}"],
+        executionMode: "update",
+        fileFilters: ["ansible/vars.yml"],
+      },
+    },
     {
       description: "GitHub Actions: regular updates after a cool-off (pins are tracked in .github/workflows/actions.lock)",
       enabled: true,
