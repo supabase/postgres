@@ -63,6 +63,9 @@ let
           mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
         fi
 
+        find $out/share/postgresql/extension -name "*.sql" \
+          -exec sed -Ei '/^CREATE TABLE\b/,/^\);$/ s/^\);$/) USING heap;/' {} +
+
         # Create versioned control file with modified module path
         sed -e "/^default_version =/d" \
             -e "/^schema =/d" \
