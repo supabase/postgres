@@ -145,6 +145,16 @@ EOF
 		)
 
 		run_sql -c "$PG_NET_GRANT_QUERY"
+
+		# Determine whether the pg_net request queue is in the net schema, and
+		# is UNLOGGED.
+		PG_NET_REQS_LOGGED=$(run_sql -A -t -c "SELECT relpersistence = 'p' FROM pg_class WHERE oid = to_regclass('net.http_request_queue');")
+
+		if [ "$PG_NET_REQS_LOGGED" = "t" ]; then
+			# In PG15 and later, setting the table UNLOGGED will automatically
+			# set all linked sequences to UNLOGGED.
+			run_sql -c "ALTER TABLE net.http_request_queue SET UNLOGGED;"
+		fi
 	fi
 
 	# Patching pg_cron ownership as it resets during upgrade

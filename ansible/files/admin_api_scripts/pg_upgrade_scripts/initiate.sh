@@ -214,16 +214,16 @@ EOF
 # migration errors between pg or extension versions, and must be run before any
 # other changes.
 function handle_upgrade_prerequisites {
+	PG_NET_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'pg_net');")
 
-	# pg_net's net.http_request_queue was created UNLOGGED on PG14. Newer pg_net
-	# defines it as LOGGED, so the persistence mismatch breaks pg_upgrade.
-	# Convert it to LOGGED before making any other changes to the source server.
-	if [[ $OLD_PGVERSION =~ ^14.* ]]; then
-		PG_NET_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = 'pg_net');")
-		if [ "$PG_NET_ENABLED" = "t" ]; then
-			echo "  - Ensuring net.http_request_queue is LOGGED prior to upgrade"
-			run_sql -c "ALTER TABLE IF EXISTS net.http_request_queue SET LOGGED;"
-		fi
+	# Even though the pg_net tables are created UNLOGGED, PG14 does not support
+	# unlogged sequences, and so they are created LOGGED. This mismatch causes
+	# pg_upgrade trouble. To work around it, SET LOGGED before the upgrade
+	# process. It (and the sequence) are then SET UNLOGGED after the upgrade
+	# succeeds (in complete.sh).
+	if [[ $OLD_PGVERSION =~ ^14.* && "$PG_NET_ENABLED" = "t" ]]; then
+		echo "  - Ensuring net.http_request_queue is LOGGED prior to upgrade"
+		run_sql -c "ALTER TABLE IF EXISTS net.http_request_queue SET LOGGED;"
 	fi
 }
 
