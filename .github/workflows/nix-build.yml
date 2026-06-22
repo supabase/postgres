@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  # required by testinfra-ami-build dependent workflows
+  # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
 
