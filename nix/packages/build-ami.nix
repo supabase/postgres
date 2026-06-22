@@ -2,7 +2,6 @@
   lib,
   stdenv,
   awscli2,
-  coreutils,
   jq,
   packer,
   writeShellApplication,
@@ -43,7 +42,6 @@ writeShellApplication {
 
   runtimeInputs = [
     awscli2
-    coreutils
     jq
     packer
   ];
@@ -64,11 +62,7 @@ writeShellApplication {
     *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
     esac
 
-    if [[ $0 != "''${BASH_SOURCE[0]}" ]]; then
-      echo "This file is not to be sourced" >&2
-      exit 1
-    fi
-    INPUT_HASH=$(realpath "$0")
+    INPUT_HASH=${placeholder "out"}
     INPUT_HASH=''${INPUT_HASH#/nix/store/}
     INPUT_HASH=''${INPUT_HASH%%-*}
     shift 2
