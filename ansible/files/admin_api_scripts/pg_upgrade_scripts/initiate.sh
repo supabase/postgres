@@ -221,7 +221,7 @@ function handle_upgrade_prerequisites {
 	# pg_upgrade trouble. To work around it, SET LOGGED before the upgrade
 	# process. It (and the sequence) are then SET UNLOGGED after the upgrade
 	# succeeds (in complete.sh).
-	if [[ $OLD_PGVERSION =~ ^14.* && "$PG_NET_ENABLED" = "t" ]]; then
+	if [[ $OLD_PGVERSION =~ ^14.* && $PG_NET_ENABLED == "t" ]]; then
 		echo "  - Ensuring net.http_request_queue is LOGGED prior to upgrade"
 		run_sql -c "ALTER TABLE IF EXISTS net.http_request_queue SET LOGGED;"
 	fi
