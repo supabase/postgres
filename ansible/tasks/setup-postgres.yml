@@ -369,7 +369,7 @@
     no_extra_spaces: true
     option: 'After'
     owner: 'root'
-    path: '/etc/systemd/system/postgresql.service.d/override.conf'
+    path: '/etc/systemd/system/postgresql.service.d/overrides.conf'
     section: 'Unit'
     state: 'present'
     value: 'tuned.service'

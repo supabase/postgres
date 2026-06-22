@@ -49,7 +49,7 @@ jobs:
           nix run github:supabase/postgres/${GIT_SHA}#packer -- build \
             -var "git-head-version=${GIT_SHA}" \
             -var "packer-execution-id=${EXECUTION_ID}" \
-            -var-file="development-arm.vars.pkr.hcl" \
+            -var-file="development-arm64.vars.pkr.hcl" \
             -var "base-image-nightly=true" \
             -var "build-timestamp=${BUILD_TIMESTAMP}" \
             -var "region=us-east-1" \
@@ -70,8 +70,10 @@ jobs:
         if: ${{ always() }}
         run: |
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
+          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
         run: |
           aws ec2 --region us-east-1 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region us-east-1 --instance-ids
+          aws ec2 --region us-east-1 describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region us-east-1 delete-volume --volume-id

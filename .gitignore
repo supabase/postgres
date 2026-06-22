@@ -1,35 +1,24 @@
-.DS_Store
-.python-version
-.mise.toml
-venv/
-*.swp
-docker/cache/
+.*
+!.env
+!.gitignore
+!.gitkeep
+!/.claude/
+!/.coderabbit.yaml
+!/.envrc.recommended
+!/.github/
+/.claude/settings.local.json
 
+# ansible related
 ansible/image-manifest*.json
-testinfra-aio-container-logs.log
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
+# python related
 *$py.class
+*.py[cod]
+__pycache__/
+venv/
 
 #nix related
-result*
-.env-local
-.history
-.envrc
-.direnv
-.nixos-test-history
-
-#IDE
-.idea/
-.vscode/
-
-db/schema.sql
 common-nix.vars.pkr.hcl
-
-# pre-commit config is managed in nix
-.pre-commit-config.yaml
+db/schema.sql
 nixos.qcow2
-.lsp
-.clj-kondo
+result*

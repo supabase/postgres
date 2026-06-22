@@ -17,6 +17,9 @@ After=apparmor.service
 # We want sysctl's to be applied
 After=systemd-sysctl.service
 
+# Ensure tuned is applied
+After=tuned.service
+
 # UFW Is modified by cloud init, but started non-blocking, so configuration
 # could be in-flight while gotrue is starting. I want to ensure future rules
 # that are relied on for security posture are applied before gotrue runs.

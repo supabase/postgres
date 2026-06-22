@@ -21,7 +21,7 @@ jobs:
 
       - name: Load postgres_release values
         id: load_postgres_release
-        uses: mikefarah/yq@master
+        uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4.50.1
         with:
           args: eval '.postgres_release' ansible/vars.yml
         # The output will be available as steps.load_postgres_release.outputs.stdout

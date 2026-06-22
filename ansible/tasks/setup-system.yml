@@ -154,46 +154,6 @@
         owner: 'root'
         group: 'root'
 
-    # Set Sysctl params specific to keepalives
-    - name: Set net.ipv4.tcp_keepalive_time=1800
-      ansible.builtin.sysctl:
-        name: 'net.ipv4.tcp_keepalive_time'
-        value: 1800
-        state: 'present'
-
-    - name: Set net.ipv4.tcp_keepalive_intvl=60
-      ansible.builtin.sysctl:
-        name: 'net.ipv4.tcp_keepalive_intvl'
-        value: 60
-        state: 'present'
-
-    # postgres_exporter runs on port 9187 and postgresT occasionlly chooses it as random srcport
-    # adminapi for 8085
-    - name: Set net.ipv4.ip_local_reserved_ports
-      ansible.builtin.sysctl:
-        name: 'net.ipv4.ip_local_reserved_ports'
-        value: '9187,8085'
-        state: 'present'
-
-- name: Execute tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
-  block:
-    # Set Sysctl params for restarting the OS on OOM after 10
-    - name: Set vm.panic_on_oom=1
-      ansible.builtin.sysctl:
-        name: 'vm.panic_on_oom'
-        reload: true
-        state: 'present'
-        value: '1'
-
-    - name: Set kernel.panic=10
-      ansible.builtin.sysctl:
-        name: 'kernel.panic'
-        reload: true
-        state: 'present'
-        value: '10'
-
 - name: set hosts file
   ansible.builtin.copy:
     content: |
@@ -205,13 +165,3 @@
     group: 'root'
   when:
     - (debpkg_mode or stage2_nix)
-
-- name: configure system
-  ansible.posix.sysctl:
-    name: 'net.core.somaxconn'
-    value: 16834
-
-- name: configure system
-  ansible.posix.sysctl:
-    name: 'net.ipv4.ip_local_port_range'
-    value: '1025 65000'
