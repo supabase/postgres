@@ -122,12 +122,12 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-darwin",
                 "big-parallel",
-                {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
+                {"labels": ["blacksmith-12vcpu-macos-26"]},
             ),
             (
                 "aarch64-darwin",
                 None,
-                {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
+                {"labels": ["blacksmith-6vcpu-macos-26"]},
             ),
             (
                 "aarch64-linux",
@@ -147,7 +147,7 @@ class TestGetRunnerForPackage:
             (
                 "x86_64-linux",
                 "kvm",
-                {"labels": ["blacksmith-8vcpu-ubuntu-2404"]},
+                {"labels": ["blacksmith-16vcpu-ubuntu-2404"]},
             ),
             (
                 "x86_64-linux",

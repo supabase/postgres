@@ -239,10 +239,9 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
 
     Priority order:
     1. VM packages on Darwin → self-hosted runners
-    2. VM packages on Linux → ephemeral runners
-    3. Large packages on Linux → 32vcpu ephemeral runners
-    4. Darwin packages → self-hosted runners
-    5. Default → ephemeral runners
+    2. VM packages on Linux  → 16vcpu blacksmith runners
+    3. Large packages on D/L → 12/32vcpu blacksmith runners
+    5. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
 
     system = pkg["system"]
@@ -255,22 +254,25 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     specs = Specs()
 
     match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
-        case (_, _, "darwin", "aarch64"):
-            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
-
         # kvm
+        case (True, _, "darwin", "aarch64"):
+            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
         case (True, _, "linux", "aarch64"):
             specs = Specs(16, "ubuntu-2404-arm")
         case (True, _, "linux", "x86_64"):
-            specs = Specs(8, "ubuntu-2404")
+            specs = Specs(16, "ubuntu-2404")
 
         # large
+        case (_, True, "darwin", "aarch64"):
+            specs = Specs(12, "macos-26")
         case (_, True, "linux", "aarch64"):
             specs = Specs(32, "ubuntu-2404-arm")
         case (_, True, "linux", "x86_64"):
             specs = Specs(32, "ubuntu-2404")
 
         # default
+        case (_, _, "darwin", "aarch64"):
+            specs = Specs(6, "macos-26")
         case (_, _, "linux", "aarch64"):
             specs = Specs(8, "ubuntu-2404-arm")
         case (_, _, "linux", "x86_64"):
