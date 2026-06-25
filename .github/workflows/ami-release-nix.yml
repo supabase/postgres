@@ -89,7 +89,7 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
+          ami_name_prefix: "supabase-postgres-${{ matrix.target.arch }}"
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           force: "true"

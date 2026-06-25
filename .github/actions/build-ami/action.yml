@@ -52,7 +52,7 @@ runs:
       id: set-execution-id
       shell: bash
       run: |
-        PACKER_EXECUTION_ID="${{ github.run_id }}-${{ inputs.postgres_version }}-${{ inputs.arch }}"
+        PACKER_EXECUTION_ID="${{ inputs.postgres_version }}-${{ inputs.arch }}-${{ github.run_id }}"
         echo "PACKER_EXECUTION_ID=$PACKER_EXECUTION_ID" >> $GITHUB_ENV
         echo "execution_id=$PACKER_EXECUTION_ID" >> $GITHUB_OUTPUT
 
