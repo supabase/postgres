@@ -161,11 +161,11 @@ def parse_nix_eval_line(
 
 def run_nix_eval_jobs(
     cmd: List[str],
-) -> Tuple[List[NixEvalJobsOutput], List[str], List[NixEvalError]]:
+) -> Tuple[str, List[str]]:
     """Run nix-eval-jobs and return parsed package data, warnings, and errors.
 
     Returns:
-        Tuple of (packages, warnings_list, errors_list)
+        Tuple of (stdout, warnings_list)
     """
     print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 
@@ -177,17 +177,6 @@ def run_nix_eval_jobs(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
     stdout_data, stderr_data = process.communicate()
-
-    # Parse stdout for packages
-    packages: List[NixEvalJobsOutput] = []
-    drv_paths: Set[str] = set()
-    errors_list: List[NixEvalError] = []
-    for line in stdout_data.splitlines():
-        result = parse_nix_eval_line(line, drv_paths)
-        if result.is_err():
-            errors_list.append(result._value)
-        elif result._value is not None:
-            packages.append(result._value)
 
     # Parse stderr for warnings (lines starting with "warning:")
     warnings_list: List[str] = []
@@ -203,7 +192,24 @@ def run_nix_eval_jobs(
             title="Process Failure",
         )
 
-    return packages, warnings_list, errors_list
+    return stdout_data, warnings_list
+
+
+def process_nix_eval_jobs_stdout(
+    stdout: str,
+) -> Tuple[List[NixEvalJobsOutput], List[NixEvalError]]:
+    # Parse stdout for packages
+    packages: List[NixEvalJobsOutput] = []
+    drv_paths: Set[str] = set()
+    errors: List[NixEvalError] = []
+    for line in stdout.splitlines():
+        result = parse_nix_eval_line(line, drv_paths)
+        if result.is_err():
+            errors_list.append(result._value)
+        elif result._value is not None:
+            packages.append(result._value)
+
+    return packages, errors
 
 
 def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
@@ -298,17 +304,32 @@ def main() -> None:
         help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
     )
     parser.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read nix-eval-jobs output from stdin instead of executing process",
+    )
+    parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Send matrix as json to stdout",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
     args = parser.parse_args()
 
-    cmd = build_nix_eval_command(
-        args.nb_eval_jobs_workers, args.max_memory_size, args.flake_outputs
-    )
+    if args.stdin:
+        nix_eval_output, warnings_list = sys.stdin.read(), []
+    else:
+        cmd = build_nix_eval_command(
+            args.nb_eval_jobs_workers,
+            args.max_memory_size,
+            args.flake_outputs,
+        )
+        nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
 
-    # Run evaluation and collect packages, warnings, and errors
-    packages, warnings_list, errors_list = run_nix_eval_jobs(cmd)
+    packages, errors_list = process_nix_eval_jobs_stdout(nix_eval_output)
     gh_action_packages = sort_pkgs_by_closures(packages)
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
@@ -405,6 +426,8 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
+    elif args.stdout:
+        print(json.dumps(gh_output))
     else:
         formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
             "\n", "%0A"
