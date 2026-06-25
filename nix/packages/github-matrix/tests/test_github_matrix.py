@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import json
+
 import pytest
 
 from github_matrix import (
@@ -8,6 +10,7 @@ from github_matrix import (
     is_extension_pkg,
     is_kvm_pkg,
     is_large_pkg,
+    parse_nix_eval_line,
     sort_pkgs_by_closures,
 )
 
@@ -90,6 +93,29 @@ class TestIsKvmPkg:
             "system": "x86_64-linux",
         }
         assert is_kvm_pkg(pkg) is False
+
+
+class TestNixOSCheck:
+    @pytest.mark.parametrize(
+        "system,expected",
+        [
+            ("aarch64-darwin", False),
+            ("aarch64-linux", True),
+            ("x86_64-linux", False),
+        ],
+    )
+    def test_system(self, system, expected):
+        check = {
+            "attr": f"attr-{system}",
+            "drvPath": f"test_{system}",
+            "system": system,
+            "requiredSystemFeatures": ["nixos-test"],
+        }
+        result = parse_nix_eval_line(json.dumps(check), set())
+        if expected:
+            assert result._value is not None
+        else:
+            assert result._value is None
 
 
 class TestGetRunnerForPackage:
