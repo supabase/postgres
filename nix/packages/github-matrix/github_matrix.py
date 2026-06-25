@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    NamedTuple,
     NotRequired,
     Optional,
     Set,
@@ -24,7 +25,6 @@ from github_action_utils import debug, notice, error, set_output, warning
 from result import Err, Ok, Result
 
 System = Literal["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
-RunnerType = Literal["ephemeral", "self-hosted"]
 
 
 class NixEvalJobsOutput(TypedDict):
@@ -65,24 +65,6 @@ class NixEvalError(TypedDict):
 
     attr: str
     error: str
-
-
-BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
-    "ephemeral": {
-        "aarch64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
-        },
-        "x86_64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
-        },
-    },
-    "self-hosted": {
-        "aarch64-darwin": {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-darwin"],
-        },
-    },
-}
 
 
 def build_nix_eval_command(
@@ -262,28 +244,39 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     4. Darwin packages → self-hosted runners
     5. Default → ephemeral runners
     """
+
     system = pkg["system"]
+    arch, os = system.split("-")
 
-    if is_kvm_pkg(pkg):
-        if system == "aarch64-darwin":
-            return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
-        if system == "aarch64-linux":
-            return {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
-        runConfig = BUILD_RUNNER_MAP["ephemeral"].get(system)
-        if runConfig is None:
-            raise ValueError(
-                f"No ephemeral runner with kvm support available for system: {system}"
-            )
-        return runConfig
+    class Specs(NamedTuple):
+        vcpu: int = 0
+        osv: str = None
 
-    if is_large_pkg(pkg) and system in ("x86_64-linux", "aarch64-linux"):
-        suffix = "-arm" if system == "aarch64-linux" else ""
-        return {"labels": [f"blacksmith-32vcpu-ubuntu-2404{suffix}"]}
+    specs = Specs()
 
-    if system == "aarch64-darwin":
-        return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+    match (is_kvm_pkg(pkg), is_large_pkg(pkg), os, arch):
+        case (_, _, "darwin", "aarch64"):
+            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
 
-    return BUILD_RUNNER_MAP["ephemeral"].get(system)
+        # kvm
+        case (True, _, "linux", "aarch64"):
+            specs = Specs(16, "ubuntu-2404-arm")
+        case (True, _, "linux", "x86_64"):
+            specs = Specs(8, "ubuntu-2404")
+
+        # large
+        case (_, True, "linux", "aarch64"):
+            specs = Specs(32, "ubuntu-2404-arm")
+        case (_, True, "linux", "x86_64"):
+            specs = Specs(32, "ubuntu-2404")
+
+        # default
+        case (_, _, "linux", "aarch64"):
+            specs = Specs(8, "ubuntu-2404-arm")
+        case (_, _, "linux", "x86_64"):
+            specs = Specs(8, "ubuntu-2404")
+
+    return {"labels": [f"blacksmith-{specs.vcpu}vcpu-{specs.osv}"]}
 
 
 def main() -> None:
