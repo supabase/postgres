@@ -8,7 +8,7 @@ from github_matrix import (
     NixEvalJobsOutput,
     get_runner_for_package,
     is_extension_pkg,
-    is_kvm_pkg,
+    is_virt_pkg,
     is_large_pkg,
     parse_nix_eval_line,
     sort_pkgs_by_closures,
@@ -70,29 +70,21 @@ class TestIsLargePkg:
         assert is_large_pkg(pkg) is expected
 
 
-class TestIsKvmPkg:
-    def test_kvm_package(self):
+class TestIsVirtPkg:
+    @pytest.mark.parametrize(
+        "feat,expected",
+        [
+            ("", False),
+            ("apple-virt", True),
+            ("big-parallel", False),
+            ("kvm", True),
+        ],
+    )
+    def test_is_virt_pkg(self, feat, expected):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.vm-test",
-            "attrPath": ["packages", "x86_64-linux", "vm-test"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "vm-test",
-            "system": "x86_64-linux",
-            "requiredSystemFeatures": ["kvm"],
+            "requiredSystemFeatures": [feat],
         }
-        assert is_kvm_pkg(pkg) is True
-
-    def test_non_kvm_package(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15",
-            "attrPath": ["packages", "x86_64-linux", "psql_15"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "postgresql-16.0",
-            "system": "x86_64-linux",
-        }
-        assert is_kvm_pkg(pkg) is False
+        assert is_virt_pkg(pkg) is expected
 
 
 class TestNixOSCheck:
@@ -124,7 +116,7 @@ class TestGetRunnerForPackage:
         [
             (
                 "aarch64-darwin",
-                "kvm",
+                "apple-virt",
                 {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
             ),
             (

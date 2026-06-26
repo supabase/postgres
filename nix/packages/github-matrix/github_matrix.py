@@ -229,17 +229,17 @@ def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     return "big-parallel" in pkg.get("requiredSystemFeatures", [])
 
 
-def is_kvm_pkg(pkg: NixEvalJobsOutput) -> bool:
-    """Determine if a package requires KVM"""
-    return "kvm" in pkg.get("requiredSystemFeatures", [])
+def is_virt_pkg(pkg: NixEvalJobsOutput) -> bool:
+    """Determine if a package requires hardware virtualization capabilities"""
+    return bool({"apple-virt", "kvm"} & set(pkg.get("requiredSystemFeatures", [])))
 
 
 def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. KVM packages on Darwin → self-hosted runners
-    2. KVM packages on Linux → ephemeral runners
+    1. VM packages on Darwin → self-hosted runners
+    2. VM packages on Linux → ephemeral runners
     3. Large packages on Linux → 32vcpu ephemeral runners
     4. Darwin packages → self-hosted runners
     5. Default → ephemeral runners
@@ -254,7 +254,7 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
 
     specs = Specs()
 
-    match (is_kvm_pkg(pkg), is_large_pkg(pkg), os, arch):
+    match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
         case (_, _, "darwin", "aarch64"):
             return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
 
