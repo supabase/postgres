@@ -111,8 +111,6 @@
           value: '1048576'
         - option: 'fs.file-max'
           value: '312139770'
-        - option: 'kernel.panic_on_oom'
-          value: '1'
         - option: 'kernel.panic_on_oops'
           value: '1'
         - option: 'kernel.sched_autogroup_enabled'
