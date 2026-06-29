@@ -111,8 +111,6 @@
           value: '1048576'
         - option: 'fs.file-max'
           value: '312139770'
-        - option: 'kernel.panic'
-          value: '10'
         - option: 'kernel.panic_on_oom'
           value: '1'
         - option: 'kernel.panic_on_oops'
@@ -141,6 +139,21 @@
           value: '1'
       loop_control:
         loop_var: 'sysctl_item'
+
+    - name: 'tuned - Set kernel.panic=10'  # noqa: name[casing]
+      community.general.ini_file:
+        create: true
+        group: 'root'
+        mode: '0644'
+        no_extra_spaces: true
+        option: 'kernel.panic'
+        path: '/etc/tuned/profiles/postgresql/tuned.conf'
+        section: 'sysctl'
+        state: 'present'
+        value: '10'
+      become: true
+      when:
+        - (debpkg_mode or nixpkg_mode)
 
     - name: 'tuned - Enable zswap if swap is present'  # noqa: name[casing]
       when:
