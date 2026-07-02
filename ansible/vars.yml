@@ -10,7 +10,7 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.099-orioledb"
+  postgresorioledb-17: "17.6.0.099-orioledb-x86-backport"
   postgres17: "17.6.1.025-x86-backport"
   postgres15: "15.14.1.025-x86-backport"
 
