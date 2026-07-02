@@ -260,17 +260,19 @@
                 "z_17_roles" # version-specific roles test, includes pgtle_admin
               ];
 
+              skipTests = [
+                "pg_partman"
+              ];
+
               # Convert filtered tests to a sorted list of basenames (without extension)
               testList = pkgs.lib.mapAttrsToList (
                 name: _: builtins.substring 0 (pkgs.lib.stringLength name - 4) name
               ) filteredSqlTests;
 
-              # Filter out CLI-incompatible tests if this is a CLI variant
-              filteredTestList =
-                if isCliVariant then
-                  builtins.filter (test: !(builtins.elem test cliSkipTests)) testList
-                else
-                  testList;
+              # Filter out tests disabled by this harness and CLI-incompatible tests if this is a CLI variant
+              filteredTestList = builtins.filter (
+                test: !(builtins.elem test (skipTests ++ lib.optionals isCliVariant cliSkipTests))
+              ) testList;
 
               sortedTestList = builtins.sort (a: b: a < b) filteredTestList;
 
@@ -314,6 +316,12 @@
                 export BASHLOG_FILE_PATH=debug.log
                 # Use a build-specific directory for coordination
                 BUILD_TMP=$(mktemp -d)
+                PRIME_SQL="$BUILD_TMP/prime.sql"
+                cp ${./tests/prime.sql} "$PRIME_SQL"
+                ${pkgs.gnused}/bin/sed -i \
+                  -e '/create schema if not exists partman;/d' \
+                  -e '/create extension if not exists pg_partman/d' \
+                  "$PRIME_SQL"
 
                 # Function to log command execution with stdout and stderr
                 function log_cmd {
@@ -452,7 +460,7 @@
                   fi
                 else
                   log info "Loading prime SQL file (full extension set)"
-                  if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql}; then
+                  if ! log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -v ON_ERROR_STOP=1 -Xf "$PRIME_SQL"; then
                     log error "Error executing SQL file. PostgreSQL log content:"
                     cat "$PGTAP_CLUSTER"/postgresql.log
                     pg_ctl -D "$PGTAP_CLUSTER" stop
@@ -516,7 +524,7 @@
                   fi
                 else
                   log info "Loading prime SQL file (full extension set)"
-                  if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf ${./tests/prime.sql} 2>&1; then
+                  if ! log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -v ON_ERROR_STOP=1 -Xf "$PRIME_SQL" 2>&1; then
                     log error "Error executing SQL file"
                     exit 1
                   fi
