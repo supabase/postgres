@@ -6,6 +6,7 @@
 !/.coderabbit.yaml
 !/.envrc.recommended
 !/.github/
+!/.yamllint
 /.claude/settings.local.json
 
 # ansible related
