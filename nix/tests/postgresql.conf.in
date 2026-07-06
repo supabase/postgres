@@ -799,3 +799,4 @@ vault.getkey_script = '@PGSODIUM_GETKEY_SCRIPT@'
 
 auto_explain.log_min_duration = 10s
 cron.database_name = 'postgres'
+pg_net.username = 'postgres'
