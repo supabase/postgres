@@ -42,6 +42,7 @@
     {
       packages = lib.optionalAttrs pkgs.stdenv.isLinux {
         "psql_17/bin" = lib.mkForce psql_old_with_latest_supautils;
+        "psql_17_cli/bin" = lib.mkForce postgres_old."psql_17_cli/bin";
         postgresql_17_debug = lib.mkForce postgres_old.postgresql_17_debug;
         postgresql_17_src = lib.mkForce postgres_old.postgresql_17_src;
         supabase-groonga = lib.mkForce postgres_old.supabase-groonga;
