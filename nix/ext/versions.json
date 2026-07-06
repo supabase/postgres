@@ -114,7 +114,10 @@
         "orioledb-17"
       ],
       "rev": "v1.6.4",
-      "hash": "sha256-t1DpFkPiSfdoGG2NgNT7g1lkvSooZoRoUrix6cBID40="
+      "hash": "sha256-t1DpFkPiSfdoGG2NgNT7g1lkvSooZoRoUrix6cBID40=",
+      "patches": [
+        "pg_cron-heap-tables.patch"
+      ]
     }
   },
   "pg_graphql": {
