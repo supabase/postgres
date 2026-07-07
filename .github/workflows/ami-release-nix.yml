@@ -49,9 +49,11 @@ jobs:
           - arch: amd64
             instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
+            ami_name_prefix: supabase-postgres-x86_64
           - arch: arm64
             instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
+            ami_name_prefix: supabase-postgres-arm64
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
@@ -89,7 +91,7 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
-          ami_name_prefix: "supabase-postgres-${{ matrix.target.arch }}"
+          ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           force: "true"
