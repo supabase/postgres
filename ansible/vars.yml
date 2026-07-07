@@ -10,9 +10,9 @@ postgres_major:
 
 # Full version strings for each major version
 postgres_release:
-  postgresorioledb-17: "17.6.0.099-orioledb-ignore2"
-  postgres17: "17.6.1.084-backfill"
-  postgres15: "15.14.1.142-ignore2"
+  postgresorioledb-17: "17.6.0.099-orioledb-ignore22"
+  postgres17: "17.6.1.084-backfill2"
+  postgres15: "15.14.1.142-ignore22"
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
