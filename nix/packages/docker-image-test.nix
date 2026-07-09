@@ -337,8 +337,39 @@ writeShellApplication {
         fi
         log_info "  ✓ pgctld start --pooler-dir $pooler_dir"
 
+        # 5. session_preload_libraries must include supautils — pgctld renders
+        # postgresql.conf from a separate template
+        # (/etc/pgctld-custom/*.conf.tmpl) than the static
+        # /etc/postgresql/postgresql.conf the SQL regression suite uses, so
+        # that suite alone can't catch supautils being missing from the
+        # template.
+        local session_pl
+        session_pl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SHOW session_preload_libraries;\" 2>&1") || true
+        if ! echo "$session_pl" | grep -q "supautils"; then
+            log_error "  supautils not in session_preload_libraries (got: $session_pl)"
+            log_error "  Check that the pgctld config template sets session_preload_libraries = 'supautils'"
+            exit 1
+        fi
+        log_info "  ✓ session_preload_libraries contains supautils"
+
+        # 6. supautils.conf's actual policy must be loaded (not just the
+        # library) — supautils.policy_grants should contain the
+        # realtime.messages grant real supautils.conf.j2 defines.
+        local policy_grants
+        policy_grants=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SHOW supautils.policy_grants;\" 2>&1") || true
+        if ! echo "$policy_grants" | grep -q "realtime.messages"; then
+            log_error "  supautils.policy_grants missing expected policy (got: $policy_grants)"
+            log_error "  Check that the pgctld config template includes /etc/postgresql-custom/supautils.conf"
+            exit 1
+        fi
+        log_info "  ✓ supautils.conf policy loaded (policy_grants set)"
+
         if [[ "$version" == "multigres-orioledb-17" ]]; then
-            # 5. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            # 7. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
             local first_line
             first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
             if [[ "$first_line" != "#!/bin/sh" ]]; then
@@ -347,7 +378,7 @@ writeShellApplication {
             fi
             log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
 
-            # 6. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            # 8. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
             spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
@@ -359,7 +390,7 @@ writeShellApplication {
             fi
             log_info "  ✓ shared_preload_libraries contains orioledb"
 
-            # 7. default_table_access_method must be orioledb
+            # 9. default_table_access_method must be orioledb
             local tam
             tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
