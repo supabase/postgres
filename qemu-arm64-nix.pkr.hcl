@@ -9,7 +9,7 @@ variable "environment" {
 }
 
 variable "git_sha" {
-  type    = string
+  type = string
 }
 
 locals {
@@ -17,22 +17,22 @@ locals {
 }
 
 variable "postgres-version" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "postgres-major-version" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "git-head-version" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
 variable "packer-execution-id" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
@@ -80,7 +80,7 @@ source "qemu" "cloudimg" {
   qemu_img_args {
     convert = ["-o", "compression_type=zstd"]
   }
-  qemu_binary    = "qemu-system-aarch64"
+  qemu_binary = "qemu-system-aarch64"
   qemuargs = [
     ["-machine", "virt,gic-version=3"],
     ["-cpu", "host"],
@@ -111,17 +111,17 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible"
+    source      = "ansible"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "scripts"
+    source      = "scripts"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "migrations"
+    source      = "migrations"
     destination = "/tmp"
   }
 
@@ -131,10 +131,10 @@ build {
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
       "GIT_SHA=${var.git_sha}"
     ]
-    use_env_var_file = true
-    script = "ebssurrogate/scripts/qemu-bootstrap-nix.sh"
-    execute_command = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
+    use_env_var_file    = true
+    script              = "ebssurrogate/scripts/qemu-bootstrap-nix.sh"
+    execute_command     = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
-    skip_clean = true
+    skip_clean          = true
   }
 }
