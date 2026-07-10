@@ -250,16 +250,11 @@
   when:
     - nixpkg_mode
 
-- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+- name: Run initdb (stage2_nix)
   when:
     - stage2_nix
   block:
-    - name: Check if psql_version is psql_orioledb
-      ansible.builtin.set_fact:
-        is_psql_17: "{{ psql_version in ['psql_17'] }}"
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
-
-    - name: Initialize the database stage2_nix (non-orioledb)
+    - name: Initialize the database stage2_nix (PG <17)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -273,10 +268,9 @@
       vars:
         ansible_command_timeout: 60
       when:
-        - not is_psql_oriole
-        - not is_psql_17
+        - psql_version not in ['psql_17', 'psql_orioledb-17']
 
-    - name: Initialize the database stage2_nix (orioledb)
+    - name: Initialize the database stage2_nix (PG >=17)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -290,7 +284,7 @@
       vars:
         ansible_command_timeout: 60
       when:
-        - (is_psql_oriole or is_psql_17)
+        - psql_version in ['psql_17', 'psql_orioledb-17']
 
 - name: copy PG apparmor profile
   ansible.builtin.copy:
