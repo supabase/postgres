@@ -266,7 +266,7 @@
   when:
     - stage2_nix
   block:
-    - name: Initialize the database stage2_nix (PG <17)
+    - name: Initialize the database stage2_nix (NOT PG17 NOR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -279,10 +279,9 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when:
-        - psql_version not in ['psql_17', 'psql_orioledb-17']
+      when: psql_version not in ['psql_17', 'psql_orioledb-17']
 
-    - name: Initialize the database stage2_nix (PG >=17)
+    - name: Initialize the database stage2_nix (PG17 OR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -295,8 +294,7 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when:
-        - psql_version in ['psql_17', 'psql_orioledb-17']
+      when: psql_version in ['psql_17', 'psql_orioledb-17']
 
 - name: copy PG apparmor profile
   ansible.builtin.copy:
