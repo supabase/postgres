@@ -73,11 +73,7 @@ in
       "nix-command"
       "flakes"
     ];
-    always-allow-substitutes = true;
-    max-jobs = "auto";
-    trusted-users = [ "@admin" ];
     extra-substituters = [ "https://nix-postgres-artifacts.s3.amazonaws.com" ];
-    extra-trusted-substituters = [ "https://nix-postgres-artifacts.s3.amazonaws.com" ];
     extra-trusted-public-keys = [
       "nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI="
     ];

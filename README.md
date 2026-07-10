@@ -124,6 +124,8 @@ The project uses Nix as its build system, which provides:
 
 ## Common Tasks
 
+To skip hours of building and download instead, configure the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
+
 ### Building Locally
 
 To build PostgreSQL with extensions locally:
