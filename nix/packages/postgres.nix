@@ -50,6 +50,7 @@
         ../ext/wrappers/default.nix
         ../ext/supautils.nix
         ../ext/plv8
+        ../ext/postgresql-unit.nix
       ];
 
       #Where we import and build the orioledb extension, we add on our custom extensions
