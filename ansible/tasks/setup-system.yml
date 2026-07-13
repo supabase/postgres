@@ -1,4 +1,11 @@
-- name: Execute tasks when stage1
+- name: Set the platform arch as a fact
+  ansible.builtin.set_fact:
+    platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+  tags:
+    - update
+    - update-only
+
+- name: Execute stage1 tasks
   when: not stage2
   block:
     - name: System - apt update and apt upgrade
@@ -75,13 +82,6 @@
         mode: '0644'
         owner: 'root'
         group: 'root'
-
-- name: Set the platform arch as a fact
-  ansible.builtin.set_fact:
-    platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
-  tags:
-    - update
-    - update-only
 
 - name: Disable algif_aead module autoload for Copy Fail mitigation
   ansible.builtin.copy:

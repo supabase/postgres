@@ -34,14 +34,6 @@
     # that inner sudo fails even though the outer caller is already pgbackrest.
     - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
 
-- name: Install pgBackRest
-  when: stage2
-  ansible.builtin.shell: |
-    sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
-  become: true
-  become_user: pgbackrest
-  changed_when: true
-
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
     group: postgres
@@ -85,23 +77,6 @@
     src: /etc/pgbackrest.conf
     state: link
 
-- name: Move pgBackRest files to /etc/pgbackrest
-  when: stage2
-  ansible.legacy.copy:
-    group: postgres
-    dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
-    mode: '0640'
-    owner: pgbackrest
-    src: "files/pgbackrest_config/{{ conf_item['name'] }}"
-  loop:
-    - {name: computed_globals.conf, path: conf.d}
-    - {name: pgbackrest.conf, path: ''}
-    - {name: repo1_async.conf, path: conf.d}
-    - {name: repo1_encrypted.conf, path: conf.d}
-    - {name: repo1.conf, path: conf.d}
-  loop_control:
-    loop_var: conf_item
-
 - name: Create pgBackRest wrapper script
   ansible.builtin.copy:
     content: |
@@ -141,3 +116,28 @@
     group: 'root'
     mode: '0755'
     owner: 'root'
+
+- name: Install pgBackRest
+  when: stage2
+  ansible.builtin.shell: |
+    sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
+  become: true
+  become_user: pgbackrest
+  changed_when: true
+
+- name: Move pgBackRest files to /etc/pgbackrest
+  when: stage2
+  ansible.legacy.copy:
+    group: postgres
+    dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
+    mode: '0640'
+    owner: pgbackrest
+    src: "files/pgbackrest_config/{{ conf_item['name'] }}"
+  loop:
+    - {name: computed_globals.conf, path: conf.d}
+    - {name: pgbackrest.conf, path: ''}
+    - {name: repo1_async.conf, path: conf.d}
+    - {name: repo1_encrypted.conf, path: conf.d}
+    - {name: repo1.conf, path: conf.d}
+  loop_control:
+    loop_var: conf_item
