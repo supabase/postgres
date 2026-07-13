@@ -2,6 +2,10 @@
   become: yes
 
   pre_tasks:
+    - name: Set the platform arch as a fact
+      ansible.builtin.set_fact:
+        platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+
     - import_tasks: tasks/setup-system.yml
   vars_files:
     - ./vars.yml

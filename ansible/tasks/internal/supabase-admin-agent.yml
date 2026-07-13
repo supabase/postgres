@@ -58,19 +58,9 @@
     # world-execute bit since it is neither owner nor group member.
     mode: "0755"
 
-- name: Setting arch (amd64)
-  when: platform == "amd64"
-  set_fact:
-    arch: "amd64"
-
-- name: Setting arch (arm)
-  when: platform == "arm64"
-  set_fact:
-    arch: "arm64"
-
 - name: Download supabase-admin-agent archive
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ platform }}.tar.gz"
     dest: "/tmp/supabase-admin-agent.tar.gz"
     timeout: 90
   register: download_result
@@ -90,7 +80,7 @@
 - name: supabase-admin-agent - create symlink
   ansible.builtin.file:
     path: /opt/supabase-admin-agent/supabase-admin-agent
-    src: "/opt/supabase-admin-agent/supabase-admin-agent-linux-{{ arch }}"
+    src: "/opt/supabase-admin-agent/supabase-admin-agent-linux-{{ platform }}"
     state: link
     owner: supabase-admin-agent
     mode: "0755"

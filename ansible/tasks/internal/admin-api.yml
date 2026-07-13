@@ -27,19 +27,9 @@
   shell: |
     chmod g+w /etc
 
-- name: Setting arch (amd64)
-  when: platform == "amd64"
-  set_fact:
-    arch: "amd64"
-
-- name: Setting arch (arm)
-  when: platform == "arm64"
-  set_fact:
-    arch: "arm64"
-
 - name: Download adminapi archive
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ platform }}.tar.gz"
     dest: "/tmp/adminapi.tar.gz"
     timeout: 90
 

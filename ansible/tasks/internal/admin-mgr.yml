@@ -1,16 +1,6 @@
-- name: Setting arch (x86)
-  when: platform == "amd64"
-  set_fact:
-    arch: "amd64"
-
-- name: Setting arch (arm)
-  when: platform == "arm64"
-  set_fact:
-    arch: "arm64"
-
 - name: Download admin-mgr archive
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_{{ arch }}.tar.gz"
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_{{ platform }}.tar.gz"
     dest: "/tmp/admin-mgr.tar.gz"
     timeout: 90
   register: download_result
