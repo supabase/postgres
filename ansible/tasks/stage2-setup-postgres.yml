@@ -6,11 +6,11 @@
         is_psql_17: "{{ psql_version in ['psql_17'] }}"
         is_psql_15: "{{ psql_version in ['psql_15'] }}"
 
-    - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2_nix
+    - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2
       become: true
       when:
         - (is_psql_oriole or is_psql_17)
-        - stage2_nix
+        - stage2
       block:
         - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
@@ -34,11 +34,11 @@
             regexp: 'db_user_namespace\ =\ off'
             replace: '#db_user_namespace\ =\ off'
 
-    - name: Execute things when is_psql_oriole and stage2_nix
+    - name: Execute things when is_psql_oriole and stage2
       become: true
       when:
         - is_psql_oriole
-        - stage2_nix
+        - stage2
       block:
         - name: Append orioledb to shared_preload_libraries append within closing quote
           ansible.builtin.replace:
@@ -57,10 +57,10 @@
             line: 'ORIOLEDB_ENABLED=true'
             path: '/etc/environment'
 
-- name: Execute things when stage2_nix
+- name: Execute things when stage2
   become: true
   when:
-    - stage2_nix
+    - stage2
   block:
     - name: Install packages from nix binary cache
       ansible.builtin.shell: |
@@ -131,7 +131,7 @@
 
         - name: Install gatekeeper if not pg15
           when:
-            - stage2_nix
+            - stage2
             - not is_psql_15
           block:
             - name: Install gatekeeper from nix binary cache

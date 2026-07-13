@@ -10,7 +10,7 @@
     - motd-news
     - vector
     - salt-minion
-  when: stage2_nix
+  when: stage2
 
 - name: disable man-db
   become: yes
@@ -21,4 +21,4 @@
     - man-db
     - popularity-contest
     - ubuntu-advantage-tools
-  when: stage2_nix
+  when: stage2

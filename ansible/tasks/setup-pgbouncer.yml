@@ -81,7 +81,7 @@
     - 'custom-overrides.ini'
     - 'generated-optimizations.ini'
     - 'ssl-config.ini'
-  when: nixpkg_mode
+  when: not stage2
 
 - name: PgBouncer - adjust pgbouncer.ini
   ansible.builtin.copy:

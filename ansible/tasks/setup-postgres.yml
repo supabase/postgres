@@ -1,6 +1,6 @@
-- name: execute stage2_nix tasks
+- name: execute stage2 tasks
   when:
-    - stage2_nix
+    - stage2
   block:
     - name: install locales
       ansible.builtin.apt:
@@ -31,9 +31,9 @@
         cmd: 'update-locale'
       become: true
 
-- name: execute nixpkg_mode tasks
+- name: execute stage1 tasks
   when:
-    - nixpkg_mode
+    - not stage2
   block:
     # the old method of installing from debian creates this group, but we must create it explicitly
     # for the nix built version
@@ -60,9 +60,9 @@
         system: true
       become: yes
 
-- name: execute nixpkg_mode tasks
+- name: execute stage1 tasks
   when:
-    - nixpkg_mode
+    - not stage2
   block:
     - name: Create relevant directories
       ansible.builtin.file:
@@ -163,19 +163,19 @@
   ansible.builtin.import_tasks:
     file: 'tasks/setup-docker.yml'
   when:
-    - stage2_nix
+    - stage2
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
   ansible.builtin.import_tasks:
     file: 'tasks/stage2-setup-postgres.yml'
   when:
-    - stage2_nix
+    - stage2
 
 # init DB
-- name: init the db when nixpkg_mode
+- name: init the db when stage1
   when:
-    - nixpkg_mode
+    - not stage2
   block:
     - name: Create directory on data volume
       ansible.builtin.file:
@@ -200,11 +200,11 @@
     path: '/var/lib/postgresql/.bashrc'
     state: 'touch'
   when:
-    - nixpkg_mode
+    - not stage2
 
 - name: Ensure /data configured for production runtime
   when:
-    - stage2_nix and (qemu_mode is not defined)
+    - stage2 and not qemu
   ansible.posix.mount:
     src: "UUID={{ ansible_mounts | selectattr('mount', 'equalto', '/data') | map(attribute='uuid') | first }}"
     path: /data
@@ -214,11 +214,11 @@
     passno: "2"
     state: mounted
 
-- name: Run initdb (stage2_nix)
+- name: Run initdb (stage2)
   when:
-    - stage2_nix
+    - stage2
   block:
-    - name: Initialize the database stage2_nix (NOT PG17 NOR PG17-OrioleDB)
+    - name: Initialize the database stage2 (NOT PG17 NOR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -233,7 +233,7 @@
         ansible_command_timeout: 60
       when: psql_version not in ['psql_17', 'psql_orioledb-17']
 
-    - name: Initialize the database stage2_nix (PG17 OR PG17-OrioleDB)
+    - name: Initialize the database stage2 (PG17 OR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -278,7 +278,7 @@
   loop_control:
     loop_var: 'systemd_svc_item'
   when:
-    - stage2_nix
+    - stage2
 
 - name: initialize pg required state
   become: true
@@ -288,8 +288,8 @@
     path: '/run/postgresql'
     state: 'directory'
   when:
-    - stage2_nix
-    - qemu_mode is defined
+    - stage2
+    - qemu
 
 - name: Restart Postgres Database without Systemd
   become: true
@@ -303,7 +303,7 @@
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
   when:
-    - stage2_nix
+    - stage2
 
 
 # Reload
@@ -349,7 +349,7 @@
     enabled: true
     name: 'postgresql'
   when:
-    - stage2_nix
+    - stage2
 
 
 - name: Add lang and locale items to .bashrc
@@ -368,4 +368,4 @@
   loop_control:
     loop_var: 'lang_item'
   when:
-    - nixpkg_mode
+    - not stage2

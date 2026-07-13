@@ -1,6 +1,6 @@
-- name: Execute wal-g things when nixpkg_mode
+- name: Execute wal-g things when stage1
   when:
-    - nixpkg_mode
+    - not stage2
   block:
     - name: Create wal-g group
       ansible.builtin.group:
@@ -24,9 +24,9 @@
         path: '/etc/wal-g'
         state: 'directory'
 
-- name: Execute wal-g things when stage2_nix
+- name: Execute wal-g things when stage2
   when:
-    - stage2_nix
+    - stage2
   block:
     - name: Install wal-g 2 from nix binary cache
       ansible.builtin.shell:

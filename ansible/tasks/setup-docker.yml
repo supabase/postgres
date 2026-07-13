@@ -1,6 +1,6 @@
-- name: stage2_nix actions
+- name: stage2 actions
   when:
-    - stage2_nix
+    - stage2
   block:
     # supautils
     - name: supautils - add supautils to session_preload_libraries

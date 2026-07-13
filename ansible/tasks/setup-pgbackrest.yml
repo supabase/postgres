@@ -3,7 +3,7 @@
     name: pgbackrest
     state: present
   when:
-    - nixpkg_mode
+    - not stage2
 
 - name: Create pgBackRest user
   ansible.builtin.user:
@@ -15,7 +15,7 @@
     shell: /sbin/nologin
     system: true
   when:
-    - nixpkg_mode
+    - not stage2
 
 - name: Configure sudoers for pgBackRest
   ansible.builtin.lineinfile:
@@ -43,7 +43,7 @@
   become_user: pgbackrest
   changed_when: true
   when:
-    - stage2_nix
+    - stage2
 
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
@@ -62,8 +62,6 @@
     - {dir: /var/log/pgbackrest}
   loop_control:
     loop_var: backrest_dir
-  when:
-    - nixpkg_mode or stage2_nix
 
 # supabase-admin-agent opens these log files with O_APPEND|O_WRONLY (no
 # O_CREATE). They must exist before SAA runs; a missing file causes the
@@ -82,8 +80,6 @@
     - /var/log/pgbackrest/saa-pgb.log
     - /var/log/pgbackrest/wal-push.log
     - /var/log/pgbackrest/wal-fetch.log
-  when:
-    - nixpkg_mode or stage2_nix
 
 - name: Symlink pgbackrest.conf
   ansible.legacy.file:
@@ -108,7 +104,7 @@
   loop_control:
     loop_var: conf_item
   when:
-    - stage2_nix
+    - stage2
 
 - name: Create pgBackRest wrapper script
   ansible.builtin.copy:

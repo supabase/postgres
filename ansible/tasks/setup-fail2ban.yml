@@ -1,7 +1,7 @@
 # set default bantime to 1 hour
-- name: do nixpkg_mode tasks
+- name: do stage1 tasks
   when:
-    - nixpkg_mode
+    - not stage2
   block:
     - name: extend the default bantime to an hour
       become: true

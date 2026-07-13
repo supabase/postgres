@@ -1,6 +1,4 @@
 - name: 'tuned - Install and configure tuned'  # noqa: name[casing]
-  when:
-    - (stage2_nix or nixpkg_mode)
   block:
     - name: 'tuned - Install tuned'  # noqa: name[casing]
       ansible.builtin.apt:
@@ -187,7 +185,7 @@
         value: '10'
       become: true
       when:
-        - nixpkg_mode
+        - not stage2
 
     - name: 'tuned - Enable zswap if swap is present'  # noqa: name[casing]
       when:
@@ -236,7 +234,7 @@
         daemon_reload: true
         enabled: true
         name: 'tuned'
-        state: "{{ 'restarted' if stage2_nix else 'stopped' }}"
+        state: "{{ 'restarted' if stage2 else 'stopped' }}"
       become: true
 
     - name: 'tuned - Activate the PostgreSQL tuned profile'  # noqa: name[casing]
@@ -245,4 +243,4 @@
       become: true
       changed_when: false
       when:
-        - stage2_nix
+        - stage2
