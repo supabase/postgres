@@ -1,12 +1,12 @@
 - name: Setting arch (x86)
+  when: platform == "amd64"
   set_fact:
     arch: "amd64"
-  when: platform == "amd64"
 
 - name: Setting arch (arm)
+  when: platform == "arm64"
   set_fact:
     arch: "arm64"
-  when: platform == "arm64"
 
 - name: Download admin-mgr archive
   get_url:

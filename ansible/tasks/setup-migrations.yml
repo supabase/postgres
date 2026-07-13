@@ -1,6 +1,5 @@
 - name: run stage2 tasks
-  when:
-    - stage2
+  when: stage2
   block:
     - name: Run migrate.sh script
       ansible.builtin.command:

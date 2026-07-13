@@ -1,6 +1,5 @@
 - name: execute stage2 tasks
-  when:
-    - stage2
+  when: stage2
   block:
     - name: install locales
       ansible.builtin.apt:
@@ -32,8 +31,7 @@
       become: true
 
 - name: execute stage1 tasks
-  when:
-    - not stage2
+  when: not stage2
   block:
     # the old method of installing from debian creates this group, but we must create it explicitly
     # for the nix built version
@@ -61,8 +59,7 @@
       become: yes
 
 - name: execute stage1 tasks
-  when:
-    - not stage2
+  when: not stage2
   block:
     - name: Create relevant directories
       ansible.builtin.file:
@@ -150,32 +147,29 @@
             is_psql_15: "{{ psql_version in ['psql_15'] }}"
 
         - name: create placeholder pam config
+          when: not is_psql_15
           file:
             path: '/etc/pam.d/postgresql'
             state: touch
             owner: postgres
             group: postgres
             mode: 0664
-          when: not is_psql_15
 
 # Install extensions before init
 - name: Install Postgres extensions
+  when: stage2
   ansible.builtin.import_tasks:
     file: 'tasks/setup-docker.yml'
-  when:
-    - stage2
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
+  when: stage2
   ansible.builtin.import_tasks:
     file: 'tasks/stage2-setup-postgres.yml'
-  when:
-    - stage2
 
 # init DB
 - name: init the db when stage1
-  when:
-    - not stage2
+  when: not stage2
   block:
     - name: Create directory on data volume
       ansible.builtin.file:
@@ -194,17 +188,15 @@
         state: 'link'
 
 - name: Make sure .bashrc exists
+  when: not stage2
   ansible.builtin.file:
     group: 'postgres'
     owner: 'postgres'
     path: '/var/lib/postgresql/.bashrc'
     state: 'touch'
-  when:
-    - not stage2
 
 - name: Ensure /data configured for production runtime
-  when:
-    - stage2 and not qemu
+  when: stage2 and not qemu
   ansible.posix.mount:
     src: "UUID={{ ansible_mounts | selectattr('mount', 'equalto', '/data') | map(attribute='uuid') | first }}"
     path: /data
@@ -215,10 +207,10 @@
     state: mounted
 
 - name: Run initdb (stage2)
-  when:
-    - stage2
+  when: stage2
   block:
     - name: Initialize the database stage2 (NOT PG17 NOR PG17-OrioleDB)
+      when: psql_version not in ['psql_17', 'psql_orioledb-17']
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -231,9 +223,9 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: psql_version not in ['psql_17', 'psql_orioledb-17']
 
     - name: Initialize the database stage2 (PG17 OR PG17-OrioleDB)
+      when: psql_version in ['psql_17', 'psql_orioledb-17']
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -246,7 +238,6 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when: psql_version in ['psql_17', 'psql_orioledb-17']
 
 - name: copy PG apparmor profile
   ansible.builtin.copy:
@@ -269,6 +260,7 @@
     cmd: '/usr/sbin/aa-enforce sbpostgres'
 
 - name: copy PG and optimizations systemd units
+  when: stage2
   ansible.builtin.template:
     dest: "/etc/systemd/system/{{ systemd_svc_item | basename }}"
     src: "files/{{ systemd_svc_item }}"
@@ -277,8 +269,6 @@
     - 'postgresql_config/postgresql.service'
   loop_control:
     loop_var: 'systemd_svc_item'
-  when:
-    - stage2
 
 - name: initialize pg required state
   become: true
@@ -292,6 +282,7 @@
     - qemu
 
 - name: Restart Postgres Database without Systemd
+  when: stage2
   become: true
   become_user: 'postgres'
   ansible.builtin.command:
@@ -302,8 +293,6 @@
     LC_ALL: en_US.UTF-8
     LC_CTYPE: en_US.UTF-8
     LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-  when:
-    - stage2
 
 
 # Reload
@@ -344,15 +333,15 @@
     state: 'present'
     value: 'tuned.service'
 - name: System - systemd reload
+  when: stage2
   ansible.builtin.systemd_service:
     daemon_reload: true
     enabled: true
     name: 'postgresql'
-  when:
-    - stage2
 
 
 - name: Add lang and locale items to .bashrc
+  when: not stage2
   ansible.builtin.lineinfile:
     create: true
     dest: '/var/lib/postgresql/.bashrc'
@@ -367,5 +356,3 @@
     - 'export LC_CTYPE="en_US.UTF-8"'
   loop_control:
     loop_var: 'lang_item'
-  when:
-    - not stage2

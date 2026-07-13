@@ -99,8 +99,7 @@
   failed_when: false
 
 - name: Execute more tasks when stage1
-  when:
-    - not stage2
+  when: not stage2
   block:
     - name: Custom systemd overrides for resolved
       ansible.builtin.copy:
@@ -159,6 +158,7 @@
         group: 'root'
 
 - name: set hosts file
+  when: stage2
   ansible.builtin.copy:
     content: |
       127.0.0.1   localhost
@@ -167,8 +167,6 @@
     mode: '0644'
     owner: 'root'
     group: 'root'
-  when:
-    - stage2
 
 - name: Configure Apt
   ansible.builtin.copy:

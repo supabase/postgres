@@ -1,6 +1,5 @@
 - name: stage2 actions
-  when:
-    - stage2
+  when: stage2
   block:
     # supautils
     - name: supautils - add supautils to session_preload_libraries

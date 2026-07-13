@@ -1,11 +1,11 @@
 - name: Create pgBackRest group
+  when: not stage2
   ansible.builtin.group:
     name: pgbackrest
     state: present
-  when:
-    - not stage2
 
 - name: Create pgBackRest user
+  when: not stage2
   ansible.builtin.user:
     comment: pgBackRest user
     group: pgbackrest
@@ -14,8 +14,6 @@
     name: pgbackrest
     shell: /sbin/nologin
     system: true
-  when:
-    - not stage2
 
 - name: Configure sudoers for pgBackRest
   ansible.builtin.lineinfile:
@@ -37,13 +35,12 @@
     - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
 
 - name: Install pgBackRest
+  when: stage2
   ansible.builtin.shell: |
     sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
   become: true
   become_user: pgbackrest
   changed_when: true
-  when:
-    - stage2
 
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
@@ -89,6 +86,7 @@
     state: link
 
 - name: Move pgBackRest files to /etc/pgbackrest
+  when: stage2
   ansible.legacy.copy:
     group: postgres
     dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
@@ -103,8 +101,6 @@
     - {name: repo1.conf, path: conf.d}
   loop_control:
     loop_var: conf_item
-  when:
-    - stage2
 
 - name: Create pgBackRest wrapper script
   ansible.builtin.copy:

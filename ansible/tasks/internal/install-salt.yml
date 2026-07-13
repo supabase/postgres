@@ -1,4 +1,5 @@
 - name: Add apt repository for Saltstack (arm)
+  when: platform == "arm64"
   block:
     - name: Ensure /etc/apt/keyrings directory exists
       file:
@@ -21,9 +22,9 @@
         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=arm64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
         filename: "salt"
         state: present
-  when: platform == "arm64"
 
 - name: Add apt repository for Saltstack (amd)
+  when: platform == "amd64"
   block:
     - name: Ensure /etc/apt/keyrings directory exists
       file:
@@ -46,7 +47,6 @@
         repo: "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.pgp arch=amd64] https://packages.broadcom.com/artifactory/saltproject-deb/ stable main"
         filename: "salt"
         state: present
-  when: platform == "amd64"
 
 - name: Salt minion install
   apt:

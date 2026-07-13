@@ -69,6 +69,7 @@
     - { mode: '0775', dir: '/etc/pgbouncer-custom' }
 
 - name: create PgBouncer placeholder config files
+  when: not stage2
   ansible.builtin.file:
     group: 'pgbouncer'
     mode: '0664'
@@ -81,7 +82,6 @@
     - 'custom-overrides.ini'
     - 'generated-optimizations.ini'
     - 'ssl-config.ini'
-  when: not stage2
 
 - name: PgBouncer - adjust pgbouncer.ini
   ansible.builtin.copy:

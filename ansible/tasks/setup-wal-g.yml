@@ -1,6 +1,5 @@
 - name: Execute wal-g things when stage1
-  when:
-    - not stage2
+  when: not stage2
   block:
     - name: Create wal-g group
       ansible.builtin.group:
@@ -25,8 +24,7 @@
         state: 'directory'
 
 - name: Execute wal-g things when stage2
-  when:
-    - stage2
+  when: stage2
   block:
     - name: Install wal-g 2 from nix binary cache
       ansible.builtin.shell:
