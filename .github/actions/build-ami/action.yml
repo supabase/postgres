@@ -11,9 +11,6 @@ inputs:
   arch:
     description: Architecture to build AMI for (amd64|arm64)
     required: true
-  force:
-    description: Force building stage1 AMI
-    required: false
   git_sha:
     description: 'Git SHA for this build'
     required: true
@@ -77,10 +74,6 @@ runs:
         GIT_SHA: ${{ inputs.git_sha }}
       run: |
         echo "::group::AMI Build: Stage 1"
-
-        if [[ -n "${{ inputs.force }}" ]]; then
-          export BUILD_AMI_NIX_FORCE_BUILD_STAGE1="${{ inputs.force }}"
-        fi
 
         nix run .#build-ami -- stage1 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
