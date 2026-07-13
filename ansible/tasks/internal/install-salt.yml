@@ -8,7 +8,8 @@
 
     - name: salt gpg key
       ansible.builtin.get_url:
-        url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+        url: "{{salt_artifacts['url']}}"
+        checksum: "{{salt_artifacts['checksum']}}"
         dest: /etc/apt/keyrings/salt-archive-keyring-2023.pgp
         mode: '0644'
       register: download_result
@@ -25,8 +26,8 @@
 - name: Salt minion install
   apt:
     name:
-      - salt-common={{ salt_version }}
-      - salt-minion={{ salt_version }}
+      - salt-common={{ salt_release }}
+      - salt-minion={{ salt_release }}
     state: present
     update_cache: yes
 
@@ -34,7 +35,7 @@
   ansible.builtin.copy:
     content: |
       Package: salt-common salt-minion
-      Pin: version {{ salt_version.split('.')[0] }}.*
+      Pin: version {{ salt_release.split('.')[0] }}.*
       Pin-Priority: 1001
     dest: /etc/apt/preferences.d/saltstack-pin
     owner: root

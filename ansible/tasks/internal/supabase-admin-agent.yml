@@ -60,7 +60,8 @@
 
 - name: Download supabase-admin-agent archive
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ platform }}.tar.gz"
+    url: "{{ supabase_admin_agent_artifacts[platform]['url'] }}"
+    checksum: "{{ supabase_admin_agent_artifacts[platform]['checksum'] }}"
     dest: "/tmp/supabase-admin-agent.tar.gz"
     timeout: 90
   register: download_result

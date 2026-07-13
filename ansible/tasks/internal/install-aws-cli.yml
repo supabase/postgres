@@ -19,9 +19,10 @@
 
 - name: AWS CLI - get
   ansible.builtin.get_url:
+    url: "{{ aws_cli_artifacts[platform]['url'] }}"
+    checksum: "{{ aws_cli_artifacts[platform]['checksum'] }}"
     dest: '/tmp/awscliv2.zip'
     timeout: 60
-    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}-{{ aws_cli_release }}.zip"
   register: download_result
   until: download_result is succeeded
   retries: 3
