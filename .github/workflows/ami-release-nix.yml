@@ -94,7 +94,6 @@ jobs:
           ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
-          force: "true"
           git_sha: ${{ github.sha }}
           instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
