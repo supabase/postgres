@@ -21,7 +21,7 @@
   ansible.builtin.get_url:
     dest: '/tmp/awscliv2.zip'
     timeout: 60
-    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ 'aarch64' if platform == 'arm64' else 'x86_64' }}-{{ aws_cli_release }}.zip"
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}-{{ aws_cli_release }}.zip"
   register: download_result
   until: download_result is succeeded
   retries: 3

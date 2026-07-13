@@ -11,11 +11,13 @@
     mode: '0700'
     owner: 'envoy'
     # yamllint disable-line rule:line-length
-    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-{{ 'aarch_64' if platform == 'arm64' else 'x86_64' }}"
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-{{ envoy_arch }}"
   register: download_result
   until: download_result is succeeded
   retries: 3
   delay: 2
+  vars:
+    envoy_arch: "{{ 'aarch_64' if platform == 'arm64' else 'x86_64' }}"
 
 - name: Envoy - download hot restarter script
   ansible.builtin.get_url:

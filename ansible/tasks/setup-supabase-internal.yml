@@ -4,7 +4,7 @@
 
 - name: download Vector package
   ansible.builtin.get_url:
-    url: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
+    url: "https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_{{ platform }}.deb"
     dest: /tmp/vector.deb
     timeout: 120
   become: true

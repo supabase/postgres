@@ -113,6 +113,3 @@ adminapi_release: "0.112.1"
 adminmgr_release: "0.43.6"
 supabase_admin_agent_release: 1.14.4
 supabase_admin_agent_splay: 30s
-
-vector_x86_deb: https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_amd64.deb
-vector_arm_deb: https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_arm64.deb

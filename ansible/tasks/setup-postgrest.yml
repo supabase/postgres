@@ -66,12 +66,7 @@
   retries: 3
   delay: 2
   vars:
-    download_binary: >-
-      {%- if platform == "arm64" -%}
-        ubuntu-aarch64
-      {%- elif platform == "amd64" -%}
-        linux-static-x86-64
-      {%- endif -%}
+    download_binary: "{{ 'ubuntu-aarch64' if platform == 'arm64' else 'linux-static-x86-64' }}"
 
 - name: PostgREST - unpack archive in /opt
   ansible.builtin.unarchive:
