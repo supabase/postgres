@@ -1,19 +1,5 @@
-variable "ansible_arguments" {
-  type    = string
-  default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
-}
-
-variable "environment" {
-  type    = string
-  default = "prod"
-}
-
 variable "git_sha" {
   type = string
-}
-
-locals {
-  creator = "packer"
 }
 
 variable "postgres-version" {
@@ -21,19 +7,9 @@ variable "postgres-version" {
   default = ""
 }
 
-variable "postgres-major-version" {
+variable "postgres_major_version" {
   type    = string
   default = ""
-}
-
-variable "git-head-version" {
-  type    = string
-  default = "unknown"
-}
-
-variable "packer-execution-id" {
-  type    = string
-  default = "unknown"
 }
 
 packer {
@@ -50,8 +26,10 @@ source "null" "dependencies" {
 }
 
 build {
-  name    = "cloudimg.deps"
-  sources = ["source.null.dependencies"]
+  name = "cloudimg.deps"
+  sources = [
+    "source.null.dependencies"
+  ]
 
   provisioner "shell-local" {
     inline = [
@@ -112,20 +90,19 @@ build {
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
     source      = "migrations"
     destination = "/tmp"
   }
 
+  provisioner "file" {
+    source      = "scripts"
+    destination = "/tmp/ansible-playbook"
+  }
+
   provisioner "shell" {
     environment_vars = [
-      "POSTGRES_MAJOR_VERSION=${var.postgres-major-version}",
-      "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
-      "GIT_SHA=${var.git_sha}"
+      "GIT_SHA=${var.git_sha}",
+      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file    = true
     script              = "ebssurrogate/scripts/qemu-bootstrap-nix.sh"
