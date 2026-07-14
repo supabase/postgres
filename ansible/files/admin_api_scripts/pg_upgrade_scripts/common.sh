@@ -54,7 +54,7 @@ function check_free_space {
 	# line when the source device name is long, which would misalign NR==2.
 	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
 
-	if ! [[ "$available_kb" =~ ^[0-9]+$ ]]; then
+	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
 		echo "ERROR: could not determine free space on /; aborting upgrade."
 		return 1
 	fi
