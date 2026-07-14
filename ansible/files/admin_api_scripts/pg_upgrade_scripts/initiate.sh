@@ -211,6 +211,9 @@ EOF
 }
 
 function initiate_upgrade {
+	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
+	check_free_space $((2 * 1024 * 1024))
+
 	mkdir -p "$MOUNT_POINT"
 	SHARED_PRELOAD_LIBRARIES=$(grep '^[[:space:]]*shared_preload_libraries' "$POSTGRES_CONFIG_PATH" | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
 
