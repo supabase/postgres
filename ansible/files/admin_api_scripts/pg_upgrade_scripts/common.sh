@@ -50,7 +50,14 @@ function ship_logs {
 function check_free_space {
 	local required_kb=$1
 	local available_kb
-	available_kb=$(df -k / | awk 'NR==2 {print $4}')
+	# -P forces POSIX single-line output; plain `df -k` wraps onto a second
+	# line when the source device name is long, which would misalign NR==2.
+	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
+
+	if ! [[ "$available_kb" =~ ^[0-9]+$ ]]; then
+		echo "ERROR: could not determine free space on /; aborting upgrade."
+		return 1
+	fi
 
 	if [ "$available_kb" -lt "$required_kb" ]; then
 		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
