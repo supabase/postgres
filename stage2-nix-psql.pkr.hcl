@@ -45,8 +45,11 @@ variable "instance_type" {
 packer {
   required_plugins {
     amazon = {
-      version = ">= 0.0.2"
-      source  = "github.com/hashicorp/amazon"
+      source = "github.com/hashicorp/amazon"
+      # don't use semver for the version since there's no lock files
+      # can go back when we can have renovate watching this
+      # see https://github.com/hashicorp/packer-plugin-amazon/issues/676
+      version = "1.8.0"
     }
   }
 }
