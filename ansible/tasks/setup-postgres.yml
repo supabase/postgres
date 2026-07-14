@@ -204,7 +204,7 @@
 
 - name: Ensure /data configured for production runtime
   when:
-    - stage2_nix
+    - stage2_nix and (qemu_mode is not defined)
   ansible.posix.mount:
     src: "UUID={{ ansible_mounts | selectattr('mount', 'equalto', '/data') | map(attribute='uuid') | first }}"
     path: /data
