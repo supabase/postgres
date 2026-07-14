@@ -2,9 +2,6 @@ name: Build QEMU image
 
 on:
   push:
-    branches:
-      - develop
-      - release/*
     paths:
       - '.github/workflows/qemu-image-build.yml'
       - 'qemu-arm64-nix.pkr.hcl'
@@ -98,12 +95,14 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: configure aws credentials - staging
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
           aws-region: "us-east-1"
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR Staging
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         id: login-ecr-private-dev
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
@@ -114,6 +113,7 @@ jobs:
           docker build -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" .
 
       - name: Push docker image to Amazon ECR
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         env:
           REGISTRY: 812073016711.dkr.ecr.us-east-1.amazonaws.com
           REPOSITORY: postgres-vm-image
@@ -124,16 +124,19 @@ jobs:
 
       # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
       - name: configure aws credentials - prod
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
           aws-region: "us-east-1"
 
-      - name: Login to Amazon ECR
+      - name: Login to Amazon ECR Prod
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         id: login-ecr-private-prod
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: Push docker image to Amazon ECR
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         env:
           REGISTRY: 156470330064.dkr.ecr.us-east-1.amazonaws.com
           REPOSITORY: postgres-vm-image
