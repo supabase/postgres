@@ -66,6 +66,7 @@ function execute_wrappers_patch {
     vault_secrets RECORD;
   BEGIN
     IF EXISTS (SELECT FROM pg_extension WHERE extname = 'wrappers')
+      AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
       AND EXISTS (SELECT FROM pg_available_extension_versions WHERE name = 'wrappers' AND version NOT IN (
       '0.1.0',
       '0.1.1',

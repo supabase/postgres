@@ -60,6 +60,6 @@ pkgs.testers.runNixOSTest {
           assert test.run_sql(sql) != "1", "supabase_vault must be absent"
 
       with subtest("Check Patch Wrappers Without Vault"):
-          server.succeed("! ${pgUpgradeScripts}/complete.sh execute_wrappers_patch")
+          server.succeed("${pgUpgradeScripts}/complete.sh execute_wrappers_patch")
     '';
 }
