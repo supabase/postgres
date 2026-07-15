@@ -252,6 +252,7 @@
                 "security" # depends on various extensions
                 "extensions_schema" # tests extension loading
                 "roles" # includes roles/schemas from extensions not in CLI (pgtle, pgmq, repack, topology)
+                "pg_net_worker_privileges" # needs the authenticated/postgres roles from the full migrations, not present in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
