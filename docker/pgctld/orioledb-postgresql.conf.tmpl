@@ -229,6 +229,8 @@ default_text_search_config = 'pg_catalog.english'
 
 # - Shared Library Preloading -
 
+session_preload_libraries = 'supautils'
+
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
@@ -273,6 +275,9 @@ restart_after_crash = off		# reinitialize after backend crash?
 # User-supplied custom parameters, override any automatically generated ones
 
 # WAL-G specific configurations
+
+# supautils specific configurations
+include = '/etc/postgresql-custom/supautils.conf'
 
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS
