@@ -17,6 +17,19 @@ variable "workdir" {
   type = string
 }
 
+# Arch-specific values supplied by build-qemu-image
+variable "arch" {
+  type = string
+}
+
+variable "machine" {
+  type = string
+}
+
+variable "qemu_binary" {
+  type = string
+}
+
 packer {
   required_plugins {
     qemu = {
@@ -35,21 +48,21 @@ source "qemu" "cloudimg" {
   headless         = true
   http_directory   = "http"
   iso_checksum     = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
-  iso_url          = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img"
+  iso_url          = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-${var.arch}.img"
   memory           = 40000
   output_directory = "${var.workdir}/output-cloudimg"
   qemu_img_args {
     convert = ["-o", "compression_type=zstd"]
   }
-  qemu_binary = "qemu-system-aarch64"
+  qemu_binary = var.qemu_binary
   qemuargs = [
-    ["-machine", "virt,gic-version=3"],
+    ["-machine", var.machine],
     ["-cpu", "host"],
     ["-device", "virtio-gpu-pci"],
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=${var.workdir}/ovmf_code.fd"],
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=${var.workdir}/ovmf_vars.fd"],
     ["-drive", "file=${var.workdir}/output-cloudimg/packer-cloudimg,if=virtio,format=qcow2,discard=on,detect-zeroes=unmap"],
-    ["-drive", "file=${var.workdir}/seeds-cloudimg.iso,format=raw"],
+    ["-drive", "file=${var.workdir}/seeds-cloudimg.iso,format=raw,if=virtio"],
     ["--enable-kvm"]
   ]
   shutdown_command       = "sudo -S shutdown -P now"

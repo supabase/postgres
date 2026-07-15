@@ -11,9 +11,24 @@ if [ -z "$postgres_major_version" ]; then
 	exit 1
 fi
 
-qemu=$(which qemu-system-aarch64)
-code=${qemu%/bin/*}/share/qemu/edk2-aarch64-code.fd
-vars=${qemu%/bin/*}/share/qemu/edk2-arm-vars.fd
+declare -A host2arch=([aarch64]=arm64 [x86_64]=amd64)
+host=${host2arch[$(uname -m)]}
+arch=${2:-$host}
+case $arch in
+amd64)
+	qemu=$(which qemu-system-x86_64)
+	code=${qemu%/bin/*}/share/qemu/edk2-x86_64-code.fd
+	vars=${qemu%/bin/*}/share/qemu/edk2-i386-vars.fd
+	machine=q35
+	;;
+arm64)
+	qemu=$(which qemu-system-aarch64)
+	code=${qemu%/bin/*}/share/qemu/edk2-aarch64-code.fd
+	vars=${qemu%/bin/*}/share/qemu/edk2-arm-vars.fd
+	machine=virt,gic-version=3
+	;;
+*) echo "Error: Invalid arch '$arch'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
+esac
 
 workdir=$(mktemp -d packer-work-qemu-XXXXXX)
 install --mode 444 "$code" "$workdir/ovmf_code.fd"
@@ -27,10 +42,13 @@ cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
 export LC_ALL=C.UTF-8
 export TZ=UTC
-packer init qemu-arm64-nix.pkr.hcl
+packer init qemu.pkr.hcl
 PACKER_LOG=${PACKER_LOG:-1} packer build \
+	-var "arch=$arch" \
 	-var "git_sha=$git_sha" \
+	-var "machine=$machine" \
 	-var "postgres-version=$postgres_version" \
 	-var "postgres_major_version=$postgres_major_version" \
+	-var "qemu_binary=$qemu" \
 	-var "workdir=$workdir" \
-	qemu-arm64-nix.pkr.hcl
+	qemu.pkr.hcl

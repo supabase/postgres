@@ -6,7 +6,7 @@ on:
       - .github/workflows/qemu-image-build.yml
       - ansible/vars.yml
       - nix/packages/build-qemu-image/*
-      - qemu-arm64-nix.pkr.hcl
+      - qemu.pkr.hcl
       - scripts/*
   workflow_dispatch:
 
@@ -71,7 +71,7 @@ jobs:
           multi-user: "false"
 
       - name: Build QEMU artifact
-        run: nix run .#build-qemu-image "${{ matrix.postgres_version }}"
+        run: nix run .#build-qemu-image "${{ matrix.postgres_version }}" arm64
 
       - name: Grab release version
         id: process_release_version
