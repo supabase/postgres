@@ -2,11 +2,10 @@
 let
   ghWorkflows = builtins.attrNames (builtins.readDir ../.github/workflows);
   lintedWorkflows = [
-    "nix-eval.yml"
-    "nix-build.yml"
-    "testinfra-ami-build.yml"
     "ami-release-nix.yml"
-    "ami-release-nix-single.yml"
+    "nix-build.yml"
+    "nix-eval.yml"
+    "testinfra-ami-build.yml"
   ];
 in
 {

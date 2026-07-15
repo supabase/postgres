@@ -341,7 +341,7 @@ EOF
 	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
-		--extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false} ' \
+		--extra-vars '{"nixpkg_mode": true, "stage2_nix": false} ' \
 		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
 		$ARGS
 }
