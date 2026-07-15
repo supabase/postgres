@@ -30,10 +30,9 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
-    description = "Unit testing framework for PostgreSQL";
+    description = "postgresql-unit implements a PostgreSQL datatype for SI units, plus byte.";
     homepage = "https://github.com/${src.owner}/${src.repo}";
-    maintainers = [ "df7cb" ];
     platforms = postgresql.meta.platforms;
-    license = licenses.postgresql;
+    license = licenses.gpl3;
   };
 }
