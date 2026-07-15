@@ -28,7 +28,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "PostgreSQL extension for enhanced security";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ steve-chavez ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };
