@@ -14,6 +14,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          # create-pull-request supplies its own auth via the `token` input.
+          # Leaving checkout's credentials persisted causes a duplicate
+          # Authorization header with checkout v6+ and a HTTP 400 on push.
+          persist-credentials: false
 
       - name: Install Nix
         uses: ./.github/actions/nix-install-ephemeral
