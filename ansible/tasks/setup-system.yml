@@ -76,14 +76,6 @@
         owner: 'root'
         group: 'root'
 
-- name: Install other useful tools
-  ansible.builtin.apt:
-    pkg:
-      - less
-    update_cache: true
-  when:
-    - qemu_mode is defined
-
 - name: Set the platform arch as a fact
   ansible.builtin.set_fact:
     platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
