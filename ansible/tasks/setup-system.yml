@@ -1,6 +1,5 @@
-- name: Execute tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
+- name: Execute tasks when nixpkg_mode
+  when: nixpkg_mode
   block:
     - name: System - apt update and apt upgrade
       ansible.builtin.apt:
@@ -92,11 +91,11 @@
     - update
     - update-only
   when:
-    - (debpkg_mode or nixpkg_mode or stage2_nix)
+    - nixpkg_mode or stage2_nix
 
-- name: Execute more tasks when (debpkg_mode or nixpkg_mode)
+- name: Execute more tasks when nixpkg_mode
   when:
-    - (debpkg_mode or nixpkg_mode)
+    - nixpkg_mode
   block:
     - name: Custom systemd overrides for resolved
       ansible.builtin.copy:
@@ -164,4 +163,4 @@
     owner: 'root'
     group: 'root'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix

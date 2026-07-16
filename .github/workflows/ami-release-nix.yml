@@ -135,16 +135,6 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Upload software manifest to s3 staging
-        run: |
-          cd ansible
-          ansible-playbook -i localhost \
-            -e "ami_release_version=$POSTGRES_SUPABASE_VERSION" \
-            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
-            -e "arch=${{ matrix.target.arch }}" \
-            manifest-playbook.yml
-
       - name: Upload nix flake revision to s3 staging
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/20.04.tar.gz"
@@ -156,16 +146,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Upload software manifest to s3 prod
-        run: |
-          cd ansible
-          ansible-playbook -i localhost \
-            -e "ami_release_version=$POSTGRES_SUPABASE_VERSION" \
-            -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
-            -e "arch=${{ matrix.target.arch }}" \
-            manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 prod
         run: |

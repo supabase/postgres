@@ -1,7 +1,7 @@
 # set default bantime to 1 hour
-- name: do debpkg_mode or nixpkg_mode tasks
+- name: do nixpkg_mode tasks
   when:
-    - (debpkg_mode or nixpkg_mode)
+    - nixpkg_mode
   block:
     - name: extend the default bantime to an hour
       become: true
