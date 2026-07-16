@@ -11,6 +11,12 @@ if [ -z "$postgres_major_version" ]; then
 	exit 1
 fi
 
+case $(uname -o) in
+Darwin) accel=hvf ;;
+GNU/Linux) accel=kvm ;;
+*) echo "Error: Invalid os '$(uname -o)'. Must be Darwin or Linux" >&2 && exit 1 ;;
+esac
+
 declare -A host2arch=([aarch64]=arm64 [x86_64]=amd64)
 host=${host2arch[$(uname -m)]}
 arch=${2:-$host}
@@ -19,13 +25,13 @@ amd64)
 	qemu=$(which qemu-system-x86_64)
 	code=${qemu%/bin/*}/share/qemu/edk2-x86_64-code.fd
 	vars=${qemu%/bin/*}/share/qemu/edk2-i386-vars.fd
-	machine=q35
+	machine=q35,accel=$accel
 	;;
 arm64)
 	qemu=$(which qemu-system-aarch64)
 	code=${qemu%/bin/*}/share/qemu/edk2-aarch64-code.fd
 	vars=${qemu%/bin/*}/share/qemu/edk2-arm-vars.fd
-	machine=virt,gic-version=3
+	machine=virt,accel=$accel,gic-version=max,highmem=on
 	;;
 *) echo "Error: Invalid arch '$arch'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
 esac

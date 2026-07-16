@@ -49,7 +49,7 @@ source "qemu" "cloudimg" {
   http_directory   = "http"
   iso_checksum     = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
   iso_url          = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-${var.arch}.img"
-  memory           = 40000
+  memory           = 4096 # MiB
   output_directory = "${var.workdir}/output-cloudimg"
   qemu_img_args {
     convert = ["-o", "compression_type=zstd"]
@@ -63,7 +63,6 @@ source "qemu" "cloudimg" {
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=${var.workdir}/ovmf_vars.fd"],
     ["-drive", "file=${var.workdir}/output-cloudimg/packer-cloudimg,if=virtio,format=qcow2,discard=on,detect-zeroes=unmap"],
     ["-drive", "file=${var.workdir}/seeds-cloudimg.iso,format=raw,if=virtio"],
-    ["--enable-kvm"]
   ]
   shutdown_command       = "sudo -S shutdown -P now"
   ssh_handshake_attempts = 500
@@ -72,7 +71,6 @@ source "qemu" "cloudimg" {
   ssh_username           = "ubuntu"
   ssh_wait_timeout       = "1h"
   use_backing_file       = false
-  accelerator            = "kvm"
 }
 
 build {
