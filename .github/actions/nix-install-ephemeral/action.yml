@@ -5,6 +5,10 @@ inputs:
     description: 'AWS region for the Nix binary cache S3 bucket'
     required: false
     default: 'us-east-1'
+  force-clean:
+    description: Whether to delete pre-existing nix paths
+    required: false
+    default: 'false'
   push-to-cache:
     description: 'Whether to push build outputs to the Nix binary cache'
     required: false
@@ -24,6 +28,13 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         output-credentials: true
         role-duration-seconds: 7200
+    - name: Force Clean Pre-Existing Nix Paths
+      if: inputs.force-clean == 'true'
+      shell: bash
+      run: sudo rm -rf /nix /etc/nix "$HOME/.nix-profile" "$HOME/.nix-channels" "$HOME/.config/nix"
+    - name: Ensure /etc/nix exists
+      shell: bash
+      run: sudo mkdir -p /etc/nix
     - name: Setup AWS credentials for Nix
       if: ${{ inputs.push-to-cache == 'true' }}
       shell: bash
@@ -32,7 +43,6 @@ runs:
         sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
         sudo -H aws configure set aws_session_token $AWS_SESSION_TOKEN
         sudo -H aws configure set region ${{ inputs.aws-region }}
-        sudo mkdir -p /etc/nix
         sudo -E python -c "import os; file = open('/etc/nix/nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
         cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
         #!/usr/bin/env bash
