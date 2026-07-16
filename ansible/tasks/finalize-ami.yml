@@ -114,4 +114,4 @@
     owner: 'postgres'
     src: 'files/pgsodium_getkey_readonly.sh.j2'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix
