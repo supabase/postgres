@@ -359,6 +359,13 @@ EXTRA_NIX_CONF
 		# registered paths are skipped on retry but an in-flight NAR restarts from
 		# 0%. Failing as a normal command (not exit 1) lets the ERR trap run cleanup
 		# and record "failed" instead of hanging.
+		#
+		# Re-check free space here: the earlier check at the top of initiate_upgrade
+		# only guarantees headroom at entry, and the tarball extraction / nix install
+		# / catalog download above can already have eaten into that reserve before
+		# the realize (the actual big consumer) starts.
+		check_free_space $((2 * 1024 * 1024))
+
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
 			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
@@ -372,6 +379,10 @@ EXTRA_NIX_CONF
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
+
+		# Closure is realized, so the multi-GB Nix reserve is no longer needed; just
+		# confirm enough room remains for the lighter apt/locale-gen work still ahead.
+		check_free_space $((512 * 1024))
 
 		PG_UPGRADE_BIN_DIR="$STORE_PATH"
 		PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
