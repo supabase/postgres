@@ -44,18 +44,28 @@ runs:
     - name: Install Nix
       shell: bash
       run: |
-        sudo tee /tmp/nix-extra.conf > /dev/null <<'NIXCONF'
+        sudo tee /etc/nix/github.nix.conf >/dev/null <<'EOF'
+        access-tokens = github.com=${{ github.token }}
+        EOF
+        chmod 400 /etc/nix/github.nix.conf
+        cat >/tmp/nix-extra.conf <<'NIXCONF'
         always-allow-substitutes = true
-        extra-experimental-features = nix-command flakes
-        extra-system-features = kvm
+        extra-experimental-features = flakes nix-command
+        extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+        extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
         max-jobs = 4
-        substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
-        trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
         NIXCONF
 
-        if [ "${{ inputs.push-to-cache }}" = "true" ]; then
-          echo "post-build-hook = /etc/nix/upload-to-cache.sh" | sudo tee -a /tmp/nix-extra.conf > /dev/null
+
+        if [[ -e /dev/kvm ]]; then
+          echo 'extra-system-features = kvm' >>/tmp/nix-extra.conf
         fi
+
+        if [[ "${{ inputs.push-to-cache }}" == true ]]; then
+          echo 'post-build-hook = /etc/nix/upload-to-cache.sh' >>/tmp/nix-extra.conf
+        fi
+
+        echo '!include /etc/nix/github.nix.conf' >>/tmp/nix-extra.conf
 
         curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
 
@@ -63,15 +73,6 @@ runs:
 
         # Add nix to PATH for subsequent steps
         echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
-        # Source the daemon profile so nix works in this step too
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    - name: Configure Nix with GitHub token
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        echo "access-tokens = github.com=$GH_TOKEN" | sudo tee -a /etc/nix/nix.conf > /dev/null
-        sudo systemctl restart nix-daemon || true
     - name: Print Nix version
       shell: bash
       run: nix --version
