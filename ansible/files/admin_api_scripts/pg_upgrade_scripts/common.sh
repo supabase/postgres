@@ -59,7 +59,7 @@ function check_free_space {
 		return 1
 	fi
 
-	if (( available_kb < required_kb )); then
+	if ((available_kb < required_kb)); then
 		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
 		return 1
 	fi
