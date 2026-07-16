@@ -1,14 +1,18 @@
 name: 'Install Nix on ephemeral runners'
 description: 'Installs Nix and sets up AWS credentials to push to the Nix binary cache'
 inputs:
-  push-to-cache:
-    description: 'Whether to push build outputs to the Nix binary cache'
-    required: false
-    default: 'false'
   aws-region:
     description: 'AWS region for the Nix binary cache S3 bucket'
     required: false
     default: 'us-east-1'
+  push-to-cache:
+    description: 'Whether to push build outputs to the Nix binary cache'
+    required: false
+    default: 'false'
+  multi-user:
+    description: Whether to install nix in multi-user mode (default true) or single-user mode
+    required: false
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -44,11 +48,26 @@ runs:
     - name: Install Nix
       shell: bash
       run: |
-        sudo tee /etc/nix/github.nix.conf >/dev/null <<'EOF'
-        access-tokens = github.com=${{ github.token }}
-        EOF
-        chmod 400 /etc/nix/github.nix.conf
-        cat >/tmp/nix-extra.conf <<'NIXCONF'
+        if [[ "${{ inputs.multi-user }}" == true ]]; then
+          daemon=--daemon
+          nixconfdir=/etc/nix
+          path=/nix/var/nix/profiles/default/bin
+          tmpconf=/tmp/nix-extra.conf
+
+          echo 'access-tokens = github.com=${{ github.token }}' | sudo tee $nixconfdir/github.nix.conf >/dev/null
+          sudo chmod 400 $nixconfdir/github.nix.conf
+        else
+          daemon=--no-daemon
+          nixconfdir=$HOME/.config/nix
+          path=$HOME/.nix-profile/bin
+          tmpconf=$nixconfdir/nix.conf # --nix-extra-conf-files is ignored for single-user installs
+
+          mkdir -p "$(dirname $tmpconf)"
+          echo 'access-tokens = github.com=${{ github.token }}' | tee $nixconfdir/github.nix.conf >/dev/null
+          chmod 400 $nixconfdir/github.nix.conf
+        fi
+
+        cat >$tmpconf <<'NIXCONF'
         always-allow-substitutes = true
         extra-experimental-features = flakes nix-command
         extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
@@ -58,21 +77,21 @@ runs:
 
 
         if [[ -e /dev/kvm ]]; then
-          echo 'extra-system-features = kvm' >>/tmp/nix-extra.conf
+          echo 'extra-system-features = kvm' >>$tmpconf
         fi
 
         if [[ "${{ inputs.push-to-cache }}" == true ]]; then
-          echo 'post-build-hook = /etc/nix/upload-to-cache.sh' >>/tmp/nix-extra.conf
+          echo 'post-build-hook = /etc/nix/upload-to-cache.sh' >>$tmpconf
         fi
 
-        echo '!include /etc/nix/github.nix.conf' >>/tmp/nix-extra.conf
+        echo "!include $nixconfdir/github.nix.conf" >>$tmpconf
 
-        curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
+        curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- $daemon --yes --nix-extra-conf-file $tmpconf
 
-        cat /etc/nix/nix.conf
+        sudo cat $nixconfdir/nix.conf
 
         # Add nix to PATH for subsequent steps
-        echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"
+        echo "$path" >> "$GITHUB_PATH"
     - name: Print Nix version
       shell: bash
       run: nix --version
