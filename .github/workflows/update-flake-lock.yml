@@ -12,39 +12,30 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.UPDATE_APP_ID }}
+          private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          # create-pull-request supplies its own auth via the `token` input.
-          # Leaving checkout's credentials persisted causes a duplicate
-          # Authorization header with checkout v6+ and a HTTP 400 on push.
-          persist-credentials: false
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Install Nix
         uses: ./.github/actions/nix-install-ephemeral
 
-      - name: Update critical flake inputs
-        run: |
-          nix flake update \
-            nixpkgs \
-            rust-overlay \
-            multigres \
-            nix-eval-jobs
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+      - name: Update flake.lock and open PR
+        uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update flake.lock (monthly)"
-          title: "chore: update flake.lock (monthly)"
-          body: |
-            Automated monthly update of critical flake inputs:
-            - `nixpkgs` (nixos-unstable channel)
-            - `rust-overlay`
-            - `multigres`
-            - `nix-eval-jobs`
-          branch: auto-update-flake-lock
-          base: develop
-          labels: |
+          token: ${{ steps.app-token.outputs.token }}
+          inputs: nixpkgs rust-overlay multigres nix-eval-jobs
+          commit-msg: "chore: update flake.lock (monthly)"
+          pr-title: "chore: update flake.lock (monthly)"
+          pr-labels: |
             dependencies
             automated
+          branch: auto-update-flake-lock
+          base: develop
