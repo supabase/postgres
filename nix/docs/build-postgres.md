@@ -97,19 +97,19 @@ _new_ hash.
 The ability to refer to a piece of data by its hash, by some notion of
 _content_, is a very powerful primitive, as we'll see later.
 
-## Build a different version: v16
+## Build a different version: v17
 
-What if we wanted PostgreSQL 16 and plugins? Just replace `_15` with `_16`:
+What if we wanted PostgreSQL 17 and plugins? Just replace `_15` with `_17`:
 
 ```
-nix build .#psql_16.bin
+nix build .#psql_17.bin
 ```
 
 You're done:
 
 ```
 $ readlink result
-/nix/store/p7ziflx0000s28bfb213jsghrczknkc4-postgresql-and-plugins-14.8
+/nix/store/p7ziflx0000s28bfb213jsghrczknkc4-postgresql-and-plugins-17.6
 ```
 
 
