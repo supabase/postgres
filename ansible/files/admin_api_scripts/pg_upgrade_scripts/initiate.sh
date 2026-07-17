@@ -156,7 +156,11 @@ EOF
 
 	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 		echo "Unmounting data disk from ${MOUNT_POINT}"
-		retry 3 umount $MOUNT_POINT
+		# check_free_space (and other pre-mount failures) can trigger this trap before
+		# $MOUNT_POINT is ever mounted. Without || true, set -e aborts cleanup() right here
+		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
+		# is stuck at "running" forever instead of reporting the real failure.
+		retry 3 umount $MOUNT_POINT || true
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
