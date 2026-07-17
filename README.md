@@ -165,7 +165,7 @@ docker build -f Dockerfile-17 -t supabase-postgres:17 .
 
 Now that you understand the basics of Supabase Postgres:
 
-* Check the [Installation Guide](https://github.com/supabase/postgres/wiki) for deployment options
+* Check the [build guide](nix/docs/build-postgres.md) and [Docker docs](nix/docs/docker.md) for deployment options
 * Explore the [Extension Documentation](#) to learn about available extensions
 * Review [Contributing Guidelines](CONTRIBUTING.md) if you want to contribute
 * Join the [Supabase Community](https://github.com/supabase/postgres/discussions) for questions and discussions
@@ -174,7 +174,7 @@ Now that you understand the basics of Supabase Postgres:
 
 * **GitHub Issues** - For bugs and feature requests
 * **Discussions** - For questions and general discussion
-* **Wiki** - For detailed documentation
+* **[nix/docs](nix/docs/README.md)** - For detailed documentation
 * **Discord** - For real-time chat with the community
 
 ---
@@ -301,10 +301,9 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 
 ## Install
 
-See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
+See the [documentation index](nix/docs/README.md) for installation instructions.
 
-[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
-[![AWS](https://github.com/supabase/postgres/blob/develop/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
+[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](nix/docs/docker.md)
 
 <!-- ### Marketplace Images
 TODO: find way to automate this
