@@ -44,6 +44,27 @@ function ship_logs {
 		-d "$BODY"
 }
 
+# Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade
+# store path onto / before the mounted data disk is touched, so a full root
+# partition otherwise fails the upgrade mid-flight instead of at the start.
+function check_free_space {
+	local required_kb=$1
+	local available_kb
+	# -P forces POSIX single-line output; plain `df -k` wraps onto a second
+	# line when the source device name is long, which would misalign NR==2.
+	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
+
+	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
+		echo "ERROR: could not determine free space on /; aborting upgrade."
+		return 1
+	fi
+
+	if ((available_kb < required_kb)); then
+		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
+		return 1
+	fi
+}
+
 function retry {
 	local retries=$1
 	shift
