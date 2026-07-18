@@ -1,41 +1,3 @@
-- name: Postgres - execute debpkg_mode tasks
-  when:
-    - debpkg_mode
-  block:
-    - name: Postgres - copy package
-      ansible.builtin.copy:
-        dest: '/tmp/build/'
-        src: 'files/postgres/'
-
-    - name: Postgres - add PPA
-      ansible.builtin.apt_repository:
-        repo: 'deb [ trusted=yes ] file:///tmp/build ./'
-        state: 'present'
-
-    - name: Postgres - install commons
-      ansible.builtin.apt:
-        install_recommends: false
-        name: 'postgresql-common'
-
-    - name: Do not create main cluster
-      ansible.builtin.command:
-        cmd: sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
-
-    - name: Postgres - install server
-      ansible.builtin.apt:
-        install_recommends: false
-        name: "postgresql-{{ postgresql_major_version }}={{ postgresql_release }}-1.pgdg24.04+1"
-
-    - name: Postgres - remove PPA
-      ansible.builtin.apt_repository:
-        repo: 'deb [ trusted=yes ] file:///tmp/build ./'
-        state: 'absent'
-
-    - name: Postgres - cleanup package
-      ansible.builtin.file:
-        path: '/tmp/build'
-        state: 'absent'
-
 - name: execute stage2_nix tasks
   when:
     - stage2_nix
@@ -98,9 +60,9 @@
         system: true
       become: yes
 
-- name: execute (debpkg_mode or nixpkg_mode) tasks
+- name: execute nixpkg_mode tasks
   when:
-    - (debpkg_mode or nixpkg_mode)
+    - nixpkg_mode
   block:
     - name: Create relevant directories
       ansible.builtin.file:
@@ -167,6 +129,12 @@
       loop_control:
         loop_var: 'pg_config_item'
 
+    - name: Set data_directory to canonical path on data volume
+      ansible.builtin.lineinfile:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: "^data_directory = '/var/lib/postgresql/data'"
+        line: "data_directory = '/data/pgdata'"
+
     - name: Move read-replica.conf file to /etc/postgresql-custom/read-replica.conf
       ansible.builtin.copy:
         dest: '/etc/postgresql-custom/read-replica.conf'
@@ -195,7 +163,7 @@
   ansible.builtin.import_tasks:
     file: 'tasks/setup-docker.yml'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix
 
 #stage 2 postgres tasks
 - name: stage2 postgres tasks
@@ -205,9 +173,9 @@
     - stage2_nix
 
 # init DB
-- name: init the db when (debpkg_mode or nixpkg_mode)
+- name: init the db when nixpkg_mode
   when:
-    - (debpkg_mode or nixpkg_mode)
+    - nixpkg_mode
   block:
     - name: Create directory on data volume
       ansible.builtin.file:
@@ -225,16 +193,6 @@
         src: '/data/pgdata'
         state: 'link'
 
-- name: Initialize the database
-  become: true
-  become_user: 'postgres'
-  ansible.builtin.command:
-    cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--data-checksums" -o "--username=supabase_admin"
-  vars:
-    ansible_command_timeout: 60
-  when:
-    - debpkg_mode
-
 - name: Make sure .bashrc exists
   ansible.builtin.file:
     group: 'postgres'
@@ -244,16 +202,23 @@
   when:
     - nixpkg_mode
 
-- name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
+- name: Ensure /data configured for production runtime
+  when:
+    - stage2_nix and (qemu_mode is not defined)
+  ansible.posix.mount:
+    src: "UUID={{ ansible_mounts | selectattr('mount', 'equalto', '/data') | map(attribute='uuid') | first }}"
+    path: /data
+    fstype: ext4
+    opts: defaults,discard,nofail,x-systemd.device-timeout=5s
+    dump: "0"
+    passno: "2"
+    state: mounted
+
+- name: Run initdb (stage2_nix)
   when:
     - stage2_nix
   block:
-    - name: Check if psql_version is psql_orioledb
-      ansible.builtin.set_fact:
-        is_psql_17: "{{ psql_version in ['psql_17'] }}"
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
-
-    - name: Initialize the database stage2_nix (non-orioledb)
+    - name: Initialize the database stage2_nix (NOT PG17 NOR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -266,11 +231,9 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when:
-        - not is_psql_oriole
-        - not is_psql_17
+      when: psql_version not in ['psql_17', 'psql_orioledb-17']
 
-    - name: Initialize the database stage2_nix (orioledb)
+    - name: Initialize the database stage2_nix (PG17 OR PG17-OrioleDB)
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -283,8 +246,7 @@
         LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
       vars:
         ansible_command_timeout: 60
-      when:
-        - (is_psql_oriole or is_psql_17)
+      when: psql_version in ['psql_17', 'psql_orioledb-17']
 
 - name: copy PG apparmor profile
   ansible.builtin.copy:
@@ -316,7 +278,7 @@
   loop_control:
     loop_var: 'systemd_svc_item'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix
 
 - name: initialize pg required state
   become: true
@@ -363,7 +325,7 @@
     no_extra_spaces: true
     option: 'After'
     owner: 'root'
-    path: '/etc/systemd/system/postgresql.service.d/override.conf'
+    path: '/etc/systemd/system/postgresql.service.d/overrides.conf'
     section: 'Unit'
     state: 'present'
     value: 'tuned.service'
@@ -387,7 +349,7 @@
     enabled: true
     name: 'postgresql'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix
 
 
 - name: Add lang and locale items to .bashrc

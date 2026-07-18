@@ -61,6 +61,7 @@
     - { file: 'logrotate-postgres-auth.conf' }
     - { file: 'logrotate-postgres-csv.conf' }
     - { file: 'logrotate-walg.conf' }
+    - { file: 'logrotate-pgbackrest.conf' }
   loop_control:
     loop_var: 'logrotate_item'
 
@@ -112,4 +113,4 @@
     owner: 'postgres'
     src: 'files/pgsodium_getkey_readonly.sh.j2'
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix

@@ -1,5 +1,5 @@
 variable "region" {
-  type    = string
+  type = string
 }
 
 variable "ami_name" {
@@ -8,17 +8,17 @@ variable "ami_name" {
 }
 
 variable "postgres-version" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "git-head-version" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
 variable "packer-execution-id" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
@@ -33,36 +33,44 @@ variable "postgres_major_version" {
 }
 
 variable "source_ami" {
-  type    = string
+  type        = string
   description = "Source AMI ID from stage 1"
+}
+
+variable "instance_type" {
+  type    = string
+  default = "c6g.4xlarge"
 }
 
 packer {
   required_plugins {
     amazon = {
-      version = ">= 0.0.2"
-      source  = "github.com/hashicorp/amazon"
+      source = "github.com/hashicorp/amazon"
+      # don't use semver for the version since there's no lock files
+      # can go back when we can have renovate watching this
+      # see https://github.com/hashicorp/packer-plugin-amazon/issues/676
+      version = "1.8.0"
     }
   }
 }
 
 source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
-  instance_type = "c6g.4xlarge"
+  instance_type = var.instance_type
   region        = "${var.region}"
   source_ami    = "${var.source_ami}"
 
   communicator = "ssh"
-  ssh_pty = true
+  ssh_pty      = true
   ssh_username = "ubuntu"
-  ssh_timeout = "5m"
+  ssh_timeout  = "5m"
 
   associate_public_ip_address = true
 
   # Increase timeout for instance stop operations to handle large instances
   aws_polling {
     delay_seconds = 15
-    max_attempts  = 120  # 120 * 15s = 30 minutes max wait
+    max_attempts  = 120 # 120 * 15s = 30 minutes max wait
   }
 
   ena_support = true
@@ -81,10 +89,10 @@ source "amazon-ebs" "ubuntu" {
     appType = "postgres"
   }
   tags = {
-    creator = "packer"
-    appType = "postgres"
-    postgresVersion = "${var.postgres-version}"
-    sourceSha = "${var.git-head-version}"
+    creator           = "packer"
+    appType           = "postgres"
+    postgresVersion   = "${var.postgres-version}"
+    sourceSha         = "${var.git-head-version}"
     packerExecutionId = "${var.packer-execution-id}"
   }
 }
@@ -101,22 +109,22 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible"
+    source      = "ansible"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "migrations"
+    source      = "migrations"
     destination = "/tmp"
   }
 
   provisioner "file" {
-    source = "scripts"
+    source      = "scripts"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "audit-specs"
+    source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
 
@@ -125,7 +133,7 @@ build {
       "GIT_SHA=${var.git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
-     script = "scripts/nix-provision.sh"
+    script = "scripts/nix-provision.sh"
   }
 
 }

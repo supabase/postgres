@@ -9,6 +9,12 @@
     force: true
     mode: '0644'
     url: 'https://www.postgresql.org/media/keys/ACCC4CF8.asc'
+    timeout: 60
+    validate_certs: true
+  register: pgdg_key_download
+  retries: 6
+  delay: 2
+  until: pgdg_key_download is succeeded
 
 - name: PostgREST - add Postgres PPA main
   ansible.builtin.apt_repository:
@@ -51,10 +57,14 @@
 
 - name: PostgREST - download ubuntu binary archive (arm)
   ansible.builtin.get_url:
-    checksum: "{{ postgrest_arm_release_checksum }}"
+    checksum: "{{ postgrest_arm_release_checksum if platform == 'arm64' else postgrest_x86_release_checksum }}"
     dest: '/tmp/postgrest.tar.xz'
     timeout: 60
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-{{ download_binary }}.tar.xz"
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
   vars:
     download_binary: >-
       {%- if platform == "arm64" -%}

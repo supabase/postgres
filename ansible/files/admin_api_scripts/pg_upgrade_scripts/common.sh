@@ -7,100 +7,121 @@ REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"
 
 REPORTING_ANON_KEY=""
 if [ -f "$REPORTING_CREDENTIALS_FILE" ]; then
-    REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
+	REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
 fi
 
 # shellcheck disable=SC2120
 # Arguments are passed in other files
 function run_sql {
-    psql -h localhost -U supabase_admin -d postgres "$@"
+	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
 function ship_logs {
-    LOG_FILE=$1
+	LOG_FILE=$1
 
-    if [ -z "$REPORTING_ANON_KEY" ]; then
-        echo "No reporting key found. Skipping log upload."
-        return 0
-    fi
+	if [ -z "$REPORTING_ANON_KEY" ]; then
+		echo "No reporting key found. Skipping log upload."
+		return 0
+	fi
 
-    if [ ! -f "$LOG_FILE" ]; then
-        echo "No log file found. Skipping log upload."
-        return 0
-    fi
+	if [ ! -f "$LOG_FILE" ]; then
+		echo "No log file found. Skipping log upload."
+		return 0
+	fi
 
-    if [ ! -s "$LOG_FILE" ]; then
-        echo "Log file is empty. Skipping log upload."
-        return 0
-    fi
+	if [ ! -s "$LOG_FILE" ]; then
+		echo "Log file is empty. Skipping log upload."
+		return 0
+	fi
 
-    HOSTNAME=$(hostname)
-    DERIVED_REF="${HOSTNAME##*-}"
+	HOSTNAME=$(hostname)
+	DERIVED_REF="${HOSTNAME##*-}"
 
-    printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
-    curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
-         -H "apikey: ${REPORTING_ANON_KEY}" \
-         -H 'Content-type: application/json' \
-         -d "$BODY"
+	printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
+	curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
+		-H "apikey: ${REPORTING_ANON_KEY}" \
+		-H 'Content-type: application/json' \
+		-d "$BODY"
+}
+
+# Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade
+# store path onto / before the mounted data disk is touched, so a full root
+# partition otherwise fails the upgrade mid-flight instead of at the start.
+function check_free_space {
+	local required_kb=$1
+	local available_kb
+	# -P forces POSIX single-line output; plain `df -k` wraps onto a second
+	# line when the source device name is long, which would misalign NR==2.
+	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
+
+	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
+		echo "ERROR: could not determine free space on /; aborting upgrade."
+		return 1
+	fi
+
+	if ((available_kb < required_kb)); then
+		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
+		return 1
+	fi
 }
 
 function retry {
-  local retries=$1
-  shift
+	local retries=$1
+	shift
 
-  local count=0
-  until "$@"; do
-    exit=$?
-    wait=$((2 ** (count + 1)))
-    count=$((count + 1))
-    if [ $count -lt "$retries" ]; then
-        echo "Command $* exited with code $exit, retrying..."
-        sleep $wait
-    else
-        echo "Command $* exited with code $exit, no more retries left."
-        return $exit
-    fi
-  done
-  return 0
+	local count=0
+	until "$@"; do
+		exit=$?
+		wait=$((2 ** (count + 1)))
+		count=$((count + 1))
+		if [ $count -lt "$retries" ]; then
+			echo "Command $* exited with code $exit, retrying..."
+			sleep $wait
+		else
+			echo "Command $* exited with code $exit, no more retries left."
+			return $exit
+		fi
+	done
+	return 0
 }
 
 CI_stop_postgres() {
-    BINDIR=$(pg_config --bindir)
-    ARG=${1:-""}
+	BINDIR=$(pg_config --bindir)
+	ARG=${1:-""}
 
-    if [ "$ARG" = "--new-bin" ]; then
-        BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
-    fi
+	if [ "$ARG" = "--new-bin" ]; then
+		BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
+	fi
 
-    su postgres -c "$BINDIR/pg_ctl stop -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
+	su postgres -c "$BINDIR/pg_ctl stop -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
 }
 
 CI_start_postgres() {
-    BINDIR=$(pg_config --bindir)
-    ARG=${1:-""}
+	BINDIR=$(pg_config --bindir)
+	ARG=${1:-""}
 
-    if [ "$ARG" = "--new-bin" ]; then
-        BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
-    fi
+	if [ "$ARG" = "--new-bin" ]; then
+		BINDIR="/tmp/pg_upgrade_bin/$PG_MAJOR_VERSION/bin"
+	fi
 
-    su postgres -c "$BINDIR/pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
+	su postgres -c "$BINDIR/pg_ctl start -o '-c config_file=/etc/postgresql/postgresql.conf' -l /tmp/postgres.log"
 }
 
 swap_postgres_and_supabase_admin() {
-    run_sql <<'EOSQL'
+	run_sql <<'EOSQL'
 alter database postgres connection limit 0;
 select pg_terminate_backend(pid) from pg_stat_activity where backend_type = 'client backend' and pid != pg_backend_pid();
 EOSQL
 
-    if [ -z "$IS_CI" ]; then
-        retry 5 systemctl restart postgresql
-    else
-        CI_start_postgres ""
-    fi
+	if [ -z "$IS_CI" ]; then
+		retry 5 systemctl restart postgresql
+	else
+		CI_start_postgres ""
+	fi
 
-    retry 8 pg_isready -h localhost -U supabase_admin
+	retry 8 pg_isready -h localhost -U supabase_admin
 
-    run_sql <<'EOSQL'
+	run_sql <<'EOSQL'
 set statement_timeout = '600s';
 begin;
 create role supabase_tmp superuser;

@@ -8,10 +8,10 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
+	cerrdefs "github.com/containerd/errdefs"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 )
 
 type Client struct {
@@ -37,9 +37,9 @@ func (c *Client) Close() error {
 }
 
 func (c *Client) ImageExists(ctx context.Context, imageName string) (bool, error) {
-	_, _, err := c.cli.ImageInspectWithRaw(ctx, imageName)
+	_, err := c.cli.ImageInspect(ctx, imageName)
 	if err != nil {
-		if client.IsErrNotFound(err) {
+		if cerrdefs.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err
@@ -54,10 +54,13 @@ func (c *Client) BuildImage(ctx context.Context, dockerfile, contextPath, tag st
 }
 
 func (c *Client) CreateContainer(ctx context.Context, imageName string, env []string) (*ContainerInfo, error) {
-	resp, err := c.cli.ContainerCreate(ctx, &container.Config{
-		Image: imageName,
-		Env:   env,
-	}, &container.HostConfig{}, nil, nil, "")
+	resp, err := c.cli.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config: &container.Config{
+			Image: imageName,
+			Env:   env,
+		},
+		HostConfig: &container.HostConfig{},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create container: %w", err)
 	}
@@ -69,7 +72,7 @@ func (c *Client) CreateContainer(ctx context.Context, imageName string, env []st
 
 func (c *Client) StartContainer(ctx context.Context, containerID string) (time.Time, error) {
 	startTime := time.Now()
-	if err := c.cli.ContainerStart(ctx, containerID, container.StartOptions{}); err != nil {
+	if _, err := c.cli.ContainerStart(ctx, containerID, client.ContainerStartOptions{}); err != nil {
 		return time.Time{}, fmt.Errorf("failed to start container: %w", err)
 	}
 	return startTime, nil
@@ -77,15 +80,17 @@ func (c *Client) StartContainer(ctx context.Context, containerID string) (time.T
 
 func (c *Client) StopContainer(ctx context.Context, containerID string) error {
 	timeout := 10
-	return c.cli.ContainerStop(ctx, containerID, container.StopOptions{Timeout: &timeout})
+	_, err := c.cli.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: &timeout})
+	return err
 }
 
 func (c *Client) RemoveContainer(ctx context.Context, containerID string) error {
-	return c.cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
+	_, err := c.cli.ContainerRemove(ctx, containerID, client.ContainerRemoveOptions{Force: true})
+	return err
 }
 
 func (c *Client) GetContainerCgroupID(ctx context.Context, containerID string) (uint64, error) {
-	inspect, err := c.cli.ContainerInspect(ctx, containerID)
+	inspect, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -97,7 +102,7 @@ func (c *Client) GetContainerCgroupID(ctx context.Context, containerID string) (
 }
 
 func (c *Client) StreamLogs(ctx context.Context, containerID string, callback func(line string, timestamp time.Time)) error {
-	options := container.LogsOptions{
+	options := client.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     true,
@@ -128,7 +133,7 @@ func (c *Client) StreamLogs(ctx context.Context, containerID string, callback fu
 }
 
 func (c *Client) PullImage(ctx context.Context, imageName string) error {
-	reader, err := c.cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
+	reader, err := c.cli.ImagePull(ctx, imageName, client.ImagePullOptions{})
 	if err != nil {
 		return err
 	}

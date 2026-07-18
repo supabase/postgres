@@ -28,8 +28,19 @@ jobs:
       - uses: ./.github/actions/nix-install-ephemeral
       - name: Set PostgreSQL versions
         id: set-versions
+        env:
+          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
         run: |
-          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          set -eo pipefail
+          if [[ -n "$POSTGRES_VERSION" ]]; then
+            git rev-parse --verify "$POSTGRES_VERSION" || {
+              echo "Error: git tag '$POSTGRES_VERSION' not found"
+              exit 1
+            }
+            VERSIONS=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major')
+          else
+            VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          fi
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -47,8 +58,15 @@ jobs:
 
       - name: Grab release version
         id: process_release_version
+        env:
+          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
         run: |
-          VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          set -eo pipefail
+          if [[ -n "$POSTGRES_VERSION" ]]; then
+            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+          else
+            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -58,7 +76,7 @@ jobs:
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -66,6 +84,7 @@ jobs:
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -94,8 +113,15 @@ jobs:
 
       - name: Grab release version
         id: process_release_version
+        env:
+          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
         run: |
-          VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          set -eo pipefail
+          if [[ -n "$POSTGRES_VERSION" ]]; then
+            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+          else
+            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -105,7 +131,7 @@ jobs:
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838 # v1.7.0
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: "us-east-1"
@@ -113,6 +139,7 @@ jobs:
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
           aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

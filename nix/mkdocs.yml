@@ -38,6 +38,8 @@ nav:
     - Testing PG Upgrade Scripts: testing-pg-upgrade-scripts.md
     - Test Docker Images: docker-testing.md
     - NixOS Tests on macOS: nixos-tests-on-macos.md
+  - CI:
+    - Nix Build Matrix: nix-build-matrix-ci.md
   - References: references.md
 
 validation:

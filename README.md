@@ -67,8 +67,6 @@ Here's a comprehensive overview of the project's directory structure:
 | migrations/tests/database/ | Database-specific migration tests |
 | migrations/tests/storage/ | Storage-related migration tests |
 | migrations/tests/extensions/ | Extension migration tests |
-| **docker/** | Container definitions and Docker-related files |
-| docker/nix/ | Nix-based Docker build configurations |
 | Dockerfile-15 | Docker image definition for PostgreSQL 15 |
 | Dockerfile-17 | Docker image definition for PostgreSQL 17 |
 | **tests/** | Integration and system tests |
@@ -87,7 +85,7 @@ Here's a comprehensive overview of the project's directory structure:
 | ansible.cfg | Ansible configuration |
 | amazon-arm64-nix.pkr.hcl | Packer configuration for AWS ARM64 builds |
 | common-nix.vars.pkr.hcl | Common Packer variables |
-| development-arm.vars.pkr.hcl | ARM development environment variables |
+| development-arm64.vars.pkr.hcl | ARM development environment variables |
 | CONTRIBUTING.md | Contribution guidelines |
 | README.md | Main project documentation |
 
@@ -125,6 +123,8 @@ The project uses Nix as its build system, which provides:
 * **Cross-platform Support** - Build for Linux, macOS, and more
 
 ## Common Tasks
+
+To skip hours of building and download instead, configure the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
 
 ### Building Locally
 
@@ -295,7 +295,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.19.0](http://www.pgbouncer.org/changelog.html#pgbouncer-119x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v14.5](https://github.com/PostgREST/postgrest/releases/tag/v14.5) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/stable/) | [v14.15](https://github.com/PostgREST/postgrest/releases/tag/v14.15) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
 
 

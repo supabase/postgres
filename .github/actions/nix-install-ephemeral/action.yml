@@ -45,11 +45,12 @@ runs:
       shell: bash
       run: |
         sudo tee /tmp/nix-extra.conf > /dev/null <<'NIXCONF'
+        always-allow-substitutes = true
         extra-experimental-features = nix-command flakes
+        extra-system-features = kvm
+        max-jobs = 4
         substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com
         trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-        max-jobs = 4
-        extra-system-features = kvm
         NIXCONF
 
         if [ "${{ inputs.push-to-cache }}" = "true" ]; then
@@ -57,6 +58,8 @@ runs:
         fi
 
         curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file /tmp/nix-extra.conf
+
+        cat /etc/nix/nix.conf
 
         # Add nix to PATH for subsequent steps
         echo "/nix/var/nix/profiles/default/bin" >> "$GITHUB_PATH"

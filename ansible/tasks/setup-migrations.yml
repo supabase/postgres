@@ -1,6 +1,6 @@
-- name: run debpkg_mode or stage2_nix tasks
+- name: run stage2_nix tasks
   when:
-    - (debpkg_mode or stage2_nix)
+    - stage2_nix
   block:
     - name: Run migrate.sh script
       ansible.builtin.command:
