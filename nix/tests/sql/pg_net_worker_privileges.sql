@@ -10,13 +10,13 @@
 -- pg_net's own install script grants ALL privileges (which includes TRIGGER) on
 -- both of those tables to PUBLIC:
 --   grant all on all tables in schema net to PUBLIC;
--- so literally any role -- including a plain `authenticated` app user -- can attach
+-- so literally any role -- including a `postgres` app user -- can attach
 -- a trigger to them. Since a normal (non SECURITY DEFINER) trigger runs with the
--- privileges of whoever performs the triggering statement, an `authenticated` user
+-- privileges of whoever performs the triggering statement, a `postgres` user
 -- could make such a trigger run arbitrary SQL with the pg_net worker's privileges
 -- the next time it processed a queued request.
 --
--- This test plants such a trigger as `authenticated` and has it record which role
+-- This test plants such a trigger as `postgres` and has it record which role
 -- and privilege level it actually ran with, confirming the worker's DML now runs
 -- as the unprivileged `postgres` role instead of the superuser `supabase_admin`.
 
@@ -42,7 +42,7 @@ $$;
 
 grant execute on function public.pg_net_privesc_trigger() to public;
 
-set session authorization authenticated;
+set session authorization postgres;
 
 create trigger pg_net_privesc
 after insert on net._http_response
