@@ -24,7 +24,7 @@ variable "ansible_arguments" {
 }
 
 variable "region" {
-  type    = string
+  type = string
 }
 
 variable "build-vol" {
@@ -58,17 +58,17 @@ locals {
 }
 
 variable "postgres-version" {
-  type = string
+  type    = string
   default = ""
 }
 
 variable "git-head-version" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
 variable "packer-execution-id" {
-  type = string
+  type    = string
   default = "unknown"
 }
 
@@ -78,45 +78,48 @@ variable "force-deregister" {
 }
 
 variable "input-hash" {
-  type    = string
-  default = ""
+  type        = string
+  default     = ""
   description = "Content hash of all input sources"
 }
 
 packer {
   required_plugins {
     amazon = {
-      source  = "github.com/hashicorp/amazon"
-      version = "~> 1"
+      source = "github.com/hashicorp/amazon"
+      # don't use semver for the version since there's no lock files
+      # can go back when we can have renovate watching this
+      # see https://github.com/hashicorp/packer-plugin-amazon/issues/676
+      version = "1.8.0"
     }
   }
 }
 
 # source block
 source "amazon-ebssurrogate" "source" {
-  profile = "${var.profile}"
-  ami_name = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
+  profile                 = "${var.profile}"
+  ami_name                = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
-  ami_architecture = "x86_64"
-  ami_regions   = "${var.ami_regions}"
-  instance_type = "c6i.4xlarge"
-  region       = "${var.region}"
-  force_deregister = var.force-deregister
+  ami_architecture        = "x86_64"
+  ami_regions             = "${var.ami_regions}"
+  instance_type           = "c6i.4xlarge"
+  region                  = "${var.region}"
+  force_deregister        = var.force-deregister
 
   # Increase timeout for instance stop operations to handle large instances
   aws_polling {
     delay_seconds = 15
-    max_attempts  = 120  # 120 * 15s = 30 minutes max wait
+    max_attempts  = 120 # 120 * 15s = 30 minutes max wait
   }
 
   # Use latest official ubuntu noble ami owned by Canonical.
   source_ami_filter {
     filters = {
       virtualization-type = "hvm"
-      name = "${var.ami}"
-      root-device-type = "ebs"
+      name                = "${var.ami}"
+      root-device-type    = "ebs"
     }
-    owners = [ "099720109477" ]
+    owners      = ["099720109477"]
     most_recent = true
   }
 
@@ -126,7 +129,7 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 10
     volume_type           = "gp3"
-   }
+  }
 
   # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
   # is a minimal default for this AMI; consumers should override this volume
@@ -136,7 +139,7 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 1
     volume_type           = "gp3"
-   }
+  }
 
   launch_block_device_mappings {
     device_name           = "/dev/${var.build-vol}"
@@ -152,25 +155,26 @@ source "amazon-ebssurrogate" "source" {
     packerExecutionId = "${var.packer-execution-id}"
   }
   run_volume_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
     creator = "packer"
     appType = "postgres"
   }
   tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator         = "packer"
+    appType         = "postgres"
     postgresVersion = "${var.postgres-version}-stage1"
-    sourceSha = "${var.git-head-version}"
-    inputHash = "${var.input-hash}"
+    sourceSha       = "${var.git-head-version}"
+    inputHash       = "${var.input-hash}"
   }
 
   communicator = "ssh"
-  ssh_pty = true
+  ssh_pty      = true
   ssh_username = "ubuntu"
-  ssh_timeout = "5m"
+  ssh_timeout  = "5m"
 
   ami_root_device {
     source_device_name    = "/dev/xvdf"
@@ -188,42 +192,42 @@ build {
   sources = ["source.amazon-ebssurrogate.source"]
 
   provisioner "file" {
-    source = "ebssurrogate/files/sources.cfg"
+    source      = "ebssurrogate/files/sources.cfg"
     destination = "/tmp/sources.list"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/ebsnvme-id"
+    source      = "ebssurrogate/files/ebsnvme-id"
     destination = "/tmp/ebsnvme-id"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/70-ec2-nvme-devices.rules"
+    source      = "ebssurrogate/files/70-ec2-nvme-devices.rules"
     destination = "/tmp/70-ec2-nvme-devices.rules"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
+    source      = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
     destination = "/tmp/chroot-bootstrap-nix.sh"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/cloud.cfg"
+    source      = "ebssurrogate/files/cloud.cfg"
     destination = "/tmp/cloud.cfg"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/vector.timer"
+    source      = "ebssurrogate/files/vector.timer"
     destination = "/tmp/vector.timer"
   }
 
   provisioner "file" {
-    source = "ebssurrogate/files/apparmor_profiles"
+    source      = "ebssurrogate/files/apparmor_profiles"
     destination = "/tmp"
   }
 
   provisioner "file" {
-    source = "migrations"
+    source      = "migrations"
     destination = "/tmp"
   }
 
@@ -233,17 +237,17 @@ build {
   }
 
   provisioner "file" {
-    source = "ansible"
+    source      = "ansible"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "scripts"
+    source      = "scripts"
     destination = "/tmp/ansible-playbook"
   }
 
   provisioner "file" {
-    source = "ansible/vars.yml"
+    source      = "ansible/vars.yml"
     destination = "/tmp/ansible-playbook/vars.yml"
   }
 
@@ -256,16 +260,16 @@ build {
       "DOCKER_IMAGE_TAG=${var.docker_image_tag}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}"
     ]
-    use_env_var_file = true
-    script = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
-    execute_command = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
+    use_env_var_file    = true
+    script              = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
+    execute_command     = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
-    skip_clean = true
+    skip_clean          = true
   }
 
   provisioner "file" {
-    source = "/tmp/ansible.log"
+    source      = "/tmp/ansible.log"
     destination = "/tmp/ansible.log"
-    direction = "download"
+    direction   = "download"
   }
 }

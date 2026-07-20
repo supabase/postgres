@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Literal,
+    NamedTuple,
     NotRequired,
     Optional,
     Set,
@@ -24,7 +25,6 @@ from github_action_utils import debug, notice, error, set_output, warning
 from result import Err, Ok, Result
 
 System = Literal["x86_64-linux", "aarch64-linux", "aarch64-darwin"]
-RunnerType = Literal["ephemeral", "self-hosted"]
 
 
 class NixEvalJobsOutput(TypedDict):
@@ -65,24 +65,6 @@ class NixEvalError(TypedDict):
 
     attr: str
     error: str
-
-
-BUILD_RUNNER_MAP: Dict[RunnerType, Dict[System, RunsOnConfig]] = {
-    "ephemeral": {
-        "aarch64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404-arm"],
-        },
-        "x86_64-linux": {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
-        },
-    },
-    "self-hosted": {
-        "aarch64-darwin": {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-darwin"],
-        },
-    },
-}
 
 
 def build_nix_eval_command(
@@ -161,11 +143,11 @@ def parse_nix_eval_line(
 
 def run_nix_eval_jobs(
     cmd: List[str],
-) -> Tuple[List[NixEvalJobsOutput], List[str], List[NixEvalError]]:
+) -> Tuple[str, List[str]]:
     """Run nix-eval-jobs and return parsed package data, warnings, and errors.
 
     Returns:
-        Tuple of (packages, warnings_list, errors_list)
+        Tuple of (stdout, warnings_list)
     """
     print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 
@@ -177,17 +159,6 @@ def run_nix_eval_jobs(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
     )
     stdout_data, stderr_data = process.communicate()
-
-    # Parse stdout for packages
-    packages: List[NixEvalJobsOutput] = []
-    drv_paths: Set[str] = set()
-    errors_list: List[NixEvalError] = []
-    for line in stdout_data.splitlines():
-        result = parse_nix_eval_line(line, drv_paths)
-        if result.is_err():
-            errors_list.append(result._value)
-        elif result._value is not None:
-            packages.append(result._value)
 
     # Parse stderr for warnings (lines starting with "warning:")
     warnings_list: List[str] = []
@@ -203,7 +174,24 @@ def run_nix_eval_jobs(
             title="Process Failure",
         )
 
-    return packages, warnings_list, errors_list
+    return stdout_data, warnings_list
+
+
+def process_nix_eval_jobs_stdout(
+    stdout: str,
+) -> Tuple[List[NixEvalJobsOutput], List[NixEvalError]]:
+    # Parse stdout for packages
+    packages: List[NixEvalJobsOutput] = []
+    drv_paths: Set[str] = set()
+    errors: List[NixEvalError] = []
+    for line in stdout.splitlines():
+        result = parse_nix_eval_line(line, drv_paths)
+        if result.is_err():
+            errors_list.append(result._value)
+        elif result._value is not None:
+            packages.append(result._value)
+
+    return packages, errors
 
 
 def is_extension_pkg(pkg: NixEvalJobsOutput) -> bool:
@@ -241,43 +229,56 @@ def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     return "big-parallel" in pkg.get("requiredSystemFeatures", [])
 
 
-def is_kvm_pkg(pkg: NixEvalJobsOutput) -> bool:
-    """Determine if a package requires KVM"""
-    return "kvm" in pkg.get("requiredSystemFeatures", [])
+def is_virt_pkg(pkg: NixEvalJobsOutput) -> bool:
+    """Determine if a package requires hardware virtualization capabilities"""
+    return bool({"apple-virt", "kvm"} & set(pkg.get("requiredSystemFeatures", [])))
 
 
 def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. KVM packages on Darwin → self-hosted runners
-    2. KVM packages on Linux → ephemeral runners
-    3. Large packages on Linux → 32vcpu ephemeral runners
-    4. Darwin packages → self-hosted runners
-    5. Default → ephemeral runners
+    1. VM packages on Darwin → self-hosted runners
+    2. VM packages on Linux  → 16vcpu blacksmith runners
+    3. Large packages on D/L → 12/32vcpu blacksmith runners
+    5. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
+
     system = pkg["system"]
+    arch, os = system.split("-")
 
-    if is_kvm_pkg(pkg):
-        if system == "aarch64-darwin":
-            return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
-        if system == "aarch64-linux":
-            return {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]}
-        runConfig = BUILD_RUNNER_MAP["ephemeral"].get(system)
-        if runConfig is None:
-            raise ValueError(
-                f"No ephemeral runner with kvm support available for system: {system}"
-            )
-        return runConfig
+    class Specs(NamedTuple):
+        vcpu: int = 0
+        osv: str = None
 
-    if is_large_pkg(pkg) and system in ("x86_64-linux", "aarch64-linux"):
-        suffix = "-arm" if system == "aarch64-linux" else ""
-        return {"labels": [f"blacksmith-32vcpu-ubuntu-2404{suffix}"]}
+    specs = Specs()
 
-    if system == "aarch64-darwin":
-        return BUILD_RUNNER_MAP["self-hosted"]["aarch64-darwin"]
+    match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
+        # kvm
+        case (True, _, "darwin", "aarch64"):
+            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
+        case (True, _, "linux", "aarch64"):
+            specs = Specs(16, "ubuntu-2404-arm")
+        case (True, _, "linux", "x86_64"):
+            specs = Specs(16, "ubuntu-2404")
 
-    return BUILD_RUNNER_MAP["ephemeral"].get(system)
+        # large
+        case (_, True, "darwin", "aarch64"):
+            specs = Specs(12, "macos-26")
+        case (_, True, "linux", "aarch64"):
+            specs = Specs(32, "ubuntu-2404-arm")
+        case (_, True, "linux", "x86_64"):
+            specs = Specs(32, "ubuntu-2404")
+
+        # default
+        case (_, _, "darwin", "aarch64"):
+            specs = Specs(6, "macos-26")
+        case (_, _, "linux", "aarch64"):
+            specs = Specs(8, "ubuntu-2404-arm")
+        case (_, _, "linux", "x86_64"):
+            specs = Specs(8, "ubuntu-2404")
+
+    return {"labels": [f"blacksmith-{specs.vcpu}vcpu-{specs.osv}"]}
 
 
 def main() -> None:
@@ -298,17 +299,32 @@ def main() -> None:
         help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
     )
     parser.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read nix-eval-jobs output from stdin instead of executing process",
+    )
+    parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Send matrix as json to stdout",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
     args = parser.parse_args()
 
-    cmd = build_nix_eval_command(
-        args.nb_eval_jobs_workers, args.max_memory_size, args.flake_outputs
-    )
+    if args.stdin:
+        nix_eval_output, warnings_list = sys.stdin.read(), []
+    else:
+        cmd = build_nix_eval_command(
+            args.nb_eval_jobs_workers,
+            args.max_memory_size,
+            args.flake_outputs,
+        )
+        nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
 
-    # Run evaluation and collect packages, warnings, and errors
-    packages, warnings_list, errors_list = run_nix_eval_jobs(cmd)
+    packages, errors_list = process_nix_eval_jobs_stdout(nix_eval_output)
     gh_action_packages = sort_pkgs_by_closures(packages)
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
@@ -405,6 +421,8 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
+    elif args.stdout:
+        print(json.dumps(gh_output))
     else:
         formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
             "\n", "%0A"

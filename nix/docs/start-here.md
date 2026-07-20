@@ -14,24 +14,18 @@ If you already have the official Nix installer (not Determinate Systems) install
 
 ### Step 1: Edit /etc/nix/nix.conf
 
-Add or update the following configuration in `/etc/nix/nix.conf`:
+Extend the following configuration in `/etc/nix/nix.conf`:
 
-```
-allowed-users = *
-always-allow-substitutes = true
-auto-optimise-store = false
-build-users-group = nixbld
-builders-use-substitutes = true
-cores = 0
+```conf
 experimental-features = nix-command flakes
-max-jobs = auto
-require-sigs = true
-substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
-trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-users = YOUR_USERNAME root
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 ```
 
-**Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
+> [!CAUTION]
+> DO NOT add anyone to `trusted-users` in `/etc/nix/nix.conf` as it [grants root without password](https://nix.dev/manual/nix/stable/command-ref/conf-file.html#conf-trusted-users). Instead, add the binary cache to `extra-substituters` and `extra-trusted-public-keys`.
+
+Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cache.md).
 
 ### Step 2: Restart the Nix Daemon
 
@@ -56,24 +50,18 @@ We'll use the official Nix installer with a custom configuration that includes o
 
 ### Step 1: Create nix.conf
 
-First, create a file named `nix.conf` with the following content:
+First, create a file named `nix.conf.extra` with the following content:
 
-```
-allowed-users = *
-always-allow-substitutes = true
-auto-optimise-store = false
-build-users-group = nixbld
-builders-use-substitutes = true
-cores = 0
+```conf
 experimental-features = nix-command flakes
-max-jobs = auto
-require-sigs = true
-substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
-trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-users = YOUR_USERNAME root
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 ```
 
-**Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
+> [!CAUTION]
+> DO NOT add anyone to `trusted-users` in `/etc/nix/nix.conf` as it [grants root without password](https://nix.dev/manual/nix/stable/command-ref/conf-file.html#conf-trusted-users). Instead, add the binary cache to `extra-substituters` and `extra-trusted-public-keys`.
+
+Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cache.md).
 
 ### Step 2: Install Nix 2.34.6
 

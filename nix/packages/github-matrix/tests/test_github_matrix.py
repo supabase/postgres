@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
+import json
+
 import pytest
 
 from github_matrix import (
     NixEvalJobsOutput,
     get_runner_for_package,
     is_extension_pkg,
-    is_kvm_pkg,
+    is_virt_pkg,
     is_large_pkg,
+    parse_nix_eval_line,
     sort_pkgs_by_closures,
 )
 
@@ -67,150 +70,106 @@ class TestIsLargePkg:
         assert is_large_pkg(pkg) is expected
 
 
-class TestIsKvmPkg:
-    def test_kvm_package(self):
+class TestIsVirtPkg:
+    @pytest.mark.parametrize(
+        "feat,expected",
+        [
+            ("", False),
+            ("apple-virt", True),
+            ("big-parallel", False),
+            ("kvm", True),
+        ],
+    )
+    def test_is_virt_pkg(self, feat, expected):
         pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.vm-test",
-            "attrPath": ["packages", "x86_64-linux", "vm-test"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "vm-test",
-            "system": "x86_64-linux",
-            "requiredSystemFeatures": ["kvm"],
+            "requiredSystemFeatures": [feat],
         }
-        assert is_kvm_pkg(pkg) is True
+        assert is_virt_pkg(pkg) is expected
 
-    def test_non_kvm_package(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.psql_15",
-            "attrPath": ["packages", "x86_64-linux", "psql_15"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "postgresql-16.0",
-            "system": "x86_64-linux",
+
+class TestNixOSCheck:
+    @pytest.mark.parametrize(
+        "system,expected",
+        [
+            ("aarch64-darwin", False),
+            ("aarch64-linux", True),
+            ("x86_64-linux", False),
+        ],
+    )
+    def test_system(self, system, expected):
+        check = {
+            "attr": f"attr-{system}",
+            "drvPath": f"test_{system}",
+            "system": system,
+            "requiredSystemFeatures": ["nixos-test"],
         }
-        assert is_kvm_pkg(pkg) is False
+        result = parse_nix_eval_line(json.dumps(check), set())
+        if expected:
+            assert result._value is not None
+        else:
+            assert result._value is None
 
 
 class TestGetRunnerForPackage:
-    def test_kvm_package_x86_64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "packages.x86_64-linux.vm-test",
-            "attrPath": ["packages", "x86_64-linux", "vm-test"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "vm-test",
-            "system": "x86_64-linux",
-            "requiredSystemFeatures": ["kvm"],
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {
-            "labels": ["blacksmith-8vcpu-ubuntu-2404"],
-        }
-
-    def test_kvm_package_aarch64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "packages.aarch64-linux.vm-test",
-            "attrPath": ["packages", "aarch64-linux", "vm-test"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "vm-test",
-            "system": "aarch64-linux",
-            "requiredSystemFeatures": ["kvm"],
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {
-            "labels": ["blacksmith-16vcpu-ubuntu-2404-arm"],
-        }
-
-    def test_large_package_x86_64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "legacyPackages.x86_64-linux.psql_15.exts.postgis",
-            "attrPath": [
-                "legacyPackages",
-                "x86_64-linux",
-                "psql_15",
-                "exts",
-                "postgis",
-            ],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "postgis",
-            "system": "x86_64-linux",
-            "requiredSystemFeatures": ["big-parallel"],
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404"]}
-
-    def test_large_package_aarch64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "legacyPackages.aarch64-linux.psql_15.exts.pg_graphql",
-            "attrPath": [
-                "legacyPackages",
+    @pytest.mark.parametrize(
+        "system,feature,expected",
+        [
+            (
+                "aarch64-darwin",
+                "apple-virt",
+                {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
+            ),
+            (
+                "aarch64-darwin",
+                "big-parallel",
+                {"labels": ["blacksmith-12vcpu-macos-26"]},
+            ),
+            (
+                "aarch64-darwin",
+                None,
+                {"labels": ["blacksmith-6vcpu-macos-26"]},
+            ),
+            (
                 "aarch64-linux",
-                "psql_15",
-                "exts",
-                "pg_graphql",
-            ],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "pg_graphql",
-            "system": "aarch64-linux",
-            "requiredSystemFeatures": ["big-parallel"],
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]}
-
-    def test_darwin_package(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "legacyPackages.aarch64-darwin.psql_15",
-            "attrPath": ["legacyPackages", "aarch64-darwin", "psql_15"],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "postgresql-16.0",
-            "system": "aarch64-darwin",
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {
-            "group": "self-hosted-runners-nix",
-            "labels": ["aarch64-darwin"],
-        }
-
-    def test_default_x86_64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "legacyPackages.x86_64-linux.psql_15.exts.pg_cron",
-            "attrPath": [
-                "legacyPackages",
-                "x86_64-linux",
-                "psql_15",
-                "exts",
-                "pg_cron",
-            ],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "pg_cron",
-            "system": "x86_64-linux",
-        }
-        result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-8vcpu-ubuntu-2404"]}
-
-    def test_default_aarch64_linux(self):
-        pkg: NixEvalJobsOutput = {
-            "attr": "legacyPackages.aarch64-linux.psql_15.exts.pg_cron",
-            "attrPath": [
-                "legacyPackages",
+                "kvm",
+                {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]},
+            ),
+            (
                 "aarch64-linux",
-                "psql_15",
-                "exts",
-                "pg_cron",
-            ],
-            "cacheStatus": "notBuilt",
-            "drvPath": "/nix/store/test.drv",
-            "name": "pg_cron",
-            "system": "aarch64-linux",
+                "big-parallel",
+                {"labels": ["blacksmith-32vcpu-ubuntu-2404-arm"]},
+            ),
+            (
+                "aarch64-linux",
+                None,
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]},
+            ),
+            (
+                "x86_64-linux",
+                "kvm",
+                {"labels": ["blacksmith-16vcpu-ubuntu-2404"]},
+            ),
+            (
+                "x86_64-linux",
+                "big-parallel",
+                {"labels": ["blacksmith-32vcpu-ubuntu-2404"]},
+            ),
+            (
+                "x86_64-linux",
+                None,
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404"]},
+            ),
+        ],
+    )
+    def test_get_runner_for_package(self, system, feature, expected):
+        pkg: NixEvalJobsOutput = {
+            "system": system,
         }
+        if feature:
+            pkg["requiredSystemFeatures"] = [feature]
+
         result = get_runner_for_package(pkg)
-        assert result == {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]}
+        assert result == expected
 
 
 class TestSortPkgsByClosures:

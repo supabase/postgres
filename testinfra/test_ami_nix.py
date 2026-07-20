@@ -291,7 +291,7 @@ def host():
                 "HttpEndpoint": "enabled",
             },
             IamInstanceProfile={"Name": "pg-ap-southeast-1"},
-            InstanceType="t4g.micro",
+            InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
             MinCount=1,
             MaxCount=1,
             ImageId=image.id,
@@ -411,7 +411,7 @@ users:
 
     def is_healthy(ssh) -> bool:
         health_checks = [
-            ("postgres", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
+            ("postgresql", "sudo -u postgres /usr/bin/pg_isready -U postgres"),
             (
                 "adminapi",
                 f"curl -sf -k --connect-timeout 30 --max-time 60 https://localhost:8085/health -H 'apikey: {supabase_admin_key}'",
@@ -1210,6 +1210,34 @@ def test_custom_overrides_take_precedence_over_generated_optimizations(host):
                 "Warning: Failed to restart PostgreSQL after restoring "
                 f"precedence test config.\n{error}"
             )
+
+
+def test_copy_fail_algif_aead_mitigation(host):
+    """Verify algif_aead is blocked from autoloading and is not loaded."""
+    result = run_ssh_command(
+        host["ssh"],
+        "grep -R '^install algif_aead /bin/false$' /etc/modprobe.d /usr/lib/modprobe.d",
+    )
+    assert result["succeeded"], (
+        "algif_aead module autoload is not disabled by modprobe config.\n"
+        f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
+    )
+
+    result = run_ssh_command(
+        host["ssh"],
+        "grep -qE '^algif_aead ' /proc/modules",
+    )
+    assert not result["succeeded"], "algif_aead module is loaded"
+
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo modprobe -n -v algif_aead 2>&1",
+    )
+    assert result["succeeded"], f"modprobe dry-run failed: {result['stderr']}"
+    assert "install /bin/false" in result["stdout"], (
+        "modprobe dry-run did not resolve algif_aead to /bin/false.\n"
+        f"stdout: {result['stdout']}"
+    )
 
 
 def test_apparmor_postgresql_service_uses_profile(host):

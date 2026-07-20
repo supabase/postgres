@@ -28,5 +28,5 @@ mkdir -p /var/log/postgresql 2>/dev/null || true
 ln -sf /proc/1/fd/1 /var/log/postgresql/postgresql.json
 
 exec /nix/var/nix/profiles/default/bin/pgctld \
-  --postgres-config-template "${POSTGRES_CONFIG_TEMPLATE_PATH:-/etc/pgctld-custom/postgresql.conf.tmpl}" \
-  "$@"
+	--postgres-config-template "${POSTGRES_CONFIG_TEMPLATE_PATH:-/etc/pgctld-custom/postgresql.conf.tmpl}" \
+	"$@"

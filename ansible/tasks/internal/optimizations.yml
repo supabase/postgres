@@ -1,18 +1,3 @@
-- name: ensure services are stopped and disabled for first boot debian build
-  systemd:
-    enabled: no
-    name: '{{ item }}'
-    state: stopped
-  with_items:
-    - postgresql
-    - pgbouncer
-    - fail2ban
-    - motd-news
-    - vector
-    - lvm2-monitor
-    - salt-minion
-  when: debpkg_mode 
-
 - name: ensure services are stopped and disabled for first boot nix build
   systemd:
     enabled: no
@@ -36,4 +21,4 @@
     - man-db
     - popularity-contest
     - ubuntu-advantage-tools
-  when: debpkg_mode or stage2_nix
+  when: stage2_nix

@@ -19,6 +19,7 @@ dependencies, copies config files, and runs database migrations.
 | Config source | `/etc/postgresql/postgresql.conf` | Same |
 | Data directory | `/var/lib/postgresql/data` | Same |
 | pgsodium | Enabled | **Not enabled** (extension not created) |
+| supautils | Enabled | Enabled |
 | supabase_vault | Enabled | Enabled |
 | pgsodium_getkey.sh | Present | Present (required by vault at startup) |
 
@@ -77,43 +78,33 @@ docker build -f Dockerfile-multigres --target variant-orioledb-17 -t pg-docker-t
 nix run .#docker-image-test -- --no-build --target variant-orioledb-17 Dockerfile-multigres
 ```
 
-### Optional: install nix
+### Install nix
 
 ## Install Nix (Fresh Installation)
 
 We'll use the official Nix installer with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
 
-### Step 1: Create nix.conf
+### Step 1: Create nix.conf.extra
 
-First, create a file named `nix.conf` with the following content:
+First, create a file named `nix.conf.extra` with the following content:
 
 ```
-allowed-users = *
-always-allow-substitutes = true
-auto-optimise-store = false
-build-users-group = nixbld
-builders-use-substitutes = true
-cores = 0
 experimental-features = nix-command flakes
-max-jobs = auto
-netrc-file =
-require-sigs = true
-substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com https://postgrest.cachix.org https://cache.nixos.org/
-trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= postgrest.cachix.org-1:icgW4R15fz1+LqvhPjt4EnX/r19AaqxiVV+1olwlZtI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-trusted-substituters =
-trusted-users = YOUR_USERNAME root
-extra-sandbox-paths =
-extra-substituters =
-```
+extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+ ```
 
-**Important**: Replace `YOUR_USERNAME` with your actual username in the `trusted-users` line.
+> [!CAUTION]
+> DO NOT add anyone to `trusted-users` in `/etc/nix/nix.conf` as it [grants root without password](https://nix.dev/manual/nix/stable/command-ref/conf-file.html#conf-trusted-users). Instead, add the binary cache to `extra-substituters` and `extra-trusted-public-keys`.
+
+Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cache.md).
 
 ### Step 2: Install Nix 2.34.6
 
 Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf.extra
 ```
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
@@ -133,8 +124,6 @@ nix (Nix) 2.34.6
 
 
 ### Test only (image already built)
-
-
 
 ```bash
 nix run .#docker-image-test -- --no-build --target variant-17 Dockerfile-multigres
