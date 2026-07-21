@@ -224,7 +224,7 @@ service:
     enabled: false
     running: false
   supabase-admin-agent_pgbackrest_tune:
-    enabled: true
+    enabled: false
     running: false
   supabase-admin-agent_salt:
     enabled: false
