@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Supabase supabase-admin-agent pgbackrest tune on a schedule
+Requires=supabase-admin-agent_pgbackrest_tune.service
+
+[Timer]
+OnCalendar=*:0/10
+RandomizedDelaySec={{ supabase_admin_agent_splay }}
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

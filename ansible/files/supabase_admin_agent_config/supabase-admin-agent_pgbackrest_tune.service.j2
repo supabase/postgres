@@ -1,0 +1,17 @@
+[Unit]
+Description=Recompute pgBackRest process-max via supabase-admin-agent pgbackrest tune
+After=network.target local-fs.target tmp.mount
+Requires=local-fs.target
+# Skips cleanly (not a failure) on instances where pgBackRest isn't enabled.
+ConditionPathExists=/etc/pgbackrest/conf.d/pgbackrest.conf
+
+[Service]
+Type=oneshot
+ExecStart=/opt/supabase-admin-agent/supabase-admin-agent --config /opt/supabase-admin-agent/config.yaml pgbackrest tune
+User=supabase-admin-agent
+Group=supabase-admin-agent
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

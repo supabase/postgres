@@ -113,6 +113,16 @@
     src: files/supabase_admin_agent_config/supabase-admin-agent_salt.service.j2
     dest: /etc/systemd/system/supabase-admin-agent_salt.service
 
+- name: supabase-admin-agent - create pgbackrest tune systemd timer file
+  template:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_pgbackrest_tune.timer.j2
+    dest: /etc/systemd/system/supabase-admin-agent_pgbackrest_tune.timer
+
+- name: supabase-admin-agent - create pgbackrest tune service file
+  template:
+    src: files/supabase_admin_agent_config/supabase-admin-agent_pgbackrest_tune.service.j2
+    dest: /etc/systemd/system/supabase-admin-agent_pgbackrest_tune.service
+
 - name: supabase-admin-agent - reload systemd
   systemd:
     daemon_reload: yes
@@ -123,3 +133,12 @@
     name: supabase-admin-agent_salt
     enabled: no
     state: stopped
+
+# Always on, unlike the salt timer above: ConditionPathExists on the service
+# unit is the safety gate (skips cleanly on instances without pgBackRest
+# enabled), so there's no separate manual enable step needed for this one.
+- name: supabase-admin-agent - ENABLE pgbackrest tune timer
+  systemd:
+    name: supabase-admin-agent_pgbackrest_tune.timer
+    enabled: yes
+    state: started

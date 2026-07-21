@@ -145,6 +145,18 @@ file:
     group: '0'
     mode: '0644'
     owner: '0'
+  /etc/systemd/system/supabase-admin-agent_pgbackrest_tune.service:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
+  /etc/systemd/system/supabase-admin-agent_pgbackrest_tune.timer:
+    exists: true
+    filetype: file
+    group: '0'
+    mode: '0644'
+    owner: '0'
   /etc/systemd/system/supabase-admin-agent_salt.service:
     exists: true
     filetype: file
