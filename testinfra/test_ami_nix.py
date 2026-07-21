@@ -1141,19 +1141,14 @@ def test_custom_overrides_take_precedence_over_generated_optimizations(host):
             ssh,
             "sudo -u postgres psql -X -v ON_ERROR_STOP=1 -t -A -F '|' "
             "-d postgres -c "
-            "\"SELECT setting, sourcefile "
+            '"SELECT setting, sourcefile '
             "FROM pg_settings WHERE name = 'max_connections';\"",
         )
         assert_command_succeeded(result, "Query max_connections setting")
 
-        rows = [
-            line.strip()
-            for line in result["stdout"].splitlines()
-            if line.strip()
-        ]
+        rows = [line.strip() for line in result["stdout"].splitlines() if line.strip()]
         assert len(rows) == 1, (
-            f"Expected one max_connections row, got {len(rows)}:\n"
-            f"{result['stdout']}"
+            f"Expected one max_connections row, got {len(rows)}:\n{result['stdout']}"
         )
         return rows[0].split("|", 1)
 
