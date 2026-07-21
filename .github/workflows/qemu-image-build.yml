@@ -71,7 +71,7 @@ jobs:
           multi-user: "false"
 
       - name: Build QEMU artifact
-        run: nix run .#build-qemu-image "${{ matrix.postgres_version }}" arm64
+        run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "${{ matrix.postgres_version }}" arm64
 
       - name: Grab release version
         id: process_release_version

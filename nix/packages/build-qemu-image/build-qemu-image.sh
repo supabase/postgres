@@ -25,16 +25,25 @@ amd64)
 	qemu=$(which qemu-system-x86_64)
 	code=${qemu%/bin/*}/share/qemu/edk2-x86_64-code.fd
 	vars=${qemu%/bin/*}/share/qemu/edk2-i386-vars.fd
-	machine=q35,accel=$accel
 	;;
 arm64)
 	qemu=$(which qemu-system-aarch64)
 	code=${qemu%/bin/*}/share/qemu/edk2-aarch64-code.fd
 	vars=${qemu%/bin/*}/share/qemu/edk2-arm-vars.fd
-	machine=virt,accel=$accel,gic-version=max,highmem=on
 	;;
 *) echo "Error: Invalid arch '$arch'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
 esac
+
+case $arch:$(uname -m) in
+amd64:aarch64) machine=q35 cpu=qemu64 ;;
+amd64:x86_64) machine=q35 cpu=host ;;
+arm64:aarch64) machine=virt,gic-version=max,highmem=on cpu=host ;;
+arm64:x86_64) machine=virt,gic-version=max,highmem=on cpu=cortex-a76 ;;
+esac
+machine+=,accel=$accel
+if [[ -z ${BUILD_QEMU_IMAGE_HW_VIRT_ONLY:-} ]]; then
+	machine+=:tcg
+fi
 
 workdir=$(mktemp -d packer-work-qemu-XXXXXX)
 install --mode 444 "$code" "$workdir/ovmf_code.fd"
@@ -51,6 +60,7 @@ export TZ=UTC
 packer init qemu.pkr.hcl
 PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "arch=$arch" \
+	-var "cpu=$cpu" \
 	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
 	-var "postgres-version=$postgres_version" \

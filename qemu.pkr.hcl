@@ -22,6 +22,10 @@ variable "arch" {
   type = string
 }
 
+variable "cpu" {
+  type = string
+}
+
 variable "machine" {
   type = string
 }
@@ -57,7 +61,7 @@ source "qemu" "cloudimg" {
   qemu_binary = var.qemu_binary
   qemuargs = [
     ["-machine", var.machine],
-    ["-cpu", "host"],
+    ["-cpu", var.cpu],
     ["-device", "virtio-gpu-pci"],
     ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=${var.workdir}/ovmf_code.fd"],
     ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=${var.workdir}/ovmf_vars.fd"],
