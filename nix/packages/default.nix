@@ -1,6 +1,10 @@
 { self, inputs, ... }:
 {
-  imports = [ ./postgres.nix ];
+  imports = [
+    ./postgres.nix
+    ./site-env.nix
+  ];
+
   perSystem =
     {
       inputs',
