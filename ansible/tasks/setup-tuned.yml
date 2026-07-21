@@ -1,6 +1,6 @@
 - name: 'tuned - Install and configure tuned'  # noqa: name[casing]
   when:
-    - (stage2_nix or nixpkg_mode or debpkg_mode)
+    - (stage2_nix or nixpkg_mode)
   block:
     - name: 'tuned - Install tuned'  # noqa: name[casing]
       ansible.builtin.apt:
@@ -187,7 +187,7 @@
         value: '10'
       become: true
       when:
-        - (debpkg_mode or nixpkg_mode)
+        - nixpkg_mode
 
     - name: 'tuned - Enable zswap if swap is present'  # noqa: name[casing]
       when:

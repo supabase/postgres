@@ -156,7 +156,11 @@ EOF
 
 	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 		echo "Unmounting data disk from ${MOUNT_POINT}"
-		retry 3 umount $MOUNT_POINT
+		# check_free_space (and other pre-mount failures) can trigger this trap before
+		# $MOUNT_POINT is ever mounted. Without || true, set -e aborts cleanup() right here
+		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
+		# is stuck at "running" forever instead of reporting the real failure.
+		retry 3 umount $MOUNT_POINT || true
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
@@ -211,6 +215,9 @@ EOF
 }
 
 function initiate_upgrade {
+	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
+	check_free_space $((2 * 1024 * 1024))
+
 	mkdir -p "$MOUNT_POINT"
 	SHARED_PRELOAD_LIBRARIES=$(grep '^[[:space:]]*shared_preload_libraries' "$POSTGRES_CONFIG_PATH" | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
 
@@ -356,6 +363,13 @@ EXTRA_NIX_CONF
 		# registered paths are skipped on retry but an in-flight NAR restarts from
 		# 0%. Failing as a normal command (not exit 1) lets the ERR trap run cleanup
 		# and record "failed" instead of hanging.
+		#
+		# Re-check free space here: the earlier check at the top of initiate_upgrade
+		# only guarantees headroom at entry, and the tarball extraction / nix install
+		# / catalog download above can already have eaten into that reserve before
+		# the realize (the actual big consumer) starts.
+		check_free_space $((2 * 1024 * 1024))
+
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
 			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
@@ -369,6 +383,10 @@ EXTRA_NIX_CONF
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
+
+		# Closure is realized, so the multi-GB Nix reserve is no longer needed; just
+		# confirm enough room remains for the lighter apt/locale-gen work still ahead.
+		check_free_space $((512 * 1024))
 
 		PG_UPGRADE_BIN_DIR="$STORE_PATH"
 		PGSHARENEW="$PG_UPGRADE_BIN_DIR/share/postgresql"
@@ -498,12 +516,12 @@ EXTRA_NIX_CONF
 
 	if [ "$IS_NIX_UPGRADE" = "true" ]; then
 		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
-			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
 		else
-			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
 		fi
 	else
-		su -c "$PGBINNEW/initdb $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+		su -c "$PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
 
 	fi
 
