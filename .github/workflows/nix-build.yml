@@ -233,3 +233,224 @@ jobs:
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  version-diff:
+    name: Package version diff
+    if: github.event_name == 'pull_request'
+    needs:
+      - nix-build-packages-x86_64-linux
+      - nix-build-packages-aarch64-linux
+      - nix-build-packages-aarch64-darwin
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runs_on: blacksmith-32vcpu-ubuntu-2404
+            installer: ephemeral
+          - system: aarch64-linux
+            runs_on: blacksmith-4vcpu-ubuntu-2404-arm
+            installer: ephemeral
+          - system: aarch64-darwin
+            runs_on:
+              group: self-hosted-runners-nix
+              labels: [aarch64-darwin]
+            installer: self-hosted
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          path: head
+
+      - name: Checkout PR base
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Install nix (ephemeral)
+        if: matrix.installer == 'ephemeral'
+        uses: ./head/.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: 'true'
+        env:
+          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+      - name: Install nix (self-hosted)
+        if: matrix.installer == 'self-hosted'
+        uses: ./head/.github/actions/nix-install-self-hosted
+
+      # nix-eval's packages_matrix only lists *uncached* packages, so it
+      # cannot be used to decide what to diff. Instead, collect every
+      # derivation under legacyPackages.<system> (recursing into attrsets
+      # like nix-eval-jobs --force-recurse does) into one linkFarm root,
+      # whose closure nvd can diff against the other side's root.
+      - name: Write root collector expression
+        run: |
+          cat > /tmp/version-diff-root.nix <<'EOF'
+          { dir, system }:
+          let
+            flake = builtins.getFlake dir;
+            pkgs = flake.inputs.nixpkgs.legacyPackages.${system};
+            isDrv = v: (v.type or "") == "derivation";
+            collect =
+              prefix: set:
+              builtins.concatLists (
+                map (
+                  n:
+                  let
+                    v = set.${n};
+                  in
+                  if isDrv v then
+                    [
+                      {
+                        name = prefix + n;
+                        path = v;
+                      }
+                    ]
+                  else if builtins.isAttrs v then
+                    collect (prefix + n + ".") v
+                  else
+                    [ ]
+                ) (builtins.attrNames set)
+              );
+          in
+          pkgs.linkFarm "version-diff-root" (collect "" flake.legacyPackages.${system})
+          EOF
+
+      # Evaluation only -- no store paths are realized yet.
+      - name: Evaluate head root
+        id: head
+        working-directory: head
+        run: |
+          path=$(nix eval --impure --raw --accept-flake-config \
+            --expr '(import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }).outPath')
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - name: Evaluate base root
+        id: base
+        working-directory: base
+        run: |
+          path=$(nix eval --impure --raw --accept-flake-config \
+            --expr '(import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }).outPath')
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      # Both roots' closures were already built and pushed to the shared
+      # cache (head by nix-build-packages-* above, base by CI on the base
+      # branch), so building them only substitutes -- no rebuild.
+      - name: Diff versions with nvd
+        run: |
+          if [ "${{ steps.head.outputs.path }}" = "${{ steps.base.outputs.path }}" ]; then
+            echo "No \`legacyPackages.${{ matrix.system }}\` version changes in this PR." > /tmp/diff.txt
+          else
+            (cd head && nix build --impure --accept-flake-config --no-link \
+              --expr 'import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }')
+            (cd base && nix build --impure --accept-flake-config --no-link \
+              --expr 'import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }')
+            nix run --accept-flake-config nixpkgs#nvd -- diff \
+              "${{ steps.base.outputs.path }}" "${{ steps.head.outputs.path }}" > /tmp/diff.txt
+          fi
+          cat /tmp/diff.txt
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-${{ matrix.system }}
+          path: /tmp/diff.txt
+          retention-days: 7
+
+  version-diff-comment:
+    name: Post package version diff comment
+    if: always() && github.event_name == 'pull_request'
+    needs: version-diff
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download diff artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: diff-*
+          path: diffs
+          merge-multiple: false
+
+      - name: Assemble collapsed comment body
+        run: |
+          all_no_diff=true
+          for dir in diffs/diff-*; do
+            file="$dir/diff.txt"
+            if [ ! -f "$file" ] || ! grep -q '^No `legacyPackages' "$file"; then
+              all_no_diff=false
+              break
+            fi
+          done
+
+          if [ "$all_no_diff" = "true" ]; then
+            systems=$(for dir in diffs/diff-*; do echo "\`${dir#diffs/diff-}\`"; done | paste -sd', ')
+            {
+              echo "<!-- version-diff -->"
+              echo "## Package version diff: none"
+              echo "Compares built package versions in \`legacyPackages\` between this PR and its base commit, per system."
+              echo
+              echo "### No Package Differences"
+              echo "All packages are hash-identical on all systems (${systems})."
+            } > /tmp/comment.md
+          else
+            {
+              echo "<!-- version-diff -->"
+              echo "## Package version diff"
+              echo "Compares built package versions in \`legacyPackages\` between this PR and its base commit, per system."
+              echo
+              for dir in diffs/diff-*; do
+                system="${dir#diffs/diff-}"
+                file="$dir/diff.txt"
+                if [ ! -f "$file" ]; then
+                  echo "<details>"
+                  echo "<summary>${system}: diff unavailable (job failed or skipped)</summary>"
+                  echo "</details>"
+                  echo
+                  continue
+                fi
+                if grep -q '^No `legacyPackages' "$file"; then
+                  # Short, no-op case: summary alone, nothing to expand.
+                  echo "<details>"
+                  echo "<summary>${system}: $(cat "$file")</summary>"
+                  echo "</details>"
+                  echo
+                  continue
+                fi
+                summary=$(grep '^Closure size:' "$file" | tail -1)
+                echo "<details>"
+                echo "<summary>${system}: ${summary:-changed (see below)}</summary>"
+                echo
+                echo '```'
+                # Cap the visible diff so a single arch can't blow the comment size limit.
+                head -c 20000 "$file"
+                if [ "$(wc -c < "$file")" -gt 20000 ]; then
+                  echo
+                  echo "... truncated, see workflow run for full output ..."
+                fi
+                echo '```'
+                echo "</details>"
+                echo
+              done
+            } > /tmp/comment.md
+          fi
+
+      - name: Find existing version diff comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- version-diff -->"
+
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/comment.md
+          edit-mode: replace
