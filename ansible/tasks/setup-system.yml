@@ -183,3 +183,15 @@
     group: 'root'
   when:
     - stage2_nix
+
+- name: Configure Apt
+  ansible.builtin.copy:
+    content: |
+      Acquire::Retries "3";
+      Acquire::http::Timeout "20";
+      Acquire::https::Timeout "20";
+      DPkg::Lock::Timeout "300";
+    dest: /etc/apt/apt.conf.d/99supabase
+    owner: root
+    group: root
+    mode: "0644"
