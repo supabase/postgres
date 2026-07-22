@@ -116,6 +116,7 @@ buildEnv {
   };
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;
