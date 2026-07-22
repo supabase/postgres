@@ -250,6 +250,13 @@
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // slimPackages // cliPackages;
+      legacyPackages = basePackages // slimPackages // cliPackages // {
+        # DO NOT MERGE, TESTING: dummy package to exercise the version-diff CI job.
+        version-diff-test-dummy = pkgs.writeTextFile {
+          name = "version-diff-test-dummy-1.0.0";
+          text = "testing drvpath-scoped version-diff workflow\n";
+          destination = "/share/version-diff-test-dummy";
+        };
+      };
     };
 }
