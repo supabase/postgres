@@ -1,4 +1,4 @@
-# These are profiles (package sets per pg major version) deployed to instances and kept up to date via salt.
+# These are profiles (package sets per pg major version) deployed to instances and updated regularly.
 {
   perSystem =
     {
