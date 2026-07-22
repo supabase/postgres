@@ -357,6 +357,22 @@ function start_vacuum_analyze {
 	echo "Upgrade job completed"
 }
 
+case $# in
+0) ;;
+1)
+	if ! declare -F "$1" >/dev/null; then
+		echo "Error: unknown function $1" >&2
+		exit 1
+	fi
+	$1
+	exit
+	;;
+*)
+	echo "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
+	exit 1
+	;;
+esac
+
 trap cleanup ERR
 
 echo "C.UTF-8 UTF-8" >/etc/locale.gen
