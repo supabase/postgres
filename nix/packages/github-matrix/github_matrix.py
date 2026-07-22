@@ -187,7 +187,7 @@ def process_nix_eval_jobs_stdout(
     for line in stdout.splitlines():
         result = parse_nix_eval_line(line, drv_paths)
         if result.is_err():
-            errors_list.append(result._value)
+            errors.append(result._value)
         elif result._value is not None:
             packages.append(result._value)
 
