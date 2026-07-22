@@ -4,7 +4,7 @@
     group: 'postgres'
     src: 'files/postgresql_config/postgresql-csvlog.conf'
 
-- name: auto_explain and pg_cron confs
+- name: auto_explain, pg_cron, and pg_net confs
   ansible.builtin.template:
     dest: "/etc/postgresql-custom/conf.d/{{ ext_item }}.conf"
     group: 'postgres'
@@ -12,6 +12,7 @@
   loop:
     - auto_explain
     - pg_cron
+    - pg_net
   loop_control:
     loop_var: 'ext_item'
 

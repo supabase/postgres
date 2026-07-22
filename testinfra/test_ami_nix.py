@@ -1087,8 +1087,7 @@ def test_custom_overrides_take_precedence_over_generated_optimizations(host):
 
     def assert_command_succeeded(result, action):
         assert result["succeeded"], (
-            f"{action} failed.\n"
-            f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
+            f"{action} failed.\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
         )
 
     def backup_name(path):
