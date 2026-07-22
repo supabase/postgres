@@ -283,17 +283,18 @@ jobs:
         uses: ./head/.github/actions/nix-install-self-hosted
 
       # nix-eval's packages_matrix only lists *uncached* packages, so it
-      # cannot be used to decide what to diff. Instead, collect every
-      # derivation under legacyPackages.<system> (recursing into attrsets
-      # like nix-eval-jobs --force-recurse does) into one linkFarm root,
-      # whose closure nvd can diff against the other side's root.
-      - name: Write root collector expression
+      # cannot be used to decide what to diff. Instead, evaluate every
+      # derivation's drvPath under legacyPackages.<system> (recursing into
+      # attrsets like nix-eval-jobs --force-recurse does) on both sides.
+      # drvPath captures any input change (source, patches, deps, build
+      # steps), not just a bumped version string, and evaluating it is pure
+      # -- no substituter queries, no downloads, no builds.
+      - name: Write drvPath collector expression
         run: |
-          cat > /tmp/version-diff-root.nix <<'EOF'
+          cat > /tmp/version-diff-drvpaths.nix <<'EOF'
           { dir, system }:
           let
             flake = builtins.getFlake dir;
-            pkgs = flake.inputs.nixpkgs.legacyPackages.${system};
             isDrv = v: (v.type or "") == "derivation";
             collect =
               prefix: set:
@@ -307,7 +308,7 @@ jobs:
                     [
                       {
                         name = prefix + n;
-                        path = v;
+                        drvPath = v.drvPath;
                       }
                     ]
                   else if builtins.isAttrs v then
@@ -317,40 +318,64 @@ jobs:
                 ) (builtins.attrNames set)
               );
           in
-          pkgs.linkFarm "version-diff-root" (collect "" flake.legacyPackages.${system})
+          builtins.listToAttrs (
+            map (e: {
+              inherit (e) name;
+              value = e.drvPath;
+            }) (collect "" flake.legacyPackages.${system})
+          )
           EOF
 
-      # Evaluation only -- no store paths are realized yet.
-      - name: Evaluate head root
-        id: head
+      - name: Evaluate head drvPaths
         working-directory: head
         run: |
-          path=$(nix eval --impure --raw --accept-flake-config \
-            --expr '(import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }).outPath')
-          echo "path=$path" >> "$GITHUB_OUTPUT"
+          nix eval --impure --json --accept-flake-config \
+            --expr '(import /tmp/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
+            > /tmp/head-drvpaths.json
 
-      - name: Evaluate base root
-        id: base
+      - name: Evaluate base drvPaths
         working-directory: base
         run: |
-          path=$(nix eval --impure --raw --accept-flake-config \
-            --expr '(import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }).outPath')
-          echo "path=$path" >> "$GITHUB_OUTPUT"
+          nix eval --impure --json --accept-flake-config \
+            --expr '(import /tmp/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
+            > /tmp/base-drvpaths.json
 
-      # Both roots' closures were already built and pushed to the shared
-      # cache (head by nix-build-packages-* above, base by CI on the base
-      # branch), so building them only substitutes -- no rebuild.
+      # Only realize/diff attrs whose drvPath actually differs, instead of
+      # the whole legacyPackages closure -- most PRs change a handful of
+      # packages, not all ~700+ of them.
       - name: Diff versions with nvd
         run: |
-          if [ "${{ steps.head.outputs.path }}" = "${{ steps.base.outputs.path }}" ]; then
+          if diff -q <(jq -S . /tmp/head-drvpaths.json) <(jq -S . /tmp/base-drvpaths.json) > /dev/null; then
             echo "No \`legacyPackages.${{ matrix.system }}\` version changes in this PR." > /tmp/diff.txt
           else
-            (cd head && nix build --impure --accept-flake-config --no-link \
-              --expr 'import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }')
-            (cd base && nix build --impure --accept-flake-config --no-link \
-              --expr 'import /tmp/version-diff-root.nix { dir = toString ./.; system = "${{ matrix.system }}"; }')
-            nix run --accept-flake-config nixpkgs#nvd -- diff \
-              "${{ steps.base.outputs.path }}" "${{ steps.head.outputs.path }}" > /tmp/diff.txt
+            changed=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+              ($h[0]) as $H | ($b[0]) as $B |
+              ($H | keys) as $hk | ($B | keys) as $bk |
+              ($hk - ($hk - $bk))[] | select($H[.] != $B[.])
+            ')
+            added=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+              (($h[0] | keys) - ($b[0] | keys))[]
+            ')
+            removed=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+              (($b[0] | keys) - ($h[0] | keys))[]
+            ')
+
+            : > /tmp/diff.txt
+            for attr in $changed; do
+              head_path=$(cd head && nix build --accept-flake-config ".#legacyPackages.${{ matrix.system }}.$attr" --no-link --print-out-paths)
+              base_path=$(cd base && nix build --accept-flake-config ".#legacyPackages.${{ matrix.system }}.$attr" --no-link --print-out-paths)
+              nix run --accept-flake-config nixpkgs#nvd -- diff "$base_path" "$head_path" >> /tmp/diff.txt
+            done
+            for attr in $added; do
+              echo "+ ${attr} added" >> /tmp/diff.txt
+            done
+            for attr in $removed; do
+              echo "- ${attr} removed" >> /tmp/diff.txt
+            done
+
+            if [ ! -s /tmp/diff.txt ]; then
+              echo "No \`legacyPackages.${{ matrix.system }}\` version changes in this PR." > /tmp/diff.txt
+            fi
           fi
           cat /tmp/diff.txt
 
