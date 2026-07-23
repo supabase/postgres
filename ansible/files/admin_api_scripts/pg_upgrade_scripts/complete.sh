@@ -66,6 +66,7 @@ function execute_wrappers_patch {
     vault_secrets RECORD;
   BEGIN
     IF EXISTS (SELECT FROM pg_extension WHERE extname = 'wrappers')
+      AND EXISTS (SELECT FROM pg_extension WHERE extname = 'supabase_vault')
       AND EXISTS (SELECT FROM pg_available_extension_versions WHERE name = 'wrappers' AND version NOT IN (
       '0.1.0',
       '0.1.1',
@@ -356,6 +357,22 @@ function start_vacuum_analyze {
 	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
 	echo "Upgrade job completed"
 }
+
+case $# in
+0) ;;
+1)
+	if ! declare -F "$1" >/dev/null; then
+		echo "Error: unknown function $1" >&2
+		exit 1
+	fi
+	$1
+	exit
+	;;
+*)
+	echo "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
+	exit 1
+	;;
+esac
 
 trap cleanup ERR
 
