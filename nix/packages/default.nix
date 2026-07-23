@@ -2,7 +2,7 @@
 {
   imports = [
     ./postgres.nix
-    ./site-env.nix
+    ./site-profile.nix
   ];
 
   perSystem =
