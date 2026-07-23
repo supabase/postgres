@@ -448,7 +448,7 @@ jobs:
                 fi
                 summary=$(grep '^Closure size:' "$file" | tail -1)
                 echo "<details>"
-                echo "<summary>${system}: ${summary:-changed (see below)}</summary>"
+                echo "<summary>${system}: ${summary:-changed}</summary>"
                 echo
                 echo '```'
                 # Cap the visible diff so a single arch can't blow the comment size limit.
