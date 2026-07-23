@@ -45,15 +45,6 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: Run checks if triggered manually
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: |
-          SUFFIX=$(yq ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
-          if [[ -z $SUFFIX ]] ; then
-            echo "Version must include non-numeric characters if built manually."
-            exit 1
-          fi
-
       - name: enable KVM support
         run: |
           sudo chown runner /dev/kvm
@@ -69,7 +60,8 @@ jobs:
           curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
           PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo 'postgres-version = "'"${PG_VERSION}.${SHORT_SHA}"'"' > common-nix.vars.pkr.hcl
           echo 'postgres_major_version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
           # Ensure there's a newline at the end of the file
           echo "" >> common-nix.vars.pkr.hcl

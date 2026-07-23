@@ -62,12 +62,10 @@ jobs:
           POSTGRES_VERSION: ${{ inputs.postgresVersion }}
         run: |
           set -eo pipefail
-          if [[ -n "$POSTGRES_VERSION" ]]; then
-            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
-          else
-            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          REF="${POSTGRES_VERSION:-HEAD}"
+          PG_VERSION=$(git show "$REF:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+          SHORT_SHA=$(git rev-parse --short=7 "$REF")
+          echo "version=${PG_VERSION}.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
         run: |
@@ -117,12 +115,10 @@ jobs:
           POSTGRES_VERSION: ${{ inputs.postgresVersion }}
         run: |
           set -eo pipefail
-          if [[ -n "$POSTGRES_VERSION" ]]; then
-            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
-          else
-            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          REF="${POSTGRES_VERSION:-HEAD}"
+          PG_VERSION=$(git show "$REF:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+          SHORT_SHA=$(git rev-parse --short=7 "$REF")
+          echo "version=${PG_VERSION}.${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
         run: |

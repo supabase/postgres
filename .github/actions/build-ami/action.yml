@@ -58,10 +58,12 @@ runs:
       shell: bash
       run: |
         PG_VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres${{ inputs.postgres_version }}"]' ansible/vars.yml)
-        echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
+        SHORT_SHA=$(git rev-parse --short=7 "${{ inputs.git_sha }}")
+        FULL_VERSION="${PG_VERSION}.${SHORT_SHA}"
+        echo 'postgres-version = "'"$FULL_VERSION"'"' > common-nix.vars.pkr.hcl
         echo "" >> common-nix.vars.pkr.hcl
         git add -f common-nix.vars.pkr.hcl
-        echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
+        echo "version=$FULL_VERSION" >> $GITHUB_OUTPUT
 
     - name: Build AMI stage 1
       shell: bash
