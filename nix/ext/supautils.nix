@@ -8,7 +8,7 @@
 stdenv.mkDerivation rec {
   pname = "supautils";
   name = pname;
-  version = "3.2.3";
+  version = "3.3.0";
 
   buildInputs = [ postgresql ];
 
@@ -16,7 +16,7 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-KpI7F9Hv0PlqGfLAoj0WnIfdttqeXYxzMmk1xqhfw7w=";
+    hash = "sha256-yGKl5vUrfvFf4eQaEbTOURMbQdRPFhdmKXgz1WKZwCU=";
   };
 
   installPhase = ''
