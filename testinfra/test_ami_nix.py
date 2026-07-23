@@ -1075,15 +1075,28 @@ def test_postgrest_read_only_session_attrs(host):
 def test_custom_overrides_take_precedence_over_generated_optimizations(host):
     """Verify CLI-managed PostgreSQL config overrides generated optimizations.
 
-    This reproduces the hosted AMI regression where a generated optimization in
-    conf.d could take precedence over /etc/postgresql-custom/custom-overrides.conf
-    after PostgreSQL restarted.
+    postgresql.conf includes generated-optimizations.conf before
+    custom-overrides.conf (both flat under /etc/postgresql-custom/, includes
+    uncommented during the AMI build), so the custom override wins. include_dir
+    conf.d comes after both, so anything in conf.d beats them by include order
+    — a hosted incident happened when generated-optimizations.conf was placed
+    in conf.d and silently overrode CLI-managed config. This test guards both
+    sides of that contract: the flat-file precedence, and that the AMI ships
+    no conf.d copy of generated-optimizations.conf.
     """
     ssh = host["ssh"]
     backup_dir = "/tmp/pg-config-precedence-test"
     custom_conf = "/etc/postgresql-custom/custom-overrides.conf"
-    generated_conf = "/etc/postgresql-custom/conf.d/generated-optimizations.conf"
+    generated_conf = "/etc/postgresql-custom/generated-optimizations.conf"
+    confd_generated_conf = "/etc/postgresql-custom/conf.d/generated-optimizations.conf"
     config_files = [custom_conf, generated_conf]
+
+    confd_check = run_ssh_command(ssh, f"sudo test -e {confd_generated_conf}")
+    assert not confd_check["succeeded"], (
+        f"{confd_generated_conf} exists on the AMI; conf.d is included after "
+        "custom-overrides.conf, so a generated-optimizations.conf there "
+        "overrides CLI-managed config"
+    )
 
     def assert_command_succeeded(result, action):
         assert result["succeeded"], (
@@ -1141,19 +1154,14 @@ def test_custom_overrides_take_precedence_over_generated_optimizations(host):
             ssh,
             "sudo -u postgres psql -X -v ON_ERROR_STOP=1 -t -A -F '|' "
             "-d postgres -c "
-            "\"SELECT setting, sourcefile "
+            '"SELECT setting, sourcefile '
             "FROM pg_settings WHERE name = 'max_connections';\"",
         )
         assert_command_succeeded(result, "Query max_connections setting")
 
-        rows = [
-            line.strip()
-            for line in result["stdout"].splitlines()
-            if line.strip()
-        ]
+        rows = [line.strip() for line in result["stdout"].splitlines() if line.strip()]
         assert len(rows) == 1, (
-            f"Expected one max_connections row, got {len(rows)}:\n"
-            f"{result['stdout']}"
+            f"Expected one max_connections row, got {len(rows)}:\n{result['stdout']}"
         )
         return rows[0].split("|", 1)
 
@@ -1165,9 +1173,8 @@ def test_custom_overrides_take_precedence_over_generated_optimizations(host):
             """
             set -eu
             CUSTOM_CONF=/etc/postgresql-custom/custom-overrides.conf
-            GENERATED_CONF=/etc/postgresql-custom/conf.d/generated-optimizations.conf
+            GENERATED_CONF=/etc/postgresql-custom/generated-optimizations.conf
 
-            sudo mkdir -p "$(dirname "$GENERATED_CONF")"
             printf '%s\n' 'max_connections = 111' |
                 sudo tee "$GENERATED_CONF" > /dev/null
             printf '%s\n' 'max_connections = 112' |
