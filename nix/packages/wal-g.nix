@@ -17,6 +17,7 @@ let
       # Extra GOEXPERIMENT flags. wal-g 3.x imports encoding/json/v2 directly
       # (internal/uploader.go), which Go 1.25 gates behind GOEXPERIMENT=jsonv2.
       goExperiment ? null,
+      patches ? [ ],
     }:
     buildGoModule rec {
       pname = "wal-g-${majorVersion}";
@@ -29,7 +30,7 @@ let
         inherit sha256;
       };
 
-      inherit vendorHash;
+      inherit vendorHash patches;
 
       env = lib.optionalAttrs (goExperiment != null) {
         GOEXPERIMENT = goExperiment;
@@ -93,5 +94,8 @@ in
     vendorHash = "sha256-K2J/Hi8TQs+UhudgTWsAmPUHKnwKP3cmx21CvDTjs6M=";
     majorVersion = "3";
     goExperiment = "jsonv2";
+    # Backport wal-g/wal-g#2112: update OrioleDB incremental-backup page
+    # header parsing to match the beta13 page format.
+    patches = [ ./wal-g/0001-orioledb-update-page-header-format-to-beta13.patch ];
   };
 }
