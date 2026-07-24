@@ -126,8 +126,7 @@ let
       }
     '';
 
-  # Create a NixOS module that provides a full Supabase-like PostgreSQL test environment
-  makeSupabaseTestConfig =
+  makeCommonSupabaseTestConfig =
     {
       majorVersion,
       postgresPort ? defaultPort,
@@ -231,12 +230,7 @@ let
         echo "Database initialization complete"
       '';
     in
-    { ... }:
     {
-      # VM resources — sized for nested virtualisation on ephemeral CI runners
-      virtualisation.memorySize = 4096;
-      virtualisation.cores = 2;
-
       # System users
       users.users.postgres = {
         isSystemUser = true;
@@ -309,6 +303,26 @@ let
         };
       };
     };
+
+  # Create a NixOS module that provides a full Supabase-like PostgreSQL test environment
+  makeSupabaseTestConfig =
+    {
+      majorVersion,
+      postgresPort ? defaultPort,
+    }:
+    makeCommonSupabaseTestConfig { inherit majorVersion postgresPort; }
+    // {
+      # VM resources — sized for nested virtualisation on ephemeral CI runners
+      virtualisation.memorySize = 4096;
+      virtualisation.cores = 2;
+    };
+
+  makeSupabaseContainerTestConfig =
+    {
+      majorVersion,
+      postgresPort ? defaultPort,
+    }:
+    makeCommonSupabaseTestConfig { inherit majorVersion postgresPort; };
 
   # Create a specialisation configuration for pg_upgrade from one major version to another
   makeUpgradeSpecialisation =
@@ -413,6 +427,7 @@ let
       # breaks D-Bus policy during switch-to-configuration)
       environment.systemPackages = [ newPkg ];
     };
+
   # Create a specialisation for OrioleDB — wipes data and reinitializes from scratch
   # (no pg_upgrade path from regular PG to OrioleDB), then runs full Supabase init
   makeOrioledbSpecialisation =
@@ -588,11 +603,12 @@ let
 in
 {
   inherit
-    processAnsibleConfig
+    defaultPort
+    expectedVersions
+    makeOrioledbSpecialisation
+    makeSupabaseContainerTestConfig
     makeSupabaseTestConfig
     makeUpgradeSpecialisation
-    makeOrioledbSpecialisation
-    expectedVersions
-    defaultPort
+    processAnsibleConfig
     ;
 }
