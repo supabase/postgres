@@ -46,14 +46,37 @@ create extension if not exists pg_freespacemap;
 create extension if not exists pg_hashids;
 create extension if not exists pg_prewarm;
 create extension if not exists pgmq;
+-- Mirrors ansible/files/postgresql_extension_custom_scripts/pgmq/after-create.sql:
+-- reassign all pgmq objects to postgres (ownership hooks don't fire in Docker).
+do $$
+declare r record;
+begin
+  update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
+  for r in select oid from pg_proc where pronamespace = 'pgmq'::regnamespace loop
+    execute format('alter function %s(%s) owner to postgres',
+      r.oid::regproc, pg_get_function_identity_arguments(r.oid));
+  end loop;
+  for r in select relname from pg_class
+           where relnamespace = 'pgmq'::regnamespace
+             and relkind in ('r', 'S', 'v', 'm', 'p') loop
+    execute format('alter table pgmq.%I owner to postgres', r.relname);
+  end loop;
+end $$;
 create extension if not exists pg_jsonschema;
 create schema if not exists partman;
 create extension if not exists pg_partman with schema partman;
 create extension if not exists pg_repack;
+-- Mirrors ansible/files/postgresql_extension_custom_scripts/pg_repack/after-create.sql
+grant all on all tables in schema repack to postgres;
+grant all on schema repack to postgres;
+alter default privileges in schema repack grant all on tables to postgres;
+alter default privileges in schema repack grant all on sequences to postgres;
 create extension if not exists pg_stat_monitor;
 create extension if not exists pg_stat_statements;
 create extension if not exists pg_surgery;
 create extension if not exists pg_tle;
+-- Mirrors ansible/files/postgresql_extension_custom_scripts/pg_tle/after-create.sql
+grant pgtle_admin to postgres;
 create extension if not exists pg_trgm;
 create extension if not exists pg_visibility;
 create extension if not exists pg_walinspect;
