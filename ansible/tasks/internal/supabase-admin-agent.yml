@@ -68,13 +68,6 @@
     arch: "arm64"
   when: platform == "arm64"
 
-- name: install gpg explicitly for qemu artifacts
-  become: yes
-  apt:
-    pkg:
-      - gpg
-  when: qemu_mode is defined
-
 - name: Download supabase-admin-agent archive
   get_url:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-{{ arch }}.tar.gz"
