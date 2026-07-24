@@ -108,7 +108,7 @@ jobs:
         run: |
           # TODO: use poetry for pkg mgmt
           pip3 install boto3 "boto3-stubs[essential]" docker ec2instanceconnectcli pytest "pytest-testinfra[paramiko,docker]" requests
-          pytest -vv -s testinfra/test_ami_nix.py
+          pytest -vv -s testinfra/
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
