@@ -111,6 +111,8 @@ def test_postgrest_ending_empty_key_query_parameter_is_removed(host):
         },
     )
     assert res.ok
+
+
 def test_postgrest_read_only_session_attrs(host):
     """Test PostgREST with target_session_attrs=read-only and check for session errors."""
     # First, check if PostgreSQL is configured for read-only mode
