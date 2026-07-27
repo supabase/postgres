@@ -34,9 +34,12 @@ elif [ -n "$(command -v apt-get)" ]; then
 		libicu-dev \
 		libcgal-dev \
 		libgcc-9-dev \
-		libgcc-8-dev \
 		ansible \
 		snapd
+
+	if [[ $(uname -m) == aarch64 ]]; then
+		apt-get -y remove --purge libgcc-8-dev
+	fi
 
 	# add-apt-repository --yes --remove ppa:ansible/ansible
 

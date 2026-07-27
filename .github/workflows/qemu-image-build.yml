@@ -3,11 +3,11 @@ name: Build QEMU image
 on:
   push:
     paths:
-      - '.github/workflows/qemu-image-build.yml'
-      - 'qemu-arm64-nix.pkr.hcl'
-      - 'common-nix.vars.pkr.hcl'
-      - 'ansible/vars.yml'
-      - 'scripts/*'
+      - .github/workflows/qemu-image-build.yml
+      - ansible/vars.yml
+      - nix/packages/build-qemu-image/*
+      - qemu.pkr.hcl
+      - scripts/*
   workflow_dispatch:
 
 permissions:
@@ -64,35 +64,20 @@ jobs:
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
           echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
-      - name: Generate common-nix.vars.pkr.hcl
-        run: |
-          curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_arm64 -o yq && chmod +x yq
-          PG_VERSION=$(./yq '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
-          PG_VERSION=$(echo "$PG_VERSION" | tr -d '"')  # Remove any surrounding quotes
-          echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
-          echo 'postgres_major_version = "'$POSTGRES_MAJOR_VERSION'"' >> common-nix.vars.pkr.hcl
-          # Ensure there's a newline at the end of the file
-          echo "" >> common-nix.vars.pkr.hcl
-
-      # TODO (darora): not quite sure why I'm having to uninstall and re-install these deps, but the build fails w/o this
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get remove -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
-          sudo apt-get install -y qemu-efi-aarch64 cloud-image-utils qemu-system-arm qemu-utils
+      - name: Install Nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          force-clean: "true"
+          multi-user: "false"
 
       - name: Build QEMU artifact
-        run: |
-          make init
-          GIT_SHA=${{github.sha}}
-          export PACKER_LOG=1
-          packer build -var "git_sha=${GIT_SHA}" -var-file="common-nix.vars.pkr.hcl" qemu-arm64-nix.pkr.hcl
+        run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "${{ matrix.postgres_version }}" arm64
 
       - name: Grab release version
         id: process_release_version
         run: |
-          VERSION=$(cat common-nix.vars.pkr.hcl | sed -e 's/postgres-version = "\(.*\)"/\1/g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
 
       - name: configure aws credentials - staging
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
@@ -110,7 +95,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
-          docker build -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" .
+          docker build -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" packer-work-qemu-*
 
       - name: Push docker image to Amazon ECR
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
