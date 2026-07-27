@@ -31,8 +31,9 @@ runCommand "image-size-analyzer"
     # Default values
     OUTPUT_JSON=false
     NO_BUILD=false
+    PG_VERSION=""
     declare -a IMAGES=()
-    ALL_DOCKERFILES=("Dockerfile-15" "Dockerfile-17" "Dockerfile-orioledb-17")
+    ALL_DOCKERFILES=("Dockerfile-15" "Dockerfile-17" "Dockerfile-supabase" "Dockerfile-orioledb-17")
     TIMESTAMP=$(date +%s)
     TEMP_DIR="/tmp/image-size-analyzer-$TIMESTAMP"
 
@@ -45,7 +46,9 @@ runCommand "image-size-analyzer"
     Options:
       --json              Output results as JSON instead of TUI
       --image DOCKERFILE  Analyze specific Dockerfile (can be used multiple times)
-                          Valid values: Dockerfile-15, Dockerfile-17, Dockerfile-orioledb-17
+                          Valid values: Dockerfile-15, Dockerfile-17, Dockerfile-supabase, Dockerfile-orioledb-17
+      --pg-version VER    PostgreSQL major version (required when --image Dockerfile-supabase)
+                          Values: 15, 17
       --no-build          Skip building images, analyze existing ones
       --help              Show this help message
 
@@ -74,8 +77,16 @@ runCommand "image-size-analyzer"
           NO_BUILD=true
           shift
           ;;
+        --pg-version)
+          if [[ -z "''${2:-}" ]]; then
+            echo "Error: --pg-version requires a value"
+            exit 1
+          fi
+          PG_VERSION="$2"
+          shift 2
+          ;;
         --image)
-          if [[ -z "$2" ]]; then
+          if [[ -z "''${2:-}" ]]; then
             echo "Error: --image requires a value"
             exit 1
           fi
@@ -141,8 +152,16 @@ runCommand "image-size-analyzer"
     # Get tag name from Dockerfile name
     get_tag() {
       local dockerfile=$1
-      local suffix=''${dockerfile#Dockerfile-}
-      echo "supabase-postgres:$suffix-analyze"
+      if [[ "$dockerfile" == "Dockerfile-supabase" ]]; then
+        if [[ -z "''${PG_VERSION:-}" ]]; then
+          echo "Error: --pg-version required for Dockerfile-supabase" >&2
+          exit 1
+        fi
+        echo "supabase-postgres:$PG_VERSION-analyze"
+      else
+        local suffix=''${dockerfile#Dockerfile-}
+        echo "supabase-postgres:$suffix-analyze"
+      fi
     }
 
     # Build a single image
@@ -152,7 +171,12 @@ runCommand "image-size-analyzer"
       tag=$(get_tag "$dockerfile")
 
       echo "Building $dockerfile as $tag..."
-      if ! docker build -f "$dockerfile" -t "$tag" . ; then
+      local pg_version_arg=""
+      if [[ -n "$PG_VERSION" ]]; then
+        pg_version_arg="--build-arg PG_VERSION=$PG_VERSION"
+      fi
+      # shellcheck disable=SC2086
+      if ! docker build -f "$dockerfile" $pg_version_arg -t "$tag" . ; then
         echo "Error: Failed to build $dockerfile"
         return 1
       fi

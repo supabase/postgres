@@ -44,6 +44,7 @@
       packages = (
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
+          build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
