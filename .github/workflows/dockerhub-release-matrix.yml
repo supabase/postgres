@@ -38,9 +38,9 @@ jobs:
                 $e | insert tag $"($ver)($e.tag_suffix)" | insert base_tag $ver
               })
           let combined = ($base | append $layered)
-          $"base_matrix=({include: $base} | to json -r)" | save --append $env.GITHUB_OUTPUT
-          $"layered_matrix=({include: $layered} | to json -r)" | save --append $env.GITHUB_OUTPUT
-          $"matrix_config=({include: $combined} | to json -r)" | save --append $env.GITHUB_OUTPUT
+          $"base_matrix=({include: $base} | to json -r)(char eol)" | save --append $env.GITHUB_OUTPUT
+          $"layered_matrix=({include: $layered} | to json -r)(char eol)" | save --append $env.GITHUB_OUTPUT
+          $"matrix_config=({include: $combined} | to json -r)(char eol)" | save --append $env.GITHUB_OUTPUT
           '
   build:
     needs: prepare
