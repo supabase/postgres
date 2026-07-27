@@ -124,7 +124,7 @@ The project uses Nix as its build system, which provides:
 
 ## Common Tasks
 
-To skip hours of building and download instead, configure the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
+To skip hours of building and download packages instead, start using the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
 
 ### Building Locally
 
@@ -189,7 +189,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
-## Extensions 
+## Extensions
 
 ### PostgreSQL 15 Extensions
 | Extension | Version | Description |
