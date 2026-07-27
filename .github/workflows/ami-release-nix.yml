@@ -204,7 +204,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
 
-      - name: Create CLI tag for PG 17
+      - name: Create CLI tag for PG 17 & Trigger Release
         if: matrix.postgres_version == '17' && matrix.target.arch == 'arm64' && github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -214,12 +214,7 @@ jobs:
           git tag "${CLI_TAG}" "${{ github.sha }}"
           git push origin "${CLI_TAG}"
 
-      - name: Trigger CLI release workflow for PG 17
-        if: matrix.postgres_version == '17' && github.event_name != 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          CLI_TAG="v${POSTGRES_SUPABASE_VERSION}-cli"
+          echo "Triggering Release Workflow: ${CLI_TAG}"
           gh workflow run cli-release.yml \
             --ref "${CLI_TAG}" \
             -f version="${CLI_TAG}"
