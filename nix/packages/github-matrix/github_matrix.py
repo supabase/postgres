@@ -258,7 +258,7 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
         case (True, _, "darwin", "aarch64"):
             return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
         case (True, _, "linux", "aarch64"):
-            specs = Specs(16, "ubuntu-2404-arm")
+            return {"labels": ["arm-native-runner"]}
         case (True, _, "linux", "x86_64"):
             specs = Specs(16, "ubuntu-2404")
 
