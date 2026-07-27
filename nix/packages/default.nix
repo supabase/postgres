@@ -3,8 +3,8 @@
   imports = [
     ./postgres.nix
     ./site-env.nix
+    ./extension-catalog.nix
   ];
-
   perSystem =
     {
       inputs',
