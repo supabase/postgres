@@ -12,58 +12,61 @@ variable "postgres_major_version" {
   default = ""
 }
 
+# Working dir to pick up non-source files and put output files
+variable "workdir" {
+  type = string
+}
+
+# Arch-specific values supplied by build-qemu-image
+variable "arch" {
+  type = string
+}
+
+variable "cpu" {
+  type = string
+}
+
+variable "machine" {
+  type = string
+}
+
+variable "qemu_binary" {
+  type = string
+}
+
 packer {
   required_plugins {
     qemu = {
       source  = "github.com/hashicorp/qemu"
-      version = "1.1.5"
+      version = "1.1.6"
     }
   }
 }
 
-source "null" "dependencies" {
-  communicator = "none"
-}
-
-build {
-  name = "cloudimg.deps"
-  sources = [
-    "source.null.dependencies"
-  ]
-
-  provisioner "shell-local" {
-    inline = [
-      "cp /usr/share/AAVMF/AAVMF_VARS.fd AAVMF_VARS.fd",
-      "cloud-localds seeds-cloudimg.iso user-data-cloudimg meta-data"
-    ]
-    inline_shebang = "/bin/bash -e"
-  }
-}
-
 source "qemu" "cloudimg" {
-  boot_wait      = "2s"
-  cpus           = 8
-  disk_image     = true
-  disk_size      = "15G"
-  format         = "qcow2"
-  headless       = true
-  http_directory = "http"
-  iso_checksum   = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
-  iso_url        = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img"
-  memory         = 40000
+  boot_wait        = "2s"
+  cpus             = 8
+  disk_image       = true
+  disk_size        = "15G"
+  format           = "qcow2"
+  headless         = true
+  http_directory   = "http"
+  iso_checksum     = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
+  iso_url          = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-${var.arch}.img"
+  memory           = 4096 # MiB
+  output_directory = "${var.workdir}/output-cloudimg"
   qemu_img_args {
     convert = ["-o", "compression_type=zstd"]
   }
-  qemu_binary = "qemu-system-aarch64"
+  qemu_binary = var.qemu_binary
   qemuargs = [
-    ["-machine", "virt,gic-version=3"],
-    ["-cpu", "host"],
+    ["-machine", var.machine],
+    ["-cpu", var.cpu],
     ["-device", "virtio-gpu-pci"],
-    ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd"],
-    ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=AAVMF_VARS.fd"],
-    ["-drive", "file=output-cloudimg/packer-cloudimg,if=virtio,format=qcow2,discard=on,detect-zeroes=unmap"],
-    ["-drive", "file=seeds-cloudimg.iso,format=raw"],
-    ["--enable-kvm"]
+    ["-drive", "if=pflash,format=raw,id=ovmf_code,readonly=on,file=${var.workdir}/ovmf_code.fd"],
+    ["-drive", "if=pflash,format=raw,id=ovmf_vars,file=${var.workdir}/ovmf_vars.fd"],
+    ["-drive", "file=${var.workdir}/output-cloudimg/packer-cloudimg,if=virtio,format=qcow2,discard=on,detect-zeroes=unmap"],
+    ["-drive", "file=${var.workdir}/seeds-cloudimg.iso,format=raw,if=virtio"],
   ]
   shutdown_command       = "sudo -S shutdown -P now"
   ssh_handshake_attempts = 500
@@ -72,7 +75,6 @@ source "qemu" "cloudimg" {
   ssh_username           = "ubuntu"
   ssh_wait_timeout       = "1h"
   use_backing_file       = false
-  accelerator            = "kvm"
 }
 
 build {
