@@ -1,10 +1,9 @@
 {
   lib,
-  buildGoModule,
-  go_1_26,
+  buildGo126Module,
   multigres-src,
 }:
-(buildGoModule.override { go = go_1_26; }) {
+buildGo126Module {
   pname = "pgctld";
   version = multigres-src.rev;
   src = multigres-src;
