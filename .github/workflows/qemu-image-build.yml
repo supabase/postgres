@@ -66,9 +66,6 @@ jobs:
 
       - name: Install Nix
         uses: ./.github/actions/nix-install-ephemeral
-        with:
-          force-clean: "true"
-          multi-user: "false"
 
       - name: Build QEMU artifact
         run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "${{ matrix.postgres_version }}" arm64
