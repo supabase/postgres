@@ -36,10 +36,9 @@ jobs:
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - id: set-matrix
         name: Generate Nix Matrix
         run: |

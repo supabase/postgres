@@ -1,43 +1,59 @@
-name: 'Install Nix on ephemeral runners'
-description: 'Installs Nix and sets up AWS credentials to push to the Nix binary cache'
+name: Install Nix on ephemeral runners
+description: Installs Nix and sets up AWS credentials to push to the Nix binary cache
 inputs:
   aws-region:
-    description: 'AWS region for the Nix binary cache S3 bucket'
+    description: AWS region for the Nix binary cache S3 bucket
     required: false
-    default: 'us-east-1'
+    default: us-east-1
   force-clean:
     description: Whether to delete pre-existing nix paths
     required: false
-    default: 'false'
-  push-to-cache:
-    description: 'Whether to push build outputs to the Nix binary cache'
+    default: false
+  nix-signing-key:
+    description: Key used to sign uploads to binary cache, required if push-to-cache is true
     required: false
-    default: 'false'
   multi-user:
     description: Whether to install nix in multi-user mode (default true) or single-user mode
     required: false
-    default: 'true'
+    default: true
+  push-to-cache:
+    description: Whether to push build outputs to the Nix binary cache
+    required: false
+    default: false
+  role-to-assume:
+    description: AWS Role to assume when configuring aws credentials, required if push-to-cache is true
+    required: false
 runs:
-  using: 'composite'
+  using: composite
   steps:
-    - name: aws-creds
+    - name: validate push-to-cache required inputs
+      if: inputs.push-to-cache == true
+      shell: bash
+      run: |
+        abort() { echo "$@" >&2; exit 1; }
+        [[ -z "${{ inputs.nix-signing-key}}" ]] && abort "nix-signing-key is required when push-to-cache is true"
+        [[ -z "${{ inputs.role-to-assume}}" ]] && abort "role-to-assume is required when push-to-cache is true"
+
+    - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
-      if: ${{ inputs.push-to-cache == 'true' }}
+      if: inputs.push-to-cache == true
       with:
-        role-to-assume: ${{ env.DEV_AWS_ROLE }}
+        role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
         output-credentials: true
         role-duration-seconds: 7200
     - name: Force Clean Pre-Existing Nix Paths
-      if: inputs.force-clean == 'true'
+      if: inputs.force-clean == true
       shell: bash
       run: sudo rm -rf /nix /etc/nix "$HOME/.nix-profile" "$HOME/.nix-channels" "$HOME/.config/nix"
+      default: false
     - name: Ensure /etc/nix exists
       shell: bash
       run: sudo mkdir -p /etc/nix
     - name: Setup AWS credentials for Nix
-      if: ${{ inputs.push-to-cache == 'true' }}
+      if: inputs.push-to-cache == true
       shell: bash
+      default: true
       run: |
         sudo -H aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
         sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
@@ -54,7 +70,7 @@ runs:
         EOF
         sudo chmod +x /etc/nix/upload-to-cache.sh
       env:
-        NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
+        NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
     - name: Install Nix
       shell: bash
       run: |
