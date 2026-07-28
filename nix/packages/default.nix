@@ -1,6 +1,9 @@
 { self, inputs, ... }:
 {
-  imports = [ ./postgres.nix ];
+  imports = [
+    ./postgres.nix
+    ./postgres-profile.nix
+  ];
   perSystem =
     {
       inputs',
@@ -25,19 +28,6 @@
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
         pkgs.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
-      # Bundles everything the AMI build installs into the postgres user's nix
-      # profile (via `nix-env --set`) into a single derivation.
-      makePostgresProfile =
-        version:
-        pkgs.symlinkJoin {
-          name = "postgres-${version}-profile";
-          paths = [
-            self'.packages."psql_${version}/bin"
-            self'.packages.pg_prove
-            self'.packages.supabase-groonga
-            self'.packages."postgresql_${version}_src"
-          ] ++ lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ];
-        };
       pgsqlSuperuser = "supabase_admin";
       supascan-pkgs = pkgs.callPackage ./supascan.nix {
         inherit (pkgs) lib;
@@ -89,9 +79,6 @@
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
-          postgres-15-profile = makePostgresProfile "15";
-          postgres-17-profile = makePostgresProfile "17";
-          postgres-orioledb-17-profile = makePostgresProfile "orioledb-17";
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {

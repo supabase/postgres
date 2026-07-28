@@ -66,7 +66,7 @@
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-{{ postgresql_major_version }}-profile
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-profile-{{ postgresql_major_version }}
         "
       register: postgres_profile_path
 
