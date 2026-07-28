@@ -8,11 +8,60 @@ postgres_major:
   - "17"
   - orioledb-17
 
-# Full version strings for each major version
+# Full version strings for each major version.
+#
+# This is the source of truth for Postgres versions used in the Dockerfiles, and
+# is used to derive image tags and base images in the release matrix.
 postgres_release:
-  postgresorioledb-17: "17.9.0.009-orioledb"
-  postgres17: "17.6.1.156"
-  postgres15: "15.14.1.156"
+  postgresorioledb-17: "17.9.0.010-orioledb"
+  postgres17: "17.6.1.157"
+  postgres15: "15.14.1.157"
+
+# Docker release matrix — base images built first, layered images built on top.
+# tag and base_tag are derived at build time from postgres_release via release_key.
+# tag_suffix is appended to the release version to form the final image tag.
+release_matrix_base:
+  - dockerfile: Dockerfile-supabase
+    target: production
+    pg_version: "15"
+    release_key: postgres15
+  - dockerfile: Dockerfile-supabase
+    target: production
+    pg_version: "17"
+    release_key: postgres17
+
+release_matrix_layered:
+  - dockerfile: Dockerfile-multigres
+    target: production
+    pg_version: "17"
+    release_key: postgres17
+    tag_suffix: "-multigres"
+
+  # OrioleDB uses a patched version of Postgres 17 so it builds from scratch but
+  # logically belongs as a layered image. The layered build job passes SUPABASE_IMAGE
+  # as a build arg which Docker silently ignores since it is undeclared in this Dockerfile.
+  - dockerfile: Dockerfile-orioledb-17
+    target: production
+    pg_version: "17"
+    release_key: postgresorioledb-17
+    tag_suffix: ""
+
+# Legacy (pre-Dockerfile-supabase) build matrix — flat list used when the manual
+# release workflow is triggered with dockerfiles: legacy (the default).
+# All images are built independently; there is no base→layered dependency.
+release_matrix_legacy:
+  - dockerfile: Dockerfile-15
+    target: production
+    pg_version: "15"
+    release_key: postgres15
+  - dockerfile: Dockerfile-17
+    target: production
+    pg_version: "17"
+    release_key: postgres17
+  - dockerfile: Dockerfile-orioledb-17
+    target: production
+    pg_version: "17"
+    release_key: postgresorioledb-17
 
 # Non Postgres Extensions
 pgbouncer_release: 1.25.1
