@@ -147,8 +147,6 @@
       apt:
         pkg:
           - unattended-upgrades
-        update_cache: yes
-        cache_valid_time: 3600
 
     - name: Run migrations
       when: stage2

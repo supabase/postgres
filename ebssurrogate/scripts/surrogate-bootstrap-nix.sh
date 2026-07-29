@@ -46,8 +46,9 @@ function setup_apt {
 	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
 }
 
-function update_apt {
+function update_and_upgrade_apt {
 	apt-get update --yes
+	apt-get upgrade --yes
 }
 
 function waitfor_boot_finished {
@@ -345,7 +346,7 @@ CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
 
 waitfor_boot_finished
 setup_apt
-update_apt
+update_and_upgrade_apt
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
