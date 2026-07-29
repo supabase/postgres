@@ -14,9 +14,9 @@
 
 - name: nginx - download source
   ansible.builtin.get_url:
-    checksum: "{{ nginx_release_checksum }}"
+    url: "{{ nginx_artifacts['url'] }}"
+    checksum: "{{ nginx_artifacts['checksum'] }}"
     dest: '/tmp/nginx-{{ nginx_release }}.tar.gz'
-    url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
   register: download_result
   until: download_result is succeeded
   retries: 3

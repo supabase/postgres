@@ -107,11 +107,10 @@
     state: 'restarted'
 
 - name: import pgsodium_getkey script
+  when: stage2
   ansible.builtin.template:
     dest: "{{ pg_bindir }}/pgsodium_getkey.sh"
     group: 'postgres'
     mode: '0700'
     owner: 'postgres'
     src: 'files/pgsodium_getkey_readonly.sh.j2'
-  when:
-    - stage2_nix

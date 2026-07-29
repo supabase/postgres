@@ -1,6 +1,5 @@
-- name: Execute tasks when stage2_nix
-  when:
-    - stage2_nix
+- name: Execute tasks when stage2
+  when: stage2
   block:
     - name: Make a backup of the /etc/postgresql/postgresql.conf file
       ansible.builtin.copy:
@@ -39,10 +38,6 @@
         loop_var: 'regx'
       register: 'pgconf'
 
-- name: Execute tasks when stage2_nix
-  when:
-    - stage2_nix
-  block:
     - name: Restart Postgres Database in stage 2 to load all extensions
       ansible.builtin.command:
         cmd: "/usr/lib/postgresql/bin/pg_ctl --pgdata /var/lib/postgresql/data --mode fast --options '-c config_file=/etc/postgresql/postgresql.conf' {{ ctlcmd }}"
@@ -60,10 +55,6 @@
       loop_control:
         loop_var: 'ctlcmd'
 
-- name: Execute tasks when stage2_nix
-  when:
-    - stage2_nix
-  block:
     - name: Re-enable PG Sodium references in /etc/postgresql/postgresql.conf
       ansible.builtin.command:
         cmd: mv /etc/postgresql/postgresql.conf.bak /etc/postgresql/postgresql.conf
