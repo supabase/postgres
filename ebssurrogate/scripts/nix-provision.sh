@@ -7,8 +7,21 @@ set -o xtrace
 
 exec 1>&2
 
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
+}
+
+function cleanup_apt {
+	apt-get clean
+	apt-get autoremove --purge --yes
+	rm -rf /var/lib/apt/lists/*
+}
+
+function update_apt {
+	apt-get update --yes
+}
+
 function install_packages {
-	apt-get update -y
 	apt-get install -y ansible
 	ansible-galaxy collection install community.general
 }
@@ -73,10 +86,13 @@ function report_disk_usage {
 	printf '::notice::disk_usage bytes=%s human=%s\n' "$dub" "$duh" | tee -a /tmp/ansible.log
 }
 
+setup_apt
+update_apt
 install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
 cleanup_nix
+cleanup_apt
 report_packages
 report_disk_usage

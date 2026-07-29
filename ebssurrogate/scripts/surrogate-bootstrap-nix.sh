@@ -12,7 +12,9 @@ set -o xtrace
 
 exec 1>&2
 
-function setup_apt_sources {
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
+
 	# This function assumes deb822 formatted sources are in use, which is the case in both qemu and aws images
 	# In aws cloud-init creates a sources file with regional mirrors for "default" Suites but keeps ubuntu for security suite
 	# So we grab the first (only) URI from security and append it to non-security's URI
@@ -44,8 +46,8 @@ function setup_apt_sources {
 	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
 }
 
-function apt_update_with_fallback {
-	timeout 300 apt-get update 2>&1
+function update_apt {
+	apt-get update --yes
 }
 
 function waitfor_boot_finished {
@@ -56,12 +58,6 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	# Setup Ansible on host VM
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists on host VM"
-		exit 1
-	fi
-
 	packages=(
 		ansible
 		debootstrap
@@ -182,7 +178,7 @@ function setup_chroot_environment {
 
 	# Use the preferred mirror (if multiple), which is the first URI/preferred
 	local mirror
-	mirror=$(awk '/^URIs:/{uri=$2} /^Suites:.*\<'"$CODENAME-updates"'\>/{print uri; exit}' /etc/apt/sources.list.d/ubuntu.sources)
+	mirror=$(grep -B1 "$CODENAME-updates" /etc/apt/sources.list.d/ubuntu.sources | awk '/URIs/ {print $2}')
 	debootstrap --arch "$ARCH" --variant=minbase "$CODENAME" /mnt "$mirror"
 
 	# Copy our files in since they are updated with all the mirrors!
@@ -346,10 +342,10 @@ ARCH=$(dpkg --print-architecture)
 # shellcheck source=/dev/null
 CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
 : "${CODENAME:?Failed to detect OS codename}"
-export DEBIAN_FRONTEND=noninteractive
 
 waitfor_boot_finished
-setup_apt_sources
+setup_apt
+update_apt
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
