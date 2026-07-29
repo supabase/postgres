@@ -215,17 +215,13 @@
 
         - name: 'tuned - Configure and enable zswap'  # noqa: name[casing]
           ansible.builtin.shell:
-            # Kernels >= 6.18 dropped some zswap params (e.g. zpool, since zsmalloc
-            # is the only remaining backend); skip params the kernel doesn't expose.
-            cmd: "[ ! -w /sys/module/zswap/parameters/{{ zswap_item['param'] }} ] || echo {{ zswap_item['value'] }} > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
+            cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
           changed_when: true
           loop:
             - param: 'compressor'
               value: 'zstd'
             - param: 'max_pool_percent'
               value: '10'
-            - param: 'zpool'
-              value: 'zsmalloc'
             - param: 'enabled'
               value: 'Y'
           loop_control:
