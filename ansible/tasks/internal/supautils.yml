@@ -4,8 +4,6 @@
     pkg:
       - build-essential
       - clang-11
-    update_cache: yes
-    cache_valid_time: 3600
 
 - name: supautils - download latest release
   get_url:

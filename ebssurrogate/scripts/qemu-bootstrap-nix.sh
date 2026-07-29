@@ -34,8 +34,9 @@ function cleanup_apt {
 	rm -rf /var/lib/apt/lists/*
 }
 
-function update_apt {
+function update_and_upgrade_apt {
 	apt-get update --yes
+	apt-get upgrade --yes
 }
 
 function waitfor_boot_finished {
@@ -217,7 +218,7 @@ function clean_system {
 #################
 
 setup_apt
-update_apt
+update_and_upgrade_apt
 waitfor_boot_finished
 install_packages
 setup_postgesql_env

@@ -17,8 +17,9 @@ function cleanup_apt {
 	rm -rf /var/lib/apt/lists/*
 }
 
-function update_apt {
+function update_and_upgrade_apt {
 	apt-get update --yes
+	apt-get upgrade --yes
 }
 
 function install_packages {
@@ -70,9 +71,10 @@ function cleanup_packages {
 }
 
 setup_apt
-update_apt
+update_and_upgrade_apt
 install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
+update_and_upgrade_apt
 cleanup_apt
