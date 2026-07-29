@@ -7,8 +7,21 @@ set -o xtrace
 
 exec 1>&2
 
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
+}
+
+function cleanup_apt {
+	apt-get clean
+	apt-get autoremove --purge --yes
+	rm -rf /var/lib/apt/lists/*
+}
+
+function update_apt {
+	apt-get update --yes
+}
+
 function install_packages {
-	sudo apt-get update -y
 	sudo apt-get install -y ansible
 	ansible-galaxy collection install community.general
 }
@@ -56,7 +69,10 @@ function cleanup_packages {
 	apt-get remove --purge --yes ansible
 }
 
+setup_apt
+update_apt
 install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
+cleanup_apt

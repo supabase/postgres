@@ -8,26 +8,21 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-# The following 2 functions don'treally do much since we are now using deb822 formatted sources with fallbacks in the URIs.
-# This means apt-get handles fallback on its own, much better and cleaner than we are doing.
-# Leaving the functions as is for now to make the diff smaller, soon will go away.
-function apt_update_with_fallback {
-	timeout 300 apt-get "${APT_OPTIONS[@]}" update 2>&1
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
 }
 
-function apt_install_with_fallback {
-	apt-get "$@"
+function cleanup_apt {
+	apt-get clean
+	apt-get autoremove --purge --yes
 }
 
-function update_install_packages {
-	# Update APT with new sources (using fallback mechanism)
-	tail -n+1 /etc/apt/sources.list /etc/apt/sources.list.d/*
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists with any mirror tier"
-		exit 1
-	fi
-	apt-get "${APT_OPTIONS[@]}" --yes dist-upgrade
+function update_and_upgrade_apt {
+	apt-get update --yes
+	apt-get dist-upgrade --yes
+}
 
+function install_initial_packages {
 	local packages=(
 		e2fsprogs
 		initramfs-tools
@@ -66,13 +61,10 @@ function update_install_packages {
 		sudo
 		wget
 	)
-	if ! apt_install_with_fallback install -y "${packages[@]}"; then
+	if ! apt-get install --yes "${packages[@]}"; then
 		echo "FATAL: Failed to install standard packages"
 		exit 1
 	fi
-
-	# apt upgrade
-	apt-get upgrade -y
 
 	packages=(
 		at
@@ -86,8 +78,8 @@ function update_install_packages {
 		python3-systemd
 		ufw
 	)
-	if ! apt_install_with_fallback install -y --no-install-recommends "${packages[@]}"; then
-		echo "FATAL: Failed to install universe packages"
+	if ! apt-get install --yes --no-install-recommends "${packages[@]}"; then
+		echo "FATAL: Failed to install extra packages"
 		exit 1
 	fi
 }
@@ -205,28 +197,18 @@ function disable_services {
 	chmod +x /usr/sbin/policy-rc.d
 }
 
-# Clear apt caches
-function cleanup_cache {
-	apt-get clean
-}
-
 # Remove policy-rc.d so services start normally on boot
 function enable_services {
 	rm -f /usr/sbin/policy-rc.d
 }
 
-export DEBIAN_FRONTEND=noninteractive
-APT_OPTIONS=(
-	-oAPT::Install-Recommends=false
-	-oAPT::Install-Suggests=false
-	-oAcquire::Languages=none
-)
-
 ARCH=$(dpkg --print-architecture)
 : "${ARCH:?Failed to detect architecture}"
 
 disable_services
-update_install_packages
+setup_apt
+update_and_upgrade_apt
+install_initial_packages
 setup_locale
 setup_postgesql_env
 setup_grub
@@ -237,5 +219,5 @@ set_default_target
 setup_eth0_interface
 disable_sshd_passwd_auth
 disable_fsck
-cleanup_cache
+cleanup_apt
 enable_services
