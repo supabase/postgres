@@ -95,8 +95,8 @@ function execute_stage2_playbook {
 }
 
 function cleanup_packages {
-	apt-get -y remove --purge ansible
 	# add-apt-repository --yes --remove ppa:ansible/ansible
+	apt-get --y remove --purge ansible
 }
 
 setup_apt
@@ -105,4 +105,5 @@ install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
+update_and_upgrade_apt
 cleanup_apt
