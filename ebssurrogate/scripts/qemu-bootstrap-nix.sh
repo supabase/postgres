@@ -8,6 +8,44 @@ set -o xtrace
 # stage1 things #
 #################
 
+function setup_apt {
+	local aptconf
+	aptconf=$(mktemp)
+	cat >"$aptconf" <<-EOF
+		APT::Install-Recommends "false";
+		APT::Install-Suggests "false";
+		Acquire::Languages "none";
+	EOF
+	export APT_CONFIG=$aptconf DEBIAN_FRONTEND=noninteractive
+
+	cat /etc/apt/sources.list.d/ubuntu.sources >&2
+	local sources defmirror ubumirror
+	sources=$(grep -e '^URIs\s*:' -e '^Suites\s*:' /etc/apt/sources.list.d/ubuntu.sources)
+	defmirror=$(grep -B1 noble-updates <<<"$sources" | awk '/URIs/ {print $2}')
+	ubumirror=$(grep -B1 noble-security <<<"$sources" | awk '/URIs/ {print $2}')
+	if [[ $ARCH == x86_64 ]]; then
+		# x86_64 hosts use security.ubuntu.com for security but archive.ubuntu.com for everything else
+		ubumirror=${ubumirror/security/archive}
+	fi
+
+	if grep -q "^URIs:.*$defmirror.*$ubumirror" /etc/apt/sources.list.d/ubuntu.sources; then
+		echo "Ubuntu upstream is already a fallback, this is unexpected and needs source changes" >&2
+		exit 1
+	fi
+	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
+}
+
+function cleanup_apt {
+	apt-get clean
+	apt-get autoremove --purge --yes
+	rm -rf /var/lib/apt/lists/*
+}
+
+function update_and_upgrade_apt {
+	apt-get update --yes
+	apt-get upgrade --yes
+}
+
 function waitfor_boot_finished {
 	# Wait for cloudinit on the surrogate to complete before making progress
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
@@ -17,7 +55,6 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update
 	packages=(
 		ansible
 		arptables
@@ -32,7 +69,7 @@ function install_packages {
 		software-properties-common
 		ufw
 	)
-	apt-get install -y "${packages[@]}"
+	apt-get install --yes "${packages[@]}"
 
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
 	# add-apt-repository --yes --update ppa:ansible/ansible &&
@@ -125,8 +162,7 @@ function execute_stage2_playbook {
 function clean_legacy_things {
 	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
 	apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
-	apt-get -y purge kong
-	apt-get autoremove -y
+	apt-get purge --yes kong
 }
 
 function clean_system {
@@ -193,11 +229,11 @@ function clean_system {
 # stage1 things #
 #################
 
-export DEBIAN_FRONTEND=noninteractive
-
 ARCH=$(dpkg --print-architecture)
 : "${ARCH:?Failed to detect architecture}"
 
+setup_apt
+update_and_upgrade_apt
 waitfor_boot_finished
 install_packages
 setup_postgesql_env
@@ -212,3 +248,4 @@ install_nix
 execute_stage2_playbook
 clean_legacy_things
 clean_system
+cleanup_apt

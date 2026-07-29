@@ -119,11 +119,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
     source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
