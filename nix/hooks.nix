@@ -23,6 +23,8 @@ in
               verbose = true;
             };
 
+            shellcheck.enable = true;
+
             treefmt = {
               enable = true;
               package = config.treefmt.build.wrapper;

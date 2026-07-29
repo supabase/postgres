@@ -223,6 +223,20 @@ jobs:
         with:
           attr: .#${{ matrix.attr }}
 
+  nix-build-checks:
+    name: Nix Checks ✅
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    needs:
+      - nix-build-checks-aarch64-darwin
+      - nix-build-checks-aarch64-linux
+      - nix-build-checks-x86_64-linux
+    steps:
+      - name: Check dependent job results
+        if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
+        run: |
+          jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
+          exit 1
+
   run-testinfra:
     needs:
       - nix-eval
@@ -255,9 +269,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     needs:
       - docker-image-test
-      - nix-build-checks-aarch64-darwin
-      - nix-build-checks-aarch64-linux
-      - nix-build-checks-x86_64-linux
+      - nix-build-checks
       - run-testinfra
       - run-tests
     steps:
