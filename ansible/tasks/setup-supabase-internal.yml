@@ -4,7 +4,8 @@
 
 - name: download Vector package
   ansible.builtin.get_url:
-    url: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
+    url: "{{ vector_artifacts[platform]['url'] }}"
+    checksum: "{{ vector_artifacts[platform]['checksum'] }}"
     dest: /tmp/vector.deb
     timeout: 120
   become: true

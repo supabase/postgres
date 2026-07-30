@@ -16,7 +16,7 @@
 
 ARG ALPINE_VERSION=3.23
 ARG GOLANG_VERSION=1.26
-ARG PGCTLD_REV=1e3bad798972600778ee27eb08ab7d34cc8be8e9 # Pinned to the commit that introduced --pg-initdb-sql-dirs (MUL-484)
+ARG PGCTLD_REV=b713432298450dd0095498193e86d9f9a9f2c348
 ARG SUPABASE_IMAGE=supabase-postgres:17
 
 ####################

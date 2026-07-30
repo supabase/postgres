@@ -1,8 +1,6 @@
-- name: stage2_nix actions
-  when:
-    - stage2_nix
+- name: Setup Supautils
+  when: stage2
   block:
-    # supautils
     - name: supautils - add supautils to session_preload_libraries
       ansible.builtin.replace:
         path: '/etc/postgresql/postgresql.conf'

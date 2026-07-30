@@ -50,7 +50,7 @@ callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "stage2_nix": false, "qemu_mode": true}' \
+	ansible-playbook ./ansible/playbook.yml --extra-vars '{"stage2": false, "qemu": true}' \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
@@ -116,7 +116,7 @@ EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
-		--extra-vars '{"nixpkg_mode": false, "stage2_nix": true, "qemu_mode": true}' \
+		--extra-vars '{"stage2": true, "qemu": true}' \
 		--extra-vars "git_commit_sha=${GIT_SHA}" \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \

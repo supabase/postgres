@@ -1,9 +1,9 @@
 {
   lib,
-  buildGoModule,
+  buildGo126Module,
   multigres-src,
 }:
-buildGoModule {
+buildGo126Module {
   pname = "pgctld";
   version = multigres-src.rev;
   src = multigres-src;
@@ -17,7 +17,7 @@ buildGoModule {
   '';
   # Tests require a running PostgreSQL instance (integration tests); skip in sandbox.
   doCheck = false;
-  vendorHash = "sha256-lObK/Oukh1oEPQENlhny8eNxRhSlTKywO3GCGZ8u5Qw=";
+  vendorHash = "sha256-oRP1ZvRmE8eqYmJIuZSad3/BVicmAFkBJ4qSaiD6F0E=";
 
   meta = {
     description = "PostgreSQL control daemon for Multigres cluster lifecycle management";

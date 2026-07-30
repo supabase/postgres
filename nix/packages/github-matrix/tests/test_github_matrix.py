@@ -132,7 +132,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-linux",
                 "kvm",
-                {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]},
+                {"labels": ["arm-native-runner"]},
             ),
             (
                 "aarch64-linux",

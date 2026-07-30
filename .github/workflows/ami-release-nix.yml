@@ -81,11 +81,10 @@ jobs:
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
+          push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
       - name: Build AMI
         id: build-ami
