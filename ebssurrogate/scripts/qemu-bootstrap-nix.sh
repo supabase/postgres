@@ -18,22 +18,21 @@ function waitfor_boot_finished {
 
 function install_packages {
 	apt-get update
-	apt-get install -y \
-		arptables \
-		e2fsprogs \
-		ebtables \
-		gpg \
-		iptables \
-		less \
-		locales \
-		logrotate \
-		nfs-common \
-		software-properties-common \
-		ufw \
-		;
-	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
-	# add-apt-repository --yes --update ppa:ansible/ansible &&
-	apt-get install ansible -y
+	packages=(
+		ansible
+		arptables
+		e2fsprogs
+		ebtables
+		gpg
+		iptables
+		less
+		locales
+		logrotate
+		nfs-common
+		software-properties-common
+		ufw
+	)
+	apt-get install -y "${packages[@]}"
 	ansible-galaxy collection install community.general
 }
 
