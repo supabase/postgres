@@ -4,16 +4,11 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-if [ $(dpkg --print-architecture) = "amd64" ]; then
-	ARCH="amd64"
-else
-	ARCH="arm64"
-fi
+#################
+# stage1 things #
+#################
 
 function waitfor_boot_finished {
-	export DEBIAN_FRONTEND=noninteractive
-
-	echo "args: ${ARGS}"
 	# Wait for cloudinit on the surrogate to complete before making progress
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
 		echo 'Waiting for cloud-init...'
@@ -38,90 +33,89 @@ function install_packages {
 		;
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
 	# add-apt-repository --yes --update ppa:ansible/ansible &&
-	sudo apt-get install ansible -y
+	apt-get install ansible -y
 	ansible-galaxy collection install community.general
 }
 
 function execute_playbook {
-	sudo mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<EOF
-[defaults]
-callbacks_enabled = timer, profile_tasks, profile_roles
-EOF
+	sed -i 's/- hosts: all/- hosts: localhost/' ansible/playbook.yml
+
+	mkdir -p /etc/ansible
+	tee /etc/ansible/ansible.cfg <<-EOF
+		[defaults]
+		callbacks_enabled = timer, profile_tasks, profile_roles
+	EOF
+
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	ansible-playbook ./ansible/playbook.yml --extra-vars '{"stage2": false, "qemu": true}' \
-		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
 function setup_postgesql_env {
 	# Create the directory if it doesn't exist
-	sudo mkdir -p /etc/environment.d
+	mkdir -p /etc/environment.d
 
 	# Define the contents of the PostgreSQL environment file
-	cat <<EOF | sudo tee /etc/environment.d/postgresql.env >/dev/null
-LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-LANG="en_US.UTF-8"
-LANGUAGE="en_US.UTF-8"
-LC_ALL="en_US.UTF-8"
-LC_CTYPE="en_US.UTF-8"
-EOF
+	tee /etc/environment.d/postgresql.env >/dev/null <<-EOF
+		LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+		LANG="en_US.UTF-8"
+		LANGUAGE="en_US.UTF-8"
+		LC_ALL="en_US.UTF-8"
+		LC_CTYPE="en_US.UTF-8"
+	EOF
 }
 
 function setup_locale {
-	cat <<EOF >>/etc/locale.gen
-en_US.UTF-8 UTF-8
-EOF
+	cat >>/etc/locale.gen <<-EOF
+		en_US.UTF-8 UTF-8
+	EOF
 
-	cat <<EOF >/etc/default/locale
-LANG="C.UTF-8"
-LC_CTYPE="C.UTF-8"
-EOF
+	cat >/etc/default/locale <<-EOF
+		LANG="C.UTF-8"
+		LC_CTYPE="C.UTF-8"
+	EOF
 	locale-gen en_US.UTF-8
 }
 
-sed -i 's/- hosts: all/- hosts: localhost/' ansible/playbook.yml
-
-waitfor_boot_finished
-install_packages
-setup_postgesql_env
-setup_locale
-execute_playbook
-
-####################
-# stage 2 things
-####################
+#################
+# stage2 things #
+#################
 
 function install_nix() {
-	sudo su -c "sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-extra-experimental-features = nix-command flakes
-extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
-EXTRA_NIX_CONF" -s /bin/bash root
-	#shellcheck disable=SC1091
+	curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
+		cat <<-EOF
+			extra-experimental-features = nix-command flakes
+			extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+			extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+		EOF
+	)
+
+	# shellcheck disable=SC1091
 	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 	nix --version
 }
 
 function execute_stage2_playbook {
-	sudo mkdir -p /etc/ansible
-	sudo tee /etc/ansible/ansible.cfg <<EOF
-[defaults]
-callbacks_enabled = timer, profile_tasks, profile_roles
-EOF
+	mkdir -p /etc/ansible
+	tee /etc/ansible/ansible.cfg <<-EOF
+		[defaults]
+		callbacks_enabled = timer, profile_tasks, profile_roles
+	EOF
+
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
 		--extra-vars '{"stage2": true, "qemu": true}' \
-		--extra-vars "git_commit_sha=${GIT_SHA}" \
-		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
-		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
+		--extra-vars "git_commit_sha=$GIT_SHA" \
+		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
@@ -133,26 +127,31 @@ function clean_legacy_things {
 }
 
 function clean_system {
+	# we do not want to ship an initialized DB as this is performed as needed
+	mkdir -p /db/template
+	mv /data/pgdata /db/template
+	cloud-init clean --logs
+
 	# Copy cleanup scripts
 	chmod +x /tmp/cleanup-qemu.sh
 	/tmp/cleanup-qemu.sh
 
-	# # Cleanup logs
+	# Cleanup logs
 	rm -rf /var/log/*
-	# # https://github.com/fail2ban/fail2ban/issues/1593
+	# https://github.com/fail2ban/fail2ban/issues/1593
 	touch /var/log/auth.log
 
 	touch /var/log/pgbouncer.log
 	chown pgbouncer:postgres /var/log/pgbouncer.log
 
-	# # Setup postgresql logs
+	# Setup postgresql logs
 	mkdir -p /var/log/postgresql
 	chown postgres:postgres /var/log/postgresql
-	# # Setup wal-g logs
+	# Setup wal-g logs
 	mkdir /var/log/wal-g
 	touch /var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
 
-	# #Creatre Sysstat directory for SAR
+	# Creatre Sysstat directory for SAR
 	mkdir /var/log/sysstat
 
 	chown -R postgres:postgres /var/log/wal-g
@@ -160,10 +159,10 @@ function clean_system {
 	chmod -R 0310 /var/log/wal-g
 	chmod 0340 /var/log/wal-g/pitr.log
 
-	# # audit logs directory for apparmor
+	# audit logs directory for apparmor
 	mkdir /var/log/audit
 
-	# # unwanted files
+	# unwanted files
 	rm -rf /var/lib/apt/lists/*
 	rm -rf /root/.cache
 	rm -rf /root/.vpython*
@@ -180,18 +179,30 @@ function clean_system {
 		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
 		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
 		/etc/ssh/sshd_config
-	grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config ||
-		{
-			echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
-			exit 1
-		}
+
+	if ! grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config; then
+		echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
+		exit 1
+	fi
 }
+
+#################
+# stage1 things #
+#################
+
+export DEBIAN_FRONTEND=noninteractive
+
+waitfor_boot_finished
+install_packages
+setup_postgesql_env
+setup_locale
+execute_playbook
+
+#################
+# stage2 things #
+#################
 
 install_nix
 execute_stage2_playbook
-# we do not want to ship an initialized DB as this is performed as needed
-mkdir -p /db/template
-mv /data/pgdata /db/template
-cloud-init clean --logs
 clean_legacy_things
 clean_system
