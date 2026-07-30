@@ -44,10 +44,9 @@ jobs:
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
@@ -75,10 +74,9 @@ jobs:
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
@@ -104,10 +102,9 @@ jobs:
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
@@ -138,10 +135,9 @@ jobs:
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
@@ -167,10 +163,9 @@ jobs:
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
@@ -198,10 +193,9 @@ jobs:
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry

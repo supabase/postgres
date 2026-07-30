@@ -6,7 +6,7 @@ Requires=local-fs.target
 
 [Service]
 Type=oneshot
-{% if qemu_mode is defined and qemu_mode %}
+{% if qemu %}
 ExecStart=/opt/supabase-admin-agent/supabase-admin-agent --config /opt/supabase-admin-agent/config.yaml salt --apply --store-result --targets-key  targetsv3-main.yaml
 User=root
 Group=root

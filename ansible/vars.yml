@@ -2,12 +2,10 @@
 supabase_internal: true
 ebssurrogate_mode: true
 async_mode: true
-
 postgres_major:
   - "15"
   - "17"
   - orioledb-17
-
 # Full version strings for each major version.
 #
 # This is the source of truth for Postgres versions used in the Dockerfiles, and
@@ -16,7 +14,6 @@ postgres_release:
   postgresorioledb-17: "17.9.0.010-orioledb"
   postgres17: "17.6.1.157"
   postgres15: "15.14.1.157"
-
 # Docker release matrix — base images built first, layered images built on top.
 # tag and base_tag are derived at build time from postgres_release via release_key.
 # tag_suffix is appended to the release version to form the final image tag.
@@ -29,14 +26,12 @@ release_matrix_base:
     target: production
     pg_version: "17"
     release_key: postgres17
-
 release_matrix_layered:
   - dockerfile: Dockerfile-multigres
     target: production
     pg_version: "17"
     release_key: postgres17
     tag_suffix: "-multigres"
-
   # OrioleDB uses a patched version of Postgres 17 so it builds from scratch but
   # logically belongs as a layered image. The layered build job passes SUPABASE_IMAGE
   # as a build arg which Docker silently ignores since it is undeclared in this Dockerfile.
@@ -45,7 +40,6 @@ release_matrix_layered:
     pg_version: "17"
     release_key: postgresorioledb-17
     tag_suffix: ""
-
 # Legacy (pre-Dockerfile-supabase) build matrix — flat list used when the manual
 # release workflow is triggered with dockerfiles: legacy (the default).
 # All images are built independently; there is no base→layered dependency.
@@ -62,57 +56,112 @@ release_matrix_legacy:
     target: production
     pg_version: "17"
     release_key: postgresorioledb-17
-
-# Non Postgres Extensions
-pgbouncer_release: 1.25.1
-pgbouncer_release_checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
-
-# The checksum can be found under "Assets", in the GitHub release page for each version.
-# The binaries used are: ubuntu-aarch64 and linux-static.
-# https://github.com/PostgREST/postgrest/releases
-postgrest_release: "14.15" # keep this as a string, otherwise gets treated as yaml float which will likely only lead to tears
-postgrest_arm_release_checksum: sha256:1eb007298c1536ba865e741da7eece6fba6db3da904c599abd15d9c3debe6c2f
-postgrest_x86_release_checksum: sha256:4e78c7f065a6c36f350c7177f5fa9bb77ea380c67b8bf40f2fc9130d857678dc
-
-gotrue_release: 2.190.0
-gotrue_release_checksum: sha1:7ceab0d91ebc68792afb58d07cfb73e1505de882
-gotrue_arm_release_checksum: sha1:7ceab0d91ebc68792afb58d07cfb73e1505de882
-gotrue_x86_release_checksum: sha1:56725ea31e32601dd5861f2e6f5d1e3cfd72299b
-
-aws_cli_release: 2.23.11
-
-salt_version: "3007.14" # keep this as a string, otherwise gets treated as yaml float which will likely only lead to tears
-
-golang_version: 1.22.11
-golang_version_checksum:
-  arm64: sha256:0fc88d966d33896384fbde56e9a8d80a305dc17a9f48f1832e061724b1719991
-  amd64: sha256:9ebfcab26801fa4cf0627c6439db7a4da4d3c6766142a3dd83508240e4f21031
-
-envoy_release: 1.28.0
-envoy_arm_release_checksum: sha256:eb930e32ab5555643e09d11d490e392d0a790c5a80eb0b0ebacb1046bdbb114d
-envoy_x86_release_checksum: sha256:2639563ce9bc09b1ee6bd4731760b596c8ed1e474cdd83cc9df9364516e14367
-envoy_hot_restarter_release_checksum: sha1:6d43b89d266fb2427a4b51756b649883b0617eda
-
-kong_release_target: focal
-kong_deb:
-  arm64: kong_2.8.1_arm64.deb
-  amd64: kong_2.8.1_amd64.deb
-kong_deb_checksum:
-  arm64: sha1:2086f6ccf8454fe64435252fea4d29d736d7ec61
-  amd64: sha1:7346d558a467f05d9ed63675b59f974300647e9f
-
-nginx_release: 1.22.0
-nginx_release_checksum: sha1:419efb77b80f165666e2ee406ad8ae9b845aba93
-
-postgres_exporter_release: "0.15.0"
-postgres_exporter_release_checksum:
-  arm64: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
-  amd64: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
-
-adminapi_release: "0.112.1"
-adminmgr_release: "0.43.6"
-supabase_admin_agent_release: 1.14.4
 supabase_admin_agent_splay: 30s
-
-vector_x86_deb: https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_amd64.deb
-vector_arm_deb: https://packages.timber.io/vector/0.48.X/vector_0.48.0-1_arm64.deb
+###############################################################################################################
+# The following block of yaml is for get_url and co throughout the playbook                                   #
+# No tasks should fetch files from the internet w/o verification (either signatures or checksum)              #
+# Having all the urls and checksums here makes it easy to manage, for both version bumps and checksum updates #
+# Keep the list sorted for faster human search                                                                #
+# Yes the urls are mostly duplicated, yes that sucks but this is ansible/jinja/yaml not nix...                #
+#                                                                                                             #
+# Checksums can be verified or updated by running:                                                            #
+# nix run .#update-ansible-artifacts                                                                          #
+###############################################################################################################
+adminapi_release: 0.112.1
+adminapi_artifacts:
+  amd64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
+    checksum: sha256:e7b94f29a7387f336846a714e3b2202c2579027efd30a3d919b41b02fd288569
+  arm64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
+    checksum: sha256:893f35ff3fcfc6088127d96998325be34bc4dc7ba59f74d38f47790beceebaf5
+adminmgr_release: 0.43.6
+adminmgr_artifacts:
+  amd64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
+    checksum: sha256:199c44e2c53e8cc73029f6b6bff64e47491cba5d59c02427facee3112e54f5b0
+  arm64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
+    checksum: sha256:0e649f0714ca47735d0e2a27ae740abd43d64b9b472b6cf113393390b2c1a694
+aws_cli_release: 2.23.11
+aws_cli_artifacts:
+  amd64:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
+    checksum: sha256:d9cad44c58bbf5f43cfccd291d688d5297356608aeaa487ce65c4ac81251f4c7
+  arm64:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
+    checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
+envoy_release: 1.28.0
+envoy_artifacts:
+  amd64:
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-x86_64"
+    checksum: sha256:2639563ce9bc09b1ee6bd4731760b596c8ed1e474cdd83cc9df9364516e14367
+  arm64:
+    url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
+    checksum: sha256:eb930e32ab5555643e09d11d490e392d0a790c5a80eb0b0ebacb1046bdbb114d
+  hot_restarter:
+    url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
+    checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
+kong_release: 2.8.1
+kong_artifacts:
+  amd64:
+    url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_amd64.deb"
+    checksum: sha256:10d12d23e5890414d666663094d51a42de41f8a9806fbc0baaf9ac4d37794361
+  arm64:
+    url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
+    checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
+gotrue_release: 2.190.0
+gotrue_artifacts:
+  amd64:
+    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
+    checksum: sha256:dfe8e2dee872747f60fe10ecec6ee8d368ee4d7eef3acd5af95aa88a2e7e6141
+  arm64:
+    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
+    checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
+nginx_release: 1.22.0
+nginx_artifacts:
+  url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
+  checksum: sha256:b33d569a6f11a01433a57ce17e83935e953ad4dc77cdd4d40f896c88ac26eb53
+pgbouncer_release: 1.25.1
+pgbouncer_artifacts:
+  url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
+  checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
+postgrest_release: "14.15" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+postgrest_artifacts:
+  amd64:
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
+    checksum: sha256:4e78c7f065a6c36f350c7177f5fa9bb77ea380c67b8bf40f2fc9130d857678dc
+  arm64:
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
+    checksum: sha256:1eb007298c1536ba865e741da7eece6fba6db3da904c599abd15d9c3debe6c2f
+  signingkey:
+    url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
+postgres_exporter_release: 0.15.0
+postgres_exporter_artifacts:
+  amd64:
+    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-amd64.tar.gz"
+    checksum: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
+  arm64:
+    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
+    checksum: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+salt_release: "3007.14" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+salt_artifacts:
+  url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+  checksum: sha256:36decef986477acb8ba2a1fc4041bcf9f22229ef6c939d0317c9e36a9d142b34
+supabase_admin_agent_release: 1.14.4
+supabase_admin_agent_artifacts:
+  amd64:
+    url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-amd64.tar.gz
+    checksum: sha256:7b0c03c3d2401f2ac41d82fad1d44a917c6f7a81ea8f8090f5c42c802b83ba21
+  arm64:
+    url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-arm64.tar.gz
+    checksum: sha256:7db4e9849d7d6131c79cc9bba21a7bb2e0949b59367b390f58d4dc526ce766c3
+vector_release: 0.48.0-1
+vector_artifacts:
+  amd64:
+    url: "https://packages.timber.io/vector/{{ vector_release.split('.')[:2] | join('.') }}.X/vector_{{ vector_release }}_amd64.deb"
+    checksum: sha256:a898f8e44b58ad9b3a87f877dfed160fa469edab1e4cbae5b7700d0ad28a444b
+  arm64:
+    url: "https://packages.timber.io/vector/{{ vector_release.split('.')[:2] | join('.') }}.X/vector_{{ vector_release }}_arm64.deb"
+    checksum: sha256:c52483bbd1aba387e8d83eded6fce0c1de31eb7eac810ad4d780895a887da6b1

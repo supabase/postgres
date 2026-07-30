@@ -14,9 +14,9 @@
 
 - name: Kong - download deb package
   get_url:
-    checksum: "{{ kong_deb_checksum[platform] }}"
+    url: "{{ kong_artifacts[platform]['url'] }}"
+    checksum: "{{ kong_artifacts[platform]['checksum'] }}"
     dest: '/tmp/kong.deb'
-    url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/{{ kong_release_target }}/main/k/ko/kong_2.8.1/{{ kong_deb[platform] }}"
   register: download_result
   until: download_result is succeeded
   retries: 3
