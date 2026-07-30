@@ -40,9 +40,9 @@ handle_extension_versions() {
     fi
 
     if site-extensions-update "$extensions_file"; then
-        log "extensions: profile updated"
+        log "extensions: env updated"
     else
-        log "extensions: update failed, continuing with existing profile"
+        log "extensions: update failed, continuing with existing env"
     fi
 }
 
