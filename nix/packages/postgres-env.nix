@@ -9,10 +9,10 @@
     let
       # Bundles everything the AMI build installs into the postgres user's nix
       # profile (via `nix-env --set`) into a single derivation.
-      makePostgresProfile =
+      makePostgresEnv =
         version:
         pkgs.symlinkJoin {
-          name = "postgres-profile-${version}";
+          name = "postgres-env-${version}";
           paths = [
             self'.packages."psql_${version}/bin"
             self'.packages.pg_prove
@@ -25,9 +25,9 @@
     in
     {
       packages = {
-        postgres-profile-15 = makePostgresProfile "15";
-        postgres-profile-17 = makePostgresProfile "17";
-        postgres-profile-orioledb-17 = makePostgresProfile "orioledb-17";
+        postgres-env-15 = makePostgresEnv "15";
+        postgres-env-17 = makePostgresEnv "17";
+        postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
       };
     };
 }

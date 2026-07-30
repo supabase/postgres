@@ -57,19 +57,19 @@
   when: stage2
   become: true
   block:
-    - name: Resolve postgres profile store path
+    - name: Resolve postgres env store path
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-profile-{{ postgresql_major_version }}
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
         "
-      register: postgres_profile_path
+      register: postgres_env_path
 
-    - name: Install postgres profile from nix binary cache
+    - name: Install postgres env from nix binary cache
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix-env --set {{ postgres_profile_path.stdout }}
+          nix-env --set {{ postgres_env_path.stdout }}
         "
 
     - name: Install supascan for baseline validation
