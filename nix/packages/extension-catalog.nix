@@ -162,7 +162,7 @@
         '';
 
         # Takes manifest json as argument.
-        # Downloads and installs paths into the profile, replacing all existing ones.
+        # Downloads paths and installs them as an env into the profile, replacing all existing ones.
         site-extensions-update = pkgs.writeShellApplication {
           name = "site-extensions-update";
           runtimeInputs = [
