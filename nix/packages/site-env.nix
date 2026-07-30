@@ -1,4 +1,4 @@
-# These are profiles (package sets per pg major version) deployed to instances
+# These are envs (package sets per pg major version) deployed to instances
 # at /nix/var/nix/profiles/site and updated regularly.
 {
   perSystem =
@@ -9,29 +9,27 @@
       ...
     }:
     let
-      makeSiteProfile =
+      makeSiteEnv =
         version: extraPaths:
         pkgs.buildEnv {
-          name = "site-profile-${version}";
+          name = "site-env-${version}";
           paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
         };
 
-      siteProfiles = {
+      siteEnvs = {
 
-        "site-profile-15" = makeSiteProfile "15" [ ];
+        "site-env-15" = makeSiteEnv "15" [ ];
 
         # gatekeeper is only available for pg 17+ on linux
 
-        "site-profile-17" = makeSiteProfile "17" (
-          lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
-        );
+        "site-env-17" = makeSiteEnv "17" (lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]);
 
-        "site-profile-orioledb-17" = makeSiteProfile "orioledb-17" (
+        "site-env-orioledb-17" = makeSiteEnv "orioledb-17" (
           lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
         );
       };
     in
     {
-      legacyPackages = siteProfiles;
+      legacyPackages = siteEnvs;
     };
 }
