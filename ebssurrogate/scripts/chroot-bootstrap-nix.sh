@@ -28,33 +28,41 @@ function update_install_packages {
 	fi
 	apt-get "${APT_OPTIONS[@]}" --yes dist-upgrade
 
-	# Do not configure grub during package install
+	local packages=(
+		e2fsprogs
+		initramfs-tools
+	)
+	# Install various packages needed for a booting system (with mirror fallback)
 	if [[ $ARCH == amd64 ]]; then
+		# Do not configure grub during package install
 		echo 'grub-pc grub-pc/install_devices_empty select true' | debconf-set-selections
 		echo 'grub-pc grub-pc/install_devices select' | debconf-set-selections
-		# Install various packages needed for a booting system (with mirror fallback)
-		if ! apt_install_with_fallback install -y linux-aws grub-pc e2fsprogs; then
-			echo "FATAL: Failed to install boot packages"
-			exit 1
-		fi
+		packages+=(
+			linux-aws
+			grub-pc
+		)
 	else
-		if ! apt_install_with_fallback install -y e2fsprogs; then
-			echo "FATAL: Failed to install e2fsprogs"
-			exit 1
-		fi
+		packages+=(
+			dosfstools
+		)
 	fi
-	# Install standard packages (with mirror fallback)
-	# Note: ec2-hibinit-agent, ec2-instance-connect, hibagent moved to stage 2
-	# because their post-install scripts try to access EC2 metadata service
-	# which doesn't work in a chroot and causes long hangs
-	if ! apt_install_with_fallback install -y \
-		bzip2 \
-		sudo \
-		wget \
-		cloud-init \
-		acpid \
-		ncurses-term \
-		ssh-import-id; then
+
+	packages+=(
+		acpid
+		apparmor
+		apparmor-utils
+		auditd
+		bzip2
+		cloud-init
+		ec2-hibinit-agent
+		ec2-instance-connect
+		hibagent
+		ncurses-term
+		ssh-import-id
+		sudo
+		wget
+	)
+	if ! apt_install_with_fallback install -y "${packages[@]}"; then
 		echo "FATAL: Failed to install standard packages"
 		exit 1
 	fi
@@ -62,31 +70,33 @@ function update_install_packages {
 	# apt upgrade
 	apt-get upgrade -y
 
-	if ! apt_install_with_fallback install -y --no-install-recommends \
-		openssh-server \
-		git \
-		ufw \
-		cron \
-		logrotate \
-		fail2ban \
-		locales \
-		at \
-		less \
-		python3-systemd; then
-		echo "FATAL: Failed to install universe packages"
-		exit 1
+	packages=(
+		at
+		cron
+		fail2ban
+		git
+		less
+		locales
+		logrotate
+		openssh-server
+		python3-systemd
+		ufw
+	)
+	if [[ $ARCH == arm64 ]]; then
+		packages+=(
+			cloud-guest-utils
+			fdisk
+			grub-efi-arm64
+			efibootmgr
+			# linux-aws is installed separately between amd64 and arm64 because of --no-install-recommends is needed for arm64
+			# otherwise we bring in grub-efi-arm64-signed which fails to boot
+			linux-aws
+		)
 	fi
 
-	if [[ $ARCH == arm64 ]]; then
-		if ! apt_install_with_fallback "${APT_OPTIONS[@]}" --yes install linux-aws initramfs-tools dosfstools; then
-			echo "FATAL: Failed to install arm64 boot packages"
-			exit 1
-		fi
-	else
-		if ! apt_install_with_fallback "${APT_OPTIONS[@]}" --yes install initramfs-tools; then
-			echo "FATAL: Failed to install amd64 boot packages"
-			exit 1
-		fi
+	if ! apt_install_with_fallback install -y --no-install-recommends "${packages[@]}"; then
+		echo "FATAL: Failed to install universe/arm64 grub packages"
+		exit 1
 	fi
 }
 
@@ -116,11 +126,6 @@ function setup_postgesql_env {
 }
 
 function setup_apparmor {
-	if ! apt_install_with_fallback install -y apparmor apparmor-utils auditd; then
-		echo "FATAL: Failed to install apparmor packages"
-		exit 1
-	fi
-
 	# Copy apparmor profiles
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
 }
@@ -138,10 +143,6 @@ function setup_grub {
 	EOF
 
 	if [[ $ARCH == arm64 ]]; then
-		if ! apt_install_with_fallback "${APT_OPTIONS[@]}" --yes install cloud-guest-utils fdisk grub-efi-arm64 efibootmgr; then
-			echo "FATAL: Failed to install grub packages for arm64"
-			exit 1
-		fi
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1
 	fi
