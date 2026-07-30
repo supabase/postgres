@@ -15,42 +15,102 @@ fi
 chmod 1777 /tmp
 
 # Cleanup more packages
-apt-get -y remove --purge \
-	automake \
-	autoconf \
-	autotools-dev \
-	cmake-data \
-	cpp-9 \
-	cpp-10 \
-	gcc-9 \
-	gcc-10 \
-	git \
-	git-man \
-	ansible \
-	libicu-dev \
-	libcgal-dev \
-	libgcc-9-dev \
-	ansible \
+packages=(
+	ansible
+	ansible-core
+	apport
+	appstream
+	autoconf
+	automake
+	autotools-dev
+	bash-completion
+	bcache-tools
+	bind9-dnsutils
+	bind9-host
+	bind9-libs
+	bolt
+	btrfs-progs
+	byobu
+	cmake-data
+	command-not-found
+	console-setup
+	cpp-10
+	cpp-9
+	distro-info
+	eject
+	'fonts-dejavu*'
+	fonts-ubuntu-console
+	friendly-recovery
+	ftp
+	fwupd
+	gawk
+	gcc-10
+	gcc-9
+	gdisk
+	git
+	git-man
+	gnupg
+	keyboard-configuration
+	libc6-dev
+	libcgal-dev
+	libclang-cpp18
+	libevent-dev
+	libgcc-9-dev
+	libicu-dev
+	libicu74
+	libpcre3-dev
+	libssl-dev
+	libsystemd-dev
+	libvolume-key1
+	'linux-headers*'
+	linux-libc-dev
+	lvm2
+	lxd-agent-loader
+	lxd-installer
+	man-db
+	mdadm
+	modemmanager
+	mtd-utils
+	multipath-tools
+	nano
+	netcat-openbsd
+	nfs-common
+	ntfs-3g
+	open-vm-tools
+	packagekit
+	parted
+	pastebinit
+	plymouth
+	publicsuffix
+	python-babel-localedata
+	python3-botocore
+	python3-pygments
+	python3-twisted
+	screen
 	snapd
+	strace
+	thin-provisioning-tools
+	tmux
+	unattended-upgrades
+	usb-modeswitch
+	vim
+	vim-runtime
+	wget
+	whiptail
+	xauth
+	xfsprogs
+)
 
 if [[ $(uname -m) == aarch64 ]]; then
-	apt-get -y remove --purge libgcc-8-dev
+	packages+=(libgcc-8-dev)
 fi
 
-# add-apt-repository --yes --remove ppa:ansible/ansible
-
 apt-mark manual libevent-2.1-7t64
-
-apt-get remove -y --purge ansible-core apport appstream bash-completion bcache-tools bind9-dnsutils bind9-host bind9-libs bolt btrfs-progs byobu command-not-found console-setup distro-info eject fonts-ubuntu-console friendly-recovery ftp fwupd gawk gdisk keyboard-configuration libvolume-key1 libssl-dev lvm2 lxd-agent-loader man-db mdadm modemmanager mtd-utils nano netcat-openbsd nfs-common ntfs-3g parted pastebinit screen strace thin-provisioning-tools tmux usb-modeswitch vim vim-runtime wget whiptail xfsprogs
-
-apt remove -y --purge libc6-dev linux-libc-dev libevent-dev libpcre3-dev libsystemd-dev packagekit multipath-tools unattended-upgrades plymouth gnupg open-vm-tools xauth lxd-installer publicsuffix libclang-cpp18 python3-twisted python-babel-localedata libicu74 python3-pygments fonts-dejavu* python3-botocore
-
-apt-get remove -y --purge linux-headers*
-
-apt-get -y autoremove
-apt-get -y autoclean
-apt-get -y update
-apt-get -y upgrade
+apt-get --yes remove --purge "${packages[@]}"
+apt-get --yes autoremove
+apt-get --yes autoclean
+apt-get --yes update
+apt-get --yes upgrade
 
 systemctl set-default multi-user.target
 systemctl disable getty@tty1.service
