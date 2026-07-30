@@ -325,11 +325,6 @@ Overlays are flake-level (not per-system):
       postgresql_17
       supabase-groonga;
 
-    # Define new packages in terms of final/prev
-    cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
-      inherit (final) lib darwin fetchCrate openssl;
-    };
-
     # Override existing packages
     buildPgrxExtension = final.callPackage ../cargo-pgrx/buildPgrxExtension.nix {
       inherit (final) cargo-pgrx lib;
