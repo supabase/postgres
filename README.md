@@ -74,7 +74,6 @@ Here's a comprehensive overview of the project's directory structure:
 | **tests/** | Integration and system tests |
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
-| **scripts/** | Utility scripts for development and deployment |
 | **docs/** | Additional documentation, images, and resources |
 | **ebssurrogate/** | AWS EBS surrogate building for AMI creation |
 | **http/** | HTTP-related configurations and files |

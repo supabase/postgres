@@ -119,11 +119,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
     source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
@@ -133,7 +128,7 @@ build {
       "GIT_SHA=${var.git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
-    script = "scripts/nix-provision.sh"
+    script = "ebssurrogate/scripts/nix-provision.sh"
   }
 
 }

@@ -363,9 +363,9 @@ function update_systemd_services {
 
 function clean_system {
 	# Copy cleanup scripts
-	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
-	chmod +x /mnt/tmp/90-cleanup.sh
-	chroot /mnt /tmp/90-cleanup.sh
+	cp -v /tmp/cleanup.sh /mnt/tmp
+	chmod +x /mnt/tmp/cleanup.sh
+	chroot /mnt /tmp/cleanup.sh
 
 	# Cleanup logs
 	rm -rf /mnt/var/log/*
