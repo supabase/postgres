@@ -440,7 +440,7 @@ EXTRA_NIX_CONF
 
 	# Needed for PostGIS, since it's compiled with Protobuf-C support now
 	log "3. Installing libprotobuf-c1 and libicu66 if missing"
-	if [[ ! "$(apt list --installed libprotobuf-c1 | grep "installed")" ]]; then
+	if ! apt list --installed libprotobuf-c1 | grep -q installed; then
 		apt-get -o DPkg::Lock::Timeout=600 update -y                # wait up to 10 minutes for any dpkg locks to clear before updating package lists
 		apt --fix-broken install -y libprotobuf-c1 libicu66 || true # apt has builtin 2 minute wait lock
 	fi
