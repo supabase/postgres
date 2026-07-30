@@ -145,6 +145,16 @@ RUN chown -R postgres:postgres /usr/lib/postgresql && \
 # Setup configs
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql.conf.j2 /etc/postgresql/postgresql.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf.j2 /etc/postgresql/pg_hba.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba.conf_15.j2 /etc/postgresql/pg_hba.conf_15.j2
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba_public.conf.j2 /etc/postgresql/pg_hba_public.conf
+COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_hba_users_public.conf.j2 /etc/postgresql/pg_hba_users_public.conf
+# pg_hba.conf include_if_exists requires PG16+; PG15 uses the monolithic file and drops the fragments.
+RUN if [ "$PG_VERSION" = "15" ]; then \
+        mv /etc/postgresql/pg_hba.conf_15.j2 /etc/postgresql/pg_hba.conf; \
+        rm -f /etc/postgresql/pg_hba_public.conf /etc/postgresql/pg_hba_users_public.conf; \
+    else \
+        rm -f /etc/postgresql/pg_hba.conf_15.j2; \
+    fi
 COPY --chown=postgres:postgres ansible/files/postgresql_config/pg_ident.conf.j2 /etc/postgresql/pg_ident.conf
 COPY --chown=postgres:postgres ansible/files/postgresql_config/conf.d /etc/postgresql/postgresql.conf.d
 COPY --chown=postgres:postgres ansible/files/postgresql_config/postgresql-stdout-log.conf /etc/postgresql/logging.conf
