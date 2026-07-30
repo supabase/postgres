@@ -1,4 +1,4 @@
-# These are profiles (package sets per pg major version) deployed to instances 
+# These are profiles (package sets per pg major version) deployed to instances
 # at /nix/var/nix/profiles/site and updated regularly.
 {
   perSystem =
