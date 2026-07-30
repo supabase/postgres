@@ -1,117 +1,49 @@
-name: 'Install Nix on ephemeral runners'
-description: 'Installs Nix and sets up AWS credentials to push to the Nix binary cache'
+name: Install Nix on ephemeral runners
+description: Installs Nix and sets up AWS credentials to push to the Nix binary cache
 inputs:
   aws-region:
-    description: 'AWS region for the Nix binary cache S3 bucket'
+    description: AWS region for the Nix binary cache S3 bucket
     required: false
-    default: 'us-east-1'
-  force-clean:
-    description: Whether to delete pre-existing nix paths
+    default: us-east-1
+  nix-signing-key:
+    description: Key used to sign uploads to binary cache, required if push-to-cache is true
     required: false
-    default: 'false'
   push-to-cache:
-    description: 'Whether to push build outputs to the Nix binary cache'
+    description: Whether to push build outputs to the Nix binary cache
     required: false
-    default: 'false'
-  multi-user:
-    description: Whether to install nix in multi-user mode (default true) or single-user mode
+    default: false
+  role-to-assume:
+    description: AWS Role to assume when configuring aws credentials, required if push-to-cache is true
     required: false
-    default: 'true'
 runs:
-  using: 'composite'
+  using: composite
   steps:
-    - name: aws-creds
+    - name: validate push-to-cache required inputs
+      if: inputs.push-to-cache == true
+      shell: bash
+      run: |
+        abort() { echo "$@" >&2; exit 1; }
+        [[ -z "${{ inputs.nix-signing-key}}" ]] && abort "nix-signing-key is required when push-to-cache is true"
+        [[ -z "${{ inputs.role-to-assume}}" ]] && abort "role-to-assume is required when push-to-cache is true"
+
+    - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
-      if: ${{ inputs.push-to-cache == 'true' }}
+      if: inputs.push-to-cache == true
       with:
-        role-to-assume: ${{ env.DEV_AWS_ROLE }}
+        role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
         output-credentials: true
         role-duration-seconds: 7200
-    - name: Force Clean Pre-Existing Nix Paths
-      if: inputs.force-clean == 'true'
-      shell: bash
-      run: sudo rm -rf /nix /etc/nix "$HOME/.nix-profile" "$HOME/.nix-channels" "$HOME/.config/nix"
-    - name: Ensure /etc/nix exists
-      shell: bash
-      run: sudo mkdir -p /etc/nix
-    - name: Setup AWS credentials for Nix
-      if: ${{ inputs.push-to-cache == 'true' }}
-      shell: bash
-      run: |
-        sudo -H aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-        sudo -H aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-        sudo -H aws configure set aws_session_token $AWS_SESSION_TOKEN
-        sudo -H aws configure set region ${{ inputs.aws-region }}
-        sudo -E python -c "import os; file = open('/etc/nix/nix-secret-key', 'w'); file.write(os.environ['NIX_SIGN_SECRET_KEY']); file.close()"
-        cat << 'EOF' | sudo tee /etc/nix/upload-to-cache.sh > /dev/null
-        #!/usr/bin/env bash
-        set -euo pipefail
-        set -f
 
-        export IFS=' '
-        /nix/var/nix/profiles/default/bin/nix copy --max-jobs 5 --to 's3://nix-postgres-artifacts?secret-key=/etc/nix/nix-secret-key' $OUT_PATHS
-        EOF
-        sudo chmod +x /etc/nix/upload-to-cache.sh
+    - name: setup nix
+      shell: bash
+      run: cd ${{ github.action_path }} && ./setup-nix.sh
       env:
-        NIX_SIGN_SECRET_KEY: ${{ env.NIX_SIGN_SECRET_KEY }}
-    - name: Install Nix
-      shell: bash
-      run: |
-        if [[ "${{ inputs.multi-user }}" == true ]]; then
-          daemon=--daemon
-          nixconfdir=/etc/nix
-          path=/nix/var/nix/profiles/default/bin
-          tmpconf=/tmp/nix-extra.conf
+        AWS_REGION: ${{ inputs.aws-region }}
+        GITHUB_TOKEN: ${{ github.token }}
+        NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
+        PUSH_TO_CACHE: ${{ inputs.push-to-cache == true }}
 
-          echo 'access-tokens = github.com=${{ github.token }}' | sudo tee $nixconfdir/github.nix.conf >/dev/null
-          sudo chmod 400 $nixconfdir/github.nix.conf
-        else
-          daemon=--no-daemon
-          nixconfdir=$HOME/.config/nix
-          path=$HOME/.nix-profile/bin
-          tmpconf=$nixconfdir/nix.conf # --nix-extra-conf-files is ignored for single-user installs
-
-          mkdir -p "$(dirname $tmpconf)"
-          echo 'access-tokens = github.com=${{ github.token }}' | tee $nixconfdir/github.nix.conf >/dev/null
-          chmod 400 $nixconfdir/github.nix.conf
-        fi
-
-        cat >$tmpconf <<'NIXCONF'
-        always-allow-substitutes = true
-        extra-experimental-features = flakes nix-command
-        extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-        extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
-        max-jobs = 4
-        NIXCONF
-
-
-        if [[ -e /dev/kvm ]]; then
-          echo 'extra-system-features = kvm' >>$tmpconf
-        fi
-
-        if [[ "${{ inputs.push-to-cache }}" == true ]]; then
-          echo 'post-build-hook = /etc/nix/upload-to-cache.sh' >>$tmpconf
-        fi
-
-        echo "!include $nixconfdir/github.nix.conf" >>$tmpconf
-
-        curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- $daemon --yes --nix-extra-conf-file $tmpconf
-
-        sudo cat $nixconfdir/nix.conf
-
-        # Add nix to PATH for subsequent steps
-        echo "$path" >> "$GITHUB_PATH"
-    - name: Print Nix version
+    - name: verify nix in path
       shell: bash
       run: nix --version
-    - name: Setup KVM permissions
-      shell: bash
-      run: |
-        if [ -e /dev/kvm ]; then
-          sudo chown runner /dev/kvm
-          sudo chmod 666 /dev/kvm
-          echo "KVM configured: $(ls -l /dev/kvm)"
-        else
-          echo "KVM device not available"
-        fi

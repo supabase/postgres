@@ -1,5 +1,5 @@
-- name: Execute tasks when nixpkg_mode
-  when: nixpkg_mode
+- name: Execute stage1 tasks
+  when: not stage2
   block:
     - name: System - apt update and apt upgrade
       ansible.builtin.apt:
@@ -76,15 +76,6 @@
         owner: 'root'
         group: 'root'
 
-- name: Set the platform arch as a fact
-  ansible.builtin.set_fact:
-    platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
-  tags:
-    - update
-    - update-only
-  when:
-    - nixpkg_mode or stage2_nix
-
 - name: Disable algif_aead module autoload for Copy Fail mitigation
   ansible.builtin.copy:
     content: |
@@ -93,20 +84,15 @@
     mode: '0644'
     owner: root
     group: root
-  when:
-    - nixpkg_mode or stage2_nix
 
 - name: Unload algif_aead module if currently loaded
   ansible.builtin.command:
     cmd: rmmod algif_aead
   changed_when: false
   failed_when: false
-  when:
-    - nixpkg_mode or stage2_nix
 
-- name: Execute more tasks when nixpkg_mode
-  when:
-    - nixpkg_mode
+- name: Execute more tasks when stage1
+  when: not stage2
   block:
     - name: Custom systemd overrides for resolved
       ansible.builtin.copy:
@@ -165,6 +151,7 @@
         group: 'root'
 
 - name: set hosts file
+  when: stage2
   ansible.builtin.copy:
     content: |
       127.0.0.1   localhost
@@ -173,8 +160,6 @@
     mode: '0644'
     owner: 'root'
     group: 'root'
-  when:
-    - stage2_nix
 
 - name: Configure Apt
   ansible.builtin.copy:

@@ -38,11 +38,6 @@ jobs:
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
-        with:
-          push-to-cache: 'false'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Check Docker image changes
         id: check
@@ -85,11 +80,6 @@ jobs:
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
-        with:
-          push-to-cache: 'false'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Create Docker context
         run: docker context create builders
