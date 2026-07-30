@@ -134,8 +134,8 @@ function clean_legacy_things {
 
 function clean_system {
 	# Copy cleanup scripts
-	chmod +x /tmp/ansible-playbook/scripts/90-cleanup-qemu.sh
-	/tmp/ansible-playbook/scripts/90-cleanup-qemu.sh
+	chmod +x /tmp/cleanup-qemu.sh
+	/tmp/cleanup-qemu.sh
 
 	# # Cleanup logs
 	rm -rf /var/log/*
