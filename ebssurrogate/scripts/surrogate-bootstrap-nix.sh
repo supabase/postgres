@@ -109,23 +109,24 @@ function install_packages {
 		exit 1
 	fi
 
-	apt-get install software-properties-common -y
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
+	# apt-get install software-properties-common -y
 	# add-apt-repository --yes --update ppa:ansible/ansible
-
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists after adding Ansible PPA"
-		exit 1
-	fi
+	#
+	# if ! apt_update_with_fallback; then
+	# 	echo "FATAL: Failed to update package lists after adding Ansible PPA"
+	# 	exit 1
+	# fi
 
 	apt-get install ansible -y
 	ansible-galaxy collection install community.general
 
 	apt-get install -y \
-		gdisk \
-		e2fsprogs \
 		debootstrap \
-		nvme-cli
+		e2fsprogs \
+		gdisk \
+		nvme-cli \
+		;
 }
 
 # Partition the new root EBS volume

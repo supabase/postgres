@@ -8,22 +8,22 @@ set -o xtrace
 exec 1>&2
 
 function install_packages {
-	# Setup Ansible on host VM
-	sudo apt-get update && sudo apt-get install -y software-properties-common
-
 	# Install EC2-specific packages that were deferred from stage 1
 	# These packages have post-install scripts that need EC2 metadata service access
 	# which only works on a real running EC2 instance (not in chroot)
-	sudo apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
+	apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
 
+	# Setup Ansible on host VM
+	# apt-get update && apt-get install -y software-properties-common
+	#
 	# Manually add GPG key with explicit keyserver
-	sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
-
+	# apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
+	#
 	# Add repository and install
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
-	# sudo add-apt-repository --yes ppa:ansible/ansible
-	# sudo apt-get update
-	sudo apt-get install -y ansible
+	# add-apt-repository --yes ppa:ansible/ansible
+	# apt-get update
+	apt-get install -y ansible
 
 	ansible-galaxy collection install community.general
 }
@@ -68,8 +68,8 @@ function execute_stage2_playbook {
 }
 
 function cleanup_packages {
-	sudo apt-get -y remove --purge ansible
-	# sudo add-apt-repository --yes --remove ppa:ansible/ansible
+	apt-get -y remove --purge ansible
+	# add-apt-repository --yes --remove ppa:ansible/ansible
 }
 
 install_packages
