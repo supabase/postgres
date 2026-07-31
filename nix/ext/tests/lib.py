@@ -133,6 +133,59 @@ class PostgresExtensionTest(object):
                 self.drop_extension()
                 self.install_extension(version)
 
+    def check_legacy_versions_upgrade_to_latest(
+        self, pg_version: str, legacy_versions: Mapping[str, str]
+    ):
+        """Prove every legacy extversion string upgrades cleanly to latest.
+
+        legacy_versions maps a legacy/bare extversion string (e.g. pg_cron's
+        "1.6") to the schema-identical canonical version it has an alignment
+        migration to (e.g. "1.6.4"). Postgres can't install a legacy string
+        directly -- there's no base script for it, only an alignment edge off
+        of it -- so for each entry this installs the canonical version fresh,
+        then patches pg_extension.extversion directly to the legacy string.
+        This reproduces the actual field state (and is the same manual fix
+        used to recover a stuck project) rather than a state Postgres would
+        ever arrive at on its own.
+
+        From there, a bare ALTER EXTENSION UPDATE (no explicit target version)
+        is run -- matching how the real upgrade-completion path invokes it --
+        and the result must land on the latest canonical version. If any
+        legacy string has no path to latest, this fails loudly, which is
+        exactly the stranded-project bug this test exists to catch.
+
+        The extension is restored to the latest canonical version on exit so
+        the subtests that follow see the expected state.
+
+        Args:
+            pg_version: PostgreSQL version under test (e.g. "15")
+            legacy_versions: Mapping of legacy extversion string to the
+                canonical version it is schema-identical to
+        """
+        if not legacy_versions:
+            return
+
+        available = self.versions.get(pg_version, [])
+        if not available:
+            raise ValueError(
+                f"No versions available for PostgreSQL version {pg_version}"
+            )
+        latest = available[-1]
+
+        for legacy_version, canonical_version in legacy_versions.items():
+            self.drop_extension()
+            self.install_extension(canonical_version)
+            self.run_sql(
+                f"UPDATE pg_extension SET extversion = '{legacy_version}' "
+                f"WHERE extname = '{self.extension_name}';"
+            )
+            self.run_sql(f"ALTER EXTENSION {self.extension_name} UPDATE;")
+            self.assert_version_matches(latest)
+
+        # Restore canonical latest so following subtests have expected state
+        self.drop_extension()
+        self.install_extension(latest)
+
     def check_install_last_version(self, pg_version: str) -> str:
         """Test if the install of the last version of the extension works for a given PostgreSQL version.
 
