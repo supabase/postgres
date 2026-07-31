@@ -19,7 +19,7 @@
 
     # Force the pre-2.42 glibc symbol version for cfgetospeed so the portable CLI bundle keeps working on older-glibc hosts.
     ncurses = prev.ncurses.overrideAttrs (old: {
-      patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-symver.patch ];
+      patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-compat.patch ];
     });
 
     cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
