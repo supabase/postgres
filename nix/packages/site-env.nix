@@ -30,6 +30,7 @@
       };
     in
     {
+      packages = siteEnvs;
       legacyPackages = siteEnvs;
     };
 }
