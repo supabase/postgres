@@ -101,11 +101,11 @@ COPY --chmod=0755 docker/pgctld/pgctld-layered.sh /usr/local/bin/pgctld
 # config from postgresql.conf.tmpl and passes it directly to PostgreSQL, so the
 # supabase base config (including wal-g and data_directory settings) is never loaded.
 
-# wal-g is not used in Multigres (pgbackrest handles backups); remove inherited files.
-RUN rm -f \
-    /etc/postgresql-custom/wal-g.conf \
-    /home/postgres/wal_fetch.sh \
-    /root/wal_change_ownership.sh
+# wal-g is not used in Multigres (pgbackrest handles backups); remove inherited files
+# and delete the now-dangling include line so /etc/postgresql/postgresql.conf stays valid
+# if it is ever loaded directly instead of pgctld's generated config.
+RUN sed -i -e "/^include = '\/etc\/postgresql-custom\/wal-g.conf'/d" /etc/postgresql/postgresql.conf && \
+    rm -f /etc/postgresql-custom/wal-g.conf /home/postgres/wal_fetch.sh /root/wal_change_ownership.sh
 
 # pgctld uses pooler-dir for pgBackRest config, unix sockets, and state files.
 RUN mkdir -p /var/lib/pgctld && chown postgres:postgres /var/lib/pgctld
