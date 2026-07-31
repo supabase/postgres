@@ -89,9 +89,9 @@ jobs:
         include:
           - runner: macos-14
             arch: darwin-arm64
-          - runner: ubuntu-latest
+          - runner: ubuntu-26.04
             arch: linux-x64
-          - runner: ubuntu-24.04-arm
+          - runner: ubuntu-26.04-arm
             arch: linux-arm64
     steps:
       - name: Download artifact
