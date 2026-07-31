@@ -17,9 +17,9 @@
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
 
-    # Force the pre-2.42 glibc symbol version for cfgetospeed so the portable CLI bundle keeps working on older-glibc hosts.
+    # Resolve cfgetospeed via dlvsym at the pre-2.42 glibc version at runtime, so the portable CLI bundle keeps working on older-glibc hosts.
     ncurses = prev.ncurses.overrideAttrs (old: {
-      patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-symver.patch ];
+      patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-compat.patch ];
     });
 
     # Hold cgal back to 6.0.2 until nixpkgs bumps sfcgal past 2.2.0 (incompatible with CGAL 6.1+). [validation only, see #2332]
