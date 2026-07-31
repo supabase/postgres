@@ -1,10 +1,10 @@
 { pkgs, ... }:
 let
 
-  go124 = pkgs.go_1_24;
-  buildGoModule124 = pkgs.buildGoModule.override { go = go124; };
+  go125 = pkgs.go_1_25;
+  buildGoModule125 = pkgs.buildGoModule.override { go = go125; };
 
-  upstream-gatekeeper = buildGoModule124 {
+  upstream-gatekeeper = buildGoModule125 {
     pname = "jit-db-gatekeeper";
     version = "1.0.5";
     src = pkgs.fetchFromGitHub {
