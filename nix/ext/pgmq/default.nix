@@ -91,7 +91,6 @@ let
       meta = with lib; {
         description = "A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.";
         homepage = "https://github.com/tembo-io/pgmq";
-        maintainers = with maintainers; [ olirice ];
         inherit (postgresql.meta) platforms;
         license = licenses.postgresql;
       };
