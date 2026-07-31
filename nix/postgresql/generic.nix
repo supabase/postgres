@@ -287,14 +287,6 @@ let
         license = licenses.postgresql;
         changelog = "https://www.postgresql.org/docs/release/${finalAttrs.version}/";
         teams = [ ];
-        maintainers = with maintainers; [
-          thoughtpolice
-          danbst
-          globin
-          ivan
-          ma27
-          wolfgangwalther
-        ];
         pkgConfigModules = [
           "libecpg"
           "libecpg_compat"
