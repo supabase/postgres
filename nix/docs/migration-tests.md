@@ -17,7 +17,7 @@ The arguments are:
 
 The versions for upgrading can be one of two forms:
 
-- A major version number, e.g. `14` or `15`
+- A major version number, e.g. `15` or `17`
 - A path to `/nix/store`, which points to _any_ version of PostgreSQL, as long
   as it has the "expected" layout and is a postgresql install.
 
@@ -35,7 +35,7 @@ the runbook on [running the server & client](./start-client-server.md) to refer
 to arbitrary git revisions.
 
 For example, if you updated an extension in this repository, and you want to
-test a migration from PostgreSQL 14 to PostgreSQL 14 + (updated extension),
+test a migration from PostgreSQL 15 to PostgreSQL 15 + (updated extension),
 using `pg_upgrade` &mdash; simply record the two git commits you want to
 compare, and you could do something like the following:
 
@@ -43,8 +43,8 @@ compare, and you could do something like the following:
 OLD_GIT_VERSION=...
 NEW_GIT_VERSION=...
 
-nix run github:supabase/nix-postgres#migration-test \
-  $(nix build "github:supabase/nix-postgres/$OLD_GIT_VERSION#psql_14.bin") \
-  $(nix build "github:supabase/nix-postgres/$NEW_GIT_VERSION#psql_14.bin") \
+nix run github:supabase/postgres#migration-test \
+  $(nix build --print-out-paths --no-link "github:supabase/postgres/$OLD_GIT_VERSION#psql_15/bin") \
+  $(nix build --print-out-paths --no-link "github:supabase/postgres/$NEW_GIT_VERSION#psql_15/bin") \
   pg_upgrade
 ```

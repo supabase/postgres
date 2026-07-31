@@ -229,7 +229,10 @@ default_text_search_config = 'pg_catalog.english'
 
 # - Shared Library Preloading -
 
+session_preload_libraries = 'supautils'
+
 shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault'
+session_preload_libraries = 'supautils'
 
 jit_provider = 'llvmjit'		# JIT library to use
 
@@ -271,8 +274,8 @@ restart_after_crash = off		# reinitialize after backend crash?
 # default postgresql.conf.  Note that these are directives, not variable
 # assignments, so they can usefully be given more than once.
 
-# Automatically generated optimizations
 # User-supplied custom parameters, override any automatically generated ones
+include_if_exists '/etc/postgresql-custom/supautils.conf'
 
 # WAL-G specific configurations
 
@@ -283,6 +286,7 @@ restart_after_crash = off		# reinitialize after backend crash?
 # Add settings for extensions here
 auto_explain.log_min_duration = 10s
 cron.database_name = 'postgres'
+pg_net.username = 'postgres'
 pgsodium.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 vault.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 wal_log_hints = 'on'

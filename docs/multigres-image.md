@@ -19,6 +19,7 @@ dependencies, copies config files, and runs database migrations.
 | Config source | `/etc/postgresql/postgresql.conf` | Same |
 | Data directory | `/var/lib/postgresql/data` | Same |
 | pgsodium | Enabled | **Not enabled** (extension not created) |
+| supautils | Enabled | Enabled |
 | supabase_vault | Enabled | Enabled |
 | pgsodium_getkey.sh | Present | Present (required by vault at startup) |
 

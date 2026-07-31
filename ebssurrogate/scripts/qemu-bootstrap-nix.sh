@@ -22,7 +22,20 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	apt-get update && sudo apt-get install software-properties-common e2fsprogs nfs-common locales iptables arptables ebtables ufw logrotate -y
+	apt-get update
+	apt-get install -y \
+		arptables \
+		e2fsprogs \
+		ebtables \
+		gpg \
+		iptables \
+		less \
+		locales \
+		logrotate \
+		nfs-common \
+		software-properties-common \
+		ufw \
+		;
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
 	# add-apt-repository --yes --update ppa:ansible/ansible &&
 	sudo apt-get install ansible -y
@@ -37,7 +50,7 @@ callbacks_enabled = timer, profile_tasks, profile_roles
 EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook ./ansible/playbook.yml --extra-vars '{"nixpkg_mode": true, "debpkg_mode": false, "stage2_nix": false, "qemu_mode": true}' \
+	ansible-playbook ./ansible/playbook.yml --extra-vars '{"stage2": false, "qemu": true}' \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major=${POSTGRES_MAJOR_VERSION}" \
@@ -103,7 +116,7 @@ EOF
 	# Run Ansible playbook
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
-		--extra-vars '{"nixpkg_mode": false, "stage2_nix": true, "debpkg_mode": false, "qemu_mode": true}' \
+		--extra-vars '{"stage2": true, "qemu": true}' \
 		--extra-vars "git_commit_sha=${GIT_SHA}" \
 		--extra-vars "postgresql_version=postgresql_${POSTGRES_MAJOR_VERSION}" \
 		--extra-vars "postgresql_major_version=${POSTGRES_MAJOR_VERSION}" \

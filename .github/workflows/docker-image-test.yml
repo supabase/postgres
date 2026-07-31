@@ -38,11 +38,6 @@ jobs:
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
-        with:
-          push-to-cache: 'false'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Check Docker image changes
         id: check
@@ -61,22 +56,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { dockerfile: Dockerfile-15,          target: "",                  name: 15                      }
-          - { dockerfile: Dockerfile-17,          target: "",                  name: 17                      }
-          - { dockerfile: Dockerfile-orioledb-17, target: "",                  name: orioledb-17             }
-          - { dockerfile: Dockerfile-multigres,   target: variant-17,          name: multigres-17            }
-          - { dockerfile: Dockerfile-multigres,   target: variant-orioledb-17, name: multigres-orioledb-17   }
+          # CHANGED: Dockerfile-15/17 replaced by parameterised Dockerfile-supabase.
+          # pg_version is passed as --build-arg PG_VERSION to select the PostgreSQL version.
+          - dockerfile: Dockerfile-supabase
+            name: 15
+            pg_version: "15"
+          - dockerfile: Dockerfile-supabase
+            name: 17
+            pg_version: "17"
+          - dockerfile: Dockerfile-orioledb-17
+            name: orioledb-17
+            pg_version: "17"
+          # CHANGED: base_dockerfile causes the build step to build the supabase base image
+          # locally first and pass it as SUPABASE_IMAGE. The variant-orioledb-17 entry was
+          # removed — that target does not exist in Dockerfile-multigres.
+          - dockerfile: Dockerfile-multigres
+            name: multigres-17
+            pg_version: "17"
+            base_dockerfile: Dockerfile-supabase
     steps:
       - name: Checkout Repo
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
-        with:
-          push-to-cache: 'false'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Create Docker context
         run: docker context create builders
@@ -89,32 +92,45 @@ jobs:
       - name: Build Docker image
         run: |
           echo "Building ${{ matrix.name }}..."
-          TARGET_ARG=""
-          if [ -n "${{ matrix.target }}" ]; then
-            TARGET_ARG="--target ${{ matrix.target }}"
+          # CHANGED: pass PG_VERSION for Dockerfile-supabase and Dockerfile-multigres builds.
+          PG_VERSION_ARG=""
+          if [ -n "${{ matrix.pg_version }}" ]; then
+            PG_VERSION_ARG="--build-arg PG_VERSION=${{ matrix.pg_version }}"
           fi
-          docker build -f "${{ matrix.dockerfile }}" $TARGET_ARG \
+          # CHANGED: layered images (multigres) need their base image available locally.
+          # Each matrix job runs on an isolated runner, so we build the base inline here
+          # and pass it as SUPABASE_IMAGE rather than pulling from a registry.
+          BASE_IMAGE_ARG=""
+          if [ -n "${{ matrix.base_dockerfile }}" ]; then
+            docker build -f "${{ matrix.base_dockerfile }}" \
+              --build-arg PG_VERSION=${{ matrix.pg_version }} \
+              --target production \
+              -t "pg-docker-test:base-${{ matrix.name }}" \
+              .
+            BASE_IMAGE_ARG="--build-arg SUPABASE_IMAGE=pg-docker-test:base-${{ matrix.name }}"
+          fi
+          docker build -f "${{ matrix.dockerfile }}" --target production $PG_VERSION_ARG $BASE_IMAGE_ARG \
             -t "pg-docker-test:${{ matrix.name }}" \
             -t "supabase-postgres:${{ matrix.name }}-analyze" \
             .
 
       - name: Run image size analysis
-        if: ${{ matrix.target == '' }}
+        if: ${{ matrix.base_dockerfile == '' }}
         run: |
           echo "=== Image Size Analysis for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#image-size-analyzer -- --image Dockerfile-${{ matrix.name }} --no-build
+          nix run --accept-flake-config .#image-size-analyzer -- --image ${{ matrix.dockerfile }} --pg-version ${{ matrix.pg_version }} --no-build
 
       - name: Run Docker image tests
-        if: ${{ matrix.target == '' }}
+        if: ${{ matrix.base_dockerfile == '' }}
         run: |
           echo "=== Running tests for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#docker-image-test -- --no-build Dockerfile-${{ matrix.name }}
+          nix run --accept-flake-config .#docker-image-test -- --no-build --pg-version ${{ matrix.pg_version }} ${{ matrix.dockerfile }}
 
       - name: Run multigres Docker image tests
-        if: ${{ matrix.target != '' }}
+        if: ${{ matrix.base_dockerfile != '' }}
         run: |
           echo "=== Running tests for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#docker-image-test -- --no-build --target ${{ matrix.target }} ${{ matrix.dockerfile }}
+          nix run --accept-flake-config .#docker-image-test -- --no-build --target production ${{ matrix.dockerfile }}
 
       - name: Show container logs on failure
         if: failure()
@@ -130,6 +146,7 @@ jobs:
         run: |
           docker ps -a --filter "name=pg-test-${{ matrix.name }}" -q | xargs -r docker rm -f || true
           docker rmi "pg-docker-test:${{ matrix.name }}" || true
+          docker rmi "pg-docker-test:base-${{ matrix.name }}" || true  # CHANGED: remove ephemeral base image built for layered builds
           docker rmi "supabase-postgres:${{ matrix.name }}-analyze" || true
 
   skip-notification:

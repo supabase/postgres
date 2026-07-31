@@ -13,10 +13,10 @@
 
 - name: PgBouncer - download latest release
   ansible.builtin.get_url:
-    checksum: "{{ pgbouncer_release_checksum }}"
+    url: "{{ pgbouncer_artifacts['url'] }}"
+    checksum: "{{ pgbouncer_artifacts['checksum'] }}"
     dest: "/tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz"
     timeout: 60
-    url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
   register: download_result
   until: download_result is succeeded
   retries: 3
@@ -69,6 +69,7 @@
     - { mode: '0775', dir: '/etc/pgbouncer-custom' }
 
 - name: create PgBouncer placeholder config files
+  when: not stage2
   ansible.builtin.file:
     group: 'pgbouncer'
     mode: '0664'
@@ -81,7 +82,6 @@
     - 'custom-overrides.ini'
     - 'generated-optimizations.ini'
     - 'ssl-config.ini'
-  when: nixpkg_mode
 
 - name: PgBouncer - adjust pgbouncer.ini
   ansible.builtin.copy:

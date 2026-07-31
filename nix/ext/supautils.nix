@@ -8,7 +8,7 @@
 stdenv.mkDerivation rec {
   pname = "supautils";
   name = pname;
-  version = "3.2.2";
+  version = "3.4.0";
 
   buildInputs = [ postgresql ];
 
@@ -16,7 +16,7 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-Oi35fel2Yp58eHsWVOXtxAo/s0RAbUxJEBxPrYRK+cs=";
+    hash = "sha256-O2zVVVf2OFTCc4BYHuGJ67odU0TwMnTJQuz9uk+a4/0=";
   };
 
   installPhase = ''
@@ -28,7 +28,6 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "PostgreSQL extension for enhanced security";
     homepage = "https://github.com/supabase/${pname}";
-    maintainers = with maintainers; [ steve-chavez ];
     platforms = postgresql.meta.platforms;
     license = licenses.postgresql;
   };

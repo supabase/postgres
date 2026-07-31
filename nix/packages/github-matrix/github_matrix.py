@@ -187,7 +187,7 @@ def process_nix_eval_jobs_stdout(
     for line in stdout.splitlines():
         result = parse_nix_eval_line(line, drv_paths)
         if result.is_err():
-            errors_list.append(result._value)
+            errors.append(result._value)
         elif result._value is not None:
             packages.append(result._value)
 
@@ -258,7 +258,7 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
         case (True, _, "darwin", "aarch64"):
             return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
         case (True, _, "linux", "aarch64"):
-            specs = Specs(16, "ubuntu-2404-arm")
+            return {"labels": ["arm-native-runner"]}
         case (True, _, "linux", "x86_64"):
             specs = Specs(16, "ubuntu-2404")
 

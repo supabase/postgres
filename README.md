@@ -69,6 +69,8 @@ Here's a comprehensive overview of the project's directory structure:
 | migrations/tests/extensions/ | Extension migration tests |
 | Dockerfile-15 | Docker image definition for PostgreSQL 15 |
 | Dockerfile-17 | Docker image definition for PostgreSQL 17 |
+| Dockerfile-supabase | Parameterised supabase base image (supports any PostgreSQL major version via `--build-arg PG_VERSION=17`) |
+| Dockerfile-multigres | Multigres image layered on top of `Dockerfile-supabase` |
 | **tests/** | Integration and system tests |
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
@@ -124,7 +126,7 @@ The project uses Nix as its build system, which provides:
 
 ## Common Tasks
 
-To skip hours of building and download instead, configure the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
+To skip hours of building and download packages instead, start using the Supabase Postgres Nix binary cache: [nix/docs/binary-cache.md](nix/docs/binary-cache.md).
 
 ### Building Locally
 
@@ -161,11 +163,39 @@ docker build -f Dockerfile-15 -t supabase-postgres:15 .
 docker build -f Dockerfile-17 -t supabase-postgres:17 .
 ```
 
+#### Supabase base image (version-parameterised)
+
+`Dockerfile-supabase` is a single Dockerfile that can target any supported PostgreSQL major version via `--build-arg`:
+
+```bash
+# Build for PostgreSQL 17 (default)
+docker build -f Dockerfile-supabase -t supabase-postgres:17 .
+
+# Build for PostgreSQL 15
+docker build -f Dockerfile-supabase --build-arg PG_VERSION=15 -t supabase-postgres:15 .
+```
+
+#### Multigres image
+
+`Dockerfile-multigres` layers on top of the supabase image, adding `pgctld` and `pgbackrest`. Build the supabase image first, then point `SUPABASE_IMAGE` at it:
+
+```bash
+# Build supabase base, then multigres on top
+docker build -f Dockerfile-supabase -t supabase-postgres:17 .
+docker build -f Dockerfile-multigres -t multigres:17 .
+
+# Target a different PostgreSQL version
+docker build -f Dockerfile-supabase --build-arg PG_VERSION=15 -t supabase-postgres:15 .
+docker build -f Dockerfile-multigres \
+    --build-arg SUPABASE_IMAGE=supabase-postgres:15 \
+    -t multigres:15 .
+```
+
 ## Next Steps
 
 Now that you understand the basics of Supabase Postgres:
 
-* Check the [Installation Guide](https://github.com/supabase/postgres/wiki) for deployment options
+* Check the [build guide](nix/docs/build-postgres.md) and [Docker docs](nix/docs/docker.md) for deployment options
 * Explore the [Extension Documentation](#) to learn about available extensions
 * Review [Contributing Guidelines](CONTRIBUTING.md) if you want to contribute
 * Join the [Supabase Community](https://github.com/supabase/postgres/discussions) for questions and discussions
@@ -174,7 +204,7 @@ Now that you understand the basics of Supabase Postgres:
 
 * **GitHub Issues** - For bugs and feature requests
 * **Discussions** - For questions and general discussion
-* **Wiki** - For detailed documentation
+* **[nix/docs](nix/docs/README.md)** - For detailed documentation
 * **Discord** - For real-time chat with the community
 
 ---
@@ -189,7 +219,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
-## Extensions 
+## Extensions
 
 ### PostgreSQL 15 Extensions
 | Extension | Version | Description |
@@ -295,16 +325,15 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.19.0](http://www.pgbouncer.org/changelog.html#pgbouncer-119x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v14.5](https://github.com/PostgREST/postgrest/releases/tag/v14.5) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/stable/) | [v14.15](https://github.com/PostgREST/postgrest/releases/tag/v14.15) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
 
 
 ## Install
 
-See all installation instructions in the [repo wiki](https://github.com/supabase/postgres/wiki).
+See the [documentation index](nix/docs/README.md) for installation instructions.
 
-[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](https://github.com/supabase/postgres/wiki/Docker)
-[![AWS](https://github.com/supabase/postgres/blob/develop/docs/img/aws.png)](https://github.com/supabase/postgres/wiki/AWS-EC2)
+[![Docker](https://github.com/supabase/postgres/blob/develop/docs/img/docker.png)](nix/docs/docker.md)
 
 <!-- ### Marketplace Images
 TODO: find way to automate this

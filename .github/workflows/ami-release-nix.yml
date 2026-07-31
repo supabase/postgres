@@ -81,11 +81,10 @@ jobs:
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
+          push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
       - name: Build AMI
         id: build-ami
@@ -135,16 +134,6 @@ jobs:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Upload software manifest to s3 staging
-        run: |
-          cd ansible
-          ansible-playbook -i localhost \
-            -e "ami_release_version=$POSTGRES_SUPABASE_VERSION" \
-            -e "internal_artifacts_bucket=${{ secrets.ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
-            -e "arch=${{ matrix.target.arch }}" \
-            manifest-playbook.yml
-
       - name: Upload nix flake revision to s3 staging
         run: |
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/20.04.tar.gz"
@@ -156,16 +145,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Upload software manifest to s3 prod
-        run: |
-          cd ansible
-          ansible-playbook -i localhost \
-            -e "ami_release_version=$POSTGRES_SUPABASE_VERSION" \
-            -e "internal_artifacts_bucket=${{ secrets.PROD_ARTIFACTS_BUCKET }}" \
-            -e "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
-            -e "arch=${{ matrix.target.arch }}" \
-            manifest-playbook.yml
 
       - name: Upload nix flake revision to s3 prod
         run: |
@@ -224,7 +203,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
 
-      - name: Create CLI tag for PG 17
+      - name: Create CLI tag for PG 17 & Trigger Release
         if: matrix.postgres_version == '17' && matrix.target.arch == 'arm64' && github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -234,12 +213,7 @@ jobs:
           git tag "${CLI_TAG}" "${{ github.sha }}"
           git push origin "${CLI_TAG}"
 
-      - name: Trigger CLI release workflow for PG 17
-        if: matrix.postgres_version == '17' && github.event_name != 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          CLI_TAG="v${POSTGRES_SUPABASE_VERSION}-cli"
+          echo "Triggering Release Workflow: ${CLI_TAG}"
           gh workflow run cli-release.yml \
             --ref "${CLI_TAG}" \
             -f version="${CLI_TAG}"

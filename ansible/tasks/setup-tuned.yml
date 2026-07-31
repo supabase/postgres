@@ -1,6 +1,4 @@
 - name: 'tuned - Install and configure tuned'  # noqa: name[casing]
-  when:
-    - (stage2_nix or nixpkg_mode or debpkg_mode)
   block:
     - name: 'tuned - Install tuned'  # noqa: name[casing]
       ansible.builtin.apt:
@@ -71,6 +69,7 @@
       become: true
 
     - name: 'tuned - Configure Intel CPUs for maximum performance'  # noqa: name[casing]
+      when: ansible_facts['processor'][0] is search('GenuineIntel', ignorecase=True)
       community.general.ini_file:
         create: true
         group: 'root'
@@ -91,8 +90,6 @@
           value: '100'
       loop_control:
         loop_var: 'intel_item'
-      when:
-        - ansible_facts['processor'][0] is search('GenuineIntel', ignorecase=True)
 
     - name: 'tuned - Set sysctl parameters'  # noqa: name[casing]
       community.general.ini_file:
@@ -175,6 +172,7 @@
         loop_var: 'sysctl_item'
 
     - name: 'tuned - Set kernel.panic=10'  # noqa: name[casing]
+      when: not stage2
       community.general.ini_file:
         create: true
         group: 'root'
@@ -186,12 +184,9 @@
         state: 'present'
         value: '10'
       become: true
-      when:
-        - (debpkg_mode or nixpkg_mode)
 
     - name: 'tuned - Enable zswap if swap is present'  # noqa: name[casing]
-      when:
-        - ansible_facts['swaptotal_mb'] > 0
+      when: ansible_facts['swaptotal_mb'] > 0
       block:
         - name: 'tuned - Decrease the kernel swappiness'  # noqa: name[casing]
           community.general.ini_file:
@@ -222,8 +217,6 @@
               value: 'zstd'
             - param: 'max_pool_percent'
               value: '10'
-            - param: 'zpool'
-              value: 'zsmalloc'
             - param: 'enabled'
               value: 'Y'
           loop_control:
@@ -234,13 +227,12 @@
         daemon_reload: true
         enabled: true
         name: 'tuned'
-        state: "{{ 'restarted' if stage2_nix else 'stopped' }}"
+        state: "{{ 'restarted' if stage2 else 'stopped' }}"
       become: true
 
     - name: 'tuned - Activate the PostgreSQL tuned profile'  # noqa: name[casing]
+      when: stage2
       ansible.builtin.command:
         cmd: 'tuned-adm profile postgresql'
       become: true
       changed_when: false
-      when:
-        - stage2_nix

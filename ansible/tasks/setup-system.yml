@@ -1,6 +1,5 @@
-- name: Execute tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
+- name: Execute stage1 tasks
+  when: not stage2
   block:
     - name: System - apt update and apt upgrade
       ansible.builtin.apt:
@@ -77,26 +76,23 @@
         owner: 'root'
         group: 'root'
 
-- name: Install other useful tools
-  ansible.builtin.apt:
-    pkg:
-      - less
-    update_cache: true
-  when:
-    - qemu_mode is defined
+- name: Disable algif_aead module autoload for Copy Fail mitigation
+  ansible.builtin.copy:
+    content: |
+      install algif_aead /bin/false
+    dest: /etc/modprobe.d/supabase-disable-algif_aead.conf
+    mode: '0644'
+    owner: root
+    group: root
 
-- name: Set the platform arch as a fact
-  ansible.builtin.set_fact:
-    platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
-  tags:
-    - update
-    - update-only
-  when:
-    - (debpkg_mode or nixpkg_mode or stage2_nix)
+- name: Unload algif_aead module if currently loaded
+  ansible.builtin.command:
+    cmd: rmmod algif_aead
+  changed_when: false
+  failed_when: false
 
-- name: Execute more tasks when (debpkg_mode or nixpkg_mode)
-  when:
-    - (debpkg_mode or nixpkg_mode)
+- name: Execute more tasks when stage1
+  when: not stage2
   block:
     - name: Custom systemd overrides for resolved
       ansible.builtin.copy:
@@ -155,6 +151,7 @@
         group: 'root'
 
 - name: set hosts file
+  when: stage2
   ansible.builtin.copy:
     content: |
       127.0.0.1   localhost
@@ -163,5 +160,15 @@
     mode: '0644'
     owner: 'root'
     group: 'root'
-  when:
-    - (debpkg_mode or stage2_nix)
+
+- name: Configure Apt
+  ansible.builtin.copy:
+    content: |
+      Acquire::Retries "3";
+      Acquire::http::Timeout "20";
+      Acquire::https::Timeout "20";
+      DPkg::Lock::Timeout "300";
+    dest: /etc/apt/apt.conf.d/99supabase
+    owner: root
+    group: root
+    mode: "0644"
