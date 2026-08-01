@@ -124,6 +124,20 @@ source "amazon-ebssurrogate" "source" {
   }
 
   ena_support = true
+
+  # Builder instance's own boot root (from the source Ubuntu AMI, device
+  # /dev/sda1) - separate from the surrogate root (/dev/xvdf) being
+  # assembled below. Ansible/apt provisioning runs directly on this disk
+  # before the chroot into /mnt, and the default Ubuntu AMI root size was
+  # too small, causing "No space left on device" failures during
+  # provisioning (reproduced independent of the surrogate/build-vol sizes).
+  launch_block_device_mappings {
+    device_name           = "/dev/sda1"
+    delete_on_termination = true
+    volume_size           = 16
+    volume_type           = "gp3"
+  }
+
   launch_block_device_mappings {
     device_name           = "/dev/xvdf"
     delete_on_termination = true
