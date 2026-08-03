@@ -81,6 +81,12 @@ jobs:
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: ./.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
       - name: Build AMI
         id: build-ami
         uses: ./.github/actions/build-ami
@@ -89,6 +95,7 @@ jobs:
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
+          packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
