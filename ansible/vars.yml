@@ -11,9 +11,9 @@ postgres_major:
 # This is the source of truth for Postgres versions used in the Dockerfiles, and
 # is used to derive image tags and base images in the release matrix.
 postgres_release:
-  postgresorioledb-17: "17.9.0.013-orioledb"
-  postgres17: "17.6.1.160"
-  postgres15: "15.14.1.160"
+  postgresorioledb-17: "17.9.0.014-orioledb-test-3"
+  postgres17: "17.6.1.161-test-3"
+  postgres15: "15.14.1.161-test-3"
 # Docker release matrix — base images built first, layered images built on top.
 # tag and base_tag are derived at build time from postgres_release via release_key.
 # tag_suffix is appended to the release version to form the final image tag.
@@ -67,14 +67,14 @@ supabase_admin_agent_splay: 30s
 # Checksums can be verified or updated by running:                                                            #
 # nix run .#update-ansible-artifacts                                                                          #
 ###############################################################################################################
-adminapi_release: 0.112.1
+adminapi_release: 0.114.0
 adminapi_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
-    checksum: sha256:e7b94f29a7387f336846a714e3b2202c2579027efd30a3d919b41b02fd288569
+    checksum: sha256:2e2323c193c7eb3688b92c0546d49e56e96f0b88d1a78dd92ab214b7082e93ba
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
-    checksum: sha256:893f35ff3fcfc6088127d96998325be34bc4dc7ba59f74d38f47790beceebaf5
+    checksum: sha256:235dc47bfb5f6986bf0bc159162b486131d163c6cc1afe5561776d8ba93174d7
 adminmgr_release: 0.43.6
 adminmgr_artifacts:
   amd64:
