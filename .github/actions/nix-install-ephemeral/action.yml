@@ -19,7 +19,7 @@ runs:
   using: composite
   steps:
     - name: validate push-to-cache required inputs
-      if: inputs.push-to-cache == true
+      if: inputs.push-to-cache == 'true'
       shell: bash
       run: |
         abort() { echo "$@" >&2; exit 1; }
@@ -31,7 +31,7 @@ runs:
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
-      if: inputs.push-to-cache == true
+      if: inputs.push-to-cache == 'true'
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
@@ -45,7 +45,7 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
         GITHUB_TOKEN: ${{ github.token }}
         NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
-        PUSH_TO_CACHE: ${{ inputs.push-to-cache == true }}
+        PUSH_TO_CACHE: ${{ inputs.push-to-cache == 'true' }}
 
     - name: verify nix in path
       shell: bash
