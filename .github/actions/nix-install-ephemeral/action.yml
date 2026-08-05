@@ -23,8 +23,11 @@ runs:
       shell: bash
       run: |
         abort() { echo "$@" >&2; exit 1; }
-        [[ -z "${{ inputs.nix-signing-key}}" ]] && abort "nix-signing-key is required when push-to-cache is true"
-        [[ -z "${{ inputs.role-to-assume}}" ]] && abort "role-to-assume is required when push-to-cache is true"
+        [[ -n ${NIX_SIGNING_KEY:+ok} ]] || abort "nix-signing-key is required when push-to-cache is true"
+        [[ -n ${ROLE_TO_ASSUME:+ok} ]] || abort "role-to-assume is required when push-to-cache is true"
+      env:
+        NIX_SIGNING_KEY: ${{ inputs.nix-signing-key }}
+        ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
