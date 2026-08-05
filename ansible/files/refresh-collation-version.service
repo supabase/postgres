@@ -1,0 +1,22 @@
+[Unit]
+Description=Refresh collation versions and reindex affected indexes
+Documentation=file:///usr/local/bin/refresh_collation.sh
+Requires=postgresql.service
+After=postgresql.service
+# Symmetric ordering: hold the traffic-facing services until the gate finishes,
+# without editing their unit files. Ordering only applies to units that exist and
+# are started in the same boot, so listing an absent one is harmless.
+Before=pgbouncer.service postgrest.service gotrue.service envoy.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Rely on the same generous ceiling as postgresql.service; plain REINDEX INDEX is
+# atomic per index, so a kill mid-run just leaves the remainder to the backstop.
+TimeoutStartSec=86400
+# Leading '-' plus the script's own `exit 0` enforce fail-open: this gate must
+# never block boot.
+ExecStart=-/usr/local/bin/refresh_collation.sh
+
+[Install]
+WantedBy=multi-user.target
