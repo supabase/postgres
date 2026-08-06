@@ -15,6 +15,7 @@ set client_min_messages = warning;
 -- migrate-tool) source prime-superuser.sql in addition to this file.
 create extension if not exists address_standardizer;
 create extension if not exists address_standardizer_data_us;
+create extension if not exists amcheck;
 create extension if not exists autoinc;
 create extension if not exists bloom;
 create extension if not exists btree_gin;
