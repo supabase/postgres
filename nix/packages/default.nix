@@ -74,7 +74,7 @@
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
-          pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
+          pg-backrest = pkgs.callPackage ./pg-backrest.nix { };
           pgctld = pkgs.callPackage ./pgctld.nix {
             multigres-src = inputs.multigres;
           };
