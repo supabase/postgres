@@ -252,17 +252,8 @@
   loop:
     - 'database-optimizations.service'
     - 'postgresql_config/postgresql.service'
-    - 'refresh-collation-version.service'
   loop_control:
     loop_var: 'systemd_svc_item'
-
-- name: copy boot-time collation refresh script
-  ansible.builtin.copy:
-    dest: '/usr/local/bin/refresh_collation.sh'
-    group: 'root'
-    mode: '0755'
-    owner: 'root'
-    src: 'files/refresh_collation.sh'
 
 - name: initialize pg required state
   become: true
@@ -332,13 +323,6 @@
     daemon_reload: true
     enabled: true
     name: 'postgresql'
-
-- name: Enable boot-time collation refresh gate
-  when: stage2
-  ansible.builtin.systemd_service:
-    daemon_reload: true
-    enabled: true
-    name: 'refresh-collation-version'
 
 - name: Add lang and locale items to .bashrc
   when: not stage2

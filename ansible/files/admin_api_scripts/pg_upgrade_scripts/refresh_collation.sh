@@ -1,16 +1,16 @@
 #! /usr/bin/env bash
 
-## Boot-time collation gate: runs once after postgresql.service and BEFORE the
-## traffic-facing services (ordered via systemd). When a new AMI ships an upgraded
-## glibc and/or ICU over an existing data volume, it reindexes every affected
-## index and then refreshes the recorded collation versions, so no warnings or
-## deferred reindexing remain once traffic is admitted. Plain (non-concurrent)
-## REINDEX is used since no clients are connected yet; reindex-before-refresh also
-## makes the bare REFRESH safe for both providers (libc 'c' and ICU 'i').
+## Collation refresh helper: when a new AMI ships an upgraded glibc and/or ICU
+## over an existing data volume, it reindexes every affected index and then
+## refreshes the recorded collation versions, so no warnings or deferred
+## reindexing remain. REINDEX ... CONCURRENTLY is used so the rebuild is safe to
+## run while clients are connected; reindex-before-refresh also makes the bare
+## REFRESH safe for both providers (libc 'c' and ICU 'i').
 ##
-## FAIL-OPEN: per-statement errors are logged and skipped and the script exits 0,
-## so the gate never wedges boot. The platform refreshCollationVersion task
-## (REINDEX CONCURRENTLY under traffic) is the backstop for oversized indexes.
+## FAIL-OPEN: per-statement errors are logged and skipped and the script exits 0.
+## A failed CONCURRENTLY rebuild may leave an INVALID leftover index (_ccnew);
+## the platform refreshCollationVersion task is the backstop that retries those
+## and any oversized indexes.
 
 set -uo pipefail # deliberately NOT -e: we handle errors per statement (fail-open)
 
@@ -27,8 +27,7 @@ run_sql() {
 	psql -h localhost -U supabase_admin -v ON_ERROR_STOP=1 --no-psqlrc "$@"
 }
 
-# Retry a command a few times (Postgres should already be up via
-# After=postgresql.service, but guard against a slow socket at boot).
+# Retry a command a few times to guard against a not-yet-ready Postgres socket.
 retry() {
 	local attempts=$1
 	shift
@@ -123,10 +122,13 @@ process_database() {
 
 	# a. Reindex affected indexes BEFORE refreshing (PostgreSQL ALTER COLLATION
 	#    docs) so a stale index is never left masked by an updated catalog.
+	#    CONCURRENTLY keeps the table writable throughout; each statement runs on
+	#    its own connection (autocommit) since REINDEX CONCURRENTLY cannot run
+	#    inside a transaction block.
 	while IFS= read -r index; do
 		[ -z "$index" ] && continue
 		log "reindex $db :: $index"
-		if ! run_sql -d "$db" -c "reindex index $index;"; then
+		if ! run_sql -d "$db" -c "reindex index concurrently $index;"; then
 			log "WARN reindex failed on $db :: $index (continuing, fail-open)"
 		fi
 	done < <(run_sql -d "$db" -Atq -c "$(affected_indexes_sql)")
