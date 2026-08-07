@@ -189,7 +189,7 @@ process_database() {
 	fi
 	while IFS= read -r oid; do
 		[ -z "$oid" ] && continue
-		if ! [[ "$oid" =~ ^[0-9]+$ ]]; then
+		if ! [[ $oid =~ ^[0-9]+$ ]]; then
 			log "WARN ignoring non-numeric index oid '$oid' on $db"
 			SCRIPT_FAILED=1
 			reindex_failed=1
@@ -201,7 +201,7 @@ process_database() {
 			SCRIPT_FAILED=1
 			reindex_failed=1
 		fi
-	done <<< "$oids"
+	done <<<"$oids"
 
 	# b. Refresh collation versions — only if every reindex succeeded, else we'd
 	#    erase the signal that the index still needs rebuilding.
@@ -219,7 +219,7 @@ process_database() {
 	fi
 	while IFS= read -r oid; do
 		[ -z "$oid" ] && continue
-		if ! [[ "$oid" =~ ^[0-9]+$ ]]; then
+		if ! [[ $oid =~ ^[0-9]+$ ]]; then
 			log "WARN ignoring non-numeric collation oid '$oid' on $db"
 			SCRIPT_FAILED=1
 			continue
@@ -229,7 +229,7 @@ process_database() {
 			log "WARN collation refresh failed on $db :: collation oid $oid (continuing)"
 			SCRIPT_FAILED=1
 		fi
-	done <<< "$oids"
+	done <<<"$oids"
 }
 
 main() {
@@ -250,7 +250,7 @@ main() {
 	# Unknown/non-numeric version must not pass the floor check — skip, don't proceed.
 	local svn
 	svn="$(run_sql -d postgres -Atq -c "select current_setting('server_version_num');")" || svn=""
-	if ! [[ "$svn" =~ ^[0-9]+$ ]]; then
+	if ! [[ $svn =~ ^[0-9]+$ ]]; then
 		log "could not read a numeric server_version_num (got '${svn}'); skipping"
 		return 0
 	fi
@@ -270,7 +270,7 @@ main() {
 	while IFS= read -r db; do
 		[ -z "$db" ] && continue
 		process_database "$db"
-	done <<< "$dbs"
+	done <<<"$dbs"
 
 	# c. Database-default versions (shared catalog), after every db's default-
 	#    collated indexes were reindexed above. Includes template0.
@@ -282,7 +282,7 @@ main() {
 	else
 		while IFS= read -r oid; do
 			[ -z "$oid" ] && continue
-			if ! [[ "$oid" =~ ^[0-9]+$ ]]; then
+			if ! [[ $oid =~ ^[0-9]+$ ]]; then
 				log "WARN ignoring non-numeric database oid '$oid'"
 				SCRIPT_FAILED=1
 				continue
@@ -292,7 +292,7 @@ main() {
 				log "WARN database-default refresh failed :: database oid $oid (continuing)"
 				SCRIPT_FAILED=1
 			fi
-		done <<< "$oids"
+		done <<<"$oids"
 	fi
 
 	log "done (failed=$SCRIPT_FAILED)"
