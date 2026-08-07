@@ -30,6 +30,6 @@ cat >"$NIXCONFDIR/upload-to-cache.sh" <<-EOF
 	export IFS=' '
 	echo $NIXBINDIR/nix copy --max-jobs 5 --to 's3://nix-postgres-artifacts?secret-key=$NIXCONFDIR/nix-secret-key' \$OUT_PATHS
 EOF
-chmod o+x "$NIXCONFDIR/upload-to-cache.sh"
+chmod 755 "$NIXCONFDIR/upload-to-cache.sh"
 
 echo "post-build-hook = $NIXCONFDIR/upload-to-cache.sh"
