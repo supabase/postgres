@@ -170,16 +170,14 @@ def maybe_freeze_new_row(history, base_ref):
 
 
 def get_current_point():
-    try:
-        commit, date = git_short_hash("HEAD"), git_date("HEAD")
-    except subprocess.CalledProcessError:
-        commit, date = "worktree", "unknown"
-    dirty = sh(["git", "diff", "--name-only", "--", CONFIG_NIX_PATH, VERSIONS_JSON_PATH, SUPAUTILS_PATH, ORIOLEDB_PATH]).strip()
-    if dirty:
-        commit, date = commit + "+local", "uncommitted"
+    # Deliberately not tied to HEAD's commit hash: the open/current period has
+    # no fixed identity yet, and every commit changes HEAD regardless of
+    # whether the tracked extension-defining files changed. Using a real hash
+    # here would make the checked-in output go stale on every commit, even
+    # unrelated ones.
     return {
-        "commit": commit,
-        "date": date,
+        "commit": "current",
+        "date": "current",
         "postgres": parse_config_nix(read_worktree(CONFIG_NIX_PATH)),
         "extensions": load_extensions_snapshot(read_worktree),
     }
