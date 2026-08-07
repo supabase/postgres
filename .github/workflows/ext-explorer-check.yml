@@ -1,0 +1,52 @@
+name: Extension explorer up to date
+
+on:
+  pull_request:
+    paths:
+      - "nix/config.nix"
+      - "nix/ext/versions.json"
+      - "nix/ext/supautils.nix"
+      - "nix/ext/orioledb.nix"
+      - "nix/ext/version-history.json"
+      - "nix/packages/ext-explorer.nix"
+      - "nix/packages/ext-explorer/**"
+      - "pg-extension-explorer.html"
+  push:
+    branches: [main]
+    paths:
+      - "nix/config.nix"
+      - "nix/ext/versions.json"
+      - "nix/ext/supautils.nix"
+      - "nix/ext/orioledb.nix"
+      - "nix/ext/version-history.json"
+      - "nix/packages/ext-explorer.nix"
+      - "nix/packages/ext-explorer/**"
+      - "pg-extension-explorer.html"
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Check ext-explorer output is up to date
+        run: |
+          set -Eeuo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="HEAD^"
+          fi
+          nix run --accept-flake-config .#ext-explorer -- --check --base "$BASE"
