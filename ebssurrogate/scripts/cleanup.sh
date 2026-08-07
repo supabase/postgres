@@ -14,37 +14,31 @@ if [[ ! -d /tmp ]]; then
 fi
 chmod 1777 /tmp
 
-if [ -n "$(command -v yum)" ]; then
-	yum update -y
-	yum clean all
-elif [ -n "$(command -v apt-get)" ]; then
-	# Cleanup more packages
-	apt-get -y remove --purge \
-		automake \
-		autoconf \
-		autotools-dev \
-		cmake-data \
-		cpp-9 \
-		cpp-10 \
-		gcc-9 \
-		gcc-10 \
-		git \
-		git-man \
-		ansible \
-		libicu-dev \
-		libcgal-dev \
-		libgcc-9-dev \
-		ansible
+# Cleanup more packages
+packages=(
+	ansible
+	ansible
+	autoconf
+	automake
+	autotools-dev
+	cmake-data
+	cpp-10
+	cpp-9
+	gcc-10
+	gcc-9
+	git
+	git-man
+	libcgal-dev
+	libgcc-9-dev
+	libicu-dev
+)
 
-	# add-apt-repository --yes --remove ppa:ansible/ansible
+apt-get --yes remove --purge "${packages[@]}"
+apt-get --yes autoremove
+apt-get --yes autoclean
+apt-get --yes update
+apt-get --yes upgrade
 
-	source /etc/os-release
-
-	apt-get -y update
-	apt-get -y upgrade
-	apt-get -y autoremove
-	apt-get -y autoclean
-fi
 rm -rf /tmp/* /var/tmp/*
 history -c
 cat /dev/null >/root/.bash_history
@@ -59,12 +53,14 @@ chmod 600 /etc/ssh/revoked_keys
 # Securely erase the unused portion of the filesystem
 GREEN='\033[0;32m'
 NC='\033[0m'
-printf "\n${GREEN}Writing zeros to the remaining disk space to securely
-erase the unused portion of the file system.
-Depending on your disk size this may take several minutes.
-The secure erase will complete successfully when you see:${NC}
-    dd: writing to '/zerofile': No space left on device\n
-Beginning secure erase now\n"
+cat <<-EOF
+	$GREEN
+	Writing zeros to the remaining disk space to securely erase the unused portion of the file system.
+	Depending on your disk size this may take several minutes.
+	The secure erase will complete successfully when you see:$NC
+	    dd: writing to '/zerofile': No space left on device
+	Beginning secure erase now
+EOF
 
 dd if=/dev/zero of=/zerofile &
 PID=$!
