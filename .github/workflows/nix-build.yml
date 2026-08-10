@@ -20,10 +20,31 @@ concurrency:
 
 jobs:
   nix-eval:
-    uses: ./.github/workflows/nix-eval.yml
-    secrets:
-      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+    runs-on: blacksmith-32vcpu-ubuntu-2404
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
+
+          sudo systemctl stop nix-daemon.socket || true
+          sudo systemctl stop nix-daemon.service || true
+          sudo pkill -9 nix-daemon || true
+          sleep 2
 
   nix-build-packages-aarch64-linux:
     name: >-
