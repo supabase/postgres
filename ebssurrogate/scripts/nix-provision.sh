@@ -19,7 +19,7 @@ function cleanup_apt {
 
 function update_and_upgrade_apt {
 	apt-get update --yes
-	apt-get upgrade --yes
+	apt-get dist-upgrade --yes
 }
 
 function install_packages {
