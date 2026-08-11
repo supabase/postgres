@@ -161,12 +161,13 @@ EOF
 		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
 		# is stuck at "running" forever instead of reporting the real failure.
 		retry 3 umount $MOUNT_POINT || true
-	fi
 
-	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 		# Warn rather than fail: this runs inside the ERR trap, and aborting here
 		# leaves /tmp/pg-upgrade-status stuck at "running" (see the umount note above).
-		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+		# To see which timers failed, reference TIMERS_TO_DISABLE from common.sh,
+		# and run on this host:
+		# 	systemctl list-timers --all
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers"
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 

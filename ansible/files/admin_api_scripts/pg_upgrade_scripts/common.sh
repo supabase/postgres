@@ -15,10 +15,7 @@ function log {
 }
 
 # Timers that trigger jobs which can be problematic during the upgrade process.
-#   supabase-admin-agent_salt.timer - reapplies host state every 10 minutes:
-#     postgres/service.sls re-enables the postgresql unit and
-#     platform-defaults.sls reloads it. Its only guard is `unless: admin-mgr
-#     is-busy`, and pg_upgrade never takes the admin-mgr host lock.
+#   supabase-admin-agent_salt.timer - reapplies host state every 10 minutes
 #   apt-daily{,-upgrade}.timer - apt-get update and unattended-upgrades contend
 #     for the dpkg lock that initiate.sh needs, and can restart services.
 TIMERS_TO_DISABLE=(
