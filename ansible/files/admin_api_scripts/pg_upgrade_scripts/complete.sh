@@ -313,15 +313,28 @@ function complete_pg_upgrade {
 		retry 3 CI_start_postgres
 	fi
 
+	local warnings=0
+
 	log "6. Starting vacuum analyze"
 	# A failed analyze is not worth failing the whole upgrade for; the status file already reads "complete" and the ERR trap would flip it to "failed"
-	retry 3 start_vacuum_analyze || log "WARNING: vacuum analyze failed after retries"
+	retry 3 start_vacuum_analyze || {
+		log "WARNING: vacuum analyze failed after retries"
+		warnings=1
+	}
 
 	log "6.1. Analyzing partitioned tables"
 	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and autovacuum never analyzes them, so without this they'd have no stats at all
-	retry 3 analyze_partitioned_tables || log "WARNING: partitioned table analyze failed after retries"
+	retry 3 analyze_partitioned_tables || {
+		log "WARNING: partitioned table analyze failed after retries"
+		warnings=1
+	}
 
 	log "Upgrade job completed"
+
+	# Clean runs ship nothing — only warn-but-completed upgrades are reported (hard failures ship via the ERR-trap cleanup)
+	if [ "$warnings" = 1 ]; then
+		ship_logs "$LOG_FILE" || true
+	fi
 }
 
 function copy_configs {
