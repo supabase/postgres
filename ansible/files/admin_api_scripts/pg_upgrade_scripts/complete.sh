@@ -14,6 +14,10 @@ source "$SCRIPT_DIR/common.sh"
 IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
+function log {
+	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
+}
+
 # Wait for the volume mapped to /data to appear before attempting to mount it
 function wait_for_data_device {
 	local fstab_src dev=""
@@ -247,7 +251,7 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
-	echo "1. Mounting data disk"
+	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
 		udevadm settle --timeout=60 || true
@@ -266,12 +270,13 @@ function complete_pg_upgrade {
 	fi
 
 	# copying custom configurations
-	echo "2. Copying custom configurations"
+	log "2. Copying custom configurations"
 	retry 3 copy_configs
 
-	echo "3. Starting postgresql"
+	log "3. Starting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql start
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 	else
 		CI_start_postgres --new-bin
 	fi
@@ -282,28 +287,28 @@ function complete_pg_upgrade {
 	# preserved, but `run_generated_sql` includes `ALTER EXTENSION
 	# supabase_vault UPDATE` which modifies that. So we need to run it
 	# beforehand.
-	echo "3.1. Patch Wrappers server options"
+	log "3.1. Patch Wrappers server options"
 	execute_wrappers_patch
 
-	echo "4. Running generated SQL files"
+	log "4. Running generated SQL files"
 	retry 3 run_generated_sql
 
-	echo "4.1. Applying patches"
+	log "4.1. Applying patches"
 	execute_patches || true
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-	echo "4.2. Applying authentication scheme updates"
+	log "4.2. Applying authentication scheme updates"
 	retry 3 apply_auth_scheme_updates
 
 	sleep 5
 
-	echo "5. Restarting postgresql"
+	log "5. Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql restart
 		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 
-		echo "5.1. Restarting gotrue and postgrest"
+		log "5.1. Restarting gotrue and postgrest"
 		retry 3 service gotrue restart
 		retry 3 service postgrest restart
 
@@ -312,7 +317,7 @@ function complete_pg_upgrade {
 		retry 3 CI_start_postgres
 	fi
 
-	echo "6. Starting vacuum analyze"
+	log "6. Starting vacuum analyze"
 	# A failed analyze is not worth failing the whole upgrade for; the status
 	# file already reads "complete" and the ERR trap would flip it to "failed"
 	retry 3 start_vacuum_analyze || echo "WARNING: vacuum analyze failed after retries"
@@ -359,7 +364,7 @@ function start_vacuum_analyze {
 	fi
 	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
 	local rc=$?
-	echo "Upgrade job completed"
+	log "Upgrade job completed"
 	return $rc
 }
 
