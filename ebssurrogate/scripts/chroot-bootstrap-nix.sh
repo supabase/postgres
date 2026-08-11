@@ -130,7 +130,7 @@ function setup_grub {
 		rm -rf /etc/grub.d/30_os-prober
 		sleep 1
 	fi
-	grub-install /dev/xvdf && update-grub
+	# grub-install /dev/xvdf && update-grub
 }
 
 # skip fsck for first boot
@@ -182,6 +182,14 @@ function create_admin_account {
 	groupadd admin
 }
 
+function create_ubuntu_account {
+	adduser --disabled-password --gecos Ubuntu ubuntu
+	usermod --append --groups sudo ubuntu
+	echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >/etc/sudoers.d/90-cloud-init-users
+	chmod 440 /etc/sudoers.d/90-cloud-init-users
+}
+
+#Set default target as multi-user
 function set_default_target {
 	rm -f /etc/systemd/system/default.target
 	ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
@@ -215,6 +223,7 @@ setup_grub
 setup_apparmor
 setup_hostname
 create_admin_account
+create_ubuntu_account
 set_default_target
 setup_eth0_interface
 disable_sshd_passwd_auth

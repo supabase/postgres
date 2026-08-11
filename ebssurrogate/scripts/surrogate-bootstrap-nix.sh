@@ -186,7 +186,7 @@ function setup_chroot_environment {
 	cp -a /etc/apt/sources.list /mnt/etc/apt/sources.list
 	cp -a /etc/apt/sources.list.d/ubuntu.sources /mnt/etc/apt/sources.list.d/ubuntu.sources
 
-	create_fstab
+	# create_fstab
 
 	# Create mount points and mount the filesystem
 	mkdir -p /mnt/{dev,proc,sys}
@@ -196,7 +196,7 @@ function setup_chroot_environment {
 
 	# Create build mount point and mount
 	mkdir -p /mnt/tmp
-	mount /dev/xvdc /mnt/tmp
+	# mount /dev/xvdc /mnt/tmp
 	chmod 777 /mnt/tmp
 
 	# Copy apparmor profiles
@@ -315,15 +315,16 @@ function clean_system {
 
 # Unmount bind mounts
 function umount_reset_mappings {
-	umount -l /mnt/dev
-	umount -l /mnt/proc
-	umount -l /mnt/sys
-	umount -l /mnt/tmp
-	if [[ $ARCH == arm64 ]]; then
-		umount /mnt/boot/efi
-	fi
-	umount /mnt/data
-	umount /mnt
+	# Keep the bind mounts for the local stage 2 chroot.
+	# umount -l /mnt/dev
+	# umount -l /mnt/proc
+	# umount -l /mnt/sys
+	# umount -l /mnt/tmp
+	# if [[ $ARCH == arm64 ]]; then
+	# 	umount /mnt/boot/efi
+	# fi
+	# umount /mnt/data
+	# umount /mnt
 
 	# Reset device mappings
 	for dev_link in "${blkdev_mappings[@]}" "${partdev_mappings[@]}"; do
@@ -343,9 +344,9 @@ waitfor_boot_finished
 setup_apt
 update_and_upgrade_apt
 install_packages
-device_partition_mappings
-format_and_mount_rootfs
-format_build_partition
+# device_partition_mappings
+# format_and_mount_rootfs
+# format_build_partition
 setup_chroot_environment
 execute_playbook
 update_systemd_services

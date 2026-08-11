@@ -28,17 +28,39 @@ function install_packages {
 }
 
 function install_nix() {
-	curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
-		cat <<-EOF
-			extra-experimental-features = nix-command flakes
-			extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-			extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
-		EOF
-	)
+	if [[ ! -x /nix/var/nix/profiles/default/bin/nix-daemon ]]; then
+		curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
+			cat <<-EOF
+				extra-experimental-features = nix-command flakes
+				extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+				extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+			EOF
+		)
+	fi
+	mkdir -p /nix/var/nix/daemon-socket
+	rm -f /nix/var/nix/daemon-socket/socket
+	/nix/var/nix/profiles/default/bin/nix-daemon &
+	NIX_DAEMON_PID=$!
+	for _ in {1..50}; do
+		[ -S /nix/var/nix/daemon-socket/socket ] && break
+		sleep 0.1
+	done
+	if [ ! -S /nix/var/nix/daemon-socket/socket ]; then
+		echo "Nix daemon failed to create its socket"
+		exit 1
+	fi
+	trap stop_nix_daemon EXIT
+
+	echo 'export NIX_REMOTE=daemon' >>/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
 	#shellcheck disable=SC1091
 	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 	nix --version
+}
+
+function stop_nix_daemon {
+	kill "$NIX_DAEMON_PID" || true
+	wait "$NIX_DAEMON_PID" || true
 }
 
 function execute_stage2_playbook {
@@ -78,3 +100,4 @@ execute_stage2_playbook
 cleanup_packages
 update_and_upgrade_apt
 cleanup_apt
+apt list --installed | awk -F/ '{print $1}' && echo Finished
