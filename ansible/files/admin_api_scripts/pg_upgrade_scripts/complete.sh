@@ -247,7 +247,7 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
-	echo "1. Mounting data disk"
+	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
 		udevadm settle --timeout=60 || true
@@ -266,12 +266,13 @@ function complete_pg_upgrade {
 	fi
 
 	# copying custom configurations
-	echo "2. Copying custom configurations"
+	log "2. Copying custom configurations"
 	retry 3 copy_configs
 
-	echo "3. Starting postgresql"
+	log "3. Starting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql start
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 	else
 		CI_start_postgres --new-bin
 	fi
@@ -282,27 +283,28 @@ function complete_pg_upgrade {
 	# preserved, but `run_generated_sql` includes `ALTER EXTENSION
 	# supabase_vault UPDATE` which modifies that. So we need to run it
 	# beforehand.
-	echo "3.1. Patch Wrappers server options"
+	log "3.1. Patch Wrappers server options"
 	execute_wrappers_patch
 
-	echo "4. Running generated SQL files"
+	log "4. Running generated SQL files"
 	retry 3 run_generated_sql
 
-	echo "4.1. Applying patches"
+	log "4.1. Applying patches"
 	execute_patches || true
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-	echo "4.2. Applying authentication scheme updates"
+	log "4.2. Applying authentication scheme updates"
 	retry 3 apply_auth_scheme_updates
 
 	sleep 5
 
-	echo "5. Restarting postgresql"
+	log "5. Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql restart
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 
-		echo "5.1. Restarting gotrue and postgrest"
+		log "5.1. Restarting gotrue and postgrest"
 		retry 3 service gotrue restart
 		retry 3 service postgrest restart
 
@@ -311,8 +313,17 @@ function complete_pg_upgrade {
 		retry 3 CI_start_postgres
 	fi
 
-	echo "6. Starting vacuum analyze"
-	retry 3 start_vacuum_analyze
+	log "6. Starting vacuum analyze"
+	# A failed analyze is not worth failing the whole upgrade for; the status
+	# file already reads "complete" and the ERR trap would flip it to "failed"
+	retry 3 start_vacuum_analyze || echo "WARNING: vacuum analyze failed after retries"
+
+	log "6.1. Analyzing partitioned tables"
+	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and
+	# autovacuum never analyzes them, so without this they'd have no stats at all
+	retry 3 analyze_partitioned_tables || echo "WARNING: partitioned table analyze failed after retries"
+
+	log "Upgrade job completed"
 }
 
 function copy_configs {
@@ -355,7 +366,20 @@ function start_vacuum_analyze {
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
 	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
-	echo "Upgrade job completed"
+}
+
+function analyze_partitioned_tables {
+	local rc=0 db stmts
+	for db in $(psql -X -h localhost -p 5432 -U supabase_admin -d postgres -A -t -c "select datname from pg_database where datallowconn"); do
+		stmts=$(psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p'") || {
+			rc=1
+			continue
+		}
+		if [ -n "$stmts" ]; then
+			echo "$stmts" | psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -v ON_ERROR_STOP=1 || rc=1
+		fi
+	done
+	return $rc
 }
 
 case $# in
