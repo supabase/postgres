@@ -14,10 +14,6 @@ source "$SCRIPT_DIR/common.sh"
 IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
-function log {
-	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
-}
-
 # Wait for the volume mapped to /data to appear before attempting to mount it
 function wait_for_data_device {
 	local fstab_src dev=""

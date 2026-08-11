@@ -10,6 +10,10 @@ if [ -f "$REPORTING_CREDENTIALS_FILE" ]; then
 	REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
 fi
 
+function log {
+	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
+}
+
 # shellcheck disable=SC2120
 # Arguments are passed in other files
 function run_sql {
