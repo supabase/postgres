@@ -2,8 +2,10 @@
 
 ## Rebuilds affected indexes and refreshes recorded collation versions after an
 ## AMI ships new glibc/ICU over existing data. Invoked on demand by adminapi (not
-## a boot service); the exit code is the signal: 0 = done / nothing to do,
-## 1 = something failed. Per-statement errors don't abort — we fix what we can,
+## a boot service); the exit code is the signal: 0 = work done, or a legitimate
+## no-op (replica, pre-PG15); 1 = something failed, OR preconditions could not be
+## established (Postgres unreachable) so we don't actually know the collation
+## state. Per-statement errors don't abort — we fix what we can,
 ## then exit non-zero (like the sibling pg_upgrade scripts). Reindex runs BEFORE
 ## refresh so a stale index is never masked by an updated catalog; a failed reindex
 ## skips that database's refresh to preserve the signal.
@@ -71,6 +73,17 @@ conninfo_for_db() {
 # the db default). Partitioned parents ('I') have no storage; catalogs use
 # version-less collations; temp schemas are skipped (reindexing another session's
 # temp index fails).
+#
+# SCOPE / KNOWN LIMITATION (follow-up): detection keys off pg_index.indcollation —
+# the collations of the index's KEY COLUMNS only. Collation dependencies that live
+# elsewhere are NOT detected and NOT rebuilt: partial-index predicates
+# (pg_index.indpred), CHECK constraints (pg_constraint), and partition bound
+# expressions (pg_class.relpartbound). The refresh step below bumps the recorded
+# version for EVERY stale collation regardless of where it is used, so those
+# dependencies get stamped "refreshed" without any revalidation. The intended
+# follow-up surfaces them via the adminapi advisory channel rather than silently
+# refreshing. See:
+# https://github.com/supabase/postgres/pull/2343#discussion_r3756738261
 affected_index_oids_sql() {
 	cat <<SQL
 with affected_coll as (
@@ -234,8 +247,9 @@ process_database() {
 
 main() {
 	if ! retry 8 pg_isready -h localhost -U supabase_admin -d postgres; then
-		log "postgres not ready after retries; skipping (nothing done)"
-		return 0
+		log "postgres not ready after retries; could not run (reporting failure)"
+		SCRIPT_FAILED=1
+		return
 	fi
 
 	# Read replica: catalogs are read-only (changes stream from the primary) and
