@@ -363,7 +363,13 @@ function start_vacuum_analyze {
 		# shellcheck disable=SC1091
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
-	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
+	# Conservative parallelism and a cost-delay reset (in case the customer raised it) — traffic may already be live
+	local jobs
+	jobs=$(($(nproc) / 4))
+	if [ "$jobs" -lt 1 ]; then
+		jobs=1
+	fi
+	PGOPTIONS='-c vacuum_cost_delay=0' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 
 function analyze_partitioned_tables {
