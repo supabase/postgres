@@ -162,6 +162,12 @@ EOF
 		# is stuck at "running" forever instead of reporting the real failure.
 		retry 3 umount $MOUNT_POINT || true
 	fi
+
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		# Warn rather than fail: this runs inside the ERR trap, and aborting here
+		# leaves /tmp/pg-upgrade-status stuck at "running" (see the umount note above).
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
 	if [ -z "$IS_CI" ]; then
@@ -215,6 +221,15 @@ EOF
 }
 
 function initiate_upgrade {
+	# Before anything destructive: no || true here, a timer firing mid-upgrade is
+	# exactly what this guards against, and failing now leaves the project untouched.
+	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
+	# `dpkg --configure -a` repairs that a moment later.
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		log "0. Disabling conflicting systemd timers"
+		retry 3 disable_conflicting_timers
+	fi
+
 	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
 	check_free_space $((2 * 1024 * 1024))
 

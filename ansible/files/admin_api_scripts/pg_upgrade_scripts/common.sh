@@ -14,6 +14,55 @@ function log {
 	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
 }
 
+# Timers that trigger jobs which can be problematic during the upgrade process.
+#   supabase-admin-agent_salt.timer - reapplies host state every 10 minutes:
+#     postgres/service.sls re-enables the postgresql unit and
+#     platform-defaults.sls reloads it. Its only guard is `unless: admin-mgr
+#     is-busy`, and pg_upgrade never takes the admin-mgr host lock.
+#   apt-daily{,-upgrade}.timer - apt-get update and unattended-upgrades contend
+#     for the dpkg lock that initiate.sh needs, and can restart services.
+TIMERS_TO_DISABLE=(
+	"supabase-admin-agent_salt.timer"
+	"apt-daily.timer"
+	"apt-daily-upgrade.timer"
+)
+
+function unit_exists {
+	systemctl cat "$1" >/dev/null 2>&1
+}
+
+# Both helpers track failures in rc rather than leaning on set -e: their callers
+# are `retry` (an `until` condition) and `|| log ...`, and set -e is suppressed in
+# both contexts. Without rc they would return the status of their last command and
+# report success after a failed systemctl call.
+function disable_conflicting_timers {
+	local rc=0 timer service
+	for timer in "${TIMERS_TO_DISABLE[@]}"; do
+		unit_exists "$timer" || continue
+		systemctl is-enabled --quiet "$timer" 2>/dev/null || continue
+
+		log "Disabling $timer for the duration of the upgrade"
+		systemctl disable --now "$timer" || rc=1
+
+		# disabling the timer does not stop a run it already triggered
+		service="${timer%.timer}.service"
+		systemctl stop "$service" || true
+	done
+	return $rc
+}
+
+function enable_conflicting_timers {
+	local rc=0 timer
+	for timer in "${TIMERS_TO_DISABLE[@]}"; do
+		unit_exists "$timer" || continue
+		systemctl is-enabled --quiet "$timer" 2>/dev/null && continue
+
+		log "Re-enabling $timer"
+		systemctl enable --now "$timer" || rc=1
+	done
+	return $rc
+}
+
 # shellcheck disable=SC2120
 # Arguments are passed in other files
 function run_sql {

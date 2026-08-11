@@ -42,6 +42,12 @@ function cleanup {
 
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
+	if [ -z "$IS_CI" ]; then
+		# Warn rather than fail: this runs inside the ERR trap, and aborting here
+		# would skip ship_logs and lose the diagnostics for the actual failure.
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+	fi
+
 	ship_logs "$LOG_FILE" || true
 
 	exit "$EXIT_CODE"
@@ -247,6 +253,13 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
+	# No || true: a salt run restarting postgres between steps 3 and 5 is exactly
+	# what this guards against, and failing here leaves the new instance untouched.
+	if [ -z "$IS_CI" ]; then
+		log "0. Disabling conflicting systemd timers"
+		retry 3 disable_conflicting_timers
+	fi
+
 	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
@@ -322,6 +335,14 @@ function complete_pg_upgrade {
 	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and
 	# autovacuum never analyzes them, so without this they'd have no stats at all
 	retry 3 analyze_partitioned_tables || echo "WARNING: partitioned table analyze failed after retries"
+
+	# The success path never reaches cleanup(), so restore the timers here too.
+	# enable_conflicting_timers skips units that are already enabled, so the
+	# cleanup() call is a no-op if this one ran.
+	if [ -z "$IS_CI" ]; then
+		log "7. Re-enabling conflicting systemd timers"
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+	fi
 
 	log "Upgrade job completed"
 }
