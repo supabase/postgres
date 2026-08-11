@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/publish-nix-pgupgrade-scripts.yml'
       - 'ansible/vars.yml'
+      - 'ansible/files/admin_api_scripts/pg_upgrade_scripts/**'
   workflow_dispatch:
     inputs:
       postgresVersion:

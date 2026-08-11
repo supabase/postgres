@@ -66,6 +66,7 @@
     - { file: "prepare.sh" }
     - { file: "pgsodium_getkey.sh" }
     - { file: "common.sh" }
+    - { file: "refresh_collation.sh" }
 
 - name: adminapi - create service file
   template:
