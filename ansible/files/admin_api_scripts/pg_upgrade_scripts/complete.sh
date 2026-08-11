@@ -247,6 +247,9 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
+	# Set (including from called functions, via dynamic scoping) whenever a fail-soft step failed; ships the log for visibility at the end
+	local warnings=0
+
 	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
@@ -277,7 +280,10 @@ function complete_pg_upgrade {
 		CI_start_postgres --new-bin
 	fi
 
-	execute_extension_upgrade_patches || true
+	execute_extension_upgrade_patches || {
+		log "WARNING: extension upgrade patches failed"
+		warnings=1
+	}
 
 	# For this to work we need `vault.secrets` from the old project to be
 	# preserved, but `run_generated_sql` includes `ALTER EXTENSION
@@ -290,7 +296,10 @@ function complete_pg_upgrade {
 	retry 3 run_generated_sql
 
 	log "4.1. Applying patches"
-	execute_patches || true
+	execute_patches || {
+		log "WARNING: post-upgrade patches failed"
+		warnings=1
+	}
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
@@ -312,8 +321,6 @@ function complete_pg_upgrade {
 		retry 3 CI_stop_postgres || true
 		retry 3 CI_start_postgres
 	fi
-
-	local warnings=0
 
 	log "6. Starting vacuum analyze"
 	# A failed analyze is not worth failing the whole upgrade for; the status file already reads "complete" and the ERR trap would flip it to "failed"
@@ -348,7 +355,10 @@ function run_generated_sql {
 	if [ -d /data/sql ]; then
 		for FILE in /data/sql/*.sql; do
 			if [ -f "$FILE" ]; then
-				run_sql -f "$FILE" || true
+				run_sql -f "$FILE" || {
+					log "WARNING: generated SQL file $FILE failed"
+					warnings=1
+				}
 			fi
 		done
 	fi
