@@ -19,20 +19,20 @@ function wait_for_data_device {
 	local fstab_src dev=""
 	fstab_src=$(awk '$2 == "/data" {print $1}' /etc/fstab)
 	if [ -z "$fstab_src" ]; then
-		echo "No /data entry in /etc/fstab"
+		log "No /data entry in /etc/fstab"
 		return 1
 	fi
 
-	echo "Waiting for /data device ($fstab_src) to appear"
+	log "Waiting for /data device ($fstab_src) to appear"
 	for _ in $(seq 1 60); do
 		dev=$(findfs "$fstab_src" 2>/dev/null) || dev=""
 		if [ -n "$dev" ] && [ -b "$dev" ]; then
-			echo "/data device ($dev) is available"
+			log "/data device ($dev) is available"
 			return 0
 		fi
 		sleep 1
 	done
-	echo "Timed out waiting for /data device ($fstab_src)"
+	log "Timed out waiting for /data device ($fstab_src)"
 	return 1
 }
 
@@ -241,7 +241,7 @@ EOF
 
 function complete_pg_upgrade {
 	if [ -f /tmp/pg-upgrade-status ]; then
-		echo "Upgrade job already started. Bailing."
+		log "Upgrade job already started. Bailing."
 		exit 0
 	fi
 
@@ -261,11 +261,11 @@ function complete_pg_upgrade {
 		# `nofail` in /etc/fstab makes `mount -a` exit with a code of 0 even when the volume is absent
 		# In the offchance of the volume not being mounted or detected, explicitly fail here
 		if ! mountpoint -q /data; then
-			echo "FATAL: /data is not a mountpoint"
+			log "FATAL: /data is not a mountpoint"
 			exit 1
 		fi
 	else
-		echo "Skipping mount -a -v"
+		log "Skipping mount -a -v"
 	fi
 
 	# copying custom configurations
@@ -425,14 +425,14 @@ case $# in
 0) ;;
 1)
 	if ! declare -F "$1" >/dev/null; then
-		echo "Error: unknown function $1" >&2
+		log "Error: unknown function $1" >&2
 		exit 1
 	fi
 	$1
 	exit
 	;;
 *)
-	echo "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
+	log "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
 	exit 1
 	;;
 esac
