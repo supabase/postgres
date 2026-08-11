@@ -317,6 +317,13 @@ function complete_pg_upgrade {
 	# A failed analyze is not worth failing the whole upgrade for; the status
 	# file already reads "complete" and the ERR trap would flip it to "failed"
 	retry 3 start_vacuum_analyze || echo "WARNING: vacuum analyze failed after retries"
+
+	log "6.1. Analyzing partitioned tables"
+	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and
+	# autovacuum never analyzes them, so without this they'd have no stats at all
+	retry 3 analyze_partitioned_tables || echo "WARNING: partitioned table analyze failed after retries"
+
+	log "Upgrade job completed"
 }
 
 function copy_configs {
@@ -359,8 +366,19 @@ function start_vacuum_analyze {
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
 	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
-	local rc=$?
-	log "Upgrade job completed"
+}
+
+function analyze_partitioned_tables {
+	local rc=0 db stmts
+	for db in $(psql -X -h localhost -p 5432 -U supabase_admin -d postgres -A -t -c "select datname from pg_database where datallowconn"); do
+		stmts=$(psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p'") || {
+			rc=1
+			continue
+		}
+		if [ -n "$stmts" ]; then
+			echo "$stmts" | psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -v ON_ERROR_STOP=1 || rc=1
+		fi
+	done
 	return $rc
 }
 
