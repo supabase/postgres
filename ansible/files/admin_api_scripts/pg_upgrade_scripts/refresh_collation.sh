@@ -37,7 +37,7 @@ SCRIPT_FAILED=0
 # fresh every run; readable by the adminapi user (0644 — index names, not secret).
 ADVISORY_FILE="/tmp/collation-refresh-status.json"
 ADVISORY_NDJSON="" # per-run temp NDJSON accumulator; set in main()
-ADVISORY_DBS="" # per-run temp file of databases that produced advisories
+ADVISORY_DBS=""    # per-run temp file of databases that produced advisories
 
 log() {
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] refresh_collation: $1"
