@@ -7,7 +7,7 @@
 - name: PostgREST - user
   ansible.builtin.user:
     name: postgrest
-    uid: 1002
+    uid: "{{ 1002 if not qemu else 1003 }}"
     group: postgrest
     state: present
 

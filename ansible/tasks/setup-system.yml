@@ -4,7 +4,7 @@
     - name: Create ubuntu primary group
       ansible.builtin.group:
         name: ubuntu
-        gid: 1014
+        gid: "{{ 1014 if not qemu else 1000 }}"
         state: present
 
     - name: Create ubuntu user supplementary groups # noqa: explicit-identity-id
@@ -19,7 +19,7 @@
     - name: Create ubuntu user
       ansible.builtin.user:
         name: ubuntu
-        uid: 1007
+        uid: "{{ 1007 if not qemu else 1000 }}"
         group: ubuntu
         groups:
           - adm
