@@ -301,6 +301,7 @@ function complete_pg_upgrade {
 	echo "5. Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql restart
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 
 		echo "5.1. Restarting gotrue and postgrest"
 		retry 3 service gotrue restart
@@ -312,7 +313,9 @@ function complete_pg_upgrade {
 	fi
 
 	echo "6. Starting vacuum analyze"
-	retry 3 start_vacuum_analyze
+	# A failed analyze is not worth failing the whole upgrade for; the status
+	# file already reads "complete" and the ERR trap would flip it to "failed"
+	retry 3 start_vacuum_analyze || echo "WARNING: vacuum analyze failed after retries"
 }
 
 function copy_configs {
@@ -355,7 +358,9 @@ function start_vacuum_analyze {
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
 	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
+	local rc=$?
 	echo "Upgrade job completed"
+	return $rc
 }
 
 case $# in
