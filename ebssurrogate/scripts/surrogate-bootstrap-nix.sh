@@ -12,45 +12,100 @@ set -o xtrace
 
 exec 1>&2
 
-function setup_apt {
-	local aptconf
-	aptconf=$(mktemp)
-	cat >"$aptconf" <<-EOF
-		APT::Install-Recommends "false";
-		APT::Install-Suggests "false";
-		Acquire::Languages "none";
-	EOF
-	export APT_CONFIG=$aptconf DEBIAN_FRONTEND=noninteractive
+if [ $(dpkg --print-architecture) = "amd64" ]; then
+	ARCH="amd64"
+else
+	ARCH="arm64"
+fi
 
-	cat /etc/apt/sources.list.d/ubuntu.sources >&2
-	local sources defmirror ubumirror
-	sources=$(grep -e '^URIs\s*:' -e '^Suites\s*:' /etc/apt/sources.list.d/ubuntu.sources)
-	defmirror=$(grep -B1 noble-updates <<<"$sources" | awk '/URIs/ {print $2}')
-	ubumirror=$(grep -B1 noble-security <<<"$sources" | awk '/URIs/ {print $2}')
-	if [[ $ARCH == x86_64 ]]; then
-		# x86_64 hosts use security.ubuntu.com for security but archive.ubuntu.com for everything else
-		ubumirror=${ubumirror/security/archive}
+# Mirror fallback function for resilient apt-get update
+function apt_update_with_fallback {
+	local sources_file="/etc/apt/sources.list"
+	local max_attempts=2
+	local attempt=1
+
+	# Get EC2 region if not already set
+	if [ -z "${REGION}" ]; then
+		REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g' || echo "")
 	fi
 
-	if grep -q "^URIs:.*$defmirror.*$ubumirror" /etc/apt/sources.list.d/ubuntu.sources; then
-		echo "Ubuntu upstream is already a fallback, this is unexpected and needs source changes" >&2
-		exit 1
+	# Define mirror tiers (in priority order)
+	local -a mirror_tiers=()
+	if [ "${ARCH}" = "amd64" ]; then
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.ec2.archive.ubuntu.com")
+		fi
+		mirror_tiers+=("archive.ubuntu.com")
+	else
+		if [ -n "${REGION}" ]; then
+			mirror_tiers+=("${REGION}.clouds.ports.ubuntu.com")
+		fi
+		mirror_tiers+=("ports.ubuntu.com")
 	fi
-	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
-}
 
-function cleanup_apt {
-	apt-get clean
-	apt-get autoremove --purge --yes
-	rm -rf /var/lib/apt/lists/*
-}
+	# If we couldn't get REGION, skip tier 1
+	if [ -z "${REGION}" ]; then
+		echo "Warning: Could not determine EC2 region, skipping regional mirror"
+		mirror_tiers=("${mirror_tiers[@]:1}") # Remove first element
+	fi
 
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get upgrade --yes
+	for mirror in "${mirror_tiers[@]}"; do
+		echo "========================================="
+		echo "Attempting apt-get update with mirror: ${mirror}"
+		echo "Attempt ${attempt} of ${max_attempts}"
+		echo "========================================="
+
+		# Update sources.list to use current mirror
+		if [ "${ARCH}" = "amd64" ]; then
+			sed -i "s|http://[^/]*/ubuntu/|http://${mirror}/ubuntu/|g" "${sources_file}"
+		else
+			sed -i "s|http://[^/]*/ubuntu-ports/|http://${mirror}/ubuntu-ports/|g" "${sources_file}"
+			sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://${mirror}/ubuntu-ports|g" "${sources_file}"
+		fi
+
+		# Show what we're using
+		echo "Current sources.list configuration:"
+		grep -E '^deb ' "${sources_file}" | head -3
+
+		# Attempt update with timeout (5 minutes)
+		if timeout 300 apt-get update 2>&1; then
+			echo "========================================="
+			echo "✓ Successfully updated apt cache using mirror: ${mirror}"
+			echo "========================================="
+			return 0
+		else
+			local exit_code=$?
+			echo "========================================="
+			echo "✗ Failed to update using mirror: ${mirror}"
+			echo "Exit code: ${exit_code}"
+			echo "========================================="
+
+			# Clean partial downloads
+			apt-get clean
+			rm -rf /var/lib/apt/lists/*
+
+			# Exponential backoff before next attempt
+			if [ ${attempt} -lt ${max_attempts} ]; then
+				local sleep_time=$((attempt * 5))
+				echo "Waiting ${sleep_time} seconds before trying next mirror..."
+				sleep ${sleep_time}
+			fi
+		fi
+
+		attempt=$((attempt + 1))
+	done
+
+	echo "========================================="
+	echo "ERROR: All mirror tiers failed after ${max_attempts} attempts"
+	echo "========================================="
+	return 1
 }
 
 function waitfor_boot_finished {
+	export DEBIAN_FRONTEND=noninteractive
+
+	echo "args: ${ARGS}"
+	# Wait for cloudinit on the surrogate to complete before making progress
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
 		echo 'Waiting for cloud-init...'
 		sleep 1
@@ -58,25 +113,35 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	packages=(
-		ansible
-		debootstrap
-		e2fsprogs
-		gdisk
-		nvme-cli
-	)
-	apt-get install --yes "${packages[@]}"
+	# Setup Ansible on host VM
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists on host VM"
+		exit 1
+	fi
 
+	sudo apt-get install software-properties-common -y
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
-	# apt-get install --yes software-properties-common
 	# add-apt-repository --yes --update ppa:ansible/ansible
 
+	if ! apt_update_with_fallback; then
+		echo "FATAL: Failed to update package lists after adding Ansible PPA"
+		exit 1
+	fi
+
+	sudo apt-get install ansible -y
 	ansible-galaxy collection install community.general
+
+	apt-get install -y \
+		gdisk \
+		e2fsprogs \
+		debootstrap \
+		nvme-cli
 }
 
 # Partition the new root EBS volume
 function create_partition_table {
-	if [[ $ARCH == arm64 ]]; then
+
+	if [ "${ARCH}" = "arm64" ]; then
 		parted --script /dev/xvdf \
 			mklabel gpt \
 			mkpart UEFI 1MiB 100MiB \
@@ -94,43 +159,46 @@ function create_partition_table {
 function device_partition_mappings {
 	# NVMe EBS launch device mappings (symlinks): /dev/nvme*n* to /dev/xvd*
 	declare -A blkdev_mappings
-	while read -r blkdev; do
+	for blkdev in $( # /dev/nvme*n*
+		nvme list | awk '/^\/dev/ { print $1 }'
+	); do
 		# Mapping info from disk headers
-		header=$(nvme id-ctrl --raw-binary "$blkdev" | cut -c3073-3104 | tr -s ' ' | sed 's/ $//g' | sed 's!/dev/!!')
-		mapping=/dev/${header%%[0-9]} # normalize sda1 => sda
+		header=$(nvme id-ctrl --raw-binary "${blkdev}" | cut -c3073-3104 | tr -s ' ' | sed 's/ $//g' | sed 's!/dev/!!')
+		mapping="/dev/${header%%[0-9]}" # normalize sda1 => sda
 
 		# Create /dev/xvd* device symlink
-		if [[ -n $mapping ]] && [[ -b $blkdev ]] && [[ ! -L $mapping ]]; then
+		if [[ -n $mapping ]] && [[ -b ${blkdev} ]] && [[ ! -L ${mapping} ]]; then
 			ln -s "$blkdev" "$mapping"
 
-			blkdev_mappings[$blkdev]=$mapping
+			blkdev_mappings["$blkdev"]="$mapping"
 		fi
-	done < <(nvme list | awk '/^\/dev/ { print $1 }')
+	done
 
 	create_partition_table
 
 	# NVMe EBS launch device partition mappings (symlinks): /dev/nvme*n*p* to /dev/xvd*[0-9]+
 	declare -A partdev_mappings
 	for blkdev in "${!blkdev_mappings[@]}"; do # /dev/nvme*n*
-		mapping=${blkdev_mappings[$blkdev]}
+		mapping="${blkdev_mappings[$blkdev]}"
 
 		# Create /dev/xvd*[0-9]+ partition device symlink
-		for partdev in "$blkdev"p*; do
+		for partdev in "${blkdev}"p*; do
 			partnum=${partdev##*p}
-			if [[ ! -L "$mapping$partnum" ]]; then
-				ln -s "${blkdev}p$partnum" "$mapping$partnum"
-				partdev_mappings[${blkdev}p$partnum]=$mapping$partnum
+			if [[ ! -L "${mapping}${partnum}" ]]; then
+				ln -s "${blkdev}p${partnum}" "${mapping}${partnum}"
+
+				partdev_mappings["${blkdev}p${partnum}"]="${mapping}${partnum}"
 			fi
 		done
 	done
 }
 
-# Download and install latest e2fsprogs for fast_commit feature,if required.
+#Download and install latest e2fsprogs for fast_commit feature,if required.
 function format_and_mount_rootfs {
 	mkfs.ext4 -m0.1 /dev/xvdf2
 
 	mount -o noatime,nodiratime /dev/xvdf2 /mnt
-	if [[ $ARCH == arm64 ]]; then
+	if [ "${ARCH}" = "arm64" ]; then
 		mkfs.fat -F32 /dev/xvdf1
 		mkdir -p /mnt/boot/efi
 		sleep 2
@@ -142,7 +210,8 @@ function format_and_mount_rootfs {
 	# Explicitly reserving 100MiB worth of blocks for the data volume
 	#
 	# Any changes here should be propagated to $GIT_DATA_DIR/ansible/files/admin_api_scripts/grow_fs.sh
-	tune2fs -r $((100 * 1024 * 1024 / 4096)) /dev/xvdh
+	RESERVED_DATA_VOLUME_BLOCK_COUNT=$((100 * 1024 * 1024 / 4096))
+	tune2fs -r $RESERVED_DATA_VOLUME_BLOCK_COUNT /dev/xvdh
 
 	mkdir -p /mnt/data
 	mount -o defaults,discard /dev/xvdh /mnt/data
@@ -157,51 +226,58 @@ function create_swapfile {
 function format_build_partition {
 	mkfs.ext4 -O ^has_journal /dev/xvdc
 }
+function pull_docker {
+	apt-get install -y docker.io
+	docker run -itd --name ccachedata "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}" sh
+	docker exec -itd ccachedata mkdir -p /build/ccache
+}
+
 # Create fstab
 function create_fstab {
-	local FMT="%-42s %-11s %-5s %-17s %-5s %s" ROOT_LINE DATA_LINE SWAP_LINE
-	ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="$FMT" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
-	DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="$FMT" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
-
-	# shellcheck disable=SC2059
-	SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
+	FMT="%-42s %-11s %-5s %-17s %-5s %s"
+	local ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
+	local DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
+	local SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
 
 	local EFI_LINE=""
-	if [[ $ARCH == arm64 ]]; then
-		EFI_LINE=$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="$FMT" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
+	if [ "${ARCH}" = "arm64" ]; then
+		EFI_LINE=$(findmnt -no SOURCE /mnt/boot/efi | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/boot/efi", "vfat", "umask=0077", "0", "1" ) }')
 	fi
 
 	{
-		# shellcheck disable=SC2059
-		printf "$FMT\n" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK"
-		echo "$ROOT_LINE"
-		[ -n "$EFI_LINE" ] && echo "$EFI_LINE"
-		echo "$DATA_LINE"
-		echo "$SWAP_LINE"
-	} >/mnt/etc/fstab
+		printf "${FMT}\n" "# DEVICE UUID" "MOUNTPOINT" "TYPE" "OPTIONS" "DUMP" "FSCK"
+		echo "${ROOT_LINE}"
+		[ -n "${EFI_LINE}" ] && echo "${EFI_LINE}"
+		echo "${DATA_LINE}"
+		echo "${SWAP_LINE}"
+	} >"/mnt/etc/fstab"
+	unset FMT
 }
 
 function setup_chroot_environment {
-	local UBUNTU_VERSION
 	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
 
 	# sometimes debootstrap will get stuck on a download for a long time
 	# the default read timeout in wget is 900s, which can cause a ~15min increase in build time
 	# this forces the process to fail-fast and retry
-	cat >~/.wgetrc <<-EOF
-		read_timeout = 30
-		timeout = 35
-		tries = 5
-	EOF
+	cat <<EOF >~/.wgetrc
+read_timeout = 30
+timeout = 35
+tries = 5
+EOF
 
-	local mirror
-	# Use the regional mirror we setup for this run, which is the first URI/preferred
-	mirror=$(awk '/^URIs:/{uri=$2} /^Suites:.*\<noble-updates\>/{print uri; exit}' /etc/apt/sources.list.d/ubuntu.sources)
-	debootstrap --arch "$ARCH" --variant=minbase "$UBUNTU_VERSION" /mnt "$mirror"
+	# Update ec2-region
+	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
 
-	cp -a /etc/apt/sources.list /mnt/etc/apt/sources.list
-	mkdir -p /mnt/etc/apt/sources.list.d
-	cp -a /etc/apt/sources.list.d/ubuntu.sources /mnt/etc/apt/sources.list.d/ubuntu.sources
+	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global mirror stalls)
+	if [ "${ARCH}" = "amd64" ]; then
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.ec2.archive.ubuntu.com/ubuntu"
+	else
+		debootstrap --arch ${ARCH} --variant=minbase "$UBUNTU_VERSION" /mnt "http://${REGION}.clouds.ports.ubuntu.com/ubuntu-ports"
+	fi
+
+	sed -i "s/REGION/${REGION}/g" /tmp/sources.list
+	cp /tmp/sources.list /mnt/etc/apt/sources.list
 
 	create_fstab
 
@@ -227,10 +303,10 @@ function setup_chroot_environment {
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh
 	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
-	echo "$POSTGRES_SUPABASE_VERSION" >/mnt/root/supabase-release
+	echo "${POSTGRES_SUPABASE_VERSION}" >/mnt/root/supabase-release
 
 	# Copy the AMI version into the /etc/supabase-release file
-	echo "$POSTGRES_SUPABASE_VERSION" >/mnt/etc/supabase-release
+	echo "${POSTGRES_SUPABASE_VERSION}" >/mnt/etc/supabase-release
 	chmod 644 /mnt/etc/supabase-release
 
 	# Copy the nvme identification script into /sbin inside the chroot
@@ -250,23 +326,23 @@ function setup_chroot_environment {
 	sleep 2
 }
 
+function download_ccache {
+	docker cp ccachedata:/build/ccache/. /mnt/tmp/ccache
+}
+
 function execute_playbook {
-	mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<-EOF
-		[defaults]
-		callbacks_enabled = timer, profile_tasks, profile_roles
-		pipelining = True
-	EOF
-
+	sudo mkdir -p /etc/ansible
+	tee /etc/ansible/ansible.cfg <<EOF
+[defaults]
+callbacks_enabled = timer, profile_tasks, profile_roles
+pipelining = True
+EOF
 	# Run Ansible playbook
-	# export ANSIBLE_DEBUG=True
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log
-	export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-
-	# shellcheck disable=SC2086
+	#export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_DEBUG=True && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
+	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":false, "qemu":false} ' \
-		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "psql_version=psql_${POSTGRES_MAJOR_VERSION}" \
 		$ARGS
 }
 
@@ -287,9 +363,9 @@ function update_systemd_services {
 
 function clean_system {
 	# Copy cleanup scripts
-	cp -v /tmp/cleanup.sh /mnt/tmp
-	chmod +x /mnt/tmp/cleanup.sh
-	chroot /mnt /tmp/cleanup.sh
+	cp -v /tmp/ansible-playbook/scripts/90-cleanup.sh /mnt/tmp
+	chmod +x /mnt/tmp/90-cleanup.sh
+	chroot /mnt /tmp/90-cleanup.sh
 
 	# Cleanup logs
 	rm -rf /mnt/var/log/*
@@ -297,13 +373,13 @@ function clean_system {
 	touch /mnt/var/log/auth.log
 
 	touch /mnt/var/log/pgbouncer.log
-	if [[ -f /usr/bin/chown ]]; then
+	if [ -f /usr/bin/chown ]; then
 		chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
 	fi
 
 	# Setup postgresql logs
 	mkdir -p /mnt/var/log/postgresql
-	if [[ -f /usr/bin/chown ]]; then
+	if [ -f /usr/bin/chown ]; then
 		chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
 	fi
 
@@ -314,7 +390,7 @@ function clean_system {
 	#Creatre Sysstat directory for SAR
 	mkdir /mnt/var/log/sysstat
 
-	if [[ -f /usr/bin/chown ]]; then
+	if [ -f /usr/bin/chown ]; then
 		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
 		chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
 	fi
@@ -331,13 +407,25 @@ function clean_system {
 
 }
 
+function upload_ccache {
+	docker cp /mnt/tmp/ccache/. ccachedata:/build/ccache
+	docker stop ccachedata
+	docker commit ccachedata "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}"
+	echo ${DOCKER_PASSWD} | docker login --username ${DOCKER_USER} --password-stdin
+	docker push "${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}"
+}
+
 # Unmount bind mounts
 function umount_reset_mappings {
+	fuser -vm /mnt || true
+	lsof +f -- /mnt || true
+	ls -l /proc/*/root | grep /mnt || true
+
 	umount -l /mnt/dev
 	umount -l /mnt/proc
 	umount -l /mnt/sys
 	umount -l /mnt/tmp
-	if [[ $ARCH == arm64 ]]; then
+	if [ "${ARCH}" = "arm64" ]; then
 		umount /mnt/boot/efi
 	fi
 	umount /mnt/data
@@ -351,20 +439,17 @@ function umount_reset_mappings {
 	done
 }
 
-ARCH=$(dpkg --print-architecture)
-: "${ARCH:?Failed to detect architecture}"
-
 waitfor_boot_finished
-setup_apt
-update_and_upgrade_apt
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
 create_swapfile
 format_build_partition
+#pull_docker
 setup_chroot_environment
+#download_ccache
 execute_playbook
 update_systemd_services
+#upload_ccache
 clean_system
-cleanup_apt
 umount_reset_mappings

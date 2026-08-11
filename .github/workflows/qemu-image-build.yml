@@ -5,9 +5,9 @@ on:
     paths:
       - .github/workflows/qemu-image-build.yml
       - ansible/vars.yml
-      - ebssurrogate/scripts/*
       - nix/packages/build-qemu-image/*
       - qemu.pkr.hcl
+      - scripts/*
   workflow_dispatch:
 
 permissions:

@@ -18,6 +18,7 @@ let
         (root + "/ebssurrogate")
         (root + "/ansible")
         (root + "/migrations")
+        (root + "/scripts")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
         (root + "/development-amd64.vars.pkr.hcl")

@@ -212,11 +212,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/cleanup.sh"
-    destination = "/tmp/cleanup.sh"
-  }
-
-  provisioner "file" {
     source      = "ebssurrogate/files/cloud.cfg"
     destination = "/tmp/cloud.cfg"
   }
@@ -243,6 +238,11 @@ build {
 
   provisioner "file" {
     source      = "ansible"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    source      = "scripts"
     destination = "/tmp/ansible-playbook"
   }
 

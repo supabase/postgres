@@ -97,8 +97,8 @@ build {
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/cleanup-qemu.sh"
-    destination = "/tmp/cleanup-qemu.sh"
+    source      = "scripts"
+    destination = "/tmp/ansible-playbook"
   }
 
   provisioner "shell" {
