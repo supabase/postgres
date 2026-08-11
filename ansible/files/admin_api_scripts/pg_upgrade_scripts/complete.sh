@@ -369,7 +369,7 @@ function start_vacuum_analyze {
 	if [ "$jobs" -lt 1 ]; then
 		jobs=1
 	fi
-	PGOPTIONS='-c vacuum_cost_delay=0' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
+	PGOPTIONS='-c vacuum_cost_delay=0 -c lock_timeout=10s' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 
 function analyze_partitioned_tables {
@@ -386,9 +386,10 @@ function analyze_partitioned_tables {
 			continue
 		}
 		if [ -n "$stmts" ]; then
-			# The instance is serving traffic by now — fail fast into the retry rather than queue behind a customer lock
+			# The instance is serving traffic by now: fail fast into the retry rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
 			{
-				echo "set lock_timeout = '60s';"
+				echo "set lock_timeout = '10s';"
+				echo "set statement_timeout = '10min';"
 				echo "$stmts"
 			} | run_sql -X -p 5432 -d "$db" -v ON_ERROR_STOP=1 || rc=1
 		fi
