@@ -377,7 +377,7 @@ function analyze_partitioned_tables {
 	# Capture the list (vs substituting into the for-list) so a failed enumeration can't trip the ERR trap inside the subshell and overwrite the status file
 	dbs=$(run_sql -X -p 5432 -A -t -c "select datname from pg_database where datallowconn") || return 1
 	for db in $dbs; do
-		stmts=$(run_sql -X -p 5432 -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p'") || {
+		stmts=$(run_sql -X -p 5432 -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
 			rc=1
 			continue
 		}
