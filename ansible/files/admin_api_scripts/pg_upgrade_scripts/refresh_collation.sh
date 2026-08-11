@@ -33,6 +33,12 @@ REINDEX_LOCK_TIMEOUT_MS=2000
 # Set by any enumeration/reindex/refresh failure; becomes the exit code.
 SCRIPT_FAILED=0
 
+# Advisory snapshot consumed by adminapi (api/refresh_collation.go). Rewritten
+# fresh every run; readable by the adminapi user (0644 — index names, not secret).
+ADVISORY_FILE="/tmp/collation-refresh-status.json"
+ADVISORY_NDJSON="" # per-run temp NDJSON accumulator; set in main()
+ADVISORY_DBS="" # per-run temp file of databases that produced advisories
+
 log() {
 	echo "[$(date '+%Y-%m-%d %H:%M:%S')] refresh_collation: $1"
 }
@@ -84,7 +90,10 @@ conninfo_for_db() {
 # follow-up surfaces them via the adminapi advisory channel rather than silently
 # refreshing. See:
 # https://github.com/supabase/postgres/pull/2343#discussion_r3756738261
-affected_index_oids_sql() {
+# Shared WITH clause: collations (affected_coll) and the current db's default
+# (affected_default) whose recorded version is stale. Used by both the reindex
+# enumeration and the advisory query so their notion of "affected" cannot drift.
+_affected_ctes() {
 	cat <<SQL
 with affected_coll as (
   select c.oid
@@ -101,7 +110,15 @@ affected_default as (
     and d.datcollversion is not null
     and d.datcollversion is distinct from pg_database_collation_actual_version(d.oid)
 )
-select i.indexrelid
+SQL
+}
+
+# Shared FROM/WHERE: leaf indexes ('i') in user schemas that depend on a stale
+# collation (explicit or the db default). Callers prepend their own SELECT and
+# append an index-class filter + ORDER BY. Aliases: i=pg_index, ci=pg_class,
+# n=pg_namespace.
+_affected_index_from_where() {
+	cat <<SQL
 from pg_index i
 join pg_class ci on ci.oid = i.indexrelid
 join pg_namespace n on n.oid = ci.relnamespace
@@ -122,7 +139,38 @@ where ci.relkind = 'i'
       )
     )
   )
+SQL
+}
+
+affected_index_oids_sql() {
+	cat <<SQL
+$(_affected_ctes)
+select i.indexrelid
+$(_affected_index_from_where)
+  and not i.indisexclusion
+  and i.indisvalid
 order by i.indexrelid;
+SQL
+}
+
+# Exclusion-constraint ('i' with indisexclusion) and invalid (not indisvalid)
+# indexes depending on a stale collation. These cannot be REINDEX-ed CONCURRENTLY,
+# so we never touch them here — we emit an advisory for the customer. Output is one
+# JSON object per index (NDJSON under -Atq); everything is built server-side so a
+# hostile index name stays data, never shell/psql code.
+affected_advisory_sql() {
+	cat <<SQL
+$(_affected_ctes)
+select json_build_object(
+  'database',    current_database(),
+  'index',       format('%I.%I', n.nspname, ci.relname),
+  'reason',      case when i.indisexclusion then 'exclusion_constraint'
+                      else 'invalid_index' end,
+  'remediation', format('REINDEX INDEX %I.%I;', n.nspname, ci.relname)
+)
+$(_affected_index_from_where)
+  and (i.indisexclusion or not i.indisvalid)
+order by n.nspname, ci.relname;
 SQL
 }
 
@@ -220,6 +268,27 @@ process_database() {
 	#    erase the signal that the index still needs rebuilding.
 	if [ "$reindex_failed" -ne 0 ]; then
 		log "skipping collation refresh on $db: reindex incomplete (stale-index signal preserved)"
+		printf '%s\n' "$db" >>"$ADVISORY_DBS"
+		return
+	fi
+
+	# Exclusion/invalid indexes we cannot rebuild automatically: record an advisory,
+	# do NOT fail, and skip this database's refresh entirely (named collations AND
+	# the db default in section c) so a stale version is never stamped over an
+	# un-rebuilt index. The advisory persists until the customer reindexes manually.
+	local advisories
+	advisories="$(run_sql -d "$conn" -Atq -c "$(affected_advisory_sql)")"
+	rc=$?
+	if [ "$rc" -ne 0 ]; then
+		log "WARN could not enumerate advisory indexes on $db (psql rc=$rc); skipping refresh to preserve signal"
+		SCRIPT_FAILED=1
+		printf '%s\n' "$db" >>"$ADVISORY_DBS"
+		return
+	fi
+	if [ -n "$advisories" ]; then
+		printf '%s\n' "$advisories" >>"$ADVISORY_NDJSON"
+		printf '%s\n' "$db" >>"$ADVISORY_DBS"
+		log "advisory: $db has exclusion/invalid indexes needing manual REINDEX; skipping this DB's collation refresh"
 		return
 	fi
 
@@ -246,6 +315,13 @@ process_database() {
 }
 
 main() {
+	# Fresh, readable, empty snapshot up front; overwritten at the end if findings.
+	printf '[]' >"$ADVISORY_FILE" 2>/dev/null || true
+	chmod 0644 "$ADVISORY_FILE" 2>/dev/null || true
+	ADVISORY_NDJSON="$(mktemp)"
+	ADVISORY_DBS="$(mktemp)"
+	trap 'rm -f "$ADVISORY_NDJSON" "$ADVISORY_DBS"' EXIT
+
 	if ! retry 8 pg_isready -h localhost -U supabase_admin -d postgres; then
 		log "postgres not ready after retries; could not run (reporting failure)"
 		SCRIPT_FAILED=1
@@ -273,7 +349,7 @@ main() {
 		return 0
 	fi
 
-	local dbs rc db oids oid
+	local dbs rc db oids oid dbname adv_json
 	dbs="$(run_sql -d postgres -Atq -c "select datname from pg_database where datallowconn and datname <> 'template0' order by datname;")"
 	rc=$?
 	if [ "$rc" -ne 0 ]; then
@@ -301,12 +377,36 @@ main() {
 				SCRIPT_FAILED=1
 				continue
 			fi
+			dbname="$(run_sql -d postgres -Atq -c "select datname from pg_database where oid = $oid;")"
+			rc=$?
+			if [ "$rc" -ne 0 ] || [ -z "$dbname" ]; then
+				log "WARN could not resolve datname for database oid $oid (psql rc=$rc); skipping db-default refresh to avoid masking advisories"
+				SCRIPT_FAILED=1
+				continue
+			fi
+			if grep -qxF "$dbname" "$ADVISORY_DBS"; then
+				log "skipping db-default refresh for $dbname: outstanding collation advisories"
+				continue
+			fi
 			log "refresh (db default) :: database oid $oid"
 			if ! refresh_db_default_by_oid "$oid"; then
 				log "WARN database-default refresh failed :: database oid $oid (continuing)"
 				SCRIPT_FAILED=1
 			fi
 		done <<<"$oids"
+	fi
+
+	# Assemble the JSON array snapshot from per-DB NDJSON. Fail-open: any problem
+	# leaves the "[]" written at entry. jq matches the sibling scripts' JSON tooling.
+	if [ -s "$ADVISORY_NDJSON" ]; then
+		if adv_json="$(jq -s '.' "$ADVISORY_NDJSON" 2>/dev/null)"; then
+			printf '%s\n' "$adv_json" >"${ADVISORY_FILE}.tmp" &&
+				mv "${ADVISORY_FILE}.tmp" "$ADVISORY_FILE"
+			chmod 0644 "$ADVISORY_FILE" 2>/dev/null || true
+		else
+			log "WARN could not assemble advisory JSON; leaving prior snapshot"
+			SCRIPT_FAILED=1
+		fi
 	fi
 
 	log "done (failed=$SCRIPT_FAILED)"
