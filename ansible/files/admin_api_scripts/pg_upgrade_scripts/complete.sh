@@ -293,7 +293,8 @@ function complete_pg_upgrade {
 	execute_wrappers_patch
 
 	log "4. Running generated SQL files"
-	retry 3 run_generated_sql
+	# Deliberately fail-soft per file (a failed ALTER EXTENSION UPDATE shouldn't fail the upgrade) so it never returns non-zero — a retry wrapper here would be dead code, and re-running would make already-applied updates error spuriously
+	run_generated_sql
 
 	log "4.1. Applying patches"
 	execute_patches || {
