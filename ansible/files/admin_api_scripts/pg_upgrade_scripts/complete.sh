@@ -253,6 +253,9 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
+	# Set (including from called functions, via dynamic scoping) whenever a fail-soft step failed; ships the log for visibility at the end
+	local warnings=0
+
 	# No || true: a salt run restarting postgres between steps 3 and 5 is exactly
 	# what this guards against, and failing here leaves the new instance untouched.
 	if [ -z "$IS_CI" ]; then
@@ -290,7 +293,10 @@ function complete_pg_upgrade {
 		CI_start_postgres --new-bin
 	fi
 
-	execute_extension_upgrade_patches || true
+	execute_extension_upgrade_patches || {
+		log "WARNING: extension upgrade patches failed"
+		warnings=1
+	}
 
 	# For this to work we need `vault.secrets` from the old project to be
 	# preserved, but `run_generated_sql` includes `ALTER EXTENSION
@@ -300,10 +306,14 @@ function complete_pg_upgrade {
 	execute_wrappers_patch
 
 	log "4. Running generated SQL files"
-	retry 3 run_generated_sql
+	# Deliberately fail-soft per file (a failed ALTER EXTENSION UPDATE shouldn't fail the upgrade) so it never returns non-zero — a retry wrapper here would be dead code, and re-running would make already-applied updates error spuriously
+	run_generated_sql
 
 	log "4.1. Applying patches"
-	execute_patches || true
+	execute_patches || {
+		log "WARNING: post-upgrade patches failed"
+		warnings=1
+	}
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
@@ -327,24 +337,34 @@ function complete_pg_upgrade {
 	fi
 
 	log "6. Starting vacuum analyze"
-	# A failed analyze is not worth failing the whole upgrade for; the status
-	# file already reads "complete" and the ERR trap would flip it to "failed"
-	retry 3 start_vacuum_analyze || echo "WARNING: vacuum analyze failed after retries"
+	# A failed analyze is not worth failing the whole upgrade for; the status file already reads "complete" and the ERR trap would flip it to "failed"
+	retry 3 start_vacuum_analyze || {
+		log "WARNING: vacuum analyze failed after retries"
+		warnings=1
+	}
 
 	log "6.1. Analyzing partitioned tables"
-	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and
-	# autovacuum never analyzes them, so without this they'd have no stats at all
-	retry 3 analyze_partitioned_tables || echo "WARNING: partitioned table analyze failed after retries"
+	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and autovacuum never analyzes them, so without this they'd have no stats at all
+	retry 3 analyze_partitioned_tables || {
+		log "WARNING: partitioned table analyze failed after retries"
+		warnings=1
+	}
 
-	# The success path never reaches cleanup(), so restore the timers here too.
-	# enable_conflicting_timers skips units that are already enabled, so the
-	# cleanup() call is a no-op if this one ran.
+	# The success path never reaches cleanup(), so restore the timers here too. enable_conflicting_timers skips units that are already enabled, so the cleanup() call is a no-op if this one ran
 	if [ -z "$IS_CI" ]; then
 		log "7. Re-enabling conflicting systemd timers"
-		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+		enable_conflicting_timers || {
+			log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+			warnings=1
+		}
 	fi
 
 	log "Upgrade job completed"
+
+	# Clean runs ship nothing — only warn-but-completed upgrades are reported (hard failures ship via the ERR-trap cleanup)
+	if [ "$warnings" = 1 ]; then
+		ship_logs "$LOG_FILE" || true
+	fi
 }
 
 function copy_configs {
@@ -358,7 +378,10 @@ function run_generated_sql {
 	if [ -d /data/sql ]; then
 		for FILE in /data/sql/*.sql; do
 			if [ -f "$FILE" ]; then
-				run_sql -f "$FILE" || true
+				run_sql -f "$FILE" || {
+					log "WARNING: generated SQL file $FILE failed"
+					warnings=1
+				}
 			fi
 		done
 	fi
@@ -386,20 +409,37 @@ function start_vacuum_analyze {
 		# shellcheck disable=SC1091
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
-	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
+	# Conservative parallelism and a cost-delay reset (in case the customer raised it) — traffic may already be live
+	local jobs
+	jobs=$(($(nproc) / 4))
+	if [ "$jobs" -lt 1 ]; then
+		jobs=1
+	fi
+	PGOPTIONS='-c vacuum_cost_delay=0 -c lock_timeout=10s' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 
 function analyze_partitioned_tables {
-	local rc=0 db stmts
-	for db in $(psql -X -h localhost -p 5432 -U supabase_admin -d postgres -A -t -c "select datname from pg_database where datallowconn"); do
-		stmts=$(psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p'") || {
+	local rc=0 db stmts dbs
+	# Capture the list (vs substituting into the for-list) so a failed enumeration can't trip the ERR trap inside the subshell and overwrite the status file
+	dbs=$(run_sql -X -p 5432 -A -t -c "select datname from pg_database where datallowconn") || return 1
+	# Iterate by line, not by word — datnames can contain spaces and glob characters
+	while IFS= read -r db; do
+		if [ -z "$db" ]; then
+			continue
+		fi
+		stmts=$(run_sql -X -p 5432 -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
 			rc=1
 			continue
 		}
 		if [ -n "$stmts" ]; then
-			echo "$stmts" | psql -X -h localhost -p 5432 -U supabase_admin -d "$db" -v ON_ERROR_STOP=1 || rc=1
+			# The instance is serving traffic by now: fail fast into the retry rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
+			{
+				echo "set lock_timeout = '10s';"
+				echo "set statement_timeout = '10min';"
+				echo "$stmts"
+			} | run_sql -X -p 5432 -d "$db" -v ON_ERROR_STOP=1 || rc=1
 		fi
-	done
+	done <<<"$dbs"
 	return $rc
 }
 
