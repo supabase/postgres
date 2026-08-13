@@ -19,20 +19,20 @@ function wait_for_data_device {
 	local fstab_src dev=""
 	fstab_src=$(awk '$2 == "/data" {print $1}' /etc/fstab)
 	if [ -z "$fstab_src" ]; then
-		echo "No /data entry in /etc/fstab"
+		log "No /data entry in /etc/fstab"
 		return 1
 	fi
 
-	echo "Waiting for /data device ($fstab_src) to appear"
+	log "Waiting for /data device ($fstab_src) to appear"
 	for _ in $(seq 1 60); do
 		dev=$(findfs "$fstab_src" 2>/dev/null) || dev=""
 		if [ -n "$dev" ] && [ -b "$dev" ]; then
-			echo "/data device ($dev) is available"
+			log "/data device ($dev) is available"
 			return 0
 		fi
 		sleep 1
 	done
-	echo "Timed out waiting for /data device ($fstab_src)"
+	log "Timed out waiting for /data device ($fstab_src)"
 	return 1
 }
 
@@ -53,11 +53,22 @@ function cleanup {
 	exit "$EXIT_CODE"
 }
 
+# Callers invoke this as the left operand of `||`, which suppresses set -e for the
+# whole function body — and re-enabling it in a subshell does not restore it (verified
+# on bash 5.3). So failures are tracked explicitly in rc, the same idiom as
+# analyze_partitioned_tables. Without it the function returns its last command's status
+# and a mid-function failure is reported as success.
 function execute_extension_upgrade_patches {
+	local rc=0
 	if [ -f "/var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql" ] && [ ! -f "/usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql" ]; then
-		cp /var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql
-		ln -s /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql
+		# Only link once the copy landed; a dangling symlink is worse than no symlink
+		if cp /var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql; then
+			ln -s /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql || rc=1
+		else
+			rc=1
+		fi
 	fi
+	return $rc
 }
 
 function execute_wrappers_patch {
@@ -128,9 +139,14 @@ EOF
 	run_sql -c "$UPDATE_WRAPPERS_SERVER_OPTIONS_QUERY"
 }
 
+# See the note on execute_extension_upgrade_patches for why failures are tracked in rc
+# rather than left to set -e. Each patch is independent, so a failure records rc and the
+# remaining patches still get applied.
 function execute_patches {
+	local rc=0
+
 	# Patch pg_net grants
-	PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';")
+	PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';") || rc=1
 
 	if [ "$PG_NET_ENABLED" = "t" ]; then
 		PG_NET_GRANT_QUERY=$(
@@ -151,11 +167,11 @@ function execute_patches {
 EOF
 		)
 
-		run_sql -c "$PG_NET_GRANT_QUERY"
+		run_sql -c "$PG_NET_GRANT_QUERY" || rc=1
 	fi
 
 	# Patching pg_cron ownership as it resets during upgrade
-	HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';")
+	HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';") || rc=1
 
 	if [ "$HAS_PG_CRON_OWNED_BY_POSTGRES" = "t" ]; then
 		RECREATE_PG_CRON_QUERY=$(
@@ -174,13 +190,13 @@ EOF
 EOF
 		)
 
-		run_sql -c "$RECREATE_PG_CRON_QUERY"
+		run_sql -c "$RECREATE_PG_CRON_QUERY" || rc=1
 	fi
 
 	# Patching pgmq ownership as it resets during upgrade
-	HAS_PGMQ=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pgmq';")
+	HAS_PGMQ=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pgmq';") || rc=1
 	if [ "$HAS_PGMQ" = "t" ]; then
-		run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';"
+		run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';" || rc=1
 	fi
 
 	# Patch to handle upgrading to pgsodium-less Vault
@@ -224,7 +240,7 @@ EOF
     \$\$;
 EOF
 	)
-	run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY"
+	run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY" || rc=1
 
 	GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY=$(
 		cat <<EOF
@@ -242,12 +258,14 @@ EOF
     \$\$;
 EOF
 	)
-	run_sql -c "$GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY"
+	run_sql -c "$GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY" || rc=1
+
+	return $rc
 }
 
 function complete_pg_upgrade {
 	if [ -f /tmp/pg-upgrade-status ]; then
-		echo "Upgrade job already started. Bailing."
+		log "Upgrade job already started. Bailing."
 		exit 0
 	fi
 
@@ -274,11 +292,11 @@ function complete_pg_upgrade {
 		# `nofail` in /etc/fstab makes `mount -a` exit with a code of 0 even when the volume is absent
 		# In the offchance of the volume not being mounted or detected, explicitly fail here
 		if ! mountpoint -q /data; then
-			echo "FATAL: /data is not a mountpoint"
+			log "FATAL: /data is not a mountpoint"
 			exit 1
 		fi
 	else
-		echo "Skipping mount -a -v"
+		log "Skipping mount -a -v"
 	fi
 
 	# copying custom configurations
@@ -415,11 +433,12 @@ function start_vacuum_analyze {
 	if [ "$jobs" -lt 1 ]; then
 		jobs=1
 	fi
-	PGOPTIONS='-c vacuum_cost_delay=0 -c lock_timeout=10s' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
+	# --skip-locked rather than a global lock_timeout: a lock_timeout error aborts the entire staged, all-databases run, and `retry` then restarts from stage 1 — so an attempt dying mid-stage-3 can overwrite the finer stats an earlier attempt already wrote with stage 1's coarse target=1. Skipping just the locked relation leaves every other table's progress intact
+	PGOPTIONS='-c vacuum_cost_delay=0' vacuumdb --all --analyze-in-stages --skip-locked -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 
 function analyze_partitioned_tables {
-	local rc=0 db stmts dbs
+	local rc=0 db conn stmt stmts dbs
 	# Capture the list (vs substituting into the for-list) so a failed enumeration can't trip the ERR trap inside the subshell and overwrite the status file
 	dbs=$(run_sql -X -p 5432 -A -t -c "select datname from pg_database where datallowconn") || return 1
 	# Iterate by line, not by word — datnames can contain spaces and glob characters
@@ -427,18 +446,20 @@ function analyze_partitioned_tables {
 		if [ -z "$db" ]; then
 			continue
 		fi
-		stmts=$(run_sql -X -p 5432 -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
+		# Never pass a raw datname to -d: psql reads a value containing '=' as a conninfo string, so a database named `host=... dbname=...` would redirect this root-launched connection off-box
+		conn=$(conninfo_for_db "$db")
+		stmts=$(run_sql -X -p 5432 -d "$conn" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
 			rc=1
 			continue
 		}
-		if [ -n "$stmts" ]; then
-			# The instance is serving traffic by now: fail fast into the retry rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
-			{
-				echo "set lock_timeout = '10s';"
-				echo "set statement_timeout = '10min';"
-				echo "$stmts"
-			} | run_sql -X -p 5432 -d "$db" -v ON_ERROR_STOP=1 || rc=1
-		fi
+		# One psql call per statement: batching them under ON_ERROR_STOP=1 lets the first failing parent strand every later parent in this database, and the retry then re-fails on that same parent forever
+		while IFS= read -r stmt; do
+			if [ -z "$stmt" ]; then
+				continue
+			fi
+			# The instance is serving traffic by now: fail fast rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
+			run_sql -X -p 5432 -d "$conn" -v ON_ERROR_STOP=1 -c "set lock_timeout = '10s'; set statement_timeout = '10min'; $stmt" || rc=1
+		done <<<"$stmts"
 	done <<<"$dbs"
 	return $rc
 }
@@ -447,14 +468,14 @@ case $# in
 0) ;;
 1)
 	if ! declare -F "$1" >/dev/null; then
-		echo "Error: unknown function $1" >&2
+		log "Error: unknown function $1" >&2
 		exit 1
 	fi
 	$1
 	exit
 	;;
 *)
-	echo "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
+	log "Error: $(basename "$0") takes 0 args or a function to call, got $*" >&2
 	exit 1
 	;;
 esac
