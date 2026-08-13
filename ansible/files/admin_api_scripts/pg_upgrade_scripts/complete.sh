@@ -247,7 +247,10 @@ function complete_pg_upgrade {
 
 	echo "running" >/tmp/pg-upgrade-status
 
-	echo "1. Mounting data disk"
+	# Set (including from called functions, via dynamic scoping) whenever a fail-soft step failed; ships the log for visibility at the end
+	local warnings=0
+
+	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
 		udevadm settle --timeout=60 || true
@@ -266,43 +269,52 @@ function complete_pg_upgrade {
 	fi
 
 	# copying custom configurations
-	echo "2. Copying custom configurations"
+	log "2. Copying custom configurations"
 	retry 3 copy_configs
 
-	echo "3. Starting postgresql"
+	log "3. Starting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql start
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 	else
 		CI_start_postgres --new-bin
 	fi
 
-	execute_extension_upgrade_patches || true
+	execute_extension_upgrade_patches || {
+		log "WARNING: extension upgrade patches failed"
+		warnings=1
+	}
 
 	# For this to work we need `vault.secrets` from the old project to be
 	# preserved, but `run_generated_sql` includes `ALTER EXTENSION
 	# supabase_vault UPDATE` which modifies that. So we need to run it
 	# beforehand.
-	echo "3.1. Patch Wrappers server options"
+	log "3.1. Patch Wrappers server options"
 	execute_wrappers_patch
 
-	echo "4. Running generated SQL files"
-	retry 3 run_generated_sql
+	log "4. Running generated SQL files"
+	# Deliberately fail-soft per file (a failed ALTER EXTENSION UPDATE shouldn't fail the upgrade) so it never returns non-zero — a retry wrapper here would be dead code, and re-running would make already-applied updates error spuriously
+	run_generated_sql
 
-	echo "4.1. Applying patches"
-	execute_patches || true
+	log "4.1. Applying patches"
+	execute_patches || {
+		log "WARNING: post-upgrade patches failed"
+		warnings=1
+	}
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-	echo "4.2. Applying authentication scheme updates"
+	log "4.2. Applying authentication scheme updates"
 	retry 3 apply_auth_scheme_updates
 
 	sleep 5
 
-	echo "5. Restarting postgresql"
+	log "5. Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
 		retry 3 service postgresql restart
+		retry 8 pg_isready -h localhost -p 5432 -U supabase_admin
 
-		echo "5.1. Restarting gotrue and postgrest"
+		log "5.1. Restarting gotrue and postgrest"
 		retry 3 service gotrue restart
 		retry 3 service postgrest restart
 
@@ -311,8 +323,26 @@ function complete_pg_upgrade {
 		retry 3 CI_start_postgres
 	fi
 
-	echo "6. Starting vacuum analyze"
-	retry 3 start_vacuum_analyze
+	log "6. Starting vacuum analyze"
+	# A failed analyze is not worth failing the whole upgrade for; the status file already reads "complete" and the ERR trap would flip it to "failed"
+	retry 3 start_vacuum_analyze || {
+		log "WARNING: vacuum analyze failed after retries"
+		warnings=1
+	}
+
+	log "6.1. Analyzing partitioned tables"
+	# vacuumdb skips partitioned parents (fixed upstream only in PG19) and autovacuum never analyzes them, so without this they'd have no stats at all
+	retry 3 analyze_partitioned_tables || {
+		log "WARNING: partitioned table analyze failed after retries"
+		warnings=1
+	}
+
+	log "Upgrade job completed"
+
+	# Clean runs ship nothing — only warn-but-completed upgrades are reported (hard failures ship via the ERR-trap cleanup)
+	if [ "$warnings" = 1 ]; then
+		ship_logs "$LOG_FILE" || true
+	fi
 }
 
 function copy_configs {
@@ -326,7 +356,10 @@ function run_generated_sql {
 	if [ -d /data/sql ]; then
 		for FILE in /data/sql/*.sql; do
 			if [ -f "$FILE" ]; then
-				run_sql -f "$FILE" || true
+				run_sql -f "$FILE" || {
+					log "WARNING: generated SQL file $FILE failed"
+					warnings=1
+				}
 			fi
 		done
 	fi
@@ -354,8 +387,38 @@ function start_vacuum_analyze {
 		# shellcheck disable=SC1091
 		source "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
 	fi
-	vacuumdb --all --analyze-in-stages -U supabase_admin -h localhost -p 5432
-	echo "Upgrade job completed"
+	# Conservative parallelism and a cost-delay reset (in case the customer raised it) — traffic may already be live
+	local jobs
+	jobs=$(($(nproc) / 4))
+	if [ "$jobs" -lt 1 ]; then
+		jobs=1
+	fi
+	PGOPTIONS='-c vacuum_cost_delay=0 -c lock_timeout=10s' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
+}
+
+function analyze_partitioned_tables {
+	local rc=0 db stmts dbs
+	# Capture the list (vs substituting into the for-list) so a failed enumeration can't trip the ERR trap inside the subshell and overwrite the status file
+	dbs=$(run_sql -X -p 5432 -A -t -c "select datname from pg_database where datallowconn") || return 1
+	# Iterate by line, not by word — datnames can contain spaces and glob characters
+	while IFS= read -r db; do
+		if [ -z "$db" ]; then
+			continue
+		fi
+		stmts=$(run_sql -X -p 5432 -d "$db" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
+			rc=1
+			continue
+		}
+		if [ -n "$stmts" ]; then
+			# The instance is serving traffic by now: fail fast into the retry rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
+			{
+				echo "set lock_timeout = '10s';"
+				echo "set statement_timeout = '10min';"
+				echo "$stmts"
+			} | run_sql -X -p 5432 -d "$db" -v ON_ERROR_STOP=1 || rc=1
+		fi
+	done <<<"$dbs"
+	return $rc
 }
 
 case $# in
