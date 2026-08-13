@@ -126,14 +126,14 @@ pgbouncer_release: 1.25.1
 pgbouncer_artifacts:
   url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
   checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
-postgrest_release: "14.15" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+postgrest_release: "16.1" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
-    checksum: sha256:4e78c7f065a6c36f350c7177f5fa9bb77ea380c67b8bf40f2fc9130d857678dc
+    checksum: sha256:b986c926cf16a1c5d97954c57d3a6edd894a5da225c3f3fc0c25dc4105009dd7
   arm64:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-    checksum: sha256:1eb007298c1536ba865e741da7eece6fba6db3da904c599abd15d9c3debe6c2f
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-aarch64.tar.xz"
+    checksum: sha256:90c801ef53671677d1c9bef4181579fe876c5a2b0c1ba51bb71ace4eebccc1c5
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
