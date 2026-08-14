@@ -438,7 +438,7 @@ function start_vacuum_analyze {
 }
 
 function analyze_partitioned_tables {
-	local rc=0 db conn stmt stmts dbs
+	local rc=0 db conn oid oids dbs
 	# Capture the list (vs substituting into the for-list) so a failed enumeration can't trip the ERR trap inside the subshell and overwrite the status file
 	dbs=$(run_sql -X -p 5432 -A -t -c "select datname from pg_database where datallowconn") || return 1
 	# Iterate by line, not by word — datnames can contain spaces and glob characters
@@ -448,18 +448,23 @@ function analyze_partitioned_tables {
 		fi
 		# Never pass a raw datname to -d: psql reads a value containing '=' as a conninfo string, so a database named `host=... dbname=...` would redirect this root-launched connection off-box
 		conn=$(conninfo_for_db "$db")
-		stmts=$(run_sql -X -p 5432 -d "$conn" -A -t -c "select format('ANALYZE %I.%I;', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
+		# Enumerate integer OIDs only, never names: line-based iteration would split a relation name containing a newline mid-statement (same pattern as refresh_collation.sh). Parents that already have stats are skipped so retries don't redo finished work
+		oids=$(run_sql -X -p 5432 -d "$conn" -A -t -c "select c.oid from pg_class c where c.relkind = 'p' and not exists (select from pg_statistic s where s.starelid = c.oid)") || {
 			rc=1
 			continue
 		}
-		# One psql call per statement: batching them under ON_ERROR_STOP=1 lets the first failing parent strand every later parent in this database, and the retry then re-fails on that same parent forever
-		while IFS= read -r stmt; do
-			if [ -z "$stmt" ]; then
-				continue
-			fi
-			# The instance is serving traffic by now: fail fast rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
-			run_sql -X -p 5432 -d "$conn" -v ON_ERROR_STOP=1 -c "set lock_timeout = '10s'; set statement_timeout = '10min'; $stmt" || rc=1
-		done <<<"$stmts"
+		# One psql call per parent: batching them under ON_ERROR_STOP=1 lets the first failing parent strand every later parent in this database, and the retry then re-fails on that same parent forever
+		while IFS= read -r oid; do
+			case "$oid" in
+			'' | *[!0-9]*) continue ;;
+			esac
+			# The ANALYZE statement is built and run server-side (format %I + \gexec) so object names never round-trip through the shell. A parent dropped since enumeration yields zero rows — \gexec then runs nothing, which is the right outcome. The instance is serving traffic by now: fail fast rather than queue behind a customer lock (autovacuum's ANALYZE cancels itself for us), and cap runaway many-leaf recursion rather than grind against live traffic
+			run_sql -X -p 5432 -d "$conn" -v ON_ERROR_STOP=1 <<-EOSQL || rc=1
+				set lock_timeout = '10s';
+				set statement_timeout = '10min';
+				select format('ANALYZE %I.%I', n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.oid = $oid and c.relkind = 'p' \gexec
+			EOSQL
+		done <<<"$oids"
 	done <<<"$dbs"
 	return $rc
 }
