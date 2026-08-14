@@ -8,166 +8,20 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-# Switch to a different mirror
-function switch_mirror {
-	local new_mirror=$1
-	local sources_file=/etc/apt/sources.list
-
-	echo "Switching to mirror: $new_mirror"
-	if [[ $ARCH == amd64 ]]; then
-		sed -i "s|http://[^/]*/ubuntu/|http://$new_mirror/ubuntu/|g" "$sources_file"
-	else
-		sed -i "s|http://[^/]*/ubuntu-ports/|http://$new_mirror/ubuntu-ports/|g" "$sources_file"
-	fi
-
-	# Show what we're using
-	echo "Current sources.list configuration:"
-	grep -E '^deb ' "$sources_file" | head -3
-}
-
-# Get list of mirrors to try
-function get_mirror_list {
-	local sources_file=/etc/apt/sources.list
-	local -a mirrors=()
-
-	# Priority order:
-	# 1. Country-specific mirror (most reliable)
-	# 2. Regional CDN (can be inconsistent)
-	# 3. Global fallback
-
-	local current_region
-	if [[ $ARCH == amd64 ]]; then
-		current_region=$(grep -oP '(?<=http://)[^.]+(?=\.ec2\.archive\.ubuntu\.com)' "$sources_file" | head -1 || echo "")
-
-		if [[ -n $current_region ]]; then
-			mirrors+=("$current_region.ec2.archive.ubuntu.com")
-		fi
-
-		mirrors+=("archive.ubuntu.com")
-	else
-		current_region=$(grep -oP '(?<=http://)[^.]+(?=\.clouds\.ports\.ubuntu\.com)' "$sources_file" | head -1 || echo "")
-
-		# Singapore country mirror for ap-southeast-1
-		if [[ $current_region == "ap-southeast-1" ]]; then
-			mirrors+=("sg.ports.ubuntu.com")
-		fi
-
-		if [[ -n $current_region ]]; then
-			mirrors+=("$current_region.clouds.ports.ubuntu.com")
-		fi
-		mirrors+=("ports.ubuntu.com")
-	fi
-
-	echo "${mirrors[@]}"
-}
-
-# Mirror fallback function for resilient apt-get update
+# The following 2 functions don'treally do much since we are now using deb822 formatted sources with fallbacks in the URIs.
+# This means apt-get handles fallback on its own, much better and cleaner than we are doing.
+# Leaving the functions as is for now to make the diff smaller, soon will go away.
 function apt_update_with_fallback {
-	local sources_file=/etc/apt/sources.list
-	local -a mirror_list
-	readarray mirror_list < <(get_mirror_list)
-	local attempt=1
-	local max_attempts=${#mirror_list[@]}
-
-	for mirror in "${mirror_list[@]}"; do
-		echo "========================================="
-		echo "Attempting apt-get update with mirror: $mirror"
-		echo "Attempt $attempt of $max_attempts"
-		echo "========================================="
-
-		switch_mirror "$mirror"
-
-		# Attempt update with timeout (5 minutes)
-		if timeout 300 apt-get "${APT_OPTIONS[@]}" update 2>&1; then
-			echo "========================================="
-			echo "✓ Successfully updated apt cache using mirror: $mirror"
-			echo "========================================="
-			return 0
-		else
-			local ret=$?
-			echo "========================================="
-			echo "✗ Failed to update using mirror: $mirror"
-			echo "Exit code: $ret"
-			echo "========================================="
-
-			# Clean partial downloads
-			apt-get clean
-			rm -rf /var/lib/apt/lists/*
-
-			# Exponential backoff before next attempt
-			if [[ $attempt -lt $max_attempts ]]; then
-				local sleep_time=$((attempt * 5))
-				echo "Waiting $sleep_time seconds before trying next mirror..."
-				sleep $sleep_time
-			fi
-		fi
-
-		attempt=$((attempt + 1))
-	done
-
-	echo "========================================="
-	echo "ERROR: All mirror tiers failed after $max_attempts attempts"
-	echo "========================================="
-	return 1
+	timeout 300 apt-get "${APT_OPTIONS[@]}" update 2>&1
 }
 
-# Wrapper for apt-get install with mirror fallback on 404 errors
 function apt_install_with_fallback {
-	local -a mirror_list
-	readarray mirror_list < <(get_mirror_list)
-	local attempt=1
-	local max_attempts=${#mirror_list[@]}
-
-	for mirror in "${mirror_list[@]}"; do
-		echo "========================================="
-		echo "Attempting apt-get install with mirror: $mirror"
-		echo "Attempt $attempt of $max_attempts"
-		echo "========================================="
-
-		switch_mirror "$mirror"
-
-		# Re-run apt-get update to get package lists from new mirror
-		if ! timeout 300 apt-get "${APT_OPTIONS[@]}" update 2>&1; then
-			echo "Warning: apt-get update failed for mirror $mirror, trying next..."
-			attempt=$((attempt + 1))
-			continue
-		fi
-
-		# Run apt-get install directly (no output capture to avoid buffering/timeout issues)
-		if apt-get "$@"; then
-			echo "========================================="
-			echo "✓ Successfully installed packages using mirror: ${mirror}"
-			echo "========================================="
-			return 0
-		else
-			local ret=$?
-			# On failure, check if it's a mirror issue worth retrying
-			echo "========================================="
-			echo "✗ apt-get failed with exit code: $ret"
-			echo "========================================="
-		fi
-
-		# Clean apt cache before potential retry
-		apt-get clean
-
-		if ((attempt < max_attempts)); then
-			local sleep_time=$((attempt * 5))
-			echo "Waiting $sleep_time seconds before trying next mirror..."
-			sleep $sleep_time
-		fi
-
-		attempt=$((attempt + 1))
-	done
-
-	echo "========================================="
-	echo "ERROR: All mirror tiers failed for apt-get install after $max_attempts attempts"
-	echo "========================================="
-	return 1
+	apt-get "$@"
 }
 
 function update_install_packages {
 	# Update APT with new sources (using fallback mechanism)
-	cat /etc/apt/sources.list
+	tail -n+1 /etc/apt/sources.list /etc/apt/sources.list.d/*
 	if ! apt_update_with_fallback; then
 		echo "FATAL: Failed to update package lists with any mirror tier"
 		exit 1
@@ -208,12 +62,6 @@ function update_install_packages {
 	# apt upgrade
 	apt-get upgrade -y
 
-	# Install OpenSSH and other packages
-	add-apt-repository --yes universe
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists after adding universe repository"
-		exit 1
-	fi
 	if ! apt_install_with_fallback install -y --no-install-recommends \
 		openssh-server \
 		git \
