@@ -47,11 +47,21 @@ function cleanup {
 	exit "$EXIT_CODE"
 }
 
+# Callers invoke this as the left operand of ||, which suppresses set -e for the
+# whole function body — and a subshell with set -e re-enabled does not restore it
+# (verified on bash 3.2 and 5.3), so a mid-function failure would be reported as
+# success. Failures are instead tracked explicitly in rc, like analyze_partitioned_tables.
 function execute_extension_upgrade_patches {
+	local rc=0
 	if [ -f "/var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql" ] && [ ! -f "/usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql" ]; then
-		cp /var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql
-		ln -s /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql
+		# Only link once the copy landed; a dangling symlink is worse than no symlink
+		if cp /var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql; then
+			ln -s /var/lib/postgresql/extension/wrappers--0.3.0--0.4.1.sql /usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql || rc=1
+		else
+			rc=1
+		fi
 	fi
+	return $rc
 }
 
 function execute_wrappers_patch {
@@ -122,9 +132,14 @@ EOF
 	run_sql -c "$UPDATE_WRAPPERS_SERVER_OPTIONS_QUERY"
 }
 
+# See the note on execute_extension_upgrade_patches for why failures are tracked
+# in rc rather than left to set -e. Each patch is independent, so a failure records
+# rc and the remaining patches still get applied.
 function execute_patches {
+	local rc=0
+
 	# Patch pg_net grants
-	PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';")
+	PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';") || rc=1
 
 	if [ "$PG_NET_ENABLED" = "t" ]; then
 		PG_NET_GRANT_QUERY=$(
@@ -145,11 +160,11 @@ function execute_patches {
 EOF
 		)
 
-		run_sql -c "$PG_NET_GRANT_QUERY"
+		run_sql -c "$PG_NET_GRANT_QUERY" || rc=1
 	fi
 
 	# Patching pg_cron ownership as it resets during upgrade
-	HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';")
+	HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';") || rc=1
 
 	if [ "$HAS_PG_CRON_OWNED_BY_POSTGRES" = "t" ]; then
 		RECREATE_PG_CRON_QUERY=$(
@@ -168,13 +183,13 @@ EOF
 EOF
 		)
 
-		run_sql -c "$RECREATE_PG_CRON_QUERY"
+		run_sql -c "$RECREATE_PG_CRON_QUERY" || rc=1
 	fi
 
 	# Patching pgmq ownership as it resets during upgrade
-	HAS_PGMQ=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pgmq';")
+	HAS_PGMQ=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pgmq';") || rc=1
 	if [ "$HAS_PGMQ" = "t" ]; then
-		run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';"
+		run_sql -c "update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';" || rc=1
 	fi
 
 	# Patch to handle upgrading to pgsodium-less Vault
@@ -218,7 +233,7 @@ EOF
     \$\$;
 EOF
 	)
-	run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY"
+	run_sql -c "$REENCRYPT_VAULT_SECRETS_QUERY" || rc=1
 
 	GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY=$(
 		cat <<EOF
@@ -236,7 +251,9 @@ EOF
     \$\$;
 EOF
 	)
-	run_sql -c "$GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY"
+	run_sql -c "$GRANT_PREDEFINED_ROLES_TO_POSTGRES_QUERY" || rc=1
+
+	return $rc
 }
 
 function complete_pg_upgrade {
