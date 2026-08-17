@@ -393,7 +393,8 @@ function start_vacuum_analyze {
 	if [ "$jobs" -lt 1 ]; then
 		jobs=1
 	fi
-	PGOPTIONS='-c vacuum_cost_delay=0 -c lock_timeout=10s' vacuumdb --all --analyze-in-stages -j "$jobs" -U supabase_admin -h localhost -p 5432
+	# --skip-locked rather than a lock_timeout: a lock-timeout error aborts the whole staged all-databases run, and the retry restarts from stage 1 — overwriting finer stats an earlier attempt already wrote with stage 1's coarse target=1. Skipping just the locked table preserves every other table's progress
+	PGOPTIONS='-c vacuum_cost_delay=0' vacuumdb --all --analyze-in-stages --skip-locked -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 
 function analyze_partitioned_tables {
