@@ -15,11 +15,10 @@ function log {
 }
 
 # Timers that trigger jobs which can be problematic during the upgrade process.
-#   supabase-admin-agent_salt.timer - reapplies host state every 10 minutes
 #   apt-daily{,-upgrade}.timer - apt-get update and unattended-upgrades contend
 #     for the dpkg lock that initiate.sh needs, and can restart services.
+# DO NOT ADD THE SALT TIMER HERE!
 TIMERS_TO_DISABLE=(
-	"supabase-admin-agent_salt.timer"
 	"apt-daily.timer"
 	"apt-daily-upgrade.timer"
 )
