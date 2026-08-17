@@ -77,8 +77,8 @@ fi
 
 if [ -n "$IS_CI" ]; then
 	PGBINOLD="$(pg_config --bindir)"
-	echo "Running in CI mode; using pg_config bindir: $PGBINOLD"
-	echo "PGVERSION: $PGVERSION"
+	log "Running in CI mode; using pg_config bindir: $PGBINOLD"
+	log "PGVERSION: $PGVERSION"
 fi
 
 OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
@@ -92,11 +92,20 @@ cleanup() {
 	fi
 
 	if [ "$UPGRADE_STATUS" = "failed" ]; then
-		echo "Upgrade job failed. Cleaning up and exiting."
+		log "Upgrade job failed. Cleaning up and exiting."
+	fi
+
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		# Restore timers before anything below: nearly every later step (chown,
+		# bare retry postgres restart, SQL) can fail under set -e and kill this
+		# trap mid-way, and the restore must not sit behind that. Warn-only for
+		# the same reason — aborting here would also leave the status file
+		# stuck at "running".
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
-		echo "Copying pg_upgrade output to /var/log"
+		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
@@ -117,7 +126,7 @@ cleanup() {
 		fi
 	fi
 
-	echo "Restarting postgresql"
+	log "Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
 		systemctl enable postgresql
 		retry 5 systemctl restart postgresql
@@ -127,18 +136,18 @@ cleanup() {
 
 	retry 8 pg_isready -h localhost -U supabase_admin
 
-	echo "Re-enabling extensions"
+	log "Re-enabling extensions"
 	if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
 		retry 5 run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
 	fi
 
-	echo "Removing SUPERUSER grant from postgres"
+	log "Removing SUPERUSER grant from postgres"
 	retry 5 run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-	echo "Resetting postgres database connection limit"
+	log "Resetting postgres database connection limit"
 	retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
 
-	echo "Making sure postgres still has access to pg_shadow"
+	log "Making sure postgres still has access to pg_shadow"
 	cat <<EOF >>$POST_UPGRADE_POSTGRES_PERMS_SCRIPT
 DO \$\$
 begin
@@ -155,7 +164,7 @@ EOF
 	fi
 
 	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-		echo "Unmounting data disk from ${MOUNT_POINT}"
+		log "Unmounting data disk from ${MOUNT_POINT}"
 		# check_free_space (and other pre-mount failures) can trigger this trap before
 		# $MOUNT_POINT is ever mounted. Without || true, set -e aborts cleanup() right here
 		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
@@ -167,7 +176,7 @@ EOF
 	if [ -z "$IS_CI" ]; then
 		exit "$EXIT_CODE"
 	else
-		echo "CI run complete with code ${EXIT_CODE}. Exiting."
+		log "CI run complete with code ${EXIT_CODE}. Exiting."
 		exit "$EXIT_CODE"
 	fi
 }
@@ -199,7 +208,7 @@ EOF
 	for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
 		EXTENSION_ENABLED=$(run_sql -A -t -c "SELECT EXISTS(SELECT 1 FROM pg_extension WHERE extname = '${EXTENSION}');")
 		if [ "$EXTENSION_ENABLED" = "t" ]; then
-			echo "Disabling extension ${EXTENSION}"
+			log "Disabling extension ${EXTENSION}"
 			run_sql -c "DROP EXTENSION IF EXISTS ${EXTENSION} CASCADE;"
 			cat <<EOF >>$POST_UPGRADE_EXTENSION_SCRIPT
 DO \$\$
@@ -215,6 +224,15 @@ EOF
 }
 
 function initiate_upgrade {
+	# Before anything destructive: no || true here, a timer firing mid-upgrade is
+	# exactly what this guards against, and failing now leaves the project untouched.
+	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
+	# `dpkg --configure -a` repairs that a moment later.
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		log "0. Masking conflicting systemd timers"
+		retry 3 disable_conflicting_timers
+	fi
+
 	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
 	check_free_space $((2 * 1024 * 1024))
 
@@ -280,7 +298,7 @@ function initiate_upgrade {
 		rm -rf /tmp/pg_upgrade_bin/
 	fi
 
-	echo "1. Extracting pg_upgrade binaries"
+	log "1. Extracting pg_upgrade binaries"
 	mkdir -p "/tmp/pg_upgrade_bin"
 	tar zxf "/tmp/persistent/pg_upgrade_bin.tar.gz" -C "/tmp/pg_upgrade_bin"
 
@@ -293,17 +311,17 @@ function initiate_upgrade {
 		if [ "$IS_NIX_BASED_SYSTEM" = "false" ]; then
 			if [ ! -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
 				if ! command -v nix >/dev/null; then
-					echo "1.1. Nix is not installed; installing."
+					log "1.1. Nix is not installed; installing."
 
 					if [ -f "$NIX_INSTALLER_PACKAGE_PATH" ]; then
-						echo "1.1.1. Installing Nix using the provided installer"
+						log "1.1.1. Installing Nix using the provided installer"
 						tar -xzf "$NIX_INSTALLER_PACKAGE_PATH" -C /tmp/persistent/
 						chmod +x "$NIX_INSTALLER_PATH"
 						"$NIX_INSTALLER_PATH" install --no-confirm \
 							--extra-conf "substituters = https://cache.nixos.org https://nix-postgres-artifacts.s3.amazonaws.com" \
 							--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 					else
-						echo "1.1.1. Installing Nix using the official installer"
+						log "1.1.1. Installing Nix using the official installer"
 						sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
@@ -311,12 +329,12 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 EXTRA_NIX_CONF
 					fi
 				else
-					echo "1.1. Nix is installed; moving on."
+					log "1.1. Nix is installed; moving on."
 				fi
 			fi
 		fi
 
-		echo "1.2. Fetching store path for flake revision: $NIX_FLAKE_VERSION"
+		log "1.2. Fetching store path for flake revision: $NIX_FLAKE_VERSION"
 		# shellcheck disable=SC1091
 		source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 		nix --version
@@ -329,31 +347,33 @@ EXTRA_NIX_CONF
 		elif [ "$ARCH" = "x86_64" ]; then
 			SYSTEM="x86_64-linux"
 		else
-			echo "ERROR: Unsupported architecture: $ARCH"
-			exit 1
+			log "ERROR: Unsupported architecture: $ARCH"
+			# fail as a command, not exit 1: exit skips the ERR trap, so cleanup
+			# would never restore the masked timers or write the status file
+			false
 		fi
 
 		# Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
 		# Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
 		CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
 		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
-		echo "Fetching catalog from: $CATALOG_S3"
+		log "Fetching catalog from: $CATALOG_S3"
 
 		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
-			echo "ERROR: Failed to fetch catalog from $CATALOG_S3"
-			exit 1
+			log "ERROR: Failed to fetch catalog from $CATALOG_S3"
+			false # not exit: let the ERR trap run cleanup
 		fi
 
 		STORE_PATH=$(jq -r ".\"${SYSTEM}\"" "$CATALOG_LOCAL")
 
 		if [ -z "$STORE_PATH" ] || [ "$STORE_PATH" = "null" ]; then
-			echo "ERROR: Could not find store path in catalog for ${SYSTEM}"
-			echo "Catalog contents:"
+			log "ERROR: Could not find store path in catalog for ${SYSTEM}"
+			log "Catalog contents:"
 			jq . "$CATALOG_LOCAL"
-			exit 1
+			false # not exit: let the ERR trap run cleanup
 		fi
 
-		echo "Store path: $STORE_PATH"
+		log "Store path: $STORE_PATH"
 
 		# Realize the closure from the binary cache.
 		#
@@ -377,9 +397,9 @@ EXTRA_NIX_CONF
 				break
 			fi
 			if [ "$attempt" -lt 3 ]; then
-				echo "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
+				log "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
 			else
-				echo "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
+				log "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
@@ -412,20 +432,20 @@ EXTRA_NIX_CONF
 	cd /tmp/pg_upgrade/
 
 	# Fixing erros generated by previous dpkg executions (package upgrades et co)
-	echo "2. Fixing potential errors generated by dpkg"
-	echo "2.1 Killing off any old hanging apt-get processes"
+	log "2. Fixing potential errors generated by dpkg"
+	log "2.1 Killing off any old hanging apt-get processes"
 	# One hour is old enough to be bad
-	pkill -f apt-get --older 3600 2>/dev/null || echo "No hanging apt-get processes found"
+	pkill -f apt-get --older 3600 2>/dev/null || log "No hanging apt-get processes found"
 	DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confold || true # handle errors generated by dpkg
 
 	# Needed for PostGIS, since it's compiled with Protobuf-C support now
-	echo "3. Installing libprotobuf-c1 and libicu66 if missing"
+	log "3. Installing libprotobuf-c1 and libicu66 if missing"
 	if [[ ! "$(apt list --installed libprotobuf-c1 | grep "installed")" ]]; then
 		apt-get -o DPkg::Lock::Timeout=600 update -y                # wait up to 10 minutes for any dpkg locks to clear before updating package lists
 		apt --fix-broken install -y libprotobuf-c1 libicu66 || true # apt has builtin 2 minute wait lock
 	fi
 
-	echo "4. Setup locale if required"
+	log "4. Setup locale if required"
 	if ! grep -q "^en_US.UTF-8" /etc/locale.gen; then
 		echo "en_US.UTF-8 UTF-8" >>/etc/locale.gen
 	fi
@@ -436,7 +456,7 @@ EXTRA_NIX_CONF
 
 	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 		# DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
-		echo "5. Determining block device to mount"
+		log "5. Determining block device to mount"
 		# lsb release
 		UBUNTU_VERSION=$(lsb_release -rs)
 		# install amazon disk utilities if not present on 24.04
@@ -458,16 +478,16 @@ EXTRA_NIX_CONF
 
 		# Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
 		if [ -z "${BLOCK_DEVICE:-}" ]; then
-			echo "No block device found using ebsnvme-id, falling back to lsblk"
+			log "No block device found using ebsnvme-id, falling back to lsblk"
 			# awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
 			# excluding nvme0 since it is the root disk
 			BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; exit }') # exit ensures we grab the first only
 		fi
 
-		echo "Block device found: $BLOCK_DEVICE"
+		log "Block device found: $BLOCK_DEVICE"
 
 		mkdir -p "$MOUNT_POINT"
-		echo "6. Mounting block device"
+		log "6. Mounting block device"
 
 		sleep 5
 		e2fsck -pf "$BLOCK_DEVICE"
@@ -487,14 +507,14 @@ EXTRA_NIX_CONF
 		chmod 600 /etc/postgresql-custom/pgsodium_root.key
 	fi
 
-	echo "7. Disabling extensions and generating post-upgrade script"
+	log "7. Disabling extensions and generating post-upgrade script"
 	handle_extensions
 
-	echo "8.1. Granting SUPERUSER to postgres user"
+	log "8.1. Granting SUPERUSER to postgres user"
 	run_sql -c "ALTER USER postgres WITH SUPERUSER;"
 
 	if [ "$OLD_BOOTSTRAP_USER" = "postgres" ]; then
-		echo "8.2. Swap postgres & supabase_admin roles as we're upgrading a project with postgres as bootstrap user"
+		log "8.2. Swap postgres & supabase_admin roles as we're upgrading a project with postgres as bootstrap user"
 		swap_postgres_and_supabase_admin
 	fi
 
@@ -510,7 +530,7 @@ EXTRA_NIX_CONF
 		export LD_LIBRARY_PATH="${PGLIBNEW}"
 	fi
 
-	echo "9. Creating new data directory, initializing database"
+	log "9. Creating new data directory, initializing database"
 	chown -R postgres:postgres "$MOUNT_POINT/"
 	rm -rf "${PGDATANEW:?}/"
 
@@ -576,7 +596,7 @@ EOF
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
 	fi
 
-	echo "10. Stopping postgres; running pg_upgrade"
+	log "10. Stopping postgres; running pg_upgrade"
 	# Extra work to ensure postgres is actually stopped
 	#  Mostly needed for PG12 projects with odd systemd unit behavior
 	if [ -z "$IS_CI" ]; then
@@ -599,7 +619,7 @@ EOF
 	fi
 
 	# copying custom configurations
-	echo "11. Copying custom configurations"
+	log "11. Copying custom configurations"
 	mkdir -p "$MOUNT_POINT/conf"
 	cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
 	# removing supautils config as to allow the latest one provided by the latest image to be used
@@ -610,12 +630,12 @@ EOF
 	rm -f "$MOUNT_POINT/conf/wal-g.conf"
 
 	# copy sql files generated by pg_upgrade
-	echo "12. Copying sql files generated by pg_upgrade"
+	log "12. Copying sql files generated by pg_upgrade"
 	mkdir -p "$MOUNT_POINT/sql"
 	cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
 	chown -R postgres:postgres "$MOUNT_POINT/sql/"
 
-	echo "13. Cleaning up"
+	log "13. Cleaning up"
 	cleanup "complete"
 }
 
@@ -624,7 +644,7 @@ trap cleanup ERR
 echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 	initiate_upgrade >>"$LOG_FILE" 2>&1 &
-	echo "Upgrade initiate job completed"
+	log "Upgrade initiate job completed"
 else
 	rm -f /tmp/pg-upgrade-status
 	initiate_upgrade
