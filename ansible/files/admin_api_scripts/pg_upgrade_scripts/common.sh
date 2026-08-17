@@ -15,12 +15,12 @@ function log {
 }
 
 TIMERS_TO_DISABLE=(
-  # apt-get update and unattended-upgrades contend for the dpkg lock that
-  # initiate.sh needs, and can modify the system leading to unexpected behavior
-  # at upgrade time.
+	# apt-get update and unattended-upgrades contend for the dpkg lock that
+	# initiate.sh needs, and can modify the system leading to unexpected behavior
+	# at upgrade time.
 	"apt-daily.timer"
 	"apt-daily-upgrade.timer"
-  # DO NOT add the supabase-admin-agent_salt timer to this set!
+	# DO NOT add the supabase-admin-agent_salt timer to this set!
 )
 
 function unit_exists {
