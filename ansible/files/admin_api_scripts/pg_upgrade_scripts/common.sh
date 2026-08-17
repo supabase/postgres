@@ -20,21 +20,33 @@ function run_sql {
 	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
+# Wrap a db name in dbname='...' (escaping \ and ') so characters special to -d
+# parsing (=, spaces, quotes) stay part of a literal name, not a conninfo fragment.
+# psql parses a -d value containing '=' as a full conninfo string, so a customer
+# database named e.g. `host=example.com dbname=postgres` would otherwise redirect
+# this root-launched connection off-box. Same helper as refresh_collation.sh.
+function conninfo_for_db {
+	local d="$1"
+	d="${d//\\/\\\\}"
+	d="${d//\'/\\\'}"
+	printf "dbname='%s'" "$d"
+}
+
 function ship_logs {
 	LOG_FILE=$1
 
 	if [ -z "$REPORTING_ANON_KEY" ]; then
-		echo "No reporting key found. Skipping log upload."
+		log "No reporting key found. Skipping log upload."
 		return 0
 	fi
 
 	if [ ! -f "$LOG_FILE" ]; then
-		echo "No log file found. Skipping log upload."
+		log "No log file found. Skipping log upload."
 		return 0
 	fi
 
 	if [ ! -s "$LOG_FILE" ]; then
-		echo "Log file is empty. Skipping log upload."
+		log "Log file is empty. Skipping log upload."
 		return 0
 	fi
 
@@ -59,12 +71,12 @@ function check_free_space {
 	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
 
 	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
-		echo "ERROR: could not determine free space on /; aborting upgrade."
+		log "ERROR: could not determine free space on /; aborting upgrade."
 		return 1
 	fi
 
 	if ((available_kb < required_kb)); then
-		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
+		log "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
 		return 1
 	fi
 }
@@ -79,10 +91,10 @@ function retry {
 		wait=$((2 ** (count + 1)))
 		count=$((count + 1))
 		if [ $count -lt "$retries" ]; then
-			echo "Command $* exited with code $exit, retrying..."
+			log "Command $* exited with code $exit, retrying..."
 			sleep $wait
 		else
-			echo "Command $* exited with code $exit, no more retries left."
+			log "Command $* exited with code $exit, no more retries left."
 			return $exit
 		fi
 	done
