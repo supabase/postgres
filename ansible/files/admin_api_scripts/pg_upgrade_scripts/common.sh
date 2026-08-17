@@ -20,6 +20,18 @@ function run_sql {
 	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
+# Wrap a db name in dbname='...' (escaping \ and ') so characters special to -d
+# parsing (=, spaces, quotes) stay part of a literal name, not a conninfo fragment.
+# psql parses a -d value containing '=' as a full conninfo string, so a customer
+# database named e.g. `host=example.com dbname=postgres` would otherwise redirect
+# this root-launched connection off-box. Same helper as refresh_collation.sh.
+function conninfo_for_db {
+	local d="$1"
+	d="${d//\\/\\\\}"
+	d="${d//\'/\\\'}"
+	printf "dbname='%s'" "$d"
+}
+
 function ship_logs {
 	LOG_FILE=$1
 
