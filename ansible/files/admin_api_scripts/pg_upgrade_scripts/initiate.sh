@@ -95,6 +95,15 @@ cleanup() {
 		log "Upgrade job failed. Cleaning up and exiting."
 	fi
 
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		# Restore timers before anything below: nearly every later step (chown,
+		# bare retry postgres restart, SQL) can fail under set -e and kill this
+		# trap mid-way, and the restore must not sit behind that. Warn-only for
+		# the same reason — aborting here would also leave the status file
+		# stuck at "running".
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+	fi
+
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
@@ -161,13 +170,6 @@ EOF
 		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
 		# is stuck at "running" forever instead of reporting the real failure.
 		retry 3 umount $MOUNT_POINT || true
-
-		# Warn rather than fail: this runs inside the ERR trap, and aborting here
-		# leaves /tmp/pg-upgrade-status stuck at "running" (see the umount note above).
-		# To see which timers failed, reference TIMERS_TO_DISABLE from common.sh,
-		# and run on this host:
-		# 	systemctl list-timers --all
-		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers"
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
@@ -227,7 +229,7 @@ function initiate_upgrade {
 	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
 	# `dpkg --configure -a` repairs that a moment later.
 	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-		log "0. Disabling conflicting systemd timers"
+		log "0. Masking conflicting systemd timers"
 		retry 3 disable_conflicting_timers
 	fi
 
@@ -346,7 +348,9 @@ EXTRA_NIX_CONF
 			SYSTEM="x86_64-linux"
 		else
 			log "ERROR: Unsupported architecture: $ARCH"
-			exit 1
+			# fail as a command, not exit 1: exit skips the ERR trap, so cleanup
+			# would never restore the masked timers or write the status file
+			false
 		fi
 
 		# Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
@@ -357,7 +361,7 @@ EXTRA_NIX_CONF
 
 		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
 			log "ERROR: Failed to fetch catalog from $CATALOG_S3"
-			exit 1
+			false # not exit: let the ERR trap run cleanup
 		fi
 
 		STORE_PATH=$(jq -r ".\"${SYSTEM}\"" "$CATALOG_LOCAL")
@@ -366,7 +370,7 @@ EXTRA_NIX_CONF
 			log "ERROR: Could not find store path in catalog for ${SYSTEM}"
 			log "Catalog contents:"
 			jq . "$CATALOG_LOCAL"
-			exit 1
+			false # not exit: let the ERR trap run cleanup
 		fi
 
 		log "Store path: $STORE_PATH"

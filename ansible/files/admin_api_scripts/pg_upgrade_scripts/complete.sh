@@ -274,11 +274,18 @@ function complete_pg_upgrade {
 	# Set (including from called functions, via dynamic scoping) whenever a fail-soft step failed; ships the log for visibility at the end
 	local warnings=0
 
-	# No || true: a salt run restarting postgres between steps 3 and 5 is exactly
-	# what this guards against, and failing here leaves the new instance untouched.
+	# Fail-soft, unlike initiate.sh's step 0: complete.sh runs no apt/dpkg
+	# commands, and by this point the data volume has already moved — aborting
+	# would take the project down over a timer we can live without stopping.
 	if [ -z "$IS_CI" ]; then
-		log "0. Disabling conflicting systemd timers"
-		retry 3 disable_conflicting_timers
+		log "0. Masking conflicting systemd timers"
+		retry 3 disable_conflicting_timers || {
+			log "WARNING: failed to mask one or more timers"
+			warnings=1
+		}
+		# Stopping an in-flight apt-daily-upgrade.service can leave dpkg
+		# half-configured; repair it the same way initiate.sh step 2 does
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confold || true
 	fi
 
 	log "1. Mounting data disk"
@@ -293,7 +300,9 @@ function complete_pg_upgrade {
 		# In the offchance of the volume not being mounted or detected, explicitly fail here
 		if ! mountpoint -q /data; then
 			log "FATAL: /data is not a mountpoint"
-			exit 1
+			# fail as a command, not exit 1: exit skips the ERR trap, so cleanup
+			# would never unmask the timers or flip the status to "failed"
+			false
 		fi
 	else
 		log "Skipping mount -a -v"
@@ -368,9 +377,9 @@ function complete_pg_upgrade {
 		warnings=1
 	}
 
-	# The success path never reaches cleanup(), so restore the timers here too. enable_conflicting_timers skips units that are already enabled, so the cleanup() call is a no-op if this one ran
+	# The success path never reaches cleanup(), so restore the timers here too. enable_conflicting_timers only touches units still masked by this run, so the cleanup() call is a no-op if this one ran
 	if [ -z "$IS_CI" ]; then
-		log "7. Re-enabling conflicting systemd timers"
+		log "7. Unmasking conflicting systemd timers"
 		enable_conflicting_timers || {
 			log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 			warnings=1

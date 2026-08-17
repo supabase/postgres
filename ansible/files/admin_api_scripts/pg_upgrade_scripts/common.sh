@@ -14,47 +14,51 @@ function log {
 	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
 }
 
-# Timers that trigger jobs which can be problematic during the upgrade process.
-#   apt-daily{,-upgrade}.timer - apt-get update and unattended-upgrades contend
-#     for the dpkg lock that initiate.sh needs, and can restart services.
-# DO NOT ADD THE SALT TIMER HERE!
 TIMERS_TO_DISABLE=(
+  # apt-get update and unattended-upgrades contend for the dpkg lock that
+  # initiate.sh needs, and can modify the system leading to unexpected behavior
+  # at upgrade time.
 	"apt-daily.timer"
 	"apt-daily-upgrade.timer"
+  # DO NOT add the supabase-admin-agent_salt timer to this set!
 )
 
 function unit_exists {
 	systemctl cat "$1" >/dev/null 2>&1
 }
 
-# Both helpers track failures in rc rather than leaning on set -e: their callers
-# are `retry` (an `until` condition) and `|| log ...`, and set -e is suppressed in
-# both contexts. Without rc they would return the status of their last command and
-# report success after a failed systemctl call.
+# Runtime-mask (a /run/systemd symlink) rather than disable. Runtime masks
+# should not persist across reboots, so a failure mid-upgrade will be easier to
+# mop up with a reboot.
 function disable_conflicting_timers {
 	local rc=0 timer service
 	for timer in "${TIMERS_TO_DISABLE[@]}"; do
 		unit_exists "$timer" || continue
 		systemctl is-enabled --quiet "$timer" 2>/dev/null || continue
 
-		log "Disabling $timer for the duration of the upgrade"
-		systemctl disable --now "$timer" || rc=1
+		log "Masking $timer for the duration of the upgrade"
+		systemctl mask --runtime --now "$timer" || rc=1
 
-		# disabling the timer does not stop a run it already triggered
 		service="${timer%.timer}.service"
-		systemctl stop "$service" || true
+		if unit_exists "$service"; then
+			systemctl stop "$service" || rc=1
+		fi
 	done
 	return $rc
 }
 
 function enable_conflicting_timers {
-	local rc=0 timer
+	local rc=0 timer state
 	for timer in "${TIMERS_TO_DISABLE[@]}"; do
-		unit_exists "$timer" || continue
-		systemctl is-enabled --quiet "$timer" 2>/dev/null && continue
+		state=$(systemctl is-enabled "$timer" 2>/dev/null || true)
+		[ "$state" = "masked-runtime" ] || continue
 
-		log "Re-enabling $timer"
-		systemctl enable --now "$timer" || rc=1
+		log "Unmasking $timer"
+		systemctl unmask --runtime "$timer" || {
+			rc=1
+			continue
+		}
+		systemctl start "$timer" || rc=1
 	done
 	return $rc
 }
