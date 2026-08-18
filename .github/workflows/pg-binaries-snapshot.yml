@@ -1,0 +1,130 @@
+name: Create PG binaries snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Space-separated postgres majors (default: ansible/vars.yml)'
+        required: false
+        default: ''
+      delete_previous:
+        description: Delete the snapshot the pointer referenced before this run
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-central-1
+  # Used for reference as ID will be unique per snapshot
+  SSM_PREFIX: /postgres/pg-binaries
+
+jobs:
+  snapshot:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: blacksmith-8vcpu-ubuntu-2404
+          - arch: arm64
+            runner: blacksmith-4vcpu-ubuntu-2404-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build closures into a staging store
+        env:
+          VERSIONS: ${{ inputs.versions }}
+        run: |
+          # nix refuses a store root that is world-writable or a symlink, so not
+          # /tmp: /mnt/pgbin owned by the runner user.
+          sudo mkdir -p /mnt/pgbin
+          sudo chown "$(id -u)" /mnt/pgbin
+          chmod 755 /mnt/pgbin
+          ./scripts/build-pg-binaries-store.sh /mnt/pgbin
+
+      - name: Build filesystem image
+        run: |
+          bytes=$(du -sb /mnt/pgup | cut -f1)
+          gib=$((bytes * 12 / 10 / 1073741824 + 1))
+          echo "payload ${bytes} bytes -> ${gib}GiB image"
+          truncate -s "${gib}G" /mnt/pgup.img
+          # -d populates from a directory, so no loop mount and no root needed.
+          # Hardlinks and modes are preserved.
+          mkfs.ext4 -q -F -m 0 -L pg-binaries -d /mnt/pgup /mnt/pgup.img
+
+      - name: Upload snapshot
+        id: upload
+        run: |
+          # shellcheck disable=SC1090
+          . /mnt/pgbin/manifest.txt
+
+          # coldsnap writes the image straight to a snapshot through the EBS
+          # direct APIs - no volume, no instance to attach it to.
+          snapshot=$(nix run nixpkgs#coldsnap -- upload \
+            --wait --no-progress --omit-zero-blocks \
+            --description "supabase postgres nix closures (${majors}) ${system} ${git_sha}" \
+            /mnt/pgbin.img | grep -oE 'snap-[0-9a-f]+' | tail -1)
+          [ -n "$snapshot" ] || {
+            echo "no snapshot id in coldsnap output" >&2
+            exit 1
+          }
+
+          aws ec2 create-tags --resources "$snapshot" --tags \
+            "Key=Name,Value=pg-binaries-${system}" \
+            "Key=git_sha,Value=${git_sha}" \
+            "Key=system,Value=${system}" \
+            "Key=majors,Value=${majors// /-}"
+
+          echo "snapshot_id=$snapshot" >>"$GITHUB_OUTPUT"
+          echo "system=$system" >>"$GITHUB_OUTPUT"
+
+      - name: Repoint SSM parameter
+        id: pointer
+        run: |
+          param="${SSM_PREFIX}/${{ steps.upload.outputs.system }}/snapshot-id"
+          previous=$(aws ssm get-parameter --name "$param" \
+            --query Parameter.Value --output text 2>/dev/null || true)
+          aws ssm put-parameter --name "$param" --type String --overwrite \
+            --value "${{ steps.upload.outputs.snapshot_id }}" >/dev/null
+
+          echo "previous=$previous" >>"$GITHUB_OUTPUT"
+          {
+            echo "\`$param\` -> \`${{ steps.upload.outputs.snapshot_id }}\`"
+            echo ""
+            echo "previous: \`${previous:-none}\`"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Delete previous snapshot
+        if: ${{ inputs.delete_previous }}
+        env:
+          PREVIOUS: ${{ steps.pointer.outputs.previous }}
+          CURRENT: ${{ steps.upload.outputs.snapshot_id }}
+        run: |
+          # Only ever runs after the pointer already moved, so a failure here
+          # leaves a stale snapshot rather than a dangling pointer.
+          case "$PREVIOUS" in
+            snap-*) ;;
+            *)
+              echo "no previous snapshot to delete"
+              exit 0
+              ;;
+          esac
+          [ "$PREVIOUS" != "$CURRENT" ] || exit 0
+          aws ec2 delete-snapshot --snapshot-id "$PREVIOUS"
+          echo "deleted $PREVIOUS"
