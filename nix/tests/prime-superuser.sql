@@ -11,10 +11,10 @@
 -- ansible/files/postgresql_config:
 --
 -- 1. "omitted because may be unsafe" — supautils.conf.j2.
---    Covers the entries available in BOTH PG 15 and PG 17 builds. Three more
---    entries from the same list, `adminpack`, `amcheck`, and `old_snapshot`, were
---    removed from contrib in PG 17 or enabled for customers, and are loaded directly by
---    nix/tests/sql/z_15_ext_interface.sql for the PG 15 path (adminpack, old_snapshot only).
+--    Covers the entries available in BOTH PG 15 and PG 17 builds. Two more
+--    entries from the same list, `adminpack` and `old_snapshot`, were
+--    removed from contrib in PG 17 and are loaded directly by
+--    nix/tests/sql/z_15_ext_interface.sql for the PG 15 path.
 --
 -- 2. "omitted because deprecated" — supautils.conf.j2.
 --    Not in privileged_extensions, so non-superuser can't install.
