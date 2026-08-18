@@ -71,13 +71,22 @@ select r.rolname,
  order by r.rolname;
 
 -- the support use case: postgres checks its own index, and -- since amcheck has
--- no per-relation gate -- one on a table it does not own, which is what makes
--- the extension useful after a 15->17 upgrade corrupts an auth index
+-- no per-relation gate -- one on a relation it neither owns nor holds any grant
+-- on. That second case is what makes the extension useful when an upgrade
+-- corrupts an index in a schema the customer does not control.
+--
+-- The not-mine relation is a supabase_admin-owned heap table rather than a real
+-- auth index: on the orioledb variant auth.users is orioledb-backed, so its
+-- btree has no conventional storage and bt_index_check fails reading block 0.
+create table amcheck_notmine(i int primary key) using heap;
+insert into amcheck_notmine select generate_series(1, 100);
+revoke all on amcheck_notmine from postgres, anon, authenticated, service_role;
+
 set role postgres;
 create table amcheck_heap(i int primary key) using heap;
 insert into amcheck_heap select generate_series(1, 100);
 select extensions.bt_index_check('amcheck_heap_pkey'::regclass);
-select extensions.bt_index_check('auth.users_pkey'::regclass);
+select extensions.bt_index_check('amcheck_notmine_pkey'::regclass);
 reset role;
 
 -- the API roles must not reach it. The denial is at the function level, so it
@@ -90,3 +99,4 @@ reset role;
 set role postgres;
 drop table amcheck_heap;
 reset role;
+drop table amcheck_notmine;
