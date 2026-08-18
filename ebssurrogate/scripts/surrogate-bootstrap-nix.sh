@@ -448,8 +448,14 @@ format_build_partition
 #pull_docker
 setup_chroot_environment
 #download_ccache
+df /mnt
+df -h /mnt
+du -x -h --max-depth=2 /mnt | sort -rh | head -30
 execute_playbook
 update_systemd_services
 #upload_ccache
 clean_system
+df /mnt
+df -h /mnt
+du -x -h --max-depth=2 /mnt | sort -rh | head -30
 umount_reset_mappings

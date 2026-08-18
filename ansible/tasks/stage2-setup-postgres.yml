@@ -62,9 +62,18 @@
   when: stage2
   become: true
   block:
+    - name: Check disk usage before nix based installs
+      ansible.builtin.command: df -h /
+      register: df_before_nix_install
+      changed_when: false
+
+    - name: Show disk usage before nix based installs
+      ansible.builtin.debug:
+        var: df_before_nix_install.stdout_lines
+
     - name: Install packages from nix binary cache
       ansible.builtin.shell: |
-        sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{ nix_item }}"
+        sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{ nix_item }}; rc=$?; df -h / >&2; exit $rc"
       loop:
         - "{{ psql_version }}/bin"
         - pg_prove
@@ -73,10 +82,24 @@
         - "{{ postgresql_version }}_src"
       loop_control:
         loop_var: 'nix_item'
+      register: nix_install_result
+      ignore_errors: true
+
+    - name: Show df output for each nix install attempt
+      ansible.builtin.debug:
+        msg: "{{ item.stderr_lines }}"
+      loop: "{{ nix_install_result.results }}"
+      loop_control:
+        label: "{{ item.nix_item }}"
+
+    - name: Fail if any nix install failed
+      ansible.builtin.fail:
+        msg: "nix profile install failed for: {{ nix_install_result.results | selectattr('failed', 'defined') | selectattr('failed') | map(attribute='nix_item') | list }}"
+      when: nix_install_result is failed
 
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan && df -h / >&2"
 
     - name: nix collect garbage after supascan install
       ansible.builtin.shell:

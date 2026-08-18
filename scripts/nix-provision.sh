@@ -66,7 +66,22 @@ function cleanup_packages {
 	# sudo add-apt-repository --yes --remove ppa:ansible/ansible
 }
 
+function show_disk_usage {
+	echo "disk usage post $1:"
+	sudo df /
+	sudo df -h /
+	sudo du -x -h --max-depth=2 / | sort -rh | head -30
+}
+
+# Snapshot disk usage even when a step below fails; errexit would otherwise skip
+# the remaining show_disk_usage calls and we'd lose the state we want to debug.
+trap 'show_disk_usage EXIT' EXIT
+
+show_disk_usage "start"
 install_packages
+show_disk_usage "install_packages"
 install_nix
+show_disk_usage "install_nix"
 execute_stage2_playbook
+show_disk_usage "ansible"
 cleanup_packages
