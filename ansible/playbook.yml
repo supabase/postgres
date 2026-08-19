@@ -78,12 +78,6 @@
       tags:
         - install-supabase-internal
 
-    - name: Install nginx
-      when: not stage2
-      import_tasks: tasks/setup-nginx.yml
-      tags:
-        - install-supabase-internal
-
     - name: Install Supabase specific content
       when: not stage2
       import_tasks: tasks/setup-supabase-internal.yml
