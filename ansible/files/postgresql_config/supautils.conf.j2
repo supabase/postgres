@@ -1,11 +1,11 @@
-# amcheck must stay pinned to `extensions`. supautils creates privileged extensions as
-# supabase_admin, whose search_path starts with `public`, and the ALTER DEFAULT PRIVILEGES in
-# migrations/db/init-scripts/00000000000000-initial-schema.sql grants EXECUTE on anything
-# supabase_admin creates there to anon, authenticated and service_role — i.e. to unauthenticated
-# PostgREST callers. amcheck performs no permission check of its own (upstream verify_nbtree.c:
-# "Intentionally not checking permissions"), so its REVOKE ALL FROM PUBLIC is the only gate and
-# whoever holds EXECUTE can check any index in the database, including auth's. In `extensions`
-# the equivalent rule grants to `postgres` only. See PSQL-1327 and nix/tests/sql/amcheck.sql.
+# amcheck must stay pinned to extensions. supautils creates privileged extensions as
+# supabase_admin, whose search_path starts with public, where ALTER DEFAULT PRIVILEGES
+# (init-scripts/00000000000000-initial-schema.sql) grants EXECUTE to anon, authenticated
+# and service_role, i.e. to unauthenticated PostgREST callers. amcheck does no permission
+# check of its own (upstream verify_nbtree.c: "Intentionally not checking permissions"),
+# so EXECUTE alone lets a role check any index in the database, including auth's. In
+# extensions the equivalent rule grants to postgres only.
+# See PSQL-1327 and nix/tests/sql/amcheck.sql.
 supautils.extensions_parameter_overrides = '{"pg_cron":{"schema":"pg_catalog"},"amcheck":{"schema":"extensions"}}'
 supautils.policy_grants = '{"postgres":["auth.audit_log_entries","auth.flow_state","auth.identities","auth.instances","auth.mfa_amr_claims","auth.mfa_challenges","auth.mfa_factors","auth.oauth_clients","auth.one_time_tokens","auth.refresh_tokens","auth.saml_providers","auth.saml_relay_states","auth.sessions","auth.sso_domains","auth.sso_providers","auth.users","realtime.messages","realtime.subscription","storage.buckets","storage.buckets_analytics","storage.objects","storage.prefixes","storage.s3_multipart_uploads","storage.s3_multipart_uploads_parts"]}'
 supautils.drop_trigger_grants = '{"postgres":["auth.audit_log_entries","auth.flow_state","auth.identities","auth.instances","auth.mfa_amr_claims","auth.mfa_challenges","auth.mfa_factors","auth.oauth_clients","auth.one_time_tokens","auth.refresh_tokens","auth.saml_providers","auth.saml_relay_states","auth.sessions","auth.sso_domains","auth.sso_providers","auth.users","realtime.messages","realtime.subscription","storage.buckets","storage.buckets_analytics","storage.objects","storage.prefixes","storage.s3_multipart_uploads","storage.s3_multipart_uploads_parts"]}'

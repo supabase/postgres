@@ -1,27 +1,23 @@
-# amcheck across a 15 -> 17 pg_upgrade (PSQL-1327).
+# amcheck across a 15 to 17 pg_upgrade (PSQL-1327).
 #
-# amcheck is a customer-installable privileged extension pinned to the
-# `extensions` schema by supautils.extensions_parameter_overrides. That pin is
-# what keeps EXECUTE away from anon/authenticated/service_role: in `public` the
-# ALTER DEFAULT PRIVILEGES in initial-schema.sql would grant to all four roles,
-# and amcheck performs no permission check of its own, so a grant is a licence
-# to check any index in the database.
+# amcheck is pinned to the extensions schema by
+# supautils.extensions_parameter_overrides, which is what keeps EXECUTE away from
+# anon, authenticated and service_role. nix/tests/sql/amcheck.sql asserts that on
+# a fresh install.
 #
-# nix/tests/sql/amcheck.sql asserts that on a fresh install. This test covers
-# the part pg_regress cannot reach: whether the schema and the grants survive a
-# major-version upgrade. That matters because extension-member function ACLs
-# ride on pg_init_privs through pg_upgrade's dump/restore, and because 15 ships
-# amcheck 1.3 while 17 ships 1.4 -- so the upgrade also runs an ALTER EXTENSION
-# UPDATE that creates new functions, each of which picks up whatever default
-# privileges apply at that moment.
+# This test covers what pg_regress cannot reach: whether the schema and the
+# grants survive a major version upgrade. Two things could break it. Extension
+# member function ACLs ride on pg_init_privs through pg_upgrade's dump and
+# restore. And 15 ships amcheck 1.3 while 17 ships 1.4, so the upgrade also runs
+# an ALTER EXTENSION UPDATE that creates new functions, each picking up whatever
+# default privileges apply at that moment.
 #
-# Upgraded projects are exactly the population the ticket is about (customers
-# hitting corrupt indexes after 15 -> 17), so a silent re-grant here would undo
-# the fix for everyone who matters.
+# Upgraded projects are the population the ticket is about (customers hitting
+# corrupt indexes after a 15 to 17 upgrade), so a silent re-grant here would undo
+# the fix for exactly the people it was written for.
 #
-# Deliberately 15 -> 17 only. There is no upgrade path into orioledb (its
-# specialisation wipes the data directory), so an orioledb leg would assert
-# nothing about upgrade behaviour and only add VM runtime.
+# 15 to 17 only. There is no upgrade path into orioledb, since its specialisation
+# wipes the data directory, so an orioledb leg would assert nothing here.
 { self, pkgs }:
 let
   testLib = import ./lib.nix { inherit self pkgs; };
@@ -50,10 +46,9 @@ pkgs.testers.runNixOSTest {
     ''
       pg17_configuration = "${pg17-configuration}"
 
-      # postgres holds EXECUTE (with grant option, via the extensions-schema
-      # default privileges); the three PostgREST roles hold nothing. Aggregated
-      # over every function the extension owns rather than named signatures, so
-      # this stays correct as amcheck grows from 6 functions on 15 to 8 on 17.
+      # postgres holds EXECUTE via the extensions schema default privileges;
+      # the three PostgREST roles hold nothing. Aggregated over every function
+      # the extension owns, so it holds as amcheck grows from 6 on 15 to 8 on 17.
       EXPECTED_ACL = "anon,f,f\nauthenticated,f,f\npostgres,t,t\nservice_role,f,f"
 
       ACL_QUERY = (
@@ -73,10 +68,9 @@ pkgs.testers.runNixOSTest {
       )
 
       def sql(query, role=None):
-        # Connect as supabase_admin (the bootstrap superuser this harness
-        # authenticates as) and pick up the target role via the startup packet,
-        # so each statement runs under its own session rather than being bundled
-        # into one implicit transaction by a multi-statement -c.
+        # Connect as supabase_admin (the superuser this harness authenticates
+        # as) and set the target role via the startup packet, so each statement
+        # gets its own session instead of one implicit multi-statement -c.
         prefix = ""
         if role is not None:
           prefix = "PGOPTIONS=\"-c role=" + role + "\" "
@@ -108,8 +102,8 @@ pkgs.testers.runNixOSTest {
         assert sql("select rolsuper from pg_roles where rolname = 'postgres'") == "f", (
           "postgres is a superuser; every grant assertion below would be vacuous"
         )
-        # Fail loudly if the role-switching mechanism itself is broken, rather
-        # than silently running the whole suite as supabase_admin.
+        # Fail loudly if role switching is broken, rather than silently
+        # running the whole suite as supabase_admin.
         whoami = sql("select current_user", role="postgres")
         assert whoami == "postgres", f"expected to be acting as postgres, got: {whoami}"
 
@@ -136,11 +130,10 @@ pkgs.testers.runNixOSTest {
         assert acl_after == EXPECTED_ACL, f"grants changed across pg_upgrade:\n{acl_after}"
 
       with subtest("The 1.3 -> 1.4 extension update preserves the grants"):
-        # The platform runs pg_upgrade's generated update_extensions.sql after
-        # the upgrade (admin_api_scripts/pg_upgrade_scripts/complete.sh). This
-        # harness runs raw pg_upgrade, so replay that file when it is present
-        # and fall back to an explicit ALTER when it is not -- either route
-        # creates the new 1.4 functions, which is what we need to inspect.
+        # The platform replays pg_upgrade's generated update_extensions.sql
+        # (admin_api_scripts/pg_upgrade_scripts/complete.sh). This harness runs
+        # raw pg_upgrade, so replay that file if present, else ALTER explicitly.
+        # Either route creates the new 1.4 functions, which is what we inspect.
         has_script = server.succeed(
           "test -f /var/lib/postgresql/update_extensions.sql && echo yes || echo no"
         ).strip()
@@ -160,9 +153,8 @@ pkgs.testers.runNixOSTest {
         assert installed_version == default_version, (
           f"expected amcheck at PG 17's default {default_version}, got {installed_version}"
         )
-        # Guard against this subtest quietly becoming a no-op if 15 and 17 ever
-        # ship the same amcheck version -- there would then be no new functions
-        # to acquire grants, and nothing here would be under test.
+        # If 15 and 17 ever ship the same amcheck version there are no new
+        # functions to acquire grants, and this subtest silently tests nothing.
         assert installed_version != before.split(",")[0], (
           f"amcheck was already at {installed_version} on PG 15; this subtest no "
           "longer exercises a version bump and needs rewriting"
@@ -183,7 +175,7 @@ pkgs.testers.runNixOSTest {
           role="postgres",
         )
         sql("select extensions.bt_index_check('amcheck_heap_pkey'::regclass)", role="postgres")
-        # amcheck has no per-relation gate, which is the point: a customer can
+        # amcheck has no per relation gate, which is the point: a customer can
         # check an auth index they do not own after an upgrade corrupts it.
         sql("select extensions.bt_index_check('auth.users_pkey'::regclass)", role="postgres")
 
