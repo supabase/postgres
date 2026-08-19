@@ -1,5 +1,6 @@
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
+SET pg_stat_statements.track_utility = off;
 ALTER USER supabase_admin WITH PASSWORD 'postgres';
 ALTER USER postgres WITH PASSWORD 'postgres';
 ALTER USER authenticator WITH PASSWORD 'postgres';
@@ -9,4 +10,5 @@ ALTER USER supabase_storage_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_replication_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_etl_admin WITH PASSWORD 'postgres';
 ALTER ROLE supabase_read_only_user WITH PASSWORD 'postgres';
+RESET pg_stat_statements.track_utility;
 ALTER ROLE supabase_admin SET search_path TO "$user",public,auth,extensions;
