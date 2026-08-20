@@ -161,9 +161,6 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Clean out build dependencies
-      import_tasks: tasks/clean-build-dependencies.yml
-
     - name: Run migrations
       when: stage2
       import_tasks: tasks/setup-migrations.yml
