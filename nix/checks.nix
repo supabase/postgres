@@ -951,6 +951,7 @@
             postgresql_17_debug
             postgresql_17_src
             ;
+          psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
         };
     };
 }
