@@ -1,8 +1,3 @@
-variable "ami" {
-  type    = string
-  default = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"
-}
-
 variable "profile" {
   type    = string
   default = env("AWS_PROFILE")
@@ -30,10 +25,6 @@ variable "region" {
 variable "build-vol" {
   type    = string
   default = "xvdc"
-}
-
-locals {
-  creator = "packer"
 }
 
 variable "postgres_major_version" {
@@ -67,6 +58,27 @@ variable "input-hash" {
   description = "Content hash of all input sources"
 }
 
+# These come from $arch.vars.pkr.hcl, don't need to pass in explicitly
+variable "arch" {
+  type        = string
+  description = "Ubuntu image arch suffix (amd64|arm64), used to build the source AMI filter"
+}
+
+variable "instance_arch" {
+  type        = string
+  description = "AWS AMI architecture (x86_64|arm64)"
+}
+
+variable "instance_type" {
+  type        = string
+  description = "EC2 instance type used for the build instance"
+}
+
+locals {
+  creator = "packer"
+  ami     = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-${var.arch}-server-*"
+}
+
 packer {
   required_plugins {
     amazon = {
@@ -81,13 +93,13 @@ packer {
 
 # source block
 source "amazon-ebssurrogate" "source" {
-  profile                 = "${var.profile}"
+  profile                 = var.profile
   ami_name                = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
-  ami_architecture        = "arm64"
-  ami_regions             = "${var.ami_regions}"
-  instance_type           = "c6g.4xlarge"
-  region                  = "${var.region}"
+  ami_architecture        = var.instance_arch
+  ami_regions             = var.ami_regions
+  instance_type           = var.instance_type
+  region                  = var.region
   force_deregister        = var.force-deregister
 
   # Increase timeout for instance stop operations to handle large instances
@@ -100,7 +112,7 @@ source "amazon-ebssurrogate" "source" {
   source_ami_filter {
     filters = {
       virtualization-type = "hvm"
-      name                = "${var.ami}"
+      name                = local.ami
       root-device-type    = "ebs"
     }
     owners      = ["099720109477"]
@@ -140,26 +152,26 @@ source "amazon-ebssurrogate" "source" {
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
     supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   snapshot_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   tags = {
     creator           = "packer"
     appType           = "postgres"
     postgresVersion   = "${var.postgres-version}-stage1"
-    sourceSha         = "${var.git-head-version}"
-    inputHash         = "${var.input-hash}"
-    packerExecutionId = "${var.packer-execution-id}"
+    sourceSha         = var.git-head-version
+    inputHash         = var.input-hash
+    packerExecutionId = var.packer-execution-id
   }
 
   communicator = "ssh"

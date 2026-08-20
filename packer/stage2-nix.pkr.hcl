@@ -37,9 +37,20 @@ variable "source_ami" {
   description = "Source AMI ID from stage 1"
 }
 
+# These come from $arch.vars.pkr.hcl, don't need to pass in explicitly
+variable "arch" {
+  type        = string
+  description = "Ubuntu image arch suffix (amd64|arm64), used to build the source AMI filter"
+}
+
+variable "instance_arch" {
+  type        = string
+  description = "AWS AMI architecture (x86_64|arm64)"
+}
+
 variable "instance_type" {
-  type    = string
-  default = "c6g.4xlarge"
+  type        = string
+  description = "EC2 instance type used for the build instance"
 }
 
 packer {
@@ -57,8 +68,8 @@ packer {
 source "amazon-ebs" "ubuntu" {
   ami_name      = "${var.ami_name}-${var.postgres-version}"
   instance_type = var.instance_type
-  region        = "${var.region}"
-  source_ami    = "${var.source_ami}"
+  region        = var.region
+  source_ami    = var.source_ami
 
   communicator = "ssh"
   ssh_pty      = true
@@ -89,25 +100,25 @@ source "amazon-ebs" "ubuntu" {
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
     supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   snapshot_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   tags = {
     creator           = "packer"
     appType           = "postgres"
-    postgresVersion   = "${var.postgres-version}"
-    sourceSha         = "${var.git-head-version}"
-    packerExecutionId = "${var.packer-execution-id}"
+    postgresVersion   = var.postgres-version
+    sourceSha         = var.git-head-version
+    packerExecutionId = var.packer-execution-id
   }
 }
 
