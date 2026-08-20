@@ -122,6 +122,7 @@ auth_file = /etc/pgbouncer/userlist.txt
 ;; Query to use to fetch password from database.  Result
 ;; must have 2 columns - username and password hash.
 auth_query = SELECT * FROM pgbouncer.get_auth($1)
+auth_dbname = postgres
 
 ;;;
 ;;; Users allowed into database 'pgbouncer'
