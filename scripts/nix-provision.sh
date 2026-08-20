@@ -70,3 +70,5 @@ install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
+sudo du -sx /
+sudo du -hsx /
