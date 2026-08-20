@@ -114,13 +114,13 @@ writeShellApplication {
       echo "Building stage 1..."
 
       cd ${packerSources}
-      packer init "$@"
+      packer init -var-file "packer/$ARCH.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
       packer build -on-error $on_error \
-        -var-file "packer/development-$ARCH.vars.pkr.hcl" \
+        -var-file "packer/$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
-        "$@"
+        "$@" packer/stage1-nix.pkr.hcl
 
       if [ -n "''${GITHUB_OUTPUT:-}" ]; then
         STAGE1_AMI_ID=$(find_stage1_ami)
@@ -147,12 +147,12 @@ writeShellApplication {
 
       echo "Found stage 1 AMI: $STAGE1_AMI_ID"
 
-      packer init packer/stage2-nix-psql.pkr.hcl
+      packer init -var-file "packer/$ARCH.vars.pkr.hcl" packer/stage2-nix.pkr.hcl
       packer build -on-error $on_error \
-        -var-file "packer/development-$ARCH.vars.pkr.hcl" \
+        -var-file "packer/$ARCH.vars.pkr.hcl" \
         -var "region=$REGION" \
         -var "source_ami=$STAGE1_AMI_ID" \
-        "$@"
+        "$@" packer/stage2-nix.pkr.hcl
 
       disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
       disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'

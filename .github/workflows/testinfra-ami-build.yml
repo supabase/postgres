@@ -44,10 +44,8 @@ jobs:
         postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
         target:
           - arch: amd64
-            instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
           - arch: arm64
-            instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
@@ -96,7 +94,6 @@ jobs:
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
