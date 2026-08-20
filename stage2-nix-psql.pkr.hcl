@@ -132,4 +132,10 @@ build {
     script           = "ebssurrogate/scripts/nix-provision.sh"
     execute_command  = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
   }
+
+  provisioner "file" {
+    source      = "/tmp/ansible.log"
+    destination = "/tmp/ansible-stage2.log"
+    direction   = "download"
+  }
 }
