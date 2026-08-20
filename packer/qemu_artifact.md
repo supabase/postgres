@@ -12,12 +12,12 @@ The current AMI process involves a few steps:
 
 - this builds Postgres along with the PG extensions we use.
 
-2. "stage1" build (`amazon-arm64-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
+2. "stage1" build (`packer/stage1-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
 
 - uses an upstream Ubuntu image to initialize the AMI
 - installs and configures the majority of the software that gets shipped as part of the AMI (e.g. gotrue, postgrest, ...)
 
-3. "stage2" build (`stage2-nix-psql.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
+3. "stage2" build (`packer/stage2-nix.pkr.hcl`, invoked via `.github/workflows/ami-release-nix.yml`)
 
 - uses the image published from (2)
 - installs and configures the software that is build and published using nix in (1)

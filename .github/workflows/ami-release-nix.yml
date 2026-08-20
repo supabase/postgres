@@ -43,11 +43,9 @@ jobs:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         target:
           - arch: amd64
-            instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
             ami_name_prefix: supabase-postgres-x86_64
           - arch: arm64
-            instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
             ami_name_prefix: supabase-postgres-arm64
     runs-on: ${{ matrix.target.runner }}
@@ -97,7 +95,6 @@ jobs:
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
