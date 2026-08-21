@@ -254,24 +254,23 @@
                 "pipefail"
               ];
               runtimeInputs = with pkgs; [
-                coreutils
                 bash
+                coreutils
+                getkey-script
+                netcat
                 perl
-                pgpkg
+                pg_isolation_regress
                 pg_prove
                 pg_regress
-                pg_isolation_regress
+                pgpkg
                 procps
-                start-postgres-server-bin
-                which
-                getkey-script
-                supabase-groonga
                 python3
-                netcat
+                start-postgres-server-bin
+                supabase-groonga
+                which
               ];
 
               text = ''
-
                 #shellcheck disable=SC1091
                 source ${bashlog}
                 #shellcheck disable=SC1091
@@ -363,19 +362,25 @@
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey" \
                   --subst-var-by PRELOAD_LIBRARIES "$PRELOAD_LIBRARIES"
+
+                # Check if postgresql.conf exists
+                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
+                  log error "postgresql.conf is missing!"
+                  exit 1
+                fi
+
                 {
                   echo "listen_addresses = '127.0.0.1'"
                   echo "port = ${pgPort}"
-                  echo "session_preload_libraries = 'supautils'"
+
                   echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
+                  echo "session_preload_libraries = 'supautils'"
                 } >> "$PGTAP_CLUSTER"/postgresql.conf
-                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
-                log info "Checking shared_preload_libraries setting:"
-                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
 
                 # Configure OrioleDB if running orioledb-17 check
                 if ${lib.boolToString isOrioleDB}; then
                   log info "Configuring OrioleDB..."
+
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
@@ -384,23 +389,23 @@
                   echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$PGTAP_CLUSTER/postgresql.conf"
                 fi
 
-                # Check if postgresql.conf exists
-                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-                    log error "postgresql.conf is missing!"
-                    exit 1
-                fi
+                log info "Checking shared_preload_libraries setting:"
+                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
+
+                log info "Configuring local auth"
+                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
 
                 # PostgreSQL startup
                 if [[ "$(uname)" == "Darwin" ]]; then
-                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
+                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
                 else
-                mkdir -p "$PGTAP_CLUSTER/sockets"
-                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
+                  mkdir -p "$PGTAP_CLUSTER/sockets"
+                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
                 fi || {
-                log error "pg_ctl failed to start PostgreSQL"
-                log error "Contents of postgresql.log:"
-                cat "$PGTAP_CLUSTER"/postgresql.log
-                exit 1
+                  log error "pg_ctl failed to start PostgreSQL"
+                  log error "Contents of postgresql.log:"
+                  cat "$PGTAP_CLUSTER"/postgresql.log
+                  exit 1
                 }
 
                 log info "Waiting for PostgreSQL to be ready..."
