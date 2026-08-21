@@ -289,6 +289,8 @@ def host():
             MetadataOptions={
                 "HttpTokens": "required",
                 "HttpEndpoint": "enabled",
+                # supabase-admin-agent reads the salt-enabled opt-out tag via IMDS
+                "InstanceMetadataTags": "enabled",
             },
             IamInstanceProfile={"Name": "pg-ap-southeast-1"},
             InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
