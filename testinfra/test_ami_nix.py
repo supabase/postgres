@@ -331,6 +331,9 @@ users:
                         {"Key": "Name", "Value": "ci-ami-test-nix"},
                         {"Key": "creator", "Value": "testinfra-ci"},
                         {"Key": "testinfra-run-id", "Value": RUN_ID},
+                        # Keep the boot-time salt run (supabase-admin-agent) off
+                        # so tests validate the AMI's own config, not salt's.
+                        {"Key": "salt-enabled", "Value": "false"},
                     ],
                 }
             ],
@@ -1345,21 +1348,7 @@ def test_apparmor_allows_pg_dump(host):
     )
 
 
-@pytest.mark.parametrize(
-    "walg_binary",
-    [
-        "wal-g-2",
-        pytest.param(
-            "wal-g-3",
-            marks=pytest.mark.xfail(
-                reason="salt highstate at boot replaces /etc/apparmor.d/sbpostgres "
-                "with a copy lacking the wal-g-3 rules; remove once the salt "
-                "formula profile carries them",
-                strict=False,
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("walg_binary", ["wal-g-2", "wal-g-3"])
 def test_apparmor_allows_walg(host, walg_binary):
     """Verify wal-g-2 and wal-g-3 can be executed under the sbpostgres AppArmor profile.
 
