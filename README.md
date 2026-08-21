@@ -215,7 +215,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 - ✅ Postgres [postgresql-17.6](https://www.postgresql.org/docs/17/index.html)
 - ✅ Postgres [orioledb-postgresql-17_11](https://github.com/orioledb/orioledb)
 - ✅ Ubuntu 24.04 (Noble Numbat).
-- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
+- ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 10. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
 ## Extensions
 
