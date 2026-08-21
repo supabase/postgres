@@ -13,7 +13,7 @@
   buildEnv,
   nodejs_20,
   libcxx,
-  v8_oldstable,
+  v8_9_7_106,
   latestOnly ? false,
 }:
 
@@ -46,7 +46,7 @@ let
     let
       # plv8 3.1 requires an older version of v8
       old = lib.versionOlder version "3.2";
-      v8 = if old then v8_oldstable else nodejs_20.libv8;
+      v8 = if old then v8_9_7_106 else nodejs_20.libv8;
     in
     stdenv.mkDerivation (finalAttrs: {
       inherit pname version;
