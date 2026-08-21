@@ -1,6 +1,6 @@
 # amcheck across a 15 to 17 pg_upgrade (PSQL-1327).
 #
-# amcheck is pinned to the extensions schema by
+# amcheck is pinned to the pg_catalog schema by
 # supautils.extensions_parameter_overrides, which is what keeps EXECUTE away from
 # anon, authenticated and service_role. nix/tests/sql/amcheck.sql asserts that on
 # a fresh install.
@@ -46,7 +46,7 @@ pkgs.testers.runNixOSTest {
     ''
       pg17_configuration = "${pg17-configuration}"
 
-      # postgres holds EXECUTE via the extensions schema default privileges;
+      # postgres holds EXECUTE on amcheck (installed into pg_catalog by supautils);
       # the three PostgREST roles hold nothing. Aggregated over every function
       # the extension owns, so it holds as amcheck grows from 6 on 15 to 8 on 17.
       EXPECTED_ACL = "anon,f,f\nauthenticated,f,f\npostgres,t,t\nservice_role,f,f"
@@ -107,11 +107,11 @@ pkgs.testers.runNixOSTest {
         whoami = sql("select current_user", role="postgres")
         assert whoami == "postgres", f"expected to be acting as postgres, got: {whoami}"
 
-      with subtest("A non-superuser installs amcheck on PG 15, pinned to extensions"):
+      with subtest("A non-superuser installs amcheck on PG 15, pinned to pg_catalog"):
         sql("create extension amcheck", role="postgres")
         before = sql(IDENTITY_QUERY)
-        assert before.endswith(",extensions"), (
-          f"expected amcheck in the extensions schema, got: {before}"
+        assert before.endswith(",pg_catalog"), (
+          f"expected amcheck in the pg_catalog schema, got: {before}"
         )
         print(f"PG 15 amcheck: {before}")
 
@@ -159,8 +159,8 @@ pkgs.testers.runNixOSTest {
           f"amcheck was already at {installed_version} on PG 15; this subtest no "
           "longer exercises a version bump and needs rewriting"
         )
-        assert updated.endswith(",extensions"), (
-          f"amcheck left the extensions schema during the update: {updated}"
+        assert updated.endswith(",pg_catalog"), (
+          f"amcheck left the pg_catalog schema during the update: {updated}"
         )
 
         acl_updated = sql(ACL_QUERY)
@@ -174,15 +174,15 @@ pkgs.testers.runNixOSTest {
           "insert into amcheck_heap select generate_series(1, 100)",
           role="postgres",
         )
-        sql("select extensions.bt_index_check('amcheck_heap_pkey'::regclass)", role="postgres")
+        sql("select pg_catalog.bt_index_check('amcheck_heap_pkey'::regclass)", role="postgres")
         # amcheck has no per relation gate, which is the point: a customer can
         # check an auth index they do not own after an upgrade corrupts it.
-        sql("select extensions.bt_index_check('auth.users_pkey'::regclass)", role="postgres")
+        sql("select pg_catalog.bt_index_check('auth.users_pkey'::regclass)", role="postgres")
 
       with subtest("The API roles are still locked out after the upgrade"):
         for role in ["anon", "authenticated", "service_role"]:
           err = sql_fails(
-            "select extensions.bt_index_check('auth.users_pkey'::regclass)", role=role
+            "select pg_catalog.bt_index_check('auth.users_pkey'::regclass)", role=role
           )
           assert "permission denied for function bt_index_check" in err, (
             f"expected {role} to be denied, got: {err}"
