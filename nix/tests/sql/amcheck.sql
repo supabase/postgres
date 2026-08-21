@@ -4,23 +4,18 @@
 -- role can install it and call bt_index_check() instead of running a full
 -- REINDEX DATABASE.
 --
--- The schema it lands in decides who can call it. supautils creates privileged
--- extensions as supabase_admin, and ALTER DEFAULT PRIVILEGES grants EXECUTE on
--- whatever supabase_admin creates:
+-- supautils.extensions_parameter_overrides pins it to pg_catalog, the same as pg_cron.
 --
---   in public:     to postgres, anon, authenticated, service_role
---                  (init-scripts/00000000000000-initial-schema.sql)
---   in extensions: to postgres only
---                  (migrations/20230224042246_grant_extensions_perms_for_postgres.sql)
+-- Why not public: supautils creates privileged extensions as supabase_admin, and
+-- ALTER DEFAULT PRIVILEGES (init-scripts/00000000000000-initial-schema.sql) grants
+-- EXECUTE on anything supabase_admin creates in public to anon, authenticated and
+-- service_role, the PostgREST API roles. amcheck does no permission check of its own
+-- (upstream verify_nbtree.c: "Intentionally not checking permissions"), so in public
+-- it would be callable over the REST API against any index, including auth's.
+-- pg_catalog has no such default-privilege grant, so the API roles never get access.
 --
--- amcheck does no permission check of its own. Upstream verify_nbtree.c says
--- "Intentionally not checking permissions", so EXECUTE alone lets a role check
--- any index in the database. Landing in public would expose
--- bt_index_parent_check() (takes ShareLock, blocks writes) and verify_heapam()
--- to unauthenticated PostgREST callers.
---
--- supautils.extensions_parameter_overrides pins amcheck to extensions. This
--- suite asserts that placement and the privilege matrix it produces.
+-- This suite asserts the placement (pg_catalog), that postgres can use it, and that
+-- the API roles cannot.
 
 -- the pin lives in the platform config
 show supautils.extensions_parameter_overrides;
@@ -31,7 +26,7 @@ select rolsuper from pg_roles where rolname = 'postgres';
 -- prime.sql already created amcheck; drop it so the creates below are observable
 drop extension if exists amcheck;
 
--- a non-superuser can install it, and it lands in extensions rather than public
+-- a non-superuser can install it, and it lands in pg_catalog rather than public
 set role postgres;
 create extension amcheck;
 reset role;
@@ -90,17 +85,17 @@ select pg_get_userbyid(relowner) as notmine_owner,
 set role postgres;
 create table amcheck_test.mine(i int primary key) using heap;
 insert into amcheck_test.mine select generate_series(1, 100);
-select extensions.bt_index_check('amcheck_test.mine_pkey'::regclass);
-select extensions.bt_index_check('amcheck_test.notmine_pkey'::regclass);
+select pg_catalog.bt_index_check('amcheck_test.mine_pkey'::regclass);
+select pg_catalog.bt_index_check('amcheck_test.notmine_pkey'::regclass);
 reset role;
 
 -- the API roles must not reach it. The denial is at the function level, so it
 -- applies to every target relation.
 set role anon;
-select extensions.bt_index_check('auth.users_pkey'::regclass);
+select pg_catalog.bt_index_check('auth.users_pkey'::regclass);
 reset role;
 
--- restore the state prime.sql created (amcheck present, in extensions)
+-- restore the state prime.sql created (amcheck present, in pg_catalog)
 set role postgres;
 drop table amcheck_test.mine;
 reset role;
