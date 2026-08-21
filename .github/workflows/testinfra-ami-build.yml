@@ -100,20 +100,14 @@ jobs:
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
-      - run: docker context create builders
-
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-        with:
-          endpoint: builders
-
       - name: Run tests
         timeout-minutes: 10
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
         run: |
-          # TODO: use poetry for pkg mgmt
-          pip3 install boto3 "boto3-stubs[essential]" docker ec2instanceconnectcli pytest "pytest-testinfra[paramiko,docker]" requests
+          # TODO: use uv for pkg mgmt
+          pip3 install boto3 'boto3-stubs[essential]' ec2instanceconnectcli pytest 'pytest-testinfra[paramiko]' requests
           pytest -vv -s testinfra/test_ami_nix.py
 
       - name: Cleanup resources on build cancellation
