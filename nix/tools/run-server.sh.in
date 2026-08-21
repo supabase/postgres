@@ -254,6 +254,8 @@ orioledb_config_items() {
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
         sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "$DATDIR/postgresql.conf"
         sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/supautils.conf"
+        # output_plugin_libraries does not exist before PG 17.11 (orioledb is on an older base)
+        sed -i 's/^output_plugin_libraries/#output_plugin_libraries/g;' "$DATDIR/postgresql.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
@@ -264,6 +266,8 @@ orioledb_config_items() {
         # Use perl instead of sed for macOS
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/postgresql.conf"
         perl -pi -e 's/db_user_namespace = off/#db_user_namespace = off/g' "$DATDIR/postgresql.conf"
+        # output_plugin_libraries does not exist before PG 17.11 (orioledb is on an older base)
+        perl -pi -e 's/^output_plugin_libraries/#output_plugin_libraries/' "$DATDIR/postgresql.conf"
         
         perl -pi -e 's/ timescaledb,//g' "$DATDIR/supautils.conf"
         perl -pi -e 's/ plv8,//g' "$DATDIR/supautils.conf"
