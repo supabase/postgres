@@ -83,6 +83,8 @@ max_parallel_maintenance_workers = {{.MaxParallelMaintenanceWorkers}}	# taken fr
 
 wal_level = logical			# minimal, replica, or logical
 					# (change requires restart)
+output_plugin_libraries = 'pgoutput, test_decoding, wal2json'	# allowlist of logical decoding
+					# output plugins (PG 15.19 / 17.11+)
 wal_buffers = {{.WalBuffers}}			# min 32kB, -1 sets based on shared_buffers
 					# (change requires restart)
 min_wal_size = {{.MinWalSize}}

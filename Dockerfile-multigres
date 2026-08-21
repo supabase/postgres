@@ -263,12 +263,10 @@ RUN chown -R postgres:postgres /usr/lib/postgresql && \
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' \
     /etc/postgresql-custom/supautils.conf
 
-# Add orioledb to shared_preload_libraries and configure as default table access method
-# orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
-# as an allow-list for logical decoding output plugins.
-RUN sed -i "s/\(shared_preload_libraries.*\)'/\1, orioledb'/" /etc/postgresql/postgresql.conf && \
-    echo "default_table_access_method = 'orioledb'" >> /etc/postgresql/postgresql.conf && \
-    echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> /etc/postgresql/postgresql.conf
+# OrioleDB configuration
+RUN sed -i /etc/postgresql/postgresql.conf \
+        -e "/shared_preload_libraries/ s|'|'orioledb,|" \
+        -e "$ a default_table_access_method = 'orioledb'" \
 
 # Register orioledb before initdb migrations run
 RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \

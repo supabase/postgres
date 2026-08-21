@@ -379,6 +379,7 @@
                   echo "port = ${pgPort}"
 
                   echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
+                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'"
                   echo "session_preload_libraries = 'supautils'"
                 } >> "$PGTAP_CLUSTER"/postgresql.conf
 
@@ -389,9 +390,6 @@
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
-                  # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
-                  # as an allow-list for logical decoding output plugins.
-                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$PGTAP_CLUSTER/postgresql.conf"
                 fi
 
                 log info "Checking shared_preload_libraries setting:"
@@ -538,7 +536,7 @@
                   --host=localhost \
                   --port=${pgPort} \
                   --user=supabase_admin \
-                  ${builtins.concatStringsSep " " (lib.lists.remove "hstore_copy_binary" sortedTestList)} 2>&1; then
+                  ${builtins.concatStringsSep " " sortedTestList} 2>&1; then
                   log error "pg_regress tests failed"
                   cat "$out/regression_output/regression.diffs"
                   exit 1
