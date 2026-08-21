@@ -289,8 +289,6 @@ def host():
             MetadataOptions={
                 "HttpTokens": "required",
                 "HttpEndpoint": "enabled",
-                # supabase-admin-agent reads the salt-enabled opt-out tag via IMDS
-                "InstanceMetadataTags": "enabled",
             },
             IamInstanceProfile={"Name": "pg-ap-southeast-1"},
             InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
@@ -333,9 +331,6 @@ users:
                         {"Key": "Name", "Value": "ci-ami-test-nix"},
                         {"Key": "creator", "Value": "testinfra-ci"},
                         {"Key": "testinfra-run-id", "Value": RUN_ID},
-                        # Keep the boot-time salt run (supabase-admin-agent) off
-                        # so tests validate the AMI's own config, not salt's.
-                        {"Key": "salt-enabled", "Value": "false"},
                     ],
                 }
             ],
