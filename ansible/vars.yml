@@ -11,9 +11,9 @@ postgres_major:
 # This is the source of truth for Postgres versions used in the Dockerfiles, and
 # is used to derive image tags and base images in the release matrix.
 postgres_release:
-  postgresorioledb-17: "17.9.0.018-orioledb"
-  postgres17: "17.6.1.165"
-  postgres15: "15.14.1.165"
+  postgresorioledb-17: "17.9.0.019-orioledb-pgrst162"
+  postgres17: "17.6.1.166-pgrst162"
+  postgres15: "15.14.1.166-pgrst162"
 # Docker release matrix — base images built first, layered images built on top.
 # tag and base_tag are derived at build time from postgres_release via release_key.
 # tag_suffix is appended to the release version to form the final image tag.
@@ -126,14 +126,14 @@ pgbouncer_release: 1.25.1
 pgbouncer_artifacts:
   url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
   checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
-postgrest_release: "14.17" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+postgrest_release: "16.2" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
-    checksum: sha256:d6e13926457487c99b77366d795dcfa32700554d08d418131d9a4ea3f6ca25e3
+    checksum: sha256:4712595baae0f5d84a527d55a11166d6bf4d9b0f1d102505c5e9d59219787f08
   arm64:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-    checksum: sha256:e9a5671caff9cea25ea002c906638ac1cefbb612a3a1cbf3ecfbe92072fef871
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-aarch64.tar.xz"
+    checksum: sha256:4c83974272acb56e6091e969ba4ee345fbc053cde457b0c8a9399e0d2a12c32d
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
