@@ -9,7 +9,8 @@ SELECT
   s.nspname AS schema,
   c.relname AS object_name,
   acl.grantee::regrole::text AS grantee,
-  acl.privilege_type
+  acl.privilege_type,
+  acl.is_grantable
 FROM pg_class c
 JOIN schema_obj s ON s.oid = c.relnamespace
 CROSS JOIN LATERAL aclexplode(c.relacl) AS acl
@@ -20,7 +21,8 @@ SELECT
   s.nspname AS schema,
   p.proname AS object_name,
   acl.grantee::regrole::text AS grantee,
-  acl.privilege_type
+  acl.privilege_type,
+  acl.is_grantable
 FROM pg_proc p
 JOIN schema_obj s ON s.oid = p.pronamespace
 CROSS JOIN LATERAL aclexplode(p.proacl) AS acl
