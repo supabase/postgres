@@ -198,14 +198,11 @@
     - name: Run supascan baseline validation
       when: stage2 and not qemu and ansible_architecture != "x86_64"
       become: yes
-      shell: |
-        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
-
-    - name: Remove supascan after validation
-      when: stage2
-      become: yes
-      shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile remove supascan"
+      shell: >-
+        nix shell github:supabase/postgres/{{ git_commit_sha }}#supascan --command
+        bash
+        /tmp/ansible-playbook/ansible/files/supascan_ami.sh
+        /tmp/ansible-playbook/audit-specs/baselines/ami-build
 
     - name: Setup Swap
       when: stage2 and not qemu
