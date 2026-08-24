@@ -3,6 +3,7 @@
   imports = [
     ./postgres.nix
     ./postgres-env.nix
+    ./site-env.nix
   ];
   perSystem =
     {

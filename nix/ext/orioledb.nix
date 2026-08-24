@@ -29,6 +29,7 @@ stdenv.mkDerivation rec {
   buildPhase = ''
     make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=20
   '';
+  separateDebugInfo = true;
   installPhase = ''
     runHook preInstall
 

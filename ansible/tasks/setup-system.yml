@@ -91,6 +91,12 @@
   changed_when: false
   failed_when: false
 
+- name: Ensure guest VM time synchronisation
+  ansible.builtin.import_tasks:
+    file: tasks/setup-kvm-timesync.yml
+  when:
+    - qemu
+
 - name: Execute more tasks when stage1
   when: not stage2
   block:

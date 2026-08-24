@@ -10,27 +10,92 @@ if [ -f "$REPORTING_CREDENTIALS_FILE" ]; then
 	REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
 fi
 
+function log {
+	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
+}
+
+TIMERS_TO_DISABLE=(
+	# apt-get update and unattended-upgrades contend for the dpkg lock that
+	# initiate.sh needs, and can modify the system leading to unexpected behavior
+	# at upgrade time.
+	"apt-daily.timer"
+	"apt-daily-upgrade.timer"
+	# DO NOT add the supabase-admin-agent_salt timer to this set!
+)
+
+function unit_exists {
+	systemctl cat "$1" >/dev/null 2>&1
+}
+
+# Runtime-mask (a /run/systemd symlink) rather than disable. Runtime masks
+# should not persist across reboots, so a failure mid-upgrade will be easier to
+# mop up with a reboot.
+function disable_conflicting_timers {
+	local rc=0 timer service
+	for timer in "${TIMERS_TO_DISABLE[@]}"; do
+		unit_exists "$timer" || continue
+		systemctl is-enabled --quiet "$timer" 2>/dev/null || continue
+
+		log "Masking $timer for the duration of the upgrade"
+		systemctl mask --runtime --now "$timer" || rc=1
+
+		service="${timer%.timer}.service"
+		if unit_exists "$service"; then
+			systemctl stop "$service" || rc=1
+		fi
+	done
+	return $rc
+}
+
+function enable_conflicting_timers {
+	local rc=0 timer state
+	for timer in "${TIMERS_TO_DISABLE[@]}"; do
+		state=$(systemctl is-enabled "$timer" 2>/dev/null || true)
+		[ "$state" = "masked-runtime" ] || continue
+
+		log "Unmasking $timer"
+		systemctl unmask --runtime "$timer" || {
+			rc=1
+			continue
+		}
+		systemctl start "$timer" || rc=1
+	done
+	return $rc
+}
+
 # shellcheck disable=SC2120
 # Arguments are passed in other files
 function run_sql {
 	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
+# Wrap a db name in dbname='...' (escaping \ and ') so characters special to -d
+# parsing (=, spaces, quotes) stay part of a literal name, not a conninfo fragment.
+# psql parses a -d value containing '=' as a full conninfo string, so a customer
+# database named e.g. `host=example.com dbname=postgres` would otherwise redirect
+# this root-launched connection off-box.
+function conninfo_for_db {
+	local d="$1"
+	d="${d//\\/\\\\}"
+	d="${d//\'/\\\'}"
+	printf "dbname='%s'" "$d"
+}
+
 function ship_logs {
 	LOG_FILE=$1
 
 	if [ -z "$REPORTING_ANON_KEY" ]; then
-		echo "No reporting key found. Skipping log upload."
+		log "No reporting key found. Skipping log upload."
 		return 0
 	fi
 
 	if [ ! -f "$LOG_FILE" ]; then
-		echo "No log file found. Skipping log upload."
+		log "No log file found. Skipping log upload."
 		return 0
 	fi
 
 	if [ ! -s "$LOG_FILE" ]; then
-		echo "Log file is empty. Skipping log upload."
+		log "Log file is empty. Skipping log upload."
 		return 0
 	fi
 
@@ -55,12 +120,12 @@ function check_free_space {
 	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
 
 	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
-		echo "ERROR: could not determine free space on /; aborting upgrade."
+		log "ERROR: could not determine free space on /; aborting upgrade."
 		return 1
 	fi
 
 	if ((available_kb < required_kb)); then
-		echo "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
+		log "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
 		return 1
 	fi
 }
@@ -75,10 +140,10 @@ function retry {
 		wait=$((2 ** (count + 1)))
 		count=$((count + 1))
 		if [ $count -lt "$retries" ]; then
-			echo "Command $* exited with code $exit, retrying..."
+			log "Command $* exited with code $exit, retrying..."
 			sleep $wait
 		else
-			echo "Command $* exited with code $exit, no more retries left."
+			log "Command $* exited with code $exit, no more retries left."
 			return $exit
 		fi
 	done
