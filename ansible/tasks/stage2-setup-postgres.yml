@@ -62,17 +62,20 @@
   when: stage2
   become: true
   block:
-    - name: Install packages from nix binary cache
+    - name: Resolve postgres env store path
       ansible.builtin.shell: |
-        sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{ nix_item }}"
-      loop:
-        - "{{ psql_version }}/bin"
-        - pg_prove
-        - supabase-groonga
-        - "{{ postgresql_version }}_debug"
-        - "{{ postgresql_version }}_src"
-      loop_control:
-        loop_var: 'nix_item'
+        sudo -u postgres bash -c "
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
+        "
+      register: postgres_env_path
+
+    - name: Install postgres env from nix binary cache
+      ansible.builtin.shell: |
+        sudo -u postgres bash -c "
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+          nix-env --set {{ postgres_env_path.stdout }}
+        "
 
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
@@ -132,11 +135,6 @@
         - name: Install gatekeeper if not pg15
           when: stage2 and not is_psql_15
           block:
-            - name: Install gatekeeper from nix binary cache
-              become: yes
-              shell: |
-                sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#gatekeeper"
-
             - name: Create symbolic link for linux-pam to find pam_jit_pg.so
               become: yes
               shell: |
