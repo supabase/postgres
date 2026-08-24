@@ -66,7 +66,8 @@ function enable_conflicting_timers {
 # shellcheck disable=SC2120
 # Arguments are passed in other files
 function run_sql {
-	psql -h localhost -U supabase_admin -d postgres "$@"
+	PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c search_path=pg_catalog,\"\$user\",public,auth,extensions" \
+		psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
 # Wrap a db name in dbname='...' (escaping \ and ') so characters special to -d

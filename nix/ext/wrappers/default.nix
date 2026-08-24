@@ -166,6 +166,8 @@ let
           create_control_files() {
             sed -e "/^default_version =/d" \
                 -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+                -e "s|^relocatable = .*|relocatable = false|" \
+                -e "\$a schema = 'extensions'" \
               $out/share/postgresql/extension/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
             rm $out/share/postgresql/extension/${pname}.control
           }

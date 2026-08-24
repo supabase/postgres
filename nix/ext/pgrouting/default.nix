@@ -103,6 +103,8 @@ let
         # Create version-specific control file
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/lib${pname}-$MAJ_MIN_VERSION'|" \
+            -e "s|^relocatable = .*|relocatable = false|" \
+            -e "\$a schema = 'extensions'" \
           sql/common/${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
         # Copy SQL upgrade scripts

@@ -46,7 +46,8 @@ log() {
 # ON_ERROR_STOP makes psql exit non-zero on any SQL error (incl. inside \gexec) —
 # that is how per-statement failure is detected below.
 run_sql() {
-	psql -h localhost -U supabase_admin -v ON_ERROR_STOP=1 --no-psqlrc "$@"
+	PGOPTIONS="${PGOPTIONS:+$PGOPTIONS }-c search_path=pg_catalog,\"\$user\",public,auth,extensions" \
+		psql -h localhost -U supabase_admin -v ON_ERROR_STOP=1 --no-psqlrc "$@"
 }
 
 # Retry to guard against a not-yet-ready Postgres socket.

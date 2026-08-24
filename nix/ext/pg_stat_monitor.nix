@@ -59,6 +59,8 @@ let
         # Create version-specific control file
         sed -e "/^default_version =/d" \
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}-${version}'|" \
+            -e "s|^relocatable = .*|relocatable = false|" \
+            -e "\$a schema = 'extensions'" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
         # For the latest version, create default control file and symlink and copy SQL upgrade scripts

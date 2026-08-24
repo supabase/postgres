@@ -9,4 +9,4 @@ ALTER USER supabase_storage_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_replication_admin WITH PASSWORD 'postgres';
 ALTER USER supabase_etl_admin WITH PASSWORD 'postgres';
 ALTER ROLE supabase_read_only_user WITH PASSWORD 'postgres';
-ALTER ROLE supabase_admin SET search_path TO "$user",public,auth,extensions;
+ALTER ROLE supabase_admin SET search_path TO pg_catalog,"$user",public,auth,extensions;
