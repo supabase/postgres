@@ -212,3 +212,8 @@
       become: yes
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+
+    - name: Setup Swap
+      when: stage2 and not qemu
+      become: yes
+      import_tasks: tasks/stage2/setup-swap.yml

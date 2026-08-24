@@ -186,6 +186,11 @@ function clean_system {
 	fi
 }
 
+function clean_nix {
+	nix-collect-garbage -d
+	nix-store --optimise -v
+}
+
 #################
 # stage1 things #
 #################
@@ -206,3 +211,4 @@ install_nix
 execute_stage2_playbook
 clean_legacy_things
 clean_system
+clean_nix
