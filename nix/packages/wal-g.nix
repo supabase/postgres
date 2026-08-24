@@ -89,13 +89,12 @@ in
   # wal-g v3.0.8 — installed alongside v2 (INDATA-904).
   # OrioleDB support + backward-compat validation; binary is wal-g-3.
   wal-g-3 = walGCommon {
-    version = "3.0.8";
-    sha256 = "sha256-iDLC3Td/U1msqdpUbJWS+MBDznx7NbddGWFP4rrfSus=";
+    version = "3.0.9";
+    sha256 = "sha256-QTPgJuCuLxlBqa2QAhV91qX4XTQHIvzAQDntchGpxrQ=";
     vendorHash = "sha256-K2J/Hi8TQs+UhudgTWsAmPUHKnwKP3cmx21CvDTjs6M=";
     majorVersion = "3";
     goExperiment = "jsonv2";
-    # Backport wal-g/wal-g#2112: update OrioleDB incremental-backup page
-    # header parsing to match the beta13 page format.
-    patches = [ ./wal-g/0001-orioledb-update-page-header-format-to-beta13.patch ];
+    # Backport wal-g/wal-g#2502: Correctly read OrioleDBOndiskPageHeader
+    patches = [ ./wal-g/0001-correctly-read-orioledbondiskpageheader.patch ];
   };
 }
