@@ -6,11 +6,7 @@ Guidance for Claude Code sessions working in this repo.
 
 This is **`supabase/postgres`**: Supabase's own build/packaging repo for its
 PostgreSQL distribution. It does **not** contain a fork of PostgreSQL's C
-source. `~/repos/community/postgres` is a separate local clone of the
-**upstream `postgres/postgres` mirror** — that's where you go to read actual
-PostgreSQL source, commit history, or release-note diffs. Never grep this
-repo for PostgreSQL internals; never grep the upstream mirror for anything
-Supabase-specific (extension list, AMI pipeline, ansible config).
+source.
 
 ## What this repo is
 
