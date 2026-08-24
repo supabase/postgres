@@ -202,23 +202,14 @@ function format_and_mount_rootfs {
 	mount -o defaults,discard /dev/xvdh /mnt/data
 }
 
-function create_swapfile {
-	fallocate -l 1G /mnt/swapfile
-	chmod 600 /mnt/swapfile
-	mkswap /mnt/swapfile
-}
-
 function format_build_partition {
 	mkfs.ext4 -O ^has_journal /dev/xvdc
 }
 # Create fstab
 function create_fstab {
-	local FMT="%-42s %-11s %-5s %-17s %-5s %s" ROOT_LINE DATA_LINE SWAP_LINE
+	local FMT="%-42s %-11s %-5s %-17s %-5s %s" ROOT_LINE DATA_LINE
 	ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="$FMT" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
 	DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="$FMT" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard", "0", "2" ) }')
-
-	# shellcheck disable=SC2059
-	SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
 
 	local EFI_LINE=""
 	if [[ $ARCH == arm64 ]]; then
@@ -231,7 +222,6 @@ function create_fstab {
 		echo "$ROOT_LINE"
 		[ -n "$EFI_LINE" ] && echo "$EFI_LINE"
 		echo "$DATA_LINE"
-		echo "$SWAP_LINE"
 	} >/mnt/etc/fstab
 }
 
@@ -387,7 +377,6 @@ function clean_system {
 	rm -rf /mnt/root/.vpython*
 	rm -rf /mnt/root/go
 	rm -rf /mnt/usr/share/doc
-
 }
 
 # Unmount bind mounts
@@ -419,7 +408,6 @@ waitfor_boot_finished
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
-create_swapfile
 format_build_partition
 setup_chroot_environment
 execute_playbook
