@@ -8,7 +8,7 @@ export PGHOST=localhost
 export PGDATABASE=postgres
 
 ARTIFACTS_BUCKET_NAME=${1:-}
-if [ -z "$ARTIFACTS_BUCKET_NAME" ]; then
+if [[ -z $ARTIFACTS_BUCKET_NAME ]]; then
 	echo "Usage: $0 <ARTIFACTS_BUCKET_NAME> [INITIAL_PG_VERSION]"
 	exit 1
 fi
@@ -19,11 +19,11 @@ LATEST_PG_VERSION=$(sed -e 's/postgres-version = "\(.*\)"/\1/g' ../../common.var
 LATEST_VERSION_SCRIPTS="scripts/pg_upgrade_scripts-${LATEST_PG_VERSION}.tar.gz"
 LATEST_VERSION_BIN="scripts/pg_upgrade_bin-${LATEST_PG_VERSION}.tar.gz"
 
-if [ ! -f "$LATEST_VERSION_SCRIPTS" ]; then
+if [[ ! -f $LATEST_VERSION_SCRIPTS ]]; then
 	aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/pg_upgrade_scripts.tar.gz" "$LATEST_VERSION_SCRIPTS"
 fi
 
-if [ ! -f "$LATEST_VERSION_BIN" ]; then
+if [[ ! -f $LATEST_VERSION_BIN ]]; then
 	aws s3 cp "s3://${ARTIFACTS_BUCKET_NAME}/upgrades/postgres/supabase-postgres-${LATEST_PG_VERSION}/24.04.tar.gz" "$LATEST_VERSION_BIN"
 fi
 
@@ -47,8 +47,7 @@ done
 
 echo "Running migrations"
 docker cp ../../migrations/db/migrations "pg_upgrade_test:/docker-entrypoint-initdb.d/"
-docker exec -it pg_upgrade_test bash -c '/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1; exit $?'
-if [ $? -ne 0 ]; then
+if ! docker exec -it pg_upgrade_test bash -c '/docker-entrypoint-initdb.d/migrate.sh > /tmp/migrate.log 2>&1; exit $?'; then
 	echo "Running migrations failed. Exiting."
 	exit 1
 fi
@@ -60,16 +59,14 @@ psql -f "./tests/98-data-fixtures.sql"
 psql -f "./tests/99-fixtures.sql"
 
 echo "Initiating pg_upgrade"
-docker exec -it pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/initiate.sh "$PG_MAJOR_VERSION"; exit $?'
-if [ $? -ne 0 ]; then
+if ! docker exec -it pg_upgrade_test bash -c '/tmp/upgrade/pg_upgrade_scripts/initiate.sh "$PG_MAJOR_VERSION"; exit $?'; then
 	echo "Initiating pg_upgrade failed. Exiting."
 	exit 1
 fi
 
 sleep 3
 echo "Completing pg_upgrade"
-docker exec -it pg_upgrade_test bash -c 'rm -f /tmp/pg-upgrade-status; /tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'
-if [ $? -ne 0 ]; then
+if ! docker exec -it pg_upgrade_test bash -c 'rm -f /tmp/pg-upgrade-status; /tmp/upgrade/pg_upgrade_scripts/complete.sh; exit $?'; then
 	echo "Completing pg_upgrade failed. Exiting."
 	exit 1
 fi

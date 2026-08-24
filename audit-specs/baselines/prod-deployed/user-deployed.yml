@@ -1,5 +1,5 @@
 # User baseline
-# Generated from baseline.yml - 72 items
+# Generated from baseline.yml - 71 items
 user:
   _apt:
     exists: true
@@ -109,12 +109,6 @@ user:
     home: /var/spool/news
     shell: /usr/sbin/nologin
     uid: 9
-  nginx:
-    exists: true
-    gid: 1009
-    home: /home/nginx
-    shell: /bin/sh
-    uid: 1005
   nixbld1:
     exists: true
     gid: 30000

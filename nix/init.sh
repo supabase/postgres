@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck shell=bash
 
 export PGUSER=supabase_admin
 export PGDATA=$PWD/postgres_data
@@ -9,12 +8,14 @@ export PGPASS=postgres
 export LOG_PATH=$PGHOST/LOG
 export PGDATABASE=testdb
 export DATABASE_URL="postgresql:///$PGDATABASE?host=$PGHOST&port=$PGPORT"
-mkdir -p $PGHOST
-if [ ! -d $PGDATA ]; then
+mkdir -p "$PGHOST"
+if [[ ! -d $PGDATA ]]; then
 	echo 'Initializing postgresql database...'
-	initdb $PGDATA --locale=C --username $PGUSER -A md5 --pwfile=<(echo $PGPASS) --auth=trust
-	echo "listen_addresses='*'" >>$PGDATA/postgresql.conf
-	echo "unix_socket_directories='$PGHOST'" >>$PGDATA/postgresql.conf
-	echo "unix_socket_permissions=0700" >>$PGDATA/postgresql.conf
+	initdb "$PGDATA" --locale=C --username $PGUSER -A md5 --pwfile=<(echo $PGPASS) --auth=trust
+	cat <<-EOF >>"$PGDATA/postgresql.conf"
+		listen_addresses='*'
+		unix_socket_directories='$PGHOST'
+		unix_socket_permissions=0700
+	EOF
 fi
-chmod o-rwx $PGDATA
+chmod o-rwx "$PGDATA"
