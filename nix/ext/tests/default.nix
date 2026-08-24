@@ -155,7 +155,11 @@ let
                   self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.postgresql_orioledb-17
               );
               settings = lib.mkForce (
-                ((installedExtension "17").defaultSettings or { })
+                # output_plugin_libraries does not exist before PG 17.11; orioledb is on an
+                # older base, so strip it from any extension's defaultSettings (e.g. wal2json)
+                (removeAttrs ((installedExtension "17").defaultSettings or { }) [
+                  "output_plugin_libraries"
+                ])
                 // {
                   jit = "off";
                   shared_preload_libraries = [

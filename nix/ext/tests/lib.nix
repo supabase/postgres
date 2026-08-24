@@ -115,6 +115,9 @@ let
       ${
         if majorVersion == "orioledb-17" then
           ''
+            # OrioleDB: comment out output_plugin_libraries (GUC does not exist before PG 17.11;
+            # orioledb line is on a 17.9 base and would fail to start on an unknown parameter)
+            sed -i 's/^output_plugin_libraries/#output_plugin_libraries/' $out/postgresql.conf
             # OrioleDB: also remove pgjwt from supautils privileged_extensions
             sed -i 's/ pgjwt,//g;' $out/supautils.conf
             # OrioleDB: append orioledb to shared_preload_libraries
