@@ -7,8 +7,8 @@
       ...
     }:
     let
-      # Bundles everything the AMI build installs into the postgres user's nix
-      # profile (via `nix-env --set`) into a single derivation.
+      # Make a bundle of packages, as a single derivation, to be installed into the
+      # postgres user's nix profile, during image provisioning or instance update.
       makePostgresEnv =
         version:
         pkgs.symlinkJoin {
