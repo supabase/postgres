@@ -77,10 +77,6 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
-    - name: Install supascan for baseline validation
-      ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
-
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
         group: 'postgres'
