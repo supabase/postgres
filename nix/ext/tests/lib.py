@@ -136,31 +136,20 @@ class PostgresExtensionTest(object):
     def check_legacy_versions_upgrade_to_latest(
         self, pg_version: str, legacy_versions: Mapping[str, str]
     ):
-        """Prove every legacy extversion string upgrades cleanly to latest.
+        """Verify every legacy extversion string upgrades to latest.
 
-        legacy_versions maps a legacy/bare extversion string (e.g. pg_cron's
-        "1.6") to the schema-identical canonical version it has an alignment
-        migration to (e.g. "1.6.4"). Postgres can't install a legacy string
-        directly -- there's no base script for it, only an alignment edge off
-        of it -- so for each entry this installs the canonical version fresh,
-        then patches pg_extension.extversion directly to the legacy string.
-        This reproduces the actual field state (and is the same manual fix
-        used to recover a stuck project) rather than a state Postgres would
-        ever arrive at on its own.
-
-        From there, a bare ALTER EXTENSION UPDATE (no explicit target version)
-        is run -- matching how the real upgrade-completion path invokes it --
-        and the result must land on the latest canonical version. If any
-        legacy string has no path to latest, this fails loudly, which is
-        exactly the stranded-project bug this test exists to catch.
-
-        The extension is restored to the latest canonical version on exit so
-        the subtests that follow see the expected state.
+        legacy_versions maps a legacy/bare extversion string (e.g. "1.6") to
+        its schema-identical canonical version (e.g. "1.6.4"). Postgres has
+        no base script for the legacy string, only an alignment edge off of
+        it, so CREATE EXTENSION can't target it directly: install the
+        canonical version, patch pg_extension.extversion to the legacy
+        string, then run a bare ALTER EXTENSION UPDATE and assert it reaches
+        latest. Restores latest on exit for subsequent subtests.
 
         Args:
             pg_version: PostgreSQL version under test (e.g. "15")
-            legacy_versions: Mapping of legacy extversion string to the
-                canonical version it is schema-identical to
+            legacy_versions: Mapping of legacy extversion string to its
+                schema-identical canonical version
         """
         if not legacy_versions:
             return
