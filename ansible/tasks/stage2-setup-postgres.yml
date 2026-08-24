@@ -53,6 +53,11 @@
             line: 'ORIOLEDB_ENABLED=true'
             path: '/etc/environment'
 
+        - name: Add ORIOLEDB_ENABLED environment variable to postgresql.env
+          ansible.builtin.lineinfile:
+            line: 'ORIOLEDB_ENABLED=true'
+            path: '/etc/environment.d/postgresql.env'
+
 - name: Execute things when stage2
   when: stage2
   become: true

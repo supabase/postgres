@@ -61,9 +61,14 @@ jobs:
           echo "result<<EOF" >> $GITHUB_OUTPUT
           echo "$ARGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: ./.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
       - name: verify schema.sql is committed
         run: |
-          nix run github:supabase/postgres/${{ github.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }} --flake-url github:supabase/postgres/${{ github.sha }}
+          nix run github:supabase/postgres/${{ steps.resolve-git-sha.outputs.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }} --flake-url github:supabase/postgres/${{ steps.resolve-git-sha.outputs.sha }}
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
             echo "Detected changes in schema.sql:"
             git diff migrations/schema-${{ env.PGMAJOR }}.sql
