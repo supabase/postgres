@@ -1,5 +1,5 @@
 # File baseline: systemd
-# Generated from baseline.yml - 34 files
+# Generated from baseline.yml - 33 files
 file:
   /etc/systemd/journald.conf:
     exists: true
@@ -92,12 +92,6 @@ file:
     mode: '0644'
     owner: '0'
   /etc/systemd/system/logrotate.timer.d/override.conf:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '0'
-  /etc/systemd/system/nginx.service:
     exists: true
     filetype: file
     group: '0'

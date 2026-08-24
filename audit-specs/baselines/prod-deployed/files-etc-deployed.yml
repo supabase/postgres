@@ -1,5 +1,5 @@
 # File baseline: etc
-# Generated from baseline.yml - 735 files
+# Generated from baseline.yml - 720 files
 file:
   /etc/.pwd.lock:
     exists: true
@@ -3385,96 +3385,6 @@ file:
     group: '0'
     mode: '0644'
     owner: '0'
-  /etc/nginx/fastcgi.conf:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/fastcgi.conf.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/fastcgi_params:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/fastcgi_params.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/koi-utf:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/koi-win:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/mime.types:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/mime.types.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/nginx.conf:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/nginx.conf.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/scgi_params:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/scgi_params.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/uwsgi_params:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/uwsgi_params.default:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /etc/nginx/win-utf:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
   /etc/nix/nix.conf:
     exists: true
     filetype: file

@@ -1,5 +1,5 @@
 # File baseline: usr-local
-# Generated from baseline.yml - 7956 files
+# Generated from baseline.yml - 7953 files
 file:
   /usr/local/aws-cli/v2/2.23.11/dist/_awscrt.abi3.so:
     exists: true
@@ -45817,24 +45817,6 @@ file:
     group: '0'
     mode: '0755'
     owner: '0'
-  /usr/local/nginx/html/50x.html:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /usr/local/nginx/html/index.html:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0644'
-    owner: '1005'
-  /usr/local/nginx/sbin/nginx:
-    exists: true
-    filetype: file
-    group: '0'
-    mode: '0755'
-    owner: '1005'
   /usr/local/openresty/COPYRIGHT:
     exists: true
     filetype: file

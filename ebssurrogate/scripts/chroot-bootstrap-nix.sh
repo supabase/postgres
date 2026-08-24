@@ -194,6 +194,7 @@ function update_install_packages {
 	# because their post-install scripts try to access EC2 metadata service
 	# which doesn't work in a chroot and causes long hangs
 	if ! apt_install_with_fallback install -y \
+		bzip2 \
 		sudo \
 		wget \
 		cloud-init \
