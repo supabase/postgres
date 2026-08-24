@@ -97,15 +97,23 @@ COPY docker/pgctld/multigres-migrations/ /docker-entrypoint-initdb.d/migrations/
 # k8s manifests and local provisioner commands work without extra flags
 COPY --chmod=0755 docker/pgctld/pgctld-layered.sh /usr/local/bin/pgctld
 
-# /etc/postgresql/postgresql.conf is not modified here: pgctld renders its own
-# config from postgresql.conf.tmpl and passes it directly to PostgreSQL, so the
-# supabase base config (including wal-g and data_directory settings) is never loaded.
-
-# wal-g is not used in Multigres (pgbackrest handles backups); remove inherited files.
-RUN rm -f \
-    /etc/postgresql-custom/wal-g.conf \
-    /home/postgres/wal_fetch.sh \
-    /root/wal_change_ownership.sh
+# The supabase base config /etc/postgresql/postgresql.conf IS loaded in Multigres:
+# the operator's --pg-initdb-extra-conf appends `include = '/etc/postgresql/postgresql.conf'`
+# onto pgctld's generated config. It therefore must not carry settings that assume the
+# base image's `postgres -D /etc/postgresql` layout, so we neutralize two here:
+#
+#   - data_directory = '/var/lib/postgresql/data' would override pgctld's -D/PGDATA and
+#     redirect PostgreSQL off the freshly-initdb'd <pooler-dir>/pg_data to the base image's
+#     empty dir, which fails startup ("data directory ... has invalid permissions") and
+#     leaves the pooler stuck retrying the first backup forever. pgctld pins the data dir
+#     via -D, so comment it out (matching the pre-layered image, which shipped it disabled).
+#   - the wal-g include is dangling (wal-g is unused in Multigres; pgbackrest handles
+#     backups), so delete it and its now-orphaned files.
+RUN sed -i \
+        -e "s|^data_directory = '/var/lib/postgresql/data'|#data_directory = '/var/lib/postgresql/data'|" \
+        -e "/^include = '\/etc\/postgresql-custom\/wal-g.conf'/d" \
+        /etc/postgresql/postgresql.conf && \
+    rm -f /etc/postgresql-custom/wal-g.conf /home/postgres/wal_fetch.sh /root/wal_change_ownership.sh
 
 # pgctld uses pooler-dir for pgBackRest config, unix sockets, and state files.
 RUN mkdir -p /var/lib/pgctld && chown postgres:postgres /var/lib/pgctld

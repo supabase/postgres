@@ -39,8 +39,6 @@ group:
     exists: true
   envoy:
     exists: true
-  nginx:
-    exists: true
   vector:
     exists: true
   supabase-admin-agent:

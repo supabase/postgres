@@ -1,5 +1,5 @@
 # Group baseline
-# Generated from baseline.yml - 70 items
+# Generated from baseline.yml - 69 items
 group:
   _ssh:
     exists: true
@@ -94,9 +94,6 @@ group:
   news:
     exists: true
     gid: 9
-  nginx:
-    exists: true
-    gid: 1009
   nixbld:
     exists: true
     gid: 30000
