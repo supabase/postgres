@@ -6,32 +6,6 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-check_orioledb_enabled() {
-   local pg_conf="/etc/postgresql/postgresql.conf"
-   if [ ! -f "$pg_conf" ]; then
-       return 0
-    fi
-   grep "^shared_preload_libraries" "$pg_conf" | grep -c "orioledb" || return 0
-}
-
-get_shared_buffers() {
-    local opt_conf="/etc/postgresql-custom/generated-optimizations.conf"
-    if [ ! -f "$opt_conf" ]; then
-        return 0
-    fi
-    grep "^shared_buffers = " "$opt_conf" | cut -d "=" -f2 | tr -d ' ' || return 0
-}
-
-update_orioledb_buffers() {
-   local pg_conf="/etc/postgresql/postgresql.conf"
-   local value="$1"
-   if grep -q "^orioledb.main_buffers = " "$pg_conf"; then
-       sed -i "s/^orioledb.main_buffers = .*/orioledb.main_buffers = $value/" "$pg_conf"
-   else
-       echo "orioledb.main_buffers = $value" >> "$pg_conf"
-   fi
-}
-
 check_extensions_file() {
     local extensions_file="/etc/adminapi/pg-extensions.json"
     if [ ! -f "$extensions_file" ]; then
@@ -111,16 +85,6 @@ main() {
    
    # 1. Handle all extension versions from config file
    handle_extension_versions
-
-   # 2. orioledb handling 
-   local has_orioledb=$(check_orioledb_enabled)
-   if [ "$has_orioledb" -lt 1 ]; then
-       return 0
-   fi
-   local shared_buffers_value=$(get_shared_buffers)
-   if [ ! -z "$shared_buffers_value" ]; then
-       update_orioledb_buffers "$shared_buffers_value"
-   fi
 
    log "Prestart script completed"
 }
