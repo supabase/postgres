@@ -39,7 +39,7 @@ extensions not yet ported.
 | `nix/` | Core build system (flake-parts modules). `nix/postgresql/` = PG version configs/patches; `nix/ext/` = one file per extension package; `nix/config.nix` = pinned PG versions/hashes per major (source of truth for "what version are we on"); `nix/tests/` = pg_regress + smoke + migration NixOS tests; `nix/docs/` = the real developer docs (start here, not README) |
 | `ansible/` | Config management for the production AMI. `ansible/playbook.yml` = main playbook (Postgres/PostgREST/pgbouncer/Auth); `ansible/vars.yml` = **source of truth for AMI version tracking** (`postgres_release`, Docker release matrix); `ansible/files/postgresql_config/postgresql.conf.j2` = the actual GUC defaults shipped to customers |
 | `migrations/db/` | SQL migrations and `init-scripts/` (what every new project's schema starts with — default-enabled extensions, roles) |
-| `migrations/tests/extensions/` | pgTAP tests, one per extension, run in CI against the built Docker image |
+| `migrations/tests/extensions/` | pgTAP tests, one per extension, run via `pg_prove` against a Nix-built Postgres as part of `nix flake check` (`nix/checks.nix`) — not against a Docker image |
 | `docker/`, `Dockerfile-*` | Container image definitions (`Dockerfile-supabase` is the version-parameterized base; `Dockerfile-multigres` layers `pgctld` + `pgbackrest` on top) |
 | `ebssurrogate/`, `*.pkr.hcl` | Packer/EBS-surrogate AMI build pipeline |
 | `testinfra/` | pytest suite (`test_ami_nix.py`) that runs against a live AMI/instance |
@@ -113,8 +113,6 @@ pre-commit hook when using `nix develop`/direnv; also enforced in CI, so
   from postgresql.org's canonical security page) and a Supabase-specific
   "surface map" (which roles, extensions, and services — wal-g, PostgREST,
   Realtime, pgbouncer — are affected by which class of upstream change).
-- **`.claude/worktrees/`** exists but is currently empty — no captured
-  worktree conventions to carry forward yet.
 - Docs inside `nix/docs/` have previously gone stale relative to actual repo
   structure (see commit `2678fc8c docs: fix stale docs`) — if a doc and the
   actual `nix/` layout disagree, trust the code.
