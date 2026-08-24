@@ -43,9 +43,6 @@ user:
   envoy:
     exists: true
     home: /home/envoy
-  nginx:
-    exists: true
-    home: /home/nginx
   vector:
     exists: true
     home: /var/lib/vector

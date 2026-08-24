@@ -19,16 +19,19 @@ runs:
   using: composite
   steps:
     - name: validate push-to-cache required inputs
-      if: inputs.push-to-cache == true
+      if: inputs.push-to-cache == 'true'
       shell: bash
       run: |
         abort() { echo "$@" >&2; exit 1; }
-        [[ -z "${{ inputs.nix-signing-key}}" ]] && abort "nix-signing-key is required when push-to-cache is true"
-        [[ -z "${{ inputs.role-to-assume}}" ]] && abort "role-to-assume is required when push-to-cache is true"
+        [[ -n ${NIX_SIGNING_KEY:+ok} ]] || abort "nix-signing-key is required when push-to-cache is true"
+        [[ -n ${ROLE_TO_ASSUME:+ok} ]] || abort "role-to-assume is required when push-to-cache is true"
+      env:
+        NIX_SIGNING_KEY: ${{ inputs.nix-signing-key }}
+        ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
-      if: inputs.push-to-cache == true
+      if: inputs.push-to-cache == 'true'
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
@@ -42,7 +45,7 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
         GITHUB_TOKEN: ${{ github.token }}
         NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
-        PUSH_TO_CACHE: ${{ inputs.push-to-cache == true }}
+        PUSH_TO_CACHE: ${{ inputs.push-to-cache == 'true' }}
 
     - name: verify nix in path
       shell: bash
