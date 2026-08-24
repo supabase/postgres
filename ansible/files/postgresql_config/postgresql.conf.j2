@@ -204,6 +204,9 @@ shared_buffers = 128MB			# min 128kB
 
 wal_level = logical			# minimal, replica, or logical
 					# (change requires restart)
+output_plugin_libraries = 'pgoutput, test_decoding, wal2json'	# allowlist of logical decoding
+					# output plugins (PG 15.19 / 17.11+); wal2json is
+					# required by Realtime and shipped in the image
 #fsync = on				# flush data to disk for crash safety
 					# (turning this off can cause
 					# unrecoverable data corruption)

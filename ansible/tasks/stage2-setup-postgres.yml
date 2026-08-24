@@ -36,6 +36,12 @@
       when: stage2 and is_psql_oriole
       become: true
       block:
+        - name: Comment out output_plugin_libraries if orioledb build (GUC does not exist before PG 17.11)
+          ansible.builtin.replace:
+            path: '/etc/postgresql/postgresql.conf'
+            regexp: '^output_plugin_libraries'
+            replace: '#output_plugin_libraries'
+
         - name: Append orioledb to shared_preload_libraries append within closing quote
           ansible.builtin.replace:
             path: '/etc/postgresql/postgresql.conf'
