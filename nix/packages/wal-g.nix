@@ -1,6 +1,7 @@
 {
   lib,
   buildGoModule,
+  buildGo126Module,
   fetchFromGitHub,
   brotli,
   libsodium,
@@ -14,12 +15,16 @@ let
       vendorHash,
       sha256,
       majorVersion,
+      # Go builder to use. Defaults to the nixpkgs default (currently 1.25.5);
+      # override when a wal-g release's go.mod demands a newer toolchain than
+      # that, since Nix builds run with GOTOOLCHAIN=local and cannot fetch one.
+      goBuilder ? buildGoModule,
       # Extra GOEXPERIMENT flags. wal-g 3.x imports encoding/json/v2 directly
       # (internal/uploader.go), which Go 1.25 gates behind GOEXPERIMENT=jsonv2.
       goExperiment ? null,
       patches ? [ ],
     }:
-    buildGoModule rec {
+    goBuilder rec {
       pname = "wal-g-${majorVersion}";
       inherit version;
 
@@ -91,8 +96,9 @@ in
   wal-g-3 = walGCommon {
     version = "3.0.9";
     sha256 = "sha256-QTPgJuCuLxlBqa2QAhV91qX4XTQHIvzAQDntchGpxrQ=";
-    vendorHash = "sha256-K2J/Hi8TQs+UhudgTWsAmPUHKnwKP3cmx21CvDTjs6M=";
+    vendorHash = "sha256-oJ7H4KdUTIbmZmzSXSMP+gXijl7XcEv+zJ9dJSA7axs=";
     majorVersion = "3";
+    goBuilder = buildGo126Module;
     goExperiment = "jsonv2";
     # Backport wal-g/wal-g#2502: Correctly read OrioleDBOndiskPageHeader
     patches = [ ./wal-g/0001-correctly-read-orioledbondiskpageheader.patch ];
