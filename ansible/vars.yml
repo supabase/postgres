@@ -118,14 +118,6 @@ gotrue_artifacts:
   arm64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
     checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
-nginx_release: 1.22.0
-nginx_artifacts:
-  url: "https://nginx.org/download/nginx-{{ nginx_release }}.tar.gz"
-  checksum: sha256:b33d569a6f11a01433a57ce17e83935e953ad4dc77cdd4d40f896c88ac26eb53
-pgbouncer_release: 1.25.1
-pgbouncer_artifacts:
-  url: "https://www.pgbouncer.org/downloads/files/{{ pgbouncer_release }}/pgbouncer-{{ pgbouncer_release }}.tar.gz"
-  checksum: sha256:6e566ae92fe3ef7f6a1b9e26d6049f7d7ca39c40e29e7b38f6d5500ae15d8465
 postgrest_release: "14.17" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:

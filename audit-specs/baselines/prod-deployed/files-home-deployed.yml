@@ -1,5 +1,5 @@
 # File baseline: home
-# Generated from baseline.yml - 38 files
+# Generated from baseline.yml - 35 files
 file:
   /home/adminapi/.bash_logout:
     exists: true
@@ -79,24 +79,6 @@ file:
     group: '1008'
     mode: '0644'
     owner: '1004'
-  /home/nginx/.bash_logout:
-    exists: true
-    filetype: file
-    group: '1009'
-    mode: '0644'
-    owner: '1005'
-  /home/nginx/.bashrc:
-    exists: true
-    filetype: file
-    group: '1009'
-    mode: '0644'
-    owner: '1005'
-  /home/nginx/.profile:
-    exists: true
-    filetype: file
-    group: '1009'
-    mode: '0644'
-    owner: '1005'
   /home/pgbouncer/.bash_logout:
     exists: true
     filetype: file
