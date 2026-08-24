@@ -86,7 +86,6 @@ let
           ${legacyAlignmentMigrations}
         fi
 
-
         # Create versioned control file with modified module path
         sed -e "/^default_version =/d" \
             -e "/^schema =/d" \
