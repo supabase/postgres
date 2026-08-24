@@ -47,11 +47,6 @@
       become: true
       become_user: wal-g
 
-    - name: nix collect garbage
-      ansible.builtin.shell:
-        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
-      become: true
-
     - name: Create symlink to make wal-g the default (v3 on orioledb builds, v2 otherwise)
       ansible.builtin.file:
         dest: '/usr/local/bin/wal-g'
