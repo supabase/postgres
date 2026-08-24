@@ -72,6 +72,11 @@ function cleanup_packages {
 	# sudo add-apt-repository --yes --remove ppa:ansible/ansible
 }
 
+function cleanup_nix {
+	nix-collect-garbage -d
+	nix-store --optimise -v
+}
+
 function report_disk_usage {
 	read -r dub _ < <(du -sx -B1 /)
 	read -r duh _ < <(du -sx -h /)
@@ -82,4 +87,5 @@ install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
+cleanup_nix
 report_disk_usage
