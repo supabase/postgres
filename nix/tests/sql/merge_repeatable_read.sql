@@ -1,0 +1,27 @@
+-- Non-CVE behavior change: MERGE now correctly raises a serialization failure
+-- (SQLSTATE 40001) under REPEATABLE READ / SERIALIZABLE when it hits a
+-- concurrently-updated tuple (previously this could be silently mishandled).
+--
+-- This pins the single-session HAPPY PATH only: MERGE under REPEATABLE READ
+-- still produces correct results. The actual concurrent-conflict (40001) case
+-- needs two concurrent sessions via the isolation tester, tracked in (PSQL-1277)
+-- since pg_isolation_regress is not wired into nix/checks.nix yet.
+--
+-- Refs: PSQL-1110, PSQL-1234, PSQL-1277.
+
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+
+CREATE TABLE merge_target (id int PRIMARY KEY, v int);
+CREATE TABLE merge_source (id int, v int);
+INSERT INTO merge_target VALUES (1, 10), (2, 20);
+INSERT INTO merge_source VALUES (1, 100), (3, 300);
+
+MERGE INTO merge_target t
+USING merge_source s ON t.id = s.id
+WHEN MATCHED THEN UPDATE SET v = s.v
+WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v);
+
+-- Expect: id 1 updated to 100, id 2 untouched (20), id 3 inserted (300).
+SELECT id, v FROM merge_target ORDER BY id;
+
+ROLLBACK;

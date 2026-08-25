@@ -183,6 +183,24 @@
               # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
               orioledbSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
+                # The regression tests below pin CVE / behavior-change fixes that
+                # first landed across 15.16-15.19 / 17.7-17.11. orioledb-17 is
+                # built on an older PG 17 base that predates these fixes, so the
+                # post-fix behavior they assert is not present there.
+                # Refs: PSQL-1110, PSQL-1234.
+                "operator_breaking_change" # CVE-2026-2004 (17.8)
+                "pgcrypto" # CVE-2026-2005 (17.8)
+                "pg_trgm" # CVE-2026-2006 multibyte (17.8)
+                "intarray_ltree_query" # CVE-2026-6473 (17.10)
+                "ltree_reindex" # ltree multibyte fix (17.8/17.10)
+                "hstore_copy_binary" # hstore recv crash fix (17.x > 17.6)
+                "merge_repeatable_read" # MERGE 40001 serialization fix
+                "multirange_create_priv" # CVE-2026-6472 (17.10)
+                "create_statistics_priv" # CVE-2025-12817 (17.7)
+                "pgcrypto_cipher_matrix" # CVE-2026-14663 (17.11)
+                "output_plugin_libraries" # CVE-2026-6471 (17.11)
+                "btree_gist_nan" # btree_gist NaN fix (17.11)
+                "ltree_label_overflow" # ltree comparison overflow fix (17.11)
               ];
 
               # Helper function to filter SQL files based on version
@@ -255,6 +273,8 @@
                 "pg_net_worker_privileges" # needs the authenticated/postgres roles from the full migrations, not present in the CLI prime file
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
+                "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
+                "btree_gist_nan" # needs btree_gist, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
