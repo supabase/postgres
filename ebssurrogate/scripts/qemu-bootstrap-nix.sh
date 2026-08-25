@@ -191,6 +191,12 @@ function clean_nix {
 	nix-store --optimise -v
 }
 
+function report_disk_usage {
+	read -r dub _ < <(du -sx -B1 /)
+	read -r duh _ < <(du -sx -h /)
+	printf '::notice::disk_usage bytes=%s human=%s\n' "$dub" "$duh" | tee -a /tmp/ansible.log
+}
+
 #################
 # stage1 things #
 #################
@@ -212,3 +218,4 @@ execute_stage2_playbook
 clean_legacy_things
 clean_system
 clean_nix
+report_disk_usage
