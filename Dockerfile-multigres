@@ -20,7 +20,7 @@ ARG PGCTLD_REV=b713432298450dd0095498193e86d9f9a9f2c348
 ARG SUPABASE_IMAGE=supabase-postgres:17
 
 ####################
-# Stage 1: pgBackRest nix builder
+# Stage 1: pgBackRest / pg_activity nix builder
 ####################
 FROM alpine:${ALPINE_VERSION} AS pgbackrest-builder
 
@@ -44,9 +44,10 @@ WORKDIR /nixpg
 COPY flake.nix flake.lock ./
 COPY nix/ ./nix/
 
-RUN nix profile add path:.#pg-backrest && \
+RUN nix profile add path:.#pg-backrest path:.#pg-activity && \
     nix store gc && \
-    readlink -f /nix/var/nix/profiles/default/bin/pgbackrest > /pgbackrest-store-path
+    readlink -f /nix/var/nix/profiles/default/bin/pgbackrest > /pgbackrest-store-path && \
+    readlink -f /nix/var/nix/profiles/default/bin/pg_activity > /pg-activity-store-path
 
 ####################
 # Stage 2: pgctld builder
@@ -72,12 +73,14 @@ RUN git clone https://github.com/multigres/multigres.git /multigres && \
 # PG_VERSION and the release matrix in ansible/vars.yml.
 FROM ${SUPABASE_IMAGE} AS production
 
-# Merge pgBackRest nix store closure into the inherited /nix/store, then symlink the binary.
+# Merge pgBackRest/pg_activity nix store closure into the inherited /nix/store, then symlink the binaries.
 # We copy only the store (not the profile) to avoid clobbering the supabase image's profile.
 COPY --from=pgbackrest-builder /nix/store /nix/store
 COPY --from=pgbackrest-builder /pgbackrest-store-path /pgbackrest-store-path
+COPY --from=pgbackrest-builder /pg-activity-store-path /pg-activity-store-path
 RUN ln -sf "$(cat /pgbackrest-store-path)" /usr/local/bin/pgbackrest && \
-    rm /pgbackrest-store-path
+    ln -sf "$(cat /pg-activity-store-path)" /usr/local/bin/pg_activity && \
+    rm /pgbackrest-store-path /pg-activity-store-path
 
 # Copy pgctld binary; keep it separate so the wrapper script can reference it cleanly
 COPY --from=pgctld-builder /usr/local/bin/pgctld /usr/local/bin/pgctld-bin

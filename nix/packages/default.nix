@@ -73,6 +73,7 @@
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
+          pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
           pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
           pgctld = pkgs.callPackage ./pgctld.nix {
             multigres-src = inputs.multigres;
