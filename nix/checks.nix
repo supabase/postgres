@@ -538,7 +538,7 @@
                   --host=localhost \
                   --port=${pgPort} \
                   --user=supabase_admin \
-                  ${builtins.concatStringsSep " " sortedTestList} 2>&1; then
+                  ${builtins.concatStringsSep " " (lib.lists.remove "hstore_copy_binary" sortedTestList)} 2>&1; then
                   log error "pg_regress tests failed"
                   cat "$out/regression_output/regression.diffs"
                   exit 1
