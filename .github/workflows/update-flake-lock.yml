@@ -32,7 +32,6 @@ jobs:
         uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
         with:
           token: ${{ steps.app-token.outputs.token }}
-          inputs: nixpkgs rust-overlay multigres nix-eval-jobs
           commit-msg: "chore: update flake.lock (monthly)"
           pr-title: "chore: update flake.lock (monthly)"
           pr-labels: |
