@@ -220,6 +220,8 @@
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
                 "amcheck" # needs the postgres/anon/authenticated/service_role roles and the default privileges from the full migrations, plus amcheck primed by prime.sql
+                "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
+                "btree_gist_nan" # needs btree_gist, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
@@ -245,7 +247,10 @@
               # Concurrency/isolation specs run via pg_isolation_regress (the stock
               # PostgreSQL isolation tester). Specs live in tests/isolation/specs/,
               # expected output in tests/isolation/expected/. Add new spec names here.
-              isolationSpecList = [ "sample_isolation" ];
+              isolationSpecList = [
+                "merge_serialization"
+                "sample_isolation"
+              ];
             in
             pkgs.writeShellApplication rec {
               name = "postgres-${pgpkg.version}-check-harness";
