@@ -23,6 +23,25 @@ let
       supportedVersions;
   versionsBuilt = if latestOnly then [ latestVersion ] else versions;
   numberOfVersionsBuilt = builtins.length versionsBuilt;
+  # Legacy bare extversion strings mapped to their schema-identical canonical
+  # version. Shared via passthru so the test can't drift from this table.
+  legacyVersions = {
+    "1.0" = "1.0.0";
+    "1.1" = "1.1.0";
+    "1.2" = "1.2.0";
+    "1.3" = "1.3.1";
+    "1.4" = "1.4.0";
+    "1.4-1" = "1.4.2";
+    "1.5" = "1.5.2";
+    "1.6" = "1.6.4";
+  };
+  legacyAlignmentMigrations = lib.concatStrings (
+    lib.mapAttrsToList (legacy: canonical: ''
+      cat > $out/share/postgresql/extension/${pname}--${legacy}--${canonical}.sql << 'EOF'
+      -- Alignment migration: ${legacy} and ${canonical} are schema-identical.
+      EOF
+    '') legacyVersions
+  );
   build =
     version: versionData:
     stdenv.mkDerivation rec {
@@ -57,10 +76,14 @@ let
           mv $out/share/postgresql/extension/pg_cron--1.0--1.1.sql $out/share/postgresql/extension/pg_cron--1.0.0--1.1.0.sql
           mv $out/share/postgresql/extension/pg_cron--1.1--1.2.sql $out/share/postgresql/extension/pg_cron--1.1.0--1.2.0.sql
           mv $out/share/postgresql/extension/pg_cron--1.2--1.3.sql $out/share/postgresql/extension/pg_cron--1.2.0--1.3.1.sql
-          mv $out/share/postgresql/extension/pg_cron--1.3--1.4.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.2.sql
+          mv $out/share/postgresql/extension/pg_cron--1.3--1.4.sql $out/share/postgresql/extension/pg_cron--1.3.1--1.4.0.sql
           mv $out/share/postgresql/extension/pg_cron--1.4--1.4-1.sql $out/share/postgresql/extension/pg_cron--1.4.0--1.4.1.sql
+          cat > $out/share/postgresql/extension/pg_cron--1.4.1--1.4.2.sql << 'EOF'
+        -- Alignment migration: 1.4.1 and 1.4.2 are schema-identical.
+        EOF
           mv $out/share/postgresql/extension/pg_cron--1.4-1--1.5.sql $out/share/postgresql/extension/pg_cron--1.4.2--1.5.2.sql
           mv $out/share/postgresql/extension/pg_cron--1.5--1.6.sql $out/share/postgresql/extension/pg_cron--1.5.2--1.6.4.sql
+          ${legacyAlignmentMigrations}
         fi
 
         # Create versioned control file with modified module path
@@ -120,6 +143,7 @@ buildEnv {
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;
     hasBackgroundWorker = true;
+    inherit legacyVersions;
     defaultSettings = {
       shared_preload_libraries = [ "pg_cron" ];
       "cron.database_name" = "postgres";
