@@ -2,6 +2,9 @@ name: Update Flake Lock
 
 on:
   workflow_dispatch:
+  # TODO: enable scheduled updates when nixpkgs is updated.
+  # schedule:
+  #   - cron: '0 0 1 * *'
 
 jobs:
   update-flake-lock:
