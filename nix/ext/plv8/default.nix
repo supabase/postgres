@@ -40,17 +40,16 @@ let
   numberOfVersionsBuilt = builtins.length versionsBuilt;
   packages = builtins.attrValues (lib.mapAttrs (name: value: build name value.hash) versionsToUse);
 
-  # plv8 3.1 requires an older version of v8 (we cannot use nodejs.libv8)
-  v8 = v8_oldstable;
-
   # Build function for individual versions
   build =
     version: hash:
+    let
+      # plv8 3.1 requires an older version of v8
+      old = lib.versionOlder version "3.2";
+      v8 = if old then v8_oldstable else nodejs_20.libv8;
+    in
     stdenv.mkDerivation (finalAttrs: {
       inherit pname version;
-      #version = "3.1.10";
-
-      v8 = (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8);
 
       src = fetchFromGitHub {
         owner = "plv8";
@@ -64,7 +63,7 @@ let
         # https://github.com/plv8/plv8/pull/505 (rejected)
         ./0001-build-Allow-using-V8-from-system-${version}.patch
       ]
-      ++ lib.optionals (builtins.compareVersions "3.1.10" version >= 0) [
+      ++ lib.optionals old [
         # Apply https://github.com/plv8/plv8/pull/552/ patch to fix extension upgrade problems
         ./0001-fix-upgrade-related-woes-with-GUC-redefinitions-${version}.patch
       ];
@@ -78,8 +77,8 @@ let
       ];
 
       buildInputs = [
-        (if (builtins.compareVersions "3.1.10" version >= 0) then v8 else nodejs_20.libv8)
         postgresql
+        v8
       ];
 
       buildFlags = [ "all" ];
@@ -163,9 +162,7 @@ let
         fi
 
         # plv8 3.2.x removed support for coffeejs and livescript
-        EXTENSIONS=(${
-          if (builtins.compareVersions "3.1.10" version >= 0) then "plv8 plcoffee plls" else "plv8"
-        })
+        EXTENSIONS=(${if old then "plv8 plcoffee plls" else "plv8"})
         for ext in "''${EXTENSIONS[@]}" ; do
           cp $ext--${version}.sql $out/share/postgresql/extension
           install -Dm644 $ext.control $out/share/postgresql/extension/$ext--${version}.control
@@ -207,10 +204,10 @@ let
         description = "V8 Engine Javascript Procedural Language add-on for PostgreSQL";
         homepage = "https://plv8.github.io/";
         platforms = [
-          "x86_64-linux"
-          "aarch64-linux"
           "aarch64-darwin"
+          "aarch64-linux"
           "x86_64-darwin"
+          "x86_64-linux"
         ];
         license = licenses.postgresql;
       };
