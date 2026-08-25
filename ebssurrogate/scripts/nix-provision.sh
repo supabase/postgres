@@ -77,6 +77,12 @@ function cleanup_nix {
 	nix-store --optimise -v
 }
 
+function report_packages {
+	# shellcheck disable=SC2016
+	dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
+	find /nix/store -maxdepth 1 | LC_COLLATE=C.UTF-8 sort -t- -k2
+}
+
 function report_disk_usage {
 	read -r dub _ < <(du -sx -B1 /)
 	read -r duh _ < <(du -sx -h /)
@@ -88,4 +94,5 @@ install_nix
 execute_stage2_playbook
 cleanup_packages
 cleanup_nix
+report_packages
 report_disk_usage

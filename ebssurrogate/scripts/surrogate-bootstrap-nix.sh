@@ -379,6 +379,11 @@ function clean_system {
 	rm -rf /mnt/usr/share/doc
 }
 
+function report_packages {
+	# shellcheck disable=SC2016
+	chroot /mnt dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
+}
+
 # Unmount bind mounts
 function umount_reset_mappings {
 	umount -l /mnt/dev
@@ -413,4 +418,5 @@ setup_chroot_environment
 execute_playbook
 update_systemd_services
 clean_system
+report_packages
 umount_reset_mappings
