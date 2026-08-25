@@ -935,6 +935,7 @@
             supabase-cli
             supascan
             wal-g-2
+            wal-g-3
             ;
           devShell = self'.devShells.default;
         }
