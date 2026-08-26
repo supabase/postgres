@@ -23,12 +23,16 @@ runs:
       shell: bash
       run: |
         VALUE=false
-        if [[ "${{ inputs.push-to-cache }}" == true && -n "${{ inputs.nix-signing-key }}" && -n "${{ inputs.role-to-assume }}" ]]; then
+        if [[ "$PUSH_TO_CACHE" == true && -n ${NIX_SIGNING_KEY:+ok} && -n ${ROLE_TO_ASSUME:+ok} ]]; then
           VALUE=true
-        elif [[ "${{ inputs.push-to-cache }}" == true ]]; then
+        elif [[ "$PUSH_TO_CACHE" == true ]]; then
           echo "::notice::push-to-cache requested but nix-signing-key/role-to-assume not set; skipping cache push"
         fi
         echo "value=$VALUE" >> "$GITHUB_OUTPUT"
+      env:
+        PUSH_TO_CACHE: ${{ inputs.push-to-cache }}
+        NIX_SIGNING_KEY: ${{ inputs.nix-signing-key }}
+        ROLE_TO_ASSUME: ${{ inputs.role-to-assume }}
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
