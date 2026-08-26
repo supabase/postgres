@@ -119,7 +119,7 @@
             inherit (pkgs) yq;
             postgresql_15 = self'.packages."postgresql_15";
           };
-          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
           inherit (pkgs.cargo-pgrx)

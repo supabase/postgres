@@ -31,16 +31,24 @@
         cmd: sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-2"
       become: true
 
+    # Installed alongside v2 (INDATA-904). The /usr/local/bin/wal-g symlink below
+    # only points at v3 on orioledb builds; v2 remains the default everywhere else.
+    - name: Install wal-g 3 from nix binary cache
+      ansible.builtin.shell:
+        cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-3
+      become: true
+      become_user: wal-g
+
     - name: nix collect garbage
       ansible.builtin.shell:
         cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
       become: true
 
-    - name: Create symlink to make wal-g-v2 the default wal-g
+    - name: Create symlink to make wal-g the default (v3 on orioledb builds, v2 otherwise)
       ansible.builtin.file:
         dest: '/usr/local/bin/wal-g'
         force: true
-        src: '/home/wal-g/.nix-profile/bin/wal-g-2'
+        src: "/home/wal-g/.nix-profile/bin/wal-g-{{ '3' if is_psql_oriole else '2' }}"
         state: 'link'
       become: true
 
