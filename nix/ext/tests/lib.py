@@ -133,6 +133,48 @@ class PostgresExtensionTest(object):
                 self.drop_extension()
                 self.install_extension(version)
 
+    def check_legacy_versions_upgrade_to_latest(
+        self, pg_version: str, legacy_versions: Mapping[str, str]
+    ):
+        """Verify every legacy extversion string upgrades to latest.
+
+        legacy_versions maps a legacy/bare extversion string (e.g. "1.6") to
+        its schema-identical canonical version (e.g. "1.6.4"). Postgres has
+        no base script for the legacy string, only an alignment edge off of
+        it, so CREATE EXTENSION can't target it directly: install the
+        canonical version, patch pg_extension.extversion to the legacy
+        string, then run a bare ALTER EXTENSION UPDATE and assert it reaches
+        latest. Restores latest on exit for subsequent subtests.
+
+        Args:
+            pg_version: PostgreSQL version under test (e.g. "15")
+            legacy_versions: Mapping of legacy extversion string to its
+                schema-identical canonical version
+        """
+        if not legacy_versions:
+            return
+
+        available = self.versions.get(pg_version, [])
+        if not available:
+            raise ValueError(
+                f"No versions available for PostgreSQL version {pg_version}"
+            )
+        latest = available[-1]
+
+        for legacy_version, canonical_version in legacy_versions.items():
+            self.drop_extension()
+            self.install_extension(canonical_version)
+            self.run_sql(
+                f"UPDATE pg_extension SET extversion = '{legacy_version}' "
+                f"WHERE extname = '{self.extension_name}';"
+            )
+            self.run_sql(f"ALTER EXTENSION {self.extension_name} UPDATE;")
+            self.assert_version_matches(latest)
+
+        # Restore canonical latest so following subtests have expected state
+        self.drop_extension()
+        self.install_extension(latest)
+
     def check_install_last_version(self, pg_version: str) -> str:
         """Test if the install of the last version of the extension works for a given PostgreSQL version.
 

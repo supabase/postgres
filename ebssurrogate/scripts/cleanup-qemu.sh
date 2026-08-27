@@ -43,8 +43,6 @@ elif [ -n "$(command -v apt-get)" ]; then
 
 	# add-apt-repository --yes --remove ppa:ansible/ansible
 
-	source /etc/os-release
-
 	apt-mark manual libevent-2.1-7t64
 
 	apt-get remove -y --purge ansible-core apport appstream bash-completion bcache-tools bind9-dnsutils bind9-host bind9-libs bolt btrfs-progs byobu command-not-found console-setup distro-info eject fonts-ubuntu-console friendly-recovery ftp fwupd gawk gdisk keyboard-configuration libvolume-key1 libssl-dev lvm2 lxd-agent-loader man-db mdadm modemmanager mtd-utils nano netcat-openbsd nfs-common ntfs-3g parted pastebinit screen strace thin-provisioning-tools tmux usb-modeswitch vim vim-runtime wget whiptail xfsprogs

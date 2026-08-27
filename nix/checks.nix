@@ -935,6 +935,7 @@
             supabase-cli
             supascan
             wal-g-2
+            wal-g-3
             ;
           devShell = self'.devShells.default;
         }
@@ -951,6 +952,7 @@
             postgresql_17_debug
             postgresql_17_src
             ;
+          psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
         };
     };
 }
