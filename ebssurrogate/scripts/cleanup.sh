@@ -54,23 +54,12 @@ rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
 touch /etc/ssh/revoked_keys
 chmod 600 /etc/ssh/revoked_keys
 
-# Securely erase the unused portion of the filesystem
-cat <<-EOF
-	Writing zeros to the remaining disk space to securely erase the unused portion of the file system.
-	Depending on your disk size this may take several minutes.
-	The secure erase will complete successfully when you see:
-	    dd: writing to '/zerofile': No space left on device
-	Beginning secure erase now
-EOF
-
-dd if=/dev/zero of=/zerofile &
-PID=$!
-while [ -d /proc/$PID ]; do
-	printf "."
-	sleep 5
-done
-sync
-rm /zerofile
+# Note: the upstream DigitalOcean version of this script zero-fills the free
+# space here ("secure erase"). That is intentionally removed for the AMI
+# build: EBS snapshots only store written blocks, so zero-filling rewrites
+# the entire root volume serially (slow) and inflates the snapshot with
+# blocks of zeros (bigger artifact), while the freshly-debootstrapped image
+# holds no secrets to erase.
 sync
 cat /dev/null >/var/log/lastlog
 cat /dev/null >/var/log/wtmp

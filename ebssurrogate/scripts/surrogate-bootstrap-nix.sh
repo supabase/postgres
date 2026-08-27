@@ -269,9 +269,6 @@ function setup_chroot_environment {
 	chmod 644 /tmp/apparmor_profiles/*
 	cp -r /tmp/apparmor_profiles /mnt/tmp/
 
-	# Copy migrations
-	cp -r /tmp/migrations /mnt/tmp/
-
 	# Copy the bootstrap script into place and execute inside chroot
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh

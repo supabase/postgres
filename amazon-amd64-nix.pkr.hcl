@@ -210,11 +210,6 @@ build {
     destination = "/tmp"
   }
 
-  provisioner "file" {
-    source      = "migrations"
-    destination = "/tmp"
-  }
-
   # Copy ansible playbook
   provisioner "shell" {
     inline = ["mkdir /tmp/ansible-playbook"]
