@@ -136,6 +136,7 @@ source "amazon-ebssurrogate" "source" {
     creator           = "packer"
     appType           = "postgres"
     packerExecutionId = "${var.packer-execution-id}"
+    supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
