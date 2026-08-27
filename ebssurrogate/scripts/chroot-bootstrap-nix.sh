@@ -172,7 +172,12 @@ function update_install_packages {
 		echo "FATAL: Failed to update package lists with any mirror tier"
 		exit 1
 	fi
-	apt-get "${APT_OPTIONS[@]}" --yes dist-upgrade
+	# Use the fallback wrapper: a package can be superseded between index and
+	# pool sync on a mirror (404 on fetch), which needs a re-update + retry.
+	if ! apt_install_with_fallback "${APT_OPTIONS[@]}" --yes dist-upgrade; then
+		echo "FATAL: Failed to dist-upgrade"
+		exit 1
+	fi
 
 	# Do not configure grub during package install
 	if [[ $ARCH == amd64 ]]; then
@@ -206,7 +211,10 @@ function update_install_packages {
 	fi
 
 	# apt upgrade
-	apt-get upgrade -y
+	if ! apt_install_with_fallback upgrade -y; then
+		echo "FATAL: Failed to upgrade packages"
+		exit 1
+	fi
 
 	# Install OpenSSH and other packages
 	add-apt-repository --yes universe

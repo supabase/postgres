@@ -102,6 +102,16 @@ function waitfor_boot_finished {
 	done
 }
 
+# A package can be superseded between a mirror's index and pool sync (404 on
+# fetch); refresh the package lists and retry once before giving up.
+function apt_install_with_retry {
+	if ! apt-get install -y "$@"; then
+		echo "apt-get install failed; refreshing package lists and retrying once..."
+		apt_update_with_fallback
+		apt-get install -y "$@"
+	fi
+}
+
 function install_packages {
 	# Setup Ansible on host VM
 	if ! apt_update_with_fallback; then
@@ -109,7 +119,7 @@ function install_packages {
 		exit 1
 	fi
 
-	apt-get install software-properties-common -y
+	apt_install_with_retry software-properties-common
 	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
 	# add-apt-repository --yes --update ppa:ansible/ansible
 
@@ -118,10 +128,10 @@ function install_packages {
 		exit 1
 	fi
 
-	apt-get install ansible -y
+	apt_install_with_retry ansible
 	ansible-galaxy collection install community.general
 
-	apt-get install -y \
+	apt_install_with_retry \
 		gdisk \
 		e2fsprogs \
 		debootstrap \
