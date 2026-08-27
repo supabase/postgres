@@ -145,12 +145,7 @@ jobs:
           SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
           SLACK_FOOTER: ''
 
-      - name: Cleanup resources after build
-        if: ${{ always() }}
-        run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
-
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
+      - name: Cleanup Packer resources
+        if: always()
         run: |
           aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
