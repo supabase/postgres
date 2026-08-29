@@ -1,0 +1,36 @@
+select
+  *
+from
+  pg_wait_sampling_current
+where
+  false;
+ pid | event_type | event | queryid 
+-----+------------+-------+---------
+(0 rows)
+
+select
+  *
+from
+  pg_wait_sampling_history
+where
+  false;
+ pid | ts | event_type | event | queryid 
+-----+----+------------+-------+---------
+(0 rows)
+
+select
+  *
+from
+  pg_wait_sampling_profile
+where
+  false;
+ pid | event_type | event | queryid | count 
+-----+------------+-------+---------+-------
+(0 rows)
+
+select pg_wait_sampling_reset_profile();
+ pg_wait_sampling_reset_profile 
+--------------------------------
+ 
+(1 row)
+

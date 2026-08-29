@@ -11,9 +11,9 @@ postgres_major:
 # This is the source of truth for Postgres versions used in the Dockerfiles, and
 # is used to derive image tags and base images in the release matrix.
 postgres_release:
-  postgresorioledb-17: "17.9.0.020-orioledb"
-  postgres17: "17.6.1.167"
-  postgres15: "15.14.1.167"
+  postgresorioledb-17: "17.9.0.021-orioledb-bench-3"
+  postgres17: "17.6.1.168-bench-3"
+  postgres15: "15.14.1.168-bench-3"
 # Docker release matrix — base images built first, layered images built on top.
 # tag and base_tag are derived at build time from postgres_release via release_key.
 # tag_suffix is appended to the release version to form the final image tag.
