@@ -296,7 +296,7 @@ wal_log_hints = 'on'
 # These settings activate OrioleDB as the default table storage engine.
 # Injected automatically by the /usr/local/bin/pgctld wrapper in variant-orioledb-17.
 #------------------------------------------------------------------------------
-shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault, orioledb'
+shared_preload_libraries = 'pg_stat_statements, pg_wait_sampling, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault, orioledb'
 default_table_access_method = 'orioledb'
 orioledb.enable_rewind = true
 orioledb.rewind_max_time = 1200

@@ -17,7 +17,11 @@
           dest: "00-schema.sql",
         }
       - { source: "stat_extension.sql", dest: "01-extension.sql" }
-    
+      - {
+          source: "pg_wait_sampling_extension.sql",
+          dest: "02-extension.sql",
+        }
+
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 

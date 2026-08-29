@@ -57,7 +57,8 @@ in
         orioledb = {
           "17" = {
             version = "17_20";
-            hash = "sha256-HDrHTx9yeIPJoyIBs+BdAhBQqt1IEtQrG9pFfvHJqdg=";
+            revision = "b8970548a74d2adec467ce7c99469a34edbc563b";
+            hash = "sha256-yQCUw8A11heKWASlZS57L4etFNbsssZ2Z9XPpYT9do4=";
           };
         };
       };

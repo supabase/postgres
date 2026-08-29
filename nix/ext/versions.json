@@ -932,5 +932,16 @@
       ],
       "hash": "sha256-+QoACPCKiFfuT2lJfSUmgfzC5MXf75KpSoc2PzPxKyM="
     }
+  },
+  "pg_wait_sampling": {
+    "1.1": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "rev": "v1.1.11",
+      "hash": "sha256-Jz96QriyocruvTECfDP24Qvxe8No/SulOCon5hmr2Po="
+    }
   }
 }
