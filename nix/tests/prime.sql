@@ -57,6 +57,7 @@ create extension if not exists pg_stat_monitor;
 create extension if not exists pg_stat_statements;
 create extension if not exists pg_tle;
 create extension if not exists pg_trgm;
+create extension if not exists pg_wait_sampling;
 create extension if not exists pg_walinspect;
 create extension if not exists pgaudit;
 create extension if not exists pgcrypto;
