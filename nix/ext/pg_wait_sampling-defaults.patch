@@ -1,0 +1,20 @@
+--- a/pg_wait_sampling.c
++++ b/pg_wait_sampling.c
+@@ -363,7 +363,7 @@
+ 							"Sets size of waits history.",
+ 							NULL,
+ 							&pgws_historySize,
+-							5000,
++							300000,
+ 							100,
+ 							/* to avoid error in collector.c:alloc_history */
+ 							MaxAllocSize / sizeof(HistoryItem),
+@@ -403,7 +403,7 @@
+ 							 "Sets whether profile should be collected per pid.",
+ 							 NULL,
+ 							 &pgws_profilePid,
+-							 true,
++							 false,
+ 							 PGC_SIGHUP,
+ 							 0,
+ 							 NULL,
