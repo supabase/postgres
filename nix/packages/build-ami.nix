@@ -17,7 +17,6 @@ let
       fileset = lib.fileset.unions [
         (root + "/ebssurrogate")
         (root + "/ansible")
-        (root + "/migrations")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
         (root + "/development-amd64.vars.pkr.hcl")
@@ -90,7 +89,10 @@ writeShellApplication {
         "Name=state,Values=available"
         "Name=tag:inputHash,Values=$INPUT_HASH"
         "Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1"
-        "Name=tag:sourceSha,Values=$GIT_SHA" # This is set by packer via the git-head-version var which is always passed in by the build-ami action
+        # sourceSha is still tagged on the AMI for traceability, but is
+        # intentionally not part of the cache key: inputHash already
+        # content-addresses everything that affects stage 1, so requiring a
+        # matching commit SHA only defeated the cache on every push.
       )
 
       local ami_output

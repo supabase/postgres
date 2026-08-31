@@ -23,6 +23,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+      targets: ${{ steps.set-versions.outputs.targets }}
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
@@ -33,8 +34,20 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
-          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          # On pull requests, build a single representative leg (PG 17 on
+          # arm64) instead of the full version × arch matrix. The full
+          # matrix still runs on merge_group, workflow_dispatch, and the
+          # release AMI workflow, so every combination is covered before
+          # anything ships.
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            VERSIONS='["17"]'
+            TARGETS='[{"arch":"arm64","instance_type":"c6g.4xlarge","runner":"blacksmith-2vcpu-ubuntu-2404-arm"}]'
+          else
+            VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+            TARGETS='[{"arch":"amd64","instance_type":"c6i.4xlarge","runner":"blacksmith-2vcpu-ubuntu-2404"},{"arch":"arm64","instance_type":"c6g.4xlarge","runner":"blacksmith-2vcpu-ubuntu-2404-arm"}]'
+          fi
           echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
 
   test-ami-nix:
     needs: gen-matrix
@@ -42,13 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
-        target:
-          - arch: amd64
-            instance_type: c6i.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404
-          - arch: arm64
-            instance_type: c6g.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
+        target: ${{ fromJson(needs.gen-matrix.outputs.targets) }}
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
