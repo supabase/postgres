@@ -12,87 +12,43 @@ set -o xtrace
 
 exec 1>&2
 
-# Mirror fallback function for resilient apt-get update
-function apt_update_with_fallback {
-	local sources_file=/etc/apt/sources.list
-	local max_attempts=2
-	local attempt=1
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
 
-	# Get EC2 region if not already set
-	if [[ -z $REGION ]]; then
-		REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g' || echo "")
-	fi
+	# This function assumes deb822 formatted sources are in use, which is the case in both qemu and aws images
+	# In aws cloud-init creates a sources file with regional mirrors for "default" Suites but keeps ubuntu for security suite
+	# So we grab the first (only) URI from security and append it to non-security's URI
+	# This ends up giving us fastest mirror for installs and falls back to ubuntu if there's an issue
+	#
+	# Note: Ubuntu amd64 mirrors have different hostnames for security vs non but aarch64 are the same, hence the amd64 specific line
 
-	# Define mirror tiers (in priority order)
-	local -a mirror_tiers=()
+	# ensure deb822 format sources are in use
+	tail -n+1 /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources >&2
+
+	local sources defmirror ubumirror
+	sources=$(grep -e '^URIs\s*:' -e '^Suites\s*:' /etc/apt/sources.list.d/ubuntu.sources)
+	defmirror=$(grep -B1 "$CODENAME-updates" <<<"$sources" | awk '/URIs/ {print $2}')
+	ubumirror=$(grep -B1 "$CODENAME-security" <<<"$sources" | awk '/URIs/ {print $2}')
 	if [[ $ARCH == amd64 ]]; then
-		if [[ -n $REGION ]]; then
-			mirror_tiers+=("$REGION.ec2.archive.ubuntu.com")
-		fi
-		mirror_tiers+=("archive.ubuntu.com")
-	else
-		if [[ -n $REGION ]]; then
-			mirror_tiers+=("$REGION.clouds.ports.ubuntu.com")
-		fi
-		mirror_tiers+=("ports.ubuntu.com")
+		# amd64 hosts use security.ubuntu.com for security but archive.ubuntu.com for everything else
+		ubumirror=${ubumirror/security/archive}
 	fi
 
-	# If we couldn't get REGION, skip tier 1
-	if [[ -z $REGION ]]; then
-		echo "Warning: Could not determine EC2 region, skipping regional mirror"
-		mirror_tiers=("${mirror_tiers[@]:1}") # Remove first element
+	if [[ $ubumirror == "$defmirror" ]]; then
+		# Only using one mirror so nothing to add as fallback, not running in AWS maybe?
+		return
 	fi
 
-	for mirror in "${mirror_tiers[@]}"; do
-		echo "========================================="
-		echo "Attempting apt-get update with mirror: $mirror"
-		echo "Attempt $attempt of $max_attempts"
-		echo "========================================="
+	if grep -q "^URIs:.*$defmirror.*$ubumirror" /etc/apt/sources.list.d/ubuntu.sources; then
+		echo "Ubuntu upstream is already a fallback, this is unexpected and needs source changes" >&2
+		exit 1
+	fi
+	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
+}
 
-		# Update sources.list to use current mirror
-		if [[ $ARCH == amd64 ]]; then
-			sed -i "s|http://[^/]*/ubuntu/|http://$mirror/ubuntu/|g" "$sources_file"
-		else
-			sed -i "s|http://[^/]*/ubuntu-ports/|http://$mirror/ubuntu-ports/|g" "$sources_file"
-			sed -i "s|http://ports.ubuntu.com/ubuntu-ports|http://$mirror/ubuntu-ports|g" "$sources_file"
-		fi
-
-		# Show what we're using
-		echo "Current sources.list configuration:"
-		grep -E '^deb ' "$sources_file" | head -3
-
-		# Attempt update with timeout (5 minutes)
-		if timeout 300 apt-get update 2>&1; then
-			echo "========================================="
-			echo "✓ Successfully updated apt cache using mirror: $mirror"
-			echo "========================================="
-			return 0
-		else
-			local exit_code=$?
-			echo "========================================="
-			echo "✗ Failed to update using mirror: $mirror"
-			echo "Exit code: $exit_code"
-			echo "========================================="
-
-			# Clean partial downloads
-			apt-get clean
-			rm -rf /var/lib/apt/lists/*
-
-			# Exponential backoff before next attempt
-			if ((attempt < max_attempts)); then
-				local sleep_time=$((attempt * 5))
-				echo "Waiting $sleep_time seconds before trying next mirror..."
-				sleep $sleep_time
-			fi
-		fi
-
-		attempt=$((attempt + 1))
-	done
-
-	echo "========================================="
-	echo "ERROR: All mirror tiers failed after $max_attempts attempts"
-	echo "========================================="
-	return 1
+function update_and_upgrade_apt {
+	apt-get update --yes
+	apt-get upgrade --yes
 }
 
 function waitfor_boot_finished {
@@ -103,29 +59,15 @@ function waitfor_boot_finished {
 }
 
 function install_packages {
-	# Setup Ansible on host VM
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists on host VM"
-		exit 1
-	fi
-
-	apt-get install software-properties-common -y
-	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
-	# add-apt-repository --yes --update ppa:ansible/ansible
-
-	if ! apt_update_with_fallback; then
-		echo "FATAL: Failed to update package lists after adding Ansible PPA"
-		exit 1
-	fi
-
-	apt-get install ansible -y
-	ansible-galaxy collection install community.general
-
-	apt-get install -y \
-		gdisk \
-		e2fsprogs \
-		debootstrap \
+	packages=(
+		ansible
+		debootstrap
+		e2fsprogs
+		gdisk
 		nvme-cli
+	)
+	apt-get install --yes "${packages[@]}"
+	ansible-galaxy collection install community.general
 }
 
 # Partition the new root EBS volume
@@ -226,9 +168,6 @@ function create_fstab {
 }
 
 function setup_chroot_environment {
-	local UBUNTU_VERSION
-	UBUNTU_VERSION=$(lsb_release -cs) # 'noble' for Ubuntu 24.04
-
 	# sometimes debootstrap will get stuck on a download for a long time
 	# the default read timeout in wget is 900s, which can cause a ~15min increase in build time
 	# this forces the process to fail-fast and retry
@@ -238,19 +177,14 @@ function setup_chroot_environment {
 		tries = 5
 	EOF
 
-	# Update ec2-region
-	local REGION
-	REGION=$(curl --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -E 's|[a-z]+$||g')
+	# Use the preferred mirror (if multiple), which is the first URI/preferred
+	local mirror
+	mirror=$(grep -B1 "$CODENAME-updates" /etc/apt/sources.list.d/ubuntu.sources | awk '/URIs/ {print $2}')
+	debootstrap --arch "$ARCH" --variant=minbase "$CODENAME" /mnt "$mirror"
 
-	# Bootstrap Ubuntu into /mnt using the regional mirror (avoids global mirror stalls)
-	if [[ $ARCH == amd64 ]]; then
-		debootstrap --arch "$ARCH" --variant=minbase "$UBUNTU_VERSION" /mnt "http://$REGION.ec2.archive.ubuntu.com/ubuntu"
-	else
-		debootstrap --arch "$ARCH" --variant=minbase "$UBUNTU_VERSION" /mnt "http://$REGION.clouds.ports.ubuntu.com/ubuntu-ports"
-	fi
-
-	sed -i "s/REGION/$REGION/g" /tmp/sources.list
-	cp /tmp/sources.list /mnt/etc/apt/sources.list
+	# Copy our files in since they are updated with all the mirrors!
+	cp -a /etc/apt/sources.list /mnt/etc/apt/sources.list
+	cp -a /etc/apt/sources.list.d/ubuntu.sources /mnt/etc/apt/sources.list.d/ubuntu.sources
 
 	create_fstab
 
@@ -379,6 +313,11 @@ function clean_system {
 	rm -rf /mnt/usr/share/doc
 }
 
+function report_packages {
+	# shellcheck disable=SC2016
+	chroot /mnt dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
+}
+
 # Unmount bind mounts
 function umount_reset_mappings {
 	umount -l /mnt/dev
@@ -399,12 +338,15 @@ function umount_reset_mappings {
 	done
 }
 
-export DEBIAN_FRONTEND=noninteractive
-
 ARCH=$(dpkg --print-architecture)
 : "${ARCH:?Failed to detect architecture}"
+# shellcheck source=/dev/null
+CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
+: "${CODENAME:?Failed to detect OS codename}"
 
 waitfor_boot_finished
+setup_apt
+update_and_upgrade_apt
 install_packages
 device_partition_mappings
 format_and_mount_rootfs
@@ -413,4 +355,5 @@ setup_chroot_environment
 execute_playbook
 update_systemd_services
 clean_system
+report_packages
 umount_reset_mappings

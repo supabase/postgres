@@ -171,11 +171,6 @@ build {
   sources = ["source.amazon-ebssurrogate.source"]
 
   provisioner "file" {
-    source      = "ebssurrogate/files/sources.cfg"
-    destination = "/tmp/sources.list"
-  }
-
-  provisioner "file" {
     source      = "ebssurrogate/files/ebsnvme-id"
     destination = "/tmp/ebsnvme-id"
   }
