@@ -25,8 +25,8 @@
           # <name>.control with default_version, from <name>--<version>.control
           for cf in "$ext"/*--*.control; do
             b=$(basename "$cf")
-            n="''${b%%--*}"
-            v="''${b#*--}"; v="''${v%.control}"
+            n=''${b%%--*}
+            v=''${b#*--}; v=''${v%.control}
             [[ -e "$ext/$n.control" ]] && continue
             { echo "default_version = '$v'"; cat "$cf"; } > "$ext/$n.control"
           done
