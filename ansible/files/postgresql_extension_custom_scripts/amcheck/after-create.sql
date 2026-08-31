@@ -12,7 +12,7 @@ begin
       join pg_extension e on e.oid = d.refobjid
      where e.extname = 'amcheck' and d.deptype = 'e'
   loop
-    execute format('grant execute on function %s to postgres', r.sig);
+    execute format('grant execute on routine %s to postgres', r.sig);
   end loop;
 
   perform set_config('search_path', saved_search_path, true);
