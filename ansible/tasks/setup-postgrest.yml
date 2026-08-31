@@ -27,7 +27,6 @@
     package:
       - libnuma-dev
       - libpq5
-    update_cache: true
     state: 'present'
 
 - name: PostgREST - grab the list of installed packages

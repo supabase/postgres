@@ -6,7 +6,6 @@
         name: 'tuned'
         policy_rc_d: 101
         state: 'present'
-        update_cache: true
       become: true
 
     - name: 'tuned - Create a tuned profile directory'  # noqa: name[casing]
