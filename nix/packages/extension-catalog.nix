@@ -34,12 +34,12 @@
           # <base>.so -> <base>-<version>.so
           for f in "$out"/lib/*-[0-9]*; do
             b=$(basename "$f")
-            suffix=".''${b##*.}"
-            core="''${b%.*}"
-            base="''${core%-[0-9]*}"
-            [ "$base" != "$core" ] || continue
-            gen="$base$suffix"
-            [ -e "$out/lib/$gen" ] || ln -sfn "$b" "$out/lib/$gen"
+            suffix=.''${b##*.}
+            core=''${b%.*}
+            base=''${core%-[0-9]*}
+            [[ "$base" != "$core" ]] || continue
+            gen=$base$suffix
+            [[ -e "$out/lib/$gen" ]] || ln -sfn "$b" "$out/lib/$gen"
           done
 
           # Sanity check. No generic control is fine only for preload-only
