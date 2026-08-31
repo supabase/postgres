@@ -27,7 +27,7 @@
             b=$(basename "$cf")
             n="''${b%%--*}"
             v="''${b#*--}"; v="''${v%.control}"
-            [ -e "$ext/$n.control" ] && continue
+            [[ -e "$ext/$n.control" ]] && continue
             { echo "default_version = '$v'"; cat "$cf"; } > "$ext/$n.control"
           done
 
