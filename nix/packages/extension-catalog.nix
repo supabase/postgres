@@ -52,7 +52,7 @@
             esac
           done
           libs=$(ls -A "$out/lib" 2>/dev/null | wc -l)
-          if [ "$generic" -eq 0 ] && [ "$libs" -eq 0 ]; then
+          if ((generic == 0)) && ((libs == 0)); then
             echo "extension-catalog: empty wrapper for ${leanPkg.pname} (no control, no lib)" >&2
             exit 1
           fi
