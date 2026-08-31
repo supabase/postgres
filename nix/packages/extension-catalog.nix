@@ -172,7 +172,7 @@
           text = ''
             manifest="''${1:-/etc/adminapi/pg-extensions.json}"
             profile="''${PROFILE:-/nix/var/nix/profiles/site-extensions}"
-            mapfile -t paths < <(site-extensions-resolve "$manifest")
+            readarray -t paths < <(site-extensions-resolve "$manifest")
             download-nix-store-paths "''${paths[@]}"
             nix-env --profile "$profile" --install "''${paths[@]}" --remove-all
           '';
