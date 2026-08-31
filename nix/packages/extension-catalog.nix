@@ -85,9 +85,9 @@
               for ctrl in "$path"/share/postgresql/extension/*.control; do
                 base=$(basename "$ctrl")
                 case "$base" in *--*) continue ;; esac
-                name="''${base%.control}"
+                name=''${base%.control}
                 ver=$(sed -n "s/^default_version = '\(.*\)'.*/\1/p" "$ctrl" | head -1)
-                [ -n "$ver" ] || { echo "no default_version in $ctrl" >&2; exit 1; }
+                [[ -n "$ver" ]] || { echo "no default_version in $ctrl" >&2; exit 1; }
                 obj=$(printf '%s' "$obj" | jq --arg e "$name" --arg v "$ver" --arg p "$path" '.[$e][$v] = $p')
               done
             done
