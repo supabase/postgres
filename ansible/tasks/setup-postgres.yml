@@ -3,7 +3,7 @@
   block:
     # the old method of installing from debian creates this group, but we must create it explicitly
     # for the nix built version
-    - name: create ssl-cert group
+    - name: create ssl-cert group # noqa: explicit-identity-id
       ansible.builtin.group:
         name: ssl-cert
         gid: 1001
