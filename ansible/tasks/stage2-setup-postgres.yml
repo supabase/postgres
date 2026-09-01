@@ -240,15 +240,6 @@
         src: '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
         state: 'link'
 
-    - name: Generate SBOM for nix and ubuntu
-      ansible.builtin.shell: |
-        nix run github:supabase/ubuntu-nix-sbom#sbom-combined -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
-
-    - name: Nix collect garbage after SBOM generation
-      ansible.builtin.shell:
-        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
-        
-
 - name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
   ansible.builtin.lineinfile:
     line: 'GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins'

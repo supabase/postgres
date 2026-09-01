@@ -79,6 +79,7 @@ function report_packages {
 	# shellcheck disable=SC2016
 	dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
 	find /nix/store -maxdepth 1 | LC_COLLATE=C.UTF-8 sort -t- -k2
+	nix run .#ubuntu-sbom -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
 }
 
 function report_disk_usage {

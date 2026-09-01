@@ -120,6 +120,8 @@
             inherit (pkgs) yq;
             postgresql_15 = self'.packages."postgresql_15";
           };
+          ubuntu-sbom =
+            inputs.ubuntu-nix-sbom.packages.${pkgs.stdenv.hostPlatform.system}.ubuntu-sbom-generator;
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;

@@ -32,6 +32,10 @@
         pg-startup-profiler = mkApp "pg-startup-profiler";
         docker-image-test = mkApp "docker-image-test";
         cli-smoke-test = mkApp "cli-smoke-test";
+        ubuntu-sbom = {
+          type = "app";
+          program = "${self'.packages.ubuntu-sbom}/bin/ubuntu-sbom";
+        };
       };
     };
 }
