@@ -1,6 +1,5 @@
 # Group baseline for AMI build
-# Checks that critical system and application groups exist
-# GIDs may vary between builds - only checking existence
+# Exact IDs are checked only for groups pinned during provisioning
 group:
   # System groups
   root:
@@ -17,32 +16,47 @@ group:
     exists: true
   ubuntu:
     exists: true
+    gid: 1014
 
   # PostgreSQL ecosystem
   postgres:
     exists: true
+    gid: 1002
   pgbouncer:
     exists: true
+    gid: 1003
+  pgbackrest:
+    exists: true
+    gid: 1005
   wal-g:
     exists: true
+    gid: 1004
   ssl-cert:
     exists: true
+    gid: 1001
 
   # Supabase services
   gotrue:
     exists: true
+    gid: 1006
   postgrest:
     exists: true
+    gid: 1007
   adminapi:
     exists: true
+    gid: 1011
   kong:
     exists: true
+    gid: 1009
   envoy:
     exists: true
+    gid: 1008
   vector:
     exists: true
+    gid: 989
   supabase-admin-agent:
     exists: true
+    gid: 987
 
   # System service groups
   messagebus:
@@ -81,7 +95,9 @@ group:
     exists: true
   netdev:
     exists: true
+    gid: 1013
   lxd:
     exists: true
+    gid: 1012
   crontab:
     exists: true
