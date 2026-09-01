@@ -39,21 +39,27 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - uses: ./.github/actions/nix-install-ephemeral
+
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
+
       - name: Strip quotes from pg major and set env var
         run: |
           stripped_version=$(echo "${{ matrix.postgres_version }}" | sed 's/^"\(.*\)"$/\1/')
           echo "PGMAJOR=$stripped_version" >> $GITHUB_ENV
+
       - name: Generate common-nix.vars.pkr.hcl
         run: |
           PG_VERSION=$(nix run nixpkgs#yq-go -- '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
           PG_VERSION=$(echo $PG_VERSION | tr -d '"')  # Remove any surrounding quotes
           echo 'postgres-version = "'$PG_VERSION'"' > common-nix.vars.pkr.hcl
           echo "" >> common-nix.vars.pkr.hcl
+
       - id: settings
         run: sed -r 's/(\s|\")+//g' common-nix.vars.pkr.hcl >> $GITHUB_OUTPUT
+
       - name: Generate args
         id: args
         run: |
@@ -61,9 +67,16 @@ jobs:
           echo "result<<EOF" >> $GITHUB_OUTPUT
           echo "$ARGS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: ./.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
       - name: verify schema.sql is committed
         run: |
-          nix run github:supabase/postgres/${{ github.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }} --flake-url github:supabase/postgres/${{ github.sha }}
+          nix run github:supabase/postgres/${{ steps.resolve-git-sha.outputs.sha }}#dbmate-tool -- --version ${{ env.PGMAJOR }} --flake-url github:supabase/postgres/${{ steps.resolve-git-sha.outputs.sha }}
           if ! git diff --exit-code --quiet migrations/schema-${{ env.PGMAJOR }}.sql; then
             echo "Detected changes in schema.sql:"
             git diff migrations/schema-${{ env.PGMAJOR }}.sql

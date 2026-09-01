@@ -316,7 +316,7 @@ write_files:
 runcmd:
     - 'sudo echo \"pgbouncer\" \"postgres\" >> /etc/pgbouncer/userlist.txt'
     - 'cd /tmp && aws s3 cp --region ap-southeast-1 s3://init-scripts-staging/project/init.sh .'
-    - 'bash init.sh "staging"'
+    - 'USE_LEGACY_INT_CA_SECRET=true bash init.sh "staging"'
     - 'touch /var/lib/init-complete'
     - 'rm -rf /tmp/*'
 users:
@@ -1345,19 +1345,21 @@ def test_apparmor_allows_pg_dump(host):
     )
 
 
-def test_apparmor_allows_walg(host):
-    """Verify wal-g-2 can be executed under the sbpostgres AppArmor profile.
+@pytest.mark.parametrize("walg_binary", ["wal-g-2", "wal-g-3"])
+def test_apparmor_allows_walg(host, walg_binary):
+    """Verify wal-g-2 and wal-g-3 can be executed under the sbpostgres AppArmor profile.
 
-    /nix/store/*/bin/wal-g-2 is listed as 'ix' in postgres_shell. We locate the
-    binary at runtime since the Nix store hash is not known ahead of time.
+    /nix/store/*/bin/wal-g-2 and /nix/store/*/bin/wal-g-3 are listed as 'ix' in
+    postgres_shell. We locate the binary at runtime since the Nix store hash is
+    not known ahead of time.
     """
     find_result = run_ssh_command(
         host["ssh"],
-        "find /nix/store -maxdepth 3 -name 'wal-g-2' -type f 2>/dev/null | head -1",
+        f"find /nix/store -maxdepth 3 -name '{walg_binary}' -type f 2>/dev/null | head -1",
     )
     walg_path = find_result["stdout"].strip()
     if not walg_path:
-        print("wal-g-2 not found in Nix store, skipping")
+        print(f"{walg_binary} not found in Nix store, skipping")
         return
 
     result = run_ssh_command(
@@ -1366,7 +1368,7 @@ def test_apparmor_allows_walg(host):
         f"\"COPY (SELECT 1) TO PROGRAM '{walg_path} --version';\"",
     )
     assert result["succeeded"], (
-        f"wal-g-2 was blocked by AppArmor.\n"
+        f"{walg_binary} was blocked by AppArmor.\n"
         f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
     )
 

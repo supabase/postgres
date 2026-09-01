@@ -1,6 +1,11 @@
 { self, inputs, ... }:
 {
-  imports = [ ./postgres.nix ];
+  imports = [
+    ./postgres.nix
+    ./postgres-env.nix
+    ./site-env.nix
+  ];
+
   perSystem =
     {
       inputs',
@@ -68,6 +73,7 @@
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
+          pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
           pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
           pgctld = pkgs.callPackage ./pgctld.nix {
             multigres-src = inputs.multigres;
@@ -115,7 +121,7 @@
             inherit (pkgs) yq;
             postgresql_15 = self'.packages."postgresql_15";
           };
-          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
           inherit (pkgs.cargo-pgrx)

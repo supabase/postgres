@@ -14,6 +14,9 @@ inputs:
   git_sha:
     description: 'Git SHA for this build'
     required: true
+  packages_git_sha:
+    description: 'Git SHA to install packages from'
+    required: true
   instance_type:
     description: 'EC2 instance type for the build'
     required: true
@@ -34,6 +37,9 @@ outputs:
   execution_id:
     description: 'The execution ID for this build'
     value: ${{ steps.set-execution-id.outputs.execution_id }}
+  disk_usage_json:
+    description: 'The stage 2 AMI root disk usage as json'
+    value: ${{ steps.build-stage2.outputs.disk_usage_json }}
 
 runs:
   using: "composite"
@@ -101,7 +107,7 @@ runs:
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var "git-head-version=${{ inputs.git_sha }}" \
-          -var "git_sha=${{ inputs.git_sha }}" \
+          -var "git_sha=${{ inputs.packages_git_sha }}" \
           -var "instance_type=${{ inputs.instance_type }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \

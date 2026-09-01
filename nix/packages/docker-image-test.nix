@@ -343,6 +343,22 @@ writeShellApplication {
         fi
         log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
 
+        # 3.5. wal-g must be fully removed: no include line left dangling in the
+        # static /etc/postgresql/postgresql.conf. (Currently, pgctld doesn't load
+        # this file today, but if it's ever loaded directly it should not error out.
+        # See Dockerfile-multigres.) None of the inherited wal-g files should remain.
+        if docker exec "$container" sh -c "grep -q 'wal-g.conf' /etc/postgresql/postgresql.conf"; then
+            log_error "  /etc/postgresql/postgresql.conf still references wal-g.conf"
+            exit 1
+        fi
+        for f in /etc/postgresql-custom/wal-g.conf /home/postgres/wal_fetch.sh /root/wal_change_ownership.sh; do
+            if docker exec "$container" test -e "$f"; then
+                log_error "  $f should have been removed from the multigres image"
+                exit 1
+            fi
+        done
+        log_info "  ✓ wal-g fully removed (no dangling include, no inherited files)"
+
         # 4. pgctld init: initializes PGDATA and runs SQL init scripts (via wrapper's
         #    --pg-initdb-sql-dirs). Uses pooler-dir for socket dir and pgBackRest config.
         local init_out init_rc=0

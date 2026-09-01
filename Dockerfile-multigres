@@ -20,7 +20,7 @@ ARG PGCTLD_REV=b713432298450dd0095498193e86d9f9a9f2c348
 ARG SUPABASE_IMAGE=supabase-postgres:17
 
 ####################
-# Stage 1: pgBackRest nix builder
+# Stage 1: pgBackRest / pg_activity nix builder
 ####################
 FROM alpine:${ALPINE_VERSION} AS pgbackrest-builder
 
@@ -44,9 +44,10 @@ WORKDIR /nixpg
 COPY flake.nix flake.lock ./
 COPY nix/ ./nix/
 
-RUN nix profile add path:.#pg-backrest && \
+RUN nix profile add path:.#pg-backrest path:.#pg-activity && \
     nix store gc && \
-    readlink -f /nix/var/nix/profiles/default/bin/pgbackrest > /pgbackrest-store-path
+    readlink -f /nix/var/nix/profiles/default/bin/pgbackrest > /pgbackrest-store-path && \
+    readlink -f /nix/var/nix/profiles/default/bin/pg_activity > /pg-activity-store-path
 
 ####################
 # Stage 2: pgctld builder
@@ -72,12 +73,14 @@ RUN git clone https://github.com/multigres/multigres.git /multigres && \
 # PG_VERSION and the release matrix in ansible/vars.yml.
 FROM ${SUPABASE_IMAGE} AS production
 
-# Merge pgBackRest nix store closure into the inherited /nix/store, then symlink the binary.
+# Merge pgBackRest/pg_activity nix store closure into the inherited /nix/store, then symlink the binaries.
 # We copy only the store (not the profile) to avoid clobbering the supabase image's profile.
 COPY --from=pgbackrest-builder /nix/store /nix/store
 COPY --from=pgbackrest-builder /pgbackrest-store-path /pgbackrest-store-path
+COPY --from=pgbackrest-builder /pg-activity-store-path /pg-activity-store-path
 RUN ln -sf "$(cat /pgbackrest-store-path)" /usr/local/bin/pgbackrest && \
-    rm /pgbackrest-store-path
+    ln -sf "$(cat /pg-activity-store-path)" /usr/local/bin/pg_activity && \
+    rm /pgbackrest-store-path /pg-activity-store-path
 
 # Copy pgctld binary; keep it separate so the wrapper script can reference it cleanly
 COPY --from=pgctld-builder /usr/local/bin/pgctld /usr/local/bin/pgctld-bin
@@ -97,15 +100,23 @@ COPY docker/pgctld/multigres-migrations/ /docker-entrypoint-initdb.d/migrations/
 # k8s manifests and local provisioner commands work without extra flags
 COPY --chmod=0755 docker/pgctld/pgctld-layered.sh /usr/local/bin/pgctld
 
-# /etc/postgresql/postgresql.conf is not modified here: pgctld renders its own
-# config from postgresql.conf.tmpl and passes it directly to PostgreSQL, so the
-# supabase base config (including wal-g and data_directory settings) is never loaded.
-
-# wal-g is not used in Multigres (pgbackrest handles backups); remove inherited files.
-RUN rm -f \
-    /etc/postgresql-custom/wal-g.conf \
-    /home/postgres/wal_fetch.sh \
-    /root/wal_change_ownership.sh
+# The supabase base config /etc/postgresql/postgresql.conf IS loaded in Multigres:
+# the operator's --pg-initdb-extra-conf appends `include = '/etc/postgresql/postgresql.conf'`
+# onto pgctld's generated config. It therefore must not carry settings that assume the
+# base image's `postgres -D /etc/postgresql` layout, so we neutralize two here:
+#
+#   - data_directory = '/var/lib/postgresql/data' would override pgctld's -D/PGDATA and
+#     redirect PostgreSQL off the freshly-initdb'd <pooler-dir>/pg_data to the base image's
+#     empty dir, which fails startup ("data directory ... has invalid permissions") and
+#     leaves the pooler stuck retrying the first backup forever. pgctld pins the data dir
+#     via -D, so comment it out (matching the pre-layered image, which shipped it disabled).
+#   - the wal-g include is dangling (wal-g is unused in Multigres; pgbackrest handles
+#     backups), so delete it and its now-orphaned files.
+RUN sed -i \
+        -e "s|^data_directory = '/var/lib/postgresql/data'|#data_directory = '/var/lib/postgresql/data'|" \
+        -e "/^include = '\/etc\/postgresql-custom\/wal-g.conf'/d" \
+        /etc/postgresql/postgresql.conf && \
+    rm -f /etc/postgresql-custom/wal-g.conf /home/postgres/wal_fetch.sh /root/wal_change_ownership.sh
 
 # pgctld uses pooler-dir for pgBackRest config, unix sockets, and state files.
 RUN mkdir -p /var/lib/pgctld && chown postgres:postgres /var/lib/pgctld

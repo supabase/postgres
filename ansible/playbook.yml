@@ -78,12 +78,6 @@
       tags:
         - install-supabase-internal
 
-    - name: Install nginx
-      when: not stage2
-      import_tasks: tasks/setup-nginx.yml
-      tags:
-        - install-supabase-internal
-
     - name: Install Supabase specific content
       when: not stage2
       import_tasks: tasks/setup-supabase-internal.yml
@@ -147,28 +141,12 @@
       when: not stage2
       import_tasks: tasks/setup-fail2ban.yml
 
-    # Install EC2 instance connect
-    # Only for AWS images
-    - name: install EC2 instance connect
-      when: not qemu
-      become: yes
-      apt:
-        pkg:
-          - ec2-instance-connect
-      tags:
-        - aws-only
-
     # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
     - name: Install security tools
       become: yes
       apt:
         pkg:
           - unattended-upgrades
-        update_cache: yes
-        cache_valid_time: 3600
-
-    - name: Clean out build dependencies
-      import_tasks: tasks/clean-build-dependencies.yml
 
     - name: Run migrations
       when: stage2
@@ -221,3 +199,8 @@
       become: yes
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+
+    - name: Setup Swap
+      when: stage2 and not qemu
+      become: yes
+      import_tasks: tasks/stage2/setup-swap.yml
