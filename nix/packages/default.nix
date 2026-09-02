@@ -60,6 +60,7 @@
             supabase-groonga = self'.packages.supabase-groonga;
           };
           docs = pkgs.callPackage ./docs.nix { };
+          ext-explorer = pkgs.callPackage ./ext-explorer.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
