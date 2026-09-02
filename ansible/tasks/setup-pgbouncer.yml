@@ -1,10 +1,18 @@
 # PgBouncer
+- name: Create pgbouncer group
+  ansible.builtin.group:
+    name: pgbouncer
+    gid: 1003
+    state: 'present'
+
 - name: Create pgbouncer user
   ansible.builtin.user:
-    comment: 'PgBouncer user'
-    groups: 'postgres,ssl-cert'
     name: 'pgbouncer'
-    shell: '/usr/sbin/nolign'
+    uid: 1000
+    comment: 'PgBouncer user'
+    group: pgbouncer
+    groups: 'postgres,ssl-cert'
+    shell: '/usr/sbin/nologin'
     state: 'present'
 
 - name: Install PgBouncer from nix binary cache

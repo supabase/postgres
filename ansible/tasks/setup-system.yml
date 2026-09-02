@@ -1,3 +1,44 @@
+- name: Create ubuntu user
+  when: not stage2 and not qemu
+  block:
+    - name: Create ubuntu primary group
+      ansible.builtin.group:
+        name: ubuntu
+        gid: 1014
+        state: present
+
+    - name: Create ubuntu user supplementary groups # noqa: explicit-identity-id
+      ansible.builtin.group:
+        name: "{{ item.name }}"
+        gid: "{{ item.gid }}"
+        state: present
+      loop:
+        - { name: lxd, gid: 1012 }
+        - { name: netdev, gid: 1013 }
+
+    - name: Create ubuntu user
+      ansible.builtin.user:
+        name: ubuntu
+        uid: 1007
+        group: ubuntu
+        groups:
+          - adm
+          - audio
+          - cdrom
+          - dialout
+          - dip
+          - floppy
+          - lxd
+          - netdev
+          - plugdev
+          - sudo
+          - video
+        comment: Ubuntu
+        create_home: true
+        password_lock: true
+        shell: /bin/bash
+        state: present
+
 - name: Execute stage1 tasks
   when: not stage2
   block:
