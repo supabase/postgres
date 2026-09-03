@@ -162,6 +162,11 @@ function execute_stage2_playbook {
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
+
+function generate_and_upload_sbom {
+    nix run github:supabase/postgres#ubuntu-sbom -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
+}
+
 function clean_legacy_things {
 	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
 	apt-mark auto zlib1g* # TODO (darora): need to make sure that there aren't other things that still need this
@@ -268,6 +273,7 @@ execute_playbook
 
 install_nix
 execute_stage2_playbook
+generate_and_upload_sbom
 clean_legacy_things
 clean_system
 clean_nix

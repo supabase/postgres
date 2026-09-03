@@ -66,6 +66,10 @@ function execute_stage2_playbook {
 		$ARGS
 }
 
+function generate_and_upload_sbom {
+    nix run "github:supabase/postgres/$GIT_SHA#ubuntu-sbom" -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
+}
+
 function cleanup_packages {
 	apt-get remove --purge --yes ansible
 }
@@ -79,7 +83,6 @@ function report_packages {
 	# shellcheck disable=SC2016
 	dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
 	find /nix/store -maxdepth 1 | LC_COLLATE=C.UTF-8 sort -t- -k2
-	nix run .#ubuntu-sbom -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
 }
 
 function report_disk_usage {
@@ -93,9 +96,10 @@ update_and_upgrade_apt
 install_packages
 install_nix
 execute_stage2_playbook
+generate_and_upload_sbom
 cleanup_packages
-cleanup_nix
 update_and_upgrade_apt
 cleanup_apt
 report_packages
+cleanup_nix
 report_disk_usage
