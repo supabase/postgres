@@ -155,7 +155,7 @@
           : "''${PG_EXTENSIONS_CATALOG:?PG_EXTENSIONS_CATALOG must point at a pg-extensions-catalog.json}"
           manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
           jq -r 'to_entries[] | "\(.key)=\(.value)"' "$manifest" | while IFS='=' read -r name version; do
-            [ -n "$name" ] || continue
+            [ -n "$name" ] || { echo "ERROR: empty extension name in $manifest" >&2; exit 1; }
             jq -er --arg n "$name" --arg v "$version" \
               '.[$n][$v] // error("\($n)=\($v) not in catalog")' "$PG_EXTENSIONS_CATALOG"
           done | sort -u
