@@ -251,7 +251,6 @@ begin
     )
         returns jsonb
         language sql
-        set search_path to ''
     as $$
         select graphql.resolve(
             query := query,
@@ -452,7 +451,6 @@ CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
         )
             returns jsonb
             language plpgsql
-            set search_path to ''
         as $$
             DECLARE
                 server_version float;
@@ -536,13 +534,13 @@ begin
     raise debug 'PgBouncer auth request: %', p_usename;
 
     return query
-    select 
-        rolname::text, 
-        case when rolvaliduntil < now() 
-            then null 
-            else rolpassword::text 
-        end 
-    from pg_authid 
+    select
+        rolname::text,
+        case when rolvaliduntil < now()
+            then null
+            else rolpassword::text
+        end
+    from pg_authid
     where rolname=$1 and rolcanlogin;
 end;
 $_$;
@@ -862,4 +860,3 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 --
 
 \unrestrict SupabaseTestDumpKey123
-

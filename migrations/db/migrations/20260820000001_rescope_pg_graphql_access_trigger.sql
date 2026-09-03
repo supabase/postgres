@@ -24,7 +24,6 @@ begin
     )
         returns jsonb
         language sql
-        set search_path to ''
     as $$
         select graphql.resolve(
             query := query,
@@ -206,7 +205,6 @@ CREATE OR REPLACE FUNCTION extensions.set_graphql_placeholder() RETURNS event_tr
         )
             returns jsonb
             language plpgsql
-            set search_path to ''
         as $$
             DECLARE
                 server_version float;
