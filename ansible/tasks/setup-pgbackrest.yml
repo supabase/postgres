@@ -47,7 +47,8 @@
     # (running as the pgbackrest user) cannot read conf files created by adminapi.
     - {dir: /etc/pgbackrest/conf.d, mode: '02770'}
     - {dir: /var/lib/pgbackrest}
-    - {dir: /var/spool/pgbackrest}
+    # setgid (02770), same reason as conf.d above (postgres_shell and pgbackrest_shell both write here per sbpostgres_apparmor); must match spool-path in pgbackrest.conf; bake-time only, see INDATA-1153 for why that alone doesn't create this on any live instance's real /data
+    - {dir: /data/pgbackrest_spool, mode: '02770'}
     - {dir: /var/log/pgbackrest}
   loop_control:
     loop_var: backrest_dir
