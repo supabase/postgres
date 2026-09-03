@@ -29,9 +29,10 @@ let
         runHook preInstall
 
         mkdir -p $out/share/postgresql/extension
-
+        mkdir -p $out/lib/plugins
         # Install versioned library
-        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/${pname}-${version}${postgresql.dlSuffix}
+        # we use the plugins path because loading libraries with `local_preload_libraries` is restricted to this path only, see https://postgresqlco.nf/doc/en/param/local_preload_libraries/
+        install -Dm755 ${pname}${postgresql.dlSuffix} $out/lib/plugins/${pname}-${version}${postgresql.dlSuffix}
 
         runHook postInstall
       '';
@@ -65,15 +66,16 @@ pkgs.buildEnv {
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
   pathsToLink = [
-    "/lib"
+    "/lib/plugins"
     "/share/postgresql/extension"
   ];
   postBuild = ''
-    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/plugins/${pname}${postgresql.dlSuffix}
+    ln -sfn plugins/${pname}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
 
     # checks
     (set -x
-       test "$(ls -A $out/lib/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
+       test "$(ls -A $out/lib/plugins/${pname}*${postgresql.dlSuffix} | wc -l)" = "${
          toString (numberOfVersionsBuilt + 1)
        }"
     )
@@ -88,6 +90,7 @@ pkgs.buildEnv {
     inherit pname latestOnly;
     defaultSettings = {
       shared_preload_libraries = [ "safeupdate" ];
+      local_preload_libraries = [ "safeupdate" ];
     };
     pgRegressTestName = "pg-safeupdate";
     version =

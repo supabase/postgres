@@ -1,4 +1,4 @@
-load 'safeupdate';
+load '$libdir/plugins/safeupdate';
 
 set safeupdate.enabled=1;
 
