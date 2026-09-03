@@ -67,7 +67,7 @@ function execute_stage2_playbook {
 }
 
 function generate_and_upload_sbom {
-    nix run "github:supabase/postgres/$GIT_SHA#ubuntu-sbom" -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
+	nix run "github:supabase/postgres/$GIT_SHA#ubuntu-sbom" -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
 }
 
 function cleanup_packages {

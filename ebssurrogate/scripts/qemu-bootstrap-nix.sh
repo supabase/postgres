@@ -162,9 +162,8 @@ function execute_stage2_playbook {
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
-
 function generate_and_upload_sbom {
-    nix run github:supabase/postgres#ubuntu-sbom -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
+	nix run "github:supabase/postgres/$GIT_SHA#ubuntu-sbom" -- --nix-target /nix/var/nix/profiles/default --include-files --no-progress --output /tmp/ami-system-sbom.json
 }
 
 function clean_legacy_things {

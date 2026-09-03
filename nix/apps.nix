@@ -1,7 +1,12 @@
 { inputs, ... }:
 {
   perSystem =
-    { self', lib, pkgs, ... }:
+    {
+      self',
+      lib,
+      pkgs,
+      ...
+    }:
     let
       mkApp = attrName: {
         type = "app";
