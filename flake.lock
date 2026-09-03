@@ -548,11 +548,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1762617903,
-        "narHash": "sha256-YvmAiwpIYqiQNeIalALzal6hQOqw8y/tmTZzKK293cE=",
+        "lastModified": 1788457735,
+        "narHash": "sha256-Qf9xRzHXQBRWdr+V5cfHSftYNMUuuRBP8Zr9Dhb8XXU=",
         "owner": "supabase",
         "repo": "ubuntu-nix-sbom",
-        "rev": "9c988098b60ecfc704b481060279f749e43f10f2",
+        "rev": "52daec35a5610fd4e96a5f993affa7d7a41d52aa",
         "type": "github"
       },
       "original": {
