@@ -1,59 +1,34 @@
 # PgBouncer
-- name: PgBouncer - download & install dependencies
-  ansible.builtin.apt:
-    pkg:
-      - build-essential
-      - libevent-dev
-      - libssl-dev
-      - libsystemd-dev
-      - pkg-config
-      - pandoc
-      - python3
-    update_cache: true
-
-- name: PgBouncer - download latest release
-  ansible.builtin.get_url:
-    url: "{{ pgbouncer_artifacts['url'] }}"
-    checksum: "{{ pgbouncer_artifacts['checksum'] }}"
-    dest: "/tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz"
-    timeout: 60
-  register: download_result
-  until: download_result is succeeded
-  retries: 3
-  delay: 2
-
-- name: PgBouncer - unpack archive
-  ansible.builtin.unarchive:
-    dest: '/tmp'
-    remote_src: true
-    src: "/tmp/pgbouncer-{{ pgbouncer_release }}.tar.gz"
-  become: true
-
-- name: PgBouncer - configure
-  ansible.builtin.command:
-    cmd: './configure --prefix=/usr/local --with-systemd'
-  args:
-    chdir: "/tmp/pgbouncer-{{ pgbouncer_release }}"
-  become: true
-
-- name: PgBouncer - build and install
-  community.general.make:
-    chdir: "/tmp/pgbouncer-{{ pgbouncer_release }}"
-    target: "{{ pgbouncer_make_item }}"
-  become: true
-  loop:
-    - 'all'
-    - 'install'
-  loop_control:
-    loop_var: 'pgbouncer_make_item'
+- name: Create pgbouncer group
+  ansible.builtin.group:
+    name: pgbouncer
+    gid: 1003
+    state: 'present'
 
 - name: Create pgbouncer user
   ansible.builtin.user:
-    comment: 'PgBouncer user'
-    groups: 'postgres,ssl-cert'
     name: 'pgbouncer'
-    shell: '/usr/sbin/nolign'
+    uid: 1000
+    comment: 'PgBouncer user'
+    group: pgbouncer
+    groups: 'postgres,ssl-cert'
+    shell: '/usr/sbin/nologin'
     state: 'present'
+
+- name: Install PgBouncer from nix binary cache
+  when: stage2
+  ansible.builtin.shell:
+    cmd: sudo -u pgbouncer bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pgbouncer"
+  become: true
+
+- name: Link PgBouncer into /usr/local/bin
+  when: stage2
+  ansible.builtin.file:
+    dest: '/usr/local/bin/pgbouncer'
+    force: true
+    src: '/home/pgbouncer/.nix-profile/bin/pgbouncer'
+    state: 'link'
+  become: true
 
 - name: Create PgBouncer directories if they do not exist
   ansible.builtin.file:

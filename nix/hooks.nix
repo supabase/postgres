@@ -22,14 +22,13 @@ in
               excludes = builtins.filter (name: !builtins.elem name lintedWorkflows) ghWorkflows;
               verbose = true;
             };
-
-            treefmt = {
+            ansible-lint = {
               enable = true;
-              package = config.treefmt.build.wrapper;
-              pass_filenames = false;
+              args = [ "ansible" ];
+              settings.subdir = "ansible";
+              settings.configPath = "ansible/ansible-lint.yaml";
               verbose = true;
             };
-
             no-cli-in-postgres-release = {
               enable = true;
               name = "no-cli-in-postgres-release";
@@ -48,6 +47,13 @@ in
               );
               files = "^ansible/vars\\.yml$";
               language = "system";
+              verbose = true;
+            };
+            shellcheck.enable = true;
+            treefmt = {
+              enable = true;
+              package = config.treefmt.build.wrapper;
+              pass_filenames = false;
               verbose = true;
             };
           };

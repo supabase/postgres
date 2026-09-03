@@ -29,7 +29,6 @@
       - salt-common={{ salt_release }}
       - salt-minion={{ salt_release }}
     state: present
-    update_cache: yes
 
 - name: Pin salt packages at major version
   ansible.builtin.copy:

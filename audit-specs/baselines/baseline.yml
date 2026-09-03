@@ -4471,96 +4471,6 @@ file:
     owner: "1006"
     group: "0"
     filetype: file
-  /etc/nginx/fastcgi.conf:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/fastcgi.conf.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/fastcgi_params:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/fastcgi_params.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/koi-utf:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/koi-win:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/mime.types:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/mime.types.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/nginx.conf:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/nginx.conf.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/scgi_params:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/scgi_params.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/uwsgi_params:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/uwsgi_params.default:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /etc/nginx/win-utf:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
   /etc/nix/nix.conf:
     exists: true
     mode: "0644"
@@ -5509,12 +5419,6 @@ file:
     owner: "0"
     group: "0"
     filetype: file
-  /etc/systemd/system/nginx.service:
-    exists: true
-    mode: "0644"
-    owner: "0"
-    group: "0"
-    filetype: file
   /etc/systemd/system/pg_egress_collect.service:
     exists: true
     mode: "0644"
@@ -5970,24 +5874,6 @@ file:
     mode: "0644"
     owner: "1004"
     group: "1008"
-    filetype: file
-  /home/nginx/.bash_logout:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "1009"
-    filetype: file
-  /home/nginx/.bashrc:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "1009"
-    filetype: file
-  /home/nginx/.profile:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "1009"
     filetype: file
   /home/pgbouncer/.bash_logout:
     exists: true
@@ -62029,24 +61915,6 @@ file:
     owner: "0"
     group: "0"
     filetype: directory
-  /usr/local/nginx/html/50x.html:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /usr/local/nginx/html/index.html:
-    exists: true
-    mode: "0644"
-    owner: "1005"
-    group: "0"
-    filetype: file
-  /usr/local/nginx/sbin/nginx:
-    exists: true
-    mode: "0755"
-    owner: "1005"
-    group: "0"
-    filetype: file
   /usr/local/openresty/COPYRIGHT:
     exists: true
     mode: "0664"
@@ -91043,9 +90911,6 @@ group:
   news:
     exists: true
     gid: 9
-  nginx:
-    exists: true
-    gid: 1009
   nixbld:
     exists: true
     gid: 30000
@@ -95914,12 +95779,6 @@ user:
     gid: 9
     home: /var/spool/news
     shell: /usr/sbin/nologin
-  nginx:
-    exists: true
-    uid: 1005
-    gid: 1009
-    home: /home/nginx
-    shell: /bin/sh
   nixbld1:
     exists: true
     uid: 30001
@@ -96123,7 +95982,7 @@ user:
     uid: 1000
     gid: 1003
     home: /home/pgbouncer
-    shell: /usr/sbin/nolign
+    shell: /usr/sbin/nologin
   polkitd:
     exists: true
     uid: 991

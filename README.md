@@ -74,7 +74,6 @@ Here's a comprehensive overview of the project's directory structure:
 | **tests/** | Integration and system tests |
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
-| **scripts/** | Utility scripts for development and deployment |
 | **docs/** | Additional documentation, images, and resources |
 | **ebssurrogate/** | AWS EBS surrogate building for AMI creation |
 | **http/** | HTTP-related configurations and files |
@@ -84,7 +83,6 @@ Here's a comprehensive overview of the project's directory structure:
 | **Root Config Files** |  |
 | .gitignore | Git ignore patterns |
 | .envrc.recommended | Recommended environment variables for development |
-| ansible.cfg | Ansible configuration |
 | amazon-arm64-nix.pkr.hcl | Packer configuration for AWS ARM64 builds |
 | common-nix.vars.pkr.hcl | Common Packer variables |
 | development-arm64.vars.pkr.hcl | ARM development environment variables |
