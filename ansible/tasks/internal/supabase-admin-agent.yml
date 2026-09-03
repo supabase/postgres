@@ -15,7 +15,10 @@
 - name: supabase-admin-agent - config dir
   file:
     path: /opt/supabase-admin-agent
-    owner: supabase-admin-agent
+    # /opt/supabase-admin-agent (dir, unpacked binary, symlink) is all root-owned so the pgbackrest-reconcile sudo grant below can't be used to swap the binary first; the agent group already has effectively unrestricted root via the salt-call entry, this just closes one more tampering path
+    owner: root
+    group: root
+    mode: "0755"
     state: directory
 
 - name: supabase-admin-agent - gpg dir
@@ -30,6 +33,7 @@
     src: files/supabase_admin_agent_config/supabase-admin-agent.sudoers.conf
     dest: /etc/sudoers.d/supabase-admin-agent
     mode: "0440"
+    validate: "visudo -csf %s"
 
 - name: supabase-admin-agent - pgbackrest helper scripts dir
   file:
@@ -74,7 +78,9 @@
     remote_src: yes
     src: /tmp/supabase-admin-agent.tar.gz
     dest: /opt/supabase-admin-agent/
-    owner: supabase-admin-agent
+    owner: root
+    group: root
+    mode: "0755"
     extra_opts:
       - --strip-components=1
 
@@ -83,7 +89,6 @@
     path: /opt/supabase-admin-agent/supabase-admin-agent
     src: "/opt/supabase-admin-agent/supabase-admin-agent-linux-{{ platform }}"
     state: link
-    owner: supabase-admin-agent
     mode: "0755"
     force: yes
 
