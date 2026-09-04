@@ -19,12 +19,19 @@
     deb: /tmp/vector.deb
   become: true
 
-- name: add Vector to postgres group
+- name: add vector system group
+  ansible.builtin.group:
+    name: vector
+    gid: 989
+    system: yes
+
+- name: add vector system user
   ansible.builtin.user:
-    append: true
-    groups: 'postgres'
-    name: 'vector'
-  become: true
+    name: vector
+    uid: 994
+    group: vector
+    groups: postgres
+    append: yes
 
 - name: create service files for Vector
   ansible.builtin.template:

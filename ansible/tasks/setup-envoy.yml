@@ -1,7 +1,15 @@
-- name: Envoy - system user
+- name: Envoy - group
+  ansible.builtin.group:
+    name: envoy
+    gid: 1008
+    state: present
+
+- name: Envoy - user
   ansible.builtin.user:
-    name: 'envoy'
-    state: 'present'
+    name: envoy
+    uid: 1003
+    group: envoy
+    state: present
 
 - name: Envoy - download binary
   ansible.builtin.get_url:

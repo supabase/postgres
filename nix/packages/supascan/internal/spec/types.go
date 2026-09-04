@@ -29,8 +29,8 @@ type ServiceSpec struct {
 type UserSpec struct {
 	Username string   `yaml:"-" json:"-"`
 	Exists   bool     `yaml:"exists" json:"exists"`
-	UID      int      `yaml:"uid,omitempty" json:"uid,omitempty"`
-	GID      int      `yaml:"gid,omitempty" json:"gid,omitempty"`
+	UID      int      `yaml:"uid" json:"uid"`
+	GID      int      `yaml:"gid" json:"gid"`
 	Groups   []string `yaml:"groups,omitempty" json:"groups,omitempty"`
 	Home     string   `yaml:"home,omitempty" json:"home,omitempty"`
 	Shell    string   `yaml:"shell,omitempty" json:"shell,omitempty"`
@@ -40,7 +40,7 @@ type UserSpec struct {
 type GroupSpec struct {
 	Name   string `yaml:"-" json:"-"`
 	Exists bool   `yaml:"exists" json:"exists"`
-	GID    int    `yaml:"gid,omitempty" json:"gid,omitempty"`
+	GID    int    `yaml:"gid" json:"gid"`
 }
 
 // KernelParamSpec represents a GOSS kernel-param resource

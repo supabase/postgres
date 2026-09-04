@@ -1,8 +1,15 @@
-- name: adminapi - system user
-  user:
+- name: adminapi - system group
+  ansible.builtin.group:
     name: adminapi
-    groups: root,admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
-    append: yes
+    gid: 1011
+    state: present
+
+- name: adminapi - system user
+  ansible.builtin.user:
+    name: adminapi
+    uid: 1006
+    group: adminapi
+    groups: admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,root,systemd-journal,vector,wal-g
 
 - name: Move shell scripts to /root dir
   copy:
