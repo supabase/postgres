@@ -1,0 +1,26 @@
+-- contrib/ltree: an integer overflow in ltree comparisons made values with more
+-- than about 14,653 labels compare incorrectly; a btree index over such values
+-- could become corrupt and need reindexing. This pins the post-fix comparison
+-- correctness for very deep ltree values (no index needed: a btree entry that
+-- size cannot exist, so this exercises the comparator directly).
+--
+-- Upstream commit: (PG 15.19) / (PG 17.11), fixed 2026-08-13.
+--
+-- Refs: PSQL-1110, PSQL-1234.
+
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS ltree;
+
+-- Build two deep ltree values (~15,000 labels) differing only in the last label.
+WITH v AS (
+  SELECT (repeat('a.', 15000) || 'x')::ltree AS a,
+         (repeat('a.', 15000) || 'y')::ltree AS b
+)
+SELECT nlevel(a) > 14653 AS deep_enough,
+       a < b            AS a_lt_b,
+       NOT (b < a)      AS b_not_lt_a,
+       a = a            AS a_eq_a
+FROM v;
+
+ROLLBACK;

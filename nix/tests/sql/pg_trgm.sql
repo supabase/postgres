@@ -1,0 +1,30 @@
+-- CVE-2026-2006: multibyte length validation via bounds-checked pg_mblen()
+-- variants. Affects every multibyte text path, including pg_trgm.
+--
+-- Upstream commits: fd82ddb6, 50863be0, b2c81ac8, 8f8b1ffa (PG 15.16);
+--                   319e8a64, 7a522039, 838248b1, dc072a09 (PG 17.8).
+--
+-- Functional regression: trigram generation, similarity, and GIN index search
+-- all return correct results on multibyte (UTF-8) input on the fixed builds.
+--
+-- Refs: PSQL-1110, PSQL-1234.
+
+BEGIN;
+
+-- 1) show_trgm() on a multibyte (UTF-8) string returns well-formed trigrams.
+SELECT show_trgm('café');
+
+-- 2) similarity() of two multibyte strings is positive and symmetric.
+SELECT similarity('café', 'café') AS self_sim,
+       similarity('café', 'cafe') = similarity('cafe', 'café') AS symmetric;
+
+-- 3) A GIN trigram index on multibyte data returns the correct match set.
+CREATE TABLE trgm_mb (id int, t text);
+INSERT INTO trgm_mb VALUES (1, 'café'), (2, 'naïve'), (3, 'résumé');
+CREATE INDEX trgm_mb_idx ON trgm_mb USING gin (t gin_trgm_ops);
+
+SET enable_seqscan = off;
+SELECT id, t FROM trgm_mb WHERE t % 'café' ORDER BY id;
+RESET enable_seqscan;
+
+ROLLBACK;
