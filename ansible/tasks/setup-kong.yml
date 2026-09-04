@@ -1,7 +1,15 @@
-- name: Kong - system user
+- name: Kong - group
+  ansible.builtin.group:
+    name: kong
+    gid: 1009
+    state: present
+
+- name: Kong - user
   ansible.builtin.user:
-    name: 'kong'
-    state: 'present'
+    name: kong
+    uid: 1004
+    group: kong
+    state: present
 
 # Kong installation steps from http://archive.vn/3HRQx
 - name: Kong - system dependencies

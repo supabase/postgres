@@ -14,35 +14,31 @@ if [[ ! -d /tmp ]]; then
 fi
 chmod 1777 /tmp
 
-if [ -n "$(command -v yum)" ]; then
-	yum update -y
-	yum clean all
-elif [ -n "$(command -v apt-get)" ]; then
-	# Cleanup more packages
-	apt-get -y remove --purge \
-		automake \
-		autoconf \
-		autotools-dev \
-		cmake-data \
-		cpp-9 \
-		cpp-10 \
-		gcc-9 \
-		gcc-10 \
-		git \
-		git-man \
-		ansible \
-		libicu-dev \
-		libcgal-dev \
-		libgcc-9-dev \
-		ansible
+# Cleanup more packages
+packages=(
+	ansible
+	ansible
+	autoconf
+	automake
+	autotools-dev
+	cmake-data
+	cpp-10
+	cpp-9
+	gcc-10
+	gcc-9
+	git
+	git-man
+	libcgal-dev
+	libgcc-9-dev
+	libicu-dev
+)
 
-	# add-apt-repository --yes --remove ppa:ansible/ansible
+apt-get --yes remove --purge "${packages[@]}"
+apt-get --yes autoremove
+apt-get --yes autoclean
+apt-get --yes update
+apt-get --yes upgrade
 
-	apt-get -y update
-	apt-get -y upgrade
-	apt-get -y autoremove
-	apt-get -y autoclean
-fi
 rm -rf /tmp/* /var/tmp/*
 history -c
 cat /dev/null >/root/.bash_history

@@ -1,15 +1,49 @@
+- name: Create ubuntu user
+  when: not stage2 and not qemu
+  block:
+    - name: Create ubuntu primary group
+      ansible.builtin.group:
+        name: ubuntu
+        gid: 1014
+        state: present
+
+    - name: Create ubuntu user supplementary groups # noqa: explicit-identity-id
+      ansible.builtin.group:
+        name: "{{ item.name }}"
+        gid: "{{ item.gid }}"
+        state: present
+      loop:
+        - { name: lxd, gid: 1012 }
+        - { name: netdev, gid: 1013 }
+
+    - name: Create ubuntu user
+      ansible.builtin.user:
+        name: ubuntu
+        uid: 1007
+        group: ubuntu
+        groups:
+          - adm
+          - audio
+          - cdrom
+          - dialout
+          - dip
+          - floppy
+          - lxd
+          - netdev
+          - plugdev
+          - sudo
+          - video
+        comment: Ubuntu
+        create_home: true
+        password_lock: true
+        shell: /bin/bash
+        state: present
+
 - name: Execute stage1 tasks
   when: not stage2
   block:
-    - name: System - apt update and apt upgrade
-      ansible.builtin.apt:
-        update_cache: true
-        upgrade: true
-      # SEE http://archive.vn/DKJjs#parameter-upgrade
-
     - name: Install required security updates Ansible dependencies, security tools, and other useful things
       ansible.builtin.apt:
-        cache_valid_time: 3600
         pkg:
           - acl
           - bwm-ng
@@ -23,7 +57,6 @@
           - sysstat
           - tzdata
           - vim
-        update_cache: true
     # SEE https://github.com/georchestra/ansible/issues/55#issuecomment-588313638
     # Without this, a similar error is faced
 

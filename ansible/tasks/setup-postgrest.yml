@@ -1,7 +1,15 @@
-- name: PostgREST - system user
+- name: PostgREST - group
+  ansible.builtin.group:
+    name: postgrest
+    gid: 1007
+    state: present
+
+- name: PostgREST - user
   ansible.builtin.user:
-    name: 'postgrest'
-    state: 'present'
+    name: postgrest
+    uid: 1002
+    group: postgrest
+    state: present
 
 - name: PostgREST - add Postgres PPA gpg key
   ansible.builtin.get_url:
@@ -27,7 +35,6 @@
     package:
       - libnuma-dev
       - libpq5
-    update_cache: true
     state: 'present'
 
 - name: PostgREST - grab the list of installed packages
