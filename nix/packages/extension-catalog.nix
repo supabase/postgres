@@ -152,7 +152,7 @@
           name = "site-extensions-update";
           runtimeInputs = [ self'.packages.site-extensions-resolve ];
           text = ''
-            manifest="''${1:-/etc/adminapi/pg-extensions.json}"
+            manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
             profile="''${PROFILE:-/nix/var/nix/profiles/site-extensions}"
             readarray -t paths < <(site-extensions-resolve "$manifest")
             nix-store -r --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
