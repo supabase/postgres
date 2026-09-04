@@ -183,11 +183,8 @@
               # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
               orioledbSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
-                # The regression tests below pin CVE / behavior-change fixes that
-                # first landed across 15.16-15.19 / 17.7-17.11. orioledb-17 is
-                # built on an older PG 17 base that predates these fixes, so the
-                # post-fix behavior they assert is not present there.
-                # Refs: PSQL-1110, PSQL-1234.
+
+                # Checks CVE/behavior changes from 17.7 -> 17.11, drop when orioledb base is updated to/past these.
                 "operator_breaking_change" # CVE-2026-2004 (17.8)
                 "pgcrypto" # CVE-2026-2005 (17.8)
                 "pg_trgm" # CVE-2026-2006 multibyte (17.8)
@@ -201,6 +198,7 @@
                 "output_plugin_libraries" # CVE-2026-6471 (17.11)
                 "btree_gist_nan" # btree_gist NaN fix (17.11)
                 "ltree_label_overflow" # ltree comparison overflow fix (17.11)
+                "replica_identity_upsert" # MERGE/ON CONFLICT replica-identity check (17.7/15.15)
               ];
 
               # Helper function to filter SQL files based on version
