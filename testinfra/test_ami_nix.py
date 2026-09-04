@@ -605,6 +605,14 @@ def test_postgresql_version(host):
     print("✓ PostgreSQL version is >= 14")
 
 
+def test_postgres_user_uid_gid(host):
+    """Pinned in ansible/tasks/setup-postgres.yml; a drift here breaks S+W wake/thaw."""
+    result = run_ssh_command(host["ssh"], "id -u postgres && id -g postgres")
+    assert result["succeeded"], f"Failed to run id on postgres user: {result['stderr']}"
+    uid, gid = result["stdout"].split()
+    assert (uid, gid) == ("999", "1002"), f"postgres uid/gid drifted: got uid={uid} gid={gid}"
+
+
 def test_libpq5_version(host):
     """Print the libpq5 version installed and ensure it's >= 14."""
     # Try different package managers to find libpq5
