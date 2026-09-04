@@ -95,16 +95,6 @@
             printf '%s\n' "$obj" | jq -S . > "$out/share/pg-extensions-catalog.json"
           '';
 
-      script =
-        name: text:
-        pkgs.writeShellApplication {
-          inherit name text;
-          runtimeInputs = [
-            pkgs.coreutils
-            pkgs.jq
-          ];
-        };
-
       # Multi version extensions as attrsets: { <major> = { <ext> = { <version> = drv; }; }; }
       perMajor = lib.genAttrs [ "15" "17" "orioledb-17" ] (
         major: wrappersFor self'.legacyPackages."psql_${major}".exts
@@ -139,15 +129,22 @@
         # Takes manifest json as argument. Format: {<ext>: <version>}.
         # Prints nix-store paths of the resolved extensions, one per line.
         # Does not download or install.
-        site-extensions-resolve = script "site-extensions-resolve" ''
-          : "''${PG_EXTENSIONS_CATALOG:?PG_EXTENSIONS_CATALOG must point at a pg-extensions-catalog.json}"
-          manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
-          jq -r 'to_entries[] | "\(.key)=\(.value)"' "$manifest" | while IFS='=' read -r name version; do
-            [ -n "$name" ] || { echo "ERROR: empty extension name in $manifest" >&2; exit 1; }
-            jq -er --arg n "$name" --arg v "$version" \
-              '.[$n][$v] // error("\($n)=\($v) not in catalog")' "$PG_EXTENSIONS_CATALOG"
-          done | sort -u
-        '';
+        site-extensions-resolve = pkgs.writeShellApplication {
+          name = "site-extensions-resolve";
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.jq
+          ];
+          text = ''
+            : "''${PG_EXTENSIONS_CATALOG:?PG_EXTENSIONS_CATALOG must point at a pg-extensions-catalog.json}"
+            manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
+            jq -r 'to_entries[] | "\(.key)=\(.value)"' "$manifest" | while IFS='=' read -r name version; do
+              [ -n "$name" ] || { echo "ERROR: empty extension name in $manifest" >&2; exit 1; }
+              jq -er --arg n "$name" --arg v "$version" \
+                '.[$n][$v] // error("\($n)=\($v) not in catalog")' "$PG_EXTENSIONS_CATALOG"
+            done | sort -u
+          '';
+        };
 
         # Takes manifest json as argument.
         # Downloads paths and installs them as an env into the profile, replacing all existing ones.
