@@ -71,7 +71,7 @@
     owner: 'pgbouncer'
     path: '/etc/pgbouncer/userlist.txt'
     state: 'touch'
-      
+
 - name: import /etc/tmpfiles.d/pgbouncer.conf
   ansible.builtin.template:
     dest: '/etc/tmpfiles.d/pgbouncer.conf'
