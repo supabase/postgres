@@ -136,16 +136,10 @@
     in
     {
       packages = catalogs // {
-        # Takes store paths as args and substitutes from binary cache, with retry.
+        # Takes store paths as args and substitutes from binary cache in parallel.
         download-nix-store-paths = script "download-nix-store-paths" ''
-          for path in "$@"; do
-            for attempt in 1 2 3; do
-              timeout -k 10s 120s nix-store -r "$path" >/dev/null && continue 2
-              echo "WARNING: attempt $attempt failed for $path" >&2
-            done
-            echo "ERROR: failed to realize $path" >&2
-            exit 1
-          done
+          [ "$#" -gt 0 ] || exit 0
+          nix-store -r --option stalled-download-timeout 120 "$@" >/dev/null
         '';
 
         # Takes manifest json as argument. Format: {<ext>: <version>}.
