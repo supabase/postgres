@@ -255,6 +255,7 @@
                 "pg_net_worker_privileges" # needs the authenticated/postgres roles from the full migrations, not present in the CLI prime file
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
+                "amcheck" # needs the postgres/anon/authenticated/service_role roles and the default privileges from the full migrations, plus amcheck primed by prime.sql
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
