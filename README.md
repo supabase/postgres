@@ -69,8 +69,6 @@ Here's a comprehensive overview of the project's directory structure:
 | migrations/tests/extensions/ | Extension migration tests |
 | Dockerfile-15 | Docker image definition for PostgreSQL 15 |
 | Dockerfile-17 | Docker image definition for PostgreSQL 17 |
-| Dockerfile-supabase | Parameterised supabase base image (supports any PostgreSQL major version via `--build-arg PG_VERSION=17`) |
-| Dockerfile-multigres | Multigres image layered on top of `Dockerfile-supabase` |
 | **tests/** | Integration and system tests |
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
@@ -159,34 +157,6 @@ docker build -f Dockerfile-15 -t supabase-postgres:15 .
 
 # Build Docker image for PostgreSQL 17
 docker build -f Dockerfile-17 -t supabase-postgres:17 .
-```
-
-#### Supabase base image (version-parameterised)
-
-`Dockerfile-supabase` is a single Dockerfile that can target any supported PostgreSQL major version via `--build-arg`:
-
-```bash
-# Build for PostgreSQL 17 (default)
-docker build -f Dockerfile-supabase -t supabase-postgres:17 .
-
-# Build for PostgreSQL 15
-docker build -f Dockerfile-supabase --build-arg PG_VERSION=15 -t supabase-postgres:15 .
-```
-
-#### Multigres image
-
-`Dockerfile-multigres` layers on top of the supabase image, adding `pgctld` and `pgbackrest`. Build the supabase image first, then point `SUPABASE_IMAGE` at it:
-
-```bash
-# Build supabase base, then multigres on top
-docker build -f Dockerfile-supabase -t supabase-postgres:17 .
-docker build -f Dockerfile-multigres -t multigres:17 .
-
-# Target a different PostgreSQL version
-docker build -f Dockerfile-supabase --build-arg PG_VERSION=15 -t supabase-postgres:15 .
-docker build -f Dockerfile-multigres \
-    --build-arg SUPABASE_IMAGE=supabase-postgres:15 \
-    -t multigres:15 .
 ```
 
 ## Next Steps
