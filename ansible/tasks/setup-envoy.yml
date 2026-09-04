@@ -7,7 +7,7 @@
 - name: Envoy - user
   ansible.builtin.user:
     name: envoy
-    uid: 1003
+    uid: "{{ 1003 if not qemu else 1004 }}"
     group: envoy
     state: present
 

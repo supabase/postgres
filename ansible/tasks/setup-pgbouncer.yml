@@ -8,7 +8,7 @@
 - name: Create pgbouncer user
   ansible.builtin.user:
     name: 'pgbouncer'
-    uid: 1000
+    uid: "{{ 1000 if not qemu else 1001 }}"
     comment: 'PgBouncer user'
     group: pgbouncer
     groups: 'postgres,ssl-cert'
