@@ -136,12 +136,6 @@
     in
     {
       packages = catalogs // {
-        # Takes store paths as args and substitutes from binary cache in parallel.
-        download-nix-store-paths = script "download-nix-store-paths" ''
-          [ "$#" -gt 0 ] || exit 0
-          nix-store -r --option stalled-download-timeout 120 "$@" >/dev/null
-        '';
-
         # Takes manifest json as argument. Format: {<ext>: <version>}.
         # Prints nix-store paths of the resolved extensions, one per line.
         # Does not download or install.
@@ -159,15 +153,12 @@
         # Downloads paths and installs them as an env into the profile, replacing all existing ones.
         site-extensions-update = pkgs.writeShellApplication {
           name = "site-extensions-update";
-          runtimeInputs = [
-            self'.packages.site-extensions-resolve
-            self'.packages.download-nix-store-paths
-          ];
+          runtimeInputs = [ self'.packages.site-extensions-resolve ];
           text = ''
             manifest="''${1:-/etc/adminapi/pg-extensions.json}"
             profile="''${PROFILE:-/nix/var/nix/profiles/site-extensions}"
             readarray -t paths < <(site-extensions-resolve "$manifest")
-            download-nix-store-paths "''${paths[@]}"
+            nix-store -r --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
             nix-env --profile "$profile" --install "''${paths[@]}" --remove-all
           '';
         };
