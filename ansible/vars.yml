@@ -110,14 +110,14 @@ kong_artifacts:
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
-gotrue_release: 2.190.0
+gotrue_release: 2.196.0
 gotrue_artifacts:
   amd64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
-    checksum: sha256:dfe8e2dee872747f60fe10ecec6ee8d368ee4d7eef3acd5af95aa88a2e7e6141
+    checksum: sha256:69aa7b9e519f33f66455c057d622414c7e79c9b33e0907af622fd22cb303512d
   arm64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
-    checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
+    checksum: sha256:9bfde818c0df8e9beb8532dc8bbda5a422372191b0284789bac7b0aa2613b1f6
 postgrest_release: "14.17" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
