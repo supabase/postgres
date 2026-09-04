@@ -4,14 +4,16 @@
     - name: Create wal-g group
       ansible.builtin.group:
         name: 'wal-g'
+        gid: 1004
         state: 'present'
 
     - name: Create wal-g user
       ansible.builtin.user:
+        name: 'wal-g'
+        uid: 996
         comment: 'WAL-G user'
         group: 'wal-g'
         groups: 'wal-g, postgres'
-        name: 'wal-g'
         shell: '/usr/bin/nologin'
         system: true
 

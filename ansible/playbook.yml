@@ -141,25 +141,12 @@
       when: not stage2
       import_tasks: tasks/setup-fail2ban.yml
 
-    # Install EC2 instance connect
-    # Only for AWS images
-    - name: install EC2 instance connect
-      when: not qemu
-      become: yes
-      apt:
-        pkg:
-          - ec2-instance-connect
-      tags:
-        - aws-only
-
     # Install this at the end to prevent it from kicking in during the apt process, causing conflicts
     - name: Install security tools
       become: yes
       apt:
         pkg:
           - unattended-upgrades
-        update_cache: yes
-        cache_valid_time: 3600
 
     - name: Run migrations
       when: stage2
@@ -196,10 +183,10 @@
         systemctl stop fail2ban.service
 
     - name: Run supascan baseline validation
-      when: stage2 and not qemu and ansible_architecture != "x86_64"
+      when: stage2 and not qemu
       become: yes
       shell: |
-        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build
+        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build-{{ platform }}
 
     - name: Remove supascan after validation
       when: stage2

@@ -4,8 +4,8 @@
     ./postgres.nix
     ./postgres-env.nix
     ./site-env.nix
+    ./extension-catalog.nix
   ];
-
   perSystem =
     {
       inputs',

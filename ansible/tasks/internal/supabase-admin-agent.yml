@@ -1,11 +1,13 @@
 - name: supabase-admin-agent - system group
-  group:
+  ansible.builtin.group:
     name: supabase-admin-agent
+    gid: 987
     system: yes
 
 - name: supabase-admin-agent - system user
-  user:
+  ansible.builtin.user:
     name: supabase-admin-agent
+    uid: 990
     group: supabase-admin-agent
     groups: admin,salt
     append: yes

@@ -4,10 +4,18 @@
     rule: 'allow'
     
 # use this user for the Gotrue build and for running the service
+- name: Gotrue - group
+  ansible.builtin.group:
+    name: gotrue
+    gid: 1006
+    state: present
+
 - name: Gotrue - system user
   ansible.builtin.user:
-    name: 'gotrue'
-    state: 'present'
+    name: gotrue
+    uid: 1001
+    group: gotrue
+    state: present
 
 - name: gotrue - download commit archive
   ansible.builtin.get_url:
