@@ -80,53 +80,24 @@ pkgs.testers.runNixOSTest {
         acl_before = sql(ACL_QUERY)
         assert acl_before == EXPECTED_ACL, f"unexpected PG 15 grants:\n{acl_before}"
 
+      with subtest("amcheck dropped before upgrade, mirroring EXTENSIONS_TO_DISABLE"):
+        sql("drop extension if exists amcheck cascade")
+
       with subtest("switch to postgresql 17"):
         server.execute(f"{pg17_configuration}/bin/switch-to-configuration test >&2")
         server.wait_for_unit("postgresql.service")
 
-      with subtest("pg_upgrade preserves amcheck's version, schema and grants"):
-        after = sql(IDENTITY_QUERY)
-        assert after == before, f"amcheck changed across pg_upgrade: {before} -> {after}"
-        acl_after = sql(ACL_QUERY)
-        assert acl_after == EXPECTED_ACL, f"grants changed across pg_upgrade:\n{acl_after}"
-
-      with subtest("amcheck updates to PG 17's default version"):
-        # Production replays pg_upgrade's generated update_extensions.sql; this
-        # harness runs a bare pg_upgrade, so replay it if present, else do the
-        # equivalent ALTER directly.
-        has_script = server.succeed(
-          "test -f /var/lib/postgresql/update_extensions.sql && echo yes || echo no"
-        ).strip()
-        if has_script == "yes":
-          server.succeed(
-            "psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 "
-            "-f /var/lib/postgresql/update_extensions.sql"
-          )
-        else:
-          sql("alter extension amcheck update")
-
+      with subtest("amcheck recreated fresh on PG 17, mirroring the EXTENSIONS_TO_DISABLE fix"):
+        sql("create extension if not exists amcheck cascade")
         default_version = sql(
           "select default_version from pg_available_extensions where name = 'amcheck'"
         )
-        updated = sql(IDENTITY_QUERY)
-        installed_version = updated.split(",")[0]
-        assert installed_version == default_version, (
-          f"expected amcheck at PG 17's default {default_version}, got {installed_version}"
+        recreated = sql(IDENTITY_QUERY)
+        assert recreated == f"{default_version},pg_catalog", (
+          f"expected amcheck at {default_version} in pg_catalog, got: {recreated}"
         )
-        assert installed_version != before.split(",")[0], (
-          f"amcheck was already at {installed_version} on PG 15; this test no "
-          "longer exercises a version bump and needs rewriting"
-        )
-        assert updated.endswith(",pg_catalog"), (
-          f"amcheck left the pg_catalog schema during the update: {updated}"
-        )
-
-        # Must always hold: no API role can execute any amcheck function.
-        acl_updated = sql(ACL_QUERY)
-        for role in ["anon", "authenticated", "service_role"]:
-          assert f"{role},f,f" in acl_updated, (
-            f"SECURITY REGRESSION: {role} can execute an amcheck function after update:\n{acl_updated}"
-          )
+        acl_recreated = sql(ACL_QUERY)
+        assert acl_recreated == EXPECTED_ACL, f"unexpected grants after recreate:\n{acl_recreated}"
 
       with subtest("The support workflow still works after the upgrade"):
         sql(
@@ -135,15 +106,12 @@ pkgs.testers.runNixOSTest {
           role="postgres",
         )
         sql("select pg_catalog.bt_index_check('amcheck_heap_pkey'::regclass)", role="postgres")
-        # No per-relation gate: a customer can check an auth index they don't own.
-        sql("select pg_catalog.bt_index_check('auth.users_pkey'::regclass)", role="postgres")
-
-      with subtest("PG17-only overload added in amcheck 1.4 is callable by postgres"):
-        # Expected to fail: this harness's bare pg_upgrade never runs the
-        # drop-before/recreate-after fix that lives in production's initiate.sh.
+        # PG17-only overload, new in amcheck 1.4.
         sql(
           "select pg_catalog.bt_index_check('amcheck_heap_pkey'::regclass, false, false)",
           role="postgres",
         )
+        # No per-relation gate: a customer can check an auth index they don't own.
+        sql("select pg_catalog.bt_index_check('auth.users_pkey'::regclass)", role="postgres")
     '';
 }
