@@ -18,25 +18,20 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
--- Detach and delete all versions of the function
-  FOR r IN
-    SELECT
-      pg_get_function_identity_arguments(p.oid) AS sig,
-      EXISTS (
-        SELECT 1 FROM pg_depend d
-        WHERE d.objid = p.oid
-          AND d.refobjid = extoid
-          AND d.deptype = 'e'
-      ) AS is_extension_member
-    FROM pg_proc p
-    JOIN pg_namespace n ON p.pronamespace = n.oid
-    WHERE n.nspname = 'pgmq' AND p.proname = 'drop_queue'
-  LOOP
-    IF r.is_extension_member THEN
-      EXECUTE format('ALTER EXTENSION pgmq DROP FUNCTION pgmq.drop_queue(%s)', r.sig);
-    END IF;
-    EXECUTE format('DROP FUNCTION IF EXISTS pgmq.drop_queue(%s)', r.sig);
-  END LOOP;
+  -- detach and drop any existing drop_queue overloads
+  for r in
+    select pg_get_function_identity_arguments(p.oid) as args,
+           d.objid is not null as in_extension
+    from pg_proc p
+    left join pg_depend d on d.objid = p.oid and d.refobjid = extoid and d.deptype = 'e'
+    where p.pronamespace = 'pgmq'::regnamespace
+      and p.proname = 'drop_queue'
+  loop
+    if r.in_extension then
+      execute format('alter extension pgmq drop function pgmq.drop_queue(%s)', r.args);
+    end if;
+    execute format('drop function pgmq.drop_queue(%s)', r.args);
+  end loop;
 
 -- Create and reattach the patched function
 CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN DEFAULT FALSE)
@@ -150,7 +145,7 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-  alter extension pgmq add function pgmq.drop_queue(TEXT, BOOLEAN);
+  alter extension pgmq add function pgmq.drop_queue(text, boolean);
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
