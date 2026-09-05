@@ -18,17 +18,23 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
--- Detach and delete the official function
-if extversion = '1.4.4' then
-  alter extension pgmq drop function pgmq.drop_queue;
-  drop function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq drop function pgmq.drop_queue(TEXT);
-  drop function pgmq.drop_queue(TEXT);
-end if;
+  -- detach and drop any existing drop_queue overloads
+  for r in
+    select pg_get_function_identity_arguments(p.oid) as args,
+           d.objid is not null as in_extension
+    from pg_proc p
+    left join pg_depend d on d.objid = p.oid and d.refobjid = extoid and d.deptype = 'e'
+    where p.pronamespace = 'pgmq'::regnamespace
+      and p.proname = 'drop_queue'
+  loop
+    if r.in_extension then
+      execute format('alter extension pgmq drop function pgmq.drop_queue(%s)', r.args);
+    end if;
+    execute format('drop function pgmq.drop_queue(%s)', r.args);
+  end loop;
 
 -- Create and reattach the patched function
-CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
+CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN DEFAULT FALSE)
 RETURNS BOOLEAN AS $func$
 DECLARE
     qtable TEXT := pgmq.format_table_name(queue_name, 'q');
@@ -36,7 +42,6 @@ DECLARE
     fq_qtable TEXT := 'pgmq.' || qtable;
     atable TEXT := pgmq.format_table_name(queue_name, 'a');
     fq_atable TEXT := 'pgmq.' || atable;
-    partitioned BOOLEAN;
 BEGIN
     EXECUTE FORMAT(
         $QUERY$
@@ -140,11 +145,7 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-if extversion = '1.4.4' then
-  alter extension pgmq add function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq add function pgmq.drop_queue(TEXT);
-end if;
+  alter extension pgmq add function pgmq.drop_queue(text, boolean);
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
