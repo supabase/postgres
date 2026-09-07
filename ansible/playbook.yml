@@ -183,10 +183,11 @@
         systemctl stop fail2ban.service
 
     - name: Run supascan baseline validation
-      when: stage2 and not qemu
+      when: stage2
       become: yes
       shell: |
-        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/ami-build-{{ platform }}
+        baseline={{ 'ami' if not qemu else 'qemu' }}-build-{{ platform }}
+        /bin/bash /tmp/ansible-playbook/ansible/files/supascan_ami.sh /tmp/ansible-playbook/audit-specs/baselines/$baseline
 
     - name: Remove supascan after validation
       when: stage2

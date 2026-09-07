@@ -92,6 +92,11 @@ build {
   }
 
   provisioner "file" {
+    source      = "audit-specs"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
     source      = "migrations"
     destination = "/tmp"
   }

@@ -22,7 +22,7 @@
 - name: add vector system group
   ansible.builtin.group:
     name: vector
-    gid: 989
+    gid: "{{ 989 if not qemu else 990 }}"
     system: yes
 
 - name: add vector system user
