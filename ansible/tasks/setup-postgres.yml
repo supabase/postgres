@@ -193,27 +193,30 @@
         passno: "2"
         state: mounted
 
-    - name: Initialize the database stage2 (NOT PG17 NOR PG17-OrioleDB)
-      when: psql_version not in ['psql_17', 'psql_orioledb-17']
-      become: true
-      become_user: 'postgres'
-      ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--data-checksums"
-      environment:
-        LANG: en_US.UTF-8
-        LANGUAGE: en_US.UTF-8
-        LC_ALL: en_US.UTF-8
-        LC_CTYPE: en_US.UTF-8
-        LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
-      vars:
-        ansible_command_timeout: 60
+    - name: Set common initdb arguments
+      ansible.builtin.set_fact:
+        initdb_common_args: -o --allow-group-access -o --username=supabase_admin -o --data-checksums
 
-    - name: Initialize the database stage2 (PG17 OR PG17-OrioleDB)
-      when: psql_version in ['psql_17', 'psql_orioledb-17']
+    - name: Set PG15 initdb arguments
+      when: is_psql_15
+      ansible.builtin.set_fact:
+        initdb_pg_version_args: ""
+
+    - name: Set Oriole initdb arguments
+      when: is_psql_oriole
+      ansible.builtin.set_fact:
+        initdb_pg_version_args: "-o --encoding=UTF-8 -o --locale-provider=icu -o --icu-locale=en_US.UTF-8"
+
+    - name: Set default initdb arguments
+      when: not (is_psql_15 or is_psql_oriole)
+      ansible.builtin.set_fact:
+        initdb_pg_version_args: "-o --encoding=UTF-8 -o --locale-provider=builtin -o --builtin-locale=C.UTF-8"
+
+    - name: Initialize the database stage2
       become: true
-      become_user: 'postgres'
+      become_user: postgres
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=icu" -o "--encoding=UTF-8" -o "--icu-locale=en_US.UTF-8" -o "--data-checksums"
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb {{ initdb_common_args}} {{ initdb_pg_version_args }}
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
