@@ -77,6 +77,24 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
+    - name: Resolve site-update store path
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#site-update
+      register: site_update_path
+
+    - name: Install site-update
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/site-update --set {{ site_update_path.stdout }}
+
+    - name: Symlink site-update onto PATH
+      ansible.builtin.file:
+        src: /nix/var/nix/profiles/site-update/bin/site-update
+        dest: /usr/local/bin/site-update
+        state: link
+        force: true
+
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
