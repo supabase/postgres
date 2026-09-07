@@ -411,6 +411,9 @@
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
+                  # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+                  # as an allow-list for logical decoding output plugins.
+                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$PGTAP_CLUSTER/postgresql.conf"
                 fi
 
                 # Check if postgresql.conf exists
