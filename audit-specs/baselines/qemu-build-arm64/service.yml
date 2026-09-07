@@ -41,7 +41,7 @@ service:
     running: true
   ssh:
     enabled: false
-    running: false
+    running: true
   atd:
     enabled: false
     running: false
