@@ -28,9 +28,34 @@
           lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
         );
       };
+
+      # Given a git sha, fetches the site-env catalog entry for this instance's pg
+      # major and flips /nix/var/nix/profiles/site to it. Generic across majors —
+      # not part of siteEnvs itself, so it doesn't get reinstalled by its own flip.
+      site-env-update = pkgs.writeShellApplication {
+        name = "site-env-update";
+        runtimeInputs = [
+          pkgs.awscli2
+          pkgs.jq
+        ];
+        text = ''
+          sha="''${1:?Usage: $0 <git-sha>}"
+          system="$(uname -m)-linux"
+          major="$(cut -d. -f1 /data/pgdata/PG_VERSION)"
+          grep -q '^ORIOLEDB_ENABLED=true' /etc/environment.d/postgresql.env 2>/dev/null && major="orioledb-$major"
+
+          catalog="/tmp/site-env-catalog-''${sha}-''${major}-''${system}.json"
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-site-env_''${major}-''${system}.json" \
+            "$catalog" --region ap-southeast-1
+
+          path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
+          nix-store -r --option stalled-download-timeout 120 "$path" >/dev/null
+          nix-env --profile /nix/var/nix/profiles/site --set "$path"
+        '';
+      };
     in
     {
-      packages = siteEnvs;
-      legacyPackages = siteEnvs;
+      packages = siteEnvs // { inherit site-env-update; };
+      legacyPackages = siteEnvs // { inherit site-env-update; };
     };
 }
