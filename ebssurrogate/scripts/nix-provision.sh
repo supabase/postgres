@@ -7,24 +7,23 @@ set -o xtrace
 
 exec 1>&2
 
+function setup_apt {
+	export DEBIAN_FRONTEND=noninteractive
+}
+
+function cleanup_apt {
+	apt-get clean
+	apt-get autoremove --purge --yes
+	rm -rf /var/lib/apt/lists/*
+}
+
+function update_and_upgrade_apt {
+	apt-get update --yes
+	apt-get dist-upgrade --yes
+}
+
 function install_packages {
-	# Setup Ansible on host VM
-	apt-get update && apt-get install -y software-properties-common
-
-	# Install EC2-specific packages that were deferred from stage 1
-	# These packages have post-install scripts that need EC2 metadata service access
-	# which only works on a real running EC2 instance (not in chroot)
-	apt-get install -y ec2-hibinit-agent ec2-instance-connect hibagent
-
-	# Manually add GPG key with explicit keyserver
-	apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 93C4A3FD7BB9C367
-
-	# Add repository and install
-	# TODO (darora): temporarily disabling while Launchpad is under ddos attack and very frequently timing out
-	# sudo add-apt-repository --yes ppa:ansible/ansible
-	# sudo apt-get update
 	apt-get install -y ansible
-
 	ansible-galaxy collection install community.general
 }
 
@@ -68,13 +67,18 @@ function execute_stage2_playbook {
 }
 
 function cleanup_packages {
-	apt-get -y remove --purge ansible
-	# sudo add-apt-repository --yes --remove ppa:ansible/ansible
+	apt-get remove --purge --yes ansible
 }
 
 function cleanup_nix {
 	nix-collect-garbage -d
 	nix-store --optimise -v
+}
+
+function report_packages {
+	# shellcheck disable=SC2016
+	dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
+	find /nix/store -maxdepth 1 | LC_COLLATE=C.UTF-8 sort -t- -k2
 }
 
 function report_disk_usage {
@@ -83,9 +87,14 @@ function report_disk_usage {
 	printf '::notice::disk_usage bytes=%s human=%s\n' "$dub" "$duh" | tee -a /tmp/ansible.log
 }
 
+setup_apt
+update_and_upgrade_apt
 install_packages
 install_nix
 execute_stage2_playbook
 cleanup_packages
 cleanup_nix
+update_and_upgrade_apt
+cleanup_apt
+report_packages
 report_disk_usage

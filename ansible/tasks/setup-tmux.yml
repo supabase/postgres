@@ -2,7 +2,6 @@
   ansible.builtin.apt:
     name: 'tmux'
     state: 'present'
-    update_cache: true
   become: true
 
 - name: tmux - Configure tmux alias

@@ -53,6 +53,7 @@
             nushell
             pythonEnv
             config.treefmt.build.wrapper
+            pre-commit
           ];
           devshell.startup.pre-commit.text = config.pre-commit.installationScript;
           commands = [
