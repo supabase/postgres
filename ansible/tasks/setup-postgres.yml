@@ -197,12 +197,16 @@
         passno: "2"
         state: mounted
 
-    - name: Initialize the database stage2 (NOT PG17 NOR PG17-OrioleDB)
+    - name: Set common initdb arguments
+      ansible.builtin.set_fact:
+        common_initdb_args: -o "--allow-group-access" -o "--username=supabase_admin" -o "--data-checksums"
+
+    - name: Initialize the database stage2 PG15
       when: psql_version not in ['psql_17', 'psql_orioledb-17']
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--data-checksums"
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb {{ common_initdb_args }}
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -212,12 +216,12 @@
       vars:
         ansible_command_timeout: 60
 
-    - name: Initialize the database stage2 (PG17)
+    - name: Initialize the database stage2 PG17
       when: psql_version == 'psql_17'
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=builtin" -o "--encoding=UTF-8" -o "--builtin-locale=C.UTF-8" -o "--data-checksums"
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb {{ common_initdb_args }} -o "--locale-provider=builtin" -o "--encoding=UTF-8" -o "--builtin-locale=C.UTF-8"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
@@ -227,12 +231,12 @@
       vars:
         ansible_command_timeout: 60
 
-    - name: Initialize the database stage2 (PG17-OrioleDB)
+    - name: Initialize the database stage2 OrioleDB
       when: psql_version == 'psql_orioledb-17'
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
-        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=icu" -o "--encoding=UTF-8" -o "--icu-locale=en_US.UTF-8" -o "--data-checksums"
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb {{ common_initdb_args }} -o "--locale-provider=icu" -o "--encoding=UTF-8" -o "--icu-locale=en_US.UTF-8"
       environment:
         LANG: en_US.UTF-8
         LANGUAGE: en_US.UTF-8
