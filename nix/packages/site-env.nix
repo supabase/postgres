@@ -49,6 +49,7 @@
             "$catalog" --region ap-southeast-1
 
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
+          [ "$(readlink -f /nix/var/nix/profiles/site)" = "$path" ] && exit 0
           nix-store -r --option stalled-download-timeout 120 "$path" >/dev/null
           nix-env --profile /nix/var/nix/profiles/site --set "$path"
         '';
