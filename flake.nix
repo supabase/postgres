@@ -31,6 +31,12 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    ubuntu-nix-sbom.url = "github:supabase/ubuntu-nix-sbom";
+    ubuntu-nix-sbom.inputs.nixpkgs.follows = "nixpkgs";
+    ubuntu-nix-sbom.inputs.flake-utils.follows = "flake-utils";
+    ubuntu-nix-sbom.inputs.flake-parts.follows = "flake-parts";
+    ubuntu-nix-sbom.inputs.treefmt-nix.follows = "treefmt-nix";
+    ubuntu-nix-sbom.inputs.git-hooks.follows = "git-hooks";
   };
 
   outputs =
