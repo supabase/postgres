@@ -205,7 +205,7 @@
     - name: Set default initdb arguments
       when: not is_psql_15
       ansible.builtin.set_fact:
-        initdb_pg_version_args: "-o --encoding=UTF-8 -o --locale-provider=icu -o --icu-locale=en_US.UTF-8"
+        initdb_pg_version_args: "-o --encoding=UTF-8 -o --locale-provider=builtin -o --builtin-locale=C.UTF-8"
 
     - name: Initialize the database stage2
       become: true
