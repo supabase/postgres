@@ -127,6 +127,26 @@ jobs:
             } >>"$GITHUB_ENV"
           fi
 
+      - name: "EXPERIMENT: diff supautils currently deployed vs nix build"
+        run: |
+          PG_MAJOR="${POSTGRES_MAJOR_VERSION#orioledb-}"
+          case "${{ matrix.target.arch }}" in
+            amd64) SHA256=734f022ea71b0f3aa23a0a09f214ede6268309fb93deb5217edd32f6298f0625 ;;
+            arm64) SHA256=70ad32781603e818e6cd8eabdd9902c2321ef821d0f058a3179c3ad822193c47 ;;
+          esac
+
+          aws s3 cp --only-show-errors --region ap-southeast-1 \
+            "s3://supabase-internal-artifacts/supautils/3.4.0/supautils-v3.4.0-${{ matrix.target.arch }}.tar.xz" \
+            /tmp/supautils-current.tar.xz
+          echo "$SHA256  /tmp/supautils-current.tar.xz" | sha256sum -c -
+          mkdir /tmp/supautils-current
+          tar -xJf /tmp/supautils-current.tar.xz -C /tmp/supautils-current
+
+          NIX_PATH=$(nix build --no-link --print-out-paths ".#legacyPackages.$(nix eval --impure --raw --expr 'builtins.currentSystem').psql_${POSTGRES_MAJOR_VERSION}.exts.supautils")
+
+          diff "/tmp/supautils-current/supautils-v3.4.0-pg${PG_MAJOR}-${{ matrix.target.arch }}-linux-gnu.so" "$NIX_PATH/lib/supautils.so"
+          exit 1
+
       - name: Create nix flake revision tarball
         run: |
           GIT_SHA=${{ steps.resolve-git-sha.outputs.sha }}
