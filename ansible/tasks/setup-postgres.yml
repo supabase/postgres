@@ -202,7 +202,7 @@
         common_initdb_args: -o "--allow-group-access" -o "--username=supabase_admin" -o "--data-checksums"
 
     - name: Initialize the database stage2 PG15
-      when: psql_version not in ['psql_17', 'psql_orioledb-17']
+      when: psql_version == 'psql_15'
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -216,8 +216,8 @@
       vars:
         ansible_command_timeout: 60
 
-    - name: Initialize the database stage2 PG17
-      when: psql_version == 'psql_17'
+    - name: Initialize the database stage2 PG17 (default)
+      when: psql_version not in ['psql_15', 'psql_orioledb-17']
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
