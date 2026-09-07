@@ -37,6 +37,7 @@
         runtimeInputs = [
           pkgs.awscli2
           pkgs.jq
+          pkgs.nix
         ];
         text = ''
           sha="''${1:?Usage: $0 <git-sha>}"
