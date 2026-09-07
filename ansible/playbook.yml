@@ -6,6 +6,12 @@
       ansible.builtin.set_fact:
         platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
 
+    - name: Set is_psql boolean facts
+      ansible.builtin.set_fact:
+        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
+        is_psql_17: "{{ psql_version in ['psql_17'] }}"
+        is_psql_15: "{{ psql_version in ['psql_15'] }}"
+
     - import_tasks: tasks/setup-system.yml
   vars_files:
     - ./vars.yml
