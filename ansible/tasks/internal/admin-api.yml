@@ -7,7 +7,7 @@
 - name: adminapi - system user
   ansible.builtin.user:
     name: adminapi
-    uid: 1006
+    uid: "{{ 1006 if not qemu else 1007 }}"
     group: adminapi
     groups: admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,root,systemd-journal,vector,wal-g
 
