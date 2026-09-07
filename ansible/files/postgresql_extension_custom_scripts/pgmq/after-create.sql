@@ -18,20 +18,19 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
-  -- detach and drop any existing drop_queue overloads
-  for r in
-    select pg_get_function_identity_arguments(p.oid) as args,
-           d.objid is not null as in_extension
-    from pg_proc p
-    left join pg_depend d on d.objid = p.oid and d.refobjid = extoid and d.deptype = 'e'
-    where p.pronamespace = 'pgmq'::regnamespace
-      and p.proname = 'drop_queue'
-  loop
-    if r.in_extension then
-      execute format('alter extension pgmq drop function pgmq.drop_queue(%s)', r.args);
-    end if;
-    execute format('drop function pgmq.drop_queue(%s)', r.args);
-  end loop;
+  -- detach and drop both historical drop_queue signatures (1.4.4 only ever
+  -- has (text, boolean); 1.5.0+ has both (text) and (text, boolean))
+  begin
+    alter extension pgmq drop function pgmq.drop_queue(text);
+  exception when others then null;
+  end;
+  begin
+    alter extension pgmq drop function pgmq.drop_queue(text, boolean);
+  exception when others then null;
+  end;
+
+  drop function if exists pgmq.drop_queue(text);
+  drop function if exists pgmq.drop_queue(text, boolean);
 
 -- Create and reattach the patched function
 CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN DEFAULT FALSE)
