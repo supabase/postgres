@@ -212,8 +212,23 @@
       vars:
         ansible_command_timeout: 60
 
-    - name: Initialize the database stage2 (PG17 OR PG17-OrioleDB)
-      when: psql_version in ['psql_17', 'psql_orioledb-17']
+    - name: Initialize the database stage2 (PG17)
+      when: psql_version == 'psql_17'
+      become: true
+      become_user: 'postgres'
+      ansible.builtin.command:
+        cmd: /usr/lib/postgresql/bin/pg_ctl -D /var/lib/postgresql/data initdb -o "--allow-group-access" -o "--username=supabase_admin" -o "--locale-provider=builtin" -o "--encoding=UTF-8" -o "--builtin-locale=C.UTF-8" -o "--data-checksums"
+      environment:
+        LANG: en_US.UTF-8
+        LANGUAGE: en_US.UTF-8
+        LC_ALL: en_US.UTF-8
+        LC_CTYPE: en_US.UTF-8
+        LOCALE_ARCHIVE: /usr/lib/locale/locale-archive
+      vars:
+        ansible_command_timeout: 60
+
+    - name: Initialize the database stage2 (PG17-OrioleDB)
+      when: psql_version == 'psql_orioledb-17'
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
