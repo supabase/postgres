@@ -36,7 +36,7 @@ let
       inherit pname version;
       buildInputs = [ postgresql ];
       src = fetchFromGitHub {
-        owner = "tembo-io";
+        owner = "pgmq";
         repo = pname;
         rev = "v${version}";
         inherit hash;
@@ -69,19 +69,6 @@ let
             echo "default_version = '${version}'"
             cat $out/share/postgresql/extension/${pname}--${version}.control
           } > $out/share/postgresql/extension/${pname}.control
-          cat >> sql/pgmq--1.5.0--1.5.1.sql <<EOF
-
-        CREATE FUNCTION pgmq._extension_exists(extension_name TEXT)
-        RETURNS BOOLEAN
-        LANGUAGE SQL
-        AS \$\$
-        SELECT EXISTS (
-            SELECT 1
-            FROM pg_extension
-            WHERE extname = extension_name
-        )
-        \$\$;
-        EOF
           cp sql/*.sql $out/share/postgresql/extension
         fi
 
@@ -90,7 +77,7 @@ let
 
       meta = with lib; {
         description = "A lightweight message queue. Like AWS SQS and RSMQ but on Postgres.";
-        homepage = "https://github.com/tembo-io/pgmq";
+        homepage = "https://github.com/pgmq/pgmq";
         inherit (postgresql.meta) platforms;
         license = licenses.postgresql;
       };
