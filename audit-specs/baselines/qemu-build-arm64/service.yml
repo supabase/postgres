@@ -109,7 +109,7 @@ service:
     enabled: true
     running: true
 
-  # Services falseshould not be running
+  # Services that should not be running
   kong:
     enabled: false
     running: false
