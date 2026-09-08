@@ -73,6 +73,9 @@ jobs:
         uses: ./.github/actions/nix-build-retry
         with:
           attr: .#${{ matrix.attr }}
+      - name: Check glibc floor
+        if: ${{ matrix.attr != '' }}
+        run: ./scripts/check-glibc-floor.sh "${{ matrix.attr }}"
 
   nix-build-checks-aarch64-linux:
     name: >-
@@ -192,6 +195,9 @@ jobs:
         uses: ./.github/actions/nix-build-retry
         with:
           attr: .#${{ matrix.attr }}
+      - name: Check glibc floor
+        if: ${{ matrix.attr != '' }}
+        run: ./scripts/check-glibc-floor.sh "${{ matrix.attr }}"
 
   nix-build-checks-x86_64-linux:
     name: >-
