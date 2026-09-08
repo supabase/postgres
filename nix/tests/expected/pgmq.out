@@ -183,7 +183,6 @@ order by
  pgmq        | detach_archive                   | postgres
  pgmq        | disable_notify_insert            | postgres
  pgmq        | drop_queue                       | postgres
- pgmq        | drop_queue                       | postgres
  pgmq        | enable_notify_insert             | postgres
  pgmq        | format_table_name                | postgres
  pgmq        | list_notify_insert_throttles     | postgres
@@ -234,7 +233,7 @@ order by
  pgmq        | validate_queue_name              | postgres
  pgmq        | validate_routing_key             | postgres
  pgmq        | validate_topic_pattern           | postgres
-(76 rows)
+(75 rows)
 
 -- assert search_path is preserved after after-create script is run
 show search_path;
