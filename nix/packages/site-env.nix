@@ -28,9 +28,37 @@
           lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
         );
       };
+
+      # Given a git sha, pg major, and system, fetches the site-env catalog entry
+      site-update = pkgs.writeShellApplication {
+        name = "site-update";
+        runtimeInputs = [
+          pkgs.awscli2
+          pkgs.jq
+          pkgs.nix
+        ];
+        text = ''
+          sha="''${1:?Usage: $0 <git-sha> <major> <system>}"
+          major="''${2:?Usage: $0 <git-sha> <major> <system>}"
+          system="''${3:?Usage: $0 <git-sha> <major> <system>}"
+
+          catalog="/tmp/site-env-catalog-''${sha}-''${major}-''${system}.json"
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-site-env_''${major}-''${system}.json" \
+            "$catalog" --region ap-southeast-1
+
+          path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
+          [[ "$(readlink -f /nix/var/nix/profiles/site)" == "$path" ]] && exit 0
+          nix-store --realise --option stalled-download-timeout 120 "$path" >/dev/null
+          nix-env --profile /nix/var/nix/profiles/site --set "$path"
+        '';
+      };
     in
     {
-      packages = siteEnvs;
-      legacyPackages = siteEnvs;
+      packages = siteEnvs // {
+        inherit site-update;
+      };
+      legacyPackages = siteEnvs // {
+        inherit site-update;
+      };
     };
 }

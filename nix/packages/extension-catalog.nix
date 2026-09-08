@@ -158,7 +158,7 @@
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
             profile="''${NIX_PROFILE:-/nix/var/nix/profiles/site-extensions}"
             readarray -t paths < <(site-extensions-resolve "$manifest")
-            nix-store -r --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
+            nix-store --realise --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
             nix-env --profile "$profile" --install "''${paths[@]}" --remove-all
           '';
         };
