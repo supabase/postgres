@@ -5,6 +5,7 @@
     ./postgres-env.nix
     ./site-env.nix
     ./extension-catalog.nix
+    ./nix-dl.nix
   ];
   perSystem =
     {
