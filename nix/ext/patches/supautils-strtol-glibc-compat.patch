@@ -1,24 +1,22 @@
 diff --git a/src/constrained_extensions.c b/src/constrained_extensions.c
-index 18e5aee..d5172a3 100644
+index 18e5aee..4eced0b 100644
 --- a/src/constrained_extensions.c
 +++ b/src/constrained_extensions.c
-@@ -9,6 +9,24 @@
+@@ -9,6 +9,22 @@
  #include "constrained_extensions.h"
  #include "utils.h"
  
-+// Force GLIBC_2.17 (atoi's inlined strtol, dlsym/dlvsym) for older-glibc hosts.
++// Modern glibc's inlined atoi() calls __isoc23_strtol@GLIBC_2.38 instead of
++// strtol. That symbol doesn't exist on older hosts, so resolve plain
++// strtol@GLIBC_2.17 (its only version node) directly instead.
 +#if defined(__linux__) && defined(__GLIBC__)
 +extern void *dlvsym(void *handle, const char *symbol, const char *version);
-+extern void *dlsym(void *handle, const char *symbol);
 +__asm__(".symver dlvsym,dlvsym@GLIBC_2.17");
-+__asm__(".symver dlsym,dlsym@GLIBC_2.17");
 +static int
 +_supautils_compat_atoi(const char *nptr)
 +{
 +    long (*fn)(const char *, char **, int) =
 +        (long (*)(const char *, char **, int)) dlvsym((void *) 0, "strtol", "GLIBC_2.17");
-+    if (!fn)
-+        fn = (long (*)(const char *, char **, int)) dlsym((void *) 0, "strtol");
 +    return fn ? (int) fn(nptr, NULL, 10) : 0;
 +}
 +#define atoi(a) _supautils_compat_atoi(a)
