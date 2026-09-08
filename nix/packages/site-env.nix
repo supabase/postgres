@@ -38,6 +38,7 @@
           pkgs.awscli2
           pkgs.jq
           pkgs.nix
+          self'.packages.nix-dl
         ];
         text = ''
           sha="''${1:?Usage: $0 <git-sha>}"
@@ -51,7 +52,7 @@
 
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
           [ "$(readlink -f /nix/var/nix/profiles/site)" = "$path" ] && exit 0
-          nix-store -r --option stalled-download-timeout 120 "$path" >/dev/null
+          nix-dl "$path"
           nix-env --profile /nix/var/nix/profiles/site --set "$path"
         '';
       };
