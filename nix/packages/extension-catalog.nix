@@ -152,13 +152,14 @@
           name = "site-extensions-update";
           runtimeInputs = [
             self'.packages.site-extensions-resolve
+            self'.packages.nix-dl
             pkgs.nix
           ];
           text = ''
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
             profile="''${NIX_PROFILE:-/nix/var/nix/profiles/site-extensions}"
             readarray -t paths < <(site-extensions-resolve "$manifest")
-            nix-store -r --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
+            nix-dl "''${paths[@]}"
             nix-env --profile "$profile" --install "''${paths[@]}" --remove-all
           '';
         };
