@@ -51,7 +51,6 @@
             "$catalog" --region ap-southeast-1
 
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
-          [ "$(readlink -f /nix/var/nix/profiles/site)" = "$path" ] && exit 0
           nix-dl "$path"
           nix-env --profile /nix/var/nix/profiles/site --set "$path"
         '';
