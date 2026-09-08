@@ -1,14 +1,12 @@
 diff --git a/src/constrained_extensions.c b/src/constrained_extensions.c
-index 18e5aee..4eced0b 100644
+index 18e5aee..64757d7 100644
 --- a/src/constrained_extensions.c
 +++ b/src/constrained_extensions.c
-@@ -9,6 +9,22 @@
+@@ -9,6 +9,20 @@
  #include "constrained_extensions.h"
  #include "utils.h"
  
-+// Modern glibc's inlined atoi() calls __isoc23_strtol@GLIBC_2.38 instead of
-+// strtol. That symbol doesn't exist on older hosts, so resolve plain
-+// strtol@GLIBC_2.17 (its only version node) directly instead.
++// atoi's inlined strtol resolves to __isoc23_strtol@GLIBC_2.38; pin strtol@GLIBC_2.17 instead.
 +#if defined(__linux__) && defined(__GLIBC__)
 +extern void *dlvsym(void *handle, const char *symbol, const char *version);
 +__asm__(".symver dlvsym,dlvsym@GLIBC_2.17");
