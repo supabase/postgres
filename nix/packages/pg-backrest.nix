@@ -1,6 +1,9 @@
 {
   fetchurl,
+  lib,
   pgbackrest,
+  stdenv,
+  systemdLibs,
 }:
 pgbackrest.overrideAttrs (
   finalAttrs: prevAttrs: {
@@ -18,6 +21,10 @@ pgbackrest.overrideAttrs (
 
     # 2.59.0 adds an optional libsystemd dependency for systemd notify support.
     # Nonexistent on darwin.
-    mesonFlags = (prevAttrs.mesonFlags or [ ]) ++ [ "-Dlibsystemd=disabled" ];
+    buildInputs =
+      (prevAttrs.buildInputs or [ ]) ++ lib.optional stdenv.hostPlatform.isLinux systemdLibs;
+    mesonFlags = (prevAttrs.mesonFlags or [ ]) ++ [
+      (lib.mesonEnable "libsystemd" stdenv.hostPlatform.isLinux)
+    ];
   }
 )
