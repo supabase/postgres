@@ -1,20 +1,27 @@
 diff --git a/src/constrained_extensions.c b/src/constrained_extensions.c
-index 18e5aee..64757d7 100644
+index 18e5aee..cdfb63f 100644
 --- a/src/constrained_extensions.c
 +++ b/src/constrained_extensions.c
-@@ -9,6 +9,20 @@
+@@ -9,6 +9,27 @@
  #include "constrained_extensions.h"
  #include "utils.h"
  
-+// atoi's inlined strtol resolves to __isoc23_strtol@GLIBC_2.38; pin strtol@GLIBC_2.17 instead.
-+#if defined(__linux__) && defined(__GLIBC__)
++// atoi's inlined strtol resolves to __isoc23_strtol@GLIBC_2.38; pin strtol's oldest
++// version node instead (2.2.5 on x86_64, 2.17 on aarch64, which glibc added support
++// for at 2.17, so it has no earlier tag).
++#if defined(__linux__) && defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__))
++#  if defined(__x86_64__)
++#    define SUPAUTILS_GLIBC_COMPAT_VER "GLIBC_2.2.5"
++#  else
++#    define SUPAUTILS_GLIBC_COMPAT_VER "GLIBC_2.17"
++#  endif
 +extern void *dlvsym(void *handle, const char *symbol, const char *version);
-+__asm__(".symver dlvsym,dlvsym@GLIBC_2.17");
++__asm__(".symver dlvsym,dlvsym@" SUPAUTILS_GLIBC_COMPAT_VER);
 +static int
 +_supautils_compat_atoi(const char *nptr)
 +{
 +    long (*fn)(const char *, char **, int) =
-+        (long (*)(const char *, char **, int)) dlvsym((void *) 0, "strtol", "GLIBC_2.17");
++        (long (*)(const char *, char **, int)) dlvsym((void *) 0, "strtol", SUPAUTILS_GLIBC_COMPAT_VER);
 +    return fn ? (int) fn(nptr, NULL, 10) : 0;
 +}
 +#define atoi(a) _supautils_compat_atoi(a)
