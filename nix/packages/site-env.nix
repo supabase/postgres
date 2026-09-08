@@ -29,9 +29,7 @@
         );
       };
 
-      # Given a git sha, fetches the site-env catalog entry for this instance's pg
-      # major and flips /nix/var/nix/profiles/site to it. Generic across majors —
-      # not part of siteEnvs itself, so it doesn't get reinstalled by its own flip.
+      # Given a git sha, fetches the site-env catalog entry
       site-env-update = pkgs.writeShellApplication {
         name = "site-env-update";
         runtimeInputs = [
