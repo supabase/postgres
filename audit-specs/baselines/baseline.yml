@@ -95982,7 +95982,7 @@ user:
     uid: 1000
     gid: 1003
     home: /home/pgbouncer
-    shell: /usr/sbin/nolign
+    shell: /usr/sbin/nologin
   polkitd:
     exists: true
     uid: 991

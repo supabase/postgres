@@ -240,6 +240,7 @@ buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

@@ -3,24 +3,27 @@
   block:
     # the old method of installing from debian creates this group, but we must create it explicitly
     # for the nix built version
-    - name: create ssl-cert and postgres groups
+    - name: create ssl-cert group # noqa: explicit-identity-id
       ansible.builtin.group:
-        name: "{{ group_item }}"
-        state: 'present'
-      loop:
-        - 'ssl-cert'
-        - 'postgres'
-      loop_control:
-        loop_var: 'group_item'
+        name: ssl-cert
+        gid: 1001
+        state: present
+
+    - name: create postgres group
+      ansible.builtin.group:
+        name: postgres
+        gid: 1002
+        state: present
 
     - name: create postgres user
       ansible.builtin.user:
+        name: 'postgres'
+        uid: 999
         comment: 'PostgreSQL administrator'
         create_home: false
         group: 'postgres'
         groups: 'ssl-cert'
         home: '/var/lib/postgresql'
-        name: 'postgres'
         shell: '/bin/bash'
         state: 'present'
         system: true
