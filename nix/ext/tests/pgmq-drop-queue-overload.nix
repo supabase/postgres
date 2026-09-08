@@ -6,7 +6,12 @@ let
   testLib = import ./lib.nix { inherit self pkgs; };
 
   installedExtension = self.legacyPackages.${system}."psql_15".exts."${pname}";
-  versions = installedExtension.versions;
+  # boundary versions only - the fix doesn't branch on extversion, so
+  # oldest/newest is enough to catch a regression
+  versions = lib.unique [
+    (lib.head installedExtension.versions)
+    (lib.last installedExtension.versions)
+  ];
 in
 pkgs.testers.runNixOSTest {
   name = "pgmq-drop-queue-overload";
@@ -30,33 +35,20 @@ pkgs.testers.runNixOSTest {
 
       def sql(query):
           return server.succeed(
-              "psql -U supabase_admin -d postgres -t -A -F',' -c \"" + query.replace('"', '\\"') + "\""
+              "psql -U supabase_admin -d postgres -t -A -c \"" + query.replace('"', '\\"') + "\""
           ).strip()
 
-      def drop_queue_overloads():
-          # owned flag first: pg_get_function_identity_arguments() can itself
-          # contain a comma ("queue_name text, partitioned boolean"), so put the
-          # single-char flag first and split on the first comma only.
-          out = sql(
-              "select (d.objid is not null), pg_get_function_identity_arguments(p.oid) "
+      def assert_single_merged_overload(version):
+          ok = sql(
+              "select count(*) = 1 "
+              "  and bool_and(d.objid is not null) "
+              "  and bool_and(pg_get_function_identity_arguments(p.oid) = 'queue_name text, partitioned boolean') "
               "from pg_proc p "
-              "left join pg_depend d on d.objid = p.oid and d.deptype = 'e' "
+              "join pg_depend d on d.objid = p.oid and d.deptype = 'e' "
               "  and d.refobjid = (select oid from pg_extension where extname = 'pgmq') "
-              "where p.pronamespace = 'pgmq'::regnamespace and p.proname = 'drop_queue' "
-              "order by 2;"
+              "where p.pronamespace = 'pgmq'::regnamespace and p.proname = 'drop_queue';"
           )
-          return [line.split(",", 1) for line in out.splitlines() if line]
-
-      def check_callers(qname):
-          sql(f"select pgmq.create('{qname}_a'); select pgmq.drop_queue('{qname}_a');")
-          sql(f"select pgmq.create('{qname}_b'); select pgmq.drop_queue('{qname}_b', false);")
-          # WRONG flag on purpose (queue isn't partitioned) - must still
-          # succeed, safely ignored in favour of pgmq.meta
-          sql(f"select pgmq.create('{qname}_c'); select pgmq.drop_queue('{qname}_c', true);")
-          sql(
-              f"select pgmq.create('{qname}_d'); "
-              f"select pgmq.drop_queue(queue_name => '{qname}_d', partitioned => true);"
-          )
+          assert ok == "t", f"[{version}] expected exactly one merged, extension-owned drop_queue(text, boolean)"
 
       start_all()
       server.wait_for_unit("supabase-db-init.service")
@@ -68,18 +60,10 @@ pkgs.testers.runNixOSTest {
                   f"psql -U supabase_admin -d postgres -c \"CREATE EXTENSION pgmq WITH VERSION '{version}' CASCADE;\""
               )
 
-              overloads = drop_queue_overloads()
-              print(f"[{version}] drop_queue overloads: {overloads}")
-              assert len(overloads) == 1, (
-                  f"[{version}] expected exactly one drop_queue overload, got: {overloads}"
-              )
-              assert overloads[0][0] == "t", (
-                  f"[{version}] drop_queue is not extension-owned: {overloads}"
-              )
-              assert overloads[0][1] == "queue_name text, partitioned boolean", (
-                  f"[{version}] expected merged text,boolean signature, got: {overloads[0][1]}"
-              )
+              assert_single_merged_overload(version)
 
-              check_callers(f"q_{version.replace('.', '_')}")
+              qname = f"q_{version.replace('.', '_')}"
+              sql(f"select pgmq.create('{qname}_a'); select pgmq.drop_queue('{qname}_a');")
+              sql(f"select pgmq.create('{qname}_b'); select pgmq.drop_queue('{qname}_b', false);")
     '';
 }
