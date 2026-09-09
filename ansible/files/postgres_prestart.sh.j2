@@ -13,7 +13,7 @@ handle_extension_versions() {
         return 0
     fi
 
-    if site-extensions-update "$extensions_file"; then
+    if update-site-extensions "$extensions_file"; then
         log "extensions: profile updated"
     else
         log "extensions: update failed, profile unchanged"
