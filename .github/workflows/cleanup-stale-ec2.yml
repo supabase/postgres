@@ -1,4 +1,4 @@
-name: Cleanup Stale EC2 Instances
+name: Cleanup Stale Build Resources
 
 on:
   schedule:
@@ -8,45 +8,29 @@ on:
 
 jobs:
   cleanup:
-    name: Delete stale packer EC2 instances
+    name: Delete stale build resources
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        region: [ap-southeast-1, us-east-1]
+        region:
+          - ap-southeast-1
+          - us-east-1
 
     permissions:
       id-token: write
       contents: read
 
     steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ matrix.region }}
 
-      - name: Find and terminate stale instances
+      - name: Cleanup stale AMI build resources
         env:
           AWS_MAX_ATTEMPTS: 6
-        run: |
-          cutoff=$(date -u -d '24 hours ago' '+%Y-%m-%dT%H:%M:%SZ')
-
-          echo "Looking for running packer builder instances launched before ${cutoff}..."
-
-          instance_ids=$(aws ec2 describe-instances \
-            --filters \
-              "Name=tag:appType,Values=postgres" \
-              "Name=tag:creator,Values=packer" \
-              "Name=instance-state-name,Values=running" \
-            --query "Reservations[].Instances[?LaunchTime<'${cutoff}'][].InstanceId" \
-            --output text)
-
-          if [ -z "$instance_ids" ]; then
-            echo "No stale instances found."
-            exit 0
-          fi
-
-          read -r -a instance_id_arr <<< "$instance_ids"
-          echo "Terminating instances: ${instance_id_arr[*]}"
-          aws ec2 terminate-instances --instance-ids "${instance_id_arr[@]}"
-          echo "Done."
+        run: ci/cleanup-stale-ami-build-resources.sh

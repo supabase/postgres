@@ -13,15 +13,9 @@ import requests
 from ec2instanceconnectcli.EC2InstanceConnectKey import EC2InstanceConnectKey
 from ec2instanceconnectcli.EC2InstanceConnectLogger import EC2InstanceConnectLogger
 
-# if EXECUTION_ID is not set, use a default value that includes the user and hostname
-RUN_ID = os.environ.get(
-    "EXECUTION_ID",
-    "unknown-ci-run-"
-    + os.environ.get("USER", "unknown-user")
-    + "@"
-    + socket.gethostname(),
-)
-AMI_ID = os.environ.get("AMI_ID")
+RUN_ID = os.environ["EXECUTION_ID"]
+AMI_ID = os.environ["AMI_ID"]
+
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
 ALTER DATABASE postgres SET "app.settings.jwt_exp" TO 3600;
