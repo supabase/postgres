@@ -63,13 +63,27 @@
           nix-env --profile "$profile_path" --set "$path"
         '';
       };
+
+      # Given a profile name and already-resolved store paths, installs them
+      # as an env into /nix/var/nix/profiles/<name>, replacing all existing ones.
+      update-profile-paths = pkgs.writeShellApplication {
+        name = "update-profile-paths";
+        runtimeInputs = [ pkgs.nix ];
+        text = ''
+          profile_name="''${1:?Usage: $0 <profile> <path>...}"
+          shift
+          [ "$#" -ge 1 ] || { echo "Usage: $0 <profile> <path>..." >&2; exit 1; }
+          nix-store --realise --option stalled-download-timeout 120 "$@" >/dev/null
+          nix-env --profile "/nix/var/nix/profiles/''${profile_name}" --install "$@" --remove-all
+        '';
+      };
     in
     {
       packages = siteEnvs // {
-        inherit update-profile;
+        inherit update-profile update-profile-paths;
       };
       legacyPackages = siteEnvs // {
-        inherit update-profile;
+        inherit update-profile update-profile-paths;
       };
     };
 }

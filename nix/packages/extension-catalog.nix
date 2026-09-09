@@ -110,8 +110,8 @@
             makeWrapper ${self'.packages.site-extensions-resolve}/bin/site-extensions-resolve \
               "$out/bin/site-extensions-resolve" \
               --set PG_EXTENSIONS_CATALOG "$out/share/pg-extensions-catalog.json"
-            makeWrapper ${self'.packages.site-extensions-update}/bin/site-extensions-update \
-              "$out/bin/site-extensions-update" \
+            makeWrapper ${self'.packages.update-site-extensions}/bin/update-site-extensions \
+              "$out/bin/update-site-extensions" \
               --set PG_EXTENSIONS_CATALOG "$out/share/pg-extensions-catalog.json"
           ''
         )
@@ -148,18 +148,16 @@
 
         # Takes manifest json as argument.
         # Downloads paths and installs them as an env into the profile, replacing all existing ones.
-        site-extensions-update = pkgs.writeShellApplication {
-          name = "site-extensions-update";
+        update-site-extensions = pkgs.writeShellApplication {
+          name = "update-site-extensions";
           runtimeInputs = [
             self'.packages.site-extensions-resolve
-            pkgs.nix
+            self'.packages.update-profile-paths
           ];
           text = ''
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
-            profile="''${NIX_PROFILE:-/nix/var/nix/profiles/site-extensions}"
             readarray -t paths < <(site-extensions-resolve "$manifest")
-            nix-store --realise --option stalled-download-timeout 120 "''${paths[@]}" >/dev/null
-            nix-env --profile "$profile" --install "''${paths[@]}" --remove-all
+            update-profile-paths site-extensions "''${paths[@]}"
           '';
         };
       };
