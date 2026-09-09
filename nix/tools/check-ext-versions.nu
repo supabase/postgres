@@ -1,11 +1,8 @@
 #!/usr/bin/env nu
-# Check nix/ext/versions.json extensions against upstream GitHub tags.
 
-# `exts` attribute name -> versions.json catalog key, where they differ.
 const ATTR_TO_CATALOG_KEY = {plan_filter: "pg_plan_filter"}
 
-# fetchurl-based source, or a cargoHash/pgrx vendor hash - not a plain GitHub
-# archive, so bump the version with Nix's standard placeholder hash instead.
+# not a plain GitHub archive (fetchurl, or a cargoHash/pgrx vendor hash)
 const NO_HASH_EXTS = ["pg_graphql" "wrappers" "postgis" "pgroonga"]
 const FAKE_HASH = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
@@ -23,8 +20,7 @@ def is-newer [current: list<int>, candidate: list<int>] {
   $candidate != $current and ([{v: $current}, {v: $candidate}] | sort-by v | last | get v) == $candidate
 }
 
-# repo-prefixed underscore tags (wal2json_2_6) are only trusted when the
-# prefix is the actual repo name, not any legacy tag scheme (REL0_9_1).
+# underscore tags (wal2json_2_6) only count when prefixed with the repo name
 def best-candidate [tags: list<string>, repo: string] {
   let prefixed = ("^" + $repo + "[-_](\\d+(?:[._]\\d+){1,3})$")
   let candidates = (
