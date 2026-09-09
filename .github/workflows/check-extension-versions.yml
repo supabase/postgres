@@ -29,9 +29,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update extension versions"
           title: "chore: update extension versions"
-          body: Automated weekly check of `nix/ext/versions.json` against upstream GitHub tags.
+          body: |
+            DO NOT MERGE
+
+            Automated weekly check of `nix/ext/versions.json` against upstream GitHub tags.
+          draft: true
           branch: auto-update-extension-versions
           base: develop
           labels: |
             dependencies
             automated
+            don't merge
