@@ -7,13 +7,13 @@ const NO_HASH_EXTS = ["pg_graphql" "wrappers" "postgis" "pgroonga"]
 const FAKE_HASH = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 def run [command: list<string>] {
-  let r = (run-external ...$command | complete)
-  if $r.exit_code == 0 { $r.stdout | str trim } else { null }
+  let result = (run-external ...$command | complete)
+  if $result.exit_code == 0 { $result.stdout | str trim } else { null }
 }
 
-def parse-version [s: string] {
-  let m = ($s | parse --regex '^(\d+(?:\.\d+)*)')
-  if ($m | is-empty) { [0] } else { $m.0.capture0 | split row "." | each { into int } }
+def parse-version [text: string] {
+  let match = ($text | parse --regex '^(\d+(?:\.\d+)*)')
+  if ($match | is-empty) { [0] } else { $match.0.capture0 | split row "." | each { into int } }
 }
 
 def is-newer [current: list<int>, candidate: list<int>] {
@@ -25,10 +25,10 @@ def best-candidate [tags: list<string>, repo: string] {
   let candidates = (
     $tags | each { |tag|
       let dtag = ($tag | str downcase)
-      let m = ($dtag | parse --regex '^(?:v|ver_)?(\d+(?:\.\d+){0,3})$')
-      let m = if ($m | is-empty) { $dtag | parse --regex $prefixed } else { $m }
-      if ($m | is-empty) { null } else {
-        {v: (parse-version ($m.0.capture0 | str replace --all "_" ".")), tag: $tag}
+      let match = ($dtag | parse --regex '^(?:v|ver_)?(\d+(?:\.\d+){0,3})$')
+      let match = if ($match | is-empty) { $dtag | parse --regex $prefixed } else { $match }
+      if ($match | is-empty) { null } else {
+        {v: (parse-version ($match.0.capture0 | str replace --all "_" ".")), tag: $tag}
       }
     } | compact
   )
