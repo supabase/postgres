@@ -20,7 +20,6 @@ def is-newer [current: list<int>, candidate: list<int>] {
   $candidate != $current and ([{v: $current}, {v: $candidate}] | sort-by v | last | get v) == $candidate
 }
 
-# underscore tags (wal2json_2_6) only count when prefixed with the repo name
 def best-candidate [tags: list<string>, repo: string] {
   let prefixed = ("^" + $repo + "[-_](\\d+(?:[._]\\d+){1,3})$")
   let candidates = (
