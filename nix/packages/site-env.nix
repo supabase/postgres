@@ -41,12 +41,12 @@
         ];
         text = ''
           profile_name="''${1:?Usage: $0 <profile> <git-sha>}"
-          sha="''${2:?Usage: $0 <profile> <git-sha>}"
           system="$(uname -m)-linux"
           profile_path="/nix/var/nix/profiles/''${profile_name}"
 
           catalog="''${UPDATE_PROFILE_CATALOG:-}"
           if [[ -z "$catalog" ]]; then
+            sha="''${2:?Usage: $0 <profile> <git-sha>}"
             catalog="/tmp/''${profile_name}-catalog-''${sha}-''${system}.json"
             aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${profile_name}-''${system}.json" \
               "$catalog" --region ap-southeast-1
