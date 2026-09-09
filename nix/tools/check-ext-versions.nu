@@ -46,8 +46,10 @@ mut changed = false
 let exts_expr = "exts: builtins.listToAttrs (map (n: { name = n; value = exts.${n}.github; }) (builtins.filter (n: exts.${n} ? github) (builtins.attrNames exts)))"
 let exts_json = (run ["nix" "eval" "--json" $".#legacyPackages.($system).psql_15.exts" "--apply" $exts_expr])
 if $exts_json == null { error make {msg: "nix eval of extension metadata failed"} }
+let exts = ($exts_json | from json | transpose attr repo_slug)
+if ($exts | is-empty) { error make {msg: "no extensions with github metadata found"} }
 
-for it in ($exts_json | from json | transpose attr repo_slug) {
+for it in $exts {
   let ext = ($ATTR_TO_CATALOG_KEY | get -o $it.attr | default $it.attr)
   if not ($ext in ($versions | columns)) { continue }
   let parts = ($it.repo_slug | split row "/")
