@@ -106,6 +106,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    github = "eulerto/wal2json";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

@@ -113,6 +113,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    github = "pramsey/pgsql-http";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

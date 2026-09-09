@@ -111,6 +111,7 @@ buildEnv {
   '';
 
   passthru = {
+    github = "aws/pg_tle";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

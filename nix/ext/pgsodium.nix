@@ -112,6 +112,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    github = "michelp/pgsodium";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

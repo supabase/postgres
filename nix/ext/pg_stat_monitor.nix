@@ -110,6 +110,7 @@ buildEnv {
   '';
 
   passthru = {
+    github = "percona/pg_stat_monitor";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

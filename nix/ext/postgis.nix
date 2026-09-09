@@ -256,6 +256,7 @@ in
   '';
 
   passthru = {
+    github = "postgis/postgis";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

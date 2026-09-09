@@ -184,6 +184,7 @@ in
   '';
 
   passthru = {
+    github = "supabase/pg_jsonschema";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

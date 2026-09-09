@@ -366,6 +366,7 @@ in
     }
   '';
   passthru = {
+    github = "supabase/wrappers";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     pname = "${pname}";

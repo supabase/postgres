@@ -152,6 +152,7 @@ buildEnv {
   ];
 
   passthru = {
+    github = "timescale/timescaledb";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;

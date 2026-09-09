@@ -86,6 +86,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    github = "pgexperts/pg_plan_filter";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

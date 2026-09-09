@@ -106,6 +106,7 @@ buildEnv {
   '';
 
   passthru = {
+    github = "iCyberon/pg_hashids";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;
