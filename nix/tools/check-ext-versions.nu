@@ -70,19 +70,12 @@ for it in ($exts_json | from json | transpose attr repo_slug) {
   } else {
     let url = $"https://github.com/($owner)/($repo)/archive/($candidate.tag).tar.gz"
     let sha256 = (run ["nix-prefetch-url" "--type" "sha256" "--unpack" $url])
-    if $sha256 == null { null } else {
-      run ["nix" "hash" "to-sri" "--type" "sha256" ($sha256 | lines | last)]
-    }
+    if $sha256 == null { null } else { run ["nix" "hash" "to-sri" "--type" "sha256" ($sha256 | lines | last)] }
   }
   if $sri_hash == null { print $"skip ($ext): prefetch failed for ($candidate.tag)"; continue }
 
   let version_str = ($candidate.v | each { into string } | str join ".")
-  let entry = {
-    postgresql: ($entries | get $current_key | get postgresql)
-    revision: $candidate.tag
-    rev: $candidate.tag
-    hash: $sri_hash
-  }
+  let entry = {postgresql: ($entries | get $current_key | get postgresql), revision: $candidate.tag, rev: $candidate.tag, hash: $sri_hash}
   $versions = ($versions | upsert $ext ($entries | upsert $version_str $entry))
   $changed = true
   print $"updated ($ext) -> ($version_str) \(($candidate.tag)\)"
