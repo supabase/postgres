@@ -1,5 +1,5 @@
 # These are envs (package sets per pg major version) deployed to instances
-# at /nix/var/nix/profiles/site-<major> and updated regularly.
+# at /nix/var/nix/profiles/<env-name> and updated regularly.
 {
   perSystem =
     {
@@ -29,7 +29,9 @@
         );
       };
 
-      # Given a git sha and pg major, fetches the site-env catalog entry
+      # Given a git sha and a named env (e.g. site-env-17, postgres-env-17),
+      # fetches its catalog entry and flips /nix/var/nix/profiles/<env> to it.
+      # Generic across any single-package catalog entry named <env>-<system>.json.
       site-update = pkgs.writeShellApplication {
         name = "site-update";
         runtimeInputs = [
@@ -38,21 +40,21 @@
           pkgs.nix
         ];
         text = ''
-          sha="''${1:?Usage: $0 <git-sha> <major>}"
-          major="''${2:?Usage: $0 <git-sha> <major>}"
+          sha="''${1:?Usage: $0 <git-sha> <env>}"
+          env="''${2:?Usage: $0 <git-sha> <env>}"
           system="$(uname -m)-linux"
-          profile="/nix/var/nix/profiles/site-''${major}"
+          profile="/nix/var/nix/profiles/''${env}"
 
           catalog="''${SITE_UPDATE_CATALOG:-}"
           if [[ -z "$catalog" ]]; then
-            catalog="/tmp/site-env-catalog-''${sha}-''${major}-''${system}.json"
-            aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-site-env_''${major}-''${system}.json" \
+            catalog="/tmp/''${env}-catalog-''${sha}-''${system}.json"
+            aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${env}-''${system}.json" \
               "$catalog" --region ap-southeast-1
           fi
 
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
-          [[ "$(basename "$path")" == *"-site-env-''${major}" ]] || {
-            echo "error: resolved path $path is not tagged for major $major" >&2
+          [[ "$(basename "$path")" == *"-''${env}" ]] || {
+            echo "error: resolved path $path is not tagged for env $env" >&2
             exit 1
           }
 
