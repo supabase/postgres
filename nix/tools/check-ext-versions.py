@@ -15,20 +15,23 @@ VERSIONS_FILE = os.path.join(REPO_ROOT, "nix/ext/versions.json")
 # `exts` attribute name -> versions.json catalog key, where they differ.
 ATTR_TO_CATALOG_KEY = {"plan_filter": "pg_plan_filter"}
 
-# Extensions where we don't attempt a hash bump: fetchurl-based source, or a
-# cargoHash/pgrx vendor hash that needs an actual build to compute. Version
-# gets bumped anyway with a placeholder hash for a human to fill in.
+# fetchurl-based source, or a cargoHash/pgrx vendor hash - not a plain GitHub
+# archive, so bump the version with Nix's standard placeholder hash instead.
 NO_HASH_EXTS = {"pg_graphql", "wrappers", "postgis", "pgroonga"}
+FAKE_HASH = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 CLEAN_TAG_RE = re.compile(r"^(?:v|ver_)?(\d+(?:\.\d+){0,3})$")
 LEADING_VERSION_RE = re.compile(r"^(\d+(?:\.\d+)*)")
 
 
+def run(*args: str) -> str | None:
+    result = subprocess.run(args, capture_output=True, text=True, cwd=REPO_ROOT)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def parse_version(s: str) -> tuple[int, ...]:
     m = LEADING_VERSION_RE.match(s)
-    if not m:
-        return (0,)
-    return tuple(int(p) for p in m.group(1).split("."))
+    return tuple(int(p) for p in m.group(1).split(".")) if m else (0,)
 
 
 def best_candidate(tags: list[str], repo: str) -> tuple[tuple[int, ...], str] | None:
@@ -37,14 +40,12 @@ def best_candidate(tags: list[str], repo: str) -> tuple[tuple[int, ...], str] | 
     prefixed_re = re.compile(
         rf"^{re.escape(repo)}[-_](\d+(?:[._]\d+){{1,3}})$", re.IGNORECASE
     )
-    candidates: list[tuple[tuple[int, ...], str]] = []
+    versions = []
     for tag in tags:
         m = CLEAN_TAG_RE.match(tag) or prefixed_re.match(tag)
-        if not m:
-            continue
-        version_str = m.group(1).replace("_", ".")
-        candidates.append((parse_version(version_str), tag))
-    return max(candidates, default=None)
+        if m:
+            versions.append((parse_version(m.group(1).replace("_", ".")), tag))
+    return max(versions, default=None)
 
 
 def github_metadata(system: str) -> dict[str, str]:
@@ -52,60 +53,34 @@ def github_metadata(system: str) -> dict[str, str]:
         "exts: builtins.listToAttrs (map (n: { name = n; value = exts.${n}.github; })"
         " (builtins.filter (n: exts.${n} ? github) (builtins.attrNames exts)))"
     )
-    out = subprocess.run(
-        [
-            "nix",
-            "eval",
-            "--json",
-            f".#legacyPackages.{system}.psql_15.exts",
-            "--apply",
-            expr,
-        ],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
+    out = run(
+        "nix",
+        "eval",
+        "--json",
+        f".#legacyPackages.{system}.psql_15.exts",
+        "--apply",
+        expr,
+    )
+    assert out, "nix eval of extension metadata failed"
     return json.loads(out)
 
 
 def fetch_tags(owner: str, repo: str) -> list[str] | None:
-    result = subprocess.run(
-        ["gh", "api", f"repos/{owner}/{repo}/tags", "--paginate"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        return None
-    return [t["name"] for t in json.loads(result.stdout)]
+    out = run("gh", "api", f"repos/{owner}/{repo}/tags", "--paginate")
+    return [t["name"] for t in json.loads(out)] if out is not None else None
 
 
 def prefetch_hash(owner: str, repo: str, tag: str) -> str | None:
     url = f"https://github.com/{owner}/{repo}/archive/{tag}.tar.gz"
-    prefetch = subprocess.run(
-        ["nix-prefetch-url", "--type", "sha256", "--unpack", url],
-        capture_output=True,
-        text=True,
-    )
-    if prefetch.returncode != 0:
+    sha256 = run("nix-prefetch-url", "--type", "sha256", "--unpack", url)
+    if sha256 is None:
         return None
-    sha256 = prefetch.stdout.strip().splitlines()[-1]
-    sri = subprocess.run(
-        ["nix", "hash", "to-sri", "--type", "sha256", sha256],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return sri.stdout.strip()
+    return run("nix", "hash", "to-sri", "--type", "sha256", sha256.splitlines()[-1])
 
 
 def main() -> None:
-    system = subprocess.run(
-        ["nix", "eval", "--impure", "--raw", "--expr", "builtins.currentSystem"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
+    system = run("nix", "eval", "--impure", "--raw", "--expr", "builtins.currentSystem")
+    assert system, "nix eval of builtins.currentSystem failed"
 
     with open(VERSIONS_FILE) as f:
         versions = json.load(f)
@@ -134,14 +109,14 @@ def main() -> None:
             continue
 
         if ext in NO_HASH_EXTS:
-            sri_hash = ""
+            sri_hash = FAKE_HASH
         else:
             sri_hash = prefetch_hash(owner, repo, tag)
             if sri_hash is None:
                 print(f"skip {ext}: prefetch failed for {tag}")
                 continue
 
-        version_str = ".".join(str(p) for p in candidate_version)
+        version_str = ".".join(map(str, candidate_version))
         entries[version_str] = {
             "postgresql": entries[current_key]["postgresql"],
             "revision": tag,
@@ -149,8 +124,7 @@ def main() -> None:
             "hash": sri_hash,
         }
         changed = True
-        suffix = " [no hash, needs manual fill-in]" if not sri_hash else ""
-        print(f"updated {ext} -> {version_str} ({tag}){suffix}")
+        print(f"updated {ext} -> {version_str} ({tag})")
 
     if changed:
         with open(VERSIONS_FILE, "w") as f:
