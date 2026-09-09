@@ -36,68 +36,59 @@ def best-candidate [tags: list<string>, repo: string] {
   if ($candidates | is-empty) { null } else { $candidates | sort-by v | last }
 }
 
-def github-metadata [system: string] {
-  let expr = "exts: builtins.listToAttrs (map (n: { name = n; value = exts.${n}.github; }) (builtins.filter (n: exts.${n} ? github) (builtins.attrNames exts)))"
-  let out = (run ["nix" "eval" "--json" $".#legacyPackages.($system).psql_15.exts" "--apply" $expr])
-  if $out == null { error make {msg: "nix eval of extension metadata failed"} }
-  $out | from json
-}
+let system = (run ["nix" "eval" "--impure" "--raw" "--expr" "builtins.currentSystem"])
+if $system == null { error make {msg: "nix eval of builtins.currentSystem failed"} }
 
-def fetch-tags [owner: string, repo: string] {
-  let out = (run ["gh" "api" $"repos/($owner)/($repo)/tags" "--paginate"])
-  if $out == null { null } else { $out | from json | get name }
-}
+let repo_root = (run ["git" "rev-parse" "--show-toplevel"])
+let versions_file = ($repo_root | path join "nix/ext/versions.json")
+mut versions = (open $versions_file)
+mut changed = false
 
-def prefetch-hash [owner: string, repo: string, tag: string] {
-  let url = $"https://github.com/($owner)/($repo)/archive/($tag).tar.gz"
-  let sha256 = (run ["nix-prefetch-url" "--type" "sha256" "--unpack" $url])
-  if $sha256 == null { null } else {
-    run ["nix" "hash" "to-sri" "--type" "sha256" ($sha256 | lines | last)]
-  }
-}
+let exts_expr = "exts: builtins.listToAttrs (map (n: { name = n; value = exts.${n}.github; }) (builtins.filter (n: exts.${n} ? github) (builtins.attrNames exts)))"
+let exts_json = (run ["nix" "eval" "--json" $".#legacyPackages.($system).psql_15.exts" "--apply" $exts_expr])
+if $exts_json == null { error make {msg: "nix eval of extension metadata failed"} }
 
-def main [] {
-  let system = (run ["nix" "eval" "--impure" "--raw" "--expr" "builtins.currentSystem"])
-  if $system == null { error make {msg: "nix eval of builtins.currentSystem failed"} }
+for it in ($exts_json | from json | transpose attr repo_slug) {
+  let ext = ($ATTR_TO_CATALOG_KEY | get -o $it.attr | default $it.attr)
+  if not ($ext in ($versions | columns)) { continue }
+  let parts = ($it.repo_slug | split row "/")
+  let owner = $parts.0
+  let repo = $parts.1
 
-  let repo_root = (run ["git" "rev-parse" "--show-toplevel"])
-  let versions_file = ($repo_root | path join "nix/ext/versions.json")
-  mut versions = (open $versions_file)
-  mut changed = false
+  let tags_json = (run ["gh" "api" $"repos/($owner)/($repo)/tags" "--paginate"])
+  if $tags_json == null { print $"skip ($ext): tags lookup failed"; continue }
+  let tags = ($tags_json | from json | get name)
 
-  for it in (github-metadata $system | transpose attr repo_slug) {
-    let ext = ($ATTR_TO_CATALOG_KEY | get -o $it.attr | default $it.attr)
-    if not ($ext in ($versions | columns)) { continue }
-    let parts = ($it.repo_slug | split row "/")
-    let owner = $parts.0
-    let repo = $parts.1
+  let candidate = (best-candidate $tags $repo)
+  if $candidate == null { print $"skip ($ext): no clean version tags"; continue }
 
-    let tags = (fetch-tags $owner $repo)
-    if $tags == null { print $"skip ($ext): tags lookup failed"; continue }
+  let entries = ($versions | get $ext)
+  let current_key = ($entries | columns | each { |k| {k: $k, v: (parse-version $k)} } | sort-by v | last | get k)
+  if not (is-newer (parse-version $current_key) $candidate.v) { continue }
 
-    let candidate = (best-candidate $tags $repo)
-    if $candidate == null { print $"skip ($ext): no clean version tags"; continue }
-
-    let entries = ($versions | get $ext)
-    let current_key = ($entries | columns | each { |k| {k: $k, v: (parse-version $k)} } | sort-by v | last | get k)
-    if not (is-newer (parse-version $current_key) $candidate.v) { continue }
-
-    let sri_hash = if $ext in $NO_HASH_EXTS { $FAKE_HASH } else { prefetch-hash $owner $repo $candidate.tag }
-    if $sri_hash == null { print $"skip ($ext): prefetch failed for ($candidate.tag)"; continue }
-
-    let version_str = ($candidate.v | each { into string } | str join ".")
-    let entry = {
-      postgresql: ($entries | get $current_key | get postgresql)
-      revision: $candidate.tag
-      rev: $candidate.tag
-      hash: $sri_hash
+  let sri_hash = if $ext in $NO_HASH_EXTS {
+    $FAKE_HASH
+  } else {
+    let url = $"https://github.com/($owner)/($repo)/archive/($candidate.tag).tar.gz"
+    let sha256 = (run ["nix-prefetch-url" "--type" "sha256" "--unpack" $url])
+    if $sha256 == null { null } else {
+      run ["nix" "hash" "to-sri" "--type" "sha256" ($sha256 | lines | last)]
     }
-    $versions = ($versions | upsert $ext ($entries | upsert $version_str $entry))
-    $changed = true
-    print $"updated ($ext) -> ($version_str) \(($candidate.tag)\)"
   }
+  if $sri_hash == null { print $"skip ($ext): prefetch failed for ($candidate.tag)"; continue }
 
-  if $changed {
-    $versions | to json --indent 2 | $"($in)\n" | save -f $versions_file
+  let version_str = ($candidate.v | each { into string } | str join ".")
+  let entry = {
+    postgresql: ($entries | get $current_key | get postgresql)
+    revision: $candidate.tag
+    rev: $candidate.tag
+    hash: $sri_hash
   }
+  $versions = ($versions | upsert $ext ($entries | upsert $version_str $entry))
+  $changed = true
+  print $"updated ($ext) -> ($version_str) \(($candidate.tag)\)"
+}
+
+if $changed {
+  $versions | to json --indent 2 | $"($in)\n" | save -f $versions_file
 }
