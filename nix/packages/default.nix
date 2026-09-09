@@ -101,6 +101,7 @@
             inherit pkgs;
             name = "start-postgres-server";
             pgroonga = self'.legacyPackages."psql_${activeVersion}".exts.pgroonga;
+            version = activeVersion;
           };
           switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;

@@ -48,7 +48,18 @@ let
       mkdir -p $out/conf.d $out/extension-custom-scripts
 
       # Copy ansible config files (make writable so we can append/modify later)
-      cp ${ansibleConfigDir}/pg_hba.conf.j2 $out/pg_hba.conf
+      ${
+        if majorVersion == "15" then
+          ''
+            cp ${ansibleConfigDir}/pg_hba.conf_15.j2 $out/pg_hba.conf
+          ''
+        else
+          ''
+            cp ${ansibleConfigDir}/pg_hba.conf.j2 $out/pg_hba.conf
+            cp ${ansibleConfigDir}/pg_hba_public.conf.j2 $out/pg_hba_public.conf
+            cp ${ansibleConfigDir}/pg_hba_users_public.conf.j2 $out/pg_hba_users_public.conf
+          ''
+      }
       cp ${ansibleConfigDir}/pg_ident.conf.j2 $out/pg_ident.conf
       chmod u+w $out/pg_hba.conf $out/pg_ident.conf
 

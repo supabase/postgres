@@ -163,6 +163,7 @@
                   PGSODIUM_GETKEY = "${getkey-script}/bin/pgsodium-getkey";
                   PGSQL_DEFAULT_PORT = pgPort;
                 };
+                version = majorVersion;
               };
 
               getVersionArg =

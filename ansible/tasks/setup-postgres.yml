@@ -82,14 +82,13 @@
       loop_control:
         loop_var: 'pg_config_item'
 
-    - name: import postgresql.conf, pg_hba.conf, and pg_ident.conf
+    - name: import postgresql.conf and pg_ident.conf
       ansible.builtin.template:
         dest: '/etc/postgresql/{{ pg_config_item }}'
         group: 'postgres'
         src: 'files/postgresql_config/{{ pg_config_item }}.j2'
       loop:
         - 'postgresql.conf'
-        - 'pg_hba.conf'
         - 'pg_ident.conf'
       loop_control:
         loop_var: 'pg_config_item'
@@ -112,7 +111,7 @@
       block:
         - name: Check if psql_version is psql_15
           ansible.builtin.set_fact:
-            is_psql_15: "{{ psql_version in ['psql_15'] }}"
+            is_psql_15: "{{ psql_version == 'psql_15' or postgresql_major | int == 15 }}"
 
         - name: create placeholder pam config
           when: not is_psql_15
@@ -122,6 +121,36 @@
             owner: postgres
             group: postgres
             mode: 0664
+
+        - name: import pg_hba.conf psql_15
+          ansible.builtin.template:
+            dest: /etc/postgresql/pg_hba.conf
+            src: files/postgresql_config/pg_hba.conf_15.j2
+            group: postgres
+          when: is_psql_15
+
+        - name: create pg_hba.conf with includes
+          when: not is_psql_15
+          block:
+            - name: import pg_hba.conf
+              ansible.builtin.template:
+                dest: /etc/postgresql/pg_hba.conf
+                src: files/postgresql_config/pg_hba.conf.j2
+                group: postgres
+
+            # Add pg_hba_public.conf
+            - name: import pg_hba_public.conf
+              ansible.builtin.template:
+                dest: /etc/postgresql/pg_hba_public.conf
+                src: files/postgresql_config/pg_hba_public.conf.j2
+                group: postgres
+
+            # Add pg_hba_users_public.conf
+            - name: import pg_hba_users_public.conf
+              ansible.builtin.template:
+                dest: /etc/postgresql/pg_hba_users_public.conf
+                src: files/postgresql_config/pg_hba_users_public.conf.j2
+                group: postgres
 
     - name: Create directory on data volume
       ansible.builtin.file:

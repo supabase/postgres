@@ -56,6 +56,7 @@ release_matrix_legacy:
     target: production
     pg_version: "17"
     release_key: postgresorioledb-17
+
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
