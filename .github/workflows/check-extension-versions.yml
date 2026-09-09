@@ -21,7 +21,7 @@ jobs:
       - name: Check for new extension versions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: nix run nixpkgs#nushell -- nix/tools/check-ext-versions.nu
+        run: nix run .#check-ext-versions
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
