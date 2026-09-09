@@ -184,7 +184,6 @@ in
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
   passthru = {
-    github = "supabase/pg_graphql";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

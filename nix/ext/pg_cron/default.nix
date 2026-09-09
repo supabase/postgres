@@ -139,7 +139,6 @@ buildEnv {
   };
 
   passthru = {
-    github = "citusdata/pg_cron";
     perVersion = lib.mapAttrs (name: value: build name value) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

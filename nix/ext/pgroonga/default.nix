@@ -181,7 +181,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "pgroonga/pgroonga";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

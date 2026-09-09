@@ -96,7 +96,6 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    github = "pgvector/pgvector";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

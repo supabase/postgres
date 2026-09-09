@@ -238,7 +238,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "plv8/plv8";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

@@ -145,7 +145,6 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    github = "supabase/pg_net";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

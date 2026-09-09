@@ -82,7 +82,6 @@ buildEnv {
   pathsToLink = [ "/share/postgresql/extension" ];
 
   passthru = {
-    github = "michelp/pgjwt";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

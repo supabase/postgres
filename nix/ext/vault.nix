@@ -99,7 +99,6 @@ pkgs.buildEnv {
   '';
 
   passthru = {
-    github = "supabase/vault";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

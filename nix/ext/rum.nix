@@ -107,7 +107,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "postgrespro/rum";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

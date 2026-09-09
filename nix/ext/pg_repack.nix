@@ -140,7 +140,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "reorg/pg_repack";
     perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

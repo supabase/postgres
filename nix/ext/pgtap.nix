@@ -134,7 +134,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "theory/pgtap";
     inherit versions numberOfVersions;
     pname = "${pname}-all";
     version =

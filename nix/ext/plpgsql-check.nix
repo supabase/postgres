@@ -139,7 +139,6 @@ buildEnv {
   '';
 
   passthru = {
-    github = "okbob/plpgsql_check";
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;
