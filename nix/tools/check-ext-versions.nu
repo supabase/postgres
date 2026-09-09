@@ -1,34 +1,22 @@
 #!/usr/bin/env nu
 
-const REPOS = {
-  http: {repo: "pramsey/pgsql-http"}
-  hypopg: {repo: "HypoPG/hypopg"}
-  index_advisor: {repo: "supabase/index_advisor"}
-  pg_cron: {repo: "citusdata/pg_cron"}
+# Extensions whose repo can't be read off the derivation's own src (fetchurl
+# instead of fetchFromGitHub, or the package doesn't expose a per-version
+# derivation at all). noHash means the real fetcher isn't a plain GitHub
+# archive, so skip the hash prefetch and use a placeholder instead.
+const OVERRIDES = {
   pg_graphql: {repo: "supabase/pg_graphql", noHash: true}
   pg_hashids: {repo: "iCyberon/pg_hashids"}
   pg_jsonschema: {repo: "supabase/pg_jsonschema"}
-  pg_net: {repo: "supabase/pg_net"}
-  pg_partman: {repo: "pgpartman/pg_partman"}
   pg_plan_filter: {repo: "pgexperts/pg_plan_filter"}
-  pg_repack: {repo: "reorg/pg_repack"}
   pg_stat_monitor: {repo: "percona/pg_stat_monitor"}
-  pg_tle: {repo: "aws/pg_tle"}
-  pgaudit: {repo: "pgaudit/pgaudit"}
   pgjwt: {repo: "michelp/pgjwt"}
-  pgmq: {repo: "pgmq/pgmq"}
   pgroonga: {repo: "pgroonga/pgroonga", noHash: true}
-  pgrouting: {repo: "pgRouting/pgrouting"}
-  pgsodium: {repo: "michelp/pgsodium"}
   pgtap: {repo: "theory/pgtap"}
   plpgsql_check: {repo: "okbob/plpgsql_check"}
-  plv8: {repo: "plv8/plv8"}
   postgis: {repo: "postgis/postgis", noHash: true}
   rum: {repo: "postgrespro/rum"}
-  safeupdate: {repo: "eradman/pg-safeupdate"}
-  supabase_vault: {repo: "supabase/vault"}
   timescaledb: {repo: "timescale/timescaledb"}
-  vector: {repo: "pgvector/pgvector"}
   wal2json: {repo: "eulerto/wal2json"}
   wrappers: {repo: "supabase/wrappers", noHash: true}
 }
@@ -64,15 +52,28 @@ def best-candidate [tags: list<string>, repo: string] {
   if ($candidates | is-empty) { null } else { $candidates | sort-by v | last }
 }
 
+let system = (run ["nix" "eval" "--impure" "--raw" "--expr" "builtins.currentSystem"])
+if $system == null { error make {msg: "nix eval of builtins.currentSystem failed"} }
+
+# reads owner/repo straight off each package's own fetchFromGitHub src, where
+# it's exposed as a per-version derivation - null where it isn't (see OVERRIDES)
+let derive_expr = "exts: builtins.listToAttrs (map (n: let pkg = exts.${n}; pv = if pkg ? perVersion then pkg.perVersion else { }; keys = builtins.attrNames pv; entry = if keys != [ ] then pv.${builtins.head keys} else { }; src = if entry ? src then entry.src else { }; in { name = n; value = if (src ? owner) && (src ? repo) then src.owner + \"/\" + src.repo else null; }) (builtins.attrNames exts))"
+let derived_json = (run ["nix" "eval" "--json" $".#legacyPackages.($system).psql_15.exts" "--apply" $derive_expr])
+if $derived_json == null { error make {msg: "nix eval of derived repos failed"} }
+let derived = ($derived_json | from json)
+
 let repo_root = (run ["git" "rev-parse" "--show-toplevel"])
 let versions_file = ($repo_root | path join "nix/ext/versions.json")
 mut versions = (open $versions_file)
 mut changed = false
 
 for ext in ($versions | columns) {
-  let info = ($REPOS | get -o $ext)
-  if $info == null { error make {msg: $"no update source configured for ($ext) - add it to REPOS in check-ext-versions.nu"} }
-  let parts = ($info.repo | split row "/")
+  let override = ($OVERRIDES | get -o $ext)
+  let repo_slug = if $override != null { $override.repo } else { ($derived | get -o $ext) }
+  if $repo_slug == null { error make {msg: $"no update source for ($ext) - add it to OVERRIDES in check-ext-versions.nu"} }
+  let no_hash = ($override | get -o noHash | default false)
+
+  let parts = ($repo_slug | split row "/")
   let owner = $parts.0
   let repo = $parts.1
 
@@ -87,7 +88,6 @@ for ext in ($versions | columns) {
   let current_key = ($entries | columns | each { |k| {k: $k, v: (parse-version $k)} } | sort-by v | last | get k)
   if not (is-newer (parse-version $current_key) $candidate.v) { continue }
 
-  let no_hash = ($info | get -o noHash | default false)
   let sri_hash = if $no_hash {
     $FAKE_HASH
   } else {
