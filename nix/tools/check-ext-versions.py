@@ -5,7 +5,6 @@ import json
 import os
 import re
 import subprocess
-import sys
 
 REPO_ROOT = subprocess.run(
     ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
@@ -40,11 +39,11 @@ def best_candidate(tags: list[str], repo: str) -> tuple[tuple[int, ...], str] | 
     prefixed_re = re.compile(
         rf"^{re.escape(repo)}[-_](\d+(?:[._]\d+){{1,3}})$", re.IGNORECASE
     )
-    versions = []
-    for tag in tags:
-        m = CLEAN_TAG_RE.match(tag) or prefixed_re.match(tag)
-        if m:
-            versions.append((parse_version(m.group(1).replace("_", ".")), tag))
+    versions = [
+        (parse_version(m.group(1).replace("_", ".")), tag)
+        for tag in tags
+        if (m := CLEAN_TAG_RE.match(tag) or prefixed_re.match(tag))
+    ]
     return max(versions, default=None)
 
 
@@ -73,9 +72,9 @@ def fetch_tags(owner: str, repo: str) -> list[str] | None:
 def prefetch_hash(owner: str, repo: str, tag: str) -> str | None:
     url = f"https://github.com/{owner}/{repo}/archive/{tag}.tar.gz"
     sha256 = run("nix-prefetch-url", "--type", "sha256", "--unpack", url)
-    if sha256 is None:
-        return None
-    return run("nix", "hash", "to-sri", "--type", "sha256", sha256.splitlines()[-1])
+    return sha256 and run(
+        "nix", "hash", "to-sri", "--type", "sha256", sha256.splitlines()[-1]
+    )
 
 
 def main() -> None:
@@ -108,13 +107,10 @@ def main() -> None:
         if candidate_version <= parse_version(current_key):
             continue
 
-        if ext in NO_HASH_EXTS:
-            sri_hash = FAKE_HASH
-        else:
-            sri_hash = prefetch_hash(owner, repo, tag)
-            if sri_hash is None:
-                print(f"skip {ext}: prefetch failed for {tag}")
-                continue
+        sri_hash = FAKE_HASH if ext in NO_HASH_EXTS else prefetch_hash(owner, repo, tag)
+        if sri_hash is None:
+            print(f"skip {ext}: prefetch failed for {tag}")
+            continue
 
         version_str = ".".join(map(str, candidate_version))
         entries[version_str] = {
@@ -131,11 +127,6 @@ def main() -> None:
             json.dump(versions, f, indent=2)
             f.write("\n")
 
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a") as f:
-            f.write(f"changed={'true' if changed else 'false'}\n")
-
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
