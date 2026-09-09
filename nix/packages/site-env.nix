@@ -43,9 +43,12 @@
           system="$(uname -m)-linux"
           profile="/nix/var/nix/profiles/site-''${major}"
 
-          catalog="/tmp/site-env-catalog-''${sha}-''${major}-''${system}.json"
-          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-site-env_''${major}-''${system}.json" \
-            "$catalog" --region ap-southeast-1
+          catalog="''${SITE_UPDATE_CATALOG:-}"
+          if [[ -z "$catalog" ]]; then
+            catalog="/tmp/site-env-catalog-''${sha}-''${major}-''${system}.json"
+            aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-site-env_''${major}-''${system}.json" \
+              "$catalog" --region ap-southeast-1
+          fi
 
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
           [[ "$(basename "$path")" == *"-site-env-''${major}" ]] || {
