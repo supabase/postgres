@@ -123,6 +123,7 @@
                 # Define which extensions should be preloaded (in order of priority)
                 WANTED_EXTS=(
                   "pg_stat_statements"
+                  "pg_wait_sampling"
                   "pgaudit"
                   "plpgsql"
                   "plpgsql_check"
@@ -256,6 +257,7 @@
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
                 "amcheck" # needs the postgres/anon/authenticated/service_role roles and the default privileges from the full migrations, plus amcheck primed by prime.sql
+                "pg_wait_sampling"
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
@@ -411,6 +413,9 @@
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
+                  # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+                  # as an allow-list for logical decoding output plugins.
+                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$PGTAP_CLUSTER/postgresql.conf"
                 fi
 
                 # Check if postgresql.conf exists

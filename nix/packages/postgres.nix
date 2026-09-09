@@ -41,6 +41,7 @@
         ../ext/pgsodium.nix
         ../ext/pg_graphql
         ../ext/pg_stat_monitor.nix
+        ../ext/pg_wait_sampling.nix
         ../ext/pg_jsonschema
         ../ext/pg_partman.nix
         ../ext/pgvector.nix

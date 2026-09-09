@@ -79,6 +79,7 @@ create extension if not exists pg_tle;
 grant pgtle_admin to postgres;
 create extension if not exists pg_trgm;
 create extension if not exists pg_visibility;
+create extension if not exists pg_wait_sampling;
 create extension if not exists pg_walinspect;
 create extension if not exists pgaudit;
 create extension if not exists pgcrypto;
