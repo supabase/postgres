@@ -1,4 +1,4 @@
-name: Check Extension Versions
+name: Check Extension Updates
 
 on:
   workflow_dispatch:
