@@ -1,12 +1,12 @@
 do $$
 declare
-  extoid oid := (select oid from pg_extension where extname = 'pgmq');
-  extversion text := (select extversion from pg_extension where extname = 'pgmq');
+  extoid oid := (select oid from pg_catalog.pg_extension where extname = 'pgmq');
+  extversion text := (select extversion from pg_catalog.pg_extension where extname = 'pgmq');
   search_path text := (select current_setting('search_path'));
   r record;
-  cls pg_class%rowtype;
+  cls pg_catalog.pg_class%rowtype;
 begin
-  perform set_config('search_path', '', true);
+  perform set_config('search_path', 'pg_catalog, pg_temp', true);
 
 /*
     Override the pgmq.drop_queue to check if relevant tables are owned
@@ -147,15 +147,15 @@ else -- 1.5.1+
 end if;
 
 
-  update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
+  update pg_catalog.pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
 
-  for r in (select * from pg_depend where refobjid = extoid) loop
+  for r in (select * from pg_catalog.pg_depend where refobjid = extoid) loop
 
 
     if r.classid = 'pg_type'::regclass then
 
       -- store the type's relkind
-      select * into cls from pg_class c where c.reltype = r.objid;
+      select * into cls from pg_catalog.pg_class c where c.reltype = r.objid;
 
       if r.objid::regtype::text like '%[]' then
         -- do nothing (skipping array type)
