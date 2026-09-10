@@ -45,6 +45,11 @@ let
       checkFlags = [
         # requires pgrx to be properly initialized with cargo pgrx init
         "--skip=command::schema::tests::test_parse_managed_postmasters"
+        "--skip=object_utils::tests::parses_managed_postmasters"
+        # require test fixtures not included in the crates.io source tarball
+        "--skip=command::upgrade::tests::find_package_manifest_in_workspace"
+        "--skip=command::upgrade::tests::process_workspace_manifest"
+        "--skip=command::upgrade::tests::process_workspace_package_manifest"
       ];
       meta = with lib; {
         description = "Build Postgres Extensions with Rust";
@@ -80,6 +85,11 @@ in
     version = "0.14.3";
     hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
     cargoHash = "sha256-LZUXhjMxkBs3O5feH4X5NQC7Qk4Ja6M5+sAYaSCikrY=";
+  };
+  cargo-pgrx_0_19_2 = mkCargoPgrx {
+    version = "0.19.2";
+    hash = "sha256-PANc819AhIE9yJ6NFHGJxHJHWZyR2Srmj2cEz3vQmJk=";
+    cargoHash = "sha256-cTD7x36FvFUIwVLuAqrOJ75vLDppITiDrY8Fs3RjPqU=";
   };
   inherit mkCargoPgrx;
 }
