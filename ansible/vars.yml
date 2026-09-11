@@ -7,9 +7,9 @@ postgres_major:
   - "17"
   - orioledb-17
 postgres_release:
-  postgresorioledb-17: "17.9.0.024-orioledb"
-  postgres17: "17.6.1.171"
-  postgres15: "15.14.1.171"
+  postgresorioledb-17: "17.9.0.024-orioledb-pgrst-1418"
+  postgres17: "17.6.1.171-pgrst-1418"
+  postgres15: "15.14.1.171-pgrst-1418"
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
