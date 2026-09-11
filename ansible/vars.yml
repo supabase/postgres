@@ -7,9 +7,9 @@ postgres_major:
   - "17"
   - orioledb-17
 postgres_release:
-  postgresorioledb-17: "17.9.0.023-orioledb"
-  postgres17: "17.6.1.170"
-  postgres15: "15.14.1.170"
+  postgresorioledb-17: "17.9.0.024-orioledb"
+  postgres17: "17.6.1.171"
+  postgres15: "15.14.1.171"
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
@@ -72,14 +72,14 @@ gotrue_artifacts:
   arm64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
     checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
-postgrest_release: "14.17" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
-    checksum: sha256:d6e13926457487c99b77366d795dcfa32700554d08d418131d9a4ea3f6ca25e3
+    checksum: sha256:98de1c0be7787aea5f5e11a25f303ea0077634d6fc1000b687bfa825fd27d299
   arm64:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-    checksum: sha256:e9a5671caff9cea25ea002c906638ac1cefbb612a3a1cbf3ecfbe92072fef871
+    checksum: sha256:960676de3fb8102393adfff7f74d40aa131b52abe0ba63b6a5594c44c3a67569
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
