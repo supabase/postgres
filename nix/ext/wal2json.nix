@@ -116,6 +116,10 @@ pkgs.buildEnv {
         "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     defaultSettings = {
       wal_level = "logical";
+      # PG 15.19 / 17.11+ only load output plugins named here (CVE-2026-6471);
+      # stripped for the orioledb specialisation in nix/ext/tests/default.nix
+      # (GUC does not exist on orioledb's older base)
+      output_plugin_libraries = "pgoutput, test_decoding, wal2json";
     };
   };
 }
