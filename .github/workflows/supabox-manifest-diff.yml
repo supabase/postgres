@@ -2,6 +2,12 @@
 # tag:manifest suite (supabase/supabox#216). Draft: manual dispatch
 # only until validated. See MPG-117 / "RFC: declarative system
 # management".
+#
+# baseline/pr run sequentially, not in parallel: e2e.yml's Blacksmith
+# build cache is a single sticky disk keyed only by profiles+latest
+# (supabase/supabox#214), not by repo pin, so two same-flavor builds
+# racing in parallel would clobber each other's cache (the exact bug
+# #214 fixed for the periodic/PR builds).
 name: Supabox manifest diff (draft)
 
 on:
@@ -23,6 +29,7 @@ jobs:
       APP_PRIVATE_KEY: ${{ secrets.SUPABOX_SB_SUPABOT_PRIVATE_KEY }}
 
   pr:
+    needs: [baseline]
     uses: supabase/supabox/.github/workflows/e2e.yml@main
     permissions:
       contents: read
