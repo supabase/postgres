@@ -1407,3 +1407,14 @@ def test_apparmor_denies_access_to_sensitive_paths(host):
             f"to have succeeded.\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
         )
         print(f"Confirmed: access to {test_file} denied by AppArmor")
+
+
+def test_manifest_snapshot(host):
+    ssh = host["ssh"]
+    script = os.path.join(os.path.dirname(__file__), "manifest-snapshot.sh")
+    upload_file_via_sftp(ssh, script, "/tmp/manifest-snapshot.sh")
+    run_ssh_command(ssh, "chmod +x /tmp/manifest-snapshot.sh")
+    result = run_ssh_command(ssh, "sudo /tmp/manifest-snapshot.sh")
+    assert result["succeeded"], result["stderr"]
+    with open(os.environ.get("MANIFEST_OUTPUT", "ami-manifest.txt"), "w") as f:
+        f.write(result["stdout"])
