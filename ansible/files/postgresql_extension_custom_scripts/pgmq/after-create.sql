@@ -18,17 +18,22 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
--- Detach and delete the official function
-if extversion = '1.4.4' then
-  alter extension pgmq drop function pgmq.drop_queue;
-  drop function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq drop function pgmq.drop_queue(TEXT);
-  drop function pgmq.drop_queue(TEXT);
-end if;
+  -- detach and drop both historical drop_queue signatures (1.4.4 only ever
+  -- has (text, boolean); 1.5.0+ has both (text) and (text, boolean))
+  begin
+    alter extension pgmq drop function pgmq.drop_queue(text);
+  exception when others then null;
+  end;
+  begin
+    alter extension pgmq drop function pgmq.drop_queue(text, boolean);
+  exception when others then null;
+  end;
+
+  drop function if exists pgmq.drop_queue(text);
+  drop function if exists pgmq.drop_queue(text, boolean);
 
 -- Create and reattach the patched function
-CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
+CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN DEFAULT FALSE)
 RETURNS BOOLEAN AS $func$
 DECLARE
     qtable TEXT := pgmq.format_table_name(queue_name, 'q');
@@ -36,7 +41,6 @@ DECLARE
     fq_qtable TEXT := 'pgmq.' || qtable;
     atable TEXT := pgmq.format_table_name(queue_name, 'a');
     fq_atable TEXT := 'pgmq.' || atable;
-    partitioned BOOLEAN;
 BEGIN
     EXECUTE FORMAT(
         $QUERY$
@@ -140,11 +144,7 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-if extversion = '1.4.4' then
-  alter extension pgmq add function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq add function pgmq.drop_queue(TEXT);
-end if;
+  alter extension pgmq add function pgmq.drop_queue(text, boolean);
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
