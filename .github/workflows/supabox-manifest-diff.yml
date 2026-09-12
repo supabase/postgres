@@ -1,0 +1,40 @@
+# Rootfs manifest diff: this PR's AMI vs develop's, via supabox's
+# tag:manifest suite (supabase/supabox#216). Draft: manual dispatch
+# only until validated. See MPG-117 / "RFC: declarative system
+# management".
+name: Supabox manifest diff (draft)
+
+on:
+  workflow_dispatch:
+  # TODO: enable once tag:manifest lands in supabox and this is validated manually
+  #pull_request:
+  #  branches: [develop]
+
+jobs:
+  baseline:
+    uses: supabase/supabox/.github/workflows/e2e.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      filters: tag:manifest
+      merge_json: '{"repos":{"postgres":{"pin":"develop"}}}'
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.SUPABOX_SB_SUPABOT_PRIVATE_KEY }}
+
+  pr:
+    uses: supabase/supabox/.github/workflows/e2e.yml@main
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      filters: tag:manifest
+      merge_json: '{"repos":{"postgres":{"pin":"${{ github.event.pull_request.head.sha || github.sha }}"}}}'
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.SUPABOX_SB_SUPABOT_PRIVATE_KEY }}
+
+  diff:
+    needs: [baseline, pr]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "TODO: fetch both manifest artifacts, post diff as PR comment"
