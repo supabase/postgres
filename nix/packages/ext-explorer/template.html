@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Supabase Postgres — Extension Explorer</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel-border: #232a38;
+    --text: #e6e9ef;
+    --text-dim: #8b93a7;
+    --accent: #3ecf8e;
+    --accent-dim: #1f6b4d;
+    --row-hover: #1a2030;
+    --tag-bg: #1c2433;
+    --tag-border: #2c3547;
+    --warn: #e0a92c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 5;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0 0 4px;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .version-tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+  .version-tabs button {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .version-tabs button.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+  .version-tabs button:hover:not(.active) {
+    color: var(--text);
+  }
+  select#minorSelect {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    outline: none;
+    min-width: 280px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  input[type="search"] {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+  }
+  input[type="search"]:focus { border-color: var(--accent-dim); }
+  label.chk {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .snapshot-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 10px;
+  }
+  .snapshot-info code {
+    background: var(--tag-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  main {
+    padding: 20px 32px 60px;
+    max-width: 1150px;
+  }
+  .count {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 4px 0 14px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--panel-border);
+  }
+  tbody tr:hover { background: var(--row-hover); }
+  td {
+    padding: 10px 12px;
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .ext-name {
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+  }
+  .ext-key {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .latest {
+    color: var(--accent);
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .all-versions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .ver-pill {
+    background: var(--tag-bg);
+    border: 1px solid var(--tag-border);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--text-dim);
+  }
+  .ver-pill.is-latest {
+    border-color: var(--accent-dim);
+    color: var(--accent);
+  }
+  .toolchain {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .badge {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .cli-badge {
+    background: rgba(224,169,44,0.12);
+    color: var(--warn);
+    border: 1px solid rgba(224,169,44,0.35);
+  }
+  .inferred-badge {
+    background: rgba(139,147,167,0.12);
+    color: var(--text-dim);
+    border: 1px solid rgba(139,147,167,0.35);
+    cursor: help;
+  }
+  footer {
+    padding: 20px 32px 40px;
+    color: var(--text-dim);
+    font-size: 12px;
+    border-top: 1px solid var(--panel-border);
+    line-height: 1.6;
+  }
+  footer code {
+    background: var(--tag-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .empty {
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 40px 0;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Supabase Postgres — Extension Explorer</h1>
+  <div class="subtitle">Pick a major, then a minor version that actually shipped. Extension list is reconstructed from the repo state at that point in time.</div>
+  <div class="controls">
+    <div class="version-tabs" id="versionTabs"></div>
+    <select id="minorSelect"></select>
+    <input type="search" id="search" placeholder="Filter extensions…" />
+    <label class="chk"><input type="checkbox" id="cliOnly" /> CLI variant only</label>
+  </div>
+  <div class="snapshot-info" id="snapshotInfo"></div>
+</header>
+
+<main>
+  <div class="count" id="count"></div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%">Extension</th>
+        <th style="width:12%">Default version</th>
+        <th style="width:48%">All versions on disk at this snapshot</th>
+        <th style="width:18%">Toolchain</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none">No extensions match.</div>
+</main>
+
+<footer>
+  Auto-generated by <code>nix run .#ext-explorer</code> — do not hand-edit. Two data sources are stitched together.
+  (1) The major/minor <b>timeline</b> is the append-only log in <code>nix/ext/version-history.json</code>: each row
+  freezes the full extension state as of the commit right before <code>nix/config.nix</code>'s postgres/orioledb
+  version fields next changed. The generator appends a new row automatically whenever it runs on a commit where
+  those fields changed since the previous commit — CI enforces that this file and this page are always regenerated
+  together. (2) For each minor, the <b>extension list</b> shown is exactly the row's frozen <code>nix/ext/versions.json</code>
+  snapshot (plus <code>supautils</code>/<code>orioledb</code>, which are pinned directly in their own <code>.nix</code>
+  file rather than via <code>versions.json</code>) — every version listed for a given minor is what the "full" build
+  variant places on disk simultaneously for that snapshot, not a cross-snapshot history; the highest one is the
+  default active version. Rows marked <span class="badge inferred-badge">inferred</span> predate this repo's
+  <code>versions.json</code> migration — that extension's version was read directly from the hardcoded
+  <code>version = "…"</code> field in its own <code>nix/ext/&lt;name&gt;.nix</code> at the time, with per-major
+  applicability inferred from which extension list (<code>ourExtensions</code> / <code>dbExtensions17</code> /
+  <code>orioledbExtensions</code>) included that file at that commit.
+</footer>
+
+<script>
+const MAJORS = __MAJORS_JSON__;
+const SNAPSHOTS = __SNAPSHOTS_JSON__;
+const NAME_MAP = __NAME_MAP_JSON__;
+const CLI_EXTENSIONS = __CLI_JSON__;
+const MAJOR_KEYS = ["15", "17", "orioledb-17"];
+
+let currentMajor = "15";
+let currentMinorIdx = MAJORS["15"].length - 1; // default to most recent minor
+
+function buildTabs() {
+  const el = document.getElementById("versionTabs");
+  el.innerHTML = "";
+  MAJOR_KEYS.forEach(m => {
+    const btn = document.createElement("button");
+    btn.textContent = m === "orioledb-17" ? "orioledb-17" : "PG " + m;
+    btn.className = m === currentMajor ? "active" : "";
+    btn.onclick = () => {
+      currentMajor = m;
+      currentMinorIdx = MAJORS[m].length - 1;
+      buildTabs();
+      buildMinorSelect();
+      render();
+    };
+    el.appendChild(btn);
+  });
+}
+
+function buildMinorSelect() {
+  const el = document.getElementById("minorSelect");
+  el.innerHTML = "";
+  MAJORS[currentMajor].forEach((entry, idx) => {
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.textContent = entry.minor + "  (" + entry.active + ")";
+    if (idx === currentMinorIdx) opt.selected = true;
+    el.appendChild(opt);
+  });
+}
+
+function cmpVersions(a, b) {
+  const pa = a.split(/[.\-_]/), pb = b.split(/[.\-_]/);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = parseInt(pa[i], 10), nb = parseInt(pb[i], 10);
+    const va = isNaN(na) ? (pa[i] || "") : na;
+    const vb = isNaN(nb) ? (pb[i] || "") : nb;
+    if (va < vb) return -1;
+    if (va > vb) return 1;
+  }
+  return 0;
+}
+
+function render() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const cliOnly = document.getElementById("cliOnly").checked;
+  const minorEntry = MAJORS[currentMajor][currentMinorIdx];
+  const data = SNAPSHOTS[minorEntry.snapshot];
+
+  document.getElementById("snapshotInfo").innerHTML =
+    "Snapshot as of commit <code>" + minorEntry.commit + "</code> (" + minorEntry.date + ") — last known state while " +
+    (currentMajor === "orioledb-17" ? "orioledb-17 patchset " : "PostgreSQL " + currentMajor + " ") +
+    "was on <code>" + minorEntry.minor + "</code>.";
+
+  const rowsEl = document.getElementById("rows");
+  rowsEl.innerHTML = "";
+
+  const entries = Object.entries(data)
+    .map(([key, versions]) => {
+      const display = NAME_MAP[key] || key;
+      const allForMajor = Object.entries(versions)
+        .filter(([, meta]) => meta.postgresql.includes(currentMajor))
+        .map(([v, meta]) => ({ version: v, ...meta }))
+        .sort((a, b) => cmpVersions(a.version, b.version));
+      return { key, display, allForMajor };
+    })
+    .filter(e => e.allForMajor.length > 0)
+    .filter(e => !cliOnly || CLI_EXTENSIONS.includes(e.key))
+    .filter(e => !q || e.display.toLowerCase().includes(q) || e.key.toLowerCase().includes(q))
+    .sort((a, b) => a.display.localeCompare(b.display));
+
+  document.getElementById("count").textContent =
+    entries.length + " extension" + (entries.length === 1 ? "" : "s") + " available for " + minorEntry.minor +
+    (cliOnly ? " (CLI variant)" : "");
+
+  document.getElementById("emptyMsg").style.display = entries.length ? "none" : "block";
+
+  entries.forEach(e => {
+    const atThisMinor = e.allForMajor[e.allForMajor.length - 1];
+    const tr = document.createElement("tr");
+
+    const tdName = document.createElement("td");
+    tdName.innerHTML = '<div class="ext-name">' + e.display + '</div>' +
+      (e.display !== e.key ? '<div class="ext-key">' + e.key + '</div>' : '') +
+      (CLI_EXTENSIONS.includes(e.key) ? '<span class="badge cli-badge">CLI</span>' : '');
+    tr.appendChild(tdName);
+
+    const tdAt = document.createElement("td");
+    tdAt.innerHTML = '<span class="latest">' + atThisMinor.version + '</span>' +
+      (atThisMinor.inferred ? '<span class="badge inferred-badge" title="Not yet in versions.json at this commit — read from the hardcoded version field in that extension&#39;s own .nix file.">inferred</span>' : '');
+    tr.appendChild(tdAt);
+
+    const tdAll = document.createElement("td");
+    const wrap = document.createElement("div");
+    wrap.className = "all-versions";
+    e.allForMajor.forEach(m => {
+      const pill = document.createElement("span");
+      pill.className = "ver-pill" + (m.version === atThisMinor.version ? " is-latest" : "");
+      pill.textContent = m.version;
+      wrap.appendChild(pill);
+    });
+    tdAll.appendChild(wrap);
+    tr.appendChild(tdAll);
+
+    const tdTool = document.createElement("td");
+    if (atThisMinor.pgrx) {
+      tdTool.innerHTML = '<div class="toolchain">pgrx ' + atThisMinor.pgrx + '</div>' +
+        (atThisMinor.rust ? '<div class="toolchain">rust ' + atThisMinor.rust + '</div>' : '');
+    } else {
+      tdTool.innerHTML = '<div class="toolchain">C / PGXS</div>';
+    }
+    tr.appendChild(tdTool);
+
+    rowsEl.appendChild(tr);
+  });
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("cliOnly").addEventListener("change", render);
+document.getElementById("minorSelect").addEventListener("change", (e) => {
+  currentMinorIdx = parseInt(e.target.value, 10);
+  render();
+});
+
+buildTabs();
+buildMinorSelect();
+render();
+</script>
+
+</body>
+</html>
