@@ -1,24 +1,15 @@
 #!/usr/bin/env nu
 
-# Extensions whose repo can't be read off the derivation's own src (fetchurl
-# instead of fetchFromGitHub, or the package doesn't expose a per-version
-# derivation at all). noHash means the real fetcher isn't a plain GitHub
-# archive, so skip the hash prefetch and use a placeholder instead.
+# repo: for extensions whose repo can't be read off the derivation's own src
+# (fetchurl instead of fetchFromGitHub, or a mismatched attr name). noHash:
+# the real fetcher isn't a plain GitHub archive (fetchurl, or a cargoHash
+# vendor hash), so skip the hash prefetch and use a placeholder instead.
 const OVERRIDES = {
-  pg_graphql: {repo: "supabase/pg_graphql", noHash: true}
-  pg_hashids: {repo: "iCyberon/pg_hashids"}
-  pg_jsonschema: {repo: "supabase/pg_jsonschema"}
+  pg_graphql: {noHash: true}
   pg_plan_filter: {repo: "pgexperts/pg_plan_filter"}
-  pg_stat_monitor: {repo: "percona/pg_stat_monitor"}
-  pgjwt: {repo: "michelp/pgjwt"}
   pgroonga: {repo: "pgroonga/pgroonga", noHash: true}
-  pgtap: {repo: "theory/pgtap"}
-  plpgsql_check: {repo: "okbob/plpgsql_check"}
   postgis: {repo: "postgis/postgis", noHash: true}
-  rum: {repo: "postgrespro/rum"}
-  timescaledb: {repo: "timescale/timescaledb"}
-  wal2json: {repo: "eulerto/wal2json"}
-  wrappers: {repo: "supabase/wrappers", noHash: true}
+  wrappers: {noHash: true}
 }
 
 const FAKE_HASH = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -69,7 +60,7 @@ mut changed = false
 
 for ext in ($versions | columns) {
   let override = ($OVERRIDES | get -o $ext)
-  let repo_slug = if $override != null { $override.repo } else { ($derived | get -o $ext) }
+  let repo_slug = ($override | get -o repo) | default ($derived | get -o $ext)
   if $repo_slug == null { error make {msg: $"no update source for ($ext) - add it to OVERRIDES in check-ext-versions.nu"} }
   let no_hash = ($override | get -o noHash | default false)
 

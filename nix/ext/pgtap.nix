@@ -134,6 +134,7 @@ buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) supportedVersions;
     inherit versions numberOfVersions;
     pname = "${pname}-all";
     version =
