@@ -16,6 +16,15 @@ on:
   #pull_request:
   #  branches: [develop]
 
+# One sticky disk, shared by every PR's baseline+pr build (same profile
+# flavor, e2e.yml's own concurrency group is per-run_id for
+# workflow_call and won't catch this). Queue concurrent PRs rather
+# than race them on the same cache; never cancel one PR's run for
+# another's.
+concurrency:
+  group: supabox-manifest-diff-cache
+  cancel-in-progress: false
+
 jobs:
   baseline:
     uses: supabase/supabox/.github/workflows/e2e.yml@main
