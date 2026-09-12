@@ -63,6 +63,9 @@ var DefaultExclusions = Config{
 		// PostgreSQL data directory - contents are dynamic database state
 		"/data/pgdata",
 
+		// pgBackRest spool - transient WAL archive-get/archive-push queue, not durable state
+		"/data/pgbackrest_spool",
+
 		// Deployment/provisioning tools - internal implementation details
 		"/opt/saltstack",
 
