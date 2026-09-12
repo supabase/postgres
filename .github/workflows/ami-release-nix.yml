@@ -116,7 +116,8 @@ jobs:
           VPC_ID=$(aws ec2 describe-vpcs --region "$AWS_REGION" --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
           SUBNET_ID=$(aws ec2 describe-subnets --region "$AWS_REGION" --filters Name=vpc-id,Values="$VPC_ID" --query 'Subnets[0].SubnetId' --output text)
           SG_ID=$(aws ec2 create-security-group --region "$AWS_REGION" --group-name "manifest-snapshot-$RUN_ID" --description "temp sg for ami manifest snapshot" --vpc-id "$VPC_ID" --query GroupId --output text)
-          aws ec2 authorize-security-group-ingress --region "$AWS_REGION" --group-id "$SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          aws ec2 authorize-security-group-ingress --region "$AWS_REGION" --group-id "$SG_ID" --protocol tcp --port 22 --cidr "$RUNNER_IP/32"
 
           cleanup() {
             [ -n "${INSTANCE_ID:-}" ] && aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" && aws ec2 wait instance-terminated --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
