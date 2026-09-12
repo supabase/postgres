@@ -105,6 +105,40 @@ jobs:
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
+      - name: Snapshot AMI manifest
+        if: matrix.target.arch == 'amd64'
+        env:
+          AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          ssh-keygen -t ed25519 -N '' -f /tmp/manifest-key -q
+
+          VPC_ID=$(aws ec2 describe-vpcs --region "$AWS_REGION" --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)
+          SUBNET_ID=$(aws ec2 describe-subnets --region "$AWS_REGION" --filters Name=vpc-id,Values="$VPC_ID" --query 'Subnets[0].SubnetId' --output text)
+          SG_ID=$(aws ec2 create-security-group --region "$AWS_REGION" --group-name "manifest-snapshot-$RUN_ID" --description "temp sg for ami manifest snapshot" --vpc-id "$VPC_ID" --query GroupId --output text)
+          aws ec2 authorize-security-group-ingress --region "$AWS_REGION" --group-id "$SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0
+
+          cleanup() {
+            [ -n "${INSTANCE_ID:-}" ] && aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" && aws ec2 wait instance-terminated --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+            aws ec2 delete-security-group --region "$AWS_REGION" --group-id "$SG_ID"
+          }
+          trap cleanup EXIT
+
+          INSTANCE_ID=$(aws ec2 run-instances --region "$AWS_REGION" --image-id "$AMI_ID" --instance-type t3.small --subnet-id "$SUBNET_ID" --security-group-ids "$SG_ID" --associate-public-ip-address --count 1 --query 'Instances[0].InstanceId' --output text)
+          aws ec2 wait instance-running --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+          IP=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+
+          for i in $(seq 1 30); do
+            aws ec2-instance-connect send-ssh-public-key --region "$AWS_REGION" --instance-id "$INSTANCE_ID" --instance-os-user ubuntu --ssh-public-key file:///tmp/manifest-key.pub
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/manifest-key "ubuntu@$IP" true && break
+            sleep 5
+          done
+
+          scp -o StrictHostKeyChecking=no -i /tmp/manifest-key testinfra/manifest-snapshot.sh "ubuntu@$IP:/tmp/manifest-snapshot.sh"
+          ssh -o StrictHostKeyChecking=no -i /tmp/manifest-key "ubuntu@$IP" "chmod +x /tmp/manifest-snapshot.sh && sudo /tmp/manifest-snapshot.sh" > ami-manifest.txt
+
+          aws s3 cp ami-manifest.txt "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/latest.txt"
+
       - name: Setup post build env vars
         run: |
           POSTGRES_SUPABASE_VERSION=${{ steps.build-ami.outputs.postgres_release_version }}
