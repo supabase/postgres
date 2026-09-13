@@ -79,14 +79,17 @@ source "amazon-ebs" "ubuntu" {
     creator           = "packer"
     appType           = "postgres"
     packerExecutionId = "${var.packer-execution-id}"
+    supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   tags = {
     creator           = "packer"

@@ -132,6 +132,7 @@ source "amazon-ebssurrogate" "source" {
     creator           = "packer"
     appType           = "postgres"
     packerExecutionId = "${var.packer-execution-id}"
+    supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
@@ -139,15 +140,17 @@ source "amazon-ebssurrogate" "source" {
     packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   tags = {
-    creator         = "packer"
-    appType         = "postgres"
-    postgresVersion = "${var.postgres-version}-stage1"
-    sourceSha       = "${var.git-head-version}"
-    inputHash       = "${var.input-hash}"
+    creator           = "packer"
+    appType           = "postgres"
+    postgresVersion   = "${var.postgres-version}-stage1"
+    sourceSha         = "${var.git-head-version}"
+    inputHash         = "${var.input-hash}"
+    packerExecutionId = "${var.packer-execution-id}"
   }
 
   communicator = "ssh"
