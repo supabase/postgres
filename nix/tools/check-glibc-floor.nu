@@ -6,11 +6,7 @@ def ver-key [ver: string] {
 }
 
 def is-elf [path: string]: nothing -> bool {
-    if ($path | path type) != file {
-        false
-    } else {
-        (open --raw $path | bytes at 0..<4) == 0x[7f454c46]
-    }
+    ($path | path type) == file and (open --raw $path | bytes at 0..<4) == 0x[7f454c46]
 }
 
 def main [max_allowed: string, ...paths: string] {
