@@ -12,12 +12,16 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ postgresql ];
 
+  dontStrip = true;
+
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
     hash = "sha256-aCOQY6eNA7KgiEWtQoYpSHbJWwSnrcUPMm57RcesqKY=";
   };
+
+  patches = [ ./patches/supautils-strtol-glibc-compat.patch ];
 
   installPhase = ''
     mkdir -p $out/lib
