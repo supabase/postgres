@@ -965,7 +965,10 @@
                 ];
               } (builtins.readFile ./tools/check-glibc-floor.nu);
             in
-            pkgs.runCommand "glibc-floor-check" { paths = lib.collect lib.isDerivation self'.legacyPackages; }
+            pkgs.runCommand "glibc-floor-check"
+              {
+                paths = lib.collect lib.isDerivation (self'.legacyPackages // self'.packages);
+              }
               ''
                 ${lib.getExe checkScript} 2.31 $paths
                 touch $out
