@@ -5,8 +5,12 @@ def ver-key [ver: string] {
     $ver | split row "." | each { into int }
 }
 
-def is-elf [file: string] {
-    (open --raw $file | bytes at 0..<4) == 0x[7f454c46]
+def is-elf [path: string]: nothing -> bool {
+    if ($path | path type) != file {
+        false
+    } else {
+        (open --raw $path | bytes at 0..<4) == 0x[7f454c46]
+    }
 }
 
 def main [max_allowed: string, ...paths: string] {
@@ -16,7 +20,6 @@ def main [max_allowed: string, ...paths: string] {
         $paths
         | each { |p| glob $"($p)/**/*" }
         | flatten
-        | where { |f| ($f | path type) == file }
         | where { |f| is-elf $f }
         | par-each { |file|
             let versions = (^objdump -T $file | complete | get stdout | parse -r 'GLIBC_(?<ver>[0-9.]+)' | get ver)
