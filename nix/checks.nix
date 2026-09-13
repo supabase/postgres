@@ -955,30 +955,19 @@
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
           glibc-floor =
-            pkgs.runCommand "glibc-floor-check"
-              {
-                nativeBuildInputs = [ pkgs.binutils ];
-                paths = lib.collect lib.isDerivation self'.legacyPackages;
-              }
+            let
+              checkScript = pkgs.writers.writeNuBin "check-glibc-floor" {
+                makeWrapperArgs = [
+                  "--prefix"
+                  "PATH"
+                  ":"
+                  "${lib.makeBinPath [ pkgs.binutils ]}"
+                ];
+              } (builtins.readFile ./tools/check-glibc-floor.nu);
+            in
+            pkgs.runCommand "glibc-floor-check" { paths = lib.collect lib.isDerivation self'.legacyPackages; }
               ''
-                MAX_ALLOWED="2.31"
-                HIT=$(
-                  for p in $paths; do find -L "$p" -type f; done \
-                    | while IFS= read -r f; do
-                        objdump -T "$f" 2>/dev/null | grep -oE 'GLIBC_[0-9.]+' | sed -E "s#GLIBC_([0-9.]+)#\1 $f#"
-                      done \
-                    | sort -V | tail -1
-                )
-
-                if [ -n "$HIT" ]; then
-                  FLOOR=''${HIT%% *}
-                  echo "glibc floor: $FLOOR (max allowed: $MAX_ALLOWED)"
-                  if [ "$(printf '%s\n%s' "$MAX_ALLOWED" "$FLOOR" | sort -V | tail -1)" != "$MAX_ALLOWED" ]; then
-                    echo "glibc floor $HIT exceeds max allowed $MAX_ALLOWED"
-                    exit 1
-                  fi
-                fi
-
+                ${lib.getExe checkScript} 2.31 $paths
                 touch $out
               '';
         };
