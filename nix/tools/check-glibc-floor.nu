@@ -6,37 +6,37 @@ def "ver-key" [ver: string] {
 }
 
 def main [max_allowed: string, ...paths: string] {
-    let hits = (
+    let max_key = (ver-key $max_allowed)
+
+    let offenders = (
         $paths
         | each { |p| glob ($p + "/**/*") }
         | flatten
         | where { |f| ($f | path type) == file }
         | each { |f|
             let res = (do { ^objdump -T $f } | complete)
-            if $res.exit_code != 0 {
-                []
+            let vers = (if $res.exit_code == 0 {
+                $res.stdout | parse -r 'GLIBC_(?<ver>[0-9.]+)' | get ver
             } else {
-                $res.stdout | parse -r 'GLIBC_(?<ver>[0-9.]+)' | each { |m| { ver: $m.ver, file: $f } }
+                []
+            })
+            if ($vers | is-empty) {
+                null
+            } else {
+                { file: $f, ver: ($vers | sort-by { |v| ver-key $v } | last) }
             }
         }
-        | flatten
+        | compact
+        | where { |h| (ver-key $h.ver) > $max_key }
     )
 
-    if ($hits | is-empty) {
+    if ($offenders | is-empty) {
+        print $"glibc floor OK \(<= ($max_allowed)\)"
         exit 0
     }
 
-    let worst = (
-        $hits
-        | insert key { |h| ver-key $h.ver }
-        | sort-by key
-        | last
-    )
-
-    print $"glibc floor: ($worst.ver) \(max allowed: ($max_allowed)\) — ($worst.file)"
-
-    if (ver-key $worst.ver) > (ver-key $max_allowed) {
-        print $"glibc floor ($worst.ver) exceeds max allowed ($max_allowed) in ($worst.file)"
-        exit 1
+    for o in $offenders {
+        print $"glibc floor ($o.ver) exceeds max allowed ($max_allowed) in ($o.file)"
     }
+    exit 1
 }
