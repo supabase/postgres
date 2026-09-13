@@ -18,15 +18,16 @@ def main [max_allowed: string, ...paths: string] {
         | flatten
         | where { is-elf }
         | par-each { |file|
-            let versions = (^objdump -T $file | complete | get stdout | parse -r 'GLIBC_(?<ver>[0-9.]+)' | get ver)
-            if ($versions | is-empty) {
-                null
-            } else {
-                { file: $file, version: ($versions | sort-by { |v| ver-key $v } | last) }
+            {
+                file: $file,
+                version: (
+                    ^objdump -T $file | complete | get stdout
+                    | parse -r 'GLIBC_(?<ver>[0-9.]+)' | get ver
+                    | sort-by { |v| ver-key $v } | last
+                ),
             }
         }
-        | compact
-        | where { |h| (ver-key $h.version) > $max_key }
+        | where { |h| $h.version != null and (ver-key $h.version) > $max_key }
     )
 
     if ($offenders | is-empty) {
