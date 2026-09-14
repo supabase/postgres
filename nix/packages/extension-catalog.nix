@@ -150,7 +150,10 @@
         # Downloads paths and installs them as an env into the profile, replacing all existing ones.
         site-extensions-update = pkgs.writeShellApplication {
           name = "site-extensions-update";
-          runtimeInputs = [ self'.packages.site-extensions-resolve ];
+          runtimeInputs = [
+            self'.packages.site-extensions-resolve
+            pkgs.nix
+          ];
           text = ''
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
             profile="''${NIX_PROFILE:-/nix/var/nix/profiles/site-extensions}"

@@ -51,6 +51,11 @@ where p.pronamespace::regnamespace::text = 'pg_catalog'
 order by object_name, grantee, privilege_type;
    schema   |          object_name           |      grantee      | privilege_type 
 ------------+--------------------------------+-------------------+----------------
+ pg_catalog | bt_index_check                 | postgres          | EXECUTE
+ pg_catalog | bt_index_check                 | postgres          | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
  pg_catalog | pg_get_backend_memory_contexts | pg_read_all_stats | EXECUTE
  pg_catalog | pg_get_shmem_allocations       | pg_read_all_stats | EXECUTE
  pg_catalog | pg_ls_archive_statusdir        | pg_monitor        | EXECUTE
@@ -62,5 +67,6 @@ order by object_name, grantee, privilege_type;
  pg_catalog | pg_ls_tmpdir                   | pg_monitor        | EXECUTE
  pg_catalog | pg_ls_waldir                   | pg_monitor        | EXECUTE
  pg_catalog | pg_reload_conf                 | postgres          | EXECUTE
-(11 rows)
+ pg_catalog | verify_heapam                  | postgres          | EXECUTE
+(17 rows)
 

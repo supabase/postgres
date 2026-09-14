@@ -13,6 +13,7 @@ EXTENSIONS_TO_DISABLE=(
 	"pg_graphql"
 	"pg_stat_monitor"
 	"pg_backtrace"
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
