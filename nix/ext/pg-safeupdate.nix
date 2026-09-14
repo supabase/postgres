@@ -20,7 +20,7 @@ let
 
       src = fetchFromGitHub {
         owner = "eradman";
-        repo = pname;
+        repo = "pg-safeupdate";
         rev = version;
         inherit hash;
       };
