@@ -216,7 +216,9 @@
       #    installed, and a receipt.json file containing metadata about the
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
-      #    package names. Only exposed for the "full" variant.
+      #    package names. Not exposed for the "cli" variant, which nothing
+      #    reads it from (checks.nix's cli check harness borrows pgroonga
+      #    from the full psql_17 instead).
       makePostgres =
         version:
         {
@@ -227,7 +229,7 @@
           {
             bin = makePostgresBin version { inherit variant latestOnly; };
           }
-          // lib.optionalAttrs (variant == "full" && !latestOnly) {
+          // lib.optionalAttrs (variant != "cli") {
             exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
           }
         );
