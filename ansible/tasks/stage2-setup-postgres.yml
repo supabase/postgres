@@ -77,6 +77,17 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
+    - name: Resolve update-profile store path
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#update-profile
+      register: update_profile_path
+
+    - name: Install update-profile
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/update-profile --set {{ update_profile_path.stdout }}
+
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
