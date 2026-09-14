@@ -954,18 +954,18 @@
             postgresql_17_src
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
-          glibc-floor =
+          glibc-version-check =
             let
-              checkScript = pkgs.writers.writeNuBin "check-glibc-floor" {
+              checkScript = pkgs.writers.writeNuBin "check-glibc-version" {
                 makeWrapperArgs = [
                   "--prefix"
                   "PATH"
                   ":"
                   "${lib.makeBinPath [ pkgs.binutils ]}"
                 ];
-              } (builtins.readFile ./tools/check-glibc-floor.nu);
+              } (builtins.readFile ./tools/check-glibc-version.nu);
             in
-            pkgs.runCommand "glibc-floor-check"
+            pkgs.runCommand "glibc-version-check"
               {
                 paths = lib.collect lib.isDerivation (self'.legacyPackages // self'.packages);
               }
