@@ -150,8 +150,10 @@ RUN sed -i \
     chown -R postgres:postgres /etc/postgresql-custom
 
 # Remove timescaledb, plv8, postgis, pgrouting references (not available in orioledb build)
+# and output_plugin_libraries (GUC does not exist before PG 17.11; orioledb is on an older base)
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/^output_plugin_libraries/#output_plugin_libraries/g;' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
 
 # OrioleDB configuration
