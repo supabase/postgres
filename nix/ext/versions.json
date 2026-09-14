@@ -409,6 +409,13 @@
           "17"
         ],
         "hash": "sha256-IU+i6ONPwtgsFKdzya6E+222ualR66gkbb0lDr+7Rb8="
+      },
+      "1.13.0": {
+        "postgresql": [
+          "15",
+          "17"
+        ],
+        "hash": "sha256-0/L/ic6WZ64Uc6JDNnKGVFVpQa2a+3OGIeyQwPFTJ5U="
       }
     },
   "pgroonga": {
