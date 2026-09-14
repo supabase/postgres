@@ -216,17 +216,21 @@
       #    installed, and a receipt.json file containing metadata about the
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
-      #    package names.
+      #    package names. Only exposed for the "full" variant.
       makePostgres =
         version:
         {
           variant ? "full",
           latestOnly ? false,
         }:
-        lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant latestOnly; };
-          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
-        };
+        lib.recurseIntoAttrs (
+          {
+            bin = makePostgresBin version { inherit variant latestOnly; };
+          }
+          // lib.optionalAttrs (variant == "full" && !latestOnly) {
+            exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
+          }
+        );
       basePackages = {
         psql_15 = makePostgres "15" { };
         psql_17 = makePostgres "17" { };
