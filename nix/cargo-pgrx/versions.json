@@ -115,5 +115,13 @@
         "cargoHash": "sha256-95DHq5GLnAqb3bbKwwaeBeKEmkfRh81ZTRaJ7L59DAg="
       }
     }
+  },
+  "0.19.2": {
+    "hash": "sha256-PANc819AhIE9yJ6NFHGJxHJHWZyR2Srmj2cEz3vQmJk=",
+    "rust": {
+      "1.97.1": {
+        "cargoHash": "sha256-cTD7x36FvFUIwVLuAqrOJ75vLDppITiDrY8Fs3RjPqU="
+      }
+    }
   }
 }
