@@ -74,11 +74,14 @@
       ];
 
       getPostgresqlPackage =
-        version: latestOnly:
+        version: latestOnly: icu73:
         let
           base = pkgs."postgresql_${version}";
+          # Swap in ICU 73.2 (from nixpkgs-oldstable) to preserve the collation
+          # lineage of projects built before the icu 75.1 bump (#1714)
+          lineage = if icu73 then base.override { icu75 = pkgs.icu73; } else base;
         in
-        if latestOnly then base.override { systemdSupport = false; } else base;
+        if latestOnly then lineage.override { systemdSupport = false; } else lineage;
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -119,9 +122,10 @@
         {
           variant ? "full",
           latestOnly ? false,
+          icu73 ? false,
         }:
         let
-          postgresql = getPostgresqlPackage version latestOnly;
+          postgresql = getPostgresqlPackage version latestOnly icu73;
           extensionsToUse =
             if variant == "cli" then
               cliExtensions
@@ -148,9 +152,10 @@
         {
           variant ? "full",
           latestOnly ? false,
+          icu73 ? false,
         }:
         let
-          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly icu73; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -178,15 +183,16 @@
         {
           variant ? "full",
           latestOnly ? false,
+          icu73 ? false,
         }:
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
           postgresql =
             let
-              base = getPostgresqlPackage version latestOnly;
+              base = getPostgresqlPackage version latestOnly icu73;
             in
             if variant == "cli" then base.override { portable = true; } else base;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly icu73; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -222,10 +228,11 @@
         {
           variant ? "full",
           latestOnly ? false,
+          icu73 ? false,
         }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant latestOnly; };
-          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
+          bin = makePostgresBin version { inherit variant latestOnly icu73; };
+          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly icu73; };
         };
       basePackages = {
         psql_15 = makePostgres "15" { };
@@ -243,13 +250,20 @@
         psql_17_cli = makePostgres "17" { variant = "cli"; };
       };
 
+      # icu73-lineage packages - the same package set built against ICU 73.2,
+      # published to the S3 nix catalog (never baked into AMIs) as the upgrade
+      # target for projects created before the icu 75.1 bump (PG17 < 17.6.1.072)
+      icu73Packages = {
+        psql_17_icu73 = makePostgres "17" { icu73 = true; };
+      };
+
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // slimPackages // cliPackages);
+      }) (basePackages // slimPackages // cliPackages // icu73Packages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // slimPackages // cliPackages;
+      legacyPackages = basePackages // slimPackages // cliPackages // icu73Packages;
     };
 }

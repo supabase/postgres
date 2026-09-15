@@ -100,6 +100,7 @@
               # Use different ports to allow parallel test runs
               # slim packages get their own ports to avoid conflicts
               isSlim = lib.hasSuffix "_slim" effectiveLegacyPkgName;
+              isIcu73 = lib.hasSuffix "_icu73" effectiveLegacyPkgName;
               pgPort =
                 if (majorVersion == "17" && isSlim) then
                   "5538"
@@ -109,6 +110,8 @@
                   "5540"
                 else if (majorVersion == "17" && isCliVariant) then
                   "5541"
+                else if (majorVersion == "17" && isIcu73) then
+                  "5542"
                 else if (majorVersion == "17") then
                   "5535"
                 else if (majorVersion == "15") then
@@ -637,8 +640,19 @@
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
           );
+          # icu73-lineage variant checks
+          psql_17_icu73 = pkgs.runCommand "run-check-harness-psql-17-icu73" { } (
+            lib.getExe (
+              makeCheckHarness self'.packages."psql_17_icu73/bin" { legacyPkgName = "psql_17_icu73"; }
+            )
+          );
           # Portable CLI bundle portability checks
           psql_17_cli_portable =
+            let
+              # ICU version the bundled postgres was built against; lineage
+              # variants link a different major, so never hardcode it here
+              icu = self'.packages."postgresql_17".icu;
+            in
             pkgs.runCommand "psql_17_cli_portable-portability-check"
               {
                 nativeBuildInputs = [
@@ -740,32 +754,32 @@
                   if pkgs.stdenv.isDarwin then
                     ''
                       # Check for ICU transitive dependencies
-                      if [ ! -f "lib/libicuuc.75.1.dylib" ]; then
-                        echo "ERROR: Missing transitive dependency libicuuc.75.1.dylib"
+                      if [ ! -f "lib/libicuuc.${icu.version}.dylib" ]; then
+                        echo "ERROR: Missing transitive dependency libicuuc.${icu.version}.dylib"
                         exit 1
                       fi
-                      echo "  ✓ Found lib/libicuuc.75.1.dylib"
+                      echo "  ✓ Found lib/libicuuc.${icu.version}.dylib"
 
-                      if [ ! -f "lib/libicudata.75.1.dylib" ]; then
-                        echo "ERROR: Missing transitive dependency libicudata.75.1.dylib"
+                      if [ ! -f "lib/libicudata.${icu.version}.dylib" ]; then
+                        echo "ERROR: Missing transitive dependency libicudata.${icu.version}.dylib"
                         exit 1
                       fi
-                      echo "  ✓ Found lib/libicudata.75.1.dylib"
+                      echo "  ✓ Found lib/libicudata.${icu.version}.dylib"
                     ''
                   else
                     ''
-                      # Check for ICU transitive dependencies (Linux uses .so.75 without patch version)
-                      if [ ! -f "lib/libicuuc.so.75" ]; then
-                        echo "ERROR: Missing transitive dependency libicuuc.so.75"
+                      # Check for ICU transitive dependencies (Linux uses .so.<major> without patch version)
+                      if [ ! -f "lib/libicuuc.so.${lib.versions.major icu.version}" ]; then
+                        echo "ERROR: Missing transitive dependency libicuuc.so.${lib.versions.major icu.version}"
                         exit 1
                       fi
-                      echo "  ✓ Found lib/libicuuc.so.75"
+                      echo "  ✓ Found lib/libicuuc.so.${lib.versions.major icu.version}"
 
-                      if [ ! -f "lib/libicudata.so.75" ]; then
-                        echo "ERROR: Missing transitive dependency libicudata.so.75"
+                      if [ ! -f "lib/libicudata.so.${lib.versions.major icu.version}" ]; then
+                        echo "ERROR: Missing transitive dependency libicudata.so.${lib.versions.major icu.version}"
                         exit 1
                       fi
-                      echo "  ✓ Found lib/libicudata.so.75"
+                      echo "  ✓ Found lib/libicudata.so.${lib.versions.major icu.version}"
                     ''
                 }
 

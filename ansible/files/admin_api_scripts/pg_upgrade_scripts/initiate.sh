@@ -59,6 +59,15 @@ PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
 NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
 
+# Builds below the ICU 75.1 boundary (PG17 < 17.6.1.072, OrioleDB < 17.6.0.029)
+# link ICU 73; such sources must receive an icu73-built target so the upgrade
+# never changes the effective collation. The lineage is read from the ICU major
+# the source binaries actually link: the full release string is not available
+# on the instance, and server_version cannot discriminate (upstream 17.6
+# shipped on both sides of the boundary).
+ICU73_SO_MAJOR="73"
+ICU73_CATALOG_SUFFIX="_icu73"
+
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
 	BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
 	if [[ $BINARY_PATH == *"nix"* ]]; then
@@ -80,6 +89,13 @@ if [ -n "$IS_CI" ]; then
 	PGBINOLD="$(pg_config --bindir)"
 	log "Running in CI mode; using pg_config bindir: $PGBINOLD"
 	log "PGVERSION: $PGVERSION"
+fi
+
+# ICU major linked by the source install; empty for PG15 and older sources,
+# which are libc-provider and always use the standard catalog
+SOURCE_ICU_SO_MAJOR=""
+if [[ ${OLD_PGVERSION%%.*} -ge 16 ]]; then
+	SOURCE_ICU_SO_MAJOR=$(ldd "$PGBINOLD/postgres" 2>/dev/null | sed -n 's/.*libicuuc\.so\.\([0-9]\{1,\}\).*/\1/p' | head -n 1 || true)
 fi
 
 OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
@@ -354,14 +370,31 @@ EXTRA_NIX_CONF
 			false
 		fi
 
+		# Preserve the source's collation lineage: icu73 sources get the
+		# icu73-built variant of the target, published under its own catalog key
+		CATALOG_PSQL="psql_${PGVERSION}"
+		if [[ ${OLD_PGVERSION%%.*} -ge 16 ]]; then
+			if [ -z "$SOURCE_ICU_SO_MAJOR" ]; then
+				log "ERROR: Could not determine the ICU version linked by $PGBINOLD/postgres; aborting before selecting a catalog"
+				false # not exit: let the ERR trap run cleanup
+			fi
+			if [ "$SOURCE_ICU_SO_MAJOR" = "$ICU73_SO_MAJOR" ]; then
+				CATALOG_PSQL="psql_${PGVERSION}${ICU73_CATALOG_SUFFIX}"
+				log "Source links ICU ${SOURCE_ICU_SO_MAJOR}: selecting the icu73-variant catalog"
+			fi
+		fi
+
 		# Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
 		# Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
-		CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
-		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
+		CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-${CATALOG_PSQL}-${SYSTEM}.json"
+		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-${CATALOG_PSQL}-${SYSTEM}.json"
 		log "Fetching catalog from: $CATALOG_S3"
 
 		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
 			log "ERROR: Failed to fetch catalog from $CATALOG_S3"
+			if [ "$CATALOG_PSQL" != "psql_${PGVERSION}" ]; then
+				log "ERROR: icu73-variant catalog is not published for this target; refusing to fall back to the cross-lineage default"
+			fi
 			false # not exit: let the ERR trap run cleanup
 		fi
 

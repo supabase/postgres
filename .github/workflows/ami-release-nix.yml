@@ -92,6 +92,12 @@ jobs:
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
+      - name: Build icu73-lineage variant closure
+        if: matrix.postgres_version == '17'
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#psql_${{ matrix.postgres_version }}_icu73/bin
+
       - name: Build AMI
         id: build-ami
         uses: ./.github/actions/build-ami
@@ -202,6 +208,28 @@ jobs:
             --content-type "application/json"
 
           echo "Catalog uploaded to ${CATALOG_S3}"
+
+          # icu73-lineage variant (17 only) is published under its own
+          # psql_17_icu73 key so it can never collide with the standard artifact
+          if [ "$POSTGRES_MAJOR_VERSION" = "17" ]; then
+            ICU73_STORE_PATH=$(nix eval --raw ".#psql_${POSTGRES_MAJOR_VERSION}_icu73/bin.outPath")
+            ICU73_CATALOG_S3="s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-psql_${POSTGRES_MAJOR_VERSION}_icu73-${SYSTEM}.json"
+
+            jq -n \
+               --arg ver "$POSTGRES_SUPABASE_VERSION" \
+               --arg sha "$GIT_SHA" \
+               --arg sys "$SYSTEM" \
+               --arg path "$ICU73_STORE_PATH" \
+               '{version: $ver, git_sha: $sha, ($sys): $path}' > /tmp/catalog-icu73.json
+
+            echo "Catalog for psql_${POSTGRES_MAJOR_VERSION}_icu73:"
+            cat /tmp/catalog-icu73.json
+
+            aws s3 cp /tmp/catalog-icu73.json "$ICU73_CATALOG_S3" \
+              --content-type "application/json"
+
+            echo "Catalog uploaded to ${ICU73_CATALOG_S3}"
+          fi
 
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0

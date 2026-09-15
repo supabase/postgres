@@ -244,6 +244,11 @@ let
           psqlSchema = lib.versions.major version;
           inherit revision;
 
+          # The ICU this build links against; lineage variants override the
+          # icu75 argument, so checks must read the version from here rather
+          # than hardcode it.
+          icu = icu75;
+
           dlSuffix = if olderThan "16" then ".so" else stdenv.hostPlatform.extensions.sharedLibrary;
           inherit isOrioleDB;
 
