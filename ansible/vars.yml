@@ -7,9 +7,9 @@ postgres_major:
   - "17"
   - orioledb-17
 postgres_release:
-  postgresorioledb-17: "17.9.0.024-orioledb"
-  postgres17: "17.6.1.171"
-  postgres15: "15.14.1.171"
+  postgresorioledb-17: "17.9.0.024-orioledb-jf"
+  postgres17: "17.6.1.171-jf"
+  postgres15: "15.14.1.171-jf"
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
@@ -29,14 +29,14 @@ adminapi_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
     checksum: sha256:235dc47bfb5f6986bf0bc159162b486131d163c6cc1afe5561776d8ba93174d7
-adminmgr_release: 0.43.6
+adminmgr_release: 0.44.5
 adminmgr_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
-    checksum: sha256:199c44e2c53e8cc73029f6b6bff64e47491cba5d59c02427facee3112e54f5b0
+    checksum: sha256:bf2cbe0b75ef94d816ef378fb4266c4351d1b8505de8c12d836fab72761add54
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
-    checksum: sha256:0e649f0714ca47735d0e2a27ae740abd43d64b9b472b6cf113393390b2c1a694
+    checksum: sha256:200d26440ed5ae73f29c14455e500a489960525cfe8b74a56e25c68f2b7cca93
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
