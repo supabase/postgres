@@ -72,7 +72,7 @@ function cleanup_packages {
 
 function cleanup_nix {
 	nix-collect-garbage -d
-	nix-store --optimise -v
+	nix store optimise -v
 }
 
 function report_packages {

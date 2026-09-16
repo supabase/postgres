@@ -66,8 +66,7 @@
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }} &&
-          nix-store --optimise
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
         "
       register: postgres_env_path
 
@@ -75,17 +74,16 @@
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix-env --set {{ postgres_env_path.stdout }} &&
-          nix-store --optimise
+          nix-env --set {{ postgres_env_path.stdout }}
         "
 
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan && nix-store --optimise"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
 
     - name: nix collect garbage after supascan install
       ansible.builtin.shell:
-        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d && nix-store --optimise"
+        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d && nix store optimise"
 
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
