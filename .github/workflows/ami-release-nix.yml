@@ -203,6 +203,32 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
+      - name: Update nix store path catalog (icu73 variant)
+        if: matrix.postgres_version == '17'
+        run: |
+          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+
+          # unlike psql_17/bin, nothing else in this job builds this variant
+          STORE_PATH=$(nix build ".#psql_17_icu73/bin" --print-out-paths)
+
+          CATALOG_S3="s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-psql_17_icu73-${SYSTEM}.json"
+
+          jq -n \
+             --arg ver "$POSTGRES_SUPABASE_VERSION" \
+             --arg sha "$GIT_SHA" \
+             --arg sys "$SYSTEM" \
+             --arg path "$STORE_PATH" \
+             '{version: $ver, git_sha: $sha, ($sys): $path}' > /tmp/catalog-icu73.json
+
+          echo "Catalog for psql_17_icu73:"
+          cat /tmp/catalog-icu73.json
+
+          aws s3 cp /tmp/catalog-icu73.json "$CATALOG_S3" \
+            --content-type "application/json"
+
+          echo "Catalog uploaded to ${CATALOG_S3}"
+
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:

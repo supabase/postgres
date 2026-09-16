@@ -36,6 +36,8 @@ IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
 IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
+ICU_VERSION=${ICU_VERSION:-} # e.g. "73"; selects psql_${PGVERSION}_icu${ICU_VERSION} catalog. detection: TODO
+
 PGVERSION=$1
 MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
@@ -356,8 +358,12 @@ EXTRA_NIX_CONF
 
 		# Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
 		# Each postgres version has its own catalog file: {git_sha}-psql_{version}.json
-		CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
-		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
+		CATALOG_KEY="psql_${PGVERSION}"
+		if [ -n "$ICU_VERSION" ]; then
+			CATALOG_KEY="psql_${PGVERSION}_icu${ICU_VERSION}"
+		fi
+		CATALOG_S3="s3://supabase-internal-artifacts/nix-catalog/${NIX_FLAKE_VERSION}-${CATALOG_KEY}-${SYSTEM}.json"
+		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-${CATALOG_KEY}-${SYSTEM}.json"
 		log "Fetching catalog from: $CATALOG_S3"
 
 		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then

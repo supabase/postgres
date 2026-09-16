@@ -12,7 +12,7 @@ let
       zlib,
       readline,
       openssl,
-      icu75,
+      icu,
       lz4,
       zstd,
       systemd,
@@ -114,9 +114,7 @@ let
         readline
         openssl
         (libxml2.override { python3 = python3; })
-        # Pin ICU to version 75 to maintain collation version 153.120
-        # This prevents collation mismatch warnings when upgrading nixpkgs
-        icu75
+        icu
       ]
       ++ lib.optionals (olderThan "13") [ libxcrypt ]
       ++ lib.optionals lz4Enabled [ lz4 ]

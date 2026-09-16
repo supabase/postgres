@@ -571,7 +571,7 @@
                 # running server as pg_regress (--use-existing). These specs target
                 # core/heap + contrib concurrency behaviour. Skipped on:
                 #   - CLI variants: portable build runs only a test subset.
-                #   - orioledb ships its own isolation suite for its storage-engine 
+                #   - orioledb ships its own isolation suite for its storage-engine
                 #     concurrency semantics.
                 #shellcheck disable=SC2193
                 if ${lib.boolToString isCliVariant}; then
@@ -637,6 +637,34 @@
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
           );
+          # ICU version check
+          psql_17_icu73 =
+            pkgs.runCommand "check-psql-17-icu73-links-icu73"
+              {
+                nativeBuildInputs = if pkgs.stdenv.isDarwin then [ pkgs.darwin.cctools ] else [ pkgs.binutils ];
+              }
+              ''
+                bin="${self'.packages."psql_17_icu73/bin"}/bin/postgres"
+                ${
+                  if pkgs.stdenv.isDarwin then
+                    ''
+                      if ! otool -L "$bin" | grep -q 'icu4c-73\.2/lib/libicuuc\.'; then
+                        echo "ERROR: psql_17_icu73's postgres binary does not link ICU 73.2"
+                        otool -L "$bin"
+                        exit 1
+                      fi
+                    ''
+                  else
+                    ''
+                      if ! readelf -d "$bin" | grep -q 'libicuuc\.so\.73'; then
+                        echo "ERROR: psql_17_icu73's postgres binary does not link ICU 73.2 (libicuuc.so.73)"
+                        readelf -d "$bin"
+                        exit 1
+                      fi
+                    ''
+                }
+                echo "  \u2713 psql_17_icu73 links ICU 73.2" | tee $out
+              '';
           # Portable CLI bundle portability checks
           psql_17_cli_portable =
             pkgs.runCommand "psql_17_cli_portable-portability-check"

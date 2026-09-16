@@ -74,11 +74,16 @@
       ];
 
       getPostgresqlPackage =
-        version: latestOnly:
+        {
+          version,
+          latestOnly ? false,
+          icuVersion ? null,
+        }:
         let
           base = pkgs."postgresql_${version}";
+          base' = if latestOnly then base.override { systemdSupport = false; } else base;
         in
-        if latestOnly then base.override { systemdSupport = false; } else base;
+        if icuVersion == null then base' else base'.override { icu = pkgs.${icuVersion}; };
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -115,13 +120,14 @@
         };
 
       makeOurPostgresPkgs =
-        version:
         {
+          version,
           variant ? "full",
           latestOnly ? false,
+          icuVersion ? null,
         }:
         let
-          postgresql = getPostgresqlPackage version latestOnly;
+          postgresql = getPostgresqlPackage { inherit version latestOnly icuVersion; };
           extensionsToUse =
             if variant == "cli" then
               cliExtensions
@@ -144,13 +150,14 @@
 
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
-        version:
         {
+          version,
           variant ? "full",
           latestOnly ? false,
+          icuVersion ? null,
         }:
         let
-          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          pkgsList = makeOurPostgresPkgs { inherit version variant latestOnly icuVersion; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -174,19 +181,20 @@
       # "15" passed in will use the nixpkgs package "postgresql_15" as the
       # basis for building extensions, etc.
       makePostgresBin =
-        version:
         {
+          version,
           variant ? "full",
           latestOnly ? false,
+          icuVersion ? null,
         }:
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
           postgresql =
             let
-              base = getPostgresqlPackage version latestOnly;
+              base = getPostgresqlPackage { inherit version latestOnly icuVersion; };
             in
             if variant == "cli" then base.override { portable = true; } else base;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          postgres-pkgs = makeOurPostgresPkgs { inherit version variant latestOnly icuVersion; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -218,38 +226,43 @@
       #  - exts: an attrset containing all the extensions, mapped to their
       #    package names.
       makePostgres =
-        version:
         {
+          version,
           variant ? "full",
           latestOnly ? false,
+          icuVersion ? null,
         }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant latestOnly; };
-          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
+          bin = makePostgresBin { inherit version variant latestOnly icuVersion; };
+          exts = makeOurPostgresPkgsSet { inherit version variant latestOnly icuVersion; };
         };
       basePackages = {
-        psql_15 = makePostgres "15" { };
-        psql_17 = makePostgres "17" { };
-        psql_orioledb-17 = makePostgres "orioledb-17" { };
+        psql_15 = makePostgres { version = "15"; };
+        psql_17 = makePostgres { version = "17"; };
+        psql_orioledb-17 = makePostgres { version = "orioledb-17"; };
       };
       slimPackages = {
-        psql_15_slim = makePostgres "15" { latestOnly = true; };
-        psql_17_slim = makePostgres "17" { latestOnly = true; };
-        psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
+        psql_15_slim = makePostgres { version = "15"; latestOnly = true; };
+        psql_17_slim = makePostgres { version = "17"; latestOnly = true; };
+        psql_orioledb-17_slim = makePostgres { version = "orioledb-17"; latestOnly = true; };
       };
 
       # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
       cliPackages = {
-        psql_17_cli = makePostgres "17" { variant = "cli"; };
+        psql_17_cli = makePostgres { version = "17"; variant = "cli"; };
+      };
+
+      icuPinnedPackages = {
+        psql_17_icu73 = makePostgres { version = "17"; icuVersion = "icu73"; };
       };
 
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // slimPackages // cliPackages);
+      }) (basePackages // slimPackages // cliPackages // icuPinnedPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // slimPackages // cliPackages;
+      legacyPackages = basePackages // slimPackages // cliPackages // icuPinnedPackages;
     };
 }

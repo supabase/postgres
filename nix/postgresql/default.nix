@@ -19,6 +19,7 @@ let
           inherit (config) version hash revision;
           self = pkgs;
           portable = false; # Default to non-portable, can be overridden
+          icu = pkgs.icu75; # pin; callPackage would otherwise default to nixpkgs' generic icu
         }
       )
     ) supportedVersions;
