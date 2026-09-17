@@ -2,7 +2,19 @@ name: Testinfra Integration Tests Nix
 
 on:
   workflow_dispatch:
+    inputs:
+      arch:
+        type: choice
+        options:
+          - amd64
+          - arm64
+        required: true
   workflow_call:
+    inputs:
+      arch:
+        description: amd64 or arm64
+        type: string
+        required: true
     secrets:
       DEV_AWS_ROLE:
         description: 'AWS role for dev environment'
@@ -22,7 +34,9 @@ jobs:
   gen-matrix:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
-      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+      instance_type: ${{ steps.set-outputs.outputs.instance_type }}
+      postgres_versions: ${{ steps.set-outputs.outputs.postgres_versions }}
+      runner: ${{ steps.set-outputs.outputs.runner }}
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
@@ -30,11 +44,20 @@ jobs:
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
 
-      - name: Set PostgreSQL versions
-        id: set-versions
+      - name: Set outputs
+        id: set-outputs
+        env:
+          ARCH: ${{ inputs.arch }}
         run: |
-          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
-          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          postgres_versions=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          case "$ARCH" in
+            amd64) runner=blacksmith-2vcpu-ubuntu-2404 instance_type=c6i.4xlarge ;;
+            arm64) runner=blacksmith-2vcpu-ubuntu-2404-arm instance_type=c6g.4xlarge ;;
+            *) echo "::error::unknown arch '$ARCH'"; exit 1 ;;
+          esac
+          echo "instance_type=$instance_type" >> "$GITHUB_OUTPUT"
+          echo "postgres_versions=$postgres_versions" >> "$GITHUB_OUTPUT"
+          echo "runner=$runner" >> "$GITHUB_OUTPUT"
 
   build:
     needs: gen-matrix
@@ -42,14 +65,7 @@ jobs:
       fail-fast: false
       matrix:
         postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
-        target:
-          - arch: amd64
-            instance_type: c6i.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404
-          - arch: arm64
-            instance_type: c6g.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: ${{ needs.gen-matrix.outputs.runner }}
     timeout-minutes: 150
 
     steps:
@@ -91,18 +107,18 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
+          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ inputs.arch }}"
           ami_regions: '["${{ env.AWS_REGION }}"]'
-          arch: ${{ matrix.target.arch }}
+          arch: ${{ inputs.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
+          instance_type: ${{ needs.gen-matrix.outputs.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
       - name: Save AMI disk usage
         env:
-          ARCH: ${{ matrix.target.arch }}
+          ARCH: ${{ inputs.arch }}
           DISK_USAGE_JSON: ${{ steps.build-ami.outputs.disk_usage_json }}
           POSTGRES_VERSION: ${{ matrix.postgres_version }}
         run: >-
@@ -116,7 +132,7 @@ jobs:
       - name: Upload AMI disk usage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ inputs.arch }}
           path: ami-disk-usage-*.json
           overwrite: true
           retention-days: 1
@@ -188,26 +204,3 @@ jobs:
           else
             echo "No stage 2 AMI to clean up"
           fi
-
-  report-disk-usage:
-    needs: build
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    steps:
-      - name: Download AMI disk usage
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          pattern: ami-disk-usage-*
-          path: ami-disk-usage
-          merge-multiple: true
-
-      - name: Report AMI disk usage
-        run: |
-          cat <<EOF >>"$GITHUB_STEP_SUMMARY"
-          ### AMI Root Disk Usage
-
-          | Version | Arch | Human | Bytes |
-          | ------- | ---- | ----- | ----- |
-          EOF
-          cat ami-disk-usage/ami-disk-usage-*.json |
-          sort -V |
-          jq -rs '.[]|{version,arch,human,bytes}|"| \(join("|")) |"' >>"$GITHUB_STEP_SUMMARY"
