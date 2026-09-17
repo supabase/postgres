@@ -47,9 +47,6 @@ function cleanup {
 		# would skip ship_logs and lose the diagnostics for the actual failure.
 		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
-
-	ship_logs "$LOG_FILE" || true
-
 	exit "$EXIT_CODE"
 }
 
@@ -387,11 +384,6 @@ function complete_pg_upgrade {
 	fi
 
 	log "Upgrade job completed"
-
-	# Clean runs ship nothing — only warn-but-completed upgrades are reported (hard failures ship via the ERR-trap cleanup)
-	if [ "$warnings" = 1 ]; then
-		ship_logs "$LOG_FILE" || true
-	fi
 }
 
 function copy_configs {

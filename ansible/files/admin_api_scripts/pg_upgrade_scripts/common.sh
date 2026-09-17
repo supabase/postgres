@@ -2,14 +2,6 @@
 
 # Common functions and variables used by initiate.sh and complete.sh
 
-REPORTING_PROJECT_REF="ihmaxnjpcccasmrbkpvo"
-REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"
-
-REPORTING_ANON_KEY=""
-if [ -f "$REPORTING_CREDENTIALS_FILE" ]; then
-	REPORTING_ANON_KEY=$(cat "$REPORTING_CREDENTIALS_FILE")
-fi
-
 function log {
 	echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"
 }
@@ -79,34 +71,6 @@ function conninfo_for_db {
 	d="${d//\\/\\\\}"
 	d="${d//\'/\\\'}"
 	printf "dbname='%s'" "$d"
-}
-
-function ship_logs {
-	LOG_FILE=$1
-
-	if [ -z "$REPORTING_ANON_KEY" ]; then
-		log "No reporting key found. Skipping log upload."
-		return 0
-	fi
-
-	if [ ! -f "$LOG_FILE" ]; then
-		log "No log file found. Skipping log upload."
-		return 0
-	fi
-
-	if [ ! -s "$LOG_FILE" ]; then
-		log "Log file is empty. Skipping log upload."
-		return 0
-	fi
-
-	HOSTNAME=$(hostname)
-	DERIVED_REF="${HOSTNAME##*-}"
-
-	printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
-	curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
-		-H "apikey: ${REPORTING_ANON_KEY}" \
-		-H 'Content-type: application/json' \
-		-d "$BODY"
 }
 
 # Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade

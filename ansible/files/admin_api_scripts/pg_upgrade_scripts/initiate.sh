@@ -110,9 +110,7 @@ cleanup() {
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		ship_logs "$LOG_FILE" || true
 		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
-		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
 	fi
 
 	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
