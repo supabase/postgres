@@ -292,6 +292,43 @@
     state: 'directory'
   become: true
 
+# Required for this (plus CoredumpFilter= in postgresql.service and the
+# storage limits below) to do anything at all: without systemd-coredump,
+# core_pattern stays at the kernel's plain "core" default and none of this
+# gets exercised (confirmed on a local test VM). Unconditional - every
+# Postgres flavor's capture depends on it, not just OrioleDB.
+- name: ensure systemd-coredump is installed
+  ansible.builtin.apt:
+    name: systemd-coredump
+  become: true
+
+- name: copy PostgreSQL coredump systemd drop-in
+  ansible.builtin.copy:
+    dest: '/etc/systemd/system/postgresql.service.d/coredump.conf'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: 'files/postgresql_config/coredump.conf'
+  become: true
+
+- name: Create a systemd-coredump conf.d dir for PostgreSQL storage limits
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0755'
+    owner: 'root'
+    path: '/etc/systemd/coredump.conf.d'
+    state: 'directory'
+  become: true
+
+- name: copy systemd-coredump storage limits
+  ansible.builtin.copy:
+    dest: '/etc/systemd/coredump.conf.d/postgres.conf'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: 'files/postgresql_config/coredump-storage.conf'
+  become: true
+
 - name: Ensure PostgreSQL starts after tuned
   become: true
   community.general.ini_file:

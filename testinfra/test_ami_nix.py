@@ -1407,3 +1407,183 @@ def test_apparmor_denies_access_to_sensitive_paths(host):
             f"to have succeeded.\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
         )
         print(f"Confirmed: access to {test_file} denied by AppArmor")
+
+
+def test_postgresql_service_allows_unlimited_core_dumps(host):
+    """Verify the postgresql.service coredump drop-in sets LimitCORE=infinity.
+
+    Coredumps are intentionally scoped to the postgresql unit only (via a
+    systemd.service.d drop-in), not enabled machine-wide, so other services
+    must keep the default core limit.
+    """
+    result = run_ssh_command(host["ssh"], "systemctl show postgresql -p LimitCORE")
+    assert result["succeeded"], f"systemctl show failed: {result['stderr']}"
+    assert "LimitCORE=infinity" in result["stdout"], (
+        f"Expected postgresql.service to have LimitCORE=infinity, got:\n{result['stdout']}"
+    )
+
+
+def test_coredump_storage_limits_configured(host):
+    """Verify /etc/systemd/coredump.conf.d/postgres.conf sets conservative,
+    bounded storage limits for the systemd-coredump storage that backs
+    Postgres core capture."""
+    result = run_ssh_command(
+        host["ssh"], "cat /etc/systemd/coredump.conf.d/postgres.conf"
+    )
+    assert result["succeeded"], (
+        f"Could not read coredump storage config: {result['stderr']}"
+    )
+    for expected in [
+        "Storage=external",
+        "Compress=yes",
+        "ProcessSizeMax=",
+        "ExternalSizeMax=",
+        "MaxUse=",
+        "KeepFree=",
+    ]:
+        assert expected in result["stdout"], (
+            f"Expected '{expected}' in /etc/systemd/coredump.conf.d/postgres.conf, "
+            f"got:\n{result['stdout']}"
+        )
+
+
+def test_postgres_coredump_filter_excludes_shared_buffers(host):
+    """Verify the running postmaster's /proc/[pid]/coredump_filter is 0x31
+    (49): private mappings + ELF headers, but not anonymous-shared mappings.
+
+    shared_buffers is mmap(MAP_SHARED|MAP_ANONYMOUS) (shared_memory_type
+    defaults to 'mmap' and is not overridden), which the kernel classifies
+    as an anonymous shared mapping - excluding it from every core is what
+    actually keeps core size bounded, since shared_buffers can be many GB.
+    postgresql.service sets this via the native systemd
+    'CoredumpFilter=private-anonymous elf-headers private-huge' directive
+    (systemd >= 246), which coredump_filter (inherited across fork(2) and
+    preserved across execve(2)) then propagates to everything postgres forks.
+    """
+    pid = run_ssh_command(
+        host["ssh"], "systemctl show postgresql -p MainPID --value"
+    )["stdout"].strip()
+    assert pid.isdigit() and pid != "0", f"Could not resolve postgresql.service MainPID: {pid}"
+
+    result = run_ssh_command(host["ssh"], f"cat /proc/{pid}/coredump_filter")
+    assert result["succeeded"], f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
+    assert result["stdout"].strip() == "31", (
+        f"Expected /proc/{pid}/coredump_filter to be '31' (0x31 = 49 decimal), "
+        f"got '{result['stdout'].strip()}'"
+    )
+
+
+def test_coredump_storage_directory_root_only(host):
+    """Verify /var/lib/systemd/coredump is root-only, since it can hold
+    core files containing customer data."""
+    result = run_ssh_command(
+        host["ssh"], "stat -c '%a %U:%G' /var/lib/systemd/coredump"
+    )
+    assert result["succeeded"], f"stat failed: {result['stderr']}"
+    mode, owner = result["stdout"].strip().split()
+    assert mode in ("700", "750"), (
+        f"Expected /var/lib/systemd/coredump to be root-only, got mode {mode}"
+    )
+    assert owner.startswith("root:"), (
+        f"Expected /var/lib/systemd/coredump to be owned by root, got {owner}"
+    )
+
+
+def test_postgres_prestart_does_not_reset_core_limit(host):
+    """Regression guard: postgres_prestart.sh must never touch 'ulimit -c',
+    or it would silently defeat the postgresql.service LimitCORE=infinity
+    coredump drop-in."""
+    result = run_ssh_command(
+        host["ssh"], "cat /usr/local/bin/postgres_prestart.sh"
+    )
+    assert result["succeeded"], f"Could not read prestart script: {result['stderr']}"
+    assert "ulimit -c" not in result["stdout"], (
+        "postgres_prestart.sh must not set 'ulimit -c' - doing so would silently "
+        "defeat the postgresql.service coredump drop-in"
+    )
+
+
+def _crash_a_backend_and_wait_for_recovery(host):
+    """Grab a real Postgres backend pid, SIGSEGV it, and wait for PostgreSQL's
+    normal crash-recovery to bring the instance back on its own
+    (Restart=always / auto-reinit, same as production). Returns the crashed
+    backend's pid. Used by tests that need a real, fresh core to appear."""
+    backend_pid = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+        "-tAc 'select pg_backend_pid()'",
+    )["stdout"].strip()
+    assert backend_pid.isdigit(), (
+        f"Could not resolve a Postgres backend pid: {backend_pid}"
+    )
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {backend_pid}")
+
+    recovered = False
+    for _ in range(30):
+        sleep(2)
+        probe = run_ssh_command(
+            host["ssh"],
+            "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+            "-tAc 'select 1'",
+        )
+        if probe["succeeded"] and probe["stdout"].strip() == "1":
+            recovered = True
+            break
+    assert recovered, (
+        "PostgreSQL did not come back up within 60s after the induced backend crash"
+    )
+    return backend_pid
+
+
+def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(host):
+    """End-to-end capture check: a segfaulted Postgres backend must produce a
+    coredumpctl-visible core, while an unrelated process crashing the same way
+    must not.
+
+    This intentionally crashes a live backend (mirroring a real SIGSEGV, e.g.
+    the background-writer crash in incident ORI-261) and relies on
+    PostgreSQL's normal crash-recovery to bring the instance back on its own
+    (Restart=always / auto-reinit), the same as in production - it does not
+    reinstall data or otherwise reset the shared test instance.
+    """
+    before = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    before_lines = set(before["stdout"].splitlines())
+
+    # Unrelated process: launch a disposable process outside the
+    # LimitCORE=infinity-scoped postgresql.service and SIGSEGV it - it must
+    # not produce a core, since the default core limit is unchanged for it.
+    run_ssh_command(
+        host["ssh"],
+        "setsid bash -c 'sleep 60 & echo $! > /tmp/unrelated_pid; wait' >/dev/null 2>&1 &",
+    )
+    sleep(1)
+    unrelated_pid = run_ssh_command(host["ssh"], "cat /tmp/unrelated_pid")[
+        "stdout"
+    ].strip()
+    assert unrelated_pid.isdigit(), (
+        f"Could not resolve the disposable unrelated process pid: {unrelated_pid}"
+    )
+    run_ssh_command(host["ssh"], f"kill -SEGV {unrelated_pid}")
+    sleep(2)
+
+    # Postgres backend: grab a real backend pid and crash it the same way.
+    backend_pid = _crash_a_backend_and_wait_for_recovery(host)
+
+    after = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    new_lines = [
+        line for line in after["stdout"].splitlines() if line not in before_lines
+    ]
+    assert any("postgres" in line for line in new_lines), (
+        f"Expected a new postgres core dump after SIGSEGV to backend {backend_pid}, "
+        f"but coredumpctl list shows:\n{after['stdout']}"
+    )
+    assert not any(unrelated_pid in line for line in new_lines), (
+        f"Unrelated process {unrelated_pid} should not have produced a core dump:\n"
+        f"{after['stdout']}"
+    )
+
+
