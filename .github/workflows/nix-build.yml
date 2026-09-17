@@ -19,7 +19,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  eval:
+  eval-x86_64-linux:
+    name: Nix Eval (x86_64-linux)
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
       packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
@@ -27,29 +28,95 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          installer: determinate
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
 
       - name: Generate Nix Matrix
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
+          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+
+  eval-aarch64-linux:
+    name: Nix Eval (aarch64-linux)
+    runs-on: blacksmith-32vcpu-ubuntu-2404-arm
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          installer: determinate
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+
+  eval-aarch64-darwin:
+    name: Nix Eval (aarch64-darwin)
+    runs-on: blacksmith-12vcpu-macos-26
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          installer: determinate
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
-    needs: eval
+    needs: eval-aarch64-linux
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_linux }}
+      matrix: ${{ fromJSON(needs.eval-aarch64-linux.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -70,14 +137,13 @@ jobs:
   checks-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
     needs:
-      - eval
+      - eval-aarch64-linux
       - builds-aarch64-linux
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_linux }}
+      matrix: ${{ fromJSON(needs.eval-aarch64-linux.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -97,13 +163,12 @@ jobs:
 
   builds-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
-    needs: eval
+    needs: eval-aarch64-darwin
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_darwin }}
+      matrix: ${{ fromJSON(needs.eval-aarch64-darwin.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -127,14 +192,13 @@ jobs:
   checks-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
     needs:
-      - eval
+      - eval-aarch64-darwin
       - builds-aarch64-darwin
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_darwin }}
+      matrix: ${{ fromJSON(needs.eval-aarch64-darwin.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -154,13 +218,12 @@ jobs:
 
   builds-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
-    needs: eval
+    needs: eval-x86_64-linux
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).x86_64_linux }}
+      matrix: ${{ fromJSON(needs.eval-x86_64-linux.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -181,14 +244,13 @@ jobs:
   checks-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
     needs:
-      - eval
+      - eval-x86_64-linux
       - builds-x86_64-linux
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).x86_64_linux }}
+      matrix: ${{ fromJSON(needs.eval-x86_64-linux.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}

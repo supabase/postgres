@@ -61,9 +61,7 @@
           };
           docs = pkgs.callPackage ./docs.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
-          github-matrix = pkgs.callPackage ./github-matrix {
-            nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
-          };
+          github-matrix = pkgs.callPackage ./github-matrix { };
           gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
           supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };

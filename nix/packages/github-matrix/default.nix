@@ -1,6 +1,5 @@
 {
   lib,
-  nix-eval-jobs,
   python3Packages,
 }:
 let
@@ -37,8 +36,6 @@ python3Packages.buildPythonApplication {
     github-action-utils
     python3Packages.result
   ];
-
-  makeWrapperArgs = [ "--suffix PATH : ${lib.makeBinPath [ nix-eval-jobs ]}" ];
 
   nativeCheckInputs = with python3Packages; [
     pytestCheckHook
