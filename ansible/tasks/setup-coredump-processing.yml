@@ -1,0 +1,75 @@
+---
+# gdb and binutils (readelf) are only used by the processor script below,
+# which is only installed for OrioleDB images due to is_psql_oriole
+- name: ensure gdb and binutils are installed
+  ansible.builtin.apt:
+    name:
+      - gdb
+      - binutils
+  become: true
+
+- name: Create orioledb-coredumps state/output directories
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0700'
+    owner: 'root'
+    path: "{{ coredump_processing_item }}"
+    state: 'directory'
+  become: true
+  loop:
+    - '/var/lib/orioledb-coredumps'
+    - '/var/lib/orioledb-coredumps/state'
+    - '/var/lib/orioledb-coredumps/diagnostics'
+    - '/var/lib/orioledb-coredumps/quarantine'
+  loop_control:
+    loop_var: 'coredump_processing_item'
+
+- name: copy PostgreSQL/OrioleDB coredump processor script
+  ansible.builtin.copy:
+    dest: '/usr/local/sbin/process-orioledb-coredumps.sh'
+    group: 'root'
+    mode: '0700'
+    owner: 'root'
+    src: 'coredump/process-orioledb-coredumps.sh'
+  become: true
+
+- name: copy GDB extraction commands (matches orioledb/ci/cmds.gdb)
+  ansible.builtin.copy:
+    dest: '/usr/local/sbin/orioledb-coredump-cmds.gdb'
+    group: 'root'
+    mode: '0600'
+    owner: 'root'
+    src: 'coredump/cmds.gdb'
+  become: true
+
+- name: copy PostgreSQL/OrioleDB coredump systemd units
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ coredump_unit_item }}"
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: "coredump/{{ coredump_unit_item }}"
+  become: true
+  loop:
+    - 'orioledb-coredump.path'
+    - 'orioledb-coredump.timer'
+    - 'orioledb-coredump.service'
+  loop_control:
+    loop_var: 'coredump_unit_item'
+
+- name: reload systemd for coredump processing units
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  become: true
+
+- name: enable coredump processing path and timer units
+  ansible.builtin.systemd_service:
+    name: "{{ coredump_enable_item }}"
+    enabled: true
+    state: 'started'
+  become: true
+  loop:
+    - 'orioledb-coredump.path'
+    - 'orioledb-coredump.timer'
+  loop_control:
+    loop_var: 'coredump_enable_item'

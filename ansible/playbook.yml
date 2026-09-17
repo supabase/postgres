@@ -39,6 +39,10 @@
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
 
+    - name: Install PostgreSQL/OrioleDB coredump processing
+      when: stage2 and is_psql_oriole
+      import_tasks: tasks/setup-coredump-processing.yml
+
     - name: Install PgBouncer
       import_tasks: tasks/setup-pgbouncer.yml
       tags:

@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic fallback sweep for PostgreSQL/OrioleDB core dumps
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+Unit=orioledb-coredump.service
+
+[Install]
+WantedBy=timers.target
