@@ -41,11 +41,6 @@ jobs:
           set -Eeu -o pipefail
           nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
 
-          sudo systemctl stop nix-daemon.socket || true
-          sudo systemctl stop nix-daemon.service || true
-          sudo pkill -9 nix-daemon || true
-          sleep 2
-
   nix-build-packages-aarch64-linux:
     name: >-
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
