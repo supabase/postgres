@@ -1694,3 +1694,57 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     )
 
 
+def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host):
+    """End-to-end processor check: after a real Postgres backend crash, the
+    orioledb-coredump.path-triggered processor must turn the raw core into a
+    small diagnostic bundle and delete the raw core - not leave it sitting in
+    /var/lib/systemd/coredump indefinitely.
+
+    Only runs on images where the coredump processor is installed (OrioleDB
+    builds, per the gated rollout); skipped otherwise.
+    """
+    unit_check = run_ssh_command(
+        host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
+    )
+    if "orioledb-coredump.path" not in unit_check["stdout"]:
+        pytest.skip("coredump processor not installed on this AMI (not an OrioleDB build)")
+
+    before_bundles = set(
+        run_ssh_command(
+            host["ssh"], "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f"
+        )["stdout"].splitlines()
+    )
+
+    _crash_a_backend_and_wait_for_recovery(host)
+
+    new_bundle = None
+    for _ in range(30):
+        sleep(2)
+        current = set(
+            run_ssh_command(
+                host["ssh"],
+                "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f",
+            )["stdout"].splitlines()
+        )
+        new = current - before_bundles
+        if new:
+            new_bundle = sorted(new)[0]
+            break
+    assert new_bundle, (
+        "Expected a new diagnostic bundle under /var/lib/orioledb-coredumps/diagnostics "
+        "after the induced backend crash, but none appeared within 60s"
+    )
+
+    bundle_contents = run_ssh_command(host["ssh"], f"sudo cat {new_bundle}")["stdout"]
+    assert "gdb backtrace" in bundle_contents, (
+        f"Expected the diagnostic bundle to contain a gdb backtrace section, got:\n"
+        f"{bundle_contents[:500]}"
+    )
+
+    remaining_cores = run_ssh_command(
+        host["ssh"], "sudo find /var/lib/systemd/coredump -maxdepth 1 -type f"
+    )["stdout"].strip()
+    assert remaining_cores == "", (
+        f"Expected the raw core to be deleted after successful processing, but "
+        f"/var/lib/systemd/coredump still has:\n{remaining_cores}"
+    )
