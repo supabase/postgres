@@ -31,6 +31,7 @@ cat >"$tmpdir/nix.conf" <<-EOF
 	extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 	extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 	max-jobs = 5
+	stalled-download-timeout = 5
 EOF
 
 if [[ -e /dev/kvm ]]; then
