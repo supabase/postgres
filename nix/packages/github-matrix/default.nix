@@ -1,48 +1,45 @@
 {
+  jq,
   lib,
-  python3Packages,
+  runtimeShell,
+  stdenvNoCC,
 }:
-let
+
+stdenvNoCC.mkDerivation {
   pname = "github-matrix";
-
-  github-action-utils = python3Packages.buildPythonPackage rec {
-    pname = "github-action-utils";
-    version = "1.1.0";
-    pyproject = true;
-
-    src = python3Packages.fetchPypi {
-      inherit pname version;
-      sha256 = "0q9xrb4jcvbn6954lvpn85gva1yc885ykdqb2q2410cxp280v94a";
-    };
-
-    build-system = with python3Packages; [ setuptools ];
-
-    meta = with lib; {
-      description = "Collection of Python functions for GitHub Action Workflow Commands";
-      homepage = "https://github.com/saadmk11/github-action-utils";
-      license = licenses.mit;
-    };
-  };
-in
-
-python3Packages.buildPythonApplication {
-  inherit pname;
-  version = "0.1.0";
-  pyproject = false;
+  version = "0.2.0";
 
   src = ./.;
 
-  propagatedBuildInputs = [
-    github-action-utils
-    python3Packages.result
-  ];
+  nativeCheckInputs = [ jq ];
 
-  nativeCheckInputs = with python3Packages; [
-    pytestCheckHook
-    pytest-mypy
-  ];
+  dontBuild = true;
+  doCheck = true;
+
+  checkPhase = ''
+    runHook preCheck
+    bash tests/run.sh
+    runHook postCheck
+  '';
 
   installPhase = ''
-    install -Dm755 github_matrix.py "$out/bin/${pname}"
+    runHook preInstall
+
+    install -Dm644 github-matrix.jq -t $out/share/github-matrix
+    mkdir -p $out/bin
+    cat >$out/bin/github-matrix <<'EOF'
+    #!${runtimeShell}
+    # usage: github-matrix <system> < jobs.jsonl
+    set -euo pipefail
+    exec ${lib.getExe jq} -r -s --arg system "''${1:?system}" -f ${placeholder "out"}/share/github-matrix/github-matrix.jq
+    EOF
+    chmod 755 $out/bin/github-matrix
+
+    runHook postInstall
   '';
+
+  meta = {
+    description = "Turn nix-eval-jobs-shaped JSONL into GitHub Actions build matrices";
+    mainProgram = "github-matrix";
+  };
 }

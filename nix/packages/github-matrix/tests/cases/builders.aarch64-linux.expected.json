@@ -1,0 +1,41 @@
+{
+  "packages": {
+    "include": [
+      {
+        "attr": "legacyPackages.aarch64-linux.psql_15.exts.pg_graphql",
+        "name": "pg_graphql-1.5.11",
+        "system": "aarch64-linux",
+        "runs_on": {
+          "labels": [
+            "blacksmith-32vcpu-ubuntu-2404-arm"
+          ]
+        },
+        "postgresql_version": "15"
+      },
+      {
+        "attr": "legacyPackages.aarch64-linux.postgresql_15",
+        "name": "postgresql-15.14",
+        "system": "aarch64-linux",
+        "runs_on": {
+          "labels": [
+            "blacksmith-8vcpu-ubuntu-2404-arm"
+          ]
+        }
+      }
+    ]
+  },
+  "checks": {
+    "include": [
+      {
+        "attr": "checks.aarch64-linux.pgvector",
+        "name": "vm-test-run-vector",
+        "system": "aarch64-linux",
+        "runs_on": {
+          "labels": [
+            "arm-native-runner"
+          ]
+        }
+      }
+    ]
+  }
+}
