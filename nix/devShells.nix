@@ -42,6 +42,7 @@
           packages = with pkgs; [
             coreutils
             just
+            jq
             nix-update
             #pg_prove
             shellcheck

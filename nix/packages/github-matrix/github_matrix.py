@@ -4,8 +4,6 @@ import argparse
 from collections import Counter, defaultdict
 import graphlib
 import json
-import os
-import subprocess
 import sys
 from typing import (
     Any,
@@ -67,33 +65,6 @@ class NixEvalError(TypedDict):
     error: str
 
 
-def build_nix_eval_command(
-    max_workers: int, max_memory_size: int, flake_outputs: List[str]
-) -> List[str]:
-    """Build the nix-eval-jobs command with appropriate flags."""
-    nix_eval_cmd = [
-        "nix-eval-jobs",
-        "--flake",
-        ".",
-        "--check-cache-status",
-        "--force-recurse",
-        "--quiet",
-        "--option",
-        "eval-cache",
-        "false",
-        "--option",
-        "accept-flake-config",
-        "true",
-        "--max-memory-size",
-        str(max_memory_size),
-        "--workers",
-        str(max_workers),
-        "--select",
-        f"outputs: {{ inherit (outputs) {' '.join(flake_outputs)}; }}",
-    ]
-    return nix_eval_cmd
-
-
 def parse_nix_eval_line(
     line: str, drv_paths: Set[str]
 ) -> Result[Optional[NixEvalJobsOutput], NixEvalError]:
@@ -139,42 +110,6 @@ def parse_nix_eval_line(
     except json.JSONDecodeError as e:
         warning(f"Skipping invalid JSON line: {line}", title="JSON Parse Warning")
         return Ok(None)
-
-
-def run_nix_eval_jobs(
-    cmd: List[str],
-) -> Tuple[str, List[str]]:
-    """Run nix-eval-jobs and return parsed package data, warnings, and errors.
-
-    Returns:
-        Tuple of (stdout, warnings_list)
-    """
-    print(f"Running: {' '.join(cmd)}", file=sys.stderr)
-
-    # Disable colors in nix output
-    env = os.environ.copy()
-    env["NO_COLOR"] = "1"
-
-    process = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env
-    )
-    stdout_data, stderr_data = process.communicate()
-
-    # Parse stderr for warnings (lines starting with "warning:")
-    warnings_list: List[str] = []
-    for line in stderr_data.splitlines():
-        line = line.strip()
-        if line.startswith("warning:") or line.startswith("evaluation warning:"):
-            # Remove "warning:" prefix for cleaner messages
-            warnings_list.append(line[8:].strip())
-
-    if process.returncode != 0:
-        error(
-            "nix-eval-jobs process failed with non-zero exit code",
-            title="Process Failure",
-        )
-
-    return stdout_data, warnings_list
 
 
 def process_nix_eval_jobs_stdout(
@@ -283,48 +218,18 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate GitHub Actions matrix for Nix builds"
-    )
-    parser.add_argument(
-        "--max-memory-size",
-        default=3072,
-        type=int,
-        help="Maximum memory per eval worker in MiB. Defaults to 3072 (3 GiB).",
-    )
-    parser.add_argument(
-        "-j",
-        "--nb-eval-jobs-workers",
-        default=os.cpu_count() or 1,
-        type=int,
-        help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
-    )
-    parser.add_argument(
-        "--stdin",
-        action="store_true",
-        help="Read nix-eval-jobs output from stdin instead of executing process",
+        description="Generate GitHub Actions matrix from nix-eval-jobs-shaped JSONL on stdin"
     )
     parser.add_argument(
         "--stdout",
         action="store_true",
         help="Send matrix as json to stdout",
     )
-    parser.add_argument(
-        "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
-    )
 
     args = parser.parse_args()
 
-    if args.stdin:
-        nix_eval_output, warnings_list = sys.stdin.read(), []
-    else:
-        cmd = build_nix_eval_command(
-            args.nb_eval_jobs_workers,
-            args.max_memory_size,
-            args.flake_outputs,
-        )
-        nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
-
-    packages, errors_list = process_nix_eval_jobs_stdout(nix_eval_output)
+    warnings_list: List[str] = []
+    packages, errors_list = process_nix_eval_jobs_stdout(sys.stdin.read())
     gh_action_packages = sort_pkgs_by_closures(packages)
 
     def clean_package_for_output(pkg: NixEvalJobsOutput) -> GitHubActionPackage:
