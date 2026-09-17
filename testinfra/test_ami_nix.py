@@ -1587,3 +1587,110 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
     )
 
 
+def _build_id_of(host, path):
+    """Return the ELF build-id (hex string) of the binary/library at path, or None."""
+    import re
+
+    result = run_ssh_command(host["ssh"], f"readelf -n {path} 2>/dev/null")
+    if not result["succeeded"]:
+        return None
+    match = re.search(r"Build ID:\s*([0-9a-f]+)", result["stdout"])
+    return match.group(1) if match else None
+
+
+def _debug_file_exists_for_build_id(host, build_id):
+    """Check whether the postgres nix-profile's debug output has a
+    .build-id/xx/yyyy...debug file matching the given build-id."""
+    prefix, rest = build_id[:2], build_id[2:]
+    debug_path = (
+        f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+    )
+    result = run_ssh_command(host["ssh"], f"test -f {debug_path} && echo present")
+    return result["succeeded"] and "present" in result["stdout"]
+
+
+def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
+    """Verify the installed 'postgres' binary's build-id has a matching
+    .build-id/xx/yyyy.debug file in the postgres-env debug output, so a
+    future coredump-processing GDB session can actually resolve symbols."""
+    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
+    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    assert _debug_file_exists_for_build_id(host, build_id), (
+        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f".build-id/ matching postgres build-id {build_id} - the shipped "
+        f"_debug package may be out of sync with the shipped binary"
+    )
+
+
+def test_orioledb_library_build_id_matches_shipped_debug_symbols(host):
+    """Verify orioledb.so's build-id has a matching debug file, same as for
+    the postgres binary - orioledb.so is built by the same derivation
+    (isOrioleDB flavor) so its debug info ships in the same _debug output."""
+    orioledb_so = "/usr/lib/postgresql/lib/orioledb.so"
+    exists = run_ssh_command(host["ssh"], f"test -f {orioledb_so} && echo present")
+    if "present" not in exists["stdout"]:
+        pytest.skip("orioledb.so not present on this AMI (not an OrioleDB build)")
+
+    build_id = _build_id_of(host, orioledb_so)
+    assert build_id, f"Could not read a build-id from {orioledb_so}"
+    assert _debug_file_exists_for_build_id(host, build_id), (
+        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f".build-id/ matching orioledb.so build-id {build_id}"
+    )
+
+
+def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
+    """Verify GDB can read actual source *content* for the installed postgres
+    binary via the shipped _src package - not just that a filename is known
+    from debug info (which 'info sources' would show regardless of whether
+    the file is reachable on disk).
+
+    The _src package mirrors the exact build-time source tree under the
+    nix-profile root (see nix/postgresql/src.nix), but the debug info records
+    the original nix build sandbox directory (DW_AT_comp_dir, e.g.
+    /build/postgres-<rev>) as each file's location. GDB needs a
+    'substitute-path' from that recorded build directory to the profile root
+    to find the files - this test discovers that build directory dynamically
+    (rather than hardcoding a guess) and confirms 'list main' then prints
+    real source lines instead of falling back to the 'in <path>' placeholder
+    GDB uses when a source file can't be found.
+    """
+    import re
+
+    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
+    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    prefix, rest = build_id[:2], build_id[2:]
+    debug_file = f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+
+    comp_dir = run_ssh_command(
+        host["ssh"],
+        f"readelf --debug-dump=info {debug_file} 2>/dev/null "
+        "| grep -m1 DW_AT_comp_dir | grep -oE '/[^ ]+$'",
+    )["stdout"].strip()
+    assert comp_dir, f"Could not determine DW_AT_comp_dir from {debug_file}"
+
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres gdb --batch -quiet "
+        "-ex 'set debug-file-directory /var/lib/postgresql/.nix-profile/lib/debug' "
+        f"-ex 'set substitute-path {comp_dir} /var/lib/postgresql/.nix-profile' "
+        "-ex 'file /usr/lib/postgresql/bin/postgres' "
+        "-ex 'list main' "
+        "2>&1",
+    )
+    assert result["succeeded"], f"gdb invocation failed: {result['stderr']}"
+    assert "No debugging symbols found" not in result["stdout"], (
+        f"GDB could not find debug symbols for postgres:\n{result['stdout']}"
+    )
+    assert not re.search(r"^\d+\tin /", result["stdout"], re.MULTILINE), (
+        f"GDB fell back to the 'in <path>' placeholder, meaning it could not "
+        f"actually read the source file even with substitute-path set from "
+        f"{comp_dir} to /var/lib/postgresql/.nix-profile:\n{result['stdout']}"
+    )
+    numbered_lines = re.findall(r"^\d+\t.+$", result["stdout"], re.MULTILINE)
+    assert len(numbered_lines) >= 3, (
+        f"Expected 'list main' to print several lines of real source code "
+        f"content via the shipped _src package, got:\n{result['stdout']}"
+    )
+
+
