@@ -19,6 +19,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  
+
   eval-15-aarch64-darwin:
     name: Nix Eval (15, aarch64-darwin)
     runs-on: blacksmith-12vcpu-macos-26
@@ -45,9 +47,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-darwin <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-15-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
@@ -130,9 +132,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-15-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
@@ -212,9 +214,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- x86_64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-15-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
@@ -294,9 +296,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-darwin <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-17-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-darwin)
@@ -379,9 +381,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-17-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-linux)
@@ -461,9 +463,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- x86_64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-17-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (x86_64-linux)
@@ -543,9 +545,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-darwin <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-orioledb-17-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-darwin)
@@ -628,9 +630,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-orioledb-17-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-linux)
@@ -710,9 +712,9 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "packages_matrix=$(jq -c .packages.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
-          echo "checks_matrix=$(jq -c .checks.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- x86_64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   builds-orioledb-17-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (x86_64-linux)
@@ -791,8 +793,8 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "checks_matrix=$(jq -c .checks.aarch64_darwin matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-darwin <jobs.jsonl | tee matrix.json
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   checks-common-aarch64-darwin:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-darwin)
@@ -848,8 +850,8 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "checks_matrix=$(jq -c .checks.aarch64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- aarch64-linux <jobs.jsonl | tee matrix.json
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   checks-common-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (aarch64-linux)
@@ -905,8 +907,8 @@ jobs:
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run .#github-matrix -- --stdout <jobs.jsonl | tee matrix.json
-          echo "checks_matrix=$(jq -c .checks.x86_64_linux matrix.json)" >>"$GITHUB_OUTPUT"
+          nix run .#github-matrix -- x86_64-linux <jobs.jsonl | tee matrix.json
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   checks-common-x86_64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }} (x86_64-linux)

@@ -1,0 +1,2 @@
+::error title=Nix Evaluation Error::Attribute: checks.x86_64-linux.c%0A%0Aerror: attribute 'foo' missing%0A  at /nix/store/x.nix:1:1
+::error title=Nix Evaluation Error::Affected attributes (2): legacyPackages.x86_64-linux.psql_17.exts.a, legacyPackages.x86_64-linux.psql_17.exts.b%0A%0Aevaluation failed

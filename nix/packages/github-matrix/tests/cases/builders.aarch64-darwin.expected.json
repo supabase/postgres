@@ -1,0 +1,43 @@
+{
+  "packages": {
+    "include": [
+      {
+        "attr": "legacyPackages.aarch64-darwin.psql_17.exts.postgis",
+        "name": "postgis-3.3.7",
+        "system": "aarch64-darwin",
+        "runs_on": {
+          "labels": [
+            "blacksmith-12vcpu-macos-26"
+          ]
+        },
+        "postgresql_version": "17"
+      },
+      {
+        "attr": "legacyPackages.aarch64-darwin.psql_orioledb-17.exts.orioledb",
+        "name": "orioledb-beta12",
+        "system": "aarch64-darwin",
+        "runs_on": {
+          "labels": [
+            "blacksmith-6vcpu-macos-26"
+          ]
+        },
+        "postgresql_version": "orioledb-17"
+      }
+    ]
+  },
+  "checks": {
+    "include": [
+      {
+        "attr": "checks.aarch64-darwin.virt-only",
+        "name": "virt-only",
+        "system": "aarch64-darwin",
+        "runs_on": {
+          "group": "self-hosted-runners-nix",
+          "labels": [
+            "aarch64-darwin"
+          ]
+        }
+      }
+    ]
+  }
+}
