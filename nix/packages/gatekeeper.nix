@@ -37,11 +37,14 @@ pkgs.stdenv.mkDerivation {
   version = "1.0.5";
 
   buildInputs = [ upstream-gatekeeper ];
+  nativeBuildInputs = [ pkgs.patchelf ];
 
   dontUnpack = true;
 
   installPhase = ''
     mkdir -p $out/lib/security/
     cp ${upstream-gatekeeper}/lib/security/pam_jit_pg.so $out/lib/security/pam_jit_pg.so
+    chmod +w $out/lib/security/pam_jit_pg.so
+    patchelf --remove-rpath $out/lib/security/pam_jit_pg.so
   '';
 }
