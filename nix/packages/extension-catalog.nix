@@ -146,7 +146,7 @@
           '';
         };
 
-        # nix comes from the environment: the AMI installs it.
+        # nix comes from the environment.
         update-site-extensions = pkgs.writeShellApplication {
           name = "update-site-extensions";
           runtimeInputs = [ self'.packages.site-extensions-resolve ];

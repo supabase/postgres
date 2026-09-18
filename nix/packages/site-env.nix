@@ -29,7 +29,7 @@
         );
       };
 
-      # aws and nix come from the environment: the AMI installs both.
+      # aws and nix come from the environment.
       update-profile = pkgs.writeShellApplication {
         name = "update-profile";
         runtimeInputs = [ pkgs.jq ];
