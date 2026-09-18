@@ -1,0 +1,46 @@
+-- CVE-2026-6473: memory-allocation overflow umbrella covering, among others,
+-- contrib intarray query_int and contrib ltree ltxtquery / lquery parsing.
+--
+-- Upstream key commits: 84a9f264 (intarray/ltree), 9c2fa5b6 (ltree lquery) on
+-- PG 15.18; c4d04cc4 and siblings on PG 17.10. Full list:
+--   git log REL_17_6..REL_17_10 --grep='CVE-2026-6473'
+--
+-- Functional regression: well-formed queries parse and match correctly; a
+-- malformed query raises a clean parse error instead of crashing.
+--
+-- Refs: PSQL-1110, PSQL-1234.
+BEGIN;
+-- 1) intarray query_int matching.
+SELECT '{1,2,3}'::int[] @@ '2&4'::query_int AS q_and;  -- expect false
+ q_and 
+-------
+ f
+(1 row)
+
+SELECT '{1,2,3}'::int[] @@ '2|4'::query_int AS q_or;   -- expect true
+ q_or 
+------
+ t
+(1 row)
+
+-- 2) ltree lquery and ltxtquery matching.
+SELECT 'Top.Science.Astronomy'::ltree ~ 'Top.*.Astronomy'::lquery AS lquery_match;   -- true
+ lquery_match 
+--------------
+ t
+(1 row)
+
+SELECT 'Top.Science.Astronomy'::ltree @ 'Astronomy & Top'::ltxtquery AS ltxtquery_match; -- true
+ ltxtquery_match 
+-----------------
+ t
+(1 row)
+
+-- 3) A malformed query_int must raise a clean parse error, not crash.
+SAVEPOINT bad_query;
+SELECT '{1}'::int[] @@ '2&&'::query_int;
+ERROR:  syntax error
+LINE 1: SELECT '{1}'::int[] @@ '2&&'::query_int;
+                               ^
+ROLLBACK TO SAVEPOINT bad_query;
+ROLLBACK;

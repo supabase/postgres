@@ -1,0 +1,53 @@
+-- Non-CVE behavior change (highest customer blast radius this release: ltree is
+-- enabled on 2,245 projects). Two upstream commits fix multibyte handling in
+-- ltree's case-insensitive label matching, so GiST indexes built under the old
+-- logic must be REINDEXed after upgrade on multibyte / ICU databases:
+--
+--   335b2f30 (PG 15.16) + 2b993167 (PG 15.18)   "Fix multibyte issues in ltree"
+--   b8cfe9dc (PG 17.8)  + d1bd9a7d (PG 17.10)
+--
+-- This pins WITHIN-version GiST index correctness + REINDEX idempotence. The
+-- cross-version pre-upgrade-build / post-upgrade-REINDEX leg is covered by A3
+-- (pg_upgrade migration tests, PSQL-1235).
+--
+-- Refs: PSQL-1110, PSQL-1234.
+BEGIN;
+CREATE TABLE ltree_mb (id int, path ltree);
+INSERT INTO ltree_mb VALUES
+  (1, 'Top.Naïve.Café'),
+  (2, 'Top.Science.Astronomy'),
+  (3, 'Top.Résumé');
+CREATE INDEX ltree_mb_gist ON ltree_mb USING gist (path);
+SET enable_seqscan = off;
+-- Index search before REINDEX.
+SELECT id, path FROM ltree_mb WHERE path ~ 'Top.*'::lquery ORDER BY id;
+ id |         path          
+----+-----------------------
+  1 | Top.Naïve.Café
+  2 | Top.Science.Astronomy
+  3 | Top.Résumé
+(3 rows)
+
+-- REINDEX (plain, so it runs inside the transaction) must not corrupt the index.
+REINDEX INDEX ltree_mb_gist;
+-- Same search after REINDEX must return the identical set.
+SELECT id, path FROM ltree_mb WHERE path ~ 'Top.*'::lquery ORDER BY id;
+ id |         path          
+----+-----------------------
+  1 | Top.Naïve.Café
+  2 | Top.Science.Astronomy
+  3 | Top.Résumé
+(3 rows)
+
+-- The '@' label modifier makes the match case-insensitive, which is what
+-- invokes the multibyte ltree_strncasecmp path the upstream commits fixed.
+SELECT id FROM ltree_mb WHERE path ~ 'top@.*'::lquery ORDER BY id;
+ id 
+----
+  1
+  2
+  3
+(3 rows)
+
+RESET enable_seqscan;
+ROLLBACK;
