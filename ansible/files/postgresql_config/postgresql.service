@@ -11,6 +11,10 @@ Type=notify
 User=postgres
 ExecStart=/usr/lib/postgresql/bin/postgres -D /etc/postgresql
 ExecStartPre=+/usr/local/bin/postgres_prestart.sh
+# Excludes shared_buffers (an anonymous *shared* mapping) from core dumps -
+# without this, every core would include the whole (potentially many-GB)
+# buffer pool. Inherited by every process postgres forks.
+CoredumpFilter=private-anonymous elf-headers private-huge
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
 KillSignal=SIGINT

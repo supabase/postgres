@@ -1407,3 +1407,344 @@ def test_apparmor_denies_access_to_sensitive_paths(host):
             f"to have succeeded.\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
         )
         print(f"Confirmed: access to {test_file} denied by AppArmor")
+
+
+def test_postgresql_service_allows_unlimited_core_dumps(host):
+    """Verify the postgresql.service coredump drop-in sets LimitCORE=infinity.
+
+    Coredumps are intentionally scoped to the postgresql unit only (via a
+    systemd.service.d drop-in), not enabled machine-wide, so other services
+    must keep the default core limit.
+    """
+    result = run_ssh_command(host["ssh"], "systemctl show postgresql -p LimitCORE")
+    assert result["succeeded"], f"systemctl show failed: {result['stderr']}"
+    assert "LimitCORE=infinity" in result["stdout"], (
+        f"Expected postgresql.service to have LimitCORE=infinity, got:\n{result['stdout']}"
+    )
+
+
+def test_coredump_storage_limits_configured(host):
+    """Verify /etc/systemd/coredump.conf.d/postgres.conf sets conservative,
+    bounded storage limits for the systemd-coredump storage that backs
+    Postgres core capture."""
+    result = run_ssh_command(
+        host["ssh"], "cat /etc/systemd/coredump.conf.d/postgres.conf"
+    )
+    assert result["succeeded"], (
+        f"Could not read coredump storage config: {result['stderr']}"
+    )
+    for expected in [
+        "Storage=external",
+        "Compress=yes",
+        "ProcessSizeMax=",
+        "ExternalSizeMax=",
+        "MaxUse=",
+        "KeepFree=",
+    ]:
+        assert expected in result["stdout"], (
+            f"Expected '{expected}' in /etc/systemd/coredump.conf.d/postgres.conf, "
+            f"got:\n{result['stdout']}"
+        )
+
+
+def test_postgres_coredump_filter_excludes_shared_buffers(host):
+    """Verify the running postmaster's /proc/[pid]/coredump_filter is 0x31
+    (49): private mappings + ELF headers, but not anonymous-shared mappings.
+
+    shared_buffers is mmap(MAP_SHARED|MAP_ANONYMOUS) (shared_memory_type
+    defaults to 'mmap' and is not overridden), which the kernel classifies
+    as an anonymous shared mapping - excluding it from every core is what
+    actually keeps core size bounded, since shared_buffers can be many GB.
+    postgresql.service sets this via the native systemd
+    'CoredumpFilter=private-anonymous elf-headers private-huge' directive
+    (systemd >= 246), which coredump_filter (inherited across fork(2) and
+    preserved across execve(2)) then propagates to everything postgres forks.
+    """
+    pid = run_ssh_command(
+        host["ssh"], "systemctl show postgresql -p MainPID --value"
+    )["stdout"].strip()
+    assert pid.isdigit() and pid != "0", f"Could not resolve postgresql.service MainPID: {pid}"
+
+    result = run_ssh_command(host["ssh"], f"cat /proc/{pid}/coredump_filter")
+    assert result["succeeded"], f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
+    assert result["stdout"].strip() == "31", (
+        f"Expected /proc/{pid}/coredump_filter to be '31' (0x31 = 49 decimal), "
+        f"got '{result['stdout'].strip()}'"
+    )
+
+
+def test_coredump_storage_directory_root_only(host):
+    """Verify /var/lib/systemd/coredump is root-only, since it can hold
+    core files containing customer data."""
+    result = run_ssh_command(
+        host["ssh"], "stat -c '%a %U:%G' /var/lib/systemd/coredump"
+    )
+    assert result["succeeded"], f"stat failed: {result['stderr']}"
+    mode, owner = result["stdout"].strip().split()
+    assert mode in ("700", "750"), (
+        f"Expected /var/lib/systemd/coredump to be root-only, got mode {mode}"
+    )
+    assert owner.startswith("root:"), (
+        f"Expected /var/lib/systemd/coredump to be owned by root, got {owner}"
+    )
+
+
+def test_postgres_prestart_does_not_reset_core_limit(host):
+    """Regression guard: postgres_prestart.sh must never touch 'ulimit -c',
+    or it would silently defeat the postgresql.service LimitCORE=infinity
+    coredump drop-in."""
+    result = run_ssh_command(
+        host["ssh"], "cat /usr/local/bin/postgres_prestart.sh"
+    )
+    assert result["succeeded"], f"Could not read prestart script: {result['stderr']}"
+    assert "ulimit -c" not in result["stdout"], (
+        "postgres_prestart.sh must not set 'ulimit -c' - doing so would silently "
+        "defeat the postgresql.service coredump drop-in"
+    )
+
+
+def _crash_a_backend_and_wait_for_recovery(host):
+    """Grab a real Postgres backend pid, SIGSEGV it, and wait for PostgreSQL's
+    normal crash-recovery to bring the instance back on its own
+    (Restart=always / auto-reinit, same as production). Returns the crashed
+    backend's pid. Used by tests that need a real, fresh core to appear."""
+    backend_pid = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+        "-tAc 'select pg_backend_pid()'",
+    )["stdout"].strip()
+    assert backend_pid.isdigit(), (
+        f"Could not resolve a Postgres backend pid: {backend_pid}"
+    )
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {backend_pid}")
+
+    recovered = False
+    for _ in range(30):
+        sleep(2)
+        probe = run_ssh_command(
+            host["ssh"],
+            "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+            "-tAc 'select 1'",
+        )
+        if probe["succeeded"] and probe["stdout"].strip() == "1":
+            recovered = True
+            break
+    assert recovered, (
+        "PostgreSQL did not come back up within 60s after the induced backend crash"
+    )
+    return backend_pid
+
+
+def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(host):
+    """End-to-end capture check: a segfaulted Postgres backend must produce a
+    coredumpctl-visible core, while an unrelated process crashing the same way
+    must not.
+
+    This intentionally crashes a live backend (mirroring a real SIGSEGV, e.g.
+    the background-writer crash in incident ORI-261) and relies on
+    PostgreSQL's normal crash-recovery to bring the instance back on its own
+    (Restart=always / auto-reinit), the same as in production - it does not
+    reinstall data or otherwise reset the shared test instance.
+    """
+    before = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    before_lines = set(before["stdout"].splitlines())
+
+    # Unrelated process: launch a disposable process outside the
+    # LimitCORE=infinity-scoped postgresql.service and SIGSEGV it - it must
+    # not produce a core, since the default core limit is unchanged for it.
+    run_ssh_command(
+        host["ssh"],
+        "setsid bash -c 'sleep 60 & echo $! > /tmp/unrelated_pid; wait' >/dev/null 2>&1 &",
+    )
+    sleep(1)
+    unrelated_pid = run_ssh_command(host["ssh"], "cat /tmp/unrelated_pid")[
+        "stdout"
+    ].strip()
+    assert unrelated_pid.isdigit(), (
+        f"Could not resolve the disposable unrelated process pid: {unrelated_pid}"
+    )
+    run_ssh_command(host["ssh"], f"kill -SEGV {unrelated_pid}")
+    sleep(2)
+
+    # Postgres backend: grab a real backend pid and crash it the same way.
+    backend_pid = _crash_a_backend_and_wait_for_recovery(host)
+
+    after = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    new_lines = [
+        line for line in after["stdout"].splitlines() if line not in before_lines
+    ]
+    assert any("postgres" in line for line in new_lines), (
+        f"Expected a new postgres core dump after SIGSEGV to backend {backend_pid}, "
+        f"but coredumpctl list shows:\n{after['stdout']}"
+    )
+    assert not any(unrelated_pid in line for line in new_lines), (
+        f"Unrelated process {unrelated_pid} should not have produced a core dump:\n"
+        f"{after['stdout']}"
+    )
+
+
+def _build_id_of(host, path):
+    """Return the ELF build-id (hex string) of the binary/library at path, or None."""
+    import re
+
+    result = run_ssh_command(host["ssh"], f"readelf -n {path} 2>/dev/null")
+    if not result["succeeded"]:
+        return None
+    match = re.search(r"Build ID:\s*([0-9a-f]+)", result["stdout"])
+    return match.group(1) if match else None
+
+
+def _debug_file_exists_for_build_id(host, build_id):
+    """Check whether the postgres nix-profile's debug output has a
+    .build-id/xx/yyyy...debug file matching the given build-id."""
+    prefix, rest = build_id[:2], build_id[2:]
+    debug_path = (
+        f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+    )
+    result = run_ssh_command(host["ssh"], f"test -f {debug_path} && echo present")
+    return result["succeeded"] and "present" in result["stdout"]
+
+
+def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
+    """Verify the installed 'postgres' binary's build-id has a matching
+    .build-id/xx/yyyy.debug file in the postgres-env debug output, so a
+    future coredump-processing GDB session can actually resolve symbols."""
+    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
+    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    assert _debug_file_exists_for_build_id(host, build_id), (
+        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f".build-id/ matching postgres build-id {build_id} - the shipped "
+        f"_debug package may be out of sync with the shipped binary"
+    )
+
+
+def test_orioledb_library_build_id_matches_shipped_debug_symbols(host):
+    """Verify orioledb.so's build-id has a matching debug file, same as for
+    the postgres binary - orioledb.so is built by the same derivation
+    (isOrioleDB flavor) so its debug info ships in the same _debug output."""
+    orioledb_so = "/usr/lib/postgresql/lib/orioledb.so"
+    exists = run_ssh_command(host["ssh"], f"test -f {orioledb_so} && echo present")
+    if "present" not in exists["stdout"]:
+        pytest.skip("orioledb.so not present on this AMI (not an OrioleDB build)")
+
+    build_id = _build_id_of(host, orioledb_so)
+    assert build_id, f"Could not read a build-id from {orioledb_so}"
+    assert _debug_file_exists_for_build_id(host, build_id), (
+        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f".build-id/ matching orioledb.so build-id {build_id}"
+    )
+
+
+def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
+    """Verify GDB can read actual source *content* for the installed postgres
+    binary via the shipped _src package - not just that a filename is known
+    from debug info (which 'info sources' would show regardless of whether
+    the file is reachable on disk).
+
+    The _src package mirrors the exact build-time source tree under the
+    nix-profile root (see nix/postgresql/src.nix), but the debug info records
+    the original nix build sandbox directory (DW_AT_comp_dir, e.g.
+    /build/postgres-<rev>) as each file's location. GDB needs a
+    'substitute-path' from that recorded build directory to the profile root
+    to find the files - this test discovers that build directory dynamically
+    (rather than hardcoding a guess) and confirms 'list main' then prints
+    real source lines instead of falling back to the 'in <path>' placeholder
+    GDB uses when a source file can't be found.
+    """
+    import re
+
+    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
+    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    prefix, rest = build_id[:2], build_id[2:]
+    debug_file = f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+
+    comp_dir = run_ssh_command(
+        host["ssh"],
+        f"readelf --debug-dump=info {debug_file} 2>/dev/null "
+        "| grep -m1 DW_AT_comp_dir | grep -oE '/[^ ]+$'",
+    )["stdout"].strip()
+    assert comp_dir, f"Could not determine DW_AT_comp_dir from {debug_file}"
+
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres gdb --batch -quiet "
+        "-ex 'set debug-file-directory /var/lib/postgresql/.nix-profile/lib/debug' "
+        f"-ex 'set substitute-path {comp_dir} /var/lib/postgresql/.nix-profile' "
+        "-ex 'file /usr/lib/postgresql/bin/postgres' "
+        "-ex 'list main' "
+        "2>&1",
+    )
+    assert result["succeeded"], f"gdb invocation failed: {result['stderr']}"
+    assert "No debugging symbols found" not in result["stdout"], (
+        f"GDB could not find debug symbols for postgres:\n{result['stdout']}"
+    )
+    assert not re.search(r"^\d+\tin /", result["stdout"], re.MULTILINE), (
+        f"GDB fell back to the 'in <path>' placeholder, meaning it could not "
+        f"actually read the source file even with substitute-path set from "
+        f"{comp_dir} to /var/lib/postgresql/.nix-profile:\n{result['stdout']}"
+    )
+    numbered_lines = re.findall(r"^\d+\t.+$", result["stdout"], re.MULTILINE)
+    assert len(numbered_lines) >= 3, (
+        f"Expected 'list main' to print several lines of real source code "
+        f"content via the shipped _src package, got:\n{result['stdout']}"
+    )
+
+
+def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host):
+    """End-to-end processor check: after a real Postgres backend crash, the
+    orioledb-coredump.path-triggered processor must turn the raw core into a
+    small diagnostic bundle and delete the raw core - not leave it sitting in
+    /var/lib/systemd/coredump indefinitely.
+
+    Only runs on images where the coredump processor is installed (OrioleDB
+    builds, per the gated rollout); skipped otherwise.
+    """
+    unit_check = run_ssh_command(
+        host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
+    )
+    if "orioledb-coredump.path" not in unit_check["stdout"]:
+        pytest.skip("coredump processor not installed on this AMI (not an OrioleDB build)")
+
+    before_bundles = set(
+        run_ssh_command(
+            host["ssh"], "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f"
+        )["stdout"].splitlines()
+    )
+
+    _crash_a_backend_and_wait_for_recovery(host)
+
+    new_bundle = None
+    for _ in range(30):
+        sleep(2)
+        current = set(
+            run_ssh_command(
+                host["ssh"],
+                "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f",
+            )["stdout"].splitlines()
+        )
+        new = current - before_bundles
+        if new:
+            new_bundle = sorted(new)[0]
+            break
+    assert new_bundle, (
+        "Expected a new diagnostic bundle under /var/lib/orioledb-coredumps/diagnostics "
+        "after the induced backend crash, but none appeared within 60s"
+    )
+
+    bundle_contents = run_ssh_command(host["ssh"], f"sudo cat {new_bundle}")["stdout"]
+    assert "gdb backtrace" in bundle_contents, (
+        f"Expected the diagnostic bundle to contain a gdb backtrace section, got:\n"
+        f"{bundle_contents[:500]}"
+    )
+
+    remaining_cores = run_ssh_command(
+        host["ssh"], "sudo find /var/lib/systemd/coredump -maxdepth 1 -type f"
+    )["stdout"].strip()
+    assert remaining_cores == "", (
+        f"Expected the raw core to be deleted after successful processing, but "
+        f"/var/lib/systemd/coredump still has:\n{remaining_cores}"
+    )
