@@ -15,14 +15,13 @@ pkgs.testers.runNixOSTest {
       ];
     };
   testScript = ''
-    machine.succeed("echo '{\"${system}\": \"${site-env-17}\"}' > /tmp/catalog.json")
-    machine.succeed("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-17")
+    machine.succeed("update-profile site-env-17 ${site-env-17}")
     machine.succeed("[ \"$(readlink -f /nix/var/nix/profiles/site-env-17)\" = \"${site-env-17}\" ]")
 
     # idempotent
-    machine.succeed("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-17")
+    machine.succeed("update-profile site-env-17 ${site-env-17}")
 
     # path not tagged for this profile
-    machine.fail("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-15")
+    machine.fail("update-profile site-env-15 ${site-env-17}")
   '';
 }

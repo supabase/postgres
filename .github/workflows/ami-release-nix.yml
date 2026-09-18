@@ -216,10 +216,10 @@ jobs:
             "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}.json" \
             --content-type "application/json"
 
-          UPDATE_PROFILE_PATH=$(nix eval --raw ".#update-profile.outPath")
-          jq -n --arg sys "$SYSTEM" --arg path "$UPDATE_PROFILE_PATH" '{($sys): $path}' > /tmp/update-profile-catalog.json
-          aws s3 cp /tmp/update-profile-catalog.json \
-            "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-update-profile-${SYSTEM}.json" \
+          UPDATE_SITE_PATH=$(nix eval --raw ".#update-site.outPath")
+          jq -n --arg sys "$SYSTEM" --arg path "$UPDATE_SITE_PATH" '{($sys): $path}' > /tmp/update-site-catalog.json
+          aws s3 cp /tmp/update-site-catalog.json \
+            "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-update-site-${SYSTEM}.json" \
             --content-type "application/json"
 
       - name: Create release

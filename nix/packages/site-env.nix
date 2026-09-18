@@ -32,21 +32,11 @@
       # aws and nix come from the environment.
       update-profile = pkgs.writeShellApplication {
         name = "update-profile";
-        runtimeInputs = [ pkgs.jq ];
         text = ''
-          profile_name="''${1:?Usage: $0 <profile> <git-sha>}"
-          system="$(uname -m)-linux"
+          profile_name="''${1:?Usage: $0 <profile> <path>}"
+          path="''${2:?Usage: $0 <profile> <path>}"
           profile_path="/nix/var/nix/profiles/''${profile_name}"
 
-          catalog="''${UPDATE_PROFILE_CATALOG:-}"
-          if [[ -z "$catalog" ]]; then
-            sha="''${2:?Usage: $0 <profile> <git-sha>}"
-            catalog="/tmp/''${profile_name}-catalog-''${sha}-''${system}.json"
-            aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${profile_name}-''${system}.json" \
-              "$catalog" --region ap-southeast-1
-          fi
-
-          path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
           [[ "$(basename "$path")" == *"-''${profile_name}" ]] || {
             echo "error: resolved path $path is not tagged for profile $profile_name" >&2
             exit 1
@@ -57,13 +47,36 @@
           nix-env --profile "$profile_path" --set "$path"
         '';
       };
+
+      # Updates whichever site-env-* profile is already active on this host.
+      update-site = pkgs.writeShellApplication {
+        name = "update-site";
+        runtimeInputs = [
+          pkgs.jq
+          update-profile
+        ];
+        text = ''
+          sha="''${1:?Usage: $0 <git-sha>}"
+          system="$(uname -m)-linux"
+          shopt -s nullglob
+          candidates=(/nix/var/nix/profiles/site-env-*)
+          profile_name="$(basename "''${candidates[0]:?no site-env-* profile found}")"
+          catalog="/tmp/''${profile_name}-catalog-''${sha}-''${system}.json"
+
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${profile_name}-''${system}.json" \
+            "$catalog" --region ap-southeast-1
+          path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
+
+          update-profile "$profile_name" "$path"
+        '';
+      };
     in
     {
       packages = siteEnvs // {
-        inherit update-profile;
+        inherit update-profile update-site;
       };
       legacyPackages = siteEnvs // {
-        inherit update-profile;
+        inherit update-profile update-site;
       };
     };
 }
