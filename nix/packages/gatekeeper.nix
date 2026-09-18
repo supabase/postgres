@@ -16,6 +16,7 @@ let
     vendorHash = null;
 
     buildInputs = [ pkgs.pam ];
+    NIX_DONT_SET_RPATH = true;
 
     buildPhase = ''
       runHook preBuild
@@ -45,6 +46,12 @@ pkgs.stdenv.mkDerivation {
     mkdir -p $out/lib/security/
     cp ${upstream-gatekeeper}/lib/security/pam_jit_pg.so $out/lib/security/pam_jit_pg.so
     chmod +w $out/lib/security/pam_jit_pg.so
-    patchelf --remove-rpath $out/lib/security/pam_jit_pg.so
+    so=$out/lib/security/pam_jit_pg.so
+    rp=$(patchelf --print-rpath "$so")
+    patchelf --remove-rpath "$so"
+    if [ -n "$rp" ]; then
+      off=$(grep -aboF "$rp" "$so" | head -1 | cut -d: -f1)
+      dd if=/dev/zero of="$so" bs=1 seek="$off" count="''${#rp}" conv=notrunc status=none
+    fi
   '';
 }
