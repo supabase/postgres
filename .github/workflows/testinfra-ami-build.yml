@@ -131,63 +131,16 @@ jobs:
           pip3 install boto3 'boto3-stubs[essential]' ec2instanceconnectcli pytest 'pytest-testinfra[paramiko]' requests
           pytest -vv -s testinfra/test_ami_nix.py
 
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
-        run: |
-          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
-          INSTANCE_IDS=$(aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text)
-          if [ -n "$INSTANCE_IDS" ]; then
-            echo "Terminating packer build instances: $INSTANCE_IDS"
-            echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids
-          else
-            echo "No packer build instances to clean up"
-          fi
-          VOLUME_IDS=$(aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
-          if [ -n "$VOLUME_IDS" ]; then
-            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
-            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id
-          else
-            echo "No orphaned packer volumes to clean up"
-          fi
-
-      - name: Cleanup resources after build
-        if: ${{ always() }}
-        run: |
-          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
-          INSTANCE_IDS=$(aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:testinfra-run-id,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text)
-          if [ -n "$INSTANCE_IDS" ]; then
-            echo "Terminating testinfra instances: $INSTANCE_IDS"
-            echo "$INSTANCE_IDS" | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids || true
-          else
-            echo "No testinfra instances to clean up"
-          fi
-          VOLUME_IDS=$(aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text)
-          if [ -n "$VOLUME_IDS" ]; then
-            echo "Deleting orphaned packer volumes: $VOLUME_IDS"
-            echo "$VOLUME_IDS" | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id || true
-          else
-            echo "No orphaned packer volumes to clean up"
-          fi
-
-      - name: Cleanup stage 2 AMI
+      - name: Configure AWS credentials for cleanup
         if: always()
-        run: |
-          EXECUTION_ID="${{ steps.build-ami.outputs.execution_id }}"
-          STAGE2_AMI_IDS=$(aws ec2 describe-images \
-            --region "$AWS_REGION" \
-            --owners self \
-            --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" \
-            --query 'Images[*].ImageId' \
-            --output text)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
 
-          if [ -n "$STAGE2_AMI_IDS" ]; then
-            for ami_id in $STAGE2_AMI_IDS; do
-              echo "Deregistering stage 2 AMI: $ami_id"
-              aws ec2 deregister-image --region "$AWS_REGION" --image-id "$ami_id" || true
-            done
-          else
-            echo "No stage 2 AMI to clean up"
-          fi
+      - name: Cleanup Packer resources
+        if: always()
+        run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
     needs: test-ami-nix
