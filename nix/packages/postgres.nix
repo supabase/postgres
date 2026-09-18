@@ -142,22 +142,6 @@
         in
         map (path: extCallPackage path { }) extensionsToUse;
 
-      # Build a single extension package, standalone (not the whole server's set).
-      makeSingleExt =
-        version: latestOnly: extPath:
-        let
-          postgresql = getPostgresqlPackage version latestOnly;
-          extCallPackage = pkgs.lib.callPackageWith (
-            pkgs
-            // {
-              inherit postgresql latestOnly;
-              switch-ext-version = extCallPackage ./switch-ext-version.nix { };
-              overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
-            }
-          );
-        in
-        extCallPackage extPath { };
-
       # Create an attrset that contains all the extensions included in a server.
       makeOurPostgresPkgsSet =
         version:
@@ -231,12 +215,10 @@
       #  - bin: the postgresql package itself, with all the extensions
       #    installed, and a receipt.json file containing metadata about the
       #    install.
-      #  - exts: an attrset containing extension packages. The "cli" variant
-      #    doesn't expose it (nothing reads it: checks.nix's cli check
-      #    harness borrows pgroonga from the full psql_17 instead). The
-      #    "slim" variants (latestOnly) only expose pgroonga, the one
-      #    extension checks.nix actually needs from them, instead of every
-      #    extension - each of which would otherwise be its own CI job.
+      #  - exts: an attrset containing all the extensions, mapped to their
+      #    package names. Not exposed for the "cli" variant, which nothing
+      #    reads it from (checks.nix's cli check harness borrows pgroonga
+      #    from the full psql_17 instead).
       makePostgres =
         version:
         {
@@ -248,11 +230,7 @@
             bin = makePostgresBin version { inherit variant latestOnly; };
           }
           // lib.optionalAttrs (variant != "cli") {
-            exts =
-              if latestOnly then
-                { pgroonga = makeSingleExt version latestOnly ../ext/pgroonga; }
-              else
-                makeOurPostgresPkgsSet version { inherit variant latestOnly; };
+            exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
           }
         );
       basePackages = {
