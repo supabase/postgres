@@ -1,5 +1,4 @@
 # These are envs (package sets per pg major version) deployed to instances
-# at /nix/var/nix/profiles/site and updated regularly.
 {
   perSystem =
     {
@@ -14,6 +13,7 @@
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          postBuild = "echo site-env-${version} > $out/site-env-name";
         };
 
       siteEnvs = {
@@ -28,9 +28,50 @@
           lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
         );
       };
+
+      # Set the named nix profile to the provided nix store path.
+      # aws and nix come from the environment.
+      update-profile = pkgs.writeShellApplication {
+        name = "update-profile";
+        text = ''
+          profile_name="''${1:?Usage: $0 <profile> <path>}"
+          path="''${2:?Usage: $0 <profile> <path>}"
+          profile_path="/nix/var/nix/profiles/''${profile_name}"
+
+          [[ "$(readlink -f "$profile_path")" == "$path" ]] && exit 0
+          nix-store --realise --option stalled-download-timeout 120 "$path" >/dev/null
+          nix-env --profile "$profile_path" --set "$path"
+        '';
+      };
+
+      # Fetch catalog and update site profile from given postgres repo hash.
+      # aws and nix come from the environment.
+      update-site = pkgs.writeShellApplication {
+        name = "update-site";
+        runtimeInputs = [
+          pkgs.jq
+          update-profile
+        ];
+        text = ''
+          sha="''${1:?Usage: $0 <git-sha>}"
+          system="$(uname -m)-linux"
+          variant="$(cat /nix/var/nix/profiles/site/site-env-name)"
+          catalog="/tmp/''${variant}-catalog-''${sha}-''${system}.json"
+
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${variant}-''${system}.json" \
+            "$catalog" --region ap-southeast-1
+          path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
+
+          update-profile site "$path"
+        '';
+      };
     in
     {
-      packages = siteEnvs;
-      legacyPackages = siteEnvs;
+      packages = siteEnvs // {
+        inherit update-profile update-site;
+      };
+      legacyPackages = siteEnvs // {
+        inherit update-profile update-site;
+      };
     };
 }
