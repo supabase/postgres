@@ -340,13 +340,22 @@ BEGIN
     , 'CREATE VIEW', 'ALTER VIEW'
     , 'CREATE MATERIALIZED VIEW', 'ALTER MATERIALIZED VIEW'
     , 'CREATE FUNCTION', 'ALTER FUNCTION'
-    , 'CREATE TRIGGER'
     , 'CREATE TYPE', 'ALTER TYPE'
     , 'CREATE RULE'
     , 'COMMENT'
     )
     -- don't notify in case of CREATE TEMP table or other objects created on pg_temp
-    AND cmd.schema_name is distinct from 'pg_temp'
+    -- also exclude any objects inside Supabase schemas
+    AND COALESCE(cmd.schema_name, '') not in ('pg_temp', 'auth', 'realtime', 'storage')
+    OR (
+      -- we validate if the trigger is created on a temporary table (relpersistence = 't')
+      cmd.command_tag = 'CREATE TRIGGER'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM pg_class c JOIN pg_trigger t ON c.oid = t.tgrelid
+        WHERE t.oid = cmd.objid AND c.relpersistence = 't'
+      )
+    )
     THEN
       NOTIFY pgrst, 'reload schema';
     END IF;
@@ -820,4 +829,3 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 --
 
 \unrestrict SupabaseTestDumpKey123
-
