@@ -146,14 +146,10 @@
           '';
         };
 
-        # Takes manifest json as argument.
-        # Downloads paths and installs them as an env into the profile, replacing all existing ones.
+        # nix comes from the environment: the AMI installs it.
         update-site-extensions = pkgs.writeShellApplication {
           name = "update-site-extensions";
-          runtimeInputs = [
-            self'.packages.site-extensions-resolve
-            pkgs.nix
-          ];
+          runtimeInputs = [ self'.packages.site-extensions-resolve ];
           text = ''
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
             profile="/nix/var/nix/profiles/site-extensions"

@@ -29,16 +29,10 @@
         );
       };
 
-      # Given a profile name (e.g. site-env-17, postgres-env-17) and a git sha,
-      # fetches that name's catalog entry and flips /nix/var/nix/profiles/<name>
-      # to it. Generic across any single-package catalog entry named <name>-<system>.json.
-      # Assumes `aws` is provided by the environment (AMIs already install AWS CLI v2).
+      # aws and nix come from the environment: the AMI installs both.
       update-profile = pkgs.writeShellApplication {
         name = "update-profile";
-        runtimeInputs = [
-          pkgs.jq
-          pkgs.nix
-        ];
+        runtimeInputs = [ pkgs.jq ];
         text = ''
           profile_name="''${1:?Usage: $0 <profile> <git-sha>}"
           system="$(uname -m)-linux"

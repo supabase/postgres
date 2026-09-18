@@ -16,14 +16,13 @@ pkgs.testers.runNixOSTest {
     };
   testScript = ''
     machine.succeed("echo '{\"${system}\": \"${site-env-17}\"}' > /tmp/catalog.json")
-    # sha is only needed to fetch from S3 — omitted here since UPDATE_PROFILE_CATALOG bypasses that
     machine.succeed("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-17")
     machine.succeed("[ \"$(readlink -f /nix/var/nix/profiles/site-env-17)\" = \"${site-env-17}\" ]")
 
-    # idempotent: same catalog again is a no-op success
+    # idempotent
     machine.succeed("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-17")
 
-    # wrong profile for the resolved path: must refuse
+    # path not tagged for this profile
     machine.fail("UPDATE_PROFILE_CATALOG=/tmp/catalog.json update-profile site-env-15")
   '';
 }
