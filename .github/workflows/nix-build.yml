@@ -19,7 +19,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  nix-eval:
+  nix-eval-x86_64-linux:
+    name: Nix Eval (x86_64-linux)
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
       packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
@@ -27,36 +28,97 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
+          installer: determinate
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
 
       - name: Generate Nix Matrix
         id: gen-matrix
         run: |
           set -Eeu -o pipefail
-          nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
+          nix run .#github-matrix -- x86_64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
-          sudo systemctl stop nix-daemon.socket || true
-          sudo systemctl stop nix-daemon.service || true
-          sudo pkill -9 nix-daemon || true
-          sleep 2
+  nix-eval-aarch64-linux:
+    name: Nix Eval (aarch64-linux)
+    runs-on: blacksmith-32vcpu-ubuntu-2404-arm
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          installer: determinate
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run .#github-matrix -- aarch64-linux <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
+
+  nix-eval-aarch64-darwin:
+    name: Nix Eval (aarch64-darwin)
+    runs-on: blacksmith-12vcpu-macos-26
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          installer: determinate
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Evaluate flake (parallel)
+        run: |
+          set -Eeu -o pipefail
+          ./scripts/parallel-nix-eval-jobs.sh | tee jobs.jsonl
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          set -Eeu -o pipefail
+          nix run .#github-matrix -- aarch64-darwin <jobs.jsonl | tee matrix.json
+          echo "packages_matrix=$(jq -c .packages matrix.json)" >>"$GITHUB_OUTPUT"
+          echo "checks_matrix=$(jq -c .checks matrix.json)" >>"$GITHUB_OUTPUT"
 
   nix-build-packages-aarch64-linux:
     name: >-
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (aarch64-linux)
-    needs: nix-eval
+    needs: nix-eval-aarch64-linux
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux }}
+      matrix: ${{ fromJSON(needs.nix-eval-aarch64-linux.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -79,14 +141,13 @@ jobs:
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (aarch64-linux)
     needs:
-      - nix-eval
+      - nix-eval-aarch64-linux
       - nix-build-packages-aarch64-linux
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux }}
+      matrix: ${{ fromJSON(needs.nix-eval-aarch64-linux.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -108,13 +169,12 @@ jobs:
     name: >-
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (aarch64-darwin)
-    needs: nix-eval
+    needs: nix-eval-aarch64-darwin
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin }}
+      matrix: ${{ fromJSON(needs.nix-eval-aarch64-darwin.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -140,14 +200,13 @@ jobs:
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (aarch64-darwin)
     needs:
-      - nix-eval
+      - nix-eval-aarch64-darwin
       - nix-build-packages-aarch64-darwin
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin }}
+      matrix: ${{ fromJSON(needs.nix-eval-aarch64-darwin.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -169,13 +228,12 @@ jobs:
     name: >-
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (x86_64-linux)
-    needs: nix-eval
+    needs: nix-eval-x86_64-linux
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux }}
+      matrix: ${{ fromJSON(needs.nix-eval-x86_64-linux.outputs.packages_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -198,14 +256,13 @@ jobs:
       ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
       (x86_64-linux)
     needs:
-      - nix-eval
+      - nix-eval-x86_64-linux
       - nix-build-packages-x86_64-linux
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux }}
+      matrix: ${{ fromJSON(needs.nix-eval-x86_64-linux.outputs.checks_matrix) }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
@@ -237,24 +294,60 @@ jobs:
           jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
           exit 1
 
-  run-testinfra:
-    needs:
-      - nix-eval
-      - nix-build-packages-aarch64-linux
-      - nix-build-packages-aarch64-darwin
-      - nix-build-packages-x86_64-linux
+  run-testinfra-aarch64-linux:
+    needs: nix-build-packages-aarch64-linux
     uses: ./.github/workflows/testinfra-ami-build.yml
+    with:
+      arch: arm64
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-  run-tests:
+  run-testinfra-x86_64-linux:
+    needs: nix-build-packages-x86_64-linux
+    uses: ./.github/workflows/testinfra-ami-build.yml
+    with:
+      arch: amd64
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  report-disk-usage:
     needs:
-      - nix-eval
-      - nix-build-packages-aarch64-linux
-      - nix-build-packages-aarch64-darwin
-      - nix-build-packages-x86_64-linux
+      - run-testinfra-aarch64-linux
+      - run-testinfra-x86_64-linux
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Download AMI disk usage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: ami-disk-usage-*
+          path: ami-disk-usage
+          merge-multiple: true
+
+      - name: Report AMI disk usage
+        run: |
+          cat <<EOF >>"$GITHUB_STEP_SUMMARY"
+          ### AMI Root Disk Usage
+
+          | Version | Arch | Human | Bytes |
+          | ------- | ---- | ----- | ----- |
+          EOF
+          cat ami-disk-usage/ami-disk-usage-*.json |
+          sort -V |
+          jq -rs '.[]|{version,arch,human,bytes}|"| \(join("|")) |"' >>"$GITHUB_STEP_SUMMARY"
+
+  run-tests-aarch64-linux:
+    needs: nix-build-packages-aarch64-linux
     uses: ./.github/workflows/test.yml
+    with:
+      arch: arm64
+
+  run-tests-x86_64-linux:
+    needs: nix-build-packages-x86_64-linux
+    uses: ./.github/workflows/test.yml
+    with:
+      arch: amd64
 
   docker-image-test:
     needs: nix-build-packages-aarch64-linux
@@ -270,8 +363,11 @@ jobs:
     needs:
       - docker-image-test
       - nix-build-checks
-      - run-testinfra
-      - run-tests
+      - report-disk-usage
+      - run-testinfra-aarch64-linux
+      - run-testinfra-x86_64-linux
+      - run-tests-aarch64-linux
+      - run-tests-x86_64-linux
     steps:
       - name: Check dependent job results
         if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
