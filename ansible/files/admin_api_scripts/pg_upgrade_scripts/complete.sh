@@ -332,6 +332,17 @@ function complete_pg_upgrade {
 	log "3.1. Patch Wrappers server options"
 	execute_wrappers_patch
 
+	# Must run before run_generated_sql (which recreates pg_graphql) and
+	# execute_patches (which recreates pg_cron): the triggers only re-apply the
+	# extension wiring if they are already scoped to CREATE EXTENSION when the
+	# recreate happens. Normally initiate.sh has already rescoped on the source
+	# cluster; this is a safety net in case it ran from an older script bundle.
+	log "3.2. Rescoping extension event triggers"
+	rescope_extension_event_triggers || {
+		log "WARNING: failed to rescope extension event triggers"
+		warnings=1
+	}
+
 	log "4. Running generated SQL files"
 	# Deliberately fail-soft per file (a failed ALTER EXTENSION UPDATE shouldn't fail the upgrade) so it never returns non-zero — a retry wrapper here would be dead code, and re-running would make already-applied updates error spuriously
 	run_generated_sql

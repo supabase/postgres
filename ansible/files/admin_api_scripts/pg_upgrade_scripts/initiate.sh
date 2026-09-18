@@ -204,6 +204,11 @@ ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
 
+	# Rescope before dropping extensions: the fixed triggers are carried into the new
+	# cluster by pg_upgrade, so both the post-upgrade re-enable and the failure-path
+	# re-enable below fire them. Fail-soft: a broken rescope should not block the upgrade.
+	rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
+
 	# Disable extensions if they're enabled
 	# Generate SQL script to re-enable them after upgrade
 	for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
