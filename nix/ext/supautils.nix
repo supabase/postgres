@@ -13,6 +13,8 @@ stdenv.mkDerivation rec {
   buildInputs = [ postgresql ];
 
   separateDebugInfo = true;
+
+  # dlopen'd into postgres, which already links glibc
   NIX_DONT_SET_RPATH = stdenv.isLinux;
 
   src = fetchFromGitHub {
