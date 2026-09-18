@@ -16,7 +16,7 @@ let
     vendorHash = null;
 
     buildInputs = [ pkgs.pam ];
-    NIX_DONT_SET_RPATH = true;
+    NIX_DONT_SET_RPATH = pkgs.stdenv.isLinux;
 
     buildPhase = ''
       runHook preBuild
