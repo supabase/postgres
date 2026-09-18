@@ -3,7 +3,6 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
-  patchelf,
 }:
 
 stdenv.mkDerivation rec {
@@ -12,13 +11,9 @@ stdenv.mkDerivation rec {
   version = "3.4.3";
 
   buildInputs = [ postgresql ];
-  nativeBuildInputs = lib.optionals stdenv.isLinux [ patchelf ];
 
   separateDebugInfo = true;
   NIX_DONT_SET_RPATH = stdenv.isLinux;
-
-  __structuredAttrs = true;
-  unsafeDiscardReferences.out = stdenv.isLinux;
 
   src = fetchFromGitHub {
     owner = "supabase";
@@ -33,9 +28,6 @@ stdenv.mkDerivation rec {
     mkdir -p $out/lib
 
     install -D *${postgresql.dlSuffix} -t $out/lib
-  ''
-  + lib.optionalString stdenv.isLinux ''
-    patchelf --remove-rpath $out/lib/supautils${postgresql.dlSuffix}
   '';
 
   meta = with lib; {
