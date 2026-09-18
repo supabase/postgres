@@ -146,6 +146,7 @@
           '';
         };
 
+        # Downloads the manifest's paths and installs them as the profile's env, replacing all existing ones.
         # nix comes from the environment.
         update-site-extensions = pkgs.writeShellApplication {
           name = "update-site-extensions";
