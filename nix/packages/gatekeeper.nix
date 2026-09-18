@@ -17,7 +17,7 @@ let
 
     buildInputs = [ pkgs.pam ];
 
-    # dlopen'd into PAM, which already links glibc
+    # dlopen'd into PAM, which already links these libs
     NIX_DONT_SET_RPATH = pkgs.stdenv.isLinux;
 
     buildPhase = ''
