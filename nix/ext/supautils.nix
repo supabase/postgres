@@ -17,6 +17,9 @@ stdenv.mkDerivation rec {
   separateDebugInfo = true;
   NIX_DONT_SET_RPATH = stdenv.isLinux;
 
+  __structuredAttrs = true;
+  unsafeDiscardReferences.out = stdenv.isLinux;
+
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
@@ -32,13 +35,7 @@ stdenv.mkDerivation rec {
     install -D *${postgresql.dlSuffix} -t $out/lib
   ''
   + lib.optionalString stdenv.isLinux ''
-    so=$out/lib/supautils${postgresql.dlSuffix}
-    rp=$(patchelf --print-rpath "$so")
-    patchelf --remove-rpath "$so"
-    if [ -n "$rp" ]; then
-      off=$(grep -aboF "$rp" "$so" | head -1 | cut -d: -f1)
-      dd if=/dev/zero of="$so" bs=1 seek="$off" count="''${#rp}" conv=notrunc status=none
-    fi
+    patchelf --remove-rpath $out/lib/supautils${postgresql.dlSuffix}
   '';
 
   meta = with lib; {
