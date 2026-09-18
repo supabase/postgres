@@ -45,7 +45,7 @@
       };
 
       # Fetch catalog and update site profile from given postgres repo hash.
-      # curl and nix come from the environment.
+      # aws and nix come from the environment.
       update-site = pkgs.writeShellApplication {
         name = "update-site";
         runtimeInputs = [
@@ -58,8 +58,8 @@
           variant="$(cat /nix/var/nix/profiles/site/site-env-name)"
           catalog="/tmp/''${variant}-catalog-''${sha}-''${system}.json"
 
-          curl -sSf "https://supabase-public-artifacts-bucket.s3.amazonaws.com/nix-catalog/''${sha}-''${variant}-''${system}.json" \
-            -o "$catalog"
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${variant}-''${system}.json" \
+            "$catalog" --region ap-southeast-1
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
 
           update-profile site "$path"

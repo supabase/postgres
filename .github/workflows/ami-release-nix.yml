@@ -213,13 +213,13 @@ jobs:
           SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
           jq -n --arg sys "$SYSTEM" --arg path "$SITE_ENV_PATH" '{($sys): $path}' > /tmp/site-env-catalog.json
           aws s3 cp /tmp/site-env-catalog.json \
-            "s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}.json" \
+            "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}.json" \
             --content-type "application/json"
 
           UPDATE_SITE_PATH=$(nix eval --raw ".#update-site.outPath")
           jq -n --arg sys "$SYSTEM" --arg path "$UPDATE_SITE_PATH" '{($sys): $path}' > /tmp/update-site-catalog.json
           aws s3 cp /tmp/update-site-catalog.json \
-            "s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}-update-site-${SYSTEM}.json" \
+            "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-update-site-${SYSTEM}.json" \
             --content-type "application/json"
 
       - name: Create release
