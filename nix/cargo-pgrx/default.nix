@@ -75,7 +75,7 @@ in
   cargo-pgrx_0_11_3 = mkCargoPgrx {
     version = "0.11.3";
     hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";
-    cargoHash = "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw=";
+    cargoHash = "sha256-giL077I5VzWJ+fAbxqp/Oc28Qjc7ontVm7of5LQz+uY=";
   };
   cargo-pgrx_0_12_6 = mkCargoPgrx {
     version = "0.12.6";
