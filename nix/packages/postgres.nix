@@ -216,9 +216,7 @@
       #    installed, and a receipt.json file containing metadata about the
       #    install.
       #  - exts: an attrset containing all the extensions, mapped to their
-      #    package names. Not exposed for the "cli" variant, which nothing
-      #    reads it from (checks.nix's cli check harness borrows pgroonga
-      #    from the full psql_17 instead).
+      #    package names. Not exposed for the "cli" variant.
       makePostgres =
         version:
         {
