@@ -939,6 +939,30 @@
             wal-g-3
             ;
           devShell = self'.devShells.default;
+          site =
+            let
+              system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+              update-profile = self.packages.${system}.update-profile;
+              site-env-17 = self.packages.${system}."site-env-17";
+            in
+            pkgs.testers.runNixOSTest {
+              name = "site";
+              nodes.machine =
+                { ... }:
+                {
+                  environment.systemPackages = [
+                    update-profile
+                    site-env-17
+                  ];
+                };
+              testScript = ''
+                machine.succeed("update-profile site ${site-env-17}")
+                machine.succeed("[ \"$(readlink -f /nix/var/nix/profiles/site)\" = \"${site-env-17}\" ]")
+
+                # idempotent
+                machine.succeed("update-profile site ${site-env-17}")
+              '';
+            };
         }
         // (import ./ext/tests {
           inherit self;

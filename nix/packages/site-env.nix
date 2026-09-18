@@ -1,5 +1,4 @@
 # These are envs (package sets per pg major version) deployed to instances
-# at /nix/var/nix/profiles/<env-name> and updated regularly.
 {
   perSystem =
     {
@@ -14,6 +13,7 @@
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          postBuild = "echo site-env-${version} > $out/site-env-name";
         };
 
       siteEnvs = {
@@ -29,6 +29,7 @@
         );
       };
 
+      # Set the named nix profile to the provided nix store path.
       # aws and nix come from the environment.
       update-profile = pkgs.writeShellApplication {
         name = "update-profile";
@@ -37,18 +38,14 @@
           path="''${2:?Usage: $0 <profile> <path>}"
           profile_path="/nix/var/nix/profiles/''${profile_name}"
 
-          [[ "$(basename "$path")" == *"-''${profile_name}" ]] || {
-            echo "error: resolved path $path is not tagged for profile $profile_name" >&2
-            exit 1
-          }
-
           [[ "$(readlink -f "$profile_path")" == "$path" ]] && exit 0
           nix-store --realise --option stalled-download-timeout 120 "$path" >/dev/null
           nix-env --profile "$profile_path" --set "$path"
         '';
       };
 
-      # Updates whichever site-env-* profile is already active on this host.
+      # Fetch catalog and update site profile from given postgres repo hash.
+      # aws and nix come from the environment.
       update-site = pkgs.writeShellApplication {
         name = "update-site";
         runtimeInputs = [
@@ -58,16 +55,14 @@
         text = ''
           sha="''${1:?Usage: $0 <git-sha>}"
           system="$(uname -m)-linux"
-          shopt -s nullglob
-          candidates=(/nix/var/nix/profiles/site-env-*)
-          profile_name="$(basename "''${candidates[0]:?no site-env-* profile found}")"
-          catalog="/tmp/''${profile_name}-catalog-''${sha}-''${system}.json"
+          variant="$(cat /nix/var/nix/profiles/site/site-env-name)"
+          catalog="/tmp/''${variant}-catalog-''${sha}-''${system}.json"
 
-          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${profile_name}-''${system}.json" \
+          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${variant}-''${system}.json" \
             "$catalog" --region ap-southeast-1
           path="$(jq -er --arg s "$system" '.[$s]' "$catalog")"
 
-          update-profile "$profile_name" "$path"
+          update-profile site "$path"
         '';
       };
     in
