@@ -19,6 +19,10 @@ grant create on database postgres to supabase_etl_admin;
 create role supabase_read_only_user with login bypassrls;
 grant pg_read_all_data to supabase_read_only_user;
 
+-- Supabase integrations user (catch-all role for first-party integrations, e.g. Issue Inbox)
+create user supabase_integrations_admin with login;
+grant create on database postgres to supabase_integrations_admin;
+
 -- Extension namespacing
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp"      with schema extensions;
