@@ -9,10 +9,21 @@ on:
           - amd64
           - arm64
         required: true
+      postgres_version:
+        type: choice
+        options:
+          - "15"
+          - "17"
+          - orioledb-17
+        required: true
   workflow_call:
     inputs:
       arch:
         description: amd64 or arm64
+        type: string
+        required: true
+      postgres_version:
+        description: 15, 17 or orioledb-17
         type: string
         required: true
     secrets:
@@ -31,43 +42,29 @@ env:
   AWS_REGION: ap-southeast-1
 
 jobs:
-  gen-matrix:
+  setup:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       instance_type: ${{ steps.set-outputs.outputs.instance_type }}
-      postgres_versions: ${{ steps.set-outputs.outputs.postgres_versions }}
       runner: ${{ steps.set-outputs.outputs.runner }}
     steps:
-      - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-
-      - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
-
       - name: Set outputs
         id: set-outputs
         env:
           ARCH: ${{ inputs.arch }}
         run: |
-          postgres_versions=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           case "$ARCH" in
             amd64) runner=blacksmith-2vcpu-ubuntu-2404 instance_type=c6i.4xlarge ;;
             arm64) runner=blacksmith-2vcpu-ubuntu-2404-arm instance_type=c6g.4xlarge ;;
             *) echo "::error::unknown arch '$ARCH'"; exit 1 ;;
           esac
           echo "instance_type=$instance_type" >> "$GITHUB_OUTPUT"
-          echo "postgres_versions=$postgres_versions" >> "$GITHUB_OUTPUT"
           echo "runner=$runner" >> "$GITHUB_OUTPUT"
 
   build:
-    needs: gen-matrix
-    strategy:
-      fail-fast: false
-      matrix:
-        postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
-    runs-on: ${{ needs.gen-matrix.outputs.runner }}
+    needs: setup
+    runs-on: ${{ needs.setup.outputs.runner }}
     timeout-minutes: 150
-
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
@@ -112,15 +109,15 @@ jobs:
           arch: ${{ inputs.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ needs.gen-matrix.outputs.instance_type }}
-          postgres_version: ${{ matrix.postgres_version }}
+          instance_type: ${{ needs.setup.outputs.instance_type }}
+          postgres_version: ${{ inputs.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
       - name: Save AMI disk usage
         env:
           ARCH: ${{ inputs.arch }}
           DISK_USAGE_JSON: ${{ steps.build-ami.outputs.disk_usage_json }}
-          POSTGRES_VERSION: ${{ matrix.postgres_version }}
+          POSTGRES_VERSION: ${{ inputs.postgres_version }}
         run: >-
           jq -cnr
           --arg arch "$ARCH"
@@ -132,7 +129,7 @@ jobs:
       - name: Upload AMI disk usage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ inputs.arch }}
+          name: ami-disk-usage-${{ inputs.postgres_version }}-${{ inputs.arch }}
           path: ami-disk-usage-*.json
           overwrite: true
           retention-days: 1

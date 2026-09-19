@@ -5,14 +5,24 @@ set -euo pipefail
 # Native system only (DetNix currently breaks on foreign-system eval).
 # Run from the repo root.
 
+PG_VERSION=${1:?usage: $0 <15|17|orioledb-17|common>}
 CACHE_URL=https://nix-postgres-artifacts.s3.amazonaws.com
 SYSTEM=$(nix eval --raw --no-pure-eval --expr builtins.currentSystem)
 workdir=$(mktemp -d)
 trap 'rm -rf "$workdir"' EXIT
 
 cat >"$workdir/walk.nix" <<-'EOF'
-	{ prefix, v }:
+	{ prefix, pgVersion, v }:
 	let
+	  # top-level attrs are grouped by the pg major in their name
+	  # (psql_15, psql_17_slim, postgresql_orioledb-17_src, site-env-15, ...)
+	  pgVersionOf = n:
+	    if builtins.match ".*orioledb-17.*" n != null then "orioledb-17"
+	    else if builtins.match "(.*[_-])?17([_-].*)?" n != null then "17"
+	    else if builtins.match "(.*[_-])?15([_-].*)?" n != null then "15"
+	    else "common";
+	  names = builtins.filter (n: pgVersionOf n == pgVersion) (builtins.attrNames v);
+	  selected = builtins.listToAttrs (map (n: { name = n; value = v.${n}; }) names);
 	  isDrv = x: (x.type or null) == "derivation";
 	  esc = s: if builtins.match "[a-zA-Z_][a-zA-Z0-9_'-]*" s != null then s else "\"${s}\"";
 	  join = p: builtins.concatStringsSep "." (map esc p);
@@ -48,7 +58,7 @@ cat >"$workdir/walk.nix" <<-'EOF'
 	        spliced = builtins.concatLists branches;
 	      in if builtins ? parallel then builtins.parallel branches spliced else spliced
 	    else [ ];
-	in go prefix v
+	in go prefix selected
 EOF
 
 # builtins.parallel needs an experimental feature that only Determinate Nix has;
@@ -59,11 +69,11 @@ if nix --version 2>/dev/null | grep -qi determinate; then
 fi
 
 for output in checks legacyPackages; do
-	echo "== evaluating $output.$SYSTEM" >&2
+	echo "== evaluating $output.$SYSTEM ($PG_VERSION)" >&2
 	time nix eval --json --no-pure-eval --option eval-cache false \
 		"${parallel_flags[@]}" \
 		".#$output.$SYSTEM" \
-		--apply "v: import $workdir/walk.nix { prefix = [ \"$output\" \"$SYSTEM\" ]; inherit v; }" \
+		--apply "v: import $workdir/walk.nix { prefix = [ \"$output\" \"$SYSTEM\" ]; pgVersion = \"$PG_VERSION\"; inherit v; }" \
 		>"$workdir/$output.json"
 done
 
