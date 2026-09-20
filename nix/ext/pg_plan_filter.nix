@@ -20,7 +20,8 @@ let
 
       src = fetchFromGitHub {
         owner = "pgexperts";
-        repo = pname;
+        # repo was renamed from plan_filter to pg_plan_filter upstream
+        repo = "pg_plan_filter";
         inherit rev hash;
       };
 
