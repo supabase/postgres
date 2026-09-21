@@ -39,5 +39,5 @@ shared_preload_libraries = 'pg_stat_statements, pg_cron, pg_net, pgsodium, supab
 #vault.getkey_script = '/path/to/pgsodium_getkey.sh'
 
 # Supautils configuration
-supautils.reserved_roles = 'supabase_admin,supabase_auth_admin,supabase_storage_admin,supabase_read_only_user,supabase_replication_admin,supabase_realtime_admin,supabase_functions_admin'
+supautils.reserved_roles = 'supabase_admin,supabase_auth_admin,supabase_storage_admin,supabase_read_only_user,supabase_replication_admin,supabase_realtime_admin,supabase_functions_admin,supabase_integrations_admin'
 supautils.reserved_memberships = 'pg_read_server_files,pg_write_server_files,pg_execute_server_program'
