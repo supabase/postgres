@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   check-changes:
-    name: Check Docker Image Changes
+    name: skippable
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
