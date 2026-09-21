@@ -109,6 +109,16 @@
         owner: 'root'
         group: 'root'
 
+    - name: Disable kexec handover # Saves ~128 MiB of RAM on a nano.
+      ansible.builtin.copy:
+        content:
+          GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} kho=off"
+        dest: /etc/default/grub.d/51-disable-kho
+        owner: root
+        group: root
+      notify:
+        - Regenerate grub configuration
+
 - name: Disable algif_aead module autoload for Copy Fail mitigation
   ansible.builtin.copy:
     content: |
