@@ -113,7 +113,7 @@
       ansible.builtin.copy:
         content:
           GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} kho=off"
-        dest: /etc/default/grub.d/51-disable-kho
+        dest: /etc/default/grub.d/51-disable-kho.cfg
         owner: root
         group: root
       notify:
