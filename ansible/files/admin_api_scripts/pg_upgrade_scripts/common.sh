@@ -69,57 +69,62 @@ function run_sql {
 	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
-# Old projects still have grant-access event triggers scoped to the tags their
-# original seed used (issue_pg_graphql_access on CREATE FUNCTION before build
-# 17.6.1.111 / 15.14.1.111, issue_pg_cron_access on CREATE SCHEMA before
-# 15.1.0.130), while the grant functions themselves (updated fleet-wide) only
-# act on CREATE EXTENSION events. With that mismatch, recreating the extension
-# never re-applies its wiring (graphql_public.graphql wrapper, cron grants).
-# Rescope the triggers so the CREATE EXTENSION statements that re-enable the
-# extensions after pg_upgrade fire them. Trigger definitions kept identical to
-# migrations 20260421000001_rescope_pg_graphql_access_trigger.sql and
-# 20231020085357_revoke_writes_on_cron_job_from_postgres.sql; no-op on
-# projects that already have the CREATE EXTENSION scope.
-# Drop this once no supported upgrade source predates 17.6.1.111 /
-# 15.14.1.111 — from then on every project already has the CREATE
-# EXTENSION triggers and this is dead code.
+# TODO: Drop once all projects have been upgraded past 17.6.1.111, 15.14.1.111
+#
+# Old projects still have grant-access event triggers scoped to the tags
+# their original seed used while the grant functions themselves (updated
+# fleet-wide) only act on CREATE EXTENSION events.
+#
+# * issue_pg_graphql_access on CREATE FUNCTION before build 17.6.1.111 /
+#   15.14.1.111
+# * issue_pg_cron_access on CREATE SCHEMA before 15.1.0.130
+#
+# With this mismatch, recreating the extension never re-applies its wiring
+# (graphql_public.graphql wrapper, cron grants). Rescope the triggers so
+# the CREATE EXTENSION statements that re-enable the extensions after
+# pg_upgrade fire them.
+#
+# Trigger definitions kept identical to migrations
+# 20260421000001_rescope_pg_graphql_access_trigger.sql and
+# 20231020085357_revoke_writes_on_cron_job_from_postgres.sql. This is a
+# no-op on projects that already have the CREATE EXTENSION scope.
 function rescope_extension_event_triggers {
 	local sql
 	sql=$(
-		cat <<'EOF'
-do $rescope$
-begin
-    if exists (
-        select 1
-        from pg_proc p
-        join pg_namespace n on p.pronamespace = n.oid
-        where n.nspname = 'extensions' and p.proname = 'grant_pg_graphql_access'
-    ) then
-        execute 'drop event trigger if exists issue_pg_graphql_access';
-        execute $q$
-            create event trigger issue_pg_graphql_access
-                on ddl_command_end
-                when tag in ('CREATE EXTENSION')
-                execute procedure extensions.grant_pg_graphql_access()
-        $q$;
-    end if;
+		cat <<-'EOF'
+			do $rescope$
+			begin
+			    if exists (
+			        select 1
+			        from pg_proc p
+			        join pg_namespace n on p.pronamespace = n.oid
+			        where n.nspname = 'extensions' and p.proname = 'grant_pg_graphql_access'
+			    ) then
+			        execute 'drop event trigger if exists issue_pg_graphql_access';
+			        execute $q$
+			            create event trigger issue_pg_graphql_access
+			                on ddl_command_end
+			                when tag in ('CREATE EXTENSION')
+			                execute procedure extensions.grant_pg_graphql_access()
+			        $q$;
+			    end if;
 
-    if exists (
-        select 1
-        from pg_proc p
-        join pg_namespace n on p.pronamespace = n.oid
-        where n.nspname = 'extensions' and p.proname = 'grant_pg_cron_access'
-    ) then
-        execute 'drop event trigger if exists issue_pg_cron_access';
-        execute $q$
-            create event trigger issue_pg_cron_access
-                on ddl_command_end
-                when tag in ('CREATE EXTENSION')
-                execute procedure extensions.grant_pg_cron_access()
-        $q$;
-    end if;
-end $rescope$;
-EOF
+			    if exists (
+			        select 1
+			        from pg_proc p
+			        join pg_namespace n on p.pronamespace = n.oid
+			        where n.nspname = 'extensions' and p.proname = 'grant_pg_cron_access'
+			    ) then
+			        execute 'drop event trigger if exists issue_pg_cron_access';
+			        execute $q$
+			            create event trigger issue_pg_cron_access
+			                on ddl_command_end
+			                when tag in ('CREATE EXTENSION')
+			                execute procedure extensions.grant_pg_cron_access()
+			        $q$;
+			    end if;
+			end $rescope$;
+		EOF
 	)
 	run_sql -c "$sql"
 }
