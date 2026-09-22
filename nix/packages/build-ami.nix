@@ -194,6 +194,21 @@ writeShellApplication {
         -var "source_ami=$STAGE1_AMI_ID" \
         "$@"
 
+      disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
+      disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'
+      if [[ $disk_usage_notice =~ $disk_usage_notice_pattern ]]; then
+        disk_usage_bytes=''${BASH_REMATCH[1]}
+        disk_usage_human=''${BASH_REMATCH[2]}
+      else
+        echo "Error: Missing or invalid disk usage notice in stage 2 log: '$disk_usage_notice'" >&2
+        exit 1
+      fi
+      echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
+      if [[ -n ''${GITHUB_OUTPUT:-} ]]; then
+        disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
+        echo "disk_usage_json=$disk_usage_json" >>"$GITHUB_OUTPUT"
+      fi
+
       if [ -n "''${PACKER_EXECUTION_ID:-}" ]; then
         STAGE2_AMI_ID=$(aws ec2 describe-images \
           --region "$REGION" \

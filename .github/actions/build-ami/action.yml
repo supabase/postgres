@@ -37,6 +37,9 @@ outputs:
   execution_id:
     description: 'The execution ID for this build'
     value: ${{ steps.set-execution-id.outputs.execution_id }}
+  disk_usage_json:
+    description: 'The stage 2 AMI root disk usage as json'
+    value: ${{ steps.build-stage2.outputs.disk_usage_json }}
 
 runs:
   using: "composite"

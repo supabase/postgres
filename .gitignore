@@ -2,6 +2,7 @@
 !.env
 !.gitignore
 !.gitkeep
+!/.ansible-lint-ignore
 !/.claude/
 !/.coderabbit.yaml
 !/.envrc.recommended

@@ -6,7 +6,6 @@
         name: 'tuned'
         policy_rc_d: 101
         state: 'present'
-        update_cache: true
       become: true
 
     - name: 'tuned - Create a tuned profile directory'  # noqa: name[casing]
@@ -184,43 +183,6 @@
         state: 'present'
         value: '10'
       become: true
-
-    - name: 'tuned - Enable zswap if swap is present'  # noqa: name[casing]
-      when: ansible_facts['swaptotal_mb'] > 0
-      block:
-        - name: 'tuned - Decrease the kernel swappiness'  # noqa: name[casing]
-          community.general.ini_file:
-            create: true
-            group: 'root'
-            mode: '0644'
-            no_extra_spaces: true
-            option: 'vm.swappiness'
-            path: '/etc/tuned/profiles/postgresql/tuned.conf'
-            section: 'sysctl'
-            state: 'present'
-            value: '10'
-          become: true
-
-        - name: 'tuned - Load zstd compressor module'  # noqa: name[casing]
-          community.general.modprobe:
-            name: 'zstd'
-            persistent: 'present'
-            state: 'present'
-          become: true
-
-        - name: 'tuned - Configure and enable zswap'  # noqa: name[casing]
-          ansible.builtin.shell:
-            cmd: "echo {{ zswap_item['value'] }}  > /sys/module/zswap/parameters/{{ zswap_item['param'] }}"
-          changed_when: true
-          loop:
-            - param: 'compressor'
-              value: 'zstd'
-            - param: 'max_pool_percent'
-              value: '10'
-            - param: 'enabled'
-              value: 'Y'
-          loop_control:
-            loop_var: 'zswap_item'
 
     - name: 'tuned - Activate the tuned service'  # noqa: name[casing]
       ansible.builtin.systemd_service:

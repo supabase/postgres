@@ -69,7 +69,6 @@ expected_results = {
     "gotrue": [{"groupname": "gotrue", "username": "gotrue"}],
     "envoy": [{"groupname": "envoy", "username": "envoy"}],
     "kong": [{"groupname": "kong", "username": "kong"}],
-    "nginx": [{"groupname": "nginx", "username": "nginx"}],
     "vector": [
         {"groupname": "adm", "username": "vector"},
         {"groupname": "postgres", "username": "vector"},
@@ -376,7 +375,6 @@ def main():
         "gotrue",
         "envoy",
         "kong",
-        "nginx",
         "vector",
         "adminapi",
         "postgrest",

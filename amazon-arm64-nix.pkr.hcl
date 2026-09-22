@@ -108,6 +108,8 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 10
     volume_type           = "gp3"
+    iops                  = 5000 # gp3 max at 10 GiB: 500 IOPS/GiB * 10
+    throughput            = 1000 # bump to max once https://github.com/hashicorp/packer-plugin-amazon/pull/707 is merged (gp3 max at 0.25 MiB/s per IOPS * 5000 = 1250)
   }
 
   # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
@@ -125,6 +127,8 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 16
     volume_type           = "gp3"
+    iops                  = 8000 # gp3 max at 16 GiB: 500 IOPS/GiB * 16
+    throughput            = 1000 # bump to max once https://github.com/hashicorp/packer-plugin-amazon/pull/707 is merged (gp3 max at 0.25 MiB/s per IOPS * 8000 = 2000)
     omit_from_artifact    = true
   }
 
@@ -161,6 +165,7 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 10
     volume_type           = "gp3"
+    iops                  = 5000 # gp3 max at 10 GiB: 500 IOPS/GiB * 10
   }
 
   associate_public_ip_address = true
@@ -169,11 +174,6 @@ source "amazon-ebssurrogate" "source" {
 # a build block invokes sources and runs provisioning steps on them.
 build {
   sources = ["source.amazon-ebssurrogate.source"]
-
-  provisioner "file" {
-    source      = "ebssurrogate/files/sources-arm64.cfg"
-    destination = "/tmp/sources.list"
-  }
 
   provisioner "file" {
     source      = "ebssurrogate/files/ebsnvme-id"
