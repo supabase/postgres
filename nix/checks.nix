@@ -27,10 +27,9 @@
           # deadnix: skip
           makeCheckHarness =
             pgpkg:
-            # legacyPkgName: the name used in legacyPackages (e.g., "psql_17" or "psql_17_slim")
             {
               isCliVariant ? false,
-              legacyPkgName ? null,
+              isSlim ? false,
             }:
             let
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
@@ -75,43 +74,23 @@
                 '';
               };
 
-              # Get the major version for filtering
-              majorVersion =
-                let
-                  version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
-                  isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
-                  isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
-                  result =
-                    if isOrioledbMatch then
-                      "orioledb-17"
-                    else if isSeventeenMatch then
-                      "17"
-                    else
-                      "15";
-                in
-                builtins.trace "Major version result: ${result}" result;
-
-              # Determine the legacy package name for selecting extensions
-              effectiveLegacyPkgName = if legacyPkgName != null then legacyPkgName else "psql_${majorVersion}";
-
-              # Select the appropriate pgroonga package for this PostgreSQL version
-              pgroonga = self'.legacyPackages.${effectiveLegacyPkgName}.exts.pgroonga;
+              pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
+              supautils = self'.legacyPackages."psql_${pgpkg.version}".exts.supautils;
 
               # Use different ports to allow parallel test runs
               # slim packages get their own ports to avoid conflicts
-              isSlim = lib.hasSuffix "_slim" effectiveLegacyPkgName;
               pgPort =
-                if (majorVersion == "17" && isSlim) then
+                if (pgpkg.version == "17" && isSlim) then
                   "5538"
-                else if (majorVersion == "15" && isSlim) then
+                else if (pgpkg.version == "15" && isSlim) then
                   "5539"
-                else if (majorVersion == "orioledb-17" && isSlim) then
+                else if (pgpkg.version == "orioledb-17" && isSlim) then
                   "5540"
-                else if (majorVersion == "17" && isCliVariant) then
+                else if (pgpkg.version == "17" && isCliVariant) then
                   "5541"
-                else if (majorVersion == "17") then
+                else if (pgpkg.version == "17") then
                   "5535"
-                else if (majorVersion == "15") then
+                else if (pgpkg.version == "15") then
                   "5536"
                 else
                   "5537";
@@ -134,7 +113,6 @@
                   "pg_tle"
                   "plan_filter"
                   "supabase_vault"
-                  "supautils"
                 )
 
                 # Extract available extensions from receipt
@@ -164,21 +142,6 @@
                   PGSQL_DEFAULT_PORT = pgPort;
                 };
               };
-
-              getVersionArg =
-                pkg:
-                let
-                  name = pkg.version;
-                in
-                # Check orioledb first since "17_15" would match "17.*" pattern
-                if builtins.match "17_[0-9]+" name != null then
-                  "orioledb-17"
-                else if builtins.match "15.*" name != null then
-                  "15"
-                else if builtins.match "17.*" name != null then
-                  "17"
-                else
-                  throw "Unsupported PostgreSQL version: ${name}";
 
               # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
               orioledbSkipTests = [
@@ -226,7 +189,7 @@
                 pkgs.lib.filterAttrs (name: _: isValidFile name) files;
 
               # Filter SQL test files
-              filteredSqlTests = filterTestFiles majorVersion ./tests/sql;
+              filteredSqlTests = filterTestFiles pgpkg.version ./tests/sql;
 
               # Tests to skip for CLI variants (require extensions not in CLI)
               cliSkipTests = [
@@ -399,8 +362,12 @@
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey" \
                   --subst-var-by PRELOAD_LIBRARIES "$PRELOAD_LIBRARIES"
-                echo "listen_addresses = '127.0.0.1'" >> "$PGTAP_CLUSTER"/postgresql.conf
-                echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
+                {
+                  echo "listen_addresses = '127.0.0.1'"
+                  echo "port = ${pgPort}"
+                  echo "session_preload_libraries = 'supautils'"
+                  echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
+                } >> "$PGTAP_CLUSTER"/postgresql.conf
                 echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
                 log info "Checking shared_preload_libraries setting:"
                 log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
@@ -497,7 +464,7 @@
 
                 log info "Starting PostgreSQL server for pg_regress tests"
                 unset GRN_PLUGINS_DIR
-                if ! log_cmd ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize; then
+                if ! log_cmd ${start-postgres-server-bin}/bin/start-postgres-server ${pgpkg.version} --daemonize; then
                   log error "Failed to start PostgreSQL server for pg_regress tests"
                   exit 1
                 fi
@@ -571,7 +538,7 @@
                 # running server as pg_regress (--use-existing). These specs target
                 # core/heap + contrib concurrency behaviour. Skipped on:
                 #   - CLI variants: portable build runs only a test subset.
-                #   - orioledb ships its own isolation suite for its storage-engine 
+                #   - orioledb ships its own isolation suite for its storage-engine
                 #     concurrency semantics.
                 #shellcheck disable=SC2193
                 if ${lib.boolToString isCliVariant}; then
@@ -610,28 +577,22 @@
         in
         {
           psql_15 = pkgs.runCommand "run-check-harness-psql-15" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { legacyPkgName = "psql_15"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { })
           );
           psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { legacyPkgName = "psql_17"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { })
           );
           psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
-            lib.getExe (
-              makeCheckHarness self'.packages."psql_orioledb-17/bin" { legacyPkgName = "psql_orioledb-17"; }
-            )
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin" { })
           );
           psql_15_slim = pkgs.runCommand "run-check-harness-psql-15-slim" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_15_slim/bin" { legacyPkgName = "psql_15_slim"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_15_slim/bin" { isSlim = true; })
           );
           psql_17_slim = pkgs.runCommand "run-check-harness-psql-17-slim" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17_slim/bin" { legacyPkgName = "psql_17_slim"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_17_slim/bin" { isSlim = true; })
           );
           psql_orioledb-17_slim = pkgs.runCommand "run-check-harness-psql-orioledb-17-slim" { } (
-            lib.getExe (
-              makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" {
-                legacyPkgName = "psql_orioledb-17_slim";
-              }
-            )
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" { isSlim = true; })
           );
           # CLI variant checks
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
