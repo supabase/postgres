@@ -206,8 +206,10 @@ EOF
 
 	# Rescope before dropping extensions: the fixed triggers are carried into the new
 	# cluster by pg_upgrade, so both the post-upgrade re-enable and the failure-path
-	# re-enable below fire them. Fail-soft: a broken rescope should not block the upgrade.
-	rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
+	# re-enable below fire them. Fail-soft: a broken rescope should not block the
+	# upgrade — but retry first, since a skipped rescope means the recreation of
+	# these extensions silently loses their wiring.
+	retry 3 rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
 
 	# Disable extensions if they're enabled
 	# Generate SQL script to re-enable them after upgrade
