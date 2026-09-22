@@ -210,6 +210,25 @@
     owner: 'root'
     group: 'root'
 
+- name: configure NTP client
+  when: stage2
+  block:
+    - name: ensure conf directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/timesyncd.conf.d
+        state: directory
+        mode: '0755'
+
+    - name: configure NTP server
+      ansible.builtin.copy:
+        content: |
+          [Time]
+          NTP=169.254.169.123 fd00:ec2::123
+        dest: /etc/systemd/timesyncd.conf.d/10-aws-time-sync.conf
+        mode: '0644'
+        owner: root
+        group: root
+
 - name: Configure Apt
   ansible.builtin.copy:
     content: |
