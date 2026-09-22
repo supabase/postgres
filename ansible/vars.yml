@@ -7,9 +7,9 @@ postgres_major:
   - "17"
   - orioledb-17
 postgres_release:
-  postgresorioledb-17: "17.9.0.027-orioledb"
-  postgres17: "17.6.1.174"
-  postgres15: "15.14.1.174"
+  postgresorioledb-17: "17.9.0.029-orioledb"
+  postgres17: "17.6.1.176"
+  postgres15: "15.14.1.176"
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
@@ -21,11 +21,11 @@ supabase_admin_agent_splay: 30s
 # Checksums can be verified or updated by running:                                                            #
 # nix run .#update-ansible-artifacts                                                                          #
 ###############################################################################################################
-adminapi_release: 0.114.0
+adminapi_release: 0.122.1
 adminapi_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
-    checksum: sha256:2e2323c193c7eb3688b92c0546d49e56e96f0b88d1a78dd92ab214b7082e93ba
+    checksum: sha256:fd0724f12c444c2a6e92805712db2528cc574ebfc6ece4e31d4d24c5d459e3b1
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
     checksum: sha256:235dc47bfb5f6986bf0bc159162b486131d163c6cc1afe5561776d8ba93174d7
