@@ -1473,19 +1473,45 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
     )
 
 
+def test_default_core_limit_is_disabled_machine_wide(host):
+    """Verify DefaultLimitCORE=0 is configured, so postgresql.service's own
+    LimitCORE=infinity is the *only* exception, not one of many.
+
+    This AMI's base image ships systemd's own DefaultLimitCORE=infinity -
+    without an explicit override here, every other service that doesn't set
+    its own LimitCORE= would also get unlimited-size core dumps, not just
+    postgres. This is the other half of "only PostgreSQL permitted to
+    generate cores" (postgres gets LimitCORE=infinity, everyone else gets 0
+    via this machine-wide default).
+    """
+    result = run_ssh_command(host["ssh"], "systemctl show -p DefaultLimitCORE")
+    assert result["succeeded"], f"systemctl show failed: {result['stderr']}"
+    assert "DefaultLimitCORE=0" in result["stdout"], (
+        f"Expected DefaultLimitCORE=0 machine-wide, got:\n{result['stdout']}"
+    )
+
+
 def test_coredump_storage_directory_root_only(host):
-    """Verify /var/lib/systemd/coredump is root-only, since it can hold
-    core files containing customer data."""
+    """Verify /var/lib/systemd/coredump is owned by root and not writable by
+    anyone else. Systemd's own default for this directory is 0755 (world
+    *readable*, confirmed on a real AMI - only 700/750 were checked here
+    originally, which was an unverified guess, not systemd's actual
+    behavior) - a world-readable directory only leaks core *filenames*, not
+    content, since the actual core files get their own restrictive
+    permissions from systemd-coredump. What actually matters is that no one
+    but root can create/replace/delete files in it."""
     result = run_ssh_command(
         host["ssh"], "stat -c '%a %U:%G' /var/lib/systemd/coredump"
     )
     assert result["succeeded"], f"stat failed: {result['stderr']}"
     mode, owner = result["stdout"].strip().split()
-    assert mode in ("700", "750"), (
-        f"Expected /var/lib/systemd/coredump to be root-only, got mode {mode}"
-    )
     assert owner.startswith("root:"), (
         f"Expected /var/lib/systemd/coredump to be owned by root, got {owner}"
+    )
+    group_other_bits = mode[-2:]
+    assert all(int(bit) & 0o2 == 0 for bit in group_other_bits), (
+        f"Expected /var/lib/systemd/coredump to not be group/other-writable, "
+        f"got mode {mode}"
     )
 
 
@@ -1507,11 +1533,28 @@ def _crash_a_backend_and_wait_for_recovery(host):
     """Grab a real Postgres backend pid, SIGSEGV it, and wait for PostgreSQL's
     normal crash-recovery to bring the instance back on its own
     (Restart=always / auto-reinit, same as production). Returns the crashed
-    backend's pid. Used by tests that need a real, fresh core to appear."""
+    backend's pid. Used by tests that need a real, fresh core to appear.
+
+    A single one-shot `select pg_backend_pid()` query is not safe here: the
+    psql client disconnects the instant it gets its answer, which makes the
+    server-side backend exit normally right after - so by the time `kill`
+    runs, that pid is usually already gone (confirmed in practice: this used
+    to silently signal a dead/nonexistent pid, producing no crash and no
+    core at all). Instead, start a backend that's still busy (via
+    pg_sleep), and look its pid up out-of-band via pg_stat_activity so it's
+    guaranteed to still be alive when we signal it.
+    """
+    run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+        "-c 'select pg_sleep(30);' >/dev/null 2>&1 &",
+    )
+    sleep(1)
     backend_pid = run_ssh_command(
         host["ssh"],
         "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
-        "-tAc 'select pg_backend_pid()'",
+        "-tAc \"select pid from pg_stat_activity where query = 'select pg_sleep(30);' "
+        "and state = 'active' limit 1;\"",
     )["stdout"].strip()
     assert backend_pid.isdigit(), (
         f"Could not resolve a Postgres backend pid: {backend_pid}"
@@ -1551,21 +1594,20 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
     )
     before_lines = set(before["stdout"].splitlines())
 
-    # Unrelated process: launch a disposable process outside the
-    # LimitCORE=infinity-scoped postgresql.service and SIGSEGV it - it must
-    # not produce a core, since the default core limit is unchanged for it.
+    # run a systemd process that isn't part of  postgresql.service and check
+    # that it keeps the default core limit (thus not producing a coredump)
     run_ssh_command(
         host["ssh"],
-        "setsid bash -c 'sleep 60 & echo $! > /tmp/unrelated_pid; wait' >/dev/null 2>&1 &",
+        "sudo systemd-run --unit=testinfra-unrelated-crash --collect /bin/sleep 60",
     )
     sleep(1)
-    unrelated_pid = run_ssh_command(host["ssh"], "cat /tmp/unrelated_pid")[
-        "stdout"
-    ].strip()
-    assert unrelated_pid.isdigit(), (
-        f"Could not resolve the disposable unrelated process pid: {unrelated_pid}"
+    unrelated_pid = run_ssh_command(
+        host["ssh"], "systemctl show testinfra-unrelated-crash -p MainPID --value"
+    )["stdout"].strip()
+    assert unrelated_pid.isdigit() and unrelated_pid != "0", (
+        f"Could not resolve the disposable unrelated unit's pid: {unrelated_pid}"
     )
-    run_ssh_command(host["ssh"], f"kill -SEGV {unrelated_pid}")
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {unrelated_pid}")
     sleep(2)
 
     # Postgres backend: grab a real backend pid and crash it the same way.
@@ -1585,6 +1627,32 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
         f"Unrelated process {unrelated_pid} should not have produced a core dump:\n"
         f"{after['stdout']}"
     )
+
+
+def _resolve_postgres_binary(host):
+    """/usr/lib/postgresql/bin/postgres is a Nix wrapper *script* (sets
+    NIX_PGLIBDIR, then execs the real ELF elsewhere in the nix store) - not
+    an executable itself, so readelf/gdb can't be pointed at it directly.
+    Resolve the real binary via the live postmaster's /proc/<pid>/exe,
+    which always shows the actual running ELF regardless of the wrapper -
+    the same real path a crash would report via coredumpctl."""
+    pid = run_ssh_command(
+        host["ssh"], "systemctl show postgresql -p MainPID --value"
+    )["stdout"].strip()
+    return run_ssh_command(host["ssh"], f"sudo readlink -f /proc/{pid}/exe")[
+        "stdout"
+    ].strip()
+
+
+def _resolve_orioledb_lib(host, postgres_binary):
+    """orioledb.so has no fixed path either - it lives in the same nix store
+    derivation as the resolved postgres binary, just under lib/ instead of
+    bin/ (see orioledb_lib_path() in process-orioledb-coredumps.sh, which
+    this mirrors)."""
+    exe_dir = run_ssh_command(
+        host["ssh"], f"dirname \"$(dirname '{postgres_binary}')\""
+    )["stdout"].strip()
+    return f"{exe_dir}/lib/orioledb.so"
 
 
 def _build_id_of(host, path):
@@ -1613,8 +1681,9 @@ def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
     """Verify the installed 'postgres' binary's build-id has a matching
     .build-id/xx/yyyy.debug file in the postgres-env debug output, so a
     future coredump-processing GDB session can actually resolve symbols."""
-    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
-    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    postgres_binary = _resolve_postgres_binary(host)
+    build_id = _build_id_of(host, postgres_binary)
+    assert build_id, f"Could not read a build-id from {postgres_binary}"
     assert _debug_file_exists_for_build_id(host, build_id), (
         f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
         f".build-id/ matching postgres build-id {build_id} - the shipped "
@@ -1626,7 +1695,7 @@ def test_orioledb_library_build_id_matches_shipped_debug_symbols(host):
     """Verify orioledb.so's build-id has a matching debug file, same as for
     the postgres binary - orioledb.so is built by the same derivation
     (isOrioleDB flavor) so its debug info ships in the same _debug output."""
-    orioledb_so = "/usr/lib/postgresql/lib/orioledb.so"
+    orioledb_so = _resolve_orioledb_lib(host, _resolve_postgres_binary(host))
     exists = run_ssh_command(host["ssh"], f"test -f {orioledb_so} && echo present")
     if "present" not in exists["stdout"]:
         pytest.skip("orioledb.so not present on this AMI (not an OrioleDB build)")
@@ -1657,8 +1726,9 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     """
     import re
 
-    build_id = _build_id_of(host, "/usr/lib/postgresql/bin/postgres")
-    assert build_id, "Could not read a build-id from /usr/lib/postgresql/bin/postgres"
+    postgres_binary = _resolve_postgres_binary(host)
+    build_id = _build_id_of(host, postgres_binary)
+    assert build_id, f"Could not read a build-id from {postgres_binary}"
     prefix, rest = build_id[:2], build_id[2:]
     debug_file = f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
 
@@ -1674,7 +1744,7 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
         "sudo -u postgres gdb --batch -quiet "
         "-ex 'set debug-file-directory /var/lib/postgresql/.nix-profile/lib/debug' "
         f"-ex 'set substitute-path {comp_dir} /var/lib/postgresql/.nix-profile' "
-        "-ex 'file /usr/lib/postgresql/bin/postgres' "
+        f"-ex 'file {postgres_binary}' "
         "-ex 'list main' "
         "2>&1",
     )

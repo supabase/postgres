@@ -169,7 +169,7 @@ process_one() {
 	local tmpdir
 	tmpdir=$(mktemp -d /tmp/coredump-XXXXXX)
 	chmod 700 "$tmpdir"
-	# suppress shellcheck warning about quoting $tmpdir in the trap command - 
+	# suppress shellcheck warning about quoting $tmpdir in the trap command -
 	# it's correct to quote it, and the trap is evaluated at runtime,
 	# not parse time.
 	# shellcheck disable=SC2064

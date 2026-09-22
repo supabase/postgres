@@ -331,6 +331,33 @@
     src: 'files/postgresql_config/coredump.conf'
   become: true
 
+# This AMI's base image ships systemd's DefaultLimitCORE=infinity - without
+# an explicit override, *every* service that doesn't set its own LimitCORE=
+# already gets unlimited-size core dumps, not just postgres (confirmed via
+# `systemctl show -p DefaultLimitCORE` on a real instance). This is the
+# other half of "only PostgreSQL permitted to generate cores" - postgres
+# gets LimitCORE=infinity above, everyone else gets 0 here. [Manager]
+# section changes only take effect on the next full boot (or a manual
+# `systemctl daemon-reexec`), which is fine for a freshly-imaged AMI but
+# means re-testing this on an already-running instance needs a reexec.
+- name: Create a systemd system.conf.d dir for the machine-wide coredump default
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0755'
+    owner: 'root'
+    path: '/etc/systemd/system.conf.d'
+    state: 'directory'
+  become: true
+
+- name: copy machine-wide default core limit (postgres is the only exception)
+  ansible.builtin.copy:
+    dest: '/etc/systemd/system.conf.d/disable-coredumps-by-default.conf'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: 'files/postgresql_config/disable-coredumps-by-default.conf'
+  become: true
+
 - name: Create a systemd-coredump conf.d dir for PostgreSQL storage limits
   ansible.builtin.file:
     group: 'root'
