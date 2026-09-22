@@ -80,6 +80,9 @@ function run_sql {
 # migrations 20260421000001_rescope_pg_graphql_access_trigger.sql and
 # 20231020085357_revoke_writes_on_cron_job_from_postgres.sql; no-op on
 # projects that already have the CREATE EXTENSION scope.
+# Drop this once no supported upgrade source predates 17.6.1.111 /
+# 15.14.1.111 — from then on every project already has the CREATE
+# EXTENSION triggers and this is dead code.
 function rescope_extension_event_triggers {
 	local sql
 	sql=$(
