@@ -205,3 +205,7 @@
       when: stage2 and not qemu
       become: yes
       import_tasks: tasks/stage2/setup-swap.yml
+
+  handlers:
+    - name: Import handlers
+      import_tasks: handlers/main.yml

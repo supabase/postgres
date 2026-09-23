@@ -119,8 +119,6 @@ Use this when the extension requires a newer pgrx version.
 | `nix/ext/versions.json` | Add new version with new pgrx version |
 | `nix/ext/<extension>/default.nix` | Add old version to `allPreviouslyPackagedVersions` |
 | `nix/cargo-pgrx/versions.json` | Add new pgrx version (if not already present) |
-| `nix/cargo-pgrx/default.nix` | Add new `cargo-pgrx_x_y_z` entry (if not already present) |
-| `nix/overlays/default.nix` | Add new `buildPgrxExtension_x_y_z` (if not already present) |
 
 ### Steps
 
@@ -143,27 +141,10 @@ Use this when the extension requires a newer pgrx version.
    }
    ```
 
-   The `rust` object maps Rust versions to their corresponding `cargoHash`. You'll need to calculate both the `hash` (for the pgrx crate) and `cargoHash` (for cargo dependencies).
+   The `rust` object maps Rust versions to their corresponding `cargoHash`.
+   You'll need to calculate both the `hash` (for the pgrx crate) and `cargoHash` (for cargo dependencies).
 
-3. **Add cargo-pgrx entry** in `nix/cargo-pgrx/default.nix`:
-
-   ```nix
-   cargo-pgrx_0_16_1 = mkCargoPgrx {
-     version = "0.16.1";
-     hash = "";
-     cargoHash = "";
-   };
-   ```
-
-4. **Add overlay entry** in `nix/overlays/default.nix`:
-
-   ```nix
-   buildPgrxExtension_0_16_1 = prev.buildPgrxExtension.override {
-     cargo-pgrx = final.cargo-pgrx.cargo-pgrx_0_16_1;
-   };
-   ```
-
-5. **Update `nix/ext/versions.json`** with the new extension version:
+3. **Update `nix/ext/versions.json`** with the new extension version:
 
    ```json
    "0.5.7": {
@@ -174,7 +155,7 @@ Use this when the extension requires a newer pgrx version.
    }
    ```
 
-6. **Stage and build** to calculate hashes:
+4. **Stage and build** to calculate hashes:
 
    ```bash
    git add .
