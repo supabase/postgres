@@ -1868,12 +1868,22 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
         f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
     )
 
+    # DW_AT_comp_dir is recorded per compilation unit, not once globally -
+    # PostgreSQL's recursive-Makefile build compiles each .c file from its
+    # own subdirectory (e.g. main.c from .../src/backend/main, a different
+    # object from a different subdirectory entirely), so grabbing the first
+    # DW_AT_comp_dir in the whole dump grabs whichever unrelated CU happens
+    # to appear first - not main.c's own. Find main.c's CU specifically and
+    # take its comp_dir.
     comp_dir = run_ssh_command(
         host["ssh"],
-        f"readelf --debug-dump=info {debug_file} 2>/dev/null "
-        "| grep -m1 DW_AT_comp_dir | grep -oE '/[^ ]+$'",
+        f"readelf --debug-dump=info {debug_file} 2>/dev/null | awk '"
+        "/DW_TAG_compile_unit/ { want=0 } "
+        "/DW_AT_name/ && /: main\\.c$/ { want=1 } "
+        "want && /DW_AT_comp_dir/ { print; exit }"
+        "' | grep -oE '/[^ ]+$'",
     )["stdout"].strip()
-    assert comp_dir, f"Could not determine DW_AT_comp_dir from {debug_file}"
+    assert comp_dir, f"Could not determine main.c's DW_AT_comp_dir from {debug_file}"
 
     result = run_ssh_command(
         host["ssh"],
