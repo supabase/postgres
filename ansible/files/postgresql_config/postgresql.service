@@ -14,6 +14,8 @@ ExecStartPre=+/usr/local/bin/postgres_prestart.sh
 # Excludes shared_buffers (an anonymous *shared* mapping) from core dumps -
 # without this, every core would include the whole (potentially many-GB)
 # buffer pool. Inherited by every process postgres forks.
+# Even though we do this again below, it's worth to keep this in case
+# we have a non supabase_internal instance.
 CoredumpFilter=private-anonymous elf-headers private-huge
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=mixed
@@ -29,6 +31,13 @@ LimitNOFILE=16384
 ReadOnlyPaths=/etc
 InaccessiblePaths=/root -/var/lib/supabase -/var/lib/supabase-admin-agent -/var/cache/supabase-admin-agent -/opt/saltstack -/etc/salt
 AppArmorProfile=-sbpostgres
+# AppArmorProfile= above makes ExecStart's exec an unconfined->confined
+# transition, which the kernel treats as a "secure exec" and resets
+# coredump_filter back to the system default - silently discarding the
+# CoredumpFilter= setting above in the same fork. Re-apply it here from
+# outside the confined process (a plain file write, not an exec, so it
+# can't be reset the same way) once the process is actually running.
+ExecStartPost=+/bin/sh -c 'echo 0x31 > /proc/$MAINPID/coredump_filter'
 {% endif %}
 [Install]
 WantedBy=multi-user.target

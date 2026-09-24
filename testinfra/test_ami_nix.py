@@ -1460,13 +1460,17 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
     (systemd >= 246), which coredump_filter (inherited across fork(2) and
     preserved across execve(2)) then propagates to everything postgres forks.
     """
-    pid = run_ssh_command(
-        host["ssh"], "systemctl show postgresql -p MainPID --value"
-    )["stdout"].strip()
-    assert pid.isdigit() and pid != "0", f"Could not resolve postgresql.service MainPID: {pid}"
+    pid = run_ssh_command(host["ssh"], "systemctl show postgresql -p MainPID --value")[
+        "stdout"
+    ].strip()
+    assert pid.isdigit() and pid != "0", (
+        f"Could not resolve postgresql.service MainPID: {pid}"
+    )
 
     result = run_ssh_command(host["ssh"], f"cat /proc/{pid}/coredump_filter")
-    assert result["succeeded"], f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
+    assert result["succeeded"], (
+        f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
+    )
     assert result["stdout"].strip() == "31", (
         f"Expected /proc/{pid}/coredump_filter to be '31' (0x31 = 49 decimal), "
         f"got '{result['stdout'].strip()}'"
@@ -1519,9 +1523,7 @@ def test_postgres_prestart_does_not_reset_core_limit(host):
     """Regression guard: postgres_prestart.sh must never touch 'ulimit -c',
     or it would silently defeat the postgresql.service LimitCORE=infinity
     coredump drop-in."""
-    result = run_ssh_command(
-        host["ssh"], "cat /usr/local/bin/postgres_prestart.sh"
-    )
+    result = run_ssh_command(host["ssh"], "cat /usr/local/bin/postgres_prestart.sh")
     assert result["succeeded"], f"Could not read prestart script: {result['stderr']}"
     assert "ulimit -c" not in result["stdout"], (
         "postgres_prestart.sh must not set 'ulimit -c' - doing so would silently "
@@ -1636,9 +1638,9 @@ def _resolve_postgres_binary(host):
     Resolve the real binary via the live postmaster's /proc/<pid>/exe,
     which always shows the actual running ELF regardless of the wrapper -
     the same real path a crash would report via coredumpctl."""
-    pid = run_ssh_command(
-        host["ssh"], "systemctl show postgresql -p MainPID --value"
-    )["stdout"].strip()
+    pid = run_ssh_command(host["ssh"], "systemctl show postgresql -p MainPID --value")[
+        "stdout"
+    ].strip()
     return run_ssh_command(host["ssh"], f"sudo readlink -f /proc/{pid}/exe")[
         "stdout"
     ].strip()
@@ -1730,7 +1732,9 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     build_id = _build_id_of(host, postgres_binary)
     assert build_id, f"Could not read a build-id from {postgres_binary}"
     prefix, rest = build_id[:2], build_id[2:]
-    debug_file = f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+    debug_file = (
+        f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+    )
 
     comp_dir = run_ssh_command(
         host["ssh"],
@@ -1777,11 +1781,14 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
         host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
     )
     if "orioledb-coredump.path" not in unit_check["stdout"]:
-        pytest.skip("coredump processor not installed on this AMI (not an OrioleDB build)")
+        pytest.skip(
+            "coredump processor not installed on this AMI (not an OrioleDB build)"
+        )
 
     before_bundles = set(
         run_ssh_command(
-            host["ssh"], "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f"
+            host["ssh"],
+            "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f",
         )["stdout"].splitlines()
     )
 
