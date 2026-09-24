@@ -39,6 +39,17 @@ profile sbpostgres flags=(attach_disconnected) {
     # All capabilities
     capability,
 
+    # postgresql.service's ExecStartPost re-applies CoredumpFilter= by writing
+    # to /proc/$MAINPID/coredump_filter from a separate (also sbpostgres-
+    # confined) process, after the ExecStart exec's unconfined->confined
+    # transition resets it. Writing another process's coredump_filter goes
+    # through ptrace_may_access() in the kernel, which AppArmor mediates as
+    # its own "ptrace" rule class - separate from `capability` (all caps,
+    # above) and from the plain file rules below. Without this, that write is
+    # denied and coredump_filter silently stays at the OS default (0x33,
+    # includes shared_buffers) instead of 0x31.
+    ptrace (trace, read) peer=sbpostgres,
+
     # Libraries
     /lib/aarch64-linux-gnu/*.so* mr,
     /usr/lib/aarch64-linux-gnu/*.so* mr,

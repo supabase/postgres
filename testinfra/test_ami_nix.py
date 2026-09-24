@@ -1471,10 +1471,28 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
     assert result["succeeded"], (
         f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
     )
-    assert result["stdout"].strip() == "31", (
-        f"Expected /proc/{pid}/coredump_filter to be '31' (0x31 = 49 decimal), "
-        f"got '{result['stdout'].strip()}'"
-    )
+    if result["stdout"].strip() != "31":
+        # Most likely cause: the ExecStartPost that re-applies 0x31 after the
+        # ExecStart exec's unconfined->confined AppArmor transition resets it
+        # writes to *another* process's coredump_filter, which the kernel
+        # gates via ptrace_may_access() - denied by AppArmor's separate
+        # "ptrace" mediation class if the profile lacks a matching rule.
+        # Surface that denial directly instead of leaving the next person to
+        # rediscover it by hand.
+        denials = run_ssh_command(
+            host["ssh"],
+            "sudo dmesg | grep -i apparmor | grep -iE 'denied|ptrace' | tail -20",
+        )["stdout"]
+        journal = run_ssh_command(
+            host["ssh"],
+            "sudo journalctl -u postgresql --no-pager | grep -i coredump_filter -B2 -A2",
+        )["stdout"]
+        raise AssertionError(
+            f"Expected /proc/{pid}/coredump_filter to be '31' (0x31 = 49 decimal), "
+            f"got '{result['stdout'].strip()}'.\n"
+            f"--- dmesg apparmor denied/ptrace lines ---\n{denials}\n"
+            f"--- journalctl -u postgresql (coredump_filter context) ---\n{journal}"
+        )
 
 
 def test_default_core_limit_is_disabled_machine_wide(host):
@@ -1625,9 +1643,21 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
         f"Expected a new postgres core dump after SIGSEGV to backend {backend_pid}, "
         f"but coredumpctl list shows:\n{after['stdout']}"
     )
-    assert not any(unrelated_pid in line for line in new_lines), (
-        f"Unrelated process {unrelated_pid} should not have produced a core dump:\n"
-        f"{after['stdout']}"
+
+    # coredumpctl always logs a crash *entry* for any SIGSEGV it observes,
+    # regardless of whether a core file was actually captured - the COREFILE
+    # column is what distinguishes "captured" (a path/size) from "missing"
+    # (recorded, but no core saved). A new line existing for unrelated_pid is
+    # therefore not itself a failure; only a captured core is.
+    unrelated_corefile = None
+    for line in new_lines:
+        fields = line.split()
+        if len(fields) >= 9 and fields[4] == unrelated_pid:
+            unrelated_corefile = fields[8]
+            break
+    assert unrelated_corefile in (None, "missing"), (
+        f"Unrelated process {unrelated_pid} should not have produced a captured "
+        f"core dump (COREFILE={unrelated_corefile}):\n{after['stdout']}"
     )
 
 
@@ -1658,14 +1688,18 @@ def _resolve_orioledb_lib(host, postgres_binary):
 
 
 def _build_id_of(host, path):
-    """Return the ELF build-id (hex string) of the binary/library at path, or None."""
+    """Return (build_id, readelf_output) for the binary/library at path.
+    build_id is None if readelf failed or found no build-id note - the raw
+    output is returned alongside so callers can report *why* on failure
+    instead of a bare 'no build-id' with no evidence."""
     import re
 
-    result = run_ssh_command(host["ssh"], f"readelf -n {path} 2>/dev/null")
+    result = run_ssh_command(host["ssh"], f"readelf -n {path}")
+    output = result["stdout"] + result["stderr"]
     if not result["succeeded"]:
-        return None
-    match = re.search(r"Build ID:\s*([0-9a-f]+)", result["stdout"])
-    return match.group(1) if match else None
+        return None, output
+    match = re.search(r"Build ID:\s*([0-9a-f]+)", output)
+    return (match.group(1) if match else None), output
 
 
 def _debug_file_exists_for_build_id(host, build_id):
@@ -1684,8 +1718,11 @@ def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
     .build-id/xx/yyyy.debug file in the postgres-env debug output, so a
     future coredump-processing GDB session can actually resolve symbols."""
     postgres_binary = _resolve_postgres_binary(host)
-    build_id = _build_id_of(host, postgres_binary)
-    assert build_id, f"Could not read a build-id from {postgres_binary}"
+    build_id, readelf_output = _build_id_of(host, postgres_binary)
+    assert build_id, (
+        f"Could not read a build-id from {postgres_binary}, readelf -n output:\n"
+        f"{readelf_output}"
+    )
     assert _debug_file_exists_for_build_id(host, build_id), (
         f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
         f".build-id/ matching postgres build-id {build_id} - the shipped "
@@ -1702,8 +1739,11 @@ def test_orioledb_library_build_id_matches_shipped_debug_symbols(host):
     if "present" not in exists["stdout"]:
         pytest.skip("orioledb.so not present on this AMI (not an OrioleDB build)")
 
-    build_id = _build_id_of(host, orioledb_so)
-    assert build_id, f"Could not read a build-id from {orioledb_so}"
+    build_id, readelf_output = _build_id_of(host, orioledb_so)
+    assert build_id, (
+        f"Could not read a build-id from {orioledb_so}, readelf -n output:\n"
+        f"{readelf_output}"
+    )
     assert _debug_file_exists_for_build_id(host, build_id), (
         f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
         f".build-id/ matching orioledb.so build-id {build_id}"
@@ -1729,8 +1769,11 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     import re
 
     postgres_binary = _resolve_postgres_binary(host)
-    build_id = _build_id_of(host, postgres_binary)
-    assert build_id, f"Could not read a build-id from {postgres_binary}"
+    build_id, readelf_output = _build_id_of(host, postgres_binary)
+    assert build_id, (
+        f"Could not read a build-id from {postgres_binary}, readelf -n output:\n"
+        f"{readelf_output}"
+    )
     prefix, rest = build_id[:2], build_id[2:]
     debug_file = (
         f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
