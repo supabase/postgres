@@ -1,7 +1,7 @@
 ---
 # gdb and binutils (readelf) are only used by the processor script below,
 # which is only installed for OrioleDB images due to is_psql_oriole
-- name: ensure gdb and binutils are installed
+- name: Ensure gdb and binutils are installed
   ansible.builtin.apt:
     name:
       - gdb
@@ -22,7 +22,7 @@
   loop_control:
     loop_var: 'coredump_processing_item'
 
-- name: copy PostgreSQL/OrioleDB coredump processor script
+- name: Copy PostgreSQL/OrioleDB coredump processor script
   ansible.builtin.copy:
     dest: '/usr/local/sbin/process-orioledb-coredumps.sh'
     group: 'root'
@@ -30,7 +30,7 @@
     owner: 'root'
     src: 'coredump/process-orioledb-coredumps.sh'
 
-- name: copy GDB extraction commands (matches orioledb/ci/cmds.gdb)
+- name: Copy GDB extraction commands (matches orioledb/ci/cmds.gdb)
   ansible.builtin.copy:
     dest: '/usr/local/sbin/orioledb-coredump-cmds.gdb'
     group: 'root'
@@ -38,7 +38,7 @@
     owner: 'root'
     src: 'coredump/cmds.gdb'
 
-- name: copy PostgreSQL/OrioleDB coredump systemd units
+- name: Copy PostgreSQL/OrioleDB coredump systemd units
   ansible.builtin.copy:
     dest: "/etc/systemd/system/{{ coredump_unit_item }}"
     group: 'root'
@@ -52,11 +52,11 @@
   loop_control:
     loop_var: 'coredump_unit_item'
 
-- name: reload systemd for coredump processing units
+- name: Reload systemd for coredump processing units
   ansible.builtin.systemd_service:
     daemon_reload: true
 
-- name: enable coredump processing path and timer units
+- name: Enable coredump processing path and timer units
   ansible.builtin.systemd_service:
     name: "{{ coredump_enable_item }}"
     enabled: true
