@@ -1,3 +1,10 @@
+# is_psql_oriole is also (re)computed in stage2-setup-postgres.yml, but this
+# file's coredump block below runs in both stage1 and stage2, so the fact
+# needs to exist before stage2-only tasks have had a chance to set it.
+- name: Determine postgres flavor from psql_version
+  ansible.builtin.set_fact:
+    is_psql_oriole: "{{ psql_version is defined and psql_version == 'psql_orioledb-17' }}"
+
 - name: execute stage1 tasks
   when: not stage2
   block:
