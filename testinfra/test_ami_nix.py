@@ -1877,7 +1877,13 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
 
     result = run_ssh_command(
         host["ssh"],
-        "sudo -u postgres gdb --batch -quiet "
+        # cd into a directory the postgres user can actually read first: GDB's
+        # source search path includes '$cwd', and the SSH session's default
+        # cwd is the login user's home directory (e.g. /home/ubuntu), which
+        # postgres can't traverse - that alone is enough to make GDB report
+        # "Permission denied" on the bare filename before it ever tries the
+        # substitute-path'd absolute path.
+        "cd /var/lib/postgresql && sudo -u postgres gdb --batch -quiet "
         "-ex 'set debug-file-directory /var/lib/postgresql/.nix-profile/lib/debug' "
         f"-ex 'set substitute-path {comp_dir} /var/lib/postgresql/.nix-profile' "
         f"-ex 'file {postgres_binary}' "

@@ -20,11 +20,6 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out
     cp -r . $out
-    # This tree is read later by a different, unrelated user (e.g. `postgres`
-    # via /var/lib/postgresql/.nix-profile, for GDB source resolution) - make
-    # sure it's readable by everyone rather than relying on whatever mode
-    # bits happened to survive the tarball extraction + copy.
-    chmod -R u+rwX,go+rX $out
   '';
 
   meta = with lib; {
