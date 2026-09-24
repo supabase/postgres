@@ -915,6 +915,21 @@
             postgresql_17_src
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
+          glibc-version-check =
+            let
+              checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
+                builtins.readFile ./tools/check-glibc-version.nu
+              );
+            in
+            pkgs.runCommand "glibc-version-check"
+              {
+                nativeBuildInputs = [ pkgs.binutils ];
+                paths = lib.collect lib.isDerivation (self'.legacyPackages // self'.packages);
+              }
+              ''
+                ${lib.getExe checkScript} 2.31 $paths
+                touch $out
+              '';
         };
     };
 }
