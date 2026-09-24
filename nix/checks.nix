@@ -32,6 +32,7 @@
               isSlim ? false,
             }:
             let
+              isOrioleDB = lib.strings.hasPrefix "orioledb-" pgpkg.version;
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
               inherit (self'.packages) pg_regress pg_isolation_regress;
               getkey-script = pkgs.stdenv.mkDerivation {
@@ -84,7 +85,7 @@
                   "5538"
                 else if (pgpkg.version == "15" && isSlim) then
                   "5539"
-                else if (pgpkg.version == "orioledb-17" && isSlim) then
+                else if (isOrioleDB && isSlim) then
                   "5540"
                 else if (pgpkg.version == "17" && isCliVariant) then
                   "5541"
@@ -144,7 +145,7 @@
               };
 
               # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
-              orioledbSkipTests = [
+              orioleDBSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
               ];
 
@@ -153,25 +154,25 @@
                 version: dir:
                 let
                   files = builtins.readDir dir;
-                  # Get list of OrioleDB-specific test basenames , then strip the orioledb prefix from them
-                  orioledbVariants = pkgs.lib.pipe files [
+                  # Get list of OrioleDB-specific test basenames, then strip the orioledb prefix from them
+                  orioleDBVariants = pkgs.lib.pipe files [
                     builtins.attrNames
                     (builtins.filter (n: builtins.match "z_orioledb-17_.*\\.sql" n != null))
                     (map (n: builtins.substring 14 (pkgs.lib.stringLength n - 18) n)) # Remove "z_orioledb-17_" prefix (14 chars) and ".sql" suffix (4 chars)
                   ];
-                  hasOrioledbVariant = basename: builtins.elem basename orioledbVariants;
+                  hasOrioleDBVariant = basename: builtins.elem basename orioleDBVariants;
                   isValidFile =
                     name:
                     let
                       isVersionSpecific = builtins.match "z_.*" name != null;
                       basename = builtins.substring 0 (pkgs.lib.stringLength name - 4) name; # Remove .sql
                       # Skip tests that don't work with OrioleDB
-                      isSkippedForOrioledb = version == "orioledb-17" && builtins.elem basename orioledbSkipTests;
+                      isSkippedForOrioleDB = isOrioleDB && builtins.elem basename orioleDBSkipTests;
                       matchesVersion =
-                        if isSkippedForOrioledb then
+                        if isSkippedForOrioleDB then
                           false
                         else if isVersionSpecific then
-                          if version == "orioledb-17" then
+                          if isOrioleDB then
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
@@ -179,7 +180,7 @@
                             builtins.match "z_15_.*" name != null
                         else
                         # For common tests: exclude if OrioleDB variant exists and we're running OrioleDB
-                        if version == "orioledb-17" && hasOrioledbVariant basename then
+                        if isOrioleDB && hasOrioleDBVariant basename then
                           false
                         else
                           true;
@@ -371,9 +372,9 @@
                 echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
                 log info "Checking shared_preload_libraries setting:"
                 log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
+
                 # Configure OrioleDB if running orioledb-17 check
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Configuring OrioleDB..."
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
@@ -406,8 +407,7 @@
                 log_cmd createdb -p ${pgPort} -h localhost --username=supabase_admin testing
 
                 # Create orioledb extension if running orioledb-17 check (before prime.sql)
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Creating orioledb extension..."
                   log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
@@ -472,8 +472,7 @@
                 check_postgres_ready
 
                 # Create orioledb extension if running orioledb-17 check (before prime.sql)
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Creating orioledb extension for pg_regress tests..."
                   log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
@@ -538,12 +537,10 @@
                 # running server as pg_regress (--use-existing). These specs target
                 # core/heap + contrib concurrency behaviour. Skipped on:
                 #   - CLI variants: portable build runs only a test subset.
-                #   - orioledb ships its own isolation suite for its storage-engine
-                #     concurrency semantics.
-                #shellcheck disable=SC2193
+                #   - orioledb ships its own isolation suite for its storage-engine concurrency semantics.
                 if ${lib.boolToString isCliVariant}; then
                   log info "CLI variant detected - skipping isolation tests"
-                elif [[ "${pgpkg.version}" == *"_"* ]]; then
+                elif ${lib.boolToString isOrioleDB}; then
                   log info "orioledb variant detected - skipping isolation tests (orioledb has its own isolation suite)"
                 else
                   log info "Running pg_isolation_regress tests (${builtins.toString (builtins.length isolationSpecList)} specs)"
