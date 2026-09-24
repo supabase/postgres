@@ -1520,14 +1520,16 @@ def test_coredump_storage_directory_root_only(host):
 
 
 def test_postgres_prestart_does_not_reset_core_limit(host):
-    """Regression guard: postgres_prestart.sh must never touch 'ulimit -c',
-    or it would silently defeat the postgresql.service LimitCORE=infinity
-    coredump drop-in."""
+    """Regression guard: postgres_prestart.sh must never touch 'ulimit' at
+    all, or it would risk silently defeating the postgresql.service
+    LimitCORE=infinity coredump drop-in. Blocking 'ulimit' outright (rather
+    than just 'ulimit -c') is a deliberately conservative stance - if a
+    legitimate future need for ulimit shows up here, revisit this test then."""
     result = run_ssh_command(host["ssh"], "cat /usr/local/bin/postgres_prestart.sh")
     assert result["succeeded"], f"Could not read prestart script: {result['stderr']}"
-    assert "ulimit -c" not in result["stdout"], (
-        "postgres_prestart.sh must not set 'ulimit -c' - doing so would silently "
-        "defeat the postgresql.service coredump drop-in"
+    assert "ulimit" not in result["stdout"], (
+        "postgres_prestart.sh must not use 'ulimit' - doing so risks silently "
+        "defeating the postgresql.service coredump drop-in"
     )
 
 
@@ -1618,9 +1620,7 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
     after = run_ssh_command(
         host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
     )
-    new_lines = [
-        line for line in after["stdout"].splitlines() if line not in before_lines
-    ]
+    new_lines = set(after["stdout"].splitlines()) - before_lines
     assert any("postgres" in line for line in new_lines), (
         f"Expected a new postgres core dump after SIGSEGV to backend {backend_pid}, "
         f"but coredumpctl list shows:\n{after['stdout']}"

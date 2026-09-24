@@ -24,7 +24,7 @@ LOCK_FILE=/run/orioledb-coredump.lock
 MAX_ATTEMPTS=3
 EXTRACTION_TIMEOUT=120
 MAX_AGE_DAYS=7
-MAX_TOTAL_BYTES=$((5 * 1024 * 1024 * 1024)) # independent of systemd-coredump's own MaxUse
+MAX_TOTAL_BYTES=$((300 * 1024 * 1024)) # independent of systemd-coredump's own MaxUse
 
 GDB_DEBUG_DIR=/var/lib/postgresql/.nix-profile/lib/debug
 GDB_CMDS_FILE=/usr/local/sbin/orioledb-coredump-cmds.gdb
