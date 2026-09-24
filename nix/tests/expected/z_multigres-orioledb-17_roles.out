@@ -57,8 +57,8 @@ select
 from pg_roles r
 where rolname not in ('pg_create_subscription', 'pg_maintain', 'pg_use_reserved_connections')
 order by rolname;
-          rolname           |                                        rolconfig                                         
-----------------------------+------------------------------------------------------------------------------------------
+          rolname           |                                                           rolconfig                                                           
+----------------------------+-------------------------------------------------------------------------------------------------------------------------------
  anon                       | {statement_timeout=3s}
  authenticated              | {statement_timeout=8s}
  authenticator              | {"session_preload_libraries=supautils, safeupdate",statement_timeout=8s,lock_timeout=8s}
@@ -77,7 +77,7 @@ order by rolname;
  pg_write_server_files      | 
  pgbouncer                  | 
  pgtle_admin                | 
- postgres                   | {"search_path=\"\\$user\", public, extensions"}
+ postgres                   | {"search_path=\"\\$user\", public, extensions","local_preload_libraries=\"$libdir/plugins/safeupdate\"",safeupdate.enabled=0}
  service_role               | 
  supabase_admin             | {"search_path=\"\\$user\", public, auth, extensions",log_statement=none}
  supabase_auth_admin        | {search_path=auth,idle_in_transaction_session_timeout=60000,log_statement=none}
