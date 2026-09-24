@@ -28,7 +28,7 @@ adminapi_artifacts:
     checksum: sha256:fd0724f12c444c2a6e92805712db2528cc574ebfc6ece4e31d4d24c5d459e3b1
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
-    checksum: sha256:235dc47bfb5f6986bf0bc159162b486131d163c6cc1afe5561776d8ba93174d7
+    checksum: sha256:8078844641304ae10480b3120f6e51d6921be16d34ef1a7373433a3e65be6b5b
 adminmgr_release: 0.44.5
 adminmgr_artifacts:
   amd64:
