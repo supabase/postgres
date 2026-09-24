@@ -1422,6 +1422,18 @@ def _skip_if_not_orioledb(host):
         )
 
 
+def _skip_if_orioledb(host):
+    """Inverse of _skip_if_not_orioledb: some tests assert the *absence* of
+    coredump capture and should only run on vanilla 15/17 AMIs."""
+    unit_check = run_ssh_command(
+        host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
+    )
+    if "orioledb-coredump.path" in unit_check["stdout"]:
+        pytest.skip(
+            "coredump capture installed on this AMI (this is an OrioleDB build)"
+        )
+
+
 def test_postgresql_service_allows_unlimited_core_dumps(host):
     """Verify the postgresql.service coredump drop-in sets LimitCORE=infinity.
 
@@ -1683,6 +1695,56 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
     )
 
 
+def test_vanilla_postgres_crash_does_not_capture_core(host):
+    """Mirror image of
+    test_postgres_backend_crash_produces_core_but_unrelated_process_does_not:
+    on vanilla 15/17 AMIs (no coredump capture installed), a segfaulted
+    Postgres backend must NOT produce a captured core, same as any other
+    process - this branch's coredump capture is OrioleDB-only, so vanilla
+    AMIs must come out of a crash exactly as they did before this work.
+    """
+    _skip_if_orioledb(host)
+    before = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    before_lines = set(before["stdout"].splitlines())
+
+    run_ssh_command(
+        host["ssh"],
+        "sudo systemd-run --unit=testinfra-unrelated-crash --collect /bin/sleep 60",
+    )
+    sleep(1)
+    unrelated_pid = run_ssh_command(
+        host["ssh"], "systemctl show testinfra-unrelated-crash -p MainPID --value"
+    )["stdout"].strip()
+    assert unrelated_pid.isdigit() and unrelated_pid != "0", (
+        f"Could not resolve the disposable unrelated unit's pid: {unrelated_pid}"
+    )
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {unrelated_pid}")
+    sleep(2)
+
+    backend_pid = _crash_a_backend_and_wait_for_recovery(host)
+
+    after = run_ssh_command(
+        host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
+    )
+    new_lines = set(after["stdout"].splitlines()) - before_lines
+
+    crashed = [(backend_pid, "postgres backend"), (unrelated_pid, "unrelated process")]
+    for pid, label in crashed:
+        corefile = None
+        for line in new_lines:
+            fields = line.split()
+            if len(fields) >= 9 and fields[4] == pid:
+                corefile = fields[8]
+                break
+        assert corefile in (None, "missing"), (
+            f"On a vanilla (non-OrioleDB) AMI, the {label} (pid {pid}) should not "
+            f"have produced a captured core dump (COREFILE={corefile}):\n"
+            f"{after['stdout']}"
+        )
+
+
 def _resolve_postgres_binary(host):
     """/usr/lib/postgresql/bin/postgres is a Nix wrapper *script* (sets
     NIX_PGLIBDIR, then execs the real ELF elsewhere in the nix store) - not
@@ -1739,6 +1801,7 @@ def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
     """Verify the installed 'postgres' binary's build-id has a matching
     .build-id/xx/yyyy.debug file in the postgres-env debug output, so a
     future coredump-processing GDB session can actually resolve symbols."""
+    _skip_if_not_orioledb(host)
     postgres_binary = _resolve_postgres_binary(host)
     build_id, readelf_output = _build_id_of(host, postgres_binary)
     assert build_id, (
@@ -1790,6 +1853,7 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     """
     import re
 
+    _skip_if_not_orioledb(host)
     postgres_binary = _resolve_postgres_binary(host)
     build_id, readelf_output = _build_id_of(host, postgres_binary)
     assert build_id, (

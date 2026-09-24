@@ -40,7 +40,7 @@ AppArmorProfile=-sbpostgres
 # CoredumpFilter= setting above in the same fork. Re-apply it here from
 # outside the confined process (a plain file write, not an exec, so it
 # can't be reset the same way) once the process is actually running.
-ExecStartPost=+/bin/sh -c 'echo 0x31 > /proc/$MAINPID/coredump_filter'
+ExecStartPost=+/bin/sh -c 'echo 0x31 > /proc/$MAINPID/coredump_filter 2>&1; logger -t coredump-filter-post "postmaster $MAINPID coredump_filter now $(cat /proc/$MAINPID/coredump_filter 2>&1)"'
 {% endif %}
 {% endif %}
 [Install]

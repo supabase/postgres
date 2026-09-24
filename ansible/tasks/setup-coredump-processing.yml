@@ -1,4 +1,26 @@
 ---
+# Sets the kernel's *default* coredump_filter (normally 0x33) to 0x31,
+# excluding shared_buffers (an anonymous shared mapping, can be many GB)
+# from every core on the machine. This is a stronger mechanism than
+# postgresql.service's own CoredumpFilter=/ExecStartPost, both of which only
+# affect the postmaster after it's already running and get silently undone
+# by the AppArmorProfile= unconfined->confined "secure exec" transition,
+# which resets coredump_filter back to whatever the kernel considers
+# "default" - so changing what "default" means here fixes it regardless of
+# that reset, for every process on the machine, from the very first fork of
+# PID 1 onward. Machine is single-purpose (postgres only), so a global
+# default is fine.
+- name: Set kernel default coredump_filter via GRUB
+  ansible.builtin.copy:
+    content: |
+      GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} coredump_filter=0x31"
+    dest: '/etc/default/grub.d/60-coredump-filter.cfg'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+  notify:
+    - Regenerate grub configuration
+
 # gdb and binutils (readelf) are only used by the processor script below,
 # which is only installed for OrioleDB images due to is_psql_oriole
 - name: Ensure gdb and binutils are installed
