@@ -107,6 +107,25 @@
           value: '1048576'
         - option: 'fs.file-max'
           value: '312139770'
+        - option: 'fs.suid_dumpable'
+          # postgresql.service's AppArmorProfile= makes ExecStart's exec an
+          # unconfined->confined transition, which the kernel treats as a
+          # privilege-changing ("secure") exec. With the kernel default (0,
+          # SUID_DUMP_DISABLE), such processes are made entirely non-dumpable
+          # - no core is ever produced on crash, and a non-dumpable process's
+          # coredump_filter can't be rewritten afterwards either (silently
+          # discarding postgresql.service's own re-apply of it), which is why
+          # postgres crashes were intermittently producing no core at all, or
+          # a core with the un-filtered default (0x33, includes
+          # shared_buffers) instead of the requested 0x31. 2 (suidsafe) only
+          # restores dumpability for privilege-changed processes when
+          # core_pattern is a pipe or fully-qualified path (true here once
+          # systemd-coredump is installed) - it does not affect any process
+          # on a machine where core_pattern is left at its plain default.
+          # This AMI is single-purpose (postgres only); there's no other
+          # privilege-transitioning process here with sensitive memory to
+          # protect from being dumped.
+          value: '2'
         - option: 'kernel.panic_on_oops'
           value: '1'
         - option: 'kernel.sched_autogroup_enabled'

@@ -1409,6 +1409,19 @@ def test_apparmor_denies_access_to_sensitive_paths(host):
         print(f"Confirmed: access to {test_file} denied by AppArmor")
 
 
+def _skip_if_not_orioledb(host):
+    """Coredump capture/processing is gated to OrioleDB builds only; skip
+    capture-layer tests on vanilla 15/17 AMIs where none of this is
+    installed."""
+    unit_check = run_ssh_command(
+        host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
+    )
+    if "orioledb-coredump.path" not in unit_check["stdout"]:
+        pytest.skip(
+            "coredump capture not installed on this AMI (not an OrioleDB build)"
+        )
+
+
 def test_postgresql_service_allows_unlimited_core_dumps(host):
     """Verify the postgresql.service coredump drop-in sets LimitCORE=infinity.
 
@@ -1416,6 +1429,7 @@ def test_postgresql_service_allows_unlimited_core_dumps(host):
     systemd.service.d drop-in), not enabled machine-wide, so other services
     must keep the default core limit.
     """
+    _skip_if_not_orioledb(host)
     result = run_ssh_command(host["ssh"], "systemctl show postgresql -p LimitCORE")
     assert result["succeeded"], f"systemctl show failed: {result['stderr']}"
     assert "LimitCORE=infinity" in result["stdout"], (
@@ -1427,6 +1441,7 @@ def test_coredump_storage_limits_configured(host):
     """Verify /etc/systemd/coredump.conf.d/postgres.conf sets conservative,
     bounded storage limits for the systemd-coredump storage that backs
     Postgres core capture."""
+    _skip_if_not_orioledb(host)
     result = run_ssh_command(
         host["ssh"], "cat /etc/systemd/coredump.conf.d/postgres.conf"
     )
@@ -1460,6 +1475,7 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
     (systemd >= 246), which coredump_filter (inherited across fork(2) and
     preserved across execve(2)) then propagates to everything postgres forks.
     """
+    _skip_if_not_orioledb(host)
     pid = run_ssh_command(host["ssh"], "systemctl show postgresql -p MainPID --value")[
         "stdout"
     ].strip()
@@ -1472,13 +1488,16 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
         f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
     )
     if result["stdout"].strip() != "31":
-        # Most likely cause: the ExecStartPost that re-applies 0x31 after the
-        # ExecStart exec's unconfined->confined AppArmor transition resets it
-        # writes to *another* process's coredump_filter, which the kernel
-        # gates via ptrace_may_access() - denied by AppArmor's separate
-        # "ptrace" mediation class if the profile lacks a matching rule.
-        # Surface that denial directly instead of leaving the next person to
-        # rediscover it by hand.
+        # Confirmed root cause (empty dmesg output here on a real run ruled
+        # out AppArmor/ptrace as the culprit): fs.suid_dumpable=0 (the kernel
+        # default) makes the ExecStart exec's unconfined->confined AppArmor
+        # transition ("secure exec") mark the process fully non-dumpable, and
+        # a non-dumpable process's coredump_filter can't be rewritten
+        # afterwards either - silently discarding postgresql.service's own
+        # ExecStartPost re-apply of it. See fs.suid_dumpable=2 in
+        # ansible/tasks/setup-tuned.yml. Kept capturing dmesg/journalctl here
+        # so a *different* regression shows real evidence instead of a bare
+        # "got 33" again.
         denials = run_ssh_command(
             host["ssh"],
             "sudo dmesg | grep -i apparmor | grep -iE 'denied|ptrace' | tail -20",
@@ -1506,6 +1525,7 @@ def test_default_core_limit_is_disabled_machine_wide(host):
     generate cores" (postgres gets LimitCORE=infinity, everyone else gets 0
     via this machine-wide default).
     """
+    _skip_if_not_orioledb(host)
     result = run_ssh_command(host["ssh"], "systemctl show -p DefaultLimitCORE")
     assert result["succeeded"], f"systemctl show failed: {result['stderr']}"
     assert "DefaultLimitCORE=0" in result["stdout"], (
@@ -1522,6 +1542,7 @@ def test_coredump_storage_directory_root_only(host):
     content, since the actual core files get their own restrictive
     permissions from systemd-coredump. What actually matters is that no one
     but root can create/replace/delete files in it."""
+    _skip_if_not_orioledb(host)
     result = run_ssh_command(
         host["ssh"], "stat -c '%a %U:%G' /var/lib/systemd/coredump"
     )
@@ -1611,6 +1632,7 @@ def test_postgres_backend_crash_produces_core_but_unrelated_process_does_not(hos
     (Restart=always / auto-reinit), the same as in production - it does not
     reinstall data or otherwise reset the shared test instance.
     """
+    _skip_if_not_orioledb(host)
     before = run_ssh_command(
         host["ssh"], "sudo coredumpctl list --no-legend 2>/dev/null || true"
     )
