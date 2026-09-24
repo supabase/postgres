@@ -1499,15 +1499,18 @@ def test_postgres_coredump_filter_excludes_shared_buffers(host):
     assert result["succeeded"], (
         f"Could not read coredump_filter for pid {pid}: {result['stderr']}"
     )
-    if result["stdout"].strip() != "31":
-        # Confirmed root cause (empty dmesg output here on a real run ruled
-        # out AppArmor/ptrace as the culprit): fs.suid_dumpable=0 (the kernel
-        # default) makes the ExecStart exec's unconfined->confined AppArmor
-        # transition ("secure exec") mark the process fully non-dumpable, and
-        # a non-dumpable process's coredump_filter can't be rewritten
-        # afterwards either - silently discarding postgresql.service's own
-        # ExecStartPost re-apply of it. See fs.suid_dumpable=2 in
-        # ansible/tasks/setup-tuned.yml. Kept capturing dmesg/journalctl here
+    # /proc/[pid]/coredump_filter reads back as zero-padded hex (e.g.
+    # '00000031'), not the bare '31' written to it.
+    if int(result["stdout"].strip(), 16) != 0x31:
+        # Confirmed root cause: postgresql.service's own CoredumpFilter=/
+        # ExecStartPost only affect the postmaster after it's already
+        # running, and get silently undone by the AppArmorProfile=
+        # unconfined->confined "secure exec" transition, which resets
+        # coredump_filter back to whatever the kernel considers "default"
+        # (0x33). Fixed at the source instead: the kernel's own default is
+        # now set to 0x31 via the `coredump_filter=` boot parameter (see
+        # ansible/tasks/setup-coredump-processing.yml), so the reset lands on
+        # the value we want regardless. Kept capturing dmesg/journalctl here
         # so a *different* regression shows real evidence instead of a bare
         # "got 33" again.
         denials = run_ssh_command(
