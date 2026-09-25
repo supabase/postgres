@@ -13,6 +13,14 @@ profile sbpostgres flags=(attach_disconnected) {
     /nix/store/*/bin/.postgres-wrapped mr,
     /nix/store/*/bin/.postgres-wrapped ix,
 
+    # Without an explicit ptrace rule, AppArmor's default-deny applies to
+    # this confined process being the *target* of ptrace-class accesses from
+    # anyone else - including unconfined root. That access class also covers
+    # plain writes to /proc/<pid>/coredump_filter (kernel routes it through
+    # ptrace_may_access()), which is why postgresql.service's ExecStartPost
+    # re-apply of CoredumpFilter= was silently failing to stick. Allow it.
+    ptrace (read, trace, readby, tracedby),
+
     # Wide open permissions for parent - to be tuned
     # some of this is managed via systemd sandboxing already
     /** rw,

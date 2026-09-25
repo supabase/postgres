@@ -1,0 +1,90 @@
+---
+# Sets the kernel's *default* coredump_filter (normally 0x33) to 0x31,
+# excluding shared_buffers (an anonymous shared mapping, can be many GB)
+# from every core on the machine. This is a stronger mechanism than
+# postgresql.service's own CoredumpFilter=/ExecStartPost, both of which only
+# affect the postmaster after it's already running and get silently undone
+# by the AppArmorProfile= unconfined->confined "secure exec" transition,
+# which resets coredump_filter back to whatever the kernel considers
+# "default" - so changing what "default" means here fixes it regardless of
+# that reset, for every process on the machine, from the very first fork of
+# PID 1 onward. Machine is single-purpose (postgres only), so a global
+# default is fine.
+- name: Set kernel default coredump_filter via GRUB
+  ansible.builtin.copy:
+    content: |
+      GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} coredump_filter=0x31"
+    dest: '/etc/default/grub.d/60-coredump-filter.cfg'
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+  notify:
+    - Regenerate grub configuration
+
+# gdb and binutils (readelf) are only used by the processor script below,
+# which is only installed for OrioleDB images due to is_psql_oriole
+- name: Ensure gdb and binutils are installed
+  ansible.builtin.apt:
+    name:
+      - gdb
+      - binutils
+
+- name: Create orioledb-coredumps state/output directories
+  ansible.builtin.file:
+    group: 'root'
+    mode: '0700'
+    owner: 'root'
+    path: "{{ coredump_processing_item }}"
+    state: 'directory'
+  loop:
+    - '/var/lib/orioledb-coredumps'
+    - '/var/lib/orioledb-coredumps/state'
+    - '/var/lib/orioledb-coredumps/diagnostics'
+    - '/var/lib/orioledb-coredumps/quarantine'
+  loop_control:
+    loop_var: 'coredump_processing_item'
+
+- name: Copy PostgreSQL/OrioleDB coredump processor script
+  ansible.builtin.copy:
+    dest: '/usr/local/sbin/process-orioledb-coredumps.sh'
+    group: 'root'
+    mode: '0700'
+    owner: 'root'
+    src: 'coredump/process-orioledb-coredumps.sh'
+
+- name: Copy GDB extraction commands (matches orioledb/ci/cmds.gdb)
+  ansible.builtin.copy:
+    dest: '/usr/local/sbin/orioledb-coredump-cmds.gdb'
+    group: 'root'
+    mode: '0600'
+    owner: 'root'
+    src: 'coredump/cmds.gdb'
+
+- name: Copy PostgreSQL/OrioleDB coredump systemd units
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ coredump_unit_item }}"
+    group: 'root'
+    mode: '0644'
+    owner: 'root'
+    src: "coredump/{{ coredump_unit_item }}"
+  loop:
+    - 'orioledb-coredump.path'
+    - 'orioledb-coredump.timer'
+    - 'orioledb-coredump.service'
+  loop_control:
+    loop_var: 'coredump_unit_item'
+
+- name: Reload systemd for coredump processing units
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Enable coredump processing path and timer units
+  ansible.builtin.systemd_service:
+    name: "{{ coredump_enable_item }}"
+    enabled: true
+    state: 'started'
+  loop:
+    - 'orioledb-coredump.path'
+    - 'orioledb-coredump.timer'
+  loop_control:
+    loop_var: 'coredump_enable_item'

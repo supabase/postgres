@@ -1,3 +1,10 @@
+# is_psql_oriole is also (re)computed in stage2-setup-postgres.yml, but this
+# file's coredump block below runs in both stage1 and stage2, so the fact
+# needs to exist before stage2-only tasks have had a chance to set it.
+- name: Determine postgres flavor from psql_version
+  ansible.builtin.set_fact:
+    is_psql_oriole: "{{ psql_version is defined and psql_version == 'psql_orioledb-17' }}"
+
 - name: execute stage1 tasks
   when: not stage2
   block:
@@ -291,6 +298,93 @@
     path: '/etc/systemd/system/postgresql.service.d'
     state: 'directory'
   become: true
+
+# Coredump capture is OrioleDB-only - see docs/plans/2026-09-07-orioledb-coredump-capture.md.
+- name: Set up PostgreSQL coredump capture (OrioleDB only)
+  when: is_psql_oriole
+  block:
+    # Pin the systemd-coredump group/user before installing the package: its
+    # postinst creates them with a dynamically-assigned system gid/uid (whatever
+    # is next free at that point), which is not reproducible across AMI variants
+    # that install a different set of packages before this point - it has
+    # collided with the vector group's own pinned gid (989) on some builds.
+    - name: add systemd-coredump system group
+      ansible.builtin.group:
+        name: systemd-coredump
+        gid: 986
+        system: yes
+
+    - name: add systemd-coredump system user
+      ansible.builtin.user:
+        name: systemd-coredump
+        uid: 986
+        group: systemd-coredump
+        system: yes
+        create_home: false
+        shell: /usr/sbin/nologin
+
+    # Required for this (plus CoredumpFilter= in postgresql.service and the
+    # storage limits below) to do anything at all: without systemd-coredump,
+    # core_pattern stays at the kernel's plain "core" default and none of this
+    # gets exercised (confirmed on a local test VM).
+    - name: ensure systemd-coredump is installed
+      ansible.builtin.apt:
+        name: systemd-coredump
+      become: true
+
+    - name: copy PostgreSQL coredump systemd drop-in
+      ansible.builtin.copy:
+        dest: '/etc/systemd/system/postgresql.service.d/coredump.conf'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/postgresql_config/coredump.conf'
+      become: true
+
+    # This AMI's base image ships systemd's DefaultLimitCORE=infinity - without
+    # an explicit override, *every* service that doesn't set its own LimitCORE=
+    # already gets unlimited-size core dumps, not just postgres (confirmed via
+    # `systemctl show -p DefaultLimitCORE` on a real instance). This is the
+    # other half of "only PostgreSQL permitted to generate cores" - postgres
+    # gets LimitCORE=infinity above, everyone else gets 0 here. [Manager]
+    # section changes only take effect on the next full boot (or a manual
+    # `systemctl daemon-reexec`), which is fine for a freshly-imaged AMI but
+    # means re-testing this on an already-running instance needs a reexec.
+    - name: Create a systemd system.conf.d dir for the machine-wide coredump default
+      ansible.builtin.file:
+        group: 'root'
+        mode: '0755'
+        owner: 'root'
+        path: '/etc/systemd/system.conf.d'
+        state: 'directory'
+      become: true
+
+    - name: copy machine-wide default core limit (postgres is the only exception)
+      ansible.builtin.copy:
+        dest: '/etc/systemd/system.conf.d/disable-coredumps-by-default.conf'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/postgresql_config/disable-coredumps-by-default.conf'
+      become: true
+
+    - name: Create a systemd-coredump conf.d dir for PostgreSQL storage limits
+      ansible.builtin.file:
+        group: 'root'
+        mode: '0755'
+        owner: 'root'
+        path: '/etc/systemd/coredump.conf.d'
+        state: 'directory'
+      become: true
+
+    - name: copy systemd-coredump storage limits
+      ansible.builtin.copy:
+        dest: '/etc/systemd/coredump.conf.d/postgres.conf'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/postgresql_config/coredump-storage.conf'
+      become: true
 
 - name: Ensure PostgreSQL starts after tuned
   become: true
