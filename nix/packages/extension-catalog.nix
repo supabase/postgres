@@ -116,13 +116,6 @@
           ''
         )
       ) perMajor;
-
-      versions = lib.mapAttrs' (
-        major: wrappers:
-        lib.nameValuePair "site-extensions-versions-${major}" (
-          lib.recurseIntoAttrs (lib.mapAttrs (_: lib.recurseIntoAttrs) wrappers)
-        )
-      ) perMajor;
     in
     {
       packages = catalogs // {
@@ -163,6 +156,6 @@
           '';
         };
       };
-      legacyPackages = catalogs // versions;
+      legacyPackages = catalogs;
     };
 }
