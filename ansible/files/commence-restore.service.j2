@@ -1,0 +1,10 @@
+[Unit]
+Description=Async commence restore of physical backup
+
+[Service]
+Type=notify
+TimeoutStartSec=30
+User=adminapi
+ExecStart=/usr/bin/admin-mgr commence-restore --run-as-service true
+Restart=no
+OOMScoreAdjust=-1000
