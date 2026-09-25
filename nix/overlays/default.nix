@@ -1,6 +1,6 @@
 { self, ... }:
 {
-  flake.overlays.default = final: _prev: {
+  flake.overlays.default = final: prev: {
     # NOTE: add any needed overlays here. in theory we could
     # pull them from the overlays/ directory automatically, but we don't
     # want to have an arbitrary order, since it might matter. being
@@ -16,6 +16,11 @@
       ;
 
     xmrig = throw "The xmrig package has been explicitly disabled in this flake.";
+
+    # Force the pre-2.42 glibc symbol version for cfgetospeed so the portable CLI bundle keeps working on older-glibc hosts.
+    ncurses = prev.ncurses.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-compat.patch ];
+    });
 
     cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
       inherit (final) lib;
