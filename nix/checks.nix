@@ -900,6 +900,50 @@
             wal-g-3
             ;
           devShell = self'.devShells.default;
+          site =
+            let
+              system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+              update-profile = self.packages.${system}.update-profile;
+              site-env-17 = self.packages.${system}."site-env-17";
+              psql_17 = self.legacyPackages.${system}."psql_17".bin;
+              pgConf = pkgs.writeText "postgresql-test.conf" ''
+                dynamic_library_path = '/nix/var/nix/profiles/site/lib:$libdir'
+                session_preload_libraries = 'supautils'
+                listen_addresses = 'localhost'
+                unix_socket_directories = '/tmp'
+              '';
+            in
+            pkgs.testers.runNixOSTest {
+              name = "site";
+              nodes.machine =
+                { ... }:
+                {
+                  environment.systemPackages = [
+                    update-profile
+                    site-env-17
+                  ];
+                  users.users.postgres = {
+                    isSystemUser = true;
+                    group = "postgres";
+                    shell = pkgs.bash;
+                  };
+                  users.groups.postgres = { };
+                };
+              testScript = ''
+                machine.succeed("update-profile site ${site-env-17}")
+                machine.succeed("[ \"$(readlink -f /nix/var/nix/profiles/site)\" = \"${site-env-17}\" ]")
+
+                # idempotent
+                machine.succeed("update-profile site ${site-env-17}")
+
+                # postgres can load supautils via the site profile's dynamic_library_path
+                machine.succeed("install -d -o postgres -g postgres /tmp/pgdata")
+                machine.succeed("su postgres -c '${psql_17}/bin/initdb -D /tmp/pgdata'")
+                machine.succeed("install -o postgres -g postgres ${pgConf} /tmp/pgdata/postgresql.conf")
+                machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata -l /tmp/pg.log start'")
+                machine.succeed("su postgres -c '${psql_17}/bin/psql -h localhost -d postgres -c \"select 1\"'")
+              '';
+            };
         }
         // (import ./ext/tests {
           inherit self;

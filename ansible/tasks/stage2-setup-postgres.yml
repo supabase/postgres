@@ -85,6 +85,28 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
+    - name: Resolve site env store path
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#site-env-{{ postgresql_major_version }}
+      register: site_env_path
+
+    - name: Install site env from nix binary cache
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/site --set {{ site_env_path.stdout }}
+
+    - name: Resolve update-site store path
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#update-site
+      register: update_site_path
+
+    - name: Install update-site
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/update-site --set {{ update_site_path.stdout }}
+
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
