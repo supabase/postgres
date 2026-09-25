@@ -126,10 +126,19 @@ jobs:
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
+          MANIFEST_OUTPUT: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}.txt
         run: |
           # TODO: use uv for pkg mgmt
           pip3 install boto3 'boto3-stubs[essential]' ec2instanceconnectcli pytest 'pytest-testinfra[paramiko]' requests
           pytest -vv -s testinfra/test_ami_nix.py
+
+      - name: Upload AMI manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          path: ami-manifest-*.txt
+          overwrite: true
+          retention-days: 1
 
       - name: Cleanup resources on build cancellation
         if: ${{ cancelled() }}
