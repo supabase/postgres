@@ -29,21 +29,47 @@ in
               settings.configPath = "ansible/ansible-lint.yaml";
               verbose = true;
             };
-            no-cli-in-postgres-release = {
+            versioning-scheme = {
               enable = true;
-              name = "no-cli-in-postgres-release";
-              description = "Prevent -cli suffix in postgres_release values in ansible/vars.yml";
-              entry = builtins.toString (
-                pkgs.writeShellScript "no-cli-in-postgres-release" ''
-                  if [ -f ansible/vars.yml ]; then
-                    if ${pkgs.gnugrep}/bin/grep -E '^\s+postgres(orioledb-)?[0-9]+:.*-cli' ansible/vars.yml; then
-                      echo ""
-                      echo "ERROR: postgres_release values in ansible/vars.yml must not contain '-cli' suffix."
-                      echo "The -cli tag is generated automatically by the AMI release workflow."
-                      exit 1
-                    fi
-                  fi
-                ''
+              name = "versioning-scheme";
+              description = "Ensure postgres_release versions match versioning scheme";
+              entry = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "versioning-scheme";
+                  runtimeInputs = with pkgs; [
+                    yq-go
+                  ];
+                  text = ''
+                    exit_code=0
+                    while read -r supa _ version; do
+                      err() { echo "ERROR: postgres_release.$supa=$version is invalid," "$*" >&2; exit_code=1; }
+
+                      flavor=''${supa#postgres*}
+                      major=''${flavor#*-}
+
+                      if [[ $version == *orioledb* ]] && [[ $flavor != orioledb-* ]]; then
+                        err "must not contain orioledb for non-orioledb PGs"
+                        continue
+                      fi
+                      if [[ $version == *-cli ]]; then
+                        err "must not contain -cli suffix"
+                        continue
+                      fi
+
+                      re=^$major
+                      re+='(\.[0-9]+){3}'
+                      if [[ $flavor == orioledb-* ]]; then
+                        re+=-orioledb
+                      fi
+                      re+='(-[0-9a-zA-Z_-]+)?$'
+
+                      if ! [[ $version =~ $re ]]; then
+                        err "does not match $re"
+                      fi
+                    done < <(yq -o props '.postgres_release' ansible/vars.yml)
+                    exit $exit_code
+                  '';
+                }
               );
               files = "^ansible/vars\\.yml$";
               language = "system";
