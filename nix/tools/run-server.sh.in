@@ -63,6 +63,14 @@ stop_postgres() {
     fi
 }
 
+# Setup failed: stop the server that was started for setup (in either mode) and
+# exit non-zero, instead of carrying on with a partially initialized database.
+abort_setup() {
+    echo "Error: database setup failed, stopping PostgreSQL" >&2
+    pg_ctl stop -D "$DATDIR" -m fast || true
+    exit 1
+}
+
 trap 'stop_postgres' SIGINT SIGTERM
 
 # Parse arguments
@@ -311,7 +319,7 @@ for i in {1..60}; do
     sleep 1
     if [ $i -eq 60 ]; then
         echo "PostgreSQL failed to start"
-        'stop_postgres' 1
+        abort_setup
     fi
 done
 
@@ -328,47 +336,47 @@ if [ "$SKIP_MIGRATIONS" = false ]; then
         alter database postgres owner to postgres;
 EOSQL
     then
-        'stop_postgres' 1
+        abort_setup
     fi
 
     if [ -n "$MIGRATION_FILE" ]; then
         echo "Running user-provided migration file $MIGRATION_FILE"
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$MIGRATION_FILE" postgres; then
-            'stop_postgres' 1
+            abort_setup
         fi
     else
         # Run default init scripts
         for sql in "$MIGRATIONS_DIR"/init-scripts/*.sql; do
             echo "Running $sql"
             if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
-                'stop_postgres' 1
+                abort_setup
             fi
         done
 
         # Set superuser password
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -c "ALTER USER supabase_admin WITH PASSWORD '$PGPASSWORD'"; then
-            'stop_postgres' 1
+            abort_setup
         fi
 
         # Run additional schema files
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$PGBOUNCER_AUTH_SCHEMA_SQL"; then
-            'stop_postgres' 1
+            abort_setup
         fi
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PSQL_USER" -p "$PORTNO" -h localhost -d postgres -f "$STAT_EXTENSION_SQL"; then
-            'stop_postgres' 1
+            abort_setup
         fi
 
         # Run migrations as superuser
         for sql in "$MIGRATIONS_DIR"/migrations/*.sql; do
             echo "Running $sql"
             if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$sql" postgres; then
-                'stop_postgres' 1
+                abort_setup
             fi
         done
 
         # Run PostgreSQL schema
         if ! psql -v ON_ERROR_STOP=1 --no-password --no-psqlrc -U "$PGSQL_SUPERUSER" -p "$PORTNO" -h localhost -f "$POSTGRESQL_SCHEMA_SQL" postgres; then
-            'stop_postgres' 1
+            abort_setup
         fi
     fi
 fi
