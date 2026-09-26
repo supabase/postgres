@@ -25,7 +25,7 @@ writeShellApplication {
   ];
   text = ''
     # Default values
-    PSQL_VERSION="ALL"
+    PSQL_VERSION="all"
     PORTNO="${defaults.port}"
     PGSQL_SUPERUSER="${defaults.superuser}"
     PGPASSWORD="''${PGPASSWORD:-postgres}"
