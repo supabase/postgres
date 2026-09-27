@@ -368,6 +368,7 @@
                   echo "port = ${pgPort}"
                   echo "session_preload_libraries = 'supautils'"
                   echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
+                  ${lib.optionalString (pgpkg.version != "15") ''echo "summarize_wal = on"''}
                 } >> "$PGTAP_CLUSTER"/postgresql.conf
                 echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
                 log info "Checking shared_preload_libraries setting:"
