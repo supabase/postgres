@@ -94,6 +94,13 @@
       loop_control:
         loop_var: 'pg_config_item'
 
+    - name: Disable summarize_wal on PG15 (GUC only exists from PG17)
+      when: psql_version == 'psql_15'
+      ansible.builtin.replace:
+        path: '/etc/postgresql/postgresql.conf'
+        regexp: '^summarize_wal = on'
+        replace: '#summarize_wal = on'
+
     - name: Set data_directory to canonical path on data volume
       ansible.builtin.lineinfile:
         path: '/etc/postgresql/postgresql.conf'

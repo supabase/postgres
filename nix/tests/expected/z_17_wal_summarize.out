@@ -1,0 +1,5 @@
+SELECT setting FROM pg_settings WHERE name = 'summarize_wal') = 'on' AS summarize_wal_default_ok;
+ summarize_wal_default_ok
+--------------------------
+ t
+(1 row)

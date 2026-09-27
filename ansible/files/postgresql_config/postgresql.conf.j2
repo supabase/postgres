@@ -250,6 +250,12 @@ checkpoint_flush_after = 256kB		# measured in pages, 0 disables
 #archive_timeout = 0		# force a logfile segment switch after this
 				# number of seconds; 0 disables
 
+# - WAL Summarization -
+
+# PostgreSQL 17+
+summarize_wal = on		# run WAL summarizer process?
+#wal_summary_keep_time = '10d'	# when to remove old summary files; 0 = never
+
 # - Archive Recovery -
 
 # These are only used in recovery mode.
