@@ -243,6 +243,7 @@ vault.getkey_script = '$PGSODIUM_GETKEY_SCRIPT'" \
 -e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '$DATDIR/read-replica.conf'|" \
 -e "\$a\\
 session_preload_libraries = 'supautils'" \
+-e "$ a output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" \
 -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
@@ -256,7 +257,6 @@ orioledb_config_items() {
         sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ pgjwt,//g;' "$DATDIR/supautils.conf"
         sed -i 's/\(shared_preload_libraries.*\)'\''\(.*\)$/\1, orioledb'\''\2/' "$DATDIR/postgresql.conf"
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
-        echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$DATDIR/postgresql.conf"
     elif [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" = "aarch64-darwin" ]]; then
         # macOS specific configuration
         echo "macOS detected, applying macOS specific configuration"
@@ -272,7 +272,6 @@ orioledb_config_items() {
         perl -pi -e 's/(shared_preload_libraries\s*=\s*'\''.*?)'\''/\1, orioledb'\''/' "$DATDIR/postgresql.conf"
         
         echo "default_table_access_method = 'orioledb'" >> "$DATDIR/postgresql.conf"
-        echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$DATDIR/postgresql.conf"
     elif [[ "$VERSION" == "17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
         echo "non-macos pg 17 conf"
         sed -i 's/ timescaledb,//g;' "$DATDIR/postgresql.conf"
