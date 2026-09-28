@@ -25,6 +25,11 @@
         path: '/etc/wal-g'
         state: 'directory'
 
+    - name: Configure tmpfiles.d rule for /run/wal-g
+      ansible.builtin.template:
+        src: 'files/postgresql_config/tmpfiles.walg.conf'
+        dest: '/etc/tmpfiles.d/wal-g-lock.conf'
+
 - name: Execute wal-g things when stage2
   when: stage2
   block:
