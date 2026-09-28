@@ -1,0 +1,65 @@
+name: Probe KVM on Blacksmith arm runners
+
+# Throwaway probe: does a blacksmith arm runner expose /dev/kvm and can qemu
+# actually use it? Decides where the v3 salt-drift job can run.
+# Delete this workflow once answered.
+
+on:
+  push:
+    branches:
+      - dliappis/releng/blacksmith-arm-kvm-probe
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - blacksmith-2vcpu-ubuntu-2404-arm
+          - blacksmith-4vcpu-ubuntu-2404-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - name: Runner facts
+        run: |
+          uname -a
+          nproc
+          ls -l /dev/kvm 2>&1 || echo "NO /dev/kvm"
+          id
+
+      - name: Make /dev/kvm accessible
+        run: |
+          if [[ -e /dev/kvm ]]; then
+            sudo chown "$(id -un)" /dev/kvm
+            sudo chmod 666 /dev/kvm
+          else
+            echo "no /dev/kvm to chown"
+          fi
+
+      - name: Install qemu
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends qemu-system-arm jq
+
+      # same probe qemu-image-build.yml uses before real builds
+      - name: QMP query-kvm
+        run: |
+          set +e
+          out=$(printf '%s\n' '{"execute":"qmp_capabilities"}' '{"execute":"query-kvm"}' '{"execute":"quit"}' |
+            qemu-system-aarch64 -machine "virt,gic-version=max,accel=kvm" -cpu host \
+              -m 128M -nodefaults -display none -S -qmp stdio 2>/tmp/qemu-stderr)
+          rc=$?
+          echo "$out"
+          echo "--- stderr ---"; cat /tmp/qemu-stderr
+          echo "$out" | jq -se 'any(.[]; .return.enabled == true)' >/dev/null 2>&1
+          kvm_ok=$?
+          if [[ $rc -eq 0 && $kvm_ok -eq 0 ]]; then
+            echo "RESULT: KVM WORKS on ${{ matrix.runner }}"
+          else
+            echo "RESULT: NO KVM on ${{ matrix.runner }} (qemu rc=$rc)"
+            exit 1
+          fi
