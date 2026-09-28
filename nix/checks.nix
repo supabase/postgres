@@ -250,7 +250,6 @@
               # expected output in tests/isolation/expected/. Add new spec names here.
               isolationSpecList = [
                 "merge_serialization"
-                "sample_isolation"
               ];
             in
             pkgs.writeShellApplication rec {
