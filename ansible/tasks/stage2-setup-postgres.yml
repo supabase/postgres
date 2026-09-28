@@ -48,6 +48,14 @@
             path: '/etc/postgresql/postgresql.conf'
             state: 'present'
 
+        # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+        # as an allow-list for logical decoding output plugins.
+        - name: Allow wal2json as a logical decoding output plugin
+          ansible.builtin.lineinfile:
+            line: "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'"
+            path: '/etc/postgresql/postgresql.conf'
+            state: 'present'
+
         - name: Add ORIOLEDB_ENABLED environment variable
           ansible.builtin.lineinfile:
             line: 'ORIOLEDB_ENABLED=true'
