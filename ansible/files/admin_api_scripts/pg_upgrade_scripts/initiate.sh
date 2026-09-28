@@ -13,6 +13,7 @@ EXTENSIONS_TO_DISABLE=(
 	"pg_graphql"
 	"pg_stat_monitor"
 	"pg_backtrace"
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -93,6 +94,15 @@ cleanup() {
 
 	if [ "$UPGRADE_STATUS" = "failed" ]; then
 		log "Upgrade job failed. Cleaning up and exiting."
+	fi
+
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		# Restore timers before anything below: nearly every later step (chown,
+		# bare retry postgres restart, SQL) can fail under set -e and kill this
+		# trap mid-way, and the restore must not sit behind that. Warn-only for
+		# the same reason — aborting here would also leave the status file
+		# stuck at "running".
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
@@ -194,6 +204,13 @@ ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
 
+	# Rescope before dropping extensions: the fixed triggers are carried into the new
+	# cluster by pg_upgrade, so both the post-upgrade re-enable and the failure-path
+	# re-enable below fire them. Fail-soft: a broken rescope should not block the
+	# upgrade — but retry first, since a skipped rescope means the recreation of
+	# these extensions silently loses their wiring.
+	retry 3 rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
+
 	# Disable extensions if they're enabled
 	# Generate SQL script to re-enable them after upgrade
 	for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
@@ -215,6 +232,15 @@ EOF
 }
 
 function initiate_upgrade {
+	# Before anything destructive: no || true here, a timer firing mid-upgrade is
+	# exactly what this guards against, and failing now leaves the project untouched.
+	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
+	# `dpkg --configure -a` repairs that a moment later.
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+		log "0. Masking conflicting systemd timers"
+		retry 3 disable_conflicting_timers
+	fi
+
 	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
 	check_free_space $((2 * 1024 * 1024))
 
@@ -330,7 +356,9 @@ EXTRA_NIX_CONF
 			SYSTEM="x86_64-linux"
 		else
 			log "ERROR: Unsupported architecture: $ARCH"
-			exit 1
+			# fail as a command, not exit 1: exit skips the ERR trap, so cleanup
+			# would never restore the masked timers or write the status file
+			false
 		fi
 
 		# Fetch store path from catalog (avoids expensive nix eval - prevents OOM on small instances)
@@ -341,7 +369,7 @@ EXTRA_NIX_CONF
 
 		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
 			log "ERROR: Failed to fetch catalog from $CATALOG_S3"
-			exit 1
+			false # not exit: let the ERR trap run cleanup
 		fi
 
 		STORE_PATH=$(jq -r ".\"${SYSTEM}\"" "$CATALOG_LOCAL")
@@ -350,7 +378,7 @@ EXTRA_NIX_CONF
 			log "ERROR: Could not find store path in catalog for ${SYSTEM}"
 			log "Catalog contents:"
 			jq . "$CATALOG_LOCAL"
-			exit 1
+			false # not exit: let the ERR trap run cleanup
 		fi
 
 		log "Store path: $STORE_PATH"
@@ -420,7 +448,7 @@ EXTRA_NIX_CONF
 
 	# Needed for PostGIS, since it's compiled with Protobuf-C support now
 	log "3. Installing libprotobuf-c1 and libicu66 if missing"
-	if [[ ! "$(apt list --installed libprotobuf-c1 | grep "installed")" ]]; then
+	if ! apt list --installed libprotobuf-c1 | grep -q installed; then
 		apt-get -o DPkg::Lock::Timeout=600 update -y                # wait up to 10 minutes for any dpkg locks to clear before updating package lists
 		apt --fix-broken install -y libprotobuf-c1 libicu66 || true # apt has builtin 2 minute wait lock
 	fi

@@ -2,16 +2,18 @@
   when: not stage2
   ansible.builtin.group:
     name: pgbackrest
+    gid: 1005
     state: present
 
 - name: Create pgBackRest user
   when: not stage2
   ansible.builtin.user:
+    name: pgbackrest
+    uid: 995
     comment: pgBackRest user
     group: pgbackrest
     groups: pgbackrest, postgres
     home: /var/lib/pgbackrest
-    name: pgbackrest
     shell: /sbin/nologin
     system: true
 

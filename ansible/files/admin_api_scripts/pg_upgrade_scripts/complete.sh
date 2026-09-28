@@ -42,15 +42,22 @@ function cleanup {
 
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
+	if [ -z "$IS_CI" ]; then
+		# Warn rather than fail: this runs inside the ERR trap, and aborting here
+		# would skip ship_logs and lose the diagnostics for the actual failure.
+		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+	fi
+
 	ship_logs "$LOG_FILE" || true
 
 	exit "$EXIT_CODE"
 }
 
-# Callers invoke this as the left operand of ||, which suppresses set -e for the
-# whole function body — and a subshell with set -e re-enabled does not restore it
-# (verified on bash 3.2 and 5.3), so a mid-function failure would be reported as
-# success. Failures are instead tracked explicitly in rc, like analyze_partitioned_tables.
+# Callers invoke this as the left operand of `||`, which suppresses set -e for the
+# whole function body — and re-enabling it in a subshell does not restore it (verified
+# on bash 5.3). So failures are tracked explicitly in rc, the same idiom as
+# analyze_partitioned_tables. Without it the function returns its last command's status
+# and a mid-function failure is reported as success.
 function execute_extension_upgrade_patches {
 	local rc=0
 	if [ -f "/var/lib/postgresql/extension/wrappers--0.3.1--0.4.1.sql" ] && [ ! -f "/usr/share/postgresql/15/extension/wrappers--0.3.0--0.4.1.sql" ]; then
@@ -132,9 +139,9 @@ EOF
 	run_sql -c "$UPDATE_WRAPPERS_SERVER_OPTIONS_QUERY"
 }
 
-# See the note on execute_extension_upgrade_patches for why failures are tracked
-# in rc rather than left to set -e. Each patch is independent, so a failure records
-# rc and the remaining patches still get applied.
+# See the note on execute_extension_upgrade_patches for why failures are tracked in rc
+# rather than left to set -e. Each patch is independent, so a failure records rc and the
+# remaining patches still get applied.
 function execute_patches {
 	local rc=0
 
@@ -267,6 +274,20 @@ function complete_pg_upgrade {
 	# Set (including from called functions, via dynamic scoping) whenever a fail-soft step failed; ships the log for visibility at the end
 	local warnings=0
 
+	# Fail-soft, unlike initiate.sh's step 0: complete.sh runs no apt/dpkg
+	# commands, and by this point the data volume has already moved — aborting
+	# would take the project down over a timer we can live without stopping.
+	if [ -z "$IS_CI" ]; then
+		log "0. Masking conflicting systemd timers"
+		retry 3 disable_conflicting_timers || {
+			log "WARNING: failed to mask one or more timers"
+			warnings=1
+		}
+		# Stopping an in-flight apt-daily-upgrade.service can leave dpkg
+		# half-configured; repair it the same way initiate.sh step 2 does
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a --force-confold || true
+	fi
+
 	log "1. Mounting data disk"
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
@@ -279,7 +300,9 @@ function complete_pg_upgrade {
 		# In the offchance of the volume not being mounted or detected, explicitly fail here
 		if ! mountpoint -q /data; then
 			log "FATAL: /data is not a mountpoint"
-			exit 1
+			# fail as a command, not exit 1: exit skips the ERR trap, so cleanup
+			# would never unmask the timers or flip the status to "failed"
+			false
 		fi
 	else
 		log "Skipping mount -a -v"
@@ -354,6 +377,15 @@ function complete_pg_upgrade {
 		warnings=1
 	}
 
+	# The success path never reaches cleanup(), so restore the timers here too. enable_conflicting_timers only touches units still masked by this run, so the cleanup() call is a no-op if this one ran
+	if [ -z "$IS_CI" ]; then
+		log "7. Unmasking conflicting systemd timers"
+		enable_conflicting_timers || {
+			log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
+			warnings=1
+		}
+	fi
+
 	log "Upgrade job completed"
 
 	# Clean runs ship nothing — only warn-but-completed upgrades are reported (hard failures ship via the ERR-trap cleanup)
@@ -410,7 +442,7 @@ function start_vacuum_analyze {
 	if [ "$jobs" -lt 1 ]; then
 		jobs=1
 	fi
-	# --skip-locked rather than a lock_timeout: a lock-timeout error aborts the whole staged all-databases run, and the retry restarts from stage 1 — overwriting finer stats an earlier attempt already wrote with stage 1's coarse target=1. Skipping just the locked table preserves every other table's progress
+	# --skip-locked rather than a global lock_timeout: a lock_timeout error aborts the entire staged, all-databases run, and `retry` then restarts from stage 1 — so an attempt dying mid-stage-3 can overwrite the finer stats an earlier attempt already wrote with stage 1's coarse target=1. Skipping just the locked relation leaves every other table's progress intact
 	PGOPTIONS='-c vacuum_cost_delay=0' vacuumdb --all --analyze-in-stages --skip-locked -j "$jobs" -U supabase_admin -h localhost -p 5432
 }
 

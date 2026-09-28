@@ -43,7 +43,7 @@ echo "Using devices - Root: $XVDA_DEVICE, Data: $XVDH_DEVICE"
 # Get root partition using findmnt
 ROOT_DEVICE_FULL=$(findmnt -no SOURCE /)
 ROOT_DEVICE=$(lsblk -no PKNAME "$ROOT_DEVICE_FULL")
-ROOT_PARTITION_NUMBER=$(echo "$ROOT_DEVICE_FULL" | sed "s|.*${ROOT_DEVICE}p||")
+ROOT_PARTITION_NUMBER=${ROOT_DEVICE_FULL##*"${ROOT_DEVICE}"p}
 
 if ! [[ $ROOT_PARTITION_NUMBER =~ ^[0-9]+$ ]]; then
 	echo "Error: ROOT_PARTITION_NUMBER is not a valid number: $ROOT_PARTITION_NUMBER"

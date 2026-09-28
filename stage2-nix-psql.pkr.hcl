@@ -75,6 +75,17 @@ source "amazon-ebs" "ubuntu" {
 
   ena_support = true
 
+  # The build volume inherits gp3 max provisioning from the stage1 AMI and
+  # CreateImage would carry it into this AMI; pin the shipped AMI to gp3 defaults.
+  ami_block_device_mappings {
+    device_name           = "/dev/xvda"
+    delete_on_termination = true
+    volume_size           = 10
+    volume_type           = "gp3"
+    iops                  = 3000
+    throughput            = 125
+  }
+
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
@@ -119,11 +130,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
     source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
@@ -133,7 +139,14 @@ build {
       "GIT_SHA=${var.git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
-    script = "scripts/nix-provision.sh"
+    use_env_var_file = true
+    script           = "ebssurrogate/scripts/nix-provision.sh"
+    execute_command  = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
   }
 
+  provisioner "file" {
+    source      = "/tmp/ansible.log"
+    destination = "/tmp/ansible-stage2.log"
+    direction   = "download"
+  }
 }
