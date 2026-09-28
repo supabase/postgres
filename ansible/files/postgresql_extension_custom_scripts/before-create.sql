@@ -8,21 +8,41 @@
 -- extension` statement.
 do $$
 declare
-  _extname text := @extname@;
-  _extschema text := @extschema@;
-  _extversion text := @extversion@;
-  _extcascade bool := @extcascade@;
+  -- It's important that the declare section doesn't have any initialization code.
+  -- Any initialization should happen in the begin/end block after search_path is
+  -- set to avoid search_path hijacking attacks.
+  search_path text;
+  _extname text;
+  _extschema text;
+  _extversion text;
+  _extcascade bool;
   _r record;
 begin
+  -- Instead of setting search_path to an empty string pg_temp is implicitly added first
+  -- in the list by Postgres. Although having pg_temp first in the list is not always
+  -- exploitable (because it's only used to lookup tables, views etc. and not functions,
+  -- or procedures) it's a defence is depth measure to guard against change in the code
+  -- later which could cause problems.
+  search_path := current_setting('search_path');
+  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+
+  _extname := @extname@;
+  _extschema := @extschema@;
+  _extversion := @extversion@;
+  _extcascade := @extcascade@;
+
   if not _extcascade then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
   if not exists (select from pg_extension where extname = 'pg_tle') then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
   if not exists (select from pgtle.available_extensions() where name = _extname) then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
@@ -71,6 +91,12 @@ begin
     )
     select name
     from dependencies
+    -- Only pre-create extensions which have a control file on disk to avoid
+    -- creating TLE extensions as superuser (this code runs as superuser).
+    -- Such TLEs will still be created by Postgres, but as a non-superuser.
+    -- This fixes a potential privilege escalation vector since TLE code is
+    -- under control of a non-superuser.
+    where name in (select name from pg_available_extensions)
     intersect
     select name
     from regexp_split_to_table(current_setting('supautils.privileged_extensions', true), '\s*,\s*') as t(name)
@@ -81,4 +107,6 @@ begin
       execute(format('create extension if not exists %I schema %I cascade', _r.name, _extschema));
     end if;
   end loop;
+
+  perform set_config('search_path', search_path, true);
 end $$;

@@ -87,6 +87,25 @@ select
  t
 (1 row)
 
+drop extension if exists pg_tle_privesc_test_dependent;
+drop extension if exists pljava;
+-- uninstall_extension drops the pgtle-owned functions (owned by whoever
+-- called install_extension) that back the TLE, so this must run before we
+-- can drop the attacker role that created them
+select pgtle.uninstall_extension('pg_tle_privesc_test_dependent');
+ uninstall_extension 
+---------------------
+ t
+(1 row)
+
+select pgtle.uninstall_extension('pljava');
+ uninstall_extension 
+---------------------
+ t
+(1 row)
+
+drop role tle_privesc_test_attacker;
+drop role tle_privesc_test_role;
 -- Restore original state if any of the above fails
 drop extension pg_tle cascade;
 create extension pg_tle;

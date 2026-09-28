@@ -67,6 +67,27 @@ drop extension pg_distance;
 select
   pgtle.uninstall_extension('pg_distance');
 
+
+reset role;
+
+-- the role must still not be superuser: before-create.sql must not
+-- pre-create TLE dependencies (like pljava) in its own superuser context
+select rolname, rolsuper from pg_roles where rolname = 'tle_privesc_test_role';
+
+-- with the fix, pljava is never pre-created as superuser, so the plain
+-- CASCADE creates it as the non-superuser attacker role instead, and its
+-- install script's `alter role ... superuser` fails with permission denied
+-- -- the extensions below were therefore never actually created.
+drop extension if exists pg_tle_privesc_test_dependent;
+drop extension if exists pljava;
+-- uninstall_extension drops the pgtle-owned functions (owned by whoever
+-- called install_extension) that back the TLE, so this must run before we
+-- can drop the attacker role that created them
+select pgtle.uninstall_extension('pg_tle_privesc_test_dependent');
+select pgtle.uninstall_extension('pljava');
+drop role tle_privesc_test_attacker;
+drop role tle_privesc_test_role;
+
 -- Restore original state if any of the above fails
 drop extension pg_tle cascade;
 

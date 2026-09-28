@@ -207,3 +207,37 @@ show search_path;
  "$user", public, auth, extensions
 (1 row)
 
+-- Regression test: pgmq/after-create.sql runs as superuser and resolves the
+-- extension's own oid via an unqualified `select ... from pg_extension
+-- where extname = 'pgmq'`, then reassigns ownership of everything pg_depend
+-- reports as depending on that oid to postgres. With search_path set to an
+-- empty string, pg_temp is implicitly searched first, so a session-local
+-- temp table named pg_extension could shadow the real catalog, feeding the
+-- script a bogus oid and leaving pgmq's own objects un-reassigned.
+drop extension pgmq cascade;
+create temp table pg_extension (oid oid, extname text, extversion text, extowner oid);
+insert into pg_extension values (0, 'pgmq', '999.999', 'postgres'::regrole);
+create extension pgmq cascade;
+-- every function in the pgmq schema must be owned by postgres (proves the
+-- real catalog row, not the shadowed temp-table row, was used to resolve
+-- the extension oid)
+select count(*) as pgmq_functions_not_owned_by_postgres
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'pgmq' and p.proowner != 'postgres'::regrole;
+ pgmq_functions_not_owned_by_postgres 
+--------------------------------------
+                                    0
+(1 row)
+
+drop table pg_extension;
+-- restore the 'Foo' queue (and its a_foo/q_foo tables) dropped by the
+-- cascade above, so later tests that inspect the full set of extension
+-- objects see the same schema as before this regression test ran
+select
+  pgmq.create('Foo');
+ create 
+--------
+ 
+(1 row)
+

@@ -1,12 +1,24 @@
 do $$
 declare
-  extoid oid := (select oid from pg_extension where extname = 'pgmq');
-  extversion text := (select extversion from pg_extension where extname = 'pgmq');
-  search_path text := (select current_setting('search_path'));
+  -- It's important that the declare section doesn't have any initialization code.
+  -- Any initialization should happen in the begin/end block after search_path is
+  -- set to avoid search_path hijacking attacks.
+  extoid oid;
+  extversion text;
+  search_path text;
   r record;
   cls pg_class%rowtype;
 begin
-  perform set_config('search_path', '', true);
+  -- Instead of setting search_path to an empty string we set it to an explicit list
+  -- of pg_catalog and pg_temp. With an empty string, pg_temp is implicitly added as the
+  -- first entry in search_path by Postgres. Although having pg_temp first in search_path
+  -- is not always exploitable (because it's only used to lookup tables, views etc. and
+  -- not functions, or procedures) it's a defence is depth measure to guard against
+  -- potential later changes in the code accidentally creating a vulnerability.
+  search_path := current_setting('search_path');
+  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+
+  select e.oid, e.extversion into extoid, extversion from pg_extension e where extname = 'pgmq';
 
 /*
     Override the pgmq.drop_queue to check if relevant tables are owned
@@ -181,6 +193,6 @@ end if;
     end if;
   end loop;
 
-  -- restore configs
+  -- restore search_path to its previous value
   perform set_config('search_path', search_path, true);
 end $$;
