@@ -29,6 +29,7 @@
       ansible.builtin.template:
         src: 'files/postgresql_config/tmpfiles.walg.conf'
         dest: '/etc/tmpfiles.d/wal-g-lock.conf'
+        mode: '0644'
 
 - name: Execute wal-g things when stage2
   when: stage2
