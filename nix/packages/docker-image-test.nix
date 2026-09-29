@@ -621,7 +621,7 @@ writeShellApplication {
         PATCHED_TESTS_DIR="$OUTPUT_DIR/tests"
         cp -r "$TESTS_DIR" "$PATCHED_TESTS_DIR"
 
-        for f in pgmq.out vault.out; do
+        for f in dblink.out pg_tle.out pgmq.out vault.out; do
             if [[ -f "$PATCHED_TESTS_DIR/expected/$f" ]]; then
                 # shellcheck disable=SC2016
                 sed -i.bak \
