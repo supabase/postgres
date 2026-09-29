@@ -4,6 +4,6 @@ Description=Async commence restore of physical backup
 [Service]
 Type=notify
 TimeoutStartSec=30
-ExecStart=/usr/bin/admin-mgr commence-restore --run-as-service true
+ExecStart=/usr/bin/admin-mgr commence-restore --run-as-service
 Restart=no
 OOMScoreAdjust=-1000
