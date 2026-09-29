@@ -101,11 +101,16 @@ begin
     select name
     from regexp_split_to_table(current_setting('supautils.privileged_extensions', true), '\s*,\s*') as t(name)
   ) loop
+    -- Create the dependency with the caller's search_path. Otherwise, when no
+    -- schema is specified, the dependency would be created in pg_catalog, the
+    -- first schema in our locked down search_path.
+    perform set_config('search_path', search_path, true);
     if _extschema is null then
       execute(format('create extension if not exists %I cascade', _r.name));
     else
       execute(format('create extension if not exists %I schema %I cascade', _r.name, _extschema));
     end if;
+    perform set_config('search_path', 'pg_catalog, pg_temp', true);
   end loop;
 
   perform set_config('search_path', search_path, true);

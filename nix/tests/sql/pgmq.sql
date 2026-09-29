@@ -104,3 +104,34 @@ order by
 
 -- assert search_path is preserved after after-create script is run
 show search_path;
+
+-- pgmq/after-create.sql runs as superuser and reassigns ownership of every
+-- object depending on the pgmq extension's oid to postgres. The oid is looked
+-- up in pg_extension, which must not be shadowable by a temp table. Point the
+-- shadow at pg_tle's pg_tle_features type to try to hijack pg_tle's objects.
+drop extension pgmq cascade;
+
+create temp table pg_extension (oid oid, extname text, extversion text, extowner oid);
+insert into pg_extension
+  values ('pgtle.pg_tle_features'::regtype::oid, 'pgmq', '1.5.1', 'postgres'::regrole);
+
+create extension pgmq;
+
+drop table pg_temp.pg_extension;
+
+-- pg_tle's objects must still be owned by supabase_admin
+select 'pgtle.feature_info'::regclass::text as obj, relowner::regrole as owner
+from pg_class
+where oid = 'pgtle.feature_info'::regclass
+union all
+select p.oid::regprocedure::text, p.proowner::regrole
+from pg_proc p
+where p.oid = 'pgtle.register_feature(regproc,pgtle.pg_tle_features)'::regprocedure;
+
+-- pgmq's own objects must have been reassigned to postgres
+select count(*) as pgmq_functions_not_owned_by_postgres
+from pg_proc p
+where p.pronamespace = 'pgmq'::regnamespace and p.proowner != 'postgres'::regrole;
+
+-- restore the 'Foo' queue dropped by the cascade above
+select pgmq.create('Foo');
