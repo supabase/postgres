@@ -3,7 +3,8 @@
 -- the caller connect as any role without a password, so a leftover grant is a
 -- path to superuser. The functions are looked up in pg_proc, which must not
 -- be shadowable by a temp table.
-drop extension dblink cascade;
+set client_min_messages = warning;
+drop extension if exists dblink cascade;
 set role postgres;
 create temp table pg_proc (oid oid, proname text, proacl aclitem[]);
 create extension dblink;

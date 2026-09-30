@@ -195,7 +195,6 @@
               # Tests to skip for CLI variants (require extensions not in CLI)
               cliSkipTests = [
                 # Extension-specific tests
-                "dblink"
                 "evtrigs"
                 "http"
                 "hypopg"
