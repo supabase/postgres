@@ -16,18 +16,6 @@
     passno: "0"
     state: present
 
-- name: 'tuned - Decrease the kernel swappiness'  # noqa: name[casing]
-  community.general.ini_file:
-    create: true
-    group: 'root'
-    mode: '0644'
-    no_extra_spaces: true
-    option: 'vm.swappiness'
-    path: '/etc/tuned/profiles/postgresql/tuned.conf'
-    section: 'sysctl'
-    state: 'present'
-    value: '10'
-
 - name: 'tuned - Load zstd compressor module'  # noqa: name[casing]
   community.general.modprobe:
     name: 'zstd'

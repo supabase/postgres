@@ -201,6 +201,11 @@
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
 
+    - name: Setup Swappiness
+      when: stage2
+      become: yes
+      import_tasks: tasks/stage2/setup-swappiness.yml
+
     - name: Setup Swap
       when: stage2 and not qemu
       become: yes
