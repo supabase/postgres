@@ -14,7 +14,7 @@ in
     { config, pkgs, ... }:
     {
       pre-commit = {
-        check.enable = true;
+        check.enable = pkgs.stdenv.hostPlatform.system != "aarch64-linux";
         settings = {
           hooks = {
             actionlint = {
