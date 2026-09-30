@@ -183,7 +183,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 ## Primary Features
 - ✅ Postgres [postgresql-15.19](https://www.postgresql.org/docs/15/index.html)
 - ✅ Postgres [postgresql-17.11](https://www.postgresql.org/docs/17/index.html)
-- ✅ Postgres [orioledb-postgresql-17_11](https://github.com/orioledb/orioledb)
+- ✅ Postgres [orioledb-postgresql-17_22](https://github.com/orioledb/orioledb)
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.
@@ -261,7 +261,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [http]() | [1.6]() |  |
 | [hypopg]() | [1.4.1]() |  |
 | [index_advisor]() | [0.2.0]() |  |
-| [orioledb](https://github.com/orioledb/orioledb/archive/beta12.tar.gz) | [orioledb](https://github.com/orioledb/orioledb/archive/beta12.tar.gz) | orioledb |
+| [orioledb](https://github.com/orioledb/orioledb/archive/beta18.tar.gz) | [orioledb](https://github.com/orioledb/orioledb/archive/beta18.tar.gz) | orioledb |
 | [pg-safeupdate](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | [1.4](https://github.com/eradman/pg-safeupdate/archive/1.4.tar.gz) | A simple extension to PostgreSQL that requires criteria for UPDATE and DELETE |
 | [pg_cron]() | [1.6.4]() | Run Cron jobs through PostgreSQL (multi-version compatible) |
 | [pg_graphql](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | [1.5.11](https://github.com/supabase/pg_graphql/archive/v1.5.11.tar.gz) | GraphQL support for PostreSQL |
