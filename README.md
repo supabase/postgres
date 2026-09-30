@@ -190,6 +190,10 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 ## Extensions
 
 ### PostgreSQL 15 Extensions
+
+<details>
+<summary>Show extensions</summary>
+
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [http]() | [1.6]() |  |
@@ -223,7 +227,13 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
 | [wrappers]() | [0.5.4]() |  |
 
+</details>
+
 ### PostgreSQL 17 Extensions
+
+<details>
+<summary>Show extensions</summary>
+
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [http]() | [1.6]() |  |
@@ -255,7 +265,13 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
 | [wrappers]() | [0.5.4]() |  |
 
+</details>
+
 ### PostgreSQL orioledb-17 Extensions
+
+<details>
+<summary>Show extensions</summary>
+
 | Extension | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [http]() | [1.6]() |  |
@@ -287,6 +303,8 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | [vector]() | [0.8.0]() |  |
 | [wal2json](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | [2_6](https://github.com/eulerto/wal2json/archive/wal2json_2_6.tar.gz) | PostgreSQL JSON output plugin for changeset extraction |
 | [wrappers]() | [0.5.4]() |  |
+
+</details>
 ## Additional Goodies
 *This is only available for our AWS EC2*
 
