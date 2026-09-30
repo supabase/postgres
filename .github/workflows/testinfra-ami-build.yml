@@ -49,6 +49,10 @@ jobs:
           - arch: arm64
             instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
+          - arch: arm64
+            builder: qemu
+            instance_type: c6g.4xlarge
+            runner: arm-native-runner
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
@@ -94,6 +98,7 @@ jobs:
           ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
+          builder: ${{ matrix.target.builder || 'packer' }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           instance_type: ${{ matrix.target.instance_type }}
@@ -102,7 +107,7 @@ jobs:
 
       - name: Save AMI disk usage
         env:
-          ARCH: ${{ matrix.target.arch }}
+          ARCH: ${{ matrix.target.arch }}${{ matrix.target.builder && '-qemu' || '' }}
           DISK_USAGE_JSON: ${{ steps.build-ami.outputs.disk_usage_json }}
           POSTGRES_VERSION: ${{ matrix.postgres_version }}
         run: >-
@@ -116,7 +121,7 @@ jobs:
       - name: Upload AMI disk usage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}${{ matrix.target.builder && '-qemu' || '' }}
           path: ami-disk-usage-*.json
           overwrite: true
           retention-days: 1

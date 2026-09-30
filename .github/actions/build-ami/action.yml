@@ -11,6 +11,9 @@ inputs:
   arch:
     description: Architecture to build AMI for (amd64|arm64)
     required: true
+  builder:
+    description: 'AMI builder (packer|qemu)'
+    default: packer
   git_sha:
     description: 'Git SHA for this build'
     required: true
@@ -30,7 +33,7 @@ inputs:
 outputs:
   stage2_ami_id:
     description: 'The AMI ID of the stage 2 build'
-    value: ${{ steps.build-stage2.outputs.stage2_ami_id }}
+    value: ${{ steps.build-stage2.outputs.stage2_ami_id || steps.build-qemu.outputs.stage2_ami_id }}
   postgres_release_version:
     description: 'The PostgreSQL release version'
     value: ${{ steps.generate-vars.outputs.version }}
@@ -39,7 +42,7 @@ outputs:
     value: ${{ steps.set-execution-id.outputs.execution_id }}
   disk_usage_json:
     description: 'The stage 2 AMI root disk usage as json'
-    value: ${{ steps.build-stage2.outputs.disk_usage_json }}
+    value: ${{ steps.build-stage2.outputs.disk_usage_json || steps.build-qemu.outputs.disk_usage_json }}
 
 runs:
   using: "composite"
@@ -55,7 +58,7 @@ runs:
       id: set-execution-id
       shell: bash
       run: |
-        PACKER_EXECUTION_ID="${{ inputs.postgres_version }}-${{ inputs.arch }}-${{ github.run_id }}"
+        PACKER_EXECUTION_ID="${{ inputs.postgres_version }}-${{ inputs.arch }}-${{ github.run_id }}${{ inputs.builder == 'qemu' && '-qemu' || '' }}"
         echo "PACKER_EXECUTION_ID=$PACKER_EXECUTION_ID" >> $GITHUB_ENV
         echo "execution_id=$PACKER_EXECUTION_ID" >> $GITHUB_OUTPUT
 
@@ -69,7 +72,24 @@ runs:
         git add -f common-nix.vars.pkr.hcl
         echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
 
+    - name: Build AMI with QEMU
+      id: build-qemu
+      if: inputs.builder == 'qemu'
+      shell: bash
+      env:
+        AMI_NAME_PREFIX: ${{ inputs.ami_name_prefix }}
+        AWS_MAX_ATTEMPTS: 10
+        AWS_RETRY_MODE: adaptive
+        AWS_REGION: ${{ inputs.region }}
+        BUILD_AMI_QEMU_HW_VIRT_ONLY: 1
+        GIT_SHA: ${{ inputs.packages_git_sha }}
+        SOURCE_SHA: ${{ inputs.git_sha }}
+      run: |
+        sudo chmod 666 /dev/kvm
+        nix run .#build-ami-qemu -- ${{ inputs.postgres_version }} ${{ inputs.arch }}
+
     - name: Build AMI stage 1
+      if: inputs.builder == 'packer'
       shell: bash
       env:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}
@@ -93,6 +113,7 @@ runs:
 
     - name: Build AMI stage 2
       id: build-stage2
+      if: inputs.builder == 'packer'
       shell: bash
       env:
         POSTGRES_MAJOR_VERSION: ${{ inputs.postgres_version }}

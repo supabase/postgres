@@ -49,6 +49,7 @@
       packages = (
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
+          build-ami-qemu = pkgs.callPackage ./build-ami-qemu { };
           build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };

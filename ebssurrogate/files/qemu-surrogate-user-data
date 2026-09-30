@@ -1,0 +1,16 @@
+#cloud-config
+write_files:
+  - path: /etc/udev/rules.d/99-qemu-surrogate-devices.rules
+    content: |
+      KERNEL=="vd*", ENV{ID_SERIAL}=="xvd?", SYMLINK+="$env{ID_SERIAL}%n"
+runcmd:
+  - udevadm trigger --settle
+  - mkdir -p /media/seed
+  - mount -o ro /dev/disk/by-label/cidata /media/seed
+  - cp -r /media/seed/tmp/. /tmp/
+  - - systemd-run
+    - --unit=surrogate-bootstrap
+    - --property=StandardOutput=journal+console
+    - bash
+    - -c
+    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/surrogate-bootstrap-nix.sh; echo "surrogate-bootstrap exit=$?"; systemctl poweroff

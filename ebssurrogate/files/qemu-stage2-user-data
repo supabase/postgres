@@ -1,0 +1,13 @@
+#cloud-config
+runcmd:
+  - systemctl start ssh
+  - mkdir -p /media/seed
+  - mount -o ro /dev/disk/by-label/cidata /media/seed
+  - cp -r /media/seed/tmp/. /tmp/
+  - - systemd-run
+    - --unit=nix-provision
+    - --setenv=HOME=/root
+    - --property=StandardOutput=journal+console
+    - bash
+    - -c
+    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/nix-provision.sh; echo "nix-provision exit=$?"; cloud-init clean --logs; systemctl poweroff
