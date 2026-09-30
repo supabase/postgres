@@ -35,6 +35,25 @@ jobs:
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
+      # Reused by version-diff's HEAD side, avoiding a duplicate evaluation.
+      - name: Evaluate drvPaths for version-diff
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p /tmp/drvpaths
+          for system in x86_64-linux aarch64-linux aarch64-darwin; do
+            nix eval --impure --json --accept-flake-config \
+              --expr "(import $PWD/ci/version-diff-drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
+              > "/tmp/drvpaths/$system.json"
+          done
+
+      - name: Upload drvPaths artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: head-drvpaths
+          path: /tmp/drvpaths/*.json
+          retention-days: 1
+
       - name: Generate Nix Matrix
         id: gen-matrix
         run: |
@@ -264,9 +283,10 @@ jobs:
     name: Package version diff
     if: github.event_name == 'pull_request'
     needs:
-      - nix-build-packages-x86_64-linux
-      - nix-build-packages-aarch64-linux
-      - nix-build-packages-aarch64-darwin
+      - eval
+      - builds-x86_64-linux
+      - builds-aarch64-linux
+      - builds-aarch64-darwin
     strategy:
       fail-fast: false
       matrix:
@@ -308,62 +328,19 @@ jobs:
         if: matrix.installer == 'self-hosted'
         uses: ./head/.github/actions/nix-install-self-hosted
 
-      # nix-eval's packages_matrix only lists *uncached* packages, so it
-      # cannot be used to decide what to diff. Instead, evaluate every
-      # derivation's drvPath under legacyPackages.<system> (recursing into
-      # attrsets like nix-eval-jobs --force-recurse does) on both sides.
-      # drvPath captures any input change (source, patches, deps, build
-      # steps), not just a bumped version string, and evaluating it is pure
-      # -- no substituter queries, no downloads, no builds.
-      - name: Write drvPath collector expression
-        run: |
-          cat > /tmp/version-diff-drvpaths.nix <<'EOF'
-          { dir, system }:
-          let
-            flake = builtins.getFlake dir;
-            isDrv = v: (v.type or "") == "derivation";
-            collect =
-              prefix: set:
-              builtins.concatLists (
-                map (
-                  n:
-                  let
-                    v = set.${n};
-                  in
-                  if isDrv v then
-                    [
-                      {
-                        name = prefix + n;
-                        drvPath = v.drvPath;
-                      }
-                    ]
-                  else if builtins.isAttrs v then
-                    collect (prefix + n + ".") v
-                  else
-                    [ ]
-                ) (builtins.attrNames set)
-              );
-          in
-          builtins.listToAttrs (
-            map (e: {
-              inherit (e) name;
-              value = e.drvPath;
-            }) (collect "" flake.legacyPackages.${system})
-          )
-          EOF
+      # eval already computed HEAD's drvPaths; only BASE needs it here.
+      - name: Download head drvPaths
+        uses: actions/download-artifact@v4
+        with:
+          name: head-drvpaths
+          path: /tmp/head-drvpaths
 
-      - name: Evaluate head drvPaths
-        working-directory: head
-        run: |
-          nix eval --impure --json --accept-flake-config \
-            --expr '(import /tmp/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
-            > /tmp/head-drvpaths.json
-
+      # use HEAD's script, base may predate it
       - name: Evaluate base drvPaths
         working-directory: base
         run: |
           nix eval --impure --json --accept-flake-config \
-            --expr '(import /tmp/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
+            --expr '(import ${{ github.workspace }}/head/ci/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
             > /tmp/base-drvpaths.json
 
       # Only realize/diff attrs whose drvPath actually differs, instead of
@@ -371,18 +348,19 @@ jobs:
       # packages, not all ~700+ of them.
       - name: Diff versions with nvd
         run: |
-          if diff -q <(jq -S . /tmp/head-drvpaths.json) <(jq -S . /tmp/base-drvpaths.json) > /dev/null; then
+          head_json=/tmp/head-drvpaths/${{ matrix.system }}.json
+          if diff -q <(jq -S . "$head_json") <(jq -S . /tmp/base-drvpaths.json) > /dev/null; then
             echo "No \`legacyPackages.${{ matrix.system }}\` version changes in this PR." > /tmp/diff.txt
           else
-            changed=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+            changed=$(jq -r -n --slurpfile h "$head_json" --slurpfile b /tmp/base-drvpaths.json '
               ($h[0]) as $H | ($b[0]) as $B |
               ($H | keys) as $hk | ($B | keys) as $bk |
               ($hk - ($hk - $bk))[] | select($H[.] != $B[.])
             ')
-            added=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+            added=$(jq -r -n --slurpfile h "$head_json" --slurpfile b /tmp/base-drvpaths.json '
               (($h[0] | keys) - ($b[0] | keys))[]
             ')
-            removed=$(jq -r -n --slurpfile h /tmp/head-drvpaths.json --slurpfile b /tmp/base-drvpaths.json '
+            removed=$(jq -r -n --slurpfile h "$head_json" --slurpfile b /tmp/base-drvpaths.json '
               (($b[0] | keys) - ($h[0] | keys))[]
             ')
 
