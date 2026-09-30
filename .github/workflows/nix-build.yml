@@ -35,7 +35,7 @@ jobs:
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
-      # Reused by version-diff's HEAD side, avoiding a duplicate evaluation.
+      # shared with version-diff's HEAD side
       - name: Evaluate drvPaths for version-diff
         if: github.event_name == 'pull_request'
         run: |
@@ -331,7 +331,7 @@ jobs:
         if: matrix.installer == 'self-hosted'
         uses: ./head/.github/actions/nix-install-self-hosted
 
-      # eval already computed HEAD's drvPaths; only BASE needs it here.
+      # HEAD side already done in eval
       - name: Download head drvPaths
         uses: actions/download-artifact@v4
         with:
@@ -346,9 +346,7 @@ jobs:
             --expr '(import ${{ github.workspace }}/head/ci/version-diff-drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
             > /tmp/base-drvpaths.json
 
-      # Only realize/diff attrs whose drvPath actually differs, instead of
-      # the whole legacyPackages closure -- most PRs change a handful of
-      # packages, not all ~700+ of them.
+      # only realize/diff attrs whose drvPath differs
       - name: Diff versions with nvd
         run: |
           head_json=/tmp/head-drvpaths/${{ matrix.system }}.json

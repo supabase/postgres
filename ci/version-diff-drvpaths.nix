@@ -1,6 +1,4 @@
-# drvPath captures any input change (source, patches, deps, build steps),
-# not just a bumped version string, and evaluating it is pure -- no
-# substituter queries, no downloads, no builds.
+# pure eval, no builds; drvPath catches any input change, not just a version bump
 { dir, system }:
 let
   flake = builtins.getFlake dir;
