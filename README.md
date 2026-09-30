@@ -312,7 +312,7 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.25.1](http://www.pgbouncer.org/changelog.html#pgbouncer-125x) | Set up Connection Pooling. |
 | [PostgREST](https://postgrest.org/en/stable/) | [v14.18](https://github.com/PostgREST/postgrest/releases/tag/v14.18) | Instantly transform your database into an RESTful API. |
-| [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1) | Tool for physical database backup and recovery. | -->
+| [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1), [v3.0.9](https://github.com/wal-g/wal-g/releases/tag/v3.0.9) | Tool for physical database backup and recovery. | -->
 
 
 ## Install
