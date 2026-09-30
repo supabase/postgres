@@ -10,4 +10,4 @@ runcmd:
     - --property=StandardOutput=journal+console
     - bash
     - -c
-    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/nix-provision.sh; echo "nix-provision exit=$?"; cloud-init clean --logs; systemctl poweroff
+    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/nix-provision.sh; echo "nix-provision exit=$?" >/dev/console; cloud-init clean --logs; systemctl poweroff

@@ -13,4 +13,4 @@ runcmd:
     - --property=StandardOutput=journal+console
     - bash
     - -c
-    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/surrogate-bootstrap-nix.sh; echo "surrogate-bootstrap exit=$?"; systemctl poweroff
+    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/surrogate-bootstrap-nix.sh; echo "surrogate-bootstrap exit=$?" >/dev/console; systemctl poweroff
