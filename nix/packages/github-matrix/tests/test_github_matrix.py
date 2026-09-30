@@ -93,7 +93,7 @@ class TestNixOSCheck:
         [
             ("aarch64-darwin", False),
             ("aarch64-linux", True),
-            ("x86_64-linux", False),
+            ("x86_64-linux", True),
         ],
     )
     def test_system(self, system, expected):

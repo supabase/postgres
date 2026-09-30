@@ -132,7 +132,7 @@ def parse_nix_eval_line(
             return Ok(None)
         if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
             "system"
-        ] in ("x86_64-linux", "aarch64-darwin"):
+        ] in ("aarch64-darwin"):
             return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)

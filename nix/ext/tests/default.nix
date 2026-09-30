@@ -163,6 +163,9 @@ let
                   ]
                   ++ (lib.toList ((installedExtension "17").defaultSettings.shared_preload_libraries or [ ]));
                   default_table_access_method = "orioledb";
+                  # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+                  # as an allow-list for logical decoding output plugins.
+                  output_plugin_libraries = "pgoutput, test_decoding, wal2json";
                 }
               );
               initdbArgs = [

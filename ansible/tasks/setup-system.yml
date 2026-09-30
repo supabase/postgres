@@ -109,6 +109,16 @@
         owner: 'root'
         group: 'root'
 
+    - name: Disable kexec handover # Saves ~128 MiB of RAM on a nano.
+      ansible.builtin.copy:
+        content:
+          GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} kho=off"
+        dest: /etc/default/grub.d/51-disable-kho.cfg
+        owner: root
+        group: root
+      notify:
+        - Regenerate grub configuration
+
 - name: Disable algif_aead module autoload for Copy Fail mitigation
   ansible.builtin.copy:
     content: |
@@ -199,6 +209,25 @@
     mode: '0644'
     owner: 'root'
     group: 'root'
+
+- name: configure NTP client
+  when: stage2
+  block:
+    - name: ensure conf directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/timesyncd.conf.d
+        state: directory
+        mode: '0755'
+
+    - name: configure NTP server
+      ansible.builtin.copy:
+        content: |
+          [Time]
+          NTP=169.254.169.123 fd00:ec2::123
+        dest: /etc/systemd/timesyncd.conf.d/10-aws-time-sync.conf
+        mode: '0644'
+        owner: root
+        group: root
 
 - name: Configure Apt
   ansible.builtin.copy:
