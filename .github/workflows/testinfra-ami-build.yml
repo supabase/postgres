@@ -85,6 +85,10 @@ jobs:
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
+      - name: Install AWS CLI
+        if: matrix.target.builder == 'qemu'
+        run: nix profile install --inputs-from . nixpkgs#awscli2
+
       - name: Resolve git sha
         id: resolve-git-sha
         uses: ./.github/actions/resolve-git-sha
