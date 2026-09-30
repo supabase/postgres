@@ -3,7 +3,7 @@ Description=Async commence restore of physical backup
 
 [Service]
 Type=notify
-TimeoutStartSec=30
+TimeoutStartSec=15
 ExecStart=/usr/bin/admin-mgr commence-restore --run-as-service
 Restart=no
 # Don't wipe failed runs, so admin-api can read their exit code.
