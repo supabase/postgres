@@ -206,6 +206,9 @@
             (makeReceipt pgbin ourExts)
           ]
           ++ extraPaths;
+          passthru = {
+            inherit version;
+          };
         };
 
       # Create an attribute set, containing all the relevant packages for a

@@ -123,12 +123,6 @@
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
-          inherit (pkgs.cargo-pgrx)
-            cargo-pgrx_0_11_3
-            cargo-pgrx_0_12_6
-            cargo-pgrx_0_12_9
-            cargo-pgrx_0_14_3
-            ;
         }
         // lib.optionalAttrs pkgs.stdenv.isDarwin {
           setup-darwin-linux-builder = pkgs.callPackage ./setup-darwin-linux-builder.nix {
