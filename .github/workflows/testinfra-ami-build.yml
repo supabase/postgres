@@ -36,7 +36,7 @@ jobs:
           VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
 
-  test-ami-nix:
+  build:
     needs: gen-matrix
     strategy:
       fail-fast: false
@@ -190,7 +190,7 @@ jobs:
           fi
 
   report-disk-usage:
-    needs: test-ami-nix
+    needs: build
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Download AMI disk usage
