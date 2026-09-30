@@ -206,10 +206,10 @@
       become: yes
       import_tasks: tasks/stage2/setup-swappiness.yml
 
-    - name: Setup Swap
+    - name: Setup Swapfile
       when: stage2 and not qemu
       become: yes
-      import_tasks: tasks/stage2/setup-swap.yml
+      import_tasks: tasks/stage2/setup-swapfile.yml
 
   handlers:
     - name: Import handlers
