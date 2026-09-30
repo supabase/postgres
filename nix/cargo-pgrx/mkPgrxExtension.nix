@@ -10,7 +10,7 @@
 let
   inherit ((callPackage ./default.nix { inherit rustVersion; })) mkCargoPgrx;
 
-  # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
+  # TODO: drop the fix-cargo.nix import once nixpkgs is bumped past NixOS/nixpkgs#512735
   rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (
     import ./crate-fetchurl.nix (makeRustPlatform {
       cargo = rust-bin.stable.${rustVersion}.default;
