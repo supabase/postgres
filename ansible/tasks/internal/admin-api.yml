@@ -54,6 +54,20 @@
     owner: adminapi
     state: directory
 
+- name: adminapi - supabase-admin-agent log dir
+  file:
+    path: /var/log/supabase-admin-agent
+    owner: adminapi
+    group: adminapi
+    mode: "0750"
+    state: directory
+
+- name: adminapi - tmpfiles.d rule for /run/supabase-admin-agent
+  copy:
+    content: "d /run/supabase-admin-agent 0750 adminapi adminapi -\n"
+    dest: /etc/tmpfiles.d/supabase-admin-agent.conf
+    mode: "0644"
+
 - name: adminapi - pg_upgrade scripts dir
   file:
     path: /etc/adminapi/pg_upgrade_scripts
