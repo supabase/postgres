@@ -34,7 +34,7 @@
       };
 
       # Set the named nix profile to the provided nix store path.
-      # aws and nix come from the environment.
+      # nix comes from the environment.
       update-profile = pkgs.writeShellApplication {
         name = "update-profile";
         text = ''

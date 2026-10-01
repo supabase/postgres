@@ -204,16 +204,6 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
-      - name: Update site-env catalogs
-        run: |
-          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
-          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-
-          SITE_ENV_NAME="site-env-${POSTGRES_MAJOR_VERSION}"
-          SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
-          aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}" \
-            --content-type "text/plain" <<< "$SITE_ENV_PATH"
-
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
