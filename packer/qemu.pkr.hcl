@@ -102,7 +102,7 @@ build {
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/cleanup-qemu.sh"
+    source      = "packer/scripts/cleanup-qemu.sh"
     destination = "/tmp/cleanup-qemu.sh"
   }
 
@@ -112,7 +112,7 @@ build {
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file    = true
-    script              = "ebssurrogate/scripts/qemu-bootstrap-nix.sh"
+    script              = "packer/scripts/qemu-bootstrap-nix.sh"
     execute_command     = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean          = true
