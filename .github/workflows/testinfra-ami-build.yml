@@ -17,7 +17,6 @@ on:
 permissions:
   contents: write
   id-token: write
-  pull-requests: write
 
 env:
   AWS_REGION: ap-southeast-1
@@ -133,19 +132,23 @@ jobs:
           overwrite: true
           retention-days: 1
 
-      - name: Post manifest diff
+      - name: Diff manifest against develop baseline
         if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           aws s3 cp "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/${{ matrix.target.arch }}/latest.txt" /tmp/baseline.txt || touch /tmp/baseline.txt
-          diff -u /tmp/baseline.txt /tmp/ami-manifest.txt > /tmp/manifest.diff || true
-          {
-            echo "### AMI manifest diff (${{ matrix.postgres_version }}, ${{ matrix.target.arch }})"
-            echo '```diff'
-            cat /tmp/manifest.diff
-            echo '```'
-          } | gh pr comment ${{ github.event.pull_request.number }} --body-file -
+          if diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
+            echo "No manifest changes." > /tmp/manifest-diff.txt
+          else
+            diff -u /tmp/baseline.txt /tmp/ami-manifest.txt > /tmp/manifest-diff.txt || true
+          fi
+
+      - name: Upload manifest diff artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ami-manifest-diff-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          path: /tmp/manifest-diff.txt
+          retention-days: 7
 
       - name: Run tests
         timeout-minutes: 10
@@ -237,3 +240,72 @@ jobs:
           cat ami-disk-usage/ami-disk-usage-*.json |
           sort -V |
           jq -rs '.[]|{version,arch,human,bytes}|"| \(join("|")) |"' >>"$GITHUB_STEP_SUMMARY"
+
+  manifest-diff-comment:
+    if: always() && github.event_name == 'pull_request'
+    needs: build
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download manifest diff artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: ami-manifest-diff-*
+          path: diffs
+          merge-multiple: false
+
+      - name: Assemble collapsed comment body
+        run: |
+          {
+            echo "<!-- ami-manifest-diff -->"
+            echo "## AMI manifest diff"
+            echo "Compares the AMI rootfs manifest between this PR and the develop baseline, per PG version and arch."
+            echo
+            for dir in diffs/ami-manifest-diff-*; do
+              leg="${dir#diffs/ami-manifest-diff-}"
+              file="$dir/manifest-diff.txt"
+              if [ ! -f "$file" ]; then
+                echo "<details>"
+                echo "<summary>${leg}: diff unavailable (job failed or skipped)</summary>"
+                echo "</details>"
+                echo
+                continue
+              fi
+              if [ "$(cat "$file")" = "No manifest changes." ]; then
+                echo "<details>"
+                echo "<summary>${leg}: no changes</summary>"
+                echo "</details>"
+                echo
+                continue
+              fi
+              echo "<details>"
+              echo "<summary>${leg}: changed</summary>"
+              echo
+              echo '```diff'
+              head -c 20000 "$file"
+              if [ "$(wc -c < "$file")" -gt 20000 ]; then
+                echo
+                echo "... truncated, see workflow run for full output ..."
+              fi
+              echo '```'
+              echo "</details>"
+              echo
+            done
+          } > /tmp/comment.md
+
+      - name: Find existing manifest diff comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- ami-manifest-diff -->"
+
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/comment.md
+          edit-mode: replace
