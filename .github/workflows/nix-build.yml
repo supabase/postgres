@@ -405,6 +405,7 @@ jobs:
 
       - name: Assemble collapsed comment body
         run: |
+          shopt -s nullglob
           all_no_diff=true
           for dir in diffs/diff-*; do
             file="$dir/diff.txt"
