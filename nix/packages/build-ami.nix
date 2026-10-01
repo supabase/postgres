@@ -15,13 +15,9 @@ let
     src = lib.fileset.toSource {
       inherit root;
       fileset = lib.fileset.unions [
-        (root + "/ebssurrogate")
         (root + "/ansible")
         (root + "/migrations")
-        (root + "/amazon-amd64-nix.pkr.hcl")
-        (root + "/amazon-arm64-nix.pkr.hcl")
-        (root + "/development-amd64.vars.pkr.hcl")
-        (root + "/development-arm64.vars.pkr.hcl")
+        (root + "/packer")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
     };
@@ -120,8 +116,8 @@ writeShellApplication {
 
       cd ${packerSources}
       packer init "$@"
-      packer build -on-error=$on_error \
-        -var-file="development-$ARCH.vars.pkr.hcl" \
+      packer build -on-error $on_error \
+        -var-file "packer/development-$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
@@ -152,10 +148,10 @@ writeShellApplication {
 
       echo "Found stage 1 AMI: $STAGE1_AMI_ID"
 
-      packer init stage2-nix-psql.pkr.hcl
-      packer build -on-error=$on_error \
-        -var-file="development-$ARCH.vars.pkr.hcl" \
-        -var-file="common-nix.vars.pkr.hcl" \
+      packer init packer/stage2-nix-psql.pkr.hcl
+      packer build -on-error $on_error \
+        -var-file "packer/development-$ARCH.vars.pkr.hcl" \
+        -var-file "common-nix.vars.pkr.hcl" \
         -var "region=$REGION" \
         -var "source_ami=$STAGE1_AMI_ID" \
         "$@"

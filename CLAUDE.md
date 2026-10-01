@@ -37,7 +37,7 @@ extensions not yet ported.
 | `migrations/db/` | SQL migrations and `init-scripts/` (what every new project's schema starts with — default-enabled extensions, roles) |
 | `migrations/tests/extensions/` | pgTAP tests, one per extension, run via `pg_prove` against a Nix-built Postgres as part of `nix flake check` (`nix/checks.nix`) — not against a Docker image |
 | `docker/`, `Dockerfile-*` | Container image definitions (`Dockerfile-supabase` is the version-parameterized base; `Dockerfile-multigres` layers `pgctld` + `pgbackrest` on top) |
-| `ebssurrogate/`, `*.pkr.hcl` | Packer/EBS-surrogate AMI build pipeline |
+| `packer/` | Packer/EBS-surrogate AMI build pipeline (`.pkr.hcl` templates plus `files/`, `scripts/`) |
 | `testinfra/` | pytest suite (`test_ami_nix.py`) that runs against a live AMI/instance |
 | `audit-specs/` | CIS-benchmark-style compliance specs run against built images |
 | `docs/plans/` | Design docs for in-flight features (profiler, pgbackrest, etc.) |

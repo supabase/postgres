@@ -86,7 +86,7 @@ runs:
           -var "ansible_arguments=-e postgresql_major=${{ inputs.postgres_version }}" \
           -var "git-head-version=${{ inputs.git_sha }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
-          amazon-${{ inputs.arch }}-nix.pkr.hcl
+          packer/amazon-${{ inputs.arch }}-nix.pkr.hcl
 
         echo "::endgroup::"
 
@@ -110,6 +110,6 @@ runs:
           -var "instance_type=${{ inputs.instance_type }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
-          stage2-nix-psql.pkr.hcl
+          packer/stage2-nix-psql.pkr.hcl
 
         echo "::endgroup::"

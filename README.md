@@ -74,7 +74,7 @@ Here's a comprehensive overview of the project's directory structure:
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
 | **docs/** | Additional documentation, images, and resources |
-| **ebssurrogate/** | AWS EBS surrogate building for AMI creation |
+| **packer/** | Packer templates and AWS EBS surrogate scripts for AMI creation |
 | **http/** | HTTP-related configurations and files |
 | **rfcs/** | Request for Comments - design documents and proposals |
 | **db/** | Database-related utilities and configurations |

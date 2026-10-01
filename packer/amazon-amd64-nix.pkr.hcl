@@ -184,37 +184,37 @@ build {
   sources = ["source.amazon-ebssurrogate.source"]
 
   provisioner "file" {
-    source      = "ebssurrogate/files/ebsnvme-id"
+    source      = "packer/files/ebsnvme-id"
     destination = "/tmp/ebsnvme-id"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/files/70-ec2-nvme-devices.rules"
+    source      = "packer/files/70-ec2-nvme-devices.rules"
     destination = "/tmp/70-ec2-nvme-devices.rules"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
+    source      = "packer/scripts/chroot-bootstrap-nix.sh"
     destination = "/tmp/chroot-bootstrap-nix.sh"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/cleanup.sh"
+    source      = "packer/scripts/cleanup.sh"
     destination = "/tmp/cleanup.sh"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/files/cloud.cfg"
+    source      = "packer/files/cloud.cfg"
     destination = "/tmp/cloud.cfg"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/files/vector.timer"
+    source      = "packer/files/vector.timer"
     destination = "/tmp/vector.timer"
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/files/apparmor_profiles"
+    source      = "packer/files/apparmor_profiles"
     destination = "/tmp"
   }
 
@@ -240,7 +240,7 @@ build {
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
     ]
     use_env_var_file    = true
-    script              = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
+    script              = "packer/scripts/surrogate-bootstrap-nix.sh"
     execute_command     = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean          = true
