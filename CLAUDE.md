@@ -64,10 +64,10 @@ docker build -f Dockerfile-15 -t supabase-postgres:15 .
 docker build -f Dockerfile-supabase --build-arg PG_VERSION=17 -t supabase-postgres:17 .
 docker build -f Dockerfile-multigres --build-arg SUPABASE_IMAGE=supabase-postgres:17 -t multigres:17 .
 
-# Remote build/cache + AMI build + testinfra (needs aws-vault; see
-# nix/docs/development-workflow.md for the full loop)
+# Remote build/cache; the AMI build + testinfra run in CI only
+# (.github/workflows/testinfra-ami-build.yml). Testing an existing AMI locally
+# needs aws-vault; see nix/docs/development-workflow.md for the full loop.
 nix run .#trigger-nix-build
-aws-vault exec <profile> -- nix run .#build-test-ami 17
 nix run .#run-testinfra -- --aws-vault-profile <profile> --ami-name <ami-name>
 ```
 

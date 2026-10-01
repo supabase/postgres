@@ -93,12 +93,6 @@
               category = "ami";
             }
             {
-              name = "build-test-ami";
-              help = "Build AMI images for PostgreSQL testing";
-              command = "${lib.getExe self'.packages.build-test-ami} $@";
-              category = "ami";
-            }
-            {
               name = "sync-exts-versions";
               help = "Update extensions versions";
               command = "${lib.getExe self'.packages.sync-exts-versions}";
