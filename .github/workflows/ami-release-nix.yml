@@ -106,8 +106,7 @@ jobs:
           region: ${{ env.AWS_REGION }}
 
       - name: Cache AMI manifest
-        if: matrix.target.arch == 'amd64'
-        run: aws s3 cp /tmp/ami-manifest.txt "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/latest.txt"
+        run: aws s3 cp /tmp/ami-manifest.txt "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/${{ matrix.target.arch }}/latest.txt"
 
       - name: Setup post build env vars
         run: |
