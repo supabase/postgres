@@ -12,7 +12,7 @@ if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
 	tmpdir=$(mktemp -d)
 	trap 'cd; rm -rf $tmpdir' EXIT
 
-	function maybesudo { sudo -E env "$@"; }
+	function maybesudo { sudo -EH env "$@"; }
 else
 	# systemd is *not* running so we must install in single-user mode
 	daemon=--no-daemon

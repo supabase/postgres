@@ -134,6 +134,7 @@ postgres_process_init_files() {
 					"$f"
 				else
 					postgres_note "Sourcing $f"
+					# shellcheck source=/dev/null
 					. "$f"
 				fi
 				;;

@@ -1,8 +1,8 @@
-# Creating a New pgrx Extension
+# Creating a new pgrx extension
 
 This guide covers how to set up a new cargo pgrx PostgreSQL extension in this project.
 
-## Template: New pgrx Extension
+## Template: New pgrx extension
 
 ### 1. Directory Structure
 
@@ -122,7 +122,7 @@ Edit `nix/ext/versions.json` and add your extension:
   "my_extension": {
     "0.1.0": {
       "postgresql": ["15", "17"],
-      "hash": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "hash": "",
       "pgrx": "0.12.6",
       "rust": "1.80.0"
     }
@@ -130,11 +130,13 @@ Edit `nix/ext/versions.json` and add your extension:
 }
 ```
 
-**To calculate the hash:** Use a dummy hash first, then run:
+Run the following to calculate content hash:
+
 ```bash
 nix build .#psql_15.exts.my_extension -L
 ```
-The error message will show the correct hash.
+
+The error message will show the correct hash, update the `hash` attribute in versions.json.
 
 ### 4. Register in postgres.nix
 
@@ -149,58 +151,13 @@ ourExtensions = [
 
 ## Files to Modify (Summary)
 
-| File | Change |
-|------|--------|
-| `nix/ext/my_extension/default.nix` | Create new file |
-| `nix/ext/versions.json` | Add version entry |
-| `nix/packages/postgres.nix` | Add to `ourExtensions` list |
-| `nix/tests/sql/my_extension.sql` | (optional) Add test SQL |
+| File                                  | Change                          |
+| ------------------------------------- | ------------------------------- |
+| `nix/ext/my_extension/default.nix`    | Create new file                 |
+| `nix/ext/versions.json`               | Add version entry               |
+| `nix/packages/postgres.nix`           | Add to `ourExtensions` list     |
+| `nix/tests/sql/my_extension.sql`      | (optional) Add test SQL         |
 | `nix/tests/expected/my_extension.out` | (optional) Expected test output |
-
-## Using nix develop for Extension Development
-
-### Available Dev Shells
-
-```bash
-# List all available dev shells
-nix flake show | grep devShells
-
-# Enter pgrx 0.12.6 development environment (Rust 1.80.0)
-nix develop .#cargo-pgrx_0_12_6
-
-# Enter pgrx 0.14.3 development environment (Rust 1.87.0)
-nix develop .#cargo-pgrx_0_14_3
-
-# Default shell (general tooling, not pgrx-specific)
-nix develop
-```
-
-### Inside the Dev Shell
-
-Once inside `nix develop .#cargo-pgrx_0_12_6`:
-
-```bash
-# Initialize pgrx (first time only)
-cargo pgrx init --pg15 $(which pg_config)
-
-# Create a new extension from scratch
-cargo pgrx new my_extension
-cd my_extension
-
-# Build and test your extension
-cargo pgrx run pg15
-
-# Package for release
-cargo pgrx package
-```
-
-### Dev Shell Contents
-
-The pgrx dev shells provide:
-- Correct Rust toolchain version
-- `cargo-pgrx` CLI matching the pgrx version
-- PostgreSQL headers and pg_config
-- Required build tools (pkg-config, openssl, etc.)
 
 ## Build Commands
 
@@ -222,17 +179,17 @@ nix flake check -L
 
 From `nix/cargo-pgrx/versions.json`:
 
-| pgrx Version | Rust Version |
-|--------------|--------------|
-| 0.12.6 | 1.80.0, 1.81.0 |
-| 0.14.3 | 1.87.0 |
+| pgrx Version | Rust Version   |
+| ------------ | -------------- |
+| 0.12.6       | 1.80.0, 1.81.0 |
+| 0.14.3       | 1.87.0         |
 
 Match your extension's pgrx dependency to a supported combination.
 
 ## Existing Examples to Reference
 
-| Extension | Path | Notes |
-|-----------|------|-------|
-| pg_graphql | `nix/ext/pg_graphql/default.nix` | Clean pgrx example |
-| pg_jsonschema | `nix/ext/pg_jsonschema/default.nix` | Simple single-crate |
-| wrappers | `nix/ext/wrappers/default.nix` | Complex with git deps |
+| Extension     | Path                                | Notes                 |
+| ------------- | ----------------------------------- | --------------------- |
+| pg_graphql    | `nix/ext/pg_graphql/default.nix`    | Clean pgrx example    |
+| pg_jsonschema | `nix/ext/pg_jsonschema/default.nix` | Simple single-crate   |
+| wrappers      | `nix/ext/wrappers/default.nix`      | Complex with git deps |

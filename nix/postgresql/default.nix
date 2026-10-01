@@ -8,20 +8,15 @@ let
   mkPostgresqlPackages =
     {
       namePrefix,
-      jitSupport,
       supportedVersions,
       isOrioleDB,
     }:
     pkgs.lib.mapAttrs' (
       version: config:
-      let
-        versionSuffix = if jitSupport then "${version}_jit" else version;
-      in
-      pkgs.lib.nameValuePair "${namePrefix}${versionSuffix}" (
+      pkgs.lib.nameValuePair "${namePrefix}${version}" (
         pkgs.callPackage ./generic.nix {
           inherit isOrioleDB;
           inherit (config) version hash revision;
-          jitSupport = jitSupport;
           self = pkgs;
           portable = false; # Default to non-portable, can be overridden
         }
@@ -42,15 +37,14 @@ let
     }
   ];
 
-  # Generate packages for all flavors with both JIT enabled and disabled
+  # Generate packages for all flavors
   mkAllPackages =
-    flavors: jitSupport:
+    flavors:
     pkgs.lib.foldl' (
       acc: flavor:
       acc
       // (mkPostgresqlPackages {
         inherit (flavor) namePrefix isOrioleDB;
-        inherit jitSupport;
         supportedVersions = flavor.versions;
       })
     ) { } flavors;
@@ -84,7 +78,6 @@ let
     ) { } flavors;
 in
 # Combine all PostgreSQL packages: runtime packages + source packages + debug packages
-(mkAllPackages postgresFlavors false)
-// (mkAllPackages postgresFlavors true)
+(mkAllPackages postgresFlavors)
 // (mkSourcePackages postgresFlavors)
 // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (mkDebugPackages postgresFlavors)

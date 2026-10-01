@@ -92,13 +92,18 @@ build {
   }
 
   provisioner "file" {
+    source      = "audit-specs"
+    destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
     source      = "migrations"
     destination = "/tmp"
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
+    source      = "ebssurrogate/scripts/cleanup-qemu.sh"
+    destination = "/tmp/cleanup-qemu.sh"
   }
 
   provisioner "shell" {

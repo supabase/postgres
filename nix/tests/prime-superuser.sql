@@ -30,7 +30,6 @@
 set client_min_messages = warning;
 
 -- Category 1: "may be unsafe" per supautils.conf.j2
-create extension if not exists amcheck;
 create extension if not exists file_fdw;
 create extension if not exists lo;
 create extension if not exists pageinspect;
