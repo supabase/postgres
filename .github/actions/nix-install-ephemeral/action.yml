@@ -5,6 +5,10 @@ inputs:
     description: AWS region for the Nix binary cache S3 bucket
     required: false
     default: us-east-1
+  installer:
+    description: upstream (default) or determinate
+    required: false
+    default: upstream
   nix-signing-key:
     description: Key used to sign uploads to binary cache, required if push-to-cache is true
     required: false
@@ -49,6 +53,7 @@ runs:
       env:
         AWS_REGION: ${{ inputs.aws-region }}
         GITHUB_TOKEN: ${{ github.token }}
+        INSTALLER: ${{ inputs.installer }}
         NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
         PUSH_TO_CACHE: ${{ steps.resolve-push-to-cache.outputs.value }}
 

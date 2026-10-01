@@ -1,0 +1,31 @@
+{
+  "packages": {
+    "include": [
+      {
+        "attr": "legacyPackages.x86_64-linux.psql_17.exts.pgvector",
+        "name": "pgvector-0.8.0",
+        "system": "x86_64-linux",
+        "runs_on": {
+          "labels": [
+            "blacksmith-8vcpu-ubuntu-2404"
+          ]
+        },
+        "postgresql_version": "17"
+      }
+    ]
+  },
+  "checks": {
+    "include": [
+      {
+        "attr": "",
+        "name": "no checks to build",
+        "system": "x86_64-linux",
+        "runs_on": {
+          "labels": [
+            "ubuntu-latest"
+          ]
+        }
+      }
+    ]
+  }
+}

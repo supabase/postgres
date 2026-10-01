@@ -897,6 +897,7 @@
             cli-smoke-test
             docker-image-inputs
             docker-image-test
+            github-matrix
             goss
             image-size-analyzer
             pg_regress

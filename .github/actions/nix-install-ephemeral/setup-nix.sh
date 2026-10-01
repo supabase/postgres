@@ -31,6 +31,7 @@ cat >"$tmpdir/nix.conf" <<-EOF
 	extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 	extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 	max-jobs = 5
+	stalled-download-timeout = 5
 EOF
 
 if [[ -e /dev/kvm ]]; then
@@ -46,8 +47,16 @@ fi
 
 maybesudo NIXCONFDIR="$nixconfdir" ./setup-github-access.sh >>"$tmpdir/nix.conf"
 
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- $daemon --yes --nix-extra-conf-file "$tmpdir/nix.conf"
-cat "$nixconfdir/nix.conf"
+if [[ ${INSTALLER:-upstream} == determinate ]]; then
+	echo 'extra-experimental-features = parallel-eval' >>"$tmpdir/nix.conf"
+	url=https://install.determinate.systems/nix/tag/v3.22.4
+	args=(install --no-confirm --extra-conf "$tmpdir/nix.conf")
+else
+	url=https://releases.nixos.org/nix/nix-2.34.6/install
+	args=("$daemon" --yes --nix-extra-conf-file "$tmpdir/nix.conf")
+fi
+curl --proto '=https' --tlsv1.2 -sSfL "$url" | sh -s -- "${args[@]}"
+cat "$nixconfdir"/nix*.conf
 
 # Add nix to PATH for subsequent steps
 echo "$path" >>"${GITHUB_PATH:?}"
