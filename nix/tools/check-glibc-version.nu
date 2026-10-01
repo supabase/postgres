@@ -33,6 +33,6 @@ def main [max_version: string, ...paths: path] {
         exit 0
     }
 
-    print $offenders
+    print ($offenders | table --width 200)
     exit 1
 }
