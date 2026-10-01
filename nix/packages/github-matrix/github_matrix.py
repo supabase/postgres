@@ -424,12 +424,10 @@ def main() -> None:
     if errors_list:
         sys.exit(1)
     else:
-        formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
-            "\n", "%0A"
-        )
-        notice(formatted_msg, title="GitHub Actions Matrix")
         set_output("packages_matrix", json.dumps(gh_output["packages"]))
         set_output("checks_matrix", json.dumps(gh_output["checks"]))
+        print("Generated GitHub Actions matrix:")
+        json.dumps(gh_output, indent=2)
 
 
 if __name__ == "__main__":
