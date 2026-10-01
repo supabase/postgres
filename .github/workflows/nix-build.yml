@@ -38,7 +38,10 @@ jobs:
       - name: Generate Nix Matrix
         id: gen-matrix
         run: |
-          nix run .#github-matrix -- checks legacyPackages
+          nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
+          echo eval.json:
+          jq -S . eval.json
+          nix run .#github-matrix -- --eval-input checks legacyPackages <eval.json
 
   builds-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
