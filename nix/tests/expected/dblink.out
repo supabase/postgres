@@ -1,8 +1,8 @@
--- dblink/after-create.sql runs as superuser and revokes execute on
--- dblink_connect_u from everyone except supabase_admin. dblink_connect_u lets
--- the caller connect as any role without a password, so a leftover grant is a
--- path to superuser. The functions are looked up in pg_proc, which must not
--- be shadowable by a temp table.
+-- The following test verifies that creating pg_proc in pg_temp doesn't shadow
+-- the real catalog table tricking the dblink/after-create.sql script to skip
+-- revoking the grants from all roles except supabase_admin, which would have
+-- lead to a privilege escalation attack since dblink_connect_u lets the caller
+-- connect as any role without a password.
 set client_min_messages = warning;
 drop extension if exists dblink cascade;
 set role postgres;
@@ -10,7 +10,6 @@ create temp table pg_proc (oid oid, proname text, proacl aclitem[]);
 create extension dblink;
 drop table pg_temp.pg_proc;
 reset role;
--- only supabase_admin may execute dblink_connect_u
 select p.oid::regprocedure as function_name, acl.grantee::regrole as grantee, acl.privilege_type
 from pg_proc p
 cross join lateral aclexplode(p.proacl) as acl
@@ -30,13 +29,11 @@ select
  f           | f
 (1 row)
 
--- assert search_path is preserved after after-create script is run
 show search_path;
             search_path            
 -----------------------------------
  "$user", public, auth, extensions
 (1 row)
 
--- recreate dblink as it was created by prime.sql
 drop extension dblink;
 create extension dblink;

@@ -55,10 +55,8 @@ ORDER BY
 -- assert search_path is preserved after after-create script is run
 show search_path;
 
--- supabase_vault/after-create.sql runs as superuser and grants postgres and
--- service_role access to vault unless the extension version is 0.2.8. The
--- version is looked up in pg_extension, which must not be shadowable by a
--- temp table.
+-- The following test code verifies that a pg_extension table created in pg_temp
+-- doesn't shadow the real one when supabase_vault/after-create.sql runs as superuser.
 set client_min_messages = warning;
 
 drop extension supabase_vault cascade;
@@ -84,5 +82,4 @@ select
   has_schema_privilege('postgres', 'vault', 'usage') as postgres_usage,
   has_schema_privilege('service_role', 'vault', 'usage') as service_role_usage;
 
--- assert search_path is preserved after after-create script is run
 show search_path;

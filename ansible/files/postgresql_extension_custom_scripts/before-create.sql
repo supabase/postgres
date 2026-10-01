@@ -8,9 +8,6 @@
 -- extension` statement.
 do $$
 declare
-  -- It's important that the declare section doesn't have any initialization code.
-  -- Any initialization should happen in the begin/end block after search_path is
-  -- set to avoid search_path hijacking attacks.
   search_path text;
   _extname text;
   _extschema text;
@@ -18,11 +15,6 @@ declare
   _extcascade bool;
   _r record;
 begin
-  -- Instead of setting search_path to an empty string pg_temp is implicitly added first
-  -- in the list by Postgres. Although having pg_temp first in the list is not always
-  -- exploitable (because it's only used to lookup tables, views etc. and not functions,
-  -- or procedures) it's a defence is depth measure to guard against change in the code
-  -- later which could cause problems.
   search_path := current_setting('search_path');
   perform set_config('search_path', 'pg_catalog, pg_temp', true);
 

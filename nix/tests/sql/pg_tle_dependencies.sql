@@ -1,10 +1,9 @@
 set client_min_messages = warning;
 
--- before-create.sql runs as superuser and pre-creates the privileged
--- dependencies of a TLE created with cascade. It must not pre-create
--- dependencies which are themselves TLEs, because TLE code is controlled by
--- a non-superuser. pljava is in supautils.privileged_extensions but has no
--- control file on disk, so a non-superuser can claim the name as a TLE.
+-- The following test verifies that creating a pg_available_extensions in
+-- pg_temp doesn't trick global before-create.sql into treating the non-TLE
+-- extensions in supautils.privileged_extensions as TLE extensions and allowing
+-- privilege escalation.
 create role tle_privesc_test_role;
 
 set role postgres;
@@ -30,13 +29,13 @@ select
     array['pljava']
   );
 
--- the pljava TLE is created as postgres, so the alter role fails with
--- insufficient_privilege (the error message differs between PG versions)
+-- The pljava TLE is created as postgres, so the alter role fails with
+-- insufficient_privilege. Since the error message differs between PG versions
+-- we set the verbosity so that only error code is printed, which is the same
+-- between versions.
 \set VERBOSITY sqlstate
 create extension tle_privesc_test_dependent cascade;
 
--- shadowing pg_available_extensions with a temp table must not trick
--- before-create.sql into treating the pljava TLE as an on-disk extension
 create temp table pg_available_extensions (name name, default_version text);
 insert into pg_available_extensions values ('pljava', '1.0');
 
@@ -80,7 +79,6 @@ select
 
 create extension tle_transitive_test_root cascade;
 
--- assert search_path is preserved after before-create script is run
 show search_path;
 
 reset role;

@@ -105,10 +105,8 @@ order by
 -- assert search_path is preserved after after-create script is run
 show search_path;
 
--- pgmq/after-create.sql runs as superuser and reassigns ownership of every
--- object depending on the pgmq extension's oid to postgres. The oid is looked
--- up in pg_extension, which must not be shadowable by a temp table. Point the
--- shadow at pg_tle's pg_tle_features type to try to hijack pg_tle's objects.
+-- The following test code verifies that a shadowed temp table can't hijack
+-- pg_tle's objects when pgmq/after-create.sql runs as superuser.
 drop extension pgmq cascade;
 
 create temp table pg_extension (oid oid, extname text, extversion text, extowner oid);
