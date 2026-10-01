@@ -13,7 +13,11 @@
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
-          postBuild = "echo site-env-${version} > $out/site-env-name";
+          postBuild = ''
+            echo site-env-${version} > $out/site-env-name
+            mkdir -p $out/pg-extensions
+            ln -s ../lib/supautils.so $out/pg-extensions/supautils.so
+          '';
         };
 
       siteEnvs = {
@@ -44,31 +48,13 @@
         '';
       };
 
-      # Fetch catalog and update site profile from given postgres repo hash.
-      # aws and nix come from the environment.
-      update-site = pkgs.writeShellApplication {
-        name = "update-site";
-        runtimeInputs = [ update-profile ];
-        text = ''
-          sha="''${1:?Usage: $0 <git-sha>}"
-          system="$(uname -m)-linux"
-          variant="$(cat /nix/var/nix/profiles/site/site-env-name)"
-          catalog="/tmp/''${variant}-catalog-''${sha}-''${system}"
-
-          aws s3 cp "s3://supabase-internal-artifacts/nix-catalog/''${sha}-''${variant}-''${system}" \
-            "$catalog" --region ap-southeast-1
-          path="$(cat "$catalog")"
-
-          update-profile site "$path"
-        '';
-      };
     in
     {
       packages = siteEnvs // {
-        inherit update-profile update-site;
+        inherit update-profile;
       };
       legacyPackages = siteEnvs // {
-        inherit update-profile update-site;
+        inherit update-profile;
       };
     };
 }

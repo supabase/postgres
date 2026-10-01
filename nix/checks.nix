@@ -946,7 +946,7 @@
               site-env-17 = self.packages.${system}."site-env-17";
               psql_17 = self.legacyPackages.${system}."psql_17".bin;
               pgConf = pkgs.writeText "postgresql-test.conf" ''
-                dynamic_library_path = '/nix/var/nix/profiles/site/lib:$libdir'
+                dynamic_library_path = '/nix/var/nix/profiles/site/pg-extensions:$libdir'
                 session_preload_libraries = 'supautils'
                 listen_addresses = 'localhost'
                 unix_socket_directories = '/tmp'
