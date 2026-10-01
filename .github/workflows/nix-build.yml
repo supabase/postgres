@@ -13,6 +13,7 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -233,6 +234,7 @@ jobs:
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+      ARTIFACTS_BUCKET: ${{ secrets.ARTIFACTS_BUCKET }}
 
   schema:
     needs:

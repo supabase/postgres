@@ -10,10 +10,14 @@ on:
       NIX_SIGN_SECRET_KEY:
         description: 'Nix signing secret key'
         required: true
+      ARTIFACTS_BUCKET:
+        description: 'S3 bucket for AMI manifest baselines'
+        required: true
 
 permissions:
   contents: write
   id-token: write
+  pull-requests: write
 
 env:
   AWS_REGION: ap-southeast-1
@@ -128,6 +132,20 @@ jobs:
           path: /tmp/ami-manifest.txt
           overwrite: true
           retention-days: 1
+
+      - name: Post manifest diff
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          aws s3 cp "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/${{ matrix.target.arch }}/latest.txt" /tmp/baseline.txt || touch /tmp/baseline.txt
+          diff -u /tmp/baseline.txt /tmp/ami-manifest.txt > /tmp/manifest.diff || true
+          {
+            echo "### AMI manifest diff (${{ matrix.postgres_version }}, ${{ matrix.target.arch }})"
+            echo '```diff'
+            cat /tmp/manifest.diff
+            echo '```'
+          } | gh pr comment ${{ github.event.pull_request.number }} --body-file -
 
       - name: Run tests
         timeout-minutes: 10
