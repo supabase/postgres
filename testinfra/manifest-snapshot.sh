@@ -3,6 +3,7 @@ set -eu
 
 INSTALLED=0
 if ! command -v bsdtar >/dev/null 2>&1; then
+	DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libarchive-tools >/dev/null
 	INSTALLED=1
 fi
