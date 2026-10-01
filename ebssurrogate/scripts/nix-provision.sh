@@ -61,7 +61,6 @@ function execute_stage2_playbook {
 		--extra-vars "git_commit_sha=$GIT_SHA" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "nix_secret_key=$NIX_SECRET_KEY" \
 		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
 		$ARGS
 }
