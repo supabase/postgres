@@ -236,7 +236,9 @@ function pull_docker {
 function create_fstab {
 	FMT="%-42s %-11s %-5s %-17s %-5s %s"
 	local ROOT_LINE=$(findmnt -no SOURCE /mnt | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/", "ext4", "defaults,discard", "0", "1" ) }')
-	local DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard,nofail,x-systemd.device-timeout=5s", "0", "2" ) }')
+	# fsck pass is 0 (not 2) so systemd never runs an unattended fsck against the data
+	# volume: fsck.mode=force/fsck.repair=yes (see setup_grub_conf) must stay scoped to root.
+	local DATA_LINE=$(findmnt -no SOURCE /mnt/data | xargs blkid -o export | awk -v FMT="${FMT}" '/^UUID=/ { printf(FMT, $0, "/data", "ext4", "defaults,discard,nofail,x-systemd.device-timeout=5s", "0", "0" ) }')
 	local SWAP_LINE=$(printf "$FMT" "/swapfile" "none" "swap" "sw" "0" "0")
 
 	local EFI_LINE=""
