@@ -75,6 +75,17 @@ source "amazon-ebs" "ubuntu" {
 
   ena_support = true
 
+  # The build volume inherits gp3 max provisioning from the stage1 AMI and
+  # CreateImage would carry it into this AMI; pin the shipped AMI to gp3 defaults.
+  ami_block_device_mappings {
+    device_name           = "/dev/xvda"
+    delete_on_termination = true
+    volume_size           = 10
+    volume_type           = "gp3"
+    iops                  = 3000
+    throughput            = 125
+  }
+
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
