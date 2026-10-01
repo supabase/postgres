@@ -142,6 +142,45 @@ func TestYAMLWriter_ChunkedWriting(t *testing.T) {
 	}
 }
 
+func TestYAMLWriter_WritesZeroUserAndGroupIDs(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "identities.yaml")
+
+	writer, err := NewWriter(outputPath)
+	if err != nil {
+		t.Fatalf("NewWriter failed: %v", err)
+	}
+
+	if err := writer.StartResource("user"); err != nil {
+		t.Fatalf("StartResource(user) failed: %v", err)
+	}
+	if err := writer.Add(UserSpec{Username: "root", Exists: true, UID: 0, GID: 0}); err != nil {
+		t.Fatalf("Add(user) failed: %v", err)
+	}
+	if err := writer.StartResource("group"); err != nil {
+		t.Fatalf("StartResource(group) failed: %v", err)
+	}
+	if err := writer.Add(GroupSpec{Name: "root", Exists: true, GID: 0}); err != nil {
+		t.Fatalf("Add(group) failed: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("Close failed: %v", err)
+	}
+
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+
+	content := string(data)
+	if strings.Count(content, "uid: 0") != 1 {
+		t.Errorf("expected one zero UID, got output:\n%s", content)
+	}
+	if strings.Count(content, "gid: 0") != 2 {
+		t.Errorf("expected two zero GIDs, got output:\n%s", content)
+	}
+}
+
 func TestYAMLWriter_JSONFormat(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "test.json")

@@ -145,12 +145,6 @@ file:
     owner: "1006"
     group: "0"
     filetype: file
-  /etc/adminapi/pg_upgrade_scripts/refresh_collation.sh:
-    exists: true
-    mode: "0755"
-    owner: "1006"
-    group: "0"
-    filetype: file
   /etc/alternatives/README:
     exists: true
     mode: "0644"
@@ -95982,7 +95976,7 @@ user:
     uid: 1000
     gid: 1003
     home: /home/pgbouncer
-    shell: /usr/sbin/nolign
+    shell: /usr/sbin/nologin
   polkitd:
     exists: true
     uid: 991

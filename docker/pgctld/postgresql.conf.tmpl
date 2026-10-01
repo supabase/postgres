@@ -83,6 +83,8 @@ max_parallel_maintenance_workers = {{.MaxParallelMaintenanceWorkers}}	# taken fr
 
 wal_level = logical			# minimal, replica, or logical
 					# (change requires restart)
+output_plugin_libraries = 'pgoutput, test_decoding, wal2json'	# allowlist of logical decoding
+					# output plugins (PG 15.19 / 17.11+)
 wal_buffers = {{.WalBuffers}}			# min 32kB, -1 sets based on shared_buffers
 					# (change requires restart)
 min_wal_size = {{.MinWalSize}}
@@ -232,7 +234,6 @@ default_text_search_config = 'pg_catalog.english'
 session_preload_libraries = 'supautils'
 
 shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault'
-session_preload_libraries = 'supautils'
 
 jit_provider = 'llvmjit'		# JIT library to use
 
@@ -274,10 +275,13 @@ restart_after_crash = off		# reinitialize after backend crash?
 # default postgresql.conf.  Note that these are directives, not variable
 # assignments, so they can usefully be given more than once.
 
+# Automatically generated optimizations
 # User-supplied custom parameters, override any automatically generated ones
-include_if_exists '/etc/postgresql-custom/supautils.conf'
 
 # WAL-G specific configurations
+
+# supautils specific configurations
+include = '/etc/postgresql-custom/supautils.conf'
 
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS
