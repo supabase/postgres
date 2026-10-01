@@ -106,6 +106,7 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
+          check-ext-versions = pkgs.callPackage ./check-ext-versions.nix { };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
