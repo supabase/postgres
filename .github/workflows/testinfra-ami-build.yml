@@ -283,8 +283,8 @@ jobs:
               echo "<summary>${leg}: changed</summary>"
               echo
               echo '```diff'
-              head -c 20000 "$file"
-              if [ "$(wc -c < "$file")" -gt 20000 ]; then
+              head -c 6000 "$file"
+              if [ "$(wc -c < "$file")" -gt 6000 ]; then
                 echo
                 echo "... truncated, see workflow run for full output ..."
               fi
