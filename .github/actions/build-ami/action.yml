@@ -5,9 +5,6 @@ inputs:
   ami_name_prefix:
     description: 'Prefix for the AMI name'
     required: true
-  ami_regions:
-    description: 'AMI regions as JSON array (e.g., ["us-east-1"])'
-    required: true
   arch:
     description: Architecture to build AMI for (amd64|arm64)
     required: true
@@ -78,7 +75,6 @@ runs:
 
         nix run .#build-ami -- stage1 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
-          -var 'ami_regions=${{ inputs.ami_regions }}' \
           -var "ansible_arguments=-e postgresql_major=$POSTGRES_MAJOR_VERSION" \
           -var "git-head-version=$GIT_SHA" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
