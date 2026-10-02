@@ -24,7 +24,6 @@ AWS_PROFILE=supabase-dev packer build \
   -var "ansible_arguments=" \
   -var "postgres-version=ci-ami-test" \
   -var "region=ap-southeast-1" \
-  -var 'ami_regions=["ap-southeast-1"]' \
   amazon-arm64.pkr.hcl
 
 # run tests

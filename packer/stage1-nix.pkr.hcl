@@ -8,11 +8,6 @@ variable "ami_name" {
   default = "supabase-postgres"
 }
 
-variable "ami_regions" {
-  type    = list(string)
-  default = ["ap-southeast-1"]
-}
-
 variable "ansible_arguments" {
   type    = string
   default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
@@ -97,7 +92,6 @@ source "amazon-ebssurrogate" "source" {
   ami_name                = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture        = var.instance_arch
-  ami_regions             = var.ami_regions
   instance_type           = var.instance_type
   region                  = var.region
   force_deregister        = var.force-deregister

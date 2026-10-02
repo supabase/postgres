@@ -91,7 +91,6 @@ jobs:
         uses: ./.github/actions/build-ami
         with:
           ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
-          ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
