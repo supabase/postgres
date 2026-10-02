@@ -231,7 +231,6 @@ jobs:
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-      ARTIFACTS_BUCKET: ${{ secrets.ARTIFACTS_BUCKET }}
 
   schema:
     needs:

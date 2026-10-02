@@ -10,9 +10,6 @@ on:
       NIX_SIGN_SECRET_KEY:
         description: 'Nix signing secret key'
         required: true
-      ARTIFACTS_BUCKET:
-        description: 'S3 bucket for AMI manifest baselines'
-        required: true
 
 permissions:
   contents: write
@@ -132,10 +129,23 @@ jobs:
           overwrite: true
           retention-days: 1
 
+      - name: Set aside this build's manifest
+        if: github.event_name == 'pull_request'
+        run: mv /tmp/ami-manifest.txt /tmp/current-manifest.txt
+
+      - name: Restore AMI manifest baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /tmp/ami-manifest.txt
+          key: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.sha }}
+          restore-keys: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-
+
       - name: Diff manifest against develop baseline
         if: github.event_name == 'pull_request'
         run: |
-          aws s3 cp "s3://${{ secrets.ARTIFACTS_BUCKET }}/ami-manifests/${{ matrix.postgres_version }}/${{ matrix.target.arch }}/latest.txt" /tmp/baseline.txt || touch /tmp/baseline.txt
+          mv /tmp/ami-manifest.txt /tmp/baseline.txt 2>/dev/null || touch /tmp/baseline.txt
+          mv /tmp/current-manifest.txt /tmp/ami-manifest.txt
           if diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
             echo "No manifest changes." > /tmp/manifest-diff.txt
           else
