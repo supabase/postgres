@@ -29,6 +29,7 @@
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
     mode: "0440"
+    validate: 'visudo -cf %s'
 
 - name: perms for adminapi
   shell: |
