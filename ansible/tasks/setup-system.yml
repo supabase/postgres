@@ -54,6 +54,7 @@
           - net-tools
           - nftables
           - ngrep
+          - rsync
           - sysstat
           - tzdata
           - vim
