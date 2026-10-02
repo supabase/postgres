@@ -14,6 +14,7 @@ EXTENSIONS_TO_DISABLE=(
 	"pg_stat_monitor"
 	"pg_backtrace"
 	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"plpgsql_check" # old versioned library clashes with the preloaded new one
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
