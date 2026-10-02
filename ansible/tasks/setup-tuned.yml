@@ -107,6 +107,10 @@
           value: '1048576'
         - option: 'fs.file-max'
           value: '312139770'
+        - option: 'fs.suid_dumpable'
+          # PostgreSQL's AppArmor profile triggers a "secure" exec; setting this
+          # to 2 ensures it can still reliably generate core dumps.
+          value: '2'
         - option: 'kernel.panic_on_oops'
           value: '1'
         - option: 'kernel.sched_autogroup_enabled'
