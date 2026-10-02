@@ -1,26 +1,17 @@
 variable "ami_name" {
-  type    = string
-  default = "supabase-postgres"
-}
-
-variable "postgres-version" {
-  type    = string
-  default = ""
+  type = string
 }
 
 variable "git-head-version" {
-  type    = string
-  default = "unknown"
+  type = string
+}
+
+variable "packages_git_sha" {
+  type = string
 }
 
 variable "packer-execution-id" {
-  type    = string
-  default = "unknown"
-}
-
-variable "git_sha" {
-  type    = string
-  default = env("GIT_SHA")
+  type = string
 }
 
 variable "site_env_path" {
@@ -28,8 +19,11 @@ variable "site_env_path" {
 }
 
 variable "postgres_major_version" {
-  type    = string
-  default = ""
+  type = string
+}
+
+variable "postgres-version" {
+  type = string
 }
 
 variable "source_ami" {
@@ -72,7 +66,7 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "${var.ami_name}-${var.postgres-version}"
+  ami_name      = var.ami_name
   instance_type = var.instance_type
   region        = var.region
   source_ami    = var.source_ami
@@ -156,7 +150,7 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "GIT_SHA=${var.git_sha}",
+      "GIT_SHA=${var.packages_git_sha}",
       "SITE_ENV_PATH=${var.site_env_path}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
