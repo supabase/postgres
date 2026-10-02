@@ -87,11 +87,10 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          postgres_version: ${{ matrix.postgres_version }}
+          postgres_major_version: ${{ matrix.postgres_version }}
 
       - name: Save AMI disk usage
         env:
