@@ -81,4 +81,4 @@ Implementation-wise, this step is very similar to the previous one. A matrix job
 
 ### Step 4: Images Build
 
-The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami.nix` script to generate a AMI image based on ubuntu noble. The generation of the image is done in two steps.
+The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami/build-ami.sh` script to generate a AMI image based on ubuntu noble. The generation of the image is done in two steps.
