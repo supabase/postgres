@@ -39,13 +39,10 @@ jobs:
       - name: Generate Nix Matrix
         id: gen-matrix
         run: |
-          set -Eeu -o pipefail
-          nix run --accept-flake-config .\#github-matrix -- checks legacyPackages
-
-          sudo systemctl stop nix-daemon.socket || true
-          sudo systemctl stop nix-daemon.service || true
-          sudo pkill -9 nix-daemon || true
-          sleep 2
+          nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
+          echo eval.json:
+          jq -S . eval.json
+          nix run .#github-matrix -- --eval-input checks legacyPackages <eval.json
 
   builds-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
