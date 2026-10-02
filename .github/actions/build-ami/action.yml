@@ -5,9 +5,6 @@ inputs:
   ami_name_prefix:
     description: 'Prefix for the AMI name'
     required: true
-  ami_regions:
-    description: 'AMI regions as JSON array (e.g., ["us-east-1"])'
-    required: true
   arch:
     description: Architecture to build AMI for (amd64|arm64)
     required: true
