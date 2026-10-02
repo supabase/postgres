@@ -14,11 +14,16 @@ case $ARCH in
 amd64 | arm64) ;;
 *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
 esac
+shift 2
+
+if [[ -z ${AWS_REGION:-} ]]; then
+	echo "AWS_REGION is required but unset" >&2
+	exit 1
+fi
 
 INPUT_HASH=@out@
 INPUT_HASH=${INPUT_HASH#/nix/store/}
 INPUT_HASH=${INPUT_HASH%%-*}
-shift 2
 
 export PACKER_LOG=${PACKER_LOG:-${RUNNER_DEBUG:-0}}
 on_error=ask
@@ -30,76 +35,75 @@ elif ! [[ -t 0 ]]; then
 	on_error=cleanup
 fi
 
-REGION="${AWS_REGION:-ap-southeast-1}"
-
-find_stage1_ami() {
-	set +e
+find_ami() {
 	local arch
 	case $ARCH in
 	amd64) arch=x86_64 ;;
 	arm64) arch=arm64 ;;
 	esac
+
+	postgresVersion=$1
+	shift
+
 	local filters=(
+		"$@"
 		"Name=architecture,Values=$arch"
 		"Name=state,Values=available"
-		"Name=tag:inputHash,Values=$INPUT_HASH"
-		"Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1"
+		"Name=tag:packerExecutionId,Values=$PACKER_EXECUTION_ID"
+		"Name=tag:postgresVersion,Values=$postgresVersion"
 		"Name=tag:sourceSha,Values=$GIT_SHA" # This is set by packer via the git-head-version var which is always passed in by the build-ami action
 	)
 
-	local ami_output
-	ami_output=$(aws ec2 describe-images \
-		--region "$REGION" \
-		--owners self \
-		--filters "${filters[@]}" \
-		--query 'Images[0].ImageId' \
-		--output text 2>&1)
-	local exit_code=$?
-	set -e
+	local ami_output exit_code
+	ami_output=$(aws ec2 describe-images --owners self --filters "${filters[@]}" --query 'Images[0].ImageId' --output text 2>&1) || exit_code=$?
 
-	if [ $exit_code -ne 0 ] && [ $exit_code -ne 255 ]; then
+	if ((exit_code != 0)) && ((exit_code != 255)); then
 		echo "Error querying AWS: $ami_output"
 		exit 1
 	fi
 
-	if [ "$ami_output" = "None" ] || [ -z "$ami_output" ]; then
+	if [[ $ami_output == "None" ]] || [[ -z $ami_output ]]; then
 		echo ""
 	else
 		echo "$ami_output"
 	fi
 }
 
-if [ "$STAGE" = "stage1" ]; then
+show_ami_info() {
+	local stage=$1 id=$2
+	if [[ -z $id ]]; then
+		echo "Error: Stage $stage AMI not found, was there an error?" >&2
+		exit 1
+	fi
+
+	if [[ -n ${GITHUB_OUTPUT:-} ]]; then
+		AMI_NAME=$(aws ec2 describe-images --image-ids "$id" --query 'Images[0].Name' --output text)
+		if [[ -n $AMI_NAME ]]; then
+			echo "::notice title=Stage $stage AMI Built::AMI '$AMI_NAME' (ID: $id) built in region $AWS_REGION"
+		fi
+	fi
+}
+
+if [[ $STAGE == "stage1" ]]; then
 	echo "Building stage 1..."
 
-	cd @packerSources@
+	cd @packerSources@ || exit 1
 	packer init -var-file="packer/$ARCH.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 	packer build -on-error=$on_error \
 		-var-file="packer/$ARCH.vars.pkr.hcl" \
 		-var "input-hash=$INPUT_HASH" \
 		-var "postgres-version=$POSTGRES_VERSION" \
-		-var "region=$REGION" \
+		-var "region=$AWS_REGION" \
 		"$@" packer/stage1-nix.pkr.hcl
 
-	if [ -n "${GITHUB_OUTPUT:-}" ]; then
-		STAGE1_AMI_ID=$(find_stage1_ami)
-		if [ -n "$STAGE1_AMI_ID" ]; then
-			AMI_NAME=$(aws ec2 describe-images \
-				--region "$REGION" \
-				--image-ids "$STAGE1_AMI_ID" \
-				--query 'Images[0].Name' \
-				--output text)
+	STAGE1_AMI_ID=$(find_ami "$POSTGRES_VERSION-stage1" "Name=tag:inputHash,Values=$INPUT_HASH")
+	show_ami_info 1 "$STAGE1_AMI_ID"
 
-			if [ -n "$AMI_NAME" ]; then
-				echo "::notice title=Stage 1 AMI Built::AMI '$AMI_NAME' (ID: $STAGE1_AMI_ID) built in region $REGION"
-			fi
-		fi
-	fi
-elif [ "$STAGE" = "stage2" ]; then
+elif [[ $STAGE == "stage2" ]]; then
 	echo "Building stage 2..."
 
 	STAGE1_AMI_ID=$(find_stage1_ami)
-	if [ -z "$STAGE1_AMI_ID" ]; then
+	if [[ -z $STAGE1_AMI_ID ]]; then
 		echo "Error: Stage 1 AMI not found. Please build stage 1 first."
 		exit 1
 	fi
@@ -109,7 +113,7 @@ elif [ "$STAGE" = "stage2" ]; then
 	packer init -var-file="packer/$ARCH.vars.pkr.hcl" packer/stage2-nix.pkr.hcl
 	packer build -on-error=$on_error \
 		-var-file="packer/$ARCH.vars.pkr.hcl" \
-		-var "region=$REGION" \
+		-var "region=$AWS_REGION" \
 		-var "source_ami=$STAGE1_AMI_ID" \
 		"$@" packer/stage2-nix.pkr.hcl
 
@@ -123,38 +127,12 @@ elif [ "$STAGE" = "stage2" ]; then
 		exit 1
 	fi
 	echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
+
 	if [[ -n ${GITHUB_OUTPUT:-} ]]; then
 		disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
 		echo "disk_usage_json=$disk_usage_json" >>"$GITHUB_OUTPUT"
 	fi
 
-	if [ -n "${PACKER_EXECUTION_ID:-}" ]; then
-		STAGE2_AMI_ID=$(aws ec2 describe-images \
-			--region "$REGION" \
-			--owners self \
-			--filters \
-			"Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" \
-			"Name=tag:postgresVersion,Values=$POSTGRES_VERSION" \
-			"Name=state,Values=available" \
-			--query 'Images[0].ImageId' \
-			--output text)
-
-		if [ -n "$STAGE2_AMI_ID" ] && [ "$STAGE2_AMI_ID" != "None" ]; then
-			echo "STAGE2_AMI_ID=$STAGE2_AMI_ID"
-
-			if [ -n "${GITHUB_OUTPUT:-}" ]; then
-				echo "stage2_ami_id=$STAGE2_AMI_ID" >>"$GITHUB_OUTPUT"
-
-				AMI_NAME=$(aws ec2 describe-images \
-					--region "$REGION" \
-					--image-ids "$STAGE2_AMI_ID" \
-					--query 'Images[0].Name' \
-					--output text)
-
-				if [ -n "$AMI_NAME" ]; then
-					echo "::notice title=Stage 2 AMI Published::AMI '$AMI_NAME' (ID: $STAGE2_AMI_ID) published in region $REGION"
-				fi
-			fi
-		fi
-	fi
+	STAGE2_AMI_ID=$(find_ami "$POSTGRES_VERSION")
+	show_ami_info 2 "$STAGE2_AMI_ID"
 fi
