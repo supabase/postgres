@@ -1,11 +1,5 @@
 variable "ami_name" {
-  type    = string
-  default = "supabase-postgres"
-}
-
-variable "ansible_arguments" {
-  type    = string
-  default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
+  type = string
 }
 
 variable "build-vol" {
@@ -13,35 +7,30 @@ variable "build-vol" {
   default = "xvdc"
 }
 
-variable "postgres_major_version" {
-  type    = string
-  default = env("POSTGRES_MAJOR_VERSION")
-}
-
-variable "postgres-version" {
-  type    = string
-  default = ""
-}
-
-variable "git-head-version" {
-  type    = string
-  default = "unknown"
-}
-
-variable "packer-execution-id" {
-  type    = string
-  default = "unknown"
-}
-
 variable "force-deregister" {
   type    = bool
   default = false
 }
 
+variable "git-head-version" {
+  type = string
+}
+
 variable "input-hash" {
   type        = string
-  default     = ""
   description = "Content hash of all input sources"
+}
+
+variable "packer-execution-id" {
+  type = string
+}
+
+variable "postgres_major_version" {
+  type = string
+}
+
+variable "postgres-version" {
+  type = string
 }
 
 # These come from $arch.vars.pkr.hcl, don't need to pass in explicitly
@@ -85,7 +74,7 @@ packer {
 
 # source block
 source "amazon-ebssurrogate" "source" {
-  ami_name                = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
+  ami_name                = var.ami_name
   ami_virtualization_type = "hvm"
   ami_architecture        = var.instance_arch
   instance_type           = var.instance_type
@@ -237,7 +226,7 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "ARGS=${var.ansible_arguments}",
+      "ARGS=-e postgresql_major=$POSTGRES_MAJOR_VERSION",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
     ]
