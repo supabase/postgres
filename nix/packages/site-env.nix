@@ -9,11 +9,26 @@
       ...
     }:
     let
+      activate = pkgs.writeShellApplication {
+        name = "activate";
+        text = ''
+          echo "Activating site profile."
+        '';
+      };
+
       makeSiteEnv =
         version: extraPaths:
         pkgs.buildEnv {
           name = "site-env-${version}";
-          paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          paths = [
+            self'.legacyPackages."psql_${version}".exts.supautils
+            activate
+          ]
+          ++ extraPaths;
+          postBuild = ''
+            mkdir -p $out/pg-extensions
+            ln -s ../lib/supautils.so $out/pg-extensions/supautils.so
+          '';
         };
 
       siteEnvs = {

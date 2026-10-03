@@ -1,0 +1,70 @@
+name: Publish site-env manifest
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/site-env-manifest.yml
+      - flake.lock
+      - flake.nix
+      - nix/**
+  push:
+    branches:
+      - develop
+      - release/*
+    paths:
+      - .github/workflows/site-env-manifest.yml
+      - flake.lock
+      - flake.nix
+      - nix/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: ./.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
+      - name: Build manifest
+        run: |
+          echo '{}' > site-env-manifest.json
+          for system in aarch64-linux x86_64-linux; do
+            for name in site-env-15 site-env-17 site-env-orioledb-17; do
+              path=$(nix eval --raw ".#legacyPackages.${system}.${name}.outPath")
+              jq --arg k "${system}/${name}" --arg v "$path" '.[$k] = $v' \
+                site-env-manifest.json > tmp.json && mv tmp.json site-env-manifest.json
+            done
+          done
+          cat site-env-manifest.json
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=site-env-manifest-${{ steps.resolve-git-sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish manifest release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ steps.resolve-git-sha.outputs.sha }}
+          prerelease: ${{ steps.tag.outputs.prerelease }}
+          files: site-env-manifest.json

@@ -11,6 +11,7 @@ on:
       - flake.lock
       - flake.nix
       - nix/packages/build-ami.nix
+      - nix/**
   workflow_dispatch:
 
 permissions:
