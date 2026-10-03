@@ -1,0 +1,51 @@
+name: Await buildbot
+description: |
+  Waits for the buildbot-nix `nix-eval` and `nix-build` commit statuses to
+  finish. Returns early if buildbot posts no status within the discovery
+  timeout. Always succeeds, so callers fall back to building what is missing
+  from the cache.
+
+inputs:
+  sha:
+    description: 'Commit sha buildbot builds'
+    required: true
+  discovery-timeout:
+    description: 'Seconds to wait for a first buildbot status'
+    required: false
+    default: '60'
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SHA: ${{ inputs.sha }}
+        DISCOVERY_TIMEOUT: ${{ inputs.discovery-timeout }}
+      run: |
+        state() {
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$SHA/status" \
+            | jq -r '[.[].statuses[] | {key: .context, value: .state}] | from_entries
+                | "\(.["buildbot/nix-eval"] // "")/\(.["buildbot/nix-build"] // "")"'
+        }
+
+        deadline=$((SECONDS + DISCOVERY_TIMEOUT))
+        while :; do
+          s=$(state)
+          echo "nix-eval/nix-build: $s"
+
+          case "$s" in
+            success/success)
+              sleep 5
+              [[ $(state) == success/success ]] && exit 0 ;;
+            failure/* | error/* | */failure | */error)
+              echo "::warning::buildbot failed, the GitHub matrix builds what is missing from the cache"
+              exit 0 ;;
+            /)
+              if (( SECONDS >= deadline )); then
+                echo "::notice::buildbot unavailable, building with the GitHub matrix"
+                exit 0
+              fi ;;
+          esac
+          sleep 30
+        done

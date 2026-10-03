@@ -23,40 +23,14 @@ jobs:
   await-buildbot:
     name: Await buildbot
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    timeout-minutes: 360
+    timeout-minutes: 120
     steps:
-      - name: Wait for buildbot to finish
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          DISCOVERY_TIMEOUT: 60
-        run: |
-          status() {
-            gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/status" \
-              --jq ".statuses[] | select(.context == \"buildbot/$1\") | .state"
-          }
-
-          deadline=$((SECONDS + DISCOVERY_TIMEOUT))
-          while :; do
-            eval_state=$(status nix-eval)
-            build_state=$(status nix-build)
-            echo "nix-eval: ${eval_state:-none}, nix-build: ${build_state:-none}"
-
-            case "$eval_state/$build_state" in
-              success/success)
-                sleep 5
-                [[ $(status nix-build) == success ]] && exit 0 ;;
-              failure/* | error/* | */failure | */error)
-                echo "::warning::buildbot failed, the GitHub matrix builds what is missing from the cache"
-                exit 0 ;;
-              /)
-                if (( SECONDS >= deadline )); then
-                  echo "::notice::buildbot unavailable, building with the GitHub matrix"
-                  exit 0
-                fi ;;
-            esac
-            sleep 30
-          done
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          sparse-checkout: .github/actions/await-buildbot
+      - uses: ./.github/actions/await-buildbot
+        with:
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   eval:
     needs: await-buildbot
