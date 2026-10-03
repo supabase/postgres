@@ -62,28 +62,17 @@
   when: stage2
   become: true
   block:
-    - name: Resolve postgres env store path
+    - name: Resolve postgres env from nix binary cache
       ansible.builtin.shell: |
-        sudo -u postgres bash -c "
-          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
-        "
+        nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
       register: postgres_env_path
 
     - name: Install postgres env from nix binary cache
       ansible.builtin.shell: |
-        sudo -u postgres bash -c "
+        sudo -u postgres bash -c '
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
           nix-env --set {{ postgres_env_path.stdout }}
-        "
-
-    - name: Install supascan for baseline validation
-      ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
-
-    - name: nix collect garbage after supascan install
-      ansible.builtin.shell:
-        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+        '
 
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
