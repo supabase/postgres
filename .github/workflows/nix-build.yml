@@ -29,7 +29,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          DISCOVERY_TIMEOUT: 120
+          DISCOVERY_TIMEOUT: 60
         run: |
           status() {
             gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/status" \
