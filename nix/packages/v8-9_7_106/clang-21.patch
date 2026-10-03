@@ -1,0 +1,412 @@
+# Clang 21 promotes -Wenum-constexpr-conversion to a hard error.
+# V8 9.7's BitField stores the maximum unsigned field value in T, which is invalid when T is a narrow enum.
+# Keep kMax in the unsigned storage type and validate typed values through is_valid instead of comparing them directly with kMax.
+#
+# The removed source-position DCHECKs remain enforced by BitField::update, which calls encode and checks is_valid in debug builds.
+diff --git a/src/base/bit-field.h b/src/base/bit-field.h
+index 7b2796e..3fbfd0d 100644
+--- a/src/base/bit-field.h
++++ b/src/base/bit-field.h
+@@ -40,14 +40,14 @@ class BitField final {
+   static constexpr U kNumValues = U{1} << kSize;
+ 
+   // Value for the field with all bits set.
+-  static constexpr T kMax = static_cast<T>(kNumValues - 1);
++  static constexpr U kMax = kNumValues - 1;
+ 
+   template <class T2, int size2>
+   using Next = BitField<T2, kShift + kSize, size2, U>;
+ 
+   // Tells whether the provided value fits into the bit field.
+   static constexpr bool is_valid(T value) {
+-    return (static_cast<U>(value) & ~static_cast<U>(kMax)) == 0;
++    return (static_cast<U>(value) & ~kMax) == 0;
+   }
+ 
+   // Returns a type U with the bit field value encoded.
+diff --git a/src/objects/feedback-vector.h b/src/objects/feedback-vector.h
+index 0fcb97f..d5fc9c1 100644
+--- a/src/objects/feedback-vector.h
++++ b/src/objects/feedback-vector.h
+@@ -203,10 +203,10 @@ class FeedbackVector
+  public:
+   NEVER_READ_ONLY_SPACE
+   DEFINE_TORQUE_GENERATED_FEEDBACK_VECTOR_FLAGS()
+-  STATIC_ASSERT(OptimizationMarker::kLastOptimizationMarker <
+-                OptimizationMarkerBits::kMax);
+-  STATIC_ASSERT(OptimizationTier::kLastOptimizationTier <
+-                OptimizationTierBits::kMax);
++  STATIC_ASSERT(OptimizationMarkerBits::is_valid(
++      OptimizationMarker::kLastOptimizationMarker));
++  STATIC_ASSERT(OptimizationTierBits::is_valid(
++      OptimizationTier::kLastOptimizationTier));
+ 
+   static const bool kFeedbackVectorMaybeOptimizedCodeIsStoreRelease = true;
+   using TorqueGeneratedFeedbackVector<FeedbackVector,
+diff --git a/src/objects/js-date-time-format.h b/src/objects/js-date-time-format.h
+index 9c5b2f9..e7bed60 100644
+--- a/src/objects/js-date-time-format.h
++++ b/src/objects/js-date-time-format.h
+@@ -105,23 +105,23 @@ class JSDateTimeFormat
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_DATE_TIME_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(HourCycle::kUndefined <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH11 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH12 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH23 <= HourCycleBits::kMax);
+-  STATIC_ASSERT(HourCycle::kH24 <= HourCycleBits::kMax);
++  STATIC_ASSERT(HourCycleBits::is_valid(HourCycle::kUndefined));
++  STATIC_ASSERT(HourCycleBits::is_valid(HourCycle::kH11));
++  STATIC_ASSERT(HourCycleBits::is_valid(HourCycle::kH12));
++  STATIC_ASSERT(HourCycleBits::is_valid(HourCycle::kH23));
++  STATIC_ASSERT(HourCycleBits::is_valid(HourCycle::kH24));
+ 
+-  STATIC_ASSERT(DateTimeStyle::kUndefined <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kFull <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kLong <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kMedium <= DateStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kShort <= DateStyleBits::kMax);
++  STATIC_ASSERT(DateStyleBits::is_valid(DateTimeStyle::kUndefined));
++  STATIC_ASSERT(DateStyleBits::is_valid(DateTimeStyle::kFull));
++  STATIC_ASSERT(DateStyleBits::is_valid(DateTimeStyle::kLong));
++  STATIC_ASSERT(DateStyleBits::is_valid(DateTimeStyle::kMedium));
++  STATIC_ASSERT(DateStyleBits::is_valid(DateTimeStyle::kShort));
+ 
+-  STATIC_ASSERT(DateTimeStyle::kUndefined <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kFull <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kLong <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kMedium <= TimeStyleBits::kMax);
+-  STATIC_ASSERT(DateTimeStyle::kShort <= TimeStyleBits::kMax);
++  STATIC_ASSERT(TimeStyleBits::is_valid(DateTimeStyle::kUndefined));
++  STATIC_ASSERT(TimeStyleBits::is_valid(DateTimeStyle::kFull));
++  STATIC_ASSERT(TimeStyleBits::is_valid(DateTimeStyle::kLong));
++  STATIC_ASSERT(TimeStyleBits::is_valid(DateTimeStyle::kMedium));
++  STATIC_ASSERT(TimeStyleBits::is_valid(DateTimeStyle::kShort));
+ 
+   DECL_ACCESSORS(icu_locale, Managed<icu::Locale>)
+   DECL_ACCESSORS(icu_simple_date_format, Managed<icu::SimpleDateFormat>)
+diff --git a/src/objects/js-display-names-inl.h b/src/objects/js-display-names-inl.h
+index d5c5553..da2605a 100644
+--- a/src/objects/js-display-names-inl.h
++++ b/src/objects/js-display-names-inl.h
+@@ -25,7 +25,7 @@ ACCESSORS(JSDisplayNames, internal, Managed<DisplayNamesInternal>,
+ TQ_OBJECT_CONSTRUCTORS_IMPL(JSDisplayNames)
+ 
+ inline void JSDisplayNames::set_style(Style style) {
+-  DCHECK_GE(StyleBits::kMax, style);
++  DCHECK(StyleBits::is_valid(style));
+   set_flags(StyleBits::update(flags(), style));
+ }
+ 
+@@ -34,7 +34,7 @@ inline JSDisplayNames::Style JSDisplayNames::style() const {
+ }
+ 
+ inline void JSDisplayNames::set_fallback(Fallback fallback) {
+-  DCHECK_GE(FallbackBit::kMax, fallback);
++  DCHECK(FallbackBit::is_valid(fallback));
+   set_flags(FallbackBit::update(flags(), fallback));
+ }
+ 
+@@ -44,7 +44,7 @@ inline JSDisplayNames::Fallback JSDisplayNames::fallback() const {
+ 
+ inline void JSDisplayNames::set_language_display(
+     LanguageDisplay language_display) {
+-  DCHECK_GE(LanguageDisplayBit::kMax, language_display);
++  DCHECK(LanguageDisplayBit::is_valid(language_display));
+   set_flags(LanguageDisplayBit::update(flags(), language_display));
+ }
+ 
+diff --git a/src/objects/js-display-names.h b/src/objects/js-display-names.h
+index 373b826..cd7a8dd 100644
+--- a/src/objects/js-display-names.h
++++ b/src/objects/js-display-names.h
+@@ -79,13 +79,13 @@ class JSDisplayNames
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_DISPLAY_NAMES_FLAGS()
+ 
+-  STATIC_ASSERT(Style::kLong <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::kShort <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::kNarrow <= StyleBits::kMax);
+-  STATIC_ASSERT(Fallback::kCode <= FallbackBit::kMax);
+-  STATIC_ASSERT(Fallback::kNone <= FallbackBit::kMax);
+-  STATIC_ASSERT(LanguageDisplay::kDialect <= LanguageDisplayBit::kMax);
+-  STATIC_ASSERT(LanguageDisplay::kStandard <= LanguageDisplayBit::kMax);
++  STATIC_ASSERT(StyleBits::is_valid(Style::kLong));
++  STATIC_ASSERT(StyleBits::is_valid(Style::kShort));
++  STATIC_ASSERT(StyleBits::is_valid(Style::kNarrow));
++  STATIC_ASSERT(FallbackBit::is_valid(Fallback::kCode));
++  STATIC_ASSERT(FallbackBit::is_valid(Fallback::kNone));
++  STATIC_ASSERT(LanguageDisplayBit::is_valid(LanguageDisplay::kDialect));
++  STATIC_ASSERT(LanguageDisplayBit::is_valid(LanguageDisplay::kStandard));
+ 
+   DECL_ACCESSORS(internal, Managed<DisplayNamesInternal>)
+ 
+diff --git a/src/objects/js-list-format-inl.h b/src/objects/js-list-format-inl.h
+index e7e0384..34d7ee0 100644
+--- a/src/objects/js-list-format-inl.h
++++ b/src/objects/js-list-format-inl.h
+@@ -27,7 +27,7 @@ ACCESSORS(JSListFormat, icu_formatter, Managed<icu::ListFormatter>,
+           kIcuFormatterOffset)
+ 
+ inline void JSListFormat::set_style(Style style) {
+-  DCHECK_GE(StyleBits::kMax, style);
++  DCHECK(StyleBits::is_valid(style));
+   int hints = flags();
+   hints = StyleBits::update(hints, style);
+   set_flags(hints);
+@@ -38,7 +38,7 @@ inline JSListFormat::Style JSListFormat::style() const {
+ }
+ 
+ inline void JSListFormat::set_type(Type type) {
+-  DCHECK_GE(TypeBits::kMax, type);
++  DCHECK(TypeBits::is_valid(type));
+   int hints = flags();
+   hints = TypeBits::update(hints, type);
+   set_flags(hints);
+diff --git a/src/objects/js-list-format.h b/src/objects/js-list-format.h
+index 123f9e4..aeaae7f 100644
+--- a/src/objects/js-list-format.h
++++ b/src/objects/js-list-format.h
+@@ -86,12 +86,12 @@ class JSListFormat
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_LIST_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(Style::LONG <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::SHORT <= StyleBits::kMax);
+-  STATIC_ASSERT(Style::NARROW <= StyleBits::kMax);
+-  STATIC_ASSERT(Type::CONJUNCTION <= TypeBits::kMax);
+-  STATIC_ASSERT(Type::DISJUNCTION <= TypeBits::kMax);
+-  STATIC_ASSERT(Type::UNIT <= TypeBits::kMax);
++  STATIC_ASSERT(StyleBits::is_valid(Style::LONG));
++  STATIC_ASSERT(StyleBits::is_valid(Style::SHORT));
++  STATIC_ASSERT(StyleBits::is_valid(Style::NARROW));
++  STATIC_ASSERT(TypeBits::is_valid(Type::CONJUNCTION));
++  STATIC_ASSERT(TypeBits::is_valid(Type::DISJUNCTION));
++  STATIC_ASSERT(TypeBits::is_valid(Type::UNIT));
+ 
+   DECL_PRINTER(JSListFormat)
+ 
+diff --git a/src/objects/js-plural-rules-inl.h b/src/objects/js-plural-rules-inl.h
+index fb4a97e..f31723f 100644
+--- a/src/objects/js-plural-rules-inl.h
++++ b/src/objects/js-plural-rules-inl.h
+@@ -30,7 +30,7 @@ ACCESSORS(JSPluralRules, icu_number_formatter,
+           kIcuNumberFormatterOffset)
+ 
+ inline void JSPluralRules::set_type(Type type) {
+-  DCHECK_LE(type, TypeBit::kMax);
++  DCHECK(TypeBit::is_valid(type));
+   int hints = flags();
+   hints = TypeBit::update(hints, type);
+   set_flags(hints);
+diff --git a/src/objects/js-plural-rules.h b/src/objects/js-plural-rules.h
+index bd0bfe6..079b9b8 100644
+--- a/src/objects/js-plural-rules.h
++++ b/src/objects/js-plural-rules.h
+@@ -62,8 +62,8 @@ class JSPluralRules
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_PLURAL_RULES_FLAGS()
+ 
+-  STATIC_ASSERT(Type::CARDINAL <= TypeBit::kMax);
+-  STATIC_ASSERT(Type::ORDINAL <= TypeBit::kMax);
++  STATIC_ASSERT(TypeBit::is_valid(Type::CARDINAL));
++  STATIC_ASSERT(TypeBit::is_valid(Type::ORDINAL));
+ 
+   DECL_ACCESSORS(icu_plural_rules, Managed<icu::PluralRules>)
+   DECL_ACCESSORS(icu_number_formatter,
+diff --git a/src/objects/js-relative-time-format-inl.h b/src/objects/js-relative-time-format-inl.h
+index 4afdaa3..5de591d 100644
+--- a/src/objects/js-relative-time-format-inl.h
++++ b/src/objects/js-relative-time-format-inl.h
+@@ -27,7 +27,7 @@ ACCESSORS(JSRelativeTimeFormat, icu_formatter,
+           Managed<icu::RelativeDateTimeFormatter>, kIcuFormatterOffset)
+ 
+ inline void JSRelativeTimeFormat::set_numeric(Numeric numeric) {
+-  DCHECK_GE(NumericBit::kMax, numeric);
++  DCHECK(NumericBit::is_valid(numeric));
+   int hints = flags();
+   hints = NumericBit::update(hints, numeric);
+   set_flags(hints);
+diff --git a/src/objects/js-relative-time-format.h b/src/objects/js-relative-time-format.h
+index 444082c..80ecc05 100644
+--- a/src/objects/js-relative-time-format.h
++++ b/src/objects/js-relative-time-format.h
+@@ -77,8 +77,8 @@ class JSRelativeTimeFormat
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_RELATIVE_TIME_FORMAT_FLAGS()
+ 
+-  STATIC_ASSERT(Numeric::AUTO <= NumericBit::kMax);
+-  STATIC_ASSERT(Numeric::ALWAYS <= NumericBit::kMax);
++  STATIC_ASSERT(NumericBit::is_valid(Numeric::AUTO));
++  STATIC_ASSERT(NumericBit::is_valid(Numeric::ALWAYS));
+ 
+   DECL_PRINTER(JSRelativeTimeFormat)
+ 
+diff --git a/src/objects/js-segment-iterator-inl.h b/src/objects/js-segment-iterator-inl.h
+index 979a1c7..b02c22e 100644
+--- a/src/objects/js-segment-iterator-inl.h
++++ b/src/objects/js-segment-iterator-inl.h
+@@ -29,7 +29,7 @@ ACCESSORS(JSSegmentIterator, unicode_string, Managed<icu::UnicodeString>,
+ 
+ inline void JSSegmentIterator::set_granularity(
+     JSSegmenter::Granularity granularity) {
+-  DCHECK_GE(GranularityBits::kMax, granularity);
++  DCHECK(GranularityBits::is_valid(granularity));
+   int hints = flags();
+   hints = GranularityBits::update(hints, granularity);
+   set_flags(hints);
+diff --git a/src/objects/js-segment-iterator.h b/src/objects/js-segment-iterator.h
+index bcbc22d..665bb6f 100644
+--- a/src/objects/js-segment-iterator.h
++++ b/src/objects/js-segment-iterator.h
+@@ -55,9 +55,9 @@ class JSSegmentIterator
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENT_ITERATOR_FLAGS()
+ 
+-  STATIC_ASSERT(JSSegmenter::Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::GRAPHEME));
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::WORD));
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::SENTENCE));
+ 
+   TQ_OBJECT_CONSTRUCTORS(JSSegmentIterator)
+ };
+diff --git a/src/objects/js-segmenter-inl.h b/src/objects/js-segmenter-inl.h
+index e674426..b7a3f5c 100644
+--- a/src/objects/js-segmenter-inl.h
++++ b/src/objects/js-segmenter-inl.h
+@@ -26,7 +26,7 @@ ACCESSORS(JSSegmenter, icu_break_iterator, Managed<icu::BreakIterator>,
+           kIcuBreakIteratorOffset)
+ 
+ inline void JSSegmenter::set_granularity(Granularity granularity) {
+-  DCHECK_GE(GranularityBits::kMax, granularity);
++  DCHECK(GranularityBits::is_valid(granularity));
+   int hints = flags();
+   hints = GranularityBits::update(hints, granularity);
+   set_flags(hints);
+diff --git a/src/objects/js-segmenter.h b/src/objects/js-segmenter.h
+index 512625d..4e4f29b 100644
+--- a/src/objects/js-segmenter.h
++++ b/src/objects/js-segmenter.h
+@@ -65,9 +65,9 @@ class JSSegmenter : public TorqueGeneratedJSSegmenter<JSSegmenter, JSObject> {
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENTER_FLAGS()
+ 
+-  STATIC_ASSERT(Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(GranularityBits::is_valid(Granularity::GRAPHEME));
++  STATIC_ASSERT(GranularityBits::is_valid(Granularity::WORD));
++  STATIC_ASSERT(GranularityBits::is_valid(Granularity::SENTENCE));
+ 
+   DECL_PRINTER(JSSegmenter)
+ 
+diff --git a/src/objects/js-segments-inl.h b/src/objects/js-segments-inl.h
+index 37fc496..5ca0f94 100644
+--- a/src/objects/js-segments-inl.h
++++ b/src/objects/js-segments-inl.h
+@@ -28,7 +28,7 @@ ACCESSORS(JSSegments, unicode_string, Managed<icu::UnicodeString>,
+           kUnicodeStringOffset)
+ 
+ inline void JSSegments::set_granularity(JSSegmenter::Granularity granularity) {
+-  DCHECK_GE(GranularityBits::kMax, granularity);
++  DCHECK(GranularityBits::is_valid(granularity));
+   int hints = flags();
+   hints = GranularityBits::update(hints, granularity);
+   set_flags(hints);
+diff --git a/src/objects/js-segments.h b/src/objects/js-segments.h
+index 30c387f..bdeda87 100644
+--- a/src/objects/js-segments.h
++++ b/src/objects/js-segments.h
+@@ -59,9 +59,9 @@ class JSSegments : public TorqueGeneratedJSSegments<JSSegments, JSObject> {
+   // Bit positions in |flags|.
+   DEFINE_TORQUE_GENERATED_JS_SEGMENT_ITERATOR_FLAGS()
+ 
+-  STATIC_ASSERT(JSSegmenter::Granularity::GRAPHEME <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::WORD <= GranularityBits::kMax);
+-  STATIC_ASSERT(JSSegmenter::Granularity::SENTENCE <= GranularityBits::kMax);
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::GRAPHEME));
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::WORD));
++  STATIC_ASSERT(GranularityBits::is_valid(JSSegmenter::Granularity::SENTENCE));
+ 
+   TQ_OBJECT_CONSTRUCTORS(JSSegments)
+ };
+diff --git a/src/objects/map.h b/src/objects/map.h
+index 4e19915..5fd4dc9 100644
+--- a/src/objects/map.h
++++ b/src/objects/map.h
+@@ -303,8 +303,8 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
+   static const int kSlackTrackingCounterStart = 7;
+   static const int kSlackTrackingCounterEnd = 1;
+   static const int kNoSlackTracking = 0;
+-  STATIC_ASSERT(kSlackTrackingCounterStart <=
+-                Bits3::ConstructionCounterBits::kMax);
++  STATIC_ASSERT(Bits3::ConstructionCounterBits::is_valid(
++      kSlackTrackingCounterStart));
+ 
+   // Inobject slack tracking is the way to reclaim unused inobject space.
+   //
+diff --git a/src/objects/scope-info.h b/src/objects/scope-info.h
+index 11c06a7..b92fdb3 100644
+--- a/src/objects/scope-info.h
++++ b/src/objects/scope-info.h
+@@ -274,7 +274,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
+   };
+ 
+   STATIC_ASSERT(LanguageModeSize == 1 << LanguageModeBit::kSize);
+-  STATIC_ASSERT(kLastFunctionKind <= FunctionKindBits::kMax);
++  STATIC_ASSERT(FunctionKindBits::is_valid(kLastFunctionKind));
+ 
+   bool IsEmpty() const;
+ 
+diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
+index e701587..ee328eb 100644
+--- a/src/objects/shared-function-info.h
++++ b/src/objects/shared-function-info.h
+@@ -627,12 +627,12 @@ class SharedFunctionInfo
+   class BodyDescriptor;
+ 
+   // Bailout reasons must fit in the DisabledOptimizationReason bitfield.
+-  STATIC_ASSERT(BailoutReason::kLastErrorMessage <=
+-                DisabledOptimizationReasonBits::kMax);
++  STATIC_ASSERT(DisabledOptimizationReasonBits::is_valid(
++      BailoutReason::kLastErrorMessage));
+ 
+-  STATIC_ASSERT(kLastFunctionKind <= FunctionKindBits::kMax);
+-  STATIC_ASSERT(FunctionSyntaxKind::kLastFunctionSyntaxKind <=
+-                FunctionSyntaxKindBits::kMax);
++  STATIC_ASSERT(FunctionKindBits::is_valid(kLastFunctionKind));
++  STATIC_ASSERT(FunctionSyntaxKindBits::is_valid(
++      FunctionSyntaxKind::kLastFunctionSyntaxKind));
+ 
+   // Sets the bytecode in {shared}'s DebugInfo as the bytecode to
+   // be returned by following calls to GetActiveBytecodeArray. Stores a
+diff --git a/src/codegen/source-position.h b/src/codegen/source-position.h
+--- a/src/codegen/source-position.h
++++ b/src/codegen/source-position.h
+@@ -99,23 +99,19 @@ class SourcePosition final {
+   }
+   void SetExternalLine(int line) {
+     DCHECK(IsExternal());
+-    DCHECK(line <= ExternalLineField::kMax - 1);
+     value_ = ExternalLineField::update(value_, line);
+   }
+   void SetExternalFileId(int file_id) {
+     DCHECK(IsExternal());
+-    DCHECK(file_id <= ExternalFileIdField::kMax - 1);
+     value_ = ExternalFileIdField::update(value_, file_id);
+   }
+ 
+   void SetScriptOffset(int script_offset) {
+     DCHECK(IsJavaScript());
+-    DCHECK(script_offset <= ScriptOffsetField::kMax - 2);
+     DCHECK_GE(script_offset, kNoSourcePosition);
+     value_ = ScriptOffsetField::update(value_, script_offset + 1);
+   }
+   void SetInliningId(int inlining_id) {
+-    DCHECK(inlining_id <= InliningIdField::kMax - 2);
+     DCHECK_GE(inlining_id, kNotInlined);
+     value_ = InliningIdField::update(value_, inlining_id + 1);
+   }
