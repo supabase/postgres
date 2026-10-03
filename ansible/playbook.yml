@@ -214,7 +214,6 @@
 
     - name: Tune Swap
       when: stage2
-      become: yes
       import_tasks: tasks/stage2/tune-swap.yml
 
     - name: Setup Swapfile
