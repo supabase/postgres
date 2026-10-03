@@ -13,13 +13,54 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
+  statuses: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  buildbot:
+    name: Wait for buildbot
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    timeout-minutes: 360
+    steps:
+      - name: Wait for buildbot to finish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          DISCOVERY_TIMEOUT: 120
+        run: |
+          status() {
+            gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$SHA/status" \
+              --jq ".statuses[] | select(.context == \"buildbot/$1\") | .state"
+          }
+
+          deadline=$((SECONDS + DISCOVERY_TIMEOUT))
+          while :; do
+            eval_state=$(status nix-eval)
+            build_state=$(status nix-build)
+            echo "nix-eval: ${eval_state:-none}, nix-build: ${build_state:-none}"
+
+            case "$eval_state/$build_state" in
+              success/success)
+                sleep 5
+                [[ $(status nix-build) == success ]] && exit 0 ;;
+              failure/* | error/* | */failure | */error)
+                echo "::warning::buildbot failed, the GitHub matrix builds what is missing from the cache"
+                exit 0 ;;
+              /)
+                if (( SECONDS >= deadline )); then
+                  echo "::notice::buildbot unavailable, building with the GitHub matrix"
+                  exit 0
+                fi ;;
+            esac
+            sleep 30
+          done
+
   eval:
+    needs: buildbot
+    if: ${{ !cancelled() }}
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
       packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
