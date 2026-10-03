@@ -942,7 +942,6 @@
           site =
             let
               system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
-              update-profile = self.packages.${system}.update-profile;
               site-env-17 = self.packages.${system}."site-env-17";
               psql_17 = self.legacyPackages.${system}."psql_17".bin;
               pgConf = pkgs.writeText "postgresql-test.conf" ''
@@ -958,7 +957,6 @@
                 { ... }:
                 {
                   environment.systemPackages = [
-                    update-profile
                     site-env-17
                   ];
                   users.users.postgres = {
@@ -969,11 +967,11 @@
                   users.groups.postgres = { };
                 };
               testScript = ''
-                machine.succeed("update-profile site ${site-env-17}")
+                machine.succeed("nix-store --realise ${site-env-17} && nix-env --profile /nix/var/nix/profiles/site --set ${site-env-17}")
                 machine.succeed("[ \"$(readlink -f /nix/var/nix/profiles/site)\" = \"${site-env-17}\" ]")
 
                 # idempotent
-                machine.succeed("update-profile site ${site-env-17}")
+                machine.succeed("nix-store --realise ${site-env-17} && nix-env --profile /nix/var/nix/profiles/site --set ${site-env-17}")
 
                 # postgres can load supautils via the site profile's dynamic_library_path
                 machine.succeed("install -d -o postgres -g postgres /tmp/pgdata")

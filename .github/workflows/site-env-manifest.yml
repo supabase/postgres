@@ -39,17 +39,14 @@ jobs:
 
       - name: Build manifest
         run: |
-          jq -n '
-            reduce inputs as $in ({}; .[$in.system][$in.name] = $in.path)
-          ' <(
-            for system in aarch64-linux x86_64-linux; do
-              for name in site-env-15 site-env-17 site-env-orioledb-17; do
-                path=$(nix eval --raw ".#legacyPackages.${system}.${name}.outPath")
-                jq -n --arg system "$system" --arg name "$name" --arg path "$path" \
-                  '{system: $system, name: $name, path: $path}'
-              done
+          echo '{}' > site-env-manifest.json
+          for system in aarch64-linux x86_64-linux; do
+            for name in site-env-15 site-env-17 site-env-orioledb-17; do
+              path=$(nix eval --raw ".#legacyPackages.${system}.${name}.outPath")
+              jq --arg k "${system}/${name}" --arg v "$path" '.[$k] = $v' \
+                site-env-manifest.json > tmp.json && mv tmp.json site-env-manifest.json
             done
-          ) > site-env-manifest.json
+          done
           cat site-env-manifest.json
 
       - name: Resolve release tag

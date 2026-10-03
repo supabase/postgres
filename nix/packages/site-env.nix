@@ -1,4 +1,5 @@
 # These are envs (package sets per pg major version) deployed to instances
+# at /nix/var/nix/profiles/site and updated regularly.
 {
   perSystem =
     {
@@ -8,13 +9,23 @@
       ...
     }:
     let
+      activate = pkgs.writeShellApplication {
+        name = "activate";
+        text = ''
+          echo "Activating site profile."
+        '';
+      };
+
       makeSiteEnv =
         version: extraPaths:
         pkgs.buildEnv {
           name = "site-env-${version}";
-          paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          paths = [
+            self'.legacyPackages."psql_${version}".exts.supautils
+            activate
+          ]
+          ++ extraPaths;
           postBuild = ''
-            echo site-env-${version} > $out/site-env-name
             mkdir -p $out/pg-extensions
             ln -s ../lib/supautils.so $out/pg-extensions/supautils.so
           '';
@@ -32,29 +43,9 @@
           lib.optionals pkgs.stdenv.isLinux [ self'.packages.gatekeeper ]
         );
       };
-
-      # Set the named nix profile to the provided nix store path.
-      # nix comes from the environment.
-      update-profile = pkgs.writeShellApplication {
-        name = "update-profile";
-        text = ''
-          profile_name="''${1:?Usage: $0 <profile> <path>}"
-          path="''${2:?Usage: $0 <profile> <path>}"
-          profile_path="/nix/var/nix/profiles/''${profile_name}"
-
-          [[ "$(readlink -f "$profile_path")" == "$path" ]] && exit 0
-          nix-store --realise --option stalled-download-timeout 120 "$path" >/dev/null
-          nix-env --profile "$profile_path" --set "$path"
-        '';
-      };
-
     in
     {
-      packages = siteEnvs // {
-        inherit update-profile;
-      };
-      legacyPackages = siteEnvs // {
-        inherit update-profile;
-      };
+      packages = siteEnvs;
+      legacyPackages = siteEnvs;
     };
 }
