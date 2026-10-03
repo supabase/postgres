@@ -18,8 +18,7 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
-  -- detach and drop both historical drop_queue signatures (1.4.4 only ever
-  -- has (text, boolean); 1.5.0+ has both (text) and (text, boolean))
+  -- detach and drop both historical drop_queue signatures
   begin
     alter extension pgmq drop function pgmq.drop_queue(text);
   exception when others then null;
