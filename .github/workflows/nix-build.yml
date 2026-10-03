@@ -29,8 +29,6 @@ jobs:
         with:
           sparse-checkout: .github/actions/await-buildbot
       - uses: ./.github/actions/await-buildbot
-        with:
-          sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   eval:
     needs: await-buildbot

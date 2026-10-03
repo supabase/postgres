@@ -1,18 +1,8 @@
 name: Await buildbot
 description: |
   Waits for the buildbot-nix `nix-eval` and `nix-build` commit statuses to
-  finish. Returns early if buildbot posts no status within the discovery
-  timeout. Always succeeds, so callers fall back to building what is missing
-  from the cache.
-
-inputs:
-  sha:
-    description: 'Commit sha buildbot builds'
-    required: true
-  discovery-timeout:
-    description: 'Seconds to wait for a first buildbot status'
-    required: false
-    default: '60'
+  finish. Returns early if buildbot posts no status within a minute. Always
+  succeeds, so callers fall back to building what is missing from the cache.
 
 runs:
   using: composite
@@ -20,8 +10,7 @@ runs:
     - shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-        SHA: ${{ inputs.sha }}
-        DISCOVERY_TIMEOUT: ${{ inputs.discovery-timeout }}
+        SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       run: |
         state() {
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$SHA/status" \
@@ -29,7 +18,7 @@ runs:
                 | "\(.["buildbot/nix-eval"] // "")/\(.["buildbot/nix-build"] // "")"'
         }
 
-        deadline=$((SECONDS + DISCOVERY_TIMEOUT))
+        deadline=$((SECONDS + 60))
         while :; do
           s=$(state)
           echo "nix-eval/nix-build: $s"
