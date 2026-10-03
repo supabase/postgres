@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  buildbot:
-    name: Wait for buildbot
+  await-buildbot:
+    name: Await buildbot
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 360
     steps:
@@ -59,7 +59,7 @@ jobs:
           done
 
   eval:
-    needs: buildbot
+    needs: await-buildbot
     if: ${{ !cancelled() }}
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
