@@ -105,6 +105,19 @@ jobs:
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
+      - name: Resolve nix store path
+        id: store-path
+        run: echo "path=$(nix eval --raw ".#psql_${{ matrix.postgres_version }}/bin.outPath")" >> "$GITHUB_OUTPUT"
+
+      - name: Annotate manifest with AMI version
+        run: sed -i "1i # ami-version: ${{ steps.build-ami.outputs.postgres_release_version }}" /tmp/ami-manifest.txt
+
+      - name: Cache AMI manifest
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /tmp/ami-manifest.txt
+          key: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ steps.store-path.outputs.path }}
+
       - name: Setup post build env vars
         run: |
           POSTGRES_SUPABASE_VERSION=${{ steps.build-ami.outputs.postgres_release_version }}
