@@ -299,14 +299,14 @@ def main() -> None:
         help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
     )
     parser.add_argument(
-        "--stdin",
+        "--eval-input",
         action="store_true",
-        help="Read nix-eval-jobs output from stdin instead of executing process",
+        help="Read eval json from stdin instead of running eval process",
     )
     parser.add_argument(
-        "--stdout",
-        action="store_true",
-        help="Send matrix as json to stdout",
+        "--eval-output",
+        type=argparse.FileType("w"),
+        help="Store eval json output to file and exit",
     )
     parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
@@ -314,8 +314,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.stdin:
-        nix_eval_output, warnings_list = sys.stdin.read(), []
+    if args.eval_input:
+        nix_eval_output = sys.stdin.read()
     else:
         cmd = build_nix_eval_command(
             args.nb_eval_jobs_workers,
@@ -323,6 +323,19 @@ def main() -> None:
             args.flake_outputs,
         )
         nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
+        if warnings_list:
+            warning_counts = Counter(warnings_list)
+            for warn_msg, count in warning_counts.items():
+                if count > 1:
+                    warning(
+                        f"{warn_msg} (occurred {count} times)",
+                        title="Nix Evaluation Warning",
+                    )
+                else:
+                    warning(warn_msg, title="Nix Evaluation Warning")
+        if args.eval_output:
+            args.eval_output.write(nix_eval_output)
+            sys.exit(0)
 
     packages, errors_list = process_nix_eval_jobs_stdout(nix_eval_output)
     gh_action_packages = sort_pkgs_by_closures(packages)
@@ -393,17 +406,6 @@ def main() -> None:
         "checks": checks_output,
     }
 
-    if warnings_list:
-        warning_counts = Counter(warnings_list)
-        for warn_msg, count in warning_counts.items():
-            if count > 1:
-                warning(
-                    f"{warn_msg} (occurred {count} times)",
-                    title="Nix Evaluation Warning",
-                )
-            else:
-                warning(warn_msg, title="Nix Evaluation Warning")
-
     if errors_list:
         # Group errors by error message
         errors_by_message: Dict[str, List[str]] = defaultdict(list)
@@ -421,15 +423,11 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
-    elif args.stdout:
-        print(json.dumps(gh_output))
     else:
-        formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
-            "\n", "%0A"
-        )
-        notice(formatted_msg, title="GitHub Actions Matrix")
         set_output("packages_matrix", json.dumps(gh_output["packages"]))
         set_output("checks_matrix", json.dumps(gh_output["checks"]))
+        print("Generated GitHub Actions matrix:")
+        json.dumps(gh_output, indent=2)
 
 
 if __name__ == "__main__":

@@ -65,7 +65,6 @@ jobs:
       - name: Set PostgreSQL version environment variable
         run: |
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
-          echo "EXECUTION_ID=${{ github.run_id }}-${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Install Nix
         uses: ./.github/actions/nix-install-ephemeral
@@ -173,13 +172,3 @@ jobs:
           SLACK_COLOR: 'danger'
           SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
           SLACK_FOOTER: ''
-
-      - name: Cleanup resources after build
-        if: ${{ always() }}
-        run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids
-
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
-        run: |
-          aws ec2 describe-instances --filters "Name=tag:packerExecutionId,Values=${EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --instance-ids

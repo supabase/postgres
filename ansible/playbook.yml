@@ -30,6 +30,13 @@
     - set_fact:
         parallel_jobs: 16
 
+    # is_psql_oriole is also (re)computed in stage2-setup-postgres.yml, but the
+    # coredump-processing import below runs in both stage1 and stage2, so the
+    # fact needs to exist before stage2-only tasks have had a chance to set it.
+    - name: Determine postgres flavor from psql_version
+      ansible.builtin.set_fact:
+        is_psql_oriole: "{{ psql_version is defined and psql_version == 'psql_orioledb-17' }}"
+
     - name: Install tuned
       import_tasks: tasks/setup-tuned.yml
 
@@ -38,6 +45,10 @@
 
     - name: Install Postgres from source
       import_tasks: tasks/setup-postgres.yml
+
+    - name: Install PostgreSQL/OrioleDB coredump capture and processing
+      when: is_psql_oriole
+      import_tasks: tasks/setup-coredump-processing.yml
 
     - name: Install PgBouncer
       import_tasks: tasks/setup-pgbouncer.yml
