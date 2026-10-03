@@ -1,0 +1,16 @@
+#cloud-config
+runcmd:
+  - systemctl start ssh
+  - install -d -m 700 -o ubuntu -g ubuntu /home/ubuntu/.cache
+  - mkdir -p /media/seed
+  - mount -o ro /dev/disk/by-label/cidata /media/seed
+  - cp -r /media/seed/tmp/. /tmp/
+  - umount /media/seed
+  - rmdir /media/seed
+  - - systemd-run
+    - --unit=nix-provision
+    - --setenv=HOME=/root
+    - --property=StandardOutput=journal+console
+    - bash
+    - -c
+    - . /tmp/env && cd /tmp/ansible-playbook && bash /tmp/nix-provision.sh; status=$?; rm /tmp/env /tmp/nix-provision.sh; echo "nix-provision exit=$status" >/dev/console; cloud-init clean --logs; systemctl poweroff
