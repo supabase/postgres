@@ -13,25 +13,24 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
-  statuses: read
+  checks: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  await-buildbot:
-    name: Await buildbot
+  await-nixbot:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          sparse-checkout: .github/actions/await-buildbot
-      - uses: ./.github/actions/await-buildbot
+          sparse-checkout: .github/actions/await-nixbot
+      - uses: ./.github/actions/await-nixbot
 
   eval:
-    needs: await-buildbot
+    needs: await-nixbot
     if: ${{ !cancelled() }}
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
