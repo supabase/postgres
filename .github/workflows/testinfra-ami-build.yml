@@ -149,7 +149,7 @@ jobs:
           if diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
             echo "No manifest changes." > /tmp/manifest-diff.txt
           else
-            diff -u /tmp/baseline.txt /tmp/ami-manifest.txt > /tmp/manifest-diff.txt || true
+            diff -u /tmp/baseline.txt /tmp/ami-manifest.txt | tee /tmp/manifest-diff.txt || true
           fi
 
       - name: Upload manifest diff artifact
