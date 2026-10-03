@@ -169,6 +169,7 @@ $$;
 
 CREATE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $$
 BEGIN
   IF EXISTS (
@@ -214,11 +215,12 @@ COMMENT ON FUNCTION extensions.grant_pg_cron_access() IS 'Grants access to pg_cr
 
 CREATE FUNCTION extensions.grant_pg_graphql_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $_$
 begin
     if not exists (
         select 1
-        from pg_event_trigger_ddl_commands() ev
+        from pg_catalog.pg_event_trigger_ddl_commands() ev
         join pg_catalog.pg_extension e on ev.objid = e.oid
         where e.extname = 'pg_graphql'
     ) then
@@ -268,6 +270,7 @@ COMMENT ON FUNCTION extensions.grant_pg_graphql_access() IS 'Grants access to pg
 
 CREATE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $$
 BEGIN
   IF EXISTS (
@@ -294,7 +297,7 @@ BEGIN
       WHERE extname = 'pg_net'
       -- all versions in use on existing projects as of 2025-02-20
       -- version 0.12.0 onwards don't need these applied
-      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8', '0.10.0', '0.11.0')
+      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8.0', '0.10.0', '0.11.0')
     ) THEN
       ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
       ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
@@ -326,6 +329,7 @@ COMMENT ON FUNCTION extensions.grant_pg_net_access() IS 'Grants access to pg_net
 
 CREATE FUNCTION extensions.pgrst_ddl_watch() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $$
 DECLARE
   cmd record;
@@ -359,6 +363,7 @@ END; $$;
 
 CREATE FUNCTION extensions.pgrst_drop_watch() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $$
 DECLARE
   obj record;
@@ -390,6 +395,7 @@ END; $$;
 
 CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO ''
     AS $_$
     DECLARE
     graphql_is_dropped bool;
