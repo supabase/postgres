@@ -71,6 +71,7 @@ cp ebssurrogate/scripts/{chroot-bootstrap-nix.sh,cleanup.sh,surrogate-bootstrap-
 cp -r ansible "$seed/tmp/ansible-playbook/"
 printf 'export ARGS=%q\nexport POSTGRES_SUPABASE_VERSION=%q\n' \
 	"-e postgresql_major=$postgres_major_version" "$postgres_version" >"$seed/tmp/env"
+find "$seed/tmp" -type f -exec chmod a-w {} +
 
 qemu-img create -q -f qcow2 -b "$cloudimg" -F qcow2 "$workdir/surrogate.qcow2" 10G
 drives=()
