@@ -12,12 +12,19 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ postgresql ];
 
+  separateDebugInfo = true;
+
+  # dlopen'd into postgres, which already links these libs
+  NIX_DONT_SET_RPATH = stdenv.isLinux;
+
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
     hash = "sha256-Wsou5U7/Tuwj2E6aPEmlHg7uz7kGyBOGrb7UkjfEo9U=";
   };
+
+  patches = [ ./patches/supautils-strtol-glibc-compat.patch ];
 
   installPhase = ''
     mkdir -p $out/lib
