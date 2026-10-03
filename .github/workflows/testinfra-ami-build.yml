@@ -144,13 +144,24 @@ jobs:
       - name: Diff manifest against develop baseline
         if: github.event_name == 'pull_request'
         run: |
-          mv /tmp/ami-manifest.txt /tmp/baseline.txt 2>/dev/null || touch /tmp/baseline.txt
-          mv /tmp/current-manifest.txt /tmp/ami-manifest.txt
-          if diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
-            echo "No manifest changes." > /tmp/manifest-diff.txt
+          if [ -s /tmp/ami-manifest.txt ]; then
+            mv /tmp/ami-manifest.txt /tmp/baseline.txt
+            BASELINE_VERSION=$(sed -n 's/^# ami-version: //p' /tmp/baseline.txt | head -1)
           else
-            diff -u /tmp/baseline.txt /tmp/ami-manifest.txt | tee /tmp/manifest-diff.txt || true
+            touch /tmp/baseline.txt
+            BASELINE_VERSION=""
           fi
+          mv /tmp/current-manifest.txt /tmp/ami-manifest.txt
+          {
+            if [ -z "$BASELINE_VERSION" ]; then
+              echo "No baseline cached yet. Publish one by running ami-release-nix.yml (push to develop)."
+            elif diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
+              echo "No changes vs baseline $BASELINE_VERSION."
+            else
+              echo "baseline: $BASELINE_VERSION"
+              diff -u /tmp/baseline.txt /tmp/ami-manifest.txt || true
+            fi
+          } | tee /tmp/manifest-diff.txt
 
       - name: Upload manifest diff artifact
         if: github.event_name == 'pull_request'
@@ -226,7 +237,7 @@ jobs:
           {
             echo "<!-- ami-manifest-diff -->"
             echo "## AMI manifest diff"
-            echo "Compares the AMI rootfs manifest between this PR and the latest AMI as the baseline, per PG version and arch."
+            echo "Compares the AMI rootfs manifest between this PR and the last published AMI, per PG version and arch."
             echo
             for dir in diffs/ami-manifest-diff-*; do
               leg="${dir#diffs/ami-manifest-diff-}"
@@ -238,15 +249,27 @@ jobs:
                 echo
                 continue
               fi
-              if [ "$(cat "$file")" = "No manifest changes." ]; then
+              if grep -q "^No baseline cached yet" "$file"; then
                 echo "<details>"
-                echo "<summary>${leg}: no changes</summary>"
+                echo "<summary>${leg}: no baseline cached yet</summary>"
+                echo
+                echo "$(cat "$file")"
                 echo "</details>"
                 echo
                 continue
               fi
+              if grep -q "^No changes vs baseline" "$file"; then
+                echo "<details>"
+                echo "<summary>${leg}: $(cat "$file")</summary>"
+                echo "</details>"
+                echo
+                continue
+              fi
+              baseline="$(sed -n 's/^baseline: //p' "$file" | head -1)"
+              tail -n +2 "$file" > "$file.body"
+              file="$file.body"
               echo "<details>"
-              echo "<summary>${leg}: changed</summary>"
+              echo "<summary>${leg}: changed (baseline: ${baseline})</summary>"
               echo
               echo '```diff'
               head -c 6000 "$file"
