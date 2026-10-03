@@ -109,7 +109,7 @@ $$ language sql stable;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
 
 -- Supabase super admin
-CREATE USER supabase_auth_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
+CREATE USER supabase_auth_admin NOINHERIT NOCREATEROLE LOGIN NOREPLICATION;
 GRANT ALL PRIVILEGES ON SCHEMA auth TO supabase_auth_admin;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA auth TO supabase_auth_admin;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA auth TO supabase_auth_admin;
