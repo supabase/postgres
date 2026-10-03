@@ -1,7 +1,8 @@
 # In-place minor upgrade from the previous release on the same data directory:
 # flip the postgres profile and the config link, then restart. Config flips with
 # the binary because a newer config can set GUCs the older minor rejects.
-# The upgraded cluster is then compared against a fresh node.
+# Clients going through pgbouncer, when it runs, see no failures: it is paused
+# around the restart. The upgraded cluster is then compared against a fresh node.
 { self, pkgs }:
 let
   testLib = import ./lib.nix { inherit self pkgs; };
@@ -27,6 +28,20 @@ let
       done
     '';
   };
+  pgbouncer = self.packages.${system}.pgbouncer;
+  pgbouncerIni = pkgs.pkgsLinux.writeText "pgbouncer.ini" ''
+    [databases]
+    * = host=127.0.0.1 port=5432
+
+    [pgbouncer]
+    listen_addr = 127.0.0.1
+    listen_port = 6543
+    unix_socket_dir =
+    auth_type = trust
+    auth_file = ${pkgs.pkgsLinux.writeText "userlist.txt" ''"supabase_admin" ""''}
+    admin_users = supabase_admin
+    pool_mode = transaction
+  '';
   configLink = "/var/lib/postgresql/config";
   oldConfig = testLib.processAnsibleConfig {
     majorVersion = "17";
@@ -60,6 +75,13 @@ pkgs.testers.runNixOSTest {
         wants = [ "postgresql.service" ];
       };
       systemd.tmpfiles.rules = [ "L ${configLink} - - - - ${oldConfig}" ];
+      systemd.services.pgbouncer = {
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          User = "postgres";
+          ExecStart = "${pgbouncer}/bin/pgbouncer ${pgbouncerIni}";
+        };
+      };
       virtualisation.additionalPaths = [
         newPkg
         newConfig
@@ -72,6 +94,7 @@ pkgs.testers.runNixOSTest {
     };
   testScript = ''
     import difflib
+    from pathlib import Path
 
     NEW_BIN = "${newPkg}/bin"
     OLD_VERSION = "${oldVersion}"
@@ -90,6 +113,7 @@ pkgs.testers.runNixOSTest {
       "from pg_control_system() s, pg_control_checkpoint() c"
     )
     MAX_RECONNECT_GAP = 5.0
+    PGBOUNCER = "-h 127.0.0.1 -p 6543 -U supabase_admin"
     NEW_MIGRATIONS: list[str] = ${builtins.toJSON newMigrations}
 
     EXTENSION_MEMBERS = (
@@ -129,22 +153,51 @@ pkgs.testers.runNixOSTest {
       assert not failures, f"extension libraries fail to load {when}: {failures}"
       return libraries
 
+    def pgbouncer_admin(command):
+      server.succeed(f"timeout 30 psql {PGBOUNCER} -d pgbouncer -X -c '{command}'")
+
+    def start_bench(name, flags):
+      log = f"/tmp/{name}.log"
+      server.succeed(
+        f"systemd-run --unit={name} -p RemainAfterExit=yes "
+        f"-p StandardOutput=file:{log} -p StandardError=file:{log} -E PGAPPNAME={name} "
+        f"/usr/lib/postgresql/bin/pgbench {PGBOUNCER} -n -S {flags} -R 50 -T 20 bench"
+      )
+
+    def finish_bench(name):
+      rc, _ = server.execute(
+        f"timeout 120 sh -c 'until systemctl show {name} -p SubState --value | grep -qx exited; do sleep 1; done'"
+      )
+      log = server.succeed(f"cat /tmp/{name}.log")
+      assert rc == 0, f"{name} did not finish:\n{log}"
+      status = server.succeed(f"systemctl show {name} -p ExecMainStatus --value").strip()
+      assert status == "0", f"{name} exited with {status}:\n{log}"
+      assert "number of failed transactions: 0 " in log, f"{name} had failures:\n{log}"
+
     def restart(machine):
       machine.succeed("systemctl restart postgresql.service")
       machine.wait_for_unit("postgresql.service")
 
+    # Dumps go through files: large command output from the VM can lose bytes under load.
     def snapshot(machine, db):
-      dump = machine.succeed(
-        f"{NEW_BIN}/pg_dump -U supabase_admin -d {db} --schema-only --restrict-key=MinorUpgrade"
-      )
-      return {
-        "roles": machine.succeed(
-          f"{NEW_BIN}/pg_dumpall -U supabase_admin --roles-only --no-role-passwords --restrict-key=MinorUpgrade"
-        ),
-        "schema": dump,
-        "extension versions": sql(machine, "select extname, extversion from pg_extension order by 1", db),
-        "extension members": sql(machine, EXTENSION_MEMBERS, db),
+      queries = {
+        "extension versions": "select extname, extversion from pg_extension order by 1",
+        "extension members": EXTENSION_MEMBERS,
       }
+      commands = {
+        "roles": f"{NEW_BIN}/pg_dumpall -U supabase_admin --roles-only --no-role-passwords --restrict-key=MinorUpgrade",
+        "schema": f"{NEW_BIN}/pg_dump -U supabase_admin -d {db} --schema-only --restrict-key=MinorUpgrade",
+      }
+      for name, query in queries.items():
+        commands[name] = f"psql -U supabase_admin -d {db} -X -t -A -F, -v ON_ERROR_STOP=1 -c \"{query}\""
+      directory = f"/tmp/snapshot-{db}"
+      machine.succeed(f"rm -rf {directory} && mkdir -p {directory}")
+      for name, command in commands.items():
+        machine.succeed(f"{command} > '{directory}/{name}'")
+      target = f"{machine.name}-{db}"
+      machine.copy_from_vm(directory, target)
+      local = machine.out_dir / target / Path(directory).name
+      return {name: (local / name).read_text() for name in commands}
 
     def diff(name, upgraded, fresh):
       lines = difflib.unified_diff(
@@ -173,16 +226,27 @@ pkgs.testers.runNixOSTest {
     with subtest("Fresh baseline with the same extension set"):
       assert not create_extensions(fresh, available), "fresh node could not create the same extension set"
 
-    with subtest("Flip the postgres profile and config and restart"):
+    with subtest("Flip the postgres profile and config and restart, with pgbouncer paused"):
+      server.wait_for_unit("pgbouncer.service")
+      server.succeed("createdb -U supabase_admin bench")
+      server.succeed("/usr/lib/postgresql/bin/pgbench -U supabase_admin -i -q bench")
+      start_bench("bench-pooled-persistent", "-c 2")
+      start_bench("bench-pooled-reconnect", "-C -c 2")
       server.succeed("systemd-run --unit=conn-probe --property=StandardOutput=file:/tmp/conn-probe.log ${connProbe}/bin/conn-probe")
       server.sleep(2)
       sql(server, "checkpoint")
+      pgbouncer_admin("PAUSE")
       server.succeed("nix-env -p ${profile} --set ${newPkg}")
       server.succeed("ln -sfn ${newConfig} ${configLink}")
       restart(server)
+      pgbouncer_admin("RESUME")
       server.wait_until_succeeds("tail -1 /tmp/conn-probe.log | grep -q ok")
       server.sleep(1)
       server.succeed("systemctl stop conn-probe.service")
+
+    with subtest("Clients going through pgbouncer saw no failures"):
+      finish_bench("bench-pooled-persistent")
+      finish_bench("bench-pooled-reconnect")
 
     with subtest("New connections come back within the restart window"):
       samples = [line.split() for line in server.succeed("cat /tmp/conn-probe.log").splitlines()]
