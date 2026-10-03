@@ -44,15 +44,19 @@
             site-env = self'.packages."site-env-${version}";
           }
         );
-    in
-    {
-      packages = {
+      postgresEnvs = {
         postgres-env-15 = makePostgresEnv "15";
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
+      };
+    in
+    {
+      packages = postgresEnvs // {
         nix-store-paths-15 = makeNixStorePaths "15";
         nix-store-paths-17 = makeNixStorePaths "17";
         nix-store-paths-orioledb-17 = makeNixStorePaths "orioledb-17";
       };
+      # The CI build matrix comes from legacyPackages, so this is what gets cached.
+      legacyPackages = postgresEnvs;
     };
 }
