@@ -138,7 +138,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/ami-manifest.txt
-          key: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.sha }}
+          key: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-
           restore-keys: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-
 
       - name: Diff manifest against develop baseline
@@ -252,6 +252,7 @@ jobs:
           jq -rs '.[]|{version,arch,human,bytes}|"| \(join("|")) |"' >>"$GITHUB_STEP_SUMMARY"
 
   manifest-diff-comment:
+    # always(): post whatever legs succeeded even if some matrix legs failed
     if: always() && github.event_name == 'pull_request'
     needs: build
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -270,7 +271,7 @@ jobs:
           {
             echo "<!-- ami-manifest-diff -->"
             echo "## AMI manifest diff"
-            echo "Compares the AMI rootfs manifest between this PR and the develop baseline, per PG version and arch."
+            echo "Compares the AMI rootfs manifest between this PR and the latest AMI as the baseline, per PG version and arch."
             echo
             for dir in diffs/ami-manifest-diff-*; do
               leg="${dir#diffs/ami-manifest-diff-}"
