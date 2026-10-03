@@ -27,6 +27,8 @@
     # for extensions that require older package versions
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
+    # Previous minor release, for upgrade tests. No follows, so outputs hit the binary cache.
+    postgres-previous-release.url = "github:supabase/postgres/e0ca4193233d226a631d26e4549ca3bae8581ff7";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
