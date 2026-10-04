@@ -1,10 +1,10 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, lib, ... }:
+    { pkgs-pg17, lib, ... }:
     let
       # Minimal glibc locales for slim images - only en_US.UTF-8 (~3MB vs ~200MB)
-      glibcLocalesMinimal = pkgs.glibcLocales.override {
+      glibcLocalesMinimal = pkgs-pg17.glibcLocales.override {
         allLocales = false;
         locales = [ "en_US.UTF-8/UTF-8" ];
       };
@@ -76,7 +76,7 @@
       getPostgresqlPackage =
         version: latestOnly:
         let
-          base = pkgs."postgresql_${version}";
+          base = pkgs-pg17."postgresql_${version}";
         in
         if latestOnly then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
@@ -96,13 +96,13 @@
       # merged with the PostgreSQL installation using 'symlinkJoin'.
       makeReceipt =
         pgbin: ourExts:
-        pkgs.writeTextFile {
+        pkgs-pg17.writeTextFile {
           name = "receipt";
           destination = "/receipt.json";
           text = builtins.toJSON {
             psql-version = pgbin.version;
             nixpkgs = {
-              revision = inputs.nixpkgs.rev;
+              revision = inputs.nixpkgs-pg17.rev;
             };
             extensions = ourExts;
 
@@ -131,8 +131,8 @@
               dbExtensions17
             else
               ourExtensions;
-          extCallPackage = pkgs.lib.callPackageWith (
-            pkgs
+          extCallPackage = pkgs-pg17.lib.callPackageWith (
+            pkgs-pg17
             // {
               inherit postgresql latestOnly;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
@@ -195,11 +195,11 @@
           pgbin = postgresql.withPackages (_ps: postgres-pkgs);
 
           # For slim packages, include minimal glibc locales for initdb locale support
-          extraPaths = lib.optionals (latestOnly && pkgs.stdenv.isLinux) [
+          extraPaths = lib.optionals (latestOnly && pkgs-pg17.stdenv.isLinux) [
             glibcLocalesMinimal
           ];
         in
-        pkgs.symlinkJoin {
+        pkgs-pg17.symlinkJoin {
           inherit (pgbin) name version;
           paths = [
             pgbin

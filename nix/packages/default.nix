@@ -11,6 +11,7 @@
       inputs',
       lib,
       pkgs,
+      pkgs-pg17,
       self',
       ...
     }:
@@ -22,14 +23,14 @@
         let
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
-        pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
+        pkgs-pg17.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       # Function to create the pg_isolation_regress package
       makePgIsolationRegress =
         version:
         let
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
-        pkgs.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
+        pkgs-pg17.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       supascan-pkgs = pkgs.callPackage ./supascan.nix {
         inherit (pkgs) lib;
@@ -64,14 +65,17 @@
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
-          gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
-          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
+          gatekeeper = pkgs-pg17.callPackage ./gatekeeper.nix {
+            inherit inputs;
+            pkgs = pkgs-pg17;
+          };
+          supabase-groonga = pkgs-pg17.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
-          mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
+          mecab-naist-jdic = pkgs-pg17.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
-          overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
+          overlayfs-on-package = pkgs-pg17.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
           pg-backrest = pkgs.callPackage ./pg-backrest.nix { };
@@ -79,7 +83,7 @@
             multigres-src = inputs.multigres;
           };
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
-          pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
+          pg_prove = pkgs-pg17.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
@@ -90,7 +94,7 @@
             psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
             inherit (self.supabase) defaults;
           };
-          psql_17_cli_portable = pkgs.callPackage ./postgres-portable.nix {
+          psql_17_cli_portable = pkgs-pg17.callPackage ./postgres-portable.nix {
             psql_17_cli = self'.legacyPackages.psql_17_cli;
           };
           start-replica = pkgs.callPackage ./start-replica.nix {
@@ -102,7 +106,7 @@
             name = "start-postgres-server";
             pgroonga = self'.legacyPackages."psql_${activeVersion}".exts.pgroonga;
           };
-          switch-ext-version = pkgs.callPackage ./switch-ext-version.nix {
+          switch-ext-version = pkgs-pg17.callPackage ./switch-ext-version.nix {
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
@@ -131,7 +135,7 @@
           verify-darwin-linux-builder = pkgs.callPackage ./verify-darwin-linux-builder.nix { };
         }
         // lib.filterAttrs (n: _v: n != "override" && n != "overrideAttrs" && n != "overrideDerivation") (
-          pkgs.callPackage ../postgresql/default.nix {
+          pkgs-pg17.callPackage ../postgresql/default.nix {
             inherit self';
             inherit (self.supabase) supportedPostgresVersions;
           }
