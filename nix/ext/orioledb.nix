@@ -19,6 +19,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-kmNfneISVhlD9Pmnl69pkiAX77MzpzyJQB/5wQ1wiZc=";
   };
   version = "beta18";
+  NIX_CFLAGS_COMPILE = "-include ${../glibc-compat-shim.h}";
   buildInputs = [
     curl
     libkrb5

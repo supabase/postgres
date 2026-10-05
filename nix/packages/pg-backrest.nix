@@ -8,6 +8,7 @@
 pgbackrest.overrideAttrs (
   finalAttrs: prevAttrs: {
     version = "2.59.1";
+    NIX_CFLAGS_COMPILE = "-include ${../glibc-compat-shim.h}";
 
     src = fetchFromGitHub {
       owner = "pgbackrest";

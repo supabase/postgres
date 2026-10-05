@@ -15,6 +15,7 @@
 stdenv.mkDerivation rec {
   pname = "pgbouncer";
   version = "1.25.1";
+  NIX_CFLAGS_COMPILE = "-include ${./glibc-compat-shim.h}";
 
   src = fetchurl {
     url = "https://www.pgbouncer.org/downloads/files/${version}/${pname}-${version}.tar.gz";
