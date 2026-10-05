@@ -204,6 +204,7 @@
                 "pg_partman"
                 "pg_repack"
                 "pg_tle"
+                "pg_tle_dependencies"
                 "pgtap"
                 "pgmq"
                 "pgroonga"
