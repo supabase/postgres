@@ -70,14 +70,12 @@ pkgs.testers.runNixOSTest {
 
               overloads = drop_queue_overloads()
               print(f"[{version}] drop_queue overloads: {overloads}")
-              assert len(overloads) == 1, (
-                  f"[{version}] expected exactly one drop_queue overload, got: {overloads}"
-              )
-              assert overloads[0][0] == "t", (
-                  f"[{version}] drop_queue is not extension-owned: {overloads}"
-              )
-              assert overloads[0][1] == "queue_name text, partitioned boolean", (
-                  f"[{version}] expected merged text,boolean signature, got: {overloads[0][1]}"
+              assert overloads == [
+                  ["t", "queue_name text"],
+                  ["f", "queue_name text, partitioned boolean"],
+              ], (
+                  f"[{version}] expected one extension-owned drop_queue(text) plus "
+                  f"an unattached drop_queue(text, boolean) compat shim, got: {overloads}"
               )
 
               check_callers(f"q_{version.replace('.', '_')}")

@@ -32,7 +32,7 @@ begin
   drop function if exists pgmq.drop_queue(text, boolean);
 
 -- Create and reattach the patched function
-CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN DEFAULT FALSE)
+CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
 RETURNS BOOLEAN AS $func$
 DECLARE
     qtable TEXT := pgmq.format_table_name(queue_name, 'q');
@@ -40,6 +40,7 @@ DECLARE
     fq_qtable TEXT := 'pgmq.' || qtable;
     atable TEXT := pgmq.format_table_name(queue_name, 'a');
     fq_atable TEXT := 'pgmq.' || atable;
+    partitioned BOOLEAN;
 BEGIN
     EXECUTE FORMAT(
         $QUERY$
@@ -143,7 +144,17 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-  alter extension pgmq add function pgmq.drop_queue(text, boolean);
+  alter extension pgmq add function pgmq.drop_queue(text);
+
+-- compat shim, not reattached: keeps ALTER EXTENSION UPDATE from ever touching it
+CREATE OR REPLACE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN)
+RETURNS BOOLEAN AS $shim$
+BEGIN
+    RETURN pgmq.drop_queue(queue_name);
+END;
+$shim$ LANGUAGE plpgsql;
+
+  alter function pgmq.drop_queue(text, boolean) owner to postgres;
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
