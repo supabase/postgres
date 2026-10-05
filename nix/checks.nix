@@ -928,15 +928,24 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
+              hasBin = _: v: lib.isAttrs v && v ? bin;
+              corePaths = lib.collect lib.isDerivation (
+                lib.mapAttrsToList (_: v: v.bin) (lib.filterAttrs hasBin self'.legacyPackages)
+              );
+              otherPaths = lib.collect lib.isDerivation (
+                (lib.mapAttrs (_: v: if lib.isAttrs v && v ? bin then v.exts else v) self'.legacyPackages)
+                // self'.packages
+              );
             in
             pkgs.runCommand "glibc-version-check"
               {
                 nativeBuildInputs = [ pkgs.binutils ];
-                paths = lib.collect lib.isDerivation (self'.legacyPackages // self'.packages);
+                inherit corePaths otherPaths;
               }
               ''
                 # 2.40: oldest AMI build (17.6.1.072) sharing current collation data.
-                ${lib.getExe checkScript} 2.40 $paths
+                ${lib.getExe checkScript} 2.40 $corePaths
+                ${lib.getExe checkScript} 2.31 $otherPaths
                 touch $out
               '';
         };
