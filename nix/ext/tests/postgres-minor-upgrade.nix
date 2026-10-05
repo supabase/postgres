@@ -1,8 +1,7 @@
-# In-place minor upgrade from the previous release on the same data directory:
-# flip the postgres profile and the config link, then restart. Config flips with
-# the binary because a newer config can set GUCs the older minor rejects.
-# Clients going through pgbouncer, when it runs, see no failures: it is paused
-# around the restart. The upgraded cluster is then compared against a fresh node.
+# In-place minor upgrade from the previous release on the same data directory,
+# run by the pg-minor-upgrade unit. The config link flips with the binary because a newer config
+# can set GUCs the older minor rejects. Clients going through pgbouncer see no
+# failures. The upgraded cluster is then compared against a fresh node.
 { self, pkgs }:
 let
   testLib = import ./lib.nix { inherit self pkgs; };
@@ -28,6 +27,7 @@ let
       done
     '';
   };
+  minorUpgrade = self.packages.${system}.pg-minor-upgrade;
   pgbouncer = self.packages.${system}.pgbouncer;
   pgbouncerIni = pkgs.pkgsLinux.writeText "pgbouncer.ini" ''
     [databases]
@@ -59,7 +59,7 @@ in
 pkgs.testers.runNixOSTest {
   name = "postgres-minor-upgrade";
   nodes.server =
-    { ... }:
+    { config, ... }:
     {
       imports = [
         (testLib.makeSupabaseTestConfig {
@@ -75,6 +75,15 @@ pkgs.testers.runNixOSTest {
         wants = [ "postgresql.service" ];
       };
       systemd.tmpfiles.rules = [ "L ${configLink} - - - - ${oldConfig}" ];
+      systemd.packages = [ minorUpgrade ];
+      systemd.services."pg-minor-upgrade@" = {
+        overrideStrategy = "asDropin";
+        path = [ config.nix.package ];
+        environment = {
+          POSTGRES_CONFIG_DIR = "/var/lib/postgresql/data";
+          PGBOUNCER_ADMIN = "host=127.0.0.1 port=6543 user=supabase_admin dbname=pgbouncer";
+        };
+      };
       systemd.services.pgbouncer = {
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
@@ -82,6 +91,8 @@ pkgs.testers.runNixOSTest {
           ExecStart = "${pgbouncer}/bin/pgbouncer ${pgbouncerIni}";
         };
       };
+      # minor.sh requires 2 GiB free on /.
+      virtualisation.diskSize = 4096;
       virtualisation.additionalPaths = [
         newPkg
         newConfig
@@ -153,8 +164,8 @@ pkgs.testers.runNixOSTest {
       assert not failures, f"extension libraries fail to load {when}: {failures}"
       return libraries
 
-    def pgbouncer_admin(command):
-      server.succeed(f"timeout 30 psql {PGBOUNCER} -d pgbouncer -X -c '{command}'")
+    def minor_upgrade_unit(target):
+      return server.succeed(f"systemd-escape --template pg-minor-upgrade@.service --path {target}").strip()
 
     def start_bench(name, flags):
       log = f"/tmp/{name}.log"
@@ -173,10 +184,6 @@ pkgs.testers.runNixOSTest {
       status = server.succeed(f"systemctl show {name} -p ExecMainStatus --value").strip()
       assert status == "0", f"{name} exited with {status}:\n{log}"
       assert "number of failed transactions: 0 " in log, f"{name} had failures:\n{log}"
-
-    def restart(machine):
-      machine.succeed("systemctl restart postgresql.service")
-      machine.wait_for_unit("postgresql.service")
 
     # Dumps go through files: large command output from the VM can lose bytes under load.
     def snapshot(machine, db):
@@ -226,7 +233,7 @@ pkgs.testers.runNixOSTest {
     with subtest("Fresh baseline with the same extension set"):
       assert not create_extensions(fresh, available), "fresh node could not create the same extension set"
 
-    with subtest("Flip the postgres profile and config and restart, with pgbouncer paused"):
+    with subtest("Flip the config and run the upgrade unit, with pgbouncer paused"):
       server.wait_for_unit("pgbouncer.service")
       server.succeed("createdb -U supabase_admin bench")
       server.succeed("/usr/lib/postgresql/bin/pgbench -U supabase_admin -i -q bench")
@@ -234,12 +241,8 @@ pkgs.testers.runNixOSTest {
       start_bench("bench-pooled-reconnect", "-C -c 2")
       server.succeed("systemd-run --unit=conn-probe --property=StandardOutput=file:/tmp/conn-probe.log ${connProbe}/bin/conn-probe")
       server.sleep(2)
-      sql(server, "checkpoint")
-      pgbouncer_admin("PAUSE")
-      server.succeed("nix-env -p ${profile} --set ${newPkg}")
       server.succeed("ln -sfn ${newConfig} ${configLink}")
-      restart(server)
-      pgbouncer_admin("RESUME")
+      server.succeed(f"systemctl start '{minor_upgrade_unit("${newPkg}")}'")
       server.wait_until_succeeds("tail -1 /tmp/conn-probe.log | grep -q ok")
       server.sleep(1)
       server.succeed("systemctl stop conn-probe.service")
@@ -301,10 +304,18 @@ pkgs.testers.runNixOSTest {
           diffs += diff(f"{db} {name}", upgraded[name], baseline[name])
       assert not diffs, "upgraded cluster differs from a fresh one:\n" + "\n\n".join(diffs)
 
+    with subtest("The upgrade unit refuses a binary that rejects the deployed config"):
+      server.fail(f"systemctl start '{minor_upgrade_unit("${oldPkg}")}'")
+      assert sql(server, "show server_version") == NEW_VERSION, "server left the new minor"
+      assert server.succeed("readlink -f ${profile}").strip() == "${newPkg}", "profile changed"
+
     with subtest("Roll back to the old minor on data the new one touched"):
-      server.succeed("nix-env -p ${profile} --rollback")
       server.succeed("ln -sfn ${oldConfig} ${configLink}")
-      restart(server)
+      server.succeed(
+        "sed 's|@dataDir@|/var/lib/postgresql/data|g' ${oldConfig}/postgresql.conf "
+        "> /var/lib/postgresql/data/postgresql.conf"
+      )
+      server.succeed(f"systemctl start '{minor_upgrade_unit("${oldPkg}")}'")
       version = sql(server, "show server_version")
       assert version == OLD_VERSION, f"expected {OLD_VERSION} after rollback, got: {version}"
       assert sql(server, IDENTITY) == identity, "system identifier or timeline changed"
