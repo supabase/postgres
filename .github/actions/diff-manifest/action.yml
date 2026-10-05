@@ -36,22 +36,4 @@ runs:
         MANIFEST_PATH: ${{ inputs.manifest_path }}
         DIFF_PATH: ${{ inputs.diff_path }}
         PUBLISH_HINT: ${{ inputs.publish_hint }}
-      run: |
-        if [ -s "$MANIFEST_PATH" ]; then
-          mv "$MANIFEST_PATH" /tmp/baseline.txt
-          BASELINE_VERSION=$(sed -n 's/^# version: //p' /tmp/baseline.txt | head -1)
-        else
-          touch /tmp/baseline.txt
-          BASELINE_VERSION=""
-        fi
-        mv /tmp/current-manifest.txt "$MANIFEST_PATH"
-        {
-          if [ -z "$BASELINE_VERSION" ]; then
-            echo "No baseline cached yet. $PUBLISH_HINT"
-          elif diff -q /tmp/baseline.txt "$MANIFEST_PATH" > /dev/null; then
-            echo "No changes vs baseline $BASELINE_VERSION."
-          else
-            echo "baseline: $BASELINE_VERSION"
-            diff -u /tmp/baseline.txt "$MANIFEST_PATH" || true
-          fi
-        } | tee "$DIFF_PATH"
+      run: nix run .#manifest-diff -- "$MANIFEST_PATH" /tmp/current-manifest.txt "$PUBLISH_HINT" "$DIFF_PATH"
