@@ -22,7 +22,7 @@ concurrency:
 jobs:
   await-nixbot:
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    timeout-minutes: 120
+    timeout-minutes: 60
     outputs:
       built: ${{ steps.await.outputs.built }}
     steps:
