@@ -150,6 +150,11 @@ let
   finalArgs = argsForBuildRustPackage // {
     buildInputs = (args.buildInputs or [ ]);
 
+    # pgrx release builds carry a large .symtab that the default stdenv
+    # fixup (stripDebugList, debug-symbols-only) doesn't touch. Force a full
+    # strip of the extension .so to drop it.
+    stripAllList = args.stripAllList or [ "lib" ];
+
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
       ++ [

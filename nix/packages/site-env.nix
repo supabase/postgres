@@ -16,12 +16,15 @@
         '';
       };
 
+      # supautils is no longer part of psql_${version}'s own extension set (it's
+      # deployed exclusively through the site profile, not the base postgres
+      # closure), so it's built directly here instead of via psql_${version}.exts.
       makeSiteEnv =
         version: extraPaths:
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [
-            self'.legacyPackages."psql_${version}".exts.supautils
+            (pkgs.callPackage ../ext/supautils.nix { postgresql = pkgs."postgresql_${version}"; })
             activate
           ]
           ++ extraPaths;
