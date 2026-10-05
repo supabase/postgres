@@ -153,6 +153,21 @@ jobs:
           cache-from: type=gha,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-latest-${{ matrix.arch }}
           file: ${{ matrix.postgres.dockerfile }}
+
+      - name: Snapshot Docker image manifest
+        if: matrix.arch == 'arm64'
+        run: |
+          docker pull "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}"
+          docker run --rm -v "$PWD/testinfra/manifest-snapshot.sh:/manifest-snapshot.sh:ro" \
+            "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}" sh /manifest-snapshot.sh > /tmp/docker-manifest.txt
+
+      - name: Cache Docker image manifest
+        if: matrix.arch == 'arm64'
+        uses: ./.github/actions/cache-manifest
+        with:
+          key_prefix: docker-manifest-${{ matrix.postgres.version }}
+          version_label: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
+          manifest_path: /tmp/docker-manifest.txt
   merge_manifest:
     needs: [prepare, build, build_release_image]
     strategy:
