@@ -14,4 +14,4 @@ writers.writeNuBin "check-ext-versions" {
       nix
     ])
   ];
-} (builtins.readFile ../tools/check-ext-versions.nu)
+} (builtins.readFile ./check-ext-versions.nu)
