@@ -68,7 +68,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
@@ -76,7 +75,6 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
@@ -95,7 +93,6 @@ jobs:
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
 
       - name: Setup post build env vars
         run: |
@@ -131,7 +128,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload nix flake revision to s3 staging
         run: |
@@ -143,7 +139,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload nix flake revision to s3 prod
         run: |
@@ -154,14 +149,12 @@ jobs:
       - name: GitHub OIDC Auth
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
-          aws-region: ap-southeast-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
           role-session-name: shared-services-jump
 
       - name: Assume destination role
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
-          aws-region: ap-southeast-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-nix-catalog-artifacts-role-6387512
           role-skip-session-tagging: true
           role-session-name: upload-assets
@@ -250,7 +243,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()

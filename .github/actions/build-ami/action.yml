@@ -17,9 +17,6 @@ inputs:
   postgres_version:
     description: 'PostgreSQL major version (e.g., 15)'
     required: true
-  region:
-    description: 'AWS region'
-    required: true
 
 outputs:
   stage2_ami_id:
@@ -69,7 +66,6 @@ runs:
       env:
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
-        AWS_REGION: ${{ inputs.region }}
       run: |
         echo "::group::AMI Build: Stage 1"
 
@@ -90,7 +86,6 @@ runs:
       env:
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
-        AWS_REGION: ${{ inputs.region }}
       run: |
         echo "::group::AMI Build: Stage 2"
 
