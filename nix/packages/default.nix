@@ -3,6 +3,7 @@
   imports = [
     ./extension-catalog.nix
     ./images.nix
+    ./pg-minor-upgrade.nix
     ./postgres-env.nix
     ./postgres.nix
     ./site-env.nix

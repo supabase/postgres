@@ -65,7 +65,7 @@ if [ "${target_version%%.*}" != "${running_version%%.*}" ]; then
 	exit 1
 fi
 
-su -s /bin/sh postgres -c "$TARGET/bin/postgres -C server_version -D $CONFIG_DIR" >/dev/null
+setpriv --reuid=postgres --regid=postgres --init-groups "$TARGET/bin/postgres" -C server_version -D "$CONFIG_DIR" >/dev/null
 identity=$(run_sql -tAXc "select system_identifier from pg_control_system()")
 
 if [ -n "$PGBOUNCER_ADMIN" ] && systemctl is-active --quiet pgbouncer; then
