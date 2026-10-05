@@ -928,11 +928,7 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
-              # Postgres core and every extension are built in the same nix closure as whatever
-              # runs them, so they always share one glibc — no floor needed there. The exception
-              # is anything loaded outside that closure, and so reachable from an older host:
-              # supautils via session_preload_libraries into an already-running legacy postgres,
-              # and gatekeeper via the host's system PAM stack.
+              # supautils/gatekeeper load outside this build's own nix closure, so they alone can reach older hosts.
               legacyNames = [
                 "supautils"
                 "gatekeeper"
