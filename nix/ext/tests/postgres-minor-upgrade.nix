@@ -233,7 +233,7 @@ pkgs.testers.runNixOSTest {
     with subtest("Fresh baseline with the same extension set"):
       assert not create_extensions(fresh, available), "fresh node could not create the same extension set"
 
-    with subtest("Flip the config and run minor.sh, with pgbouncer paused"):
+    with subtest("Flip the config and run the upgrade unit, with pgbouncer paused"):
       server.wait_for_unit("pgbouncer.service")
       server.succeed("createdb -U supabase_admin bench")
       server.succeed("/usr/lib/postgresql/bin/pgbench -U supabase_admin -i -q bench")
@@ -304,7 +304,7 @@ pkgs.testers.runNixOSTest {
           diffs += diff(f"{db} {name}", upgraded[name], baseline[name])
       assert not diffs, "upgraded cluster differs from a fresh one:\n" + "\n\n".join(diffs)
 
-    with subtest("minor.sh refuses a binary that rejects the deployed config"):
+    with subtest("The upgrade unit refuses a binary that rejects the deployed config"):
       server.fail(f"systemctl start '{minor_upgrade_unit("${oldPkg}")}'")
       assert sql(server, "show server_version") == NEW_VERSION, "server left the new minor"
       assert server.succeed("readlink -f ${profile}").strip() == "${newPkg}", "profile changed"
