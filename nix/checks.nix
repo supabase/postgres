@@ -929,12 +929,20 @@
                 builtins.readFile ./tools/check-glibc-version.nu
               );
               hasBin = _: v: lib.isAttrs v && v ? bin;
+              # These just repackage an already core-targeted postgres build, not an independent compile.
+              coreNames = [
+                "pg_regress"
+                "pg_isolation_regress"
+                "psql_17_cli_portable"
+              ];
+              isCore = n: _: lib.hasPrefix "postgresql_" n || builtins.elem n coreNames;
               corePaths = lib.collect lib.isDerivation (
-                lib.mapAttrsToList (_: v: v.bin) (lib.filterAttrs hasBin self'.legacyPackages)
+                (lib.mapAttrsToList (_: v: v.bin) (lib.filterAttrs hasBin self'.legacyPackages))
+                ++ (lib.attrValues (lib.filterAttrs isCore self'.packages))
               );
               otherPaths = lib.collect lib.isDerivation (
                 (lib.mapAttrs (_: v: if lib.isAttrs v && v ? bin then v.exts else v) self'.legacyPackages)
-                // self'.packages
+                // (lib.filterAttrs (n: v: !(isCore n v)) self'.packages)
               );
             in
             pkgs.runCommand "glibc-version-check"
@@ -944,6 +952,7 @@
               }
               ''
                 # 2.40: oldest AMI build (17.6.1.072) sharing current collation data.
+                # 2.31: supautils's compat floor, catch-all for everything not core.
                 ${lib.getExe checkScript} 2.40 $corePaths
                 ${lib.getExe checkScript} 2.31 $otherPaths
                 touch $out
