@@ -24,7 +24,6 @@ pkgs.testers.runNixOSTest {
     let
       versionList = lib.concatStringsSep ", " (map (v: ''"${v}"'') versions);
     in
-    # python
     ''
       versions = [${versionList}]
 
@@ -47,6 +46,7 @@ pkgs.testers.runNixOSTest {
           )
           return [line.split(",", 1) for line in out.splitlines() if line]
 
+      # every calling convention drop_queue has ever supported still works
       def check_callers(qname):
           sql(f"select pgmq.create('{qname}_a'); select pgmq.drop_queue('{qname}_a');")
           sql(f"select pgmq.create('{qname}_b'); select pgmq.drop_queue('{qname}_b', false);")
@@ -61,6 +61,7 @@ pkgs.testers.runNixOSTest {
       start_all()
       server.wait_for_unit("supabase-db-init.service")
 
+      # fresh install of each pinned version: check the overload split, then the callers
       for version in versions:
           with subtest(f"install pgmq {version}"):
               server.succeed("psql -U supabase_admin -d postgres -c 'DROP EXTENSION IF EXISTS pgmq;'")
