@@ -4,10 +4,16 @@ description: |
   Returns early if nixbot posts no check run within a minute. Always succeeds,
   so callers fall back to building what is missing from the cache.
 
+outputs:
+  built:
+    description: '`true` if nixbot built all checks successfully'
+    value: ${{ steps.await.outputs.built }}
+
 runs:
   using: composite
   steps:
-    - shell: bash
+    - id: await
+      shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
         SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -29,7 +35,7 @@ runs:
           case "$s" in
             success/success)
               sleep 5
-              [[ $(state) == success/success ]] && exit 0 ;;
+              [[ $(state) == success/success ]] && echo built=true >> "$GITHUB_OUTPUT" && exit 0 ;;
             failure/* | */failure)
               echo "::warning::nixbot failed, the GitHub matrix builds what is missing from the cache"
               exit 0 ;;

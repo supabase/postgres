@@ -23,11 +23,14 @@ jobs:
   await-nixbot:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 120
+    outputs:
+      built: ${{ steps.await.outputs.built }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           sparse-checkout: .github/actions/await-nixbot
-      - uses: ./.github/actions/await-nixbot
+      - id: await
+        uses: ./.github/actions/await-nixbot
 
   eval:
     needs: await-nixbot
@@ -49,8 +52,14 @@ jobs:
 
       - name: Generate Nix Matrix
         id: gen-matrix
+        env:
+          NIXBOT_BUILT: ${{ needs.await-nixbot.outputs.built }}
         run: |
-          nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
+          if [[ $NIXBOT_BUILT == true ]]; then
+            : > eval.json
+          else
+            nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
+          fi
           echo eval.json:
           jq -S . eval.json
           nix run .#github-matrix -- --eval-input checks legacyPackages <eval.json

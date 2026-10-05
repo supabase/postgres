@@ -907,6 +907,14 @@
             wal-g-2
             wal-g-3
             ;
+          inherit (self'.legacyPackages)
+            site-env-15
+            site-env-17
+            site-env-orioledb-17
+            site-extensions-catalog-15
+            site-extensions-catalog-17
+            site-extensions-catalog-orioledb-17
+            ;
           devShell = self'.devShells.default;
         }
         // (import ./ext/tests {
