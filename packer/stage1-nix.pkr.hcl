@@ -1,8 +1,3 @@
-variable "profile" {
-  type    = string
-  default = env("AWS_PROFILE")
-}
-
 variable "ami_name" {
   type    = string
   default = "supabase-postgres"
@@ -11,10 +6,6 @@ variable "ami_name" {
 variable "ansible_arguments" {
   type    = string
   default = "--skip-tags install-postgrest,install-pgbouncer,install-supabase-internal"
-}
-
-variable "region" {
-  type = string
 }
 
 variable "build-vol" {
@@ -69,6 +60,12 @@ variable "instance_type" {
   description = "EC2 instance type used for the build instance"
 }
 
+# defined as variable because packer doesn't allow env() directly, not meant to be passed in
+variable "region" {
+  type    = string
+  default = env("AWS_REGION")
+}
+
 locals {
   creator = "packer"
   ami     = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-${var.arch}-server-*"
@@ -88,7 +85,6 @@ packer {
 
 # source block
 source "amazon-ebssurrogate" "source" {
-  profile                 = var.profile
   ami_name                = "${var.ami_name}-${var.postgres-version}-${var.input-hash}-stage-1"
   ami_virtualization_type = "hvm"
   ami_architecture        = var.instance_arch
