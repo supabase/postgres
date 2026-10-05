@@ -31,7 +31,7 @@ let
       buildInputs = [ postgresql ];
 
       src = fetchFromGitHub {
-        owner = "olirice";
+        owner = "supabase";
         repo = pname;
         rev = "v${version}";
         inherit hash;
