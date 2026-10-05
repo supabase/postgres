@@ -25,9 +25,9 @@ removed=$(jq -r -n --slurpfile h "$head_json" --slurpfile b "$base_json" '
 
 : >/tmp/diff.txt
 for attr in $changed; do
-	head_path=$(cd head && nix build --accept-flake-config ".#legacyPackages.$system.$attr" --no-link --print-out-paths)
-	base_path=$(cd base && nix build --accept-flake-config ".#legacyPackages.$system.$attr" --no-link --print-out-paths)
-	nix run --accept-flake-config nixpkgs#nvd -- diff "$base_path" "$head_path" >>/tmp/diff.txt
+	head_path=$(cd head && nix build ".#legacyPackages.$system.$attr" --no-link --print-out-paths)
+	base_path=$(cd base && nix build ".#legacyPackages.$system.$attr" --no-link --print-out-paths)
+	nix run nixpkgs#nvd -- diff "$base_path" "$head_path" >>/tmp/diff.txt
 done
 for attr in $added; do
 	echo "+ $attr added" >>/tmp/diff.txt

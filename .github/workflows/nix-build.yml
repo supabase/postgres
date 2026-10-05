@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p /tmp/drvpaths
           for system in x86_64-linux aarch64-linux aarch64-darwin; do
-            nix eval --impure --json \
+            nix eval --no-pure-eval --json \
               --expr "(import $PWD/ci/version-diff/drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
               > "/tmp/drvpaths/$system.json"
           done
@@ -334,7 +334,7 @@ jobs:
       - name: Evaluate base drvPaths
         working-directory: base
         run: |
-          nix eval --impure --json --accept-flake-config \
+          nix eval --no-pure-eval --json \
             --expr '(import ${{ github.workspace }}/head/ci/version-diff/drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
             > /tmp/base-drvpaths.json
 
