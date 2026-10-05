@@ -15,10 +15,10 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "beta18";
-    sha256 = "sha256-kmNfneISVhlD9Pmnl69pkiAX77MzpzyJQB/5wQ1wiZc=";
+    rev = "beta19";
+    sha256 = "sha256-nLb3UHf2X+BFf5pXvUKW4LsSEtzmGy97Qw8rEkgewso=";
   };
-  version = "beta18";
+  version = "beta19";
   buildInputs = [
     curl
     libkrb5
