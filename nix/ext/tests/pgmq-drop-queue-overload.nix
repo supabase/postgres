@@ -6,12 +6,7 @@ let
   testLib = import ./lib.nix { inherit self pkgs; };
 
   installedExtension = self.legacyPackages.${system}."psql_15".exts."${pname}";
-  # boundary versions only - the fix doesn't branch on extversion, so
-  # oldest/newest is enough to catch a regression
-  versions = lib.unique [
-    (lib.head installedExtension.versions)
-    (lib.last installedExtension.versions)
-  ];
+  versions = installedExtension.versions;
 in
 pkgs.testers.runNixOSTest {
   name = "pgmq-drop-queue-overload";
@@ -29,30 +24,44 @@ pkgs.testers.runNixOSTest {
     let
       versionList = lib.concatStringsSep ", " (map (v: ''"${v}"'') versions);
     in
-    # python
     ''
       versions = [${versionList}]
 
       def sql(query):
           return server.succeed(
-              "psql -U supabase_admin -d postgres -t -A -c \"" + query.replace('"', '\\"') + "\""
+              "psql -U supabase_admin -d postgres -t -A -F',' -c \"" + query.replace('"', '\\"') + "\""
           ).strip()
 
-      def assert_single_merged_overload(version):
-          ok = sql(
-              "select count(*) = 1 "
-              "  and bool_and(d.objid is not null) "
-              "  and bool_and(pg_get_function_identity_arguments(p.oid) = 'queue_name text, partitioned boolean') "
+      def drop_queue_overloads():
+          # owned flag first: pg_get_function_identity_arguments() can itself
+          # contain a comma ("queue_name text, partitioned boolean"), so put the
+          # single-char flag first and split on the first comma only.
+          out = sql(
+              "select (d.objid is not null), pg_get_function_identity_arguments(p.oid) "
               "from pg_proc p "
-              "join pg_depend d on d.objid = p.oid and d.deptype = 'e' "
+              "left join pg_depend d on d.objid = p.oid and d.deptype = 'e' "
               "  and d.refobjid = (select oid from pg_extension where extname = 'pgmq') "
-              "where p.pronamespace = 'pgmq'::regnamespace and p.proname = 'drop_queue';"
+              "where p.pronamespace = 'pgmq'::regnamespace and p.proname = 'drop_queue' "
+              "order by 2;"
           )
-          assert ok == "t", f"[{version}] expected exactly one merged, extension-owned drop_queue(text, boolean)"
+          return [line.split(",", 1) for line in out.splitlines() if line]
+
+      # every calling convention drop_queue has ever supported still works
+      def check_callers(qname):
+          sql(f"select pgmq.create('{qname}_a'); select pgmq.drop_queue('{qname}_a');")
+          sql(f"select pgmq.create('{qname}_b'); select pgmq.drop_queue('{qname}_b', false);")
+          # WRONG flag on purpose (queue isn't partitioned) - must still
+          # succeed, safely ignored in favour of pgmq.meta
+          sql(f"select pgmq.create('{qname}_c'); select pgmq.drop_queue('{qname}_c', true);")
+          sql(
+              f"select pgmq.create('{qname}_d'); "
+              f"select pgmq.drop_queue(queue_name => '{qname}_d', partitioned => true);"
+          )
 
       start_all()
       server.wait_for_unit("supabase-db-init.service")
 
+      # fresh install of each pinned version: check the overload split, then the callers
       for version in versions:
           with subtest(f"install pgmq {version}"):
               server.succeed("psql -U supabase_admin -d postgres -c 'DROP EXTENSION IF EXISTS pgmq;'")
@@ -60,10 +69,16 @@ pkgs.testers.runNixOSTest {
                   f"psql -U supabase_admin -d postgres -c \"CREATE EXTENSION pgmq WITH VERSION '{version}' CASCADE;\""
               )
 
-              assert_single_merged_overload(version)
+              overloads = drop_queue_overloads()
+              print(f"[{version}] drop_queue overloads: {overloads}")
+              assert overloads == [
+                  ["t", "queue_name text"],
+                  ["f", "queue_name text, partitioned boolean"],
+              ], (
+                  f"[{version}] expected one extension-owned drop_queue(text) plus "
+                  f"an unattached drop_queue(text, boolean) compat shim, got: {overloads}"
+              )
 
-              qname = f"q_{version.replace('.', '_')}"
-              sql(f"select pgmq.create('{qname}_a'); select pgmq.drop_queue('{qname}_a');")
-              sql(f"select pgmq.create('{qname}_b'); select pgmq.drop_queue('{qname}_b', false);")
+              check_callers(f"q_{version.replace('.', '_')}")
     '';
 }
