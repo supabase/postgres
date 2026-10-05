@@ -27,8 +27,8 @@
     # for extensions that require older package versions
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
     # Postgres, its extensions, and anything else loaded into the postgres
-    # process stay on glibc 2.40. A glibc bump changes the libc collation
-    # version of every existing database.
+    # process stay on glibc 2.40. Postgres warns when the running glibc's
+    # collation version differs from the one stored in each database.
     nixpkgs-pg17.url = "https://releases.nixos.org/nixos/unstable/nixos-26.05pre921484.fb7944c166a3/nixexprs.tar.xz?rev=fb7944c166a3b630f177938e478f0378e64ce108";
     nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
