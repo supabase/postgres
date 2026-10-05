@@ -77,16 +77,16 @@ runs:
       if: inputs.builder == 'qemu'
       shell: bash
       env:
-        AMI_NAME_PREFIX: ${{ inputs.ami_name_prefix }}
         AWS_MAX_ATTEMPTS: 10
         AWS_RETRY_MODE: adaptive
         AWS_REGION: ${{ inputs.region }}
-        BUILD_AMI_QEMU_HW_VIRT_ONLY: 1
         GIT_SHA: ${{ inputs.packages_git_sha }}
+        POSTGRES_VERSION: ${{ steps.generate-vars.outputs.version }}
         SOURCE_SHA: ${{ inputs.git_sha }}
       run: |
         sudo chmod 666 /dev/kvm
-        nix run .#build-ami-qemu -- ${{ inputs.postgres_version }} ${{ inputs.arch }}
+        nix run .#build-ami-qemu -- ${{ inputs.postgres_version }} packer-work-ami-qemu
+        nix run .#publish-ami -- packer-work-ami-qemu "${{ inputs.ami_name_prefix }}-qemu-$POSTGRES_VERSION"
 
     - name: Build AMI stage 1
       if: inputs.builder == 'packer'
