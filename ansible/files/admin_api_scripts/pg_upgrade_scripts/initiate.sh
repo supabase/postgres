@@ -10,10 +10,10 @@
 # Running an upgrade with these extensions enabled will result in errors due to
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"pg_backtrace"
 	"pg_graphql"
 	"pg_stat_monitor"
-	"pg_backtrace"
-	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
 	"plpgsql_check" # old versioned library clashes with the preloaded new one
 )
 
