@@ -23,14 +23,14 @@
         let
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
-        pkgs-pg.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
+        pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
       # Function to create the pg_isolation_regress package
       makePgIsolationRegress =
         version:
         let
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
-        pkgs-pg.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
+        pkgs.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       supascan-pkgs = pkgs.callPackage ./supascan.nix {
         inherit (pkgs) lib;
@@ -66,10 +66,7 @@
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
-          gatekeeper = pkgs-pg.callPackage ./gatekeeper.nix {
-            inherit inputs;
-            pkgs = pkgs-pg;
-          };
+          gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
           supabase-groonga = pkgs-pg.callPackage ../ext/pgroonga/groonga.nix { };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
