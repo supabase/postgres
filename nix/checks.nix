@@ -929,7 +929,7 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
-              # supautils/gatekeeper load outside this build's own nix closure, so they alone can reach older hosts.
+              # these packages are dlopened into processes with old glibcs so need a lower version floor
               legacyNames = [
                 "supautils"
                 "gatekeeper"
