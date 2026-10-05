@@ -3,8 +3,12 @@ set -eu
 
 INSTALLED=0
 if ! command -v bsdtar >/dev/null 2>&1; then
-	DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null
-	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libarchive-tools >/dev/null
+	if command -v apt-get >/dev/null 2>&1; then
+		DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null
+		DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libarchive-tools >/dev/null
+	elif command -v apk >/dev/null 2>&1; then
+		apk add --no-cache libarchive-tools >/dev/null
+	fi
 	INSTALLED=1
 fi
 
@@ -15,7 +19,11 @@ bsdtar --format=mtree \
 	-cf - . 2>/dev/null | sort
 
 if [ "$INSTALLED" = 1 ]; then
-	DEBIAN_FRONTEND=noninteractive apt-get remove -y --purge libarchive-tools >/dev/null
+	if command -v apt-get >/dev/null 2>&1; then
+		DEBIAN_FRONTEND=noninteractive apt-get remove -y --purge libarchive-tools >/dev/null
+	elif command -v apk >/dev/null 2>&1; then
+		apk del libarchive-tools >/dev/null
+	fi
 fi
 
 echo '--- units ---'

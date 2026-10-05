@@ -131,10 +131,11 @@ jobs:
 
       - name: Diff AMI manifest
         if: github.event_name == 'pull_request'
-        uses: ./.github/actions/diff-ami-manifest
+        uses: ./.github/actions/diff-manifest
         with:
-          postgres_version: ${{ matrix.postgres_version }}
-          arch: ${{ matrix.target.arch }}
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          publish_hint: Publish one by running ami-release-nix.yml (push to develop).
+          manifest_path: /tmp/ami-manifest.txt
 
       - name: Upload manifest diff artifact
         if: github.event_name == 'pull_request'
@@ -200,4 +201,9 @@ jobs:
     steps:
       - uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/post-ami-manifest-comment
+      - uses: ./.github/actions/post-manifest-comment
+        with:
+          marker: ami-manifest-diff
+          title: AMI manifest diff
+          description: Compares the AMI rootfs manifest between this PR and the last published AMI, per PG version and arch.
+          artifact_pattern: ami-manifest-diff-*

@@ -1,0 +1,36 @@
+name: Cache manifest
+description: Annotates a rootfs manifest with a version label and caches it as the diff baseline, keyed by its own content hash
+
+inputs:
+  key_prefix:
+    description: 'Cache key prefix (e.g. ami-manifest-15-amd64, docker-manifest-17-production)'
+    required: true
+  version_label:
+    description: 'Version string to stamp into the manifest'
+    required: true
+  manifest_path:
+    description: 'Path to the captured manifest file'
+    required: false
+    default: /tmp/manifest.txt
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        VERSION_LABEL: ${{ inputs.version_label }}
+        MANIFEST_PATH: ${{ inputs.manifest_path }}
+      run: |
+        printf '%s\n' "# version: $VERSION_LABEL" | cat - "$MANIFEST_PATH" > "$MANIFEST_PATH.new"
+        mv "$MANIFEST_PATH.new" "$MANIFEST_PATH"
+
+    - id: hash
+      shell: bash
+      env:
+        MANIFEST_PATH: ${{ inputs.manifest_path }}
+      run: echo "value=$(sha256sum "$MANIFEST_PATH" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ inputs.manifest_path }}
+        key: ${{ inputs.key_prefix }}-${{ steps.hash.outputs.value }}

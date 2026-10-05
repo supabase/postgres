@@ -106,11 +106,11 @@ jobs:
           region: ${{ env.AWS_REGION }}
 
       - name: Cache AMI manifest
-        uses: ./.github/actions/cache-ami-manifest
+        uses: ./.github/actions/cache-manifest
         with:
-          postgres_version: ${{ matrix.postgres_version }}
-          arch: ${{ matrix.target.arch }}
-          ami_version: ${{ steps.build-ami.outputs.postgres_release_version }}
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          version_label: ${{ steps.build-ami.outputs.postgres_release_version }}
+          manifest_path: /tmp/ami-manifest.txt
 
       - name: Setup post build env vars
         run: |

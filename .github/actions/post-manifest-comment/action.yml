@@ -1,24 +1,44 @@
-name: Post AMI manifest comment
-description: Assembles the per-leg manifest diffs into one collapsed comment and posts it, updating any existing one in place
+name: Post manifest comment
+description: Assembles per-leg manifest diffs into one collapsed comment and posts it, updating any existing one in place
+
+inputs:
+  marker:
+    description: 'Unique HTML comment marker identifying this comment (e.g. ami-manifest-diff)'
+    required: true
+  title:
+    description: 'Comment heading (e.g. AMI manifest diff)'
+    required: true
+  description:
+    description: 'One-line explanation shown under the heading'
+    required: true
+  artifact_pattern:
+    description: 'Glob matching the uploaded per-leg diff artifacts (e.g. ami-manifest-diff-*)'
+    required: true
 
 runs:
   using: composite
   steps:
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
-        pattern: ami-manifest-diff-*
+        pattern: ${{ inputs.artifact_pattern }}
         path: diffs
         merge-multiple: false
 
     - shell: bash
+      env:
+        MARKER: ${{ inputs.marker }}
+        TITLE: ${{ inputs.title }}
+        DESCRIPTION: ${{ inputs.description }}
+        ARTIFACT_PATTERN: ${{ inputs.artifact_pattern }}
       run: |
+        prefix="${ARTIFACT_PATTERN%-\*}"
         {
-          echo "<!-- ami-manifest-diff -->"
-          echo "## AMI manifest diff"
-          echo "Compares the AMI rootfs manifest between this PR and the last published AMI, per PG version and arch."
+          echo "<!-- $MARKER -->"
+          echo "## $TITLE"
+          echo "$DESCRIPTION"
           echo
-          for dir in diffs/ami-manifest-diff-*; do
-            leg="${dir#diffs/ami-manifest-diff-}"
+          for dir in "diffs/${prefix}"-*; do
+            leg="${dir#diffs/${prefix}-}"
             file="$dir/manifest-diff.txt"
             if [ ! -f "$file" ]; then
               echo "<details>"
@@ -65,7 +85,7 @@ runs:
       with:
         issue-number: ${{ github.event.pull_request.number }}
         comment-author: "github-actions[bot]"
-        body-includes: "<!-- ami-manifest-diff -->"
+        body-includes: "<!-- ${{ inputs.marker }} -->"
 
     - uses: peter-evans/create-or-update-comment@v4
       with:

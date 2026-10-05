@@ -1,17 +1,17 @@
-name: Diff AMI manifest
-description: Restores the cached develop-baseline manifest and diffs it against this build's manifest
+name: Diff manifest
+description: Restores the cached baseline manifest and diffs it against this build's manifest
 
 inputs:
-  postgres_version:
-    description: 'PostgreSQL major version (e.g., 15)'
+  key_prefix:
+    description: 'Cache key prefix matching the one used by cache-manifest (e.g. ami-manifest-15-amd64)'
     required: true
-  arch:
-    description: 'Architecture (amd64|arm64)'
+  publish_hint:
+    description: 'Shown when no baseline is cached yet, naming what publishes one'
     required: true
   manifest_path:
     description: 'Path to the manifest this build captured'
     required: false
-    default: /tmp/ami-manifest.txt
+    default: /tmp/manifest.txt
   diff_path:
     description: 'Path to write the resulting diff to'
     required: false
@@ -28,17 +28,18 @@ runs:
     - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.manifest_path }}
-        key: ami-manifest-${{ inputs.postgres_version }}-${{ inputs.arch }}-
-        restore-keys: ami-manifest-${{ inputs.postgres_version }}-${{ inputs.arch }}-
+        key: ${{ inputs.key_prefix }}-
+        restore-keys: ${{ inputs.key_prefix }}-
 
     - shell: bash
       env:
         MANIFEST_PATH: ${{ inputs.manifest_path }}
         DIFF_PATH: ${{ inputs.diff_path }}
+        PUBLISH_HINT: ${{ inputs.publish_hint }}
       run: |
         if [ -s "$MANIFEST_PATH" ]; then
           mv "$MANIFEST_PATH" /tmp/baseline.txt
-          BASELINE_VERSION=$(sed -n 's/^# ami-version: //p' /tmp/baseline.txt | head -1)
+          BASELINE_VERSION=$(sed -n 's/^# version: //p' /tmp/baseline.txt | head -1)
         else
           touch /tmp/baseline.txt
           BASELINE_VERSION=""
@@ -46,7 +47,7 @@ runs:
         mv /tmp/current-manifest.txt "$MANIFEST_PATH"
         {
           if [ -z "$BASELINE_VERSION" ]; then
-            echo "No baseline cached yet. Publish one by running ami-release-nix.yml (push to develop)."
+            echo "No baseline cached yet. $PUBLISH_HINT"
           elif diff -q /tmp/baseline.txt "$MANIFEST_PATH" > /dev/null; then
             echo "No changes vs baseline $BASELINE_VERSION."
           else
