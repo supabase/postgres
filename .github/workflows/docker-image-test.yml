@@ -83,17 +83,10 @@ jobs:
             .
 
       - name: Snapshot Docker image manifest
-        run: |
-          docker run --rm -v "$PWD/testinfra/manifest-snapshot.sh:/manifest-snapshot.sh:ro" \
-            "pg-docker-test:${{ matrix.name }}" sh /manifest-snapshot.sh > /tmp/docker-manifest.txt
-
-      - name: Upload Docker image manifest
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: ./.github/actions/snapshot-docker-manifest
         with:
-          name: docker-manifest-${{ matrix.name }}
-          path: /tmp/docker-manifest.txt
-          overwrite: true
-          retention-days: 1
+          image: pg-docker-test:${{ matrix.name }}
+          manifest_path: /tmp/docker-manifest.txt
 
       - name: Diff Docker image manifest
         if: github.event_name == 'pull_request'
