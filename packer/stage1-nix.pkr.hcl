@@ -226,7 +226,6 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "ARGS=-e postgresql_major=$POSTGRES_MAJOR_VERSION",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
     ]

@@ -249,8 +249,9 @@ function execute_playbook {
 	# shellcheck disable=SC2086
 	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":false, "qemu":false} ' \
+		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
-		$ARGS
+		;
 }
 
 function update_systemd_services {
