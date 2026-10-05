@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p /tmp/drvpaths
           for system in x86_64-linux aarch64-linux aarch64-darwin; do
-            nix eval --impure --json --accept-flake-config \
+            nix eval --impure --json \
               --expr "(import $PWD/ci/version-diff/drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
               > "/tmp/drvpaths/$system.json"
           done
