@@ -13,6 +13,7 @@
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
         inherit (self.supabase) defaults;
+        inherit (self'.packages) supabase-groonga;
       };
       bashlog = builtins.fetchurl {
         url = "https://raw.githubusercontent.com/Zordrak/bashlog/master/log.sh";
@@ -271,7 +272,7 @@
                 procps
                 python3
                 start-postgres-server-bin
-                supabase-groonga
+                self'.packages.supabase-groonga
                 which
               ];
 
@@ -355,7 +356,7 @@
                 export HTTP_MOCK_PORT
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
-                export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
+                export GRN_PLUGINS_DIR=${self'.packages.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
                 log info "Creating temporary PostgreSQL cluster at $PGTAP_CLUSTER"
                 log_cmd initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
