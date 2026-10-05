@@ -1,4 +1,10 @@
 { inputs, ... }:
+# NOTE: supautils is intentionally absent from ourExtensions/dbExtensions17/
+# orioledbExtensions below. It's deployed exclusively through the site
+# profile (nix/packages/site-env.nix) via `dynamic_library_path`, wired up in
+# martonboros/mpg-12-site-env-update (#2424) — this branch is rebased onto
+# it. Re-adding supautils here would just duplicate it in every instance's
+# base closure.
 {
   perSystem =
     { pkgs, lib, ... }:
@@ -48,7 +54,6 @@
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
         ../ext/wrappers/default.nix
-        ../ext/supautils.nix
         ../ext/plv8
       ];
 

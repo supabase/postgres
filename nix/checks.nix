@@ -76,7 +76,12 @@
               };
 
               pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
-              supautils = self'.legacyPackages."psql_${pgpkg.version}".exts.supautils;
+              # supautils is no longer part of psql_${version}.exts (it's deployed
+              # via the site profile, not the base postgres closure), so build it
+              # directly here for the test harness's dynamic_library_path.
+              supautils = pkgs.callPackage ../ext/supautils.nix {
+                postgresql = pkgs."postgresql_${pgpkg.version}";
+              };
 
               # Use different ports to allow parallel test runs
               # slim packages get their own ports to avoid conflicts
