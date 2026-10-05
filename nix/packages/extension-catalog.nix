@@ -2,7 +2,7 @@
 {
   perSystem =
     {
-      pkgs,
+      pkgs-pg17,
       lib,
       self',
       ...
@@ -13,7 +13,7 @@
       # postgis and its `-3` convention) pass through untouched.
       mkGenericVersion =
         leanPkg:
-        pkgs.runCommand "${leanPkg.pname}-${leanPkg.version}-generic" { } ''
+        pkgs-pg17.runCommand "${leanPkg.pname}-${leanPkg.version}-generic" { } ''
           set -euo pipefail
           shopt -s nullglob
           mkdir -p "$out/lib" "$out/share/postgresql/extension"
@@ -69,10 +69,10 @@
       # which can differ (pgsql-http "1.5.0" builds extversion "1.5").
       mkCatalogFile =
         wrappers:
-        pkgs.runCommand "pg-extensions-catalog"
+        pkgs-pg17.runCommand "pg-extensions-catalog"
           {
             paths = map toString (lib.concatMap lib.attrValues (lib.attrValues wrappers));
-            nativeBuildInputs = [ pkgs.jq ];
+            nativeBuildInputs = [ pkgs-pg17.jq ];
             # Without this the literal wrapper paths in the JSON would pull
             # every wrapper's closure into the catalog's runtime closure.
             __structuredAttrs = true;
@@ -104,7 +104,7 @@
       catalogs = lib.mapAttrs' (
         major: wrappers:
         lib.nameValuePair "site-extensions-catalog-${major}" (
-          pkgs.runCommand "site-extensions-catalog" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+          pkgs-pg17.runCommand "site-extensions-catalog" { nativeBuildInputs = [ pkgs-pg17.makeWrapper ]; } ''
             mkdir -p "$out/share" "$out/bin"
             ln -s ${mkCatalogFile wrappers}/share/pg-extensions-catalog.json "$out/share/"
             makeWrapper ${self'.packages.site-extensions-resolve}/bin/site-extensions-resolve \
@@ -122,11 +122,11 @@
         # Takes manifest json as argument. Format: {<ext>: <version>}.
         # Prints nix-store paths of the resolved extensions, one per line.
         # Does not download or install.
-        site-extensions-resolve = pkgs.writeShellApplication {
+        site-extensions-resolve = pkgs-pg17.writeShellApplication {
           name = "site-extensions-resolve";
           runtimeInputs = [
-            pkgs.coreutils
-            pkgs.jq
+            pkgs-pg17.coreutils
+            pkgs-pg17.jq
           ];
           text = ''
             : "''${PG_EXTENSIONS_CATALOG:?PG_EXTENSIONS_CATALOG must point at a pg-extensions-catalog.json}"
@@ -141,11 +141,11 @@
 
         # Takes manifest json as argument.
         # Downloads paths and installs them as an env into the profile, replacing all existing ones.
-        site-extensions-update = pkgs.writeShellApplication {
+        site-extensions-update = pkgs-pg17.writeShellApplication {
           name = "site-extensions-update";
           runtimeInputs = [
             self'.packages.site-extensions-resolve
-            pkgs.nix
+            pkgs-pg17.nix
           ];
           text = ''
             manifest="''${1:?Usage: $0 path-to/pg-extensions.json}"
