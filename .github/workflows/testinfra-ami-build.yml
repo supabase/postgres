@@ -253,7 +253,7 @@ jobs:
                 echo "<details>"
                 echo "<summary>${leg}: no baseline cached yet</summary>"
                 echo
-                echo "$(cat "$file")"
+                cat "$file"
                 echo "</details>"
                 echo
                 continue

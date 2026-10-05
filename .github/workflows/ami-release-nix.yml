@@ -112,7 +112,9 @@ jobs:
       - name: Annotate manifest with AMI version
         env:
           AMI_VERSION: ${{ steps.build-ami.outputs.postgres_release_version }}
-        run: sed -i "1i # ami-version: $AMI_VERSION" /tmp/ami-manifest.txt
+        run: |
+          printf '%s\n' "# ami-version: $AMI_VERSION" | cat - /tmp/ami-manifest.txt > /tmp/ami-manifest.txt.new
+          mv /tmp/ami-manifest.txt.new /tmp/ami-manifest.txt
 
       - name: Cache AMI manifest
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
