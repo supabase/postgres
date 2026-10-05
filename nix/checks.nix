@@ -935,7 +935,8 @@
                 paths = lib.collect lib.isDerivation (self'.legacyPackages // self'.packages);
               }
               ''
-                ${lib.getExe checkScript} 2.31 $paths
+                # 2.40: oldest AMI build (17.6.1.072) sharing current collation data.
+                ${lib.getExe checkScript} 2.40 $paths
                 touch $out
               '';
         };
