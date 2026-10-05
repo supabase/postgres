@@ -1,7 +1,3 @@
-variable "region" {
-  type = string
-}
-
 variable "ami_name" {
   type    = string
   default = "supabase-postgres"
@@ -51,6 +47,12 @@ variable "instance_arch" {
 variable "instance_type" {
   type        = string
   description = "EC2 instance type used for the build instance"
+}
+
+# defined as variable because packer doesn't allow env() directly, not meant to be passed in
+variable "region" {
+  type    = string
+  default = env("AWS_REGION")
 }
 
 packer {

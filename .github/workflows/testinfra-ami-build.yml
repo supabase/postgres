@@ -67,7 +67,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
@@ -75,7 +74,6 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
@@ -94,7 +92,6 @@ jobs:
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
 
       - name: Save AMI disk usage
         env:
@@ -132,7 +129,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()
