@@ -1,5 +1,5 @@
 # In-place minor upgrade from the previous release on the same data directory,
-# run by minor.sh. The config link flips with the binary because a newer config
+# run by the pg-minor-upgrade unit. The config link flips with the binary because a newer config
 # can set GUCs the older minor rejects. Clients going through pgbouncer see no
 # failures. The upgraded cluster is then compared against a fresh node.
 { self, pkgs }:
@@ -27,10 +27,7 @@ let
       done
     '';
   };
-  pgUpgradeScripts = builtins.path {
-    path = ../../../ansible/files/admin_api_scripts/pg_upgrade_scripts;
-    name = "pg_upgrade_scripts";
-  };
+  minorUpgrade = self.packages.${system}.pg-minor-upgrade;
   pgbouncer = self.packages.${system}.pgbouncer;
   pgbouncerIni = pkgs.pkgsLinux.writeText "pgbouncer.ini" ''
     [databases]
@@ -62,7 +59,7 @@ in
 pkgs.testers.runNixOSTest {
   name = "postgres-minor-upgrade";
   nodes.server =
-    { ... }:
+    { config, ... }:
     {
       imports = [
         (testLib.makeSupabaseTestConfig {
@@ -78,6 +75,15 @@ pkgs.testers.runNixOSTest {
         wants = [ "postgresql.service" ];
       };
       systemd.tmpfiles.rules = [ "L ${configLink} - - - - ${oldConfig}" ];
+      systemd.packages = [ minorUpgrade ];
+      systemd.services."pg-minor-upgrade@" = {
+        overrideStrategy = "asDropin";
+        path = [ config.nix.package ];
+        environment = {
+          POSTGRES_CONFIG_DIR = "/var/lib/postgresql/data";
+          PGBOUNCER_ADMIN = "host=127.0.0.1 port=6543 user=supabase_admin dbname=pgbouncer";
+        };
+      };
       systemd.services.pgbouncer = {
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
@@ -119,11 +125,6 @@ pkgs.testers.runNixOSTest {
     )
     MAX_RECONNECT_GAP = 5.0
     PGBOUNCER = "-h 127.0.0.1 -p 6543 -U supabase_admin"
-    MINOR = (
-      "POSTGRES_CONFIG_DIR=/var/lib/postgresql/data "
-      "PGBOUNCER_ADMIN='host=127.0.0.1 port=6543 user=supabase_admin dbname=pgbouncer' "
-      "${pgUpgradeScripts}/minor.sh"
-    )
     NEW_MIGRATIONS: list[str] = ${builtins.toJSON newMigrations}
 
     EXTENSION_MEMBERS = (
@@ -162,6 +163,9 @@ pkgs.testers.runNixOSTest {
           failures[lib] = out.strip()
       assert not failures, f"extension libraries fail to load {when}: {failures}"
       return libraries
+
+    def minor_upgrade_unit(target):
+      return server.succeed(f"systemd-escape --template pg-minor-upgrade@.service --path {target}").strip()
 
     def start_bench(name, flags):
       log = f"/tmp/{name}.log"
@@ -238,7 +242,7 @@ pkgs.testers.runNixOSTest {
       server.succeed("systemd-run --unit=conn-probe --property=StandardOutput=file:/tmp/conn-probe.log ${connProbe}/bin/conn-probe")
       server.sleep(2)
       server.succeed("ln -sfn ${newConfig} ${configLink}")
-      server.succeed(f"{MINOR} ${newPkg} >&2")
+      server.succeed(f"systemctl start '{minor_upgrade_unit("${newPkg}")}'")
       server.wait_until_succeeds("tail -1 /tmp/conn-probe.log | grep -q ok")
       server.sleep(1)
       server.succeed("systemctl stop conn-probe.service")
@@ -301,7 +305,7 @@ pkgs.testers.runNixOSTest {
       assert not diffs, "upgraded cluster differs from a fresh one:\n" + "\n\n".join(diffs)
 
     with subtest("minor.sh refuses a binary that rejects the deployed config"):
-      server.fail(f"{MINOR} ${oldPkg} >&2")
+      server.fail(f"systemctl start '{minor_upgrade_unit("${oldPkg}")}'")
       assert sql(server, "show server_version") == NEW_VERSION, "server left the new minor"
       assert server.succeed("readlink -f ${profile}").strip() == "${newPkg}", "profile changed"
 
@@ -311,7 +315,7 @@ pkgs.testers.runNixOSTest {
         "sed 's|@dataDir@|/var/lib/postgresql/data|g' ${oldConfig}/postgresql.conf "
         "> /var/lib/postgresql/data/postgresql.conf"
       )
-      server.succeed(f"{MINOR} ${oldPkg} >&2")
+      server.succeed(f"systemctl start '{minor_upgrade_unit("${oldPkg}")}'")
       version = sql(server, "show server_version")
       assert version == OLD_VERSION, f"expected {OLD_VERSION} after rollback, got: {version}"
       assert sql(server, IDENTITY) == identity, "system identifier or timeline changed"
