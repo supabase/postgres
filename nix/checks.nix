@@ -910,10 +910,12 @@
             ;
           devShell = self'.devShells.default;
         }
-        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (import ./ext/tests {
-          inherit self;
-          inherit pkgs;
-        })
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+        )
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug
