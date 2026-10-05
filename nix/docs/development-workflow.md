@@ -33,7 +33,7 @@ If you're on a feature different branch, you'll be prompted to confirm before pr
 
 ### 2. Build AMI
 
-After the build is complete and cached, build the AMI. AMI builds run in CI only. The local `build-test-ami` script has been removed.
+After the build is complete and cached, build the AMI. The usual path is the CI workflow below. To build one locally with `nix run .#build-ami`, see [`testinfra/README.md`](../../testinfra/README.md).
 
 Run the `Testinfra Integration Tests Nix` workflow (`.github/workflows/testinfra-ami-build.yml`) from the GitHub Actions tab, or with the `gh` CLI:
 

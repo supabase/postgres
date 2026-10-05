@@ -10,7 +10,7 @@ You can adopt the nuclear approach and generate the AMI image regardless of the 
 
 IE. remove the following conditions:
 
-```
+```yaml
 (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
 (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success')
 (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
@@ -26,20 +26,20 @@ You can see the available runners and their associated labels on [this page](htt
 
 ### **Q:** The eval step is OOM-ing, what should I do?
 
-**A:** The evaluation can be quite costly memory-wise. [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs) is spinning up multiple nix evaluation in parallel to speed things up. The tradeoff is an increased memory consumption compared to a single-process eval.
+**A:** The evaluation can be quite costly memory-wise. We use [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs) to spin up multiple nix evaluations in parallel to speed eval up. The tradeoff is an increased memory consumption compared to a single-process eval.
 
 There are two ways to reduce memory consumption, both configurable from the `github_matrix` call in `.github/workflows/nix-build.yml`.
 
 **Reduce the number of parallel workers** by overriding `--nb-eval-jobs-workers`. By default, `github_matrix.py` spins up one eval instance per CPU. For a `blacksmith-32vcpu-ubuntu-2404` worker, that means 32 nix eval instances.
 
-```terminal
-nix run .\#github-matrix -- --nb-eval-jobs-workers 16 checks legacyPackages
+```shell
+nix run .#github-matrix -- --nb-eval-jobs-workers 16 checks legacyPackages
 ```
 
 **Reduce the per-worker memory limit** by overriding `--max-memory-size` (in MiB). The default is 3072 (3 GiB). Lowering this value causes nix-eval-jobs to restart workers that exceed the threshold, trading evaluation speed for lower peak memory usage.
 
-```terminal
-nix run .\#github-matrix -- --max-memory-size 2048 checks legacyPackages
+```shell
+nix run .#github-matrix -- --max-memory-size 2048 checks legacyPackages
 ```
 
 Both flags can be combined for tighter control over total memory consumption.
@@ -80,4 +80,17 @@ Implementation-wise, this step is very similar to the previous one. A matrix job
 
 ### Step 4: Images Build
 
-The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami/build-ami.sh` script to generate a AMI image based on ubuntu noble. The generation of the image is done in two steps.
+The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami/build-ami.sh` script to generate a AMI image based on ubuntu noble. The image is built in two stages, and a single `build-ami` call builds both, wrapping each stage in its own GitHub Actions log group.
+
+`build-ami` takes build inputs through its CLI, with `AWS_REGION` and standard AWS credentials supplied through the environment. It reads the release version from its packaged `ansible/postgres_release.yml` and constructs the Packer arguments for both stages:
+
+```bash
+export AWS_REGION=us-east-1
+nix run .#build-ami -- --arch arm64 --postgres-major-version 17 --git-sha <source-sha>
+```
+
+With `CI=true`, `GITHUB_RUN_ID` is required and the execution ID is `<postgres-major-version>-<arch>-<GITHUB_RUN_ID>` (for example `17-arm64-123`), matching the workflow cleanup commands. Local builds use `<postgres-major-version>-<arch>-<source-sha>`. Stage 2 defaults to installing packages from the source SHA; `--packages-git-sha` selects a different package revision. Before stage 1 starts, the script evaluates `site-env` from `github:supabase/postgres/<packages-sha>` for stage 2, so that SHA must be pushed to GitHub even for a local build. Stage 2 also reads the disk usage notice from `/tmp/ansible-stage2.log` and fails if it is missing.
+
+Architecture-specific Packer var files supply the instance type. The script builds the AMI name itself as `supabase-postgres-<AWS arch>-<postgres-version>`, where `<postgres-version>` is the release version from `ansible/postgres_release.yml`. Unless `AMI_RELEASE=true` is set, as the release AMI workflow does, the version gets a `-g<short source SHA>` suffix (the first 12 characters of `--git-sha`), which marks the build as a non-release build. The stage 1 name also gets a `-stage-1` suffix. The input hash is not part of the name; it is stored in the `inputHash` tag. The `postgresVersion` tag carries the same suffixed version, with a `-stage1` suffix on stage 1 AMIs.
+
+See [`build-ami.sh`](../packages/build-ami/build-ami.sh) for the CLI options. `RUNNER_DEBUG=1` enables Packer debug logging. On error Packer cleans up its resources (instance, volumes, snapshots), both in CI and in non-interactive local runs. Only a local run with stdin attached to a terminal prompts for what to do instead. Outputs are written to $GITHUB_OUTPUT when it is set.
