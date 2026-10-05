@@ -1,4 +1,4 @@
-# pure eval, no builds; drvPath catches any input change, not just a version bump
+# dumps legacyPackages.<system> -> drvPath, recursively; used to diff head vs base
 { dir, system }:
 let
   flake = builtins.getFlake dir;
