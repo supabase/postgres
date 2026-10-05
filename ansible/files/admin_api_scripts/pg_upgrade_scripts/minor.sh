@@ -7,8 +7,8 @@
 set -eEuo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "$0")" && pwd)
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/common.sh"
+# shellcheck source=/dev/null
+source "${PG_UPGRADE_COMMON:-$SCRIPT_DIR/common.sh}"
 
 TARGET=${1:?Usage: $0 <postgres-env store path>}
 PROFILE=${POSTGRES_PROFILE:-/nix/var/nix/profiles/per-user/postgres/profile}
@@ -20,6 +20,7 @@ if [ -f "$NIX_DAEMON_PROFILE" ]; then
 	# shellcheck disable=SC1090
 	source "$NIX_DAEMON_PROFILE"
 fi
+export PATH="$PATH:/usr/lib/postgresql/bin"
 
 flipped=false
 paused=false
