@@ -910,7 +910,7 @@
             ;
           devShell = self'.devShells.default;
         }
-        // (import ./ext/tests {
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (import ./ext/tests {
           inherit self;
           inherit pkgs;
         })
