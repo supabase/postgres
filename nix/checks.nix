@@ -928,49 +928,45 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
-              hasBin = _: v: lib.isAttrs v && v ? bin;
-              # These just repackage an already core-targeted postgres build, not an independent compile.
-              coreNames = [
-                "pg_regress"
-                "pg_isolation_regress"
-                "psql_17_cli_portable"
-              ];
-              # Loaded outside this AMI's own postgres nix closure, so they can reach hosts
-              # built from an older AMI: supautils via session_preload_libraries into an
-              # already-running legacy postgres, gatekeeper via the host's system PAM stack.
+              # Postgres core and every extension are built in the same nix closure as whatever
+              # runs them, so they always share one glibc — no floor needed there. The exception
+              # is anything loaded outside that closure, and so reachable from an older host:
+              # supautils via session_preload_libraries into an already-running legacy postgres,
+              # and gatekeeper via the host's system PAM stack.
               legacyNames = [
                 "supautils"
                 "gatekeeper"
               ];
-              isCore = n: _: lib.hasPrefix "postgresql_" n || builtins.elem n coreNames;
-              isLegacy = n: _: builtins.elem n legacyNames;
-              corePaths = lib.collect lib.isDerivation (
-                (lib.mapAttrsToList (_: v: v.bin) (lib.filterAttrs hasBin self'.legacyPackages))
-                ++ (lib.attrValues (lib.filterAttrs (n: v: isCore n v && !(isLegacy n v)) self'.packages))
-              );
               legacyPaths = lib.collect lib.isDerivation (
-                lib.attrValues (lib.filterAttrs isLegacy self'.packages)
-              );
-              otherPaths = lib.collect lib.isDerivation (
-                (lib.mapAttrs (_: v: if lib.isAttrs v && v ? bin then v.exts else v) self'.legacyPackages)
-                // (lib.filterAttrs (n: v: !(isCore n v) && !(isLegacy n v)) self'.packages)
+                lib.attrValues (lib.filterAttrs (n: _: builtins.elem n legacyNames) self'.packages)
               );
             in
             pkgs.runCommand "glibc-version-check"
               {
                 nativeBuildInputs = [ pkgs.binutils ];
-                inherit corePaths otherPaths legacyPaths;
+                inherit legacyPaths;
               }
               ''
-                # 2.40: oldest AMI build (17.6.1.072) sharing current collation data. Everything
-                # else only ever activates from within that same AMI's own closure, so it shares
-                # this floor too — there's no live path that pushes a newer build onto an older host.
-                # 2.31: Ubuntu 20.04's glibc, for the two things loaded outside this AMI's own
-                # closure and so reachable from older hosts: supautils and gatekeeper (see above).
-                ${lib.getExe checkScript} 2.40 $corePaths $otherPaths
+                # 2.31: Ubuntu 20.04's glibc.
                 ${lib.getExe checkScript} 2.31 $legacyPaths
                 touch $out
               '';
+          collation-version-check =
+            let
+              baseline = lib.strings.trim (builtins.readFile ./collation-version-baseline.txt);
+              actual = pkgs.glibc.name;
+            in
+            pkgs.runCommand "collation-version-check" { } (
+              if actual == baseline then
+                "touch $out"
+              else
+                ''
+                  echo "glibc collation data changed: baseline is ${baseline}, build has ${actual}."
+                  echo "This can silently reorder existing indexes without a version-string change."
+                  echo "If this bump has been reviewed for collation safety, update collation-version-baseline.txt to match."
+                  exit 1
+                ''
+            );
         };
     };
 }
