@@ -8,21 +8,33 @@
 -- extension` statement.
 do $$
 declare
-  _extname text := @extname@;
-  _extschema text := @extschema@;
-  _extversion text := @extversion@;
-  _extcascade bool := @extcascade@;
+  search_path text;
+  _extname text;
+  _extschema text;
+  _extversion text;
+  _extcascade bool;
   _r record;
 begin
+  search_path := current_setting('search_path');
+  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+
+  _extname := @extname@;
+  _extschema := @extschema@;
+  _extversion := @extversion@;
+  _extcascade := @extcascade@;
+
   if not _extcascade then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
   if not exists (select from pg_extension where extname = 'pg_tle') then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
   if not exists (select from pgtle.available_extensions() where name = _extname) then
+    perform set_config('search_path', search_path, true);
     return;
   end if;
 
@@ -71,14 +83,27 @@ begin
     )
     select name
     from dependencies
+    -- Only pre-create extensions which have a control file on disk to avoid
+    -- creating TLE extensions as superuser (this code runs as superuser).
+    -- Such TLEs will still be created by Postgres, but as a non-superuser.
+    -- This fixes a potential privilege escalation vector since TLE code is
+    -- under control of a non-superuser.
+    where name in (select name from pg_available_extensions)
     intersect
     select name
     from regexp_split_to_table(current_setting('supautils.privileged_extensions', true), '\s*,\s*') as t(name)
   ) loop
+    -- Create the dependency with the caller's search_path. Otherwise, when no
+    -- schema is specified, the dependency would be created in pg_catalog, the
+    -- first schema in our locked down search_path.
+    perform set_config('search_path', search_path, true);
     if _extschema is null then
       execute(format('create extension if not exists %I cascade', _r.name));
     else
       execute(format('create extension if not exists %I schema %I cascade', _r.name, _extschema));
     end if;
+    perform set_config('search_path', 'pg_catalog, pg_temp', true);
   end loop;
+
+  perform set_config('search_path', search_path, true);
 end $$;

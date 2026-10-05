@@ -117,13 +117,6 @@
         )
       ) perMajor;
 
-      versions = lib.mapAttrs' (
-        major: wrappers:
-        lib.nameValuePair "site-extensions-versions-${major}" (
-          lib.recurseIntoAttrs (lib.mapAttrs (_: lib.recurseIntoAttrs) wrappers)
-        )
-      ) perMajor;
-
       extUpdateRepos = lib.filterAttrs (_: v: v != null) (
         lib.mapAttrs (
           _: pkg:
@@ -175,6 +168,8 @@
           '';
         };
       };
-      legacyPackages = catalogs // versions // { inherit extUpdateRepos; };
+      legacyPackages = catalogs // {
+        inherit extUpdateRepos;
+      };
     };
 }
