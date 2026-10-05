@@ -935,26 +935,40 @@
                 "pg_isolation_regress"
                 "psql_17_cli_portable"
               ];
+              # Loaded outside this AMI's own postgres nix closure, so they can reach hosts
+              # built from an older AMI: supautils via session_preload_libraries into an
+              # already-running legacy postgres, gatekeeper via the host's system PAM stack.
+              legacyNames = [
+                "supautils"
+                "gatekeeper"
+              ];
               isCore = n: _: lib.hasPrefix "postgresql_" n || builtins.elem n coreNames;
+              isLegacy = n: _: builtins.elem n legacyNames;
               corePaths = lib.collect lib.isDerivation (
                 (lib.mapAttrsToList (_: v: v.bin) (lib.filterAttrs hasBin self'.legacyPackages))
-                ++ (lib.attrValues (lib.filterAttrs isCore self'.packages))
+                ++ (lib.attrValues (lib.filterAttrs (n: v: isCore n v && !(isLegacy n v)) self'.packages))
+              );
+              legacyPaths = lib.collect lib.isDerivation (
+                lib.attrValues (lib.filterAttrs isLegacy self'.packages)
               );
               otherPaths = lib.collect lib.isDerivation (
                 (lib.mapAttrs (_: v: if lib.isAttrs v && v ? bin then v.exts else v) self'.legacyPackages)
-                // (lib.filterAttrs (n: v: !(isCore n v)) self'.packages)
+                // (lib.filterAttrs (n: v: !(isCore n v) && !(isLegacy n v)) self'.packages)
               );
             in
             pkgs.runCommand "glibc-version-check"
               {
                 nativeBuildInputs = [ pkgs.binutils ];
-                inherit corePaths otherPaths;
+                inherit corePaths otherPaths legacyPaths;
               }
               ''
-                # 2.40: oldest AMI build (17.6.1.072) sharing current collation data.
-                # 2.31: supautils's compat floor, catch-all for everything not core.
-                ${lib.getExe checkScript} 2.40 $corePaths
-                ${lib.getExe checkScript} 2.31 $otherPaths
+                # 2.40: oldest AMI build (17.6.1.072) sharing current collation data. Everything
+                # else only ever activates from within that same AMI's own closure, so it shares
+                # this floor too — there's no live path that pushes a newer build onto an older host.
+                # 2.31: Ubuntu 20.04's glibc, for the two things loaded outside this AMI's own
+                # closure and so reachable from older hosts: supautils and gatekeeper (see above).
+                ${lib.getExe checkScript} 2.40 $corePaths $otherPaths
+                ${lib.getExe checkScript} 2.31 $legacyPaths
                 touch $out
               '';
         };
