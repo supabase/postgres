@@ -129,39 +129,12 @@ jobs:
           overwrite: true
           retention-days: 1
 
-      - name: Set aside this build's manifest
+      - name: Diff AMI manifest
         if: github.event_name == 'pull_request'
-        run: mv /tmp/ami-manifest.txt /tmp/current-manifest.txt
-
-      - name: Restore AMI manifest baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: ./.github/actions/diff-ami-manifest
         with:
-          path: /tmp/ami-manifest.txt
-          key: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-
-          restore-keys: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}-
-
-      - name: Diff manifest against develop baseline
-        if: github.event_name == 'pull_request'
-        run: |
-          if [ -s /tmp/ami-manifest.txt ]; then
-            mv /tmp/ami-manifest.txt /tmp/baseline.txt
-            BASELINE_VERSION=$(sed -n 's/^# ami-version: //p' /tmp/baseline.txt | head -1)
-          else
-            touch /tmp/baseline.txt
-            BASELINE_VERSION=""
-          fi
-          mv /tmp/current-manifest.txt /tmp/ami-manifest.txt
-          {
-            if [ -z "$BASELINE_VERSION" ]; then
-              echo "No baseline cached yet. Publish one by running ami-release-nix.yml (push to develop)."
-            elif diff -q /tmp/baseline.txt /tmp/ami-manifest.txt > /dev/null; then
-              echo "No changes vs baseline $BASELINE_VERSION."
-            else
-              echo "baseline: $BASELINE_VERSION"
-              diff -u /tmp/baseline.txt /tmp/ami-manifest.txt || true
-            fi
-          } | tee /tmp/manifest-diff.txt
+          postgres_version: ${{ matrix.postgres_version }}
+          arch: ${{ matrix.target.arch }}
 
       - name: Upload manifest diff artifact
         if: github.event_name == 'pull_request'
@@ -225,75 +198,6 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Download manifest diff artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          pattern: ami-manifest-diff-*
-          path: diffs
-          merge-multiple: false
+      - uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: Assemble collapsed comment body
-        run: |
-          {
-            echo "<!-- ami-manifest-diff -->"
-            echo "## AMI manifest diff"
-            echo "Compares the AMI rootfs manifest between this PR and the last published AMI, per PG version and arch."
-            echo
-            for dir in diffs/ami-manifest-diff-*; do
-              leg="${dir#diffs/ami-manifest-diff-}"
-              file="$dir/manifest-diff.txt"
-              if [ ! -f "$file" ]; then
-                echo "<details>"
-                echo "<summary>${leg}: diff unavailable (job failed or skipped)</summary>"
-                echo "</details>"
-                echo
-                continue
-              fi
-              if grep -q "^No baseline cached yet" "$file"; then
-                echo "<details>"
-                echo "<summary>${leg}: no baseline cached yet</summary>"
-                echo
-                cat "$file"
-                echo "</details>"
-                echo
-                continue
-              fi
-              if grep -q "^No changes vs baseline" "$file"; then
-                echo "<details>"
-                echo "<summary>${leg}: $(cat "$file")</summary>"
-                echo "</details>"
-                echo
-                continue
-              fi
-              baseline="$(sed -n 's/^baseline: //p' "$file" | head -1)"
-              tail -n +2 "$file" > "$file.body"
-              file="$file.body"
-              echo "<details>"
-              echo "<summary>${leg}: changed (baseline: ${baseline})</summary>"
-              echo
-              echo '```diff'
-              head -c 6000 "$file"
-              echo '```'
-              if [ "$(wc -c < "$file")" -gt 6000 ]; then
-                echo "truncated, [full output](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-              fi
-              echo "</details>"
-              echo
-            done
-          } > /tmp/comment.md
-
-      - name: Find existing manifest diff comment
-        uses: peter-evans/find-comment@v3
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "<!-- ami-manifest-diff -->"
-
-      - name: Comment on PR
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: /tmp/comment.md
-          edit-mode: replace
+      - uses: ./.github/actions/post-ami-manifest-comment

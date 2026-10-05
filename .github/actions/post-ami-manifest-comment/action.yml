@@ -1,0 +1,75 @@
+name: Post AMI manifest comment
+description: Assembles the per-leg manifest diffs into one collapsed comment and posts it, updating any existing one in place
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        pattern: ami-manifest-diff-*
+        path: diffs
+        merge-multiple: false
+
+    - shell: bash
+      run: |
+        {
+          echo "<!-- ami-manifest-diff -->"
+          echo "## AMI manifest diff"
+          echo "Compares the AMI rootfs manifest between this PR and the last published AMI, per PG version and arch."
+          echo
+          for dir in diffs/ami-manifest-diff-*; do
+            leg="${dir#diffs/ami-manifest-diff-}"
+            file="$dir/manifest-diff.txt"
+            if [ ! -f "$file" ]; then
+              echo "<details>"
+              echo "<summary>${leg}: diff unavailable (job failed or skipped)</summary>"
+              echo "</details>"
+              echo
+              continue
+            fi
+            if grep -q "^No baseline cached yet" "$file"; then
+              echo "<details>"
+              echo "<summary>${leg}: no baseline cached yet</summary>"
+              echo
+              cat "$file"
+              echo "</details>"
+              echo
+              continue
+            fi
+            if grep -q "^No changes vs baseline" "$file"; then
+              echo "<details>"
+              echo "<summary>${leg}: $(cat "$file")</summary>"
+              echo "</details>"
+              echo
+              continue
+            fi
+            baseline="$(sed -n 's/^baseline: //p' "$file" | head -1)"
+            tail -n +2 "$file" > "$file.body"
+            file="$file.body"
+            echo "<details>"
+            echo "<summary>${leg}: changed (baseline: ${baseline})</summary>"
+            echo
+            echo '```diff'
+            head -c 6000 "$file"
+            echo '```'
+            if [ "$(wc -c < "$file")" -gt 6000 ]; then
+              echo "truncated, [full output](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            fi
+            echo "</details>"
+            echo
+          done
+        } > /tmp/comment.md
+
+    - uses: peter-evans/find-comment@v3
+      id: fc
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: "github-actions[bot]"
+        body-includes: "<!-- ami-manifest-diff -->"
+
+    - uses: peter-evans/create-or-update-comment@v4
+      with:
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: /tmp/comment.md
+        edit-mode: replace

@@ -1,0 +1,56 @@
+name: Diff AMI manifest
+description: Restores the cached develop-baseline manifest and diffs it against this build's manifest
+
+inputs:
+  postgres_version:
+    description: 'PostgreSQL major version (e.g., 15)'
+    required: true
+  arch:
+    description: 'Architecture (amd64|arm64)'
+    required: true
+  manifest_path:
+    description: 'Path to the manifest this build captured'
+    required: false
+    default: /tmp/ami-manifest.txt
+  diff_path:
+    description: 'Path to write the resulting diff to'
+    required: false
+    default: /tmp/manifest-diff.txt
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        MANIFEST_PATH: ${{ inputs.manifest_path }}
+      run: mv "$MANIFEST_PATH" /tmp/current-manifest.txt
+
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ inputs.manifest_path }}
+        key: ami-manifest-${{ inputs.postgres_version }}-${{ inputs.arch }}-
+        restore-keys: ami-manifest-${{ inputs.postgres_version }}-${{ inputs.arch }}-
+
+    - shell: bash
+      env:
+        MANIFEST_PATH: ${{ inputs.manifest_path }}
+        DIFF_PATH: ${{ inputs.diff_path }}
+      run: |
+        if [ -s "$MANIFEST_PATH" ]; then
+          mv "$MANIFEST_PATH" /tmp/baseline.txt
+          BASELINE_VERSION=$(sed -n 's/^# ami-version: //p' /tmp/baseline.txt | head -1)
+        else
+          touch /tmp/baseline.txt
+          BASELINE_VERSION=""
+        fi
+        mv /tmp/current-manifest.txt "$MANIFEST_PATH"
+        {
+          if [ -z "$BASELINE_VERSION" ]; then
+            echo "No baseline cached yet. Publish one by running ami-release-nix.yml (push to develop)."
+          elif diff -q /tmp/baseline.txt "$MANIFEST_PATH" > /dev/null; then
+            echo "No changes vs baseline $BASELINE_VERSION."
+          else
+            echo "baseline: $BASELINE_VERSION"
+            diff -u /tmp/baseline.txt "$MANIFEST_PATH" || true
+          fi
+        } | tee "$DIFF_PATH"
