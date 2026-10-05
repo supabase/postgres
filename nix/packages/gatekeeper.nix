@@ -1,10 +1,6 @@
 { pkgs, ... }:
 let
-
-  go124 = pkgs.go_1_24;
-  buildGoModule124 = pkgs.buildGoModule.override { go = go124; };
-
-  upstream-gatekeeper = buildGoModule124 {
+  upstream-gatekeeper = pkgs.buildGoModule {
     pname = "jit-db-gatekeeper";
     version = "1.0.5";
     src = pkgs.fetchFromGitHub {
@@ -16,6 +12,9 @@ let
     vendorHash = null;
 
     buildInputs = [ pkgs.pam ];
+
+    # dlopen'd into PAM, which already links these libs
+    NIX_DONT_SET_RPATH = pkgs.stdenv.isLinux;
 
     buildPhase = ''
       runHook preBuild
