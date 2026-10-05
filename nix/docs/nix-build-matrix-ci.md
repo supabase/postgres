@@ -6,11 +6,12 @@ Something broke the Nix CI, you need a quick and dirty fix to unblock you as fas
 
 ### **Q:** A test is failing; how to ignore it and generate an AMI image anyway?
 
-You can adopt the nuclear approach and generate the AMI image regardless of the test outcome. To do that, remove the three conditions checking the `nix-build-checks` result in the if clause of the `run-testinfra` step in the `.github/workflows/nix-build.yml` file.
+You can adopt the nuclear approach and generate the AMI image regardless of the test outcome.
+To do that, remove the three conditions checking the `nix-build-checks` result in the if clause of the `run-testinfra` step in the `.github/workflows/nix-build.yml` file.
 
 IE. remove the following conditions:
 
-```
+```nix
 (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
 (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success')
 (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
@@ -22,24 +23,31 @@ Note: the merge queue check will block the PR from getting merged to develop.
 
 **A:** Edit the `BUILD_RUNNER_MAP` dictionary in the `github_matrix.py` script and change the `labels` entry to match one of the still functional GitHub runners.
 
-You can see the available runners and their associated labels on [this page](https://github.com/supabase/postgres/actions/runners?tab=self-hosted). Note: the blacksmith runners are considered as "self-hosted" by GitHub.
+You can see the available runners and their associated labels on [this page](https://github.com/supabase/postgres/actions/runners?tab=self-hosted).
+Note: the blacksmith runners are considered as "self-hosted" by GitHub.
 
 ### **Q:** The eval step is OOM-ing, what should I do?
 
-**A:** The evaluation can be quite costly memory-wise. [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs) is spinning up multiple nix evaluation in parallel to speed things up. The tradeoff is an increased memory consumption compared to a single-process eval.
+**A:** The evaluation can be quite costly memory-wise.
+We use [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs) to spin up multiple nix evaluations in parallel to speed eval up.
+The tradeoff is an increased memory consumption compared to a single-process eval.
 
 There are two ways to reduce memory consumption, both configurable from the `github_matrix` call in `github/workflows/nix-eval.yml`.
 
-**Reduce the number of parallel workers** by overriding `--nb-eval-jobs-workers`. By default, `github_matrix.py` spins up one eval instance per CPU. For a `blacksmith-32vcpu-ubuntu-2404` worker, that means 32 nix eval instances.
+**Reduce the number of parallel workers** by overriding `--nb-eval-jobs-workers`.
+By default, `github_matrix.py` spins up one eval instance per CPU.
+For a `blacksmith-32vcpu-ubuntu-2404` worker, that means 32 nix eval instances.
 
-```terminal
-nix run .\#github-matrix -- --nb-eval-jobs-workers 16 checks legacyPackages
+```shell
+nix run .#github-matrix -- --nb-eval-jobs-workers 16 checks legacyPackages
 ```
 
-**Reduce the per-worker memory limit** by overriding `--max-memory-size` (in MiB). The default is 3072 (3 GiB). Lowering this value causes nix-eval-jobs to restart workers that exceed the threshold, trading evaluation speed for lower peak memory usage.
+**Reduce the per-worker memory limit** by overriding `--max-memory-size` (in MiB).
+The default is 3072 (3 GiB).
+Lowering this value causes nix-eval-jobs to restart workers that exceed the threshold, trading evaluation speed for lower peak memory usage.
 
-```terminal
-nix run .\#github-matrix -- --max-memory-size 2048 checks legacyPackages
+```shell
+nix run .#github-matrix -- --max-memory-size 2048 checks legacyPackages
 ```
 
 Both flags can be combined for tighter control over total memory consumption.
@@ -48,13 +56,18 @@ Both flags can be combined for tighter control over total memory consumption.
 
 The Nix artifacts are built from the `Nix CI` workflow defined in the `.github/workflows/nix-build.yml` file.
 
-It's performed in 4 steps. Each step depending on the previous one.
+It's performed in 4 steps.
+Each step depending on the previous one.
 
 ### Step 1: Eval
 
-Conceptually, this workflow evaluates the `legacyPackages` and `checks` flake outputs using [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs). This step produces a json map containing the jobs to build/check for each architecture. That json map is later consumed by the subsequent build and check steps.
+Conceptually, this workflow evaluates the `legacyPackages` and `checks` flake outputs using [nix-eval-jobs](https://github.com/NixOS/nix-eval-jobs).
+This step produces a json map containing the jobs to build/check for each architecture.
+That json map is later consumed by the subsequent build and check steps.
 
-Implementation-wise, most of the code lives in the `/nix/packages/github-matrix/github_matrix.py` python script. The script starts an instance of `nix-eval-jobs` and parses its output. Each parsed job is associated with a builder tag using the following order:
+Implementation-wise, most of the code lives in the `/nix/packages/github-matrix/github_matrix.py` python script.
+The script starts an instance of `nix-eval-jobs` and parses its output.
+Each parsed job is associated with a builder tag using the following order:
 
 1. KVM packages -> self-hosted runners
 2. Large packages on Linux -> 32vcpu ephemeral runners
@@ -63,22 +76,56 @@ Implementation-wise, most of the code lives in the `/nix/packages/github-matrix/
 
 KVM packages and large packages are determined respectively by the `kvm` and `big-parallel` Nix attributes.
 
-GHA-wise, `.github/workflows/nix-eval.yml` is called by the `nix-build.yml` workflow. `github_matrix.py` is instantiated in the `Generate Nix Matrix` step through a `nix run` call. The resulting json map is stored in the workflow output and later used by the subsequent steps.
+GHA-wise, `.github/workflows/nix-eval.yml` is called by the `nix-build.yml` workflow.
+`github_matrix.py` is instantiated in the `Generate Nix Matrix` step through a `nix run` call.
+The resulting json map is stored in the workflow output and later used by the subsequent steps.
 
 ### Step 2: Build
 
-This step is in charge of building the various Nix packages. Build matrices are instantiated for each system architecture.
+This step is in charge of building the various Nix packages.
+Build matrices are instantiated for each system architecture.
 
-Implementation-wise, this step is less complex than the eval one. Most of the magic lies in the machine selection. The previous step attached an instance label to each job on which kind of GitHub runner it should be executed.
+Implementation-wise, this step is less complex than the eval one.
+Most of the magic lies in the machine selection.
+The previous step attached an instance label to each job on which kind of GitHub runner it should be executed.
 
-The actual build step is a simple `nix build ${job}` invocation. The result of this build is pushed to the `nix-postgres-artifacts` s3 cache. This step is instantiated 3 times, once for each of the supported architectures: aarch64 darwin, aarch64 linux and x86_64 linux.
+The actual build step is a simple `nix build ${job}` invocation.
+The result of this build is pushed to the `nix-postgres-artifacts` s3 cache.
+This step is instantiated 3 times, once for each of the supported architectures: aarch64 darwin, aarch64 linux and x86_64 linux.
 
 ### Step 3: Check
 
-This step uses again the JSON generated by the evaluation step to run various automated tests. Some of those require virtualization and are run on the self hosted runners able to perform KVM virtualization.
+This step uses again the JSON generated by the evaluation step to run various automated tests.
+Some of those require virtualization and are run on the self hosted runners able to perform KVM virtualization.
 
-Implementation-wise, this step is very similar to the previous one. A matrix job instantiated once per target architecture. It's "just" running on a different set of Nix jobs. These tests do assume the various plugins have been built and are part of the Nix cache.
+Implementation-wise, this step is very similar to the previous one.
+A matrix job instantiated once per target architecture.
+It's "just" running on a different set of Nix jobs.
+These tests do assume the various plugins have been built and are part of the Nix cache.
 
 ### Step 4: Images Build
 
-The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami/build-ami.sh` script to generate a AMI image based on ubuntu noble. The generation of the image is done in two steps.
+The last step builds AMI images using the artifacts generated during step 2 and uses the `nix/packages/build-ami/build-ami.sh` script to generate a AMI image based on ubuntu noble.
+The generation of the image is done in two steps.
+
+`build-ami` takes build inputs through its CLI, with `AWS_REGION` and standard AWS credentials supplied through the environment.
+It reads the release version from its packaged `ansible/vars.yml` and constructs the Packer arguments for each stage:
+
+```bash
+export AWS_REGION=us-east-1
+nix run .#build-ami -- --stage stage1 --arch arm64 --postgres-version 17 --git-sha <source-sha>
+nix run .#build-ami -- --stage stage2 --arch arm64 --postgres-version 17 --git-sha <source-sha>
+```
+
+Use the same source SHA for both stages.
+With `CI=true`, `GITHUB_RUN_ID` is required and the execution ID is `<postgres-version>-<arch>-<GITHUB_RUN_ID>`, matching the workflow cleanup commands.
+Local builds use `<postgres-version>-<arch>-<source-sha>` so both stages share an execution ID.
+Stage 2 defaults to installing packages from the source SHA; `--packages-git-sha` selects a different package revision.
+Architecture-specific Packer var files supply the instance type.
+AMI name prefixes default to `supabase-postgres-<AWS arch>-<short source SHA>` (the first 12 characters of `--git-sha`).
+The release AMI workflow sets `AMI_RELEASE=true` to use the stable `supabase-postgres-<AWS arch>` prefix instead.
+Packer appends the release version (and the input hash and stage suffix for stage 1).
+See [`build-ami.sh`](../packages/build-ami/build-ami.sh) for the CLI options.
+`RUNNER_DEBUG=1` enables Packer debug logging, and `CI=true` selects abort-on-error.
+Outside CI, errors prompt when stdin is a terminal and trigger cleanup otherwise.
+The shared GitHub Action passes `--output-file "$GITHUB_OUTPUT"` to publish the build outputs.
