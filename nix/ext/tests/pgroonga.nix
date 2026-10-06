@@ -102,6 +102,58 @@ pkgs.testers.runNixOSTest {
 
       test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
+      def pgrn_bytes():
+        return int(server.succeed(
+          "find /var/lib/postgresql/data/base -name 'pgrn*' -printf '%s\\n' | awk '{s+=$1} END {print s+0}'"
+        ).strip())
+
+      def sql(query):
+        return server.succeed(f"psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -t -A -c \"{query}\"").strip()
+
+      def setup_indexed_table():
+        sql("CREATE EXTENSION IF NOT EXISTS pgroonga WITH SCHEMA extensions")
+        sql("CREATE SCHEMA IF NOT EXISTS repro")
+        sql("CREATE TABLE repro.t AS SELECT g AS id, md5(g::text) || ' ' || md5((g * 7)::text) AS body FROM generate_series(1, 20000) g")
+        sql("CREATE INDEX repro_idx ON repro.t USING pgroonga (body)")
+        sql("SELECT count(*) FROM repro.t WHERE body &@~ 'abc'")
+
+      with subtest("Repro orphaned pgrn files"):
+        sql("DROP EXTENSION IF EXISTS pgroonga CASCADE")
+        sql("DROP SCHEMA IF EXISTS repro CASCADE")
+        baseline = pgrn_bytes()
+        print(f"REPRO baseline: {baseline}")
+
+        scenarios = {
+          "drop_index_then_drop_extension": ["DROP INDEX repro.repro_idx", "DROP EXTENSION pgroonga"],
+          "drop_table": ["DROP TABLE repro.t", "DROP EXTENSION pgroonga"],
+          "drop_schema_cascade": ["DROP SCHEMA repro CASCADE", "DROP EXTENSION pgroonga"],
+          "drop_extension_cascade": ["DROP EXTENSION pgroonga CASCADE"],
+        }
+        for name, statements in scenarios.items():
+          sql("DROP EXTENSION IF EXISTS pgroonga CASCADE")
+          sql("DROP SCHEMA IF EXISTS repro CASCADE")
+          setup_indexed_table()
+          populated = pgrn_bytes()
+          for statement in statements:
+            sql(statement)
+          sql("DROP SCHEMA IF EXISTS repro CASCADE")
+          left = pgrn_bytes()
+          print(f"REPRO {name}: baseline={baseline} populated={populated} after_drop={left}")
+
+        with subtest("Dropped index data is kept until a pgroonga index is vacuumed"):
+          sql("DROP EXTENSION IF EXISTS pgroonga CASCADE")
+          sql("DROP SCHEMA IF EXISTS repro CASCADE")
+          setup_indexed_table()
+          sql("DROP INDEX repro.repro_idx")
+          leaked = pgrn_bytes()
+          sql("CREATE TABLE repro.tiny (body text)")
+          sql("CREATE INDEX tiny_idx ON repro.tiny USING pgroonga (body)")
+          sql("VACUUM repro.tiny")
+          vacuumed = pgrn_bytes()
+          print(f"REPRO vacuum: leaked={leaked} vacuumed={vacuumed}")
+          assert vacuumed < leaked, f"Expected VACUUM on a pgroonga index to remove dropped index data, got {leaked} -> {vacuumed}"
+          sql("DROP SCHEMA repro CASCADE")
+
       with subtest("Check upgrade path with postgresql 15"):
         test.check_upgrade_path("15")
 
