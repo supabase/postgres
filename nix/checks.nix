@@ -935,15 +935,21 @@
                 self'.legacyPackages.psql_17.exts.supautils
                 self'.legacyPackages."psql_orioledb-17".exts.supautils
               ];
+              # gatekeeper is dlopened by the base AMI's own system PAM stack, not postgres's nix
+              # closure, so it isn't covered by "core and extensions share one glibc" — pin it
+              # explicitly so a future nixpkgs glibc bump can't silently outrun the base image.
+              pamPaths = [ self'.packages.gatekeeper ];
             in
             pkgs.runCommand "glibc-version-check"
               {
                 nativeBuildInputs = [ pkgs.binutils ];
-                inherit legacyPaths;
+                inherit legacyPaths pamPaths;
               }
               ''
                 # 2.31: Ubuntu 20.04's glibc.
                 ${lib.getExe checkScript} 2.31 $legacyPaths
+                # 2.40: current core floor.
+                ${lib.getExe checkScript} 2.40 $pamPaths
                 touch $out
               '';
           collation-version-check =
