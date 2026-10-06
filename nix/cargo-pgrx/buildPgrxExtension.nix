@@ -150,6 +150,8 @@ let
   finalArgs = argsForBuildRustPackage // {
     buildInputs = (args.buildInputs or [ ]);
 
+    stripAllList = args.stripAllList or [ "lib" ];
+
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
       ++ [

@@ -7,13 +7,10 @@
   libuv,
   makeWrapper,
   switch-ext-version,
-  curl_8_6,
+  curl,
   latestOnly ? false,
 }:
 
-let
-  curl = curl_8_6;
-in
 let
   pname = "pg_net";
   build =

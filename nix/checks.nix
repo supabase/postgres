@@ -76,7 +76,9 @@
               };
 
               pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
-              supautils = self'.legacyPackages."psql_${pgpkg.version}".exts.supautils;
+              supautils = pkgs.callPackage ../ext/supautils.nix {
+                postgresql = pkgs."postgresql_${pgpkg.version}";
+              };
 
               # Use different ports to allow parallel test runs
               # slim packages get their own ports to avoid conflicts

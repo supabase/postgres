@@ -48,7 +48,6 @@
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
         ../ext/wrappers/default.nix
-        ../ext/supautils.nix
         ../ext/plv8
       ];
 
@@ -74,11 +73,11 @@
       ];
 
       getPostgresqlPackage =
-        version: latestOnly:
+        version: slim:
         let
           base = pkgs."postgresql_${version}";
         in
-        if latestOnly then base.override { systemdSupport = false; } else base;
+        if slim then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
       # of adding a bit of metadata to the package, which can be used by other
       # tools to inspect what the contents of the install are: the PSQL
@@ -119,9 +118,10 @@
         {
           variant ? "full",
           latestOnly ? false,
+          slim ? latestOnly,
         }:
         let
-          postgresql = getPostgresqlPackage version latestOnly;
+          postgresql = getPostgresqlPackage version slim;
           extensionsToUse =
             if variant == "cli" then
               cliExtensions
@@ -148,9 +148,10 @@
         {
           variant ? "full",
           latestOnly ? false,
+          slim ? latestOnly,
         }:
         let
-          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          pkgsList = makeOurPostgresPkgs version { inherit variant latestOnly slim; };
           baseAttrs = builtins.listToAttrs (
             map (drv: {
               name = drv.name;
@@ -178,15 +179,16 @@
         {
           variant ? "full",
           latestOnly ? false,
+          slim ? latestOnly,
         }:
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
           postgresql =
             let
-              base = getPostgresqlPackage version latestOnly;
+              base = getPostgresqlPackage version slim;
             in
             if variant == "cli" then base.override { portable = true; } else base;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly slim; };
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -195,7 +197,7 @@
           pgbin = postgresql.withPackages (_ps: postgres-pkgs);
 
           # For slim packages, include minimal glibc locales for initdb locale support
-          extraPaths = lib.optionals (latestOnly && pkgs.stdenv.isLinux) [
+          extraPaths = lib.optionals (slim && pkgs.stdenv.isLinux) [
             glibcLocalesMinimal
           ];
         in
@@ -225,15 +227,30 @@
         {
           variant ? "full",
           latestOnly ? false,
+          slim ? latestOnly,
         }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant latestOnly; };
-          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
+          bin = makePostgresBin version { inherit variant latestOnly slim; };
+          exts = makeOurPostgresPkgsSet version { inherit variant latestOnly slim; };
         };
       basePackages = {
         psql_15 = makePostgres "15" { };
         psql_17 = makePostgres "17" { };
         psql_orioledb-17 = makePostgres "orioledb-17" { };
+      };
+      latestPackages = {
+        psql_15_latest = makePostgres "15" {
+          latestOnly = true;
+          slim = false;
+        };
+        psql_17_latest = makePostgres "17" {
+          latestOnly = true;
+          slim = false;
+        };
+        psql_orioledb-17_latest = makePostgres "orioledb-17" {
+          latestOnly = true;
+          slim = false;
+        };
       };
       slimPackages = {
         psql_15_slim = makePostgres "15" { latestOnly = true; };
@@ -249,10 +266,10 @@
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // slimPackages // cliPackages);
+      }) (basePackages // latestPackages // slimPackages // cliPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // slimPackages // cliPackages;
+      legacyPackages = basePackages // latestPackages // slimPackages // cliPackages;
     };
 }
