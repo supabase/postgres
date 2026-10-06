@@ -950,7 +950,7 @@
               '';
           collation-version-check =
             let
-              baseline = lib.strings.trim (builtins.readFile ./collation-version-baseline.txt);
+              baseline = "glibc-2.40-66";
               actual = pkgs.glibc.name;
             in
             pkgs.runCommand "collation-version-check" { } (
@@ -960,7 +960,7 @@
                 ''
                   echo "glibc collation data changed: baseline is ${baseline}, build has ${actual}."
                   echo "This can silently reorder existing indexes without a version-string change."
-                  echo "If this bump has been reviewed for collation safety, update collation-version-baseline.txt to match."
+                  echo "If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match."
                   exit 1
                 ''
             );
