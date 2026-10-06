@@ -76,7 +76,7 @@
               };
 
               pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
-              supautils = pkgs.callPackage ../ext/supautils.nix {
+              supautils = pkgs.callPackage ./ext/supautils.nix {
                 postgresql = pkgs."postgresql_${pgpkg.version}";
               };
 
