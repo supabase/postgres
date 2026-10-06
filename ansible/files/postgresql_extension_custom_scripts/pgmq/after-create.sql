@@ -18,15 +18,13 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
-  -- detach and drop both historical drop_queue signatures
-  begin
+  -- detach both historical drop_queue signatures, if present as extension members
+  if to_regprocedure('pgmq.drop_queue(text)') is not null then
     alter extension pgmq drop function pgmq.drop_queue(text);
-  exception when others then null;
-  end;
-  begin
+  end if;
+  if to_regprocedure('pgmq.drop_queue(text, boolean)') is not null then
     alter extension pgmq drop function pgmq.drop_queue(text, boolean);
-  exception when others then null;
-  end;
+  end if;
 
   drop function if exists pgmq.drop_queue(text);
   drop function if exists pgmq.drop_queue(text, boolean);
