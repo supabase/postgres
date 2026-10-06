@@ -929,9 +929,8 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
-              # these packages are dlopened into processes with old glibcs so need a lower version floor
+              # supautils is dlopened into already-running legacy pre-nix postgres, so it needs a lower floor than an AMI build.
               legacyPaths = [
-                self'.packages.gatekeeper
                 self'.legacyPackages.psql_15.exts.supautils
                 self'.legacyPackages.psql_17.exts.supautils
                 self'.legacyPackages."psql_orioledb-17".exts.supautils
