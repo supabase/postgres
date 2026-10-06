@@ -2,6 +2,9 @@
 set -euo pipefail
 shopt -s nullglob
 
+# shellcheck disable=SC2016 # backtick is literal markdown, not a command substitution
+desc='Compares built package versions in `legacyPackages` between this PR and its base commit, per system.'
+
 all_no_diff=true
 for dir in diffs/diff-*; do
 	file="$dir/diff.txt"
@@ -16,7 +19,7 @@ if [ "$all_no_diff" = "true" ]; then
 	{
 		echo "<!-- version-diff -->"
 		echo "## Package version diff: none"
-		echo 'Compares built package versions in `legacyPackages` between this PR and its base commit, per system.'
+		echo "$desc"
 		echo
 		echo "### No Package Differences"
 		echo "All packages are hash-identical on all systems (${systems})."
@@ -25,7 +28,7 @@ else
 	{
 		echo "<!-- version-diff -->"
 		echo "## Package version diff"
-		echo 'Compares built package versions in `legacyPackages` between this PR and its base commit, per system.'
+		echo "$desc"
 		echo
 		for dir in diffs/diff-*; do
 			system="${dir#diffs/diff-}"
