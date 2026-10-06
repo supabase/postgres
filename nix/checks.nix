@@ -953,17 +953,12 @@
               baseline = "glibc-2.40-66";
               actual = pkgs.glibc.name;
             in
-            pkgs.runCommand "collation-version-check" { } (
-              if actual == baseline then
-                "touch $out"
-              else
-                ''
-                  echo "glibc collation data changed: baseline is ${baseline}, build has ${actual}."
-                  echo "This can silently reorder existing indexes without a version-string change."
-                  echo "If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match."
-                  exit 1
-                ''
-            );
+            assert lib.assertMsg (actual == baseline) ''
+              glibc collation data changed: baseline is ${baseline}, build has ${actual}.
+              This can change collation versions and require a reindex.
+              If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
+            '';
+            pkgs.runCommand "collation-version-check" { } "touch $out";
         };
     };
 }
