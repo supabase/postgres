@@ -11,7 +11,6 @@ let
       hash = "sha256-xabGzCTzWwT8568xg6sdlE32OYPXlG9Fei0DoyAoXgo=";
     };
     vendorHash = "sha256-BPW4nC9gxDbyhA5UOfFAtOIusNvwJ7pQiprZsqTiak0=";
-    env.CGO_ENABLED = "0";
   };
 
   # Audit specifications bundled as a package

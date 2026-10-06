@@ -23,7 +23,6 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "supabase-groonga";
   version = "14.0.5";
-  NIX_CFLAGS_COMPILE = "-include ${../../glibc-compat-shim.h}";
   src = fetchurl {
     url = "https://packages.groonga.org/source/groonga/groonga-${finalAttrs.version}.tar.gz";
     hash = "sha256-y4UGnv8kK0z+br8wXpPf57NMXkdEJHcLCuTvYiubnIc=";
