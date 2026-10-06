@@ -2,8 +2,7 @@
 set -euo pipefail
 shopt -s nullglob
 
-# shellcheck disable=SC2016 # backtick is literal markdown, not a command substitution
-desc='Compares built package versions in `legacyPackages` between this PR and its base commit, per system.'
+desc="Compares built package versions in \`legacyPackages\` between this PR and its base commit, per system."
 
 all_no_diff=true
 for dir in diffs/diff-*; do
