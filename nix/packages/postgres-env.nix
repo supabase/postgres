@@ -14,7 +14,7 @@
         pkgs.symlinkJoin {
           name = "postgres-env-${version}";
           paths = [
-            self'.packages."psql_${version}_latest/bin"
+            self'.packages."psql_${version}_env/bin"
             self'.packages.pg_prove
             self'.packages.supabase-groonga
           ]

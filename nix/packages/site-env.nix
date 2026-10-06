@@ -21,7 +21,7 @@
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [
-            (pkgs.callPackage ../ext/supautils.nix { postgresql = pkgs."postgresql_${version}"; })
+            self'.legacyPackages."psql_${version}".exts.supautils
             activate
           ]
           ++ extraPaths;
