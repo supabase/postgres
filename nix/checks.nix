@@ -204,6 +204,7 @@
                 "pg_partman"
                 "pg_repack"
                 "pg_tle"
+                "pg_tle_dependencies"
                 "pgtap"
                 "pgmq"
                 "pgroonga"
@@ -223,6 +224,7 @@
                 "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
                 "btree_gist_nan" # needs btree_gist, not in the CLI prime file
                 "hstore_copy_binary" # needs hstore
+                "pgrst_watch_triggers" # needs dblink, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"

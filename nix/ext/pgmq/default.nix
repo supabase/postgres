@@ -36,7 +36,7 @@ let
       inherit pname version;
       buildInputs = [ postgresql ];
       src = fetchFromGitHub {
-        owner = "tembo-io";
+        owner = "pgmq";
         repo = pname;
         rev = "v${version}";
         inherit hash;

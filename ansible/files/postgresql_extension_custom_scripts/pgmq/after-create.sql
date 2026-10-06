@@ -1,12 +1,15 @@
 do $$
 declare
-  extoid oid := (select oid from pg_extension where extname = 'pgmq');
-  extversion text := (select extversion from pg_extension where extname = 'pgmq');
-  search_path text := (select current_setting('search_path'));
+  extoid oid;
+  extversion text;
+  search_path text;
   r record;
   cls pg_class%rowtype;
 begin
-  perform set_config('search_path', '', true);
+  search_path := current_setting('search_path');
+  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+
+  select e.oid, e.extversion into extoid, extversion from pg_extension e where extname = 'pgmq';
 
 /*
     Override the pgmq.drop_queue to check if relevant tables are owned
@@ -189,6 +192,5 @@ $shim$ LANGUAGE plpgsql;
     end if;
   end loop;
 
-  -- restore configs
   perform set_config('search_path', search_path, true);
 end $$;
