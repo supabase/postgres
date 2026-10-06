@@ -7,13 +7,10 @@
   libuv,
   makeWrapper,
   switch-ext-version,
-  curl_8_6,
+  curl,
   latestOnly ? false,
 }:
 
-let
-  curl = curl_8_6;
-in
 let
   pname = "pg_net";
   build =
@@ -50,23 +47,28 @@ let
           rm sql/pg_net--0.5.1--0.6.sql
         '';
 
+      # curl >= 8.17 makes <curl/multi.h> pull in the curl_multi_setopt
+      # typecheck macro, which breaks the declaration in multi.h before 0.20.4.
       env.NIX_CFLAGS_COMPILE =
-        if (lib.versionOlder version "0.19.1") then
-          "-Wno-error"
-        else if
-          (
-            builtins.elem version [
-              "0.19.5"
-              "0.20.0"
-            ]
-            && stdenv.isDarwin
-          )
-        then
-          # Fix for dangling pointer warning on darwin with newer clang
-          # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
-          "-Wno-error=dangling-assignment"
-        else
-          "";
+        lib.optionalString (lib.versionOlder version "0.20.4") "-DCURL_DISABLE_TYPECHECK "
+        + (
+          if (lib.versionOlder version "0.19.1") then
+            "-Wno-error"
+          else if
+            (
+              builtins.elem version [
+                "0.19.5"
+                "0.20.0"
+              ]
+              && stdenv.isDarwin
+            )
+          then
+            # Fix for dangling pointer warning on darwin with newer clang
+            # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
+            "-Wno-error=dangling-assignment"
+          else
+            ""
+        );
 
       installPhase = ''
         mkdir -p $out/{lib,share/postgresql/extension}

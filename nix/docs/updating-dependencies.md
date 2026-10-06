@@ -70,9 +70,6 @@ Similar patterns can be followed for other dependencies defined in the nix packa
 
 ## Updating nixpkgs
 
-The flake uses two nixpkgs inputs:
+`nixpkgs` tracks the current NixOS stable channel and builds everything, including Postgres and its extensions. Update it with `nix flake update nixpkgs`. When the stable release changes, also move `nix-darwin` to the matching `nix-darwin-YY.MM` branch.
 
-- `nixpkgs-pg` pins the nixpkgs that builds Postgres, every extension, and anything loaded into the postgres process, such as `supabase-groonga` and the `gatekeeper` PAM module. It pins glibc 2.40. After a glibc change, Postgres warns that the running collation version differs from the one stored in each database. Leave this input alone unless you plan that migration. Code built against a newer glibc fails to load into a postgres process running an older one.
-- `nixpkgs` tracks the current NixOS stable channel and builds everything else. Update it with `nix flake update nixpkgs`. When the stable release changes, also move `nix-darwin` to the matching `nix-darwin-YY.MM` branch.
-
-After an update, check that every Postgres output keeps its drvPath, for example `nix eval --raw .#packages.x86_64-linux."psql_17/bin".drvPath`.
+A nixpkgs update can change glibc. After a glibc change, Postgres warns that the collation version stored in each database differs from the running one, until each database runs `ALTER DATABASE ... REFRESH COLLATION VERSION`.

@@ -280,20 +280,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-pg": {
-      "locked": {
-        "lastModified": 1767460468,
-        "narHash": "sha256-3xDI4xtzovwqE/eAxCwmXxUqBg6Yoam2L1u0IwRNhW4=",
-        "rev": "fb7944c166a3b630f177938e478f0378e64ce108",
-        "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre921484.fb7944c166a3/nixexprs.tar.xz"
-      },
-      "original": {
-        "rev": "fb7944c166a3b630f177938e478f0378e64ce108",
-        "type": "tarball",
-        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre921484.fb7944c166a3/nixexprs.tar.xz"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1790920529,
@@ -320,7 +306,6 @@
         "nix2container": "nix2container",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
-        "nixpkgs-pg": "nixpkgs-pg",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix"
       }

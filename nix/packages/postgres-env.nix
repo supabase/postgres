@@ -2,7 +2,7 @@
   perSystem =
     {
       lib,
-      pkgs-pg,
+      pkgs,
       self',
       ...
     }:
@@ -11,7 +11,7 @@
       # postgres user's nix profile, during image provisioning or instance update.
       makePostgresEnv =
         version:
-        pkgs-pg.symlinkJoin {
+        pkgs.symlinkJoin {
           name = "postgres-env-${version}";
           paths = [
             self'.packages."psql_${version}/bin"
@@ -19,12 +19,12 @@
             self'.packages.supabase-groonga
             self'.packages."postgresql_${version}_src"
           ]
-          ++ lib.optionals pkgs-pg.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
-          ++ lib.optionals (pkgs-pg.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
+          ++ lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
+          ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
           # orioledb.so ships as a separate extension package (nix/ext/orioledb.nix), not
           # part of the postgresql derivation itself, so its debug output isn't covered by
           # postgresql_${version}_debug above and has to be pulled in explicitly.
-          ++ lib.optionals (pkgs-pg.stdenv.isLinux && version == "orioledb-17") [
+          ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
             self'.legacyPackages."psql_${version}".exts.orioledb.debug
           ];
         };

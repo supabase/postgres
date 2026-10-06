@@ -6,10 +6,6 @@
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;
-      };
-      _module.args.pkgs-pg = import inputs.nixpkgs-pg {
-        inherit system;
-        config.allowUnfree = true;
         permittedInsecurePackages = [ "v8-9.7.106.18" ];
         overlays = [
           (import inputs.rust-overlay)
@@ -23,10 +19,10 @@
               };
             in
             _final: _prev: {
-              curl_8_6 = oldstable.curl;
               v8_oldstable = oldstable.v8;
             }
           )
+          inputs.devshell.overlays.default
         ];
       };
     };

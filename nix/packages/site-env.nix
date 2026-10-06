@@ -9,17 +9,11 @@
       ...
     }:
     let
-      # Built from the main nixpkgs. supautils is dlopen'd into postgres without
-      # an RPATH, so it runs against the postgres process's glibc.
-      supautils =
-        version:
-        pkgs.callPackage ../ext/supautils.nix { postgresql = self'.packages."postgresql_${version}"; };
-
       makeSiteEnv =
         version: extraPaths:
         pkgs.buildEnv {
           name = "site-env-${version}";
-          paths = [ (supautils version) ] ++ extraPaths;
+          paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
         };
 
       siteEnvs = {
