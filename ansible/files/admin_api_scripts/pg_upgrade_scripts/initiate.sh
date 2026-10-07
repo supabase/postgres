@@ -38,6 +38,7 @@ IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
+POSTGRES_SHARE_DIR="/usr/share/postgresql/${PGVERSION}"
 MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
@@ -95,13 +96,16 @@ OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid =
 #     pg_upgrade lives. The file goes stale when pg_upgrade exits.
 PG_UPGRADE_LOCK_DROPIN_DIR="/run/systemd/system/postgresql.service.d"
 PG_UPGRADE_LOCK_DROPIN="$PG_UPGRADE_LOCK_DROPIN_DIR/pg-upgrade-lock.conf"
+PG_UPGRADE_PID_LOCK_MARKER="/run/pg-upgrade-source.pid"
 PG_UPGRADE_LOCK_WATCHER_PID=""
+PG_UPGRADE_START_BLOCKED=""
 
 block_postgres_start() {
 	mkdir -p "$PG_UPGRADE_LOCK_DROPIN_DIR"
 	# The empty ExecStartPre= resets the unit's own list: otherwise a blocked start
 	# would still run postgres_prestart.sh (as root) before /bin/false fails it.
 	printf '[Service]\nExecStartPre=\nExecStartPre=/bin/false\nRestart=no\n' >"$PG_UPGRADE_LOCK_DROPIN"
+	PG_UPGRADE_START_BLOCKED=1
 	systemctl daemon-reload
 }
 
@@ -122,7 +126,14 @@ start_pid_lock_watcher() {
 			log "WARNING: $PGDATAOLD/postmaster.pid already exists; not creating the pg_upgrade lock"
 			exit 0
 		fi
-		printf '%s\n' "$upg_pid" >"$PGDATAOLD/postmaster.pid"
+		printf '%s\n' "$upg_pid" >"$PG_UPGRADE_PID_LOCK_MARKER" || exit 1
+		if ! (
+			set -o noclobber
+			cat "$PG_UPGRADE_PID_LOCK_MARKER" >"$PGDATAOLD/postmaster.pid"
+		); then
+			log "WARNING: could not create the pg_upgrade PID lock"
+			exit 1
+		fi
 		chown postgres:postgres "$PGDATAOLD/postmaster.pid"
 		chmod 0600 "$PGDATAOLD/postmaster.pid"
 		log "Locked $PGDATAOLD with pg_upgrade pid $upg_pid"
@@ -134,23 +145,32 @@ start_pid_lock_watcher() {
 unblock_postgres_start() {
 	if [ -n "$PG_UPGRADE_LOCK_WATCHER_PID" ]; then
 		kill "$PG_UPGRADE_LOCK_WATCHER_PID" 2>/dev/null || true
+		wait "$PG_UPGRADE_LOCK_WATCHER_PID" 2>/dev/null || true
 		PG_UPGRADE_LOCK_WATCHER_PID=""
 	fi
-	# Only remove our own one-line file, never a real postmaster's (6+ lines).
 	local pidfile="${PGDATAOLD:-/nonexistent}/postmaster.pid"
-	if [ -f "$pidfile" ] && [ "$(wc -l <"$pidfile")" -le 1 ]; then
-		rm -f "$pidfile"
-	fi
 	# Callers run this under `||` where set -e is off, so report failures through
 	# the return status: a failed daemon-reload leaves the block loaded in systemd.
 	local rc=0
+	if [ -f "$PG_UPGRADE_PID_LOCK_MARKER" ]; then
+		if [ -f "$pidfile" ] && cmp -s "$PG_UPGRADE_PID_LOCK_MARKER" "$pidfile"; then
+			rm -f "$pidfile" || rc=1
+		fi
+		if [ "$rc" -eq 0 ]; then
+			rm -f "$PG_UPGRADE_PID_LOCK_MARKER" || rc=1
+		fi
+	fi
 	if [ -z "$IS_CI" ]; then
 		if [ -e "$PG_UPGRADE_LOCK_DROPIN" ]; then
+			PG_UPGRADE_START_BLOCKED=1
 			rm -f "$PG_UPGRADE_LOCK_DROPIN" || rc=1
 			rmdir --ignore-fail-on-non-empty "$PG_UPGRADE_LOCK_DROPIN_DIR" || true
-			systemctl daemon-reload || rc=1
 		fi
-		systemctl reset-failed postgresql || true
+		systemctl daemon-reload || rc=1
+		if [ "$rc" -eq 0 ] && [ -n "$PG_UPGRADE_START_BLOCKED" ]; then
+			systemctl reset-failed postgresql || true
+			PG_UPGRADE_START_BLOCKED=""
+		fi
 	fi
 	return $rc
 }
@@ -166,8 +186,7 @@ assert_source_stayed_down() {
 		log "ERROR: postgresql.service is ${state} after pg_upgrade; the copied data files may be inconsistent"
 		return 1
 	fi
-	# A postmaster writes 6+ lines; our lock is a single line.
-	if [ -f "$PGDATAOLD/postmaster.pid" ] && [ "$(wc -l <"$PGDATAOLD/postmaster.pid")" -gt 1 ]; then
+	if [ -f "$PGDATAOLD/postmaster.pid" ] && ! cmp -s "$PG_UPGRADE_PID_LOCK_MARKER" "$PGDATAOLD/postmaster.pid"; then
 		log "ERROR: a postmaster ran in $PGDATAOLD during pg_upgrade; the copied data files may be inconsistent"
 		return 1
 	fi
@@ -199,15 +218,15 @@ cleanup() {
 
 	# Put the old share dir back before the start block is lifted, so a start that
 	# slips in right after it cannot see the new version's files.
-	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
-		rm "/usr/share/postgresql/${PGVERSION}"
+	if [ -L "$POSTGRES_SHARE_DIR" ]; then
+		rm "$POSTGRES_SHARE_DIR" || log "WARNING: failed to remove the postgres share symlink"
 
-		if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+		if [ -f "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
 		fi
 
-		if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
+		if [ -d "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
 		fi
 	fi
 
@@ -285,10 +304,21 @@ EOF
 # cleanup() already ran (or died part way under set -e), only make sure the
 # start block is gone.
 on_exit() {
+	local exit_code=$?
+	trap - ERR
+	set +e
 	if [ -z "$CLEANUP_STARTED" ]; then
-		cleanup failed
+		(
+			trap - ERR EXIT
+			set -e
+			cleanup failed
+		)
+		if [ "$exit_code" -eq 0 ]; then
+			exit_code=1
+		fi
 	fi
-	unblock_postgres_start || true
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+	exit "$exit_code"
 }
 
 function handle_extensions {
