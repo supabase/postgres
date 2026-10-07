@@ -5,7 +5,7 @@ variable "ami" {
 
 variable "profile" {
   type    = string
-  default = "${env("AWS_PROFILE")}"
+  default = env("AWS_PROFILE")
 }
 
 variable "ami_name" {
@@ -34,6 +34,11 @@ variable "build-vol" {
 
 locals {
   creator = "packer"
+}
+
+variable "postgres_major_version" {
+  type    = string
+  default = env("POSTGRES_MAJOR_VERSION")
 }
 
 variable "postgres-version" {
@@ -231,7 +236,8 @@ build {
   provisioner "shell" {
     environment_vars = [
       "ARGS=${var.ansible_arguments}",
-      "POSTGRES_SUPABASE_VERSION=${var.postgres-version}"
+      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
+      "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
     ]
     use_env_var_file    = true
     script              = "ebssurrogate/scripts/surrogate-bootstrap-nix.sh"
