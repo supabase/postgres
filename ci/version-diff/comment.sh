@@ -2,7 +2,7 @@
 set -euo pipefail
 shopt -s nullglob
 
-desc="Compares built package versions in \`legacyPackages\` between this PR and its base commit, per system."
+desc='Compares built package versions in legacyPackages between this PR and its base commit, per system.'
 
 all_no_diff=true
 for dir in diffs/diff-*; do
