@@ -47,7 +47,7 @@
       import_tasks: tasks/setup-postgres.yml
 
     - name: Install PostgreSQL/OrioleDB coredump capture and processing
-      when: is_psql_oriole
+      when: stage2 and is_psql_oriole
       import_tasks: tasks/setup-coredump-processing.yml
 
     - name: Install PgBouncer
