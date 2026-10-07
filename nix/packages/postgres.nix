@@ -122,7 +122,7 @@
         }:
         let
           postgresql = getPostgresqlPackage version latestOnly;
-          allExtensions =
+          extensionsToUse =
             if variant == "cli" then
               cliExtensions
             else if (builtins.elem version [ "orioledb-17" ]) then
@@ -131,7 +131,6 @@
               dbExtensions17
             else
               ourExtensions;
-          extensionsToUse = builtins.filter (x: variant != "env" || x != ../ext/supautils.nix) allExtensions;
           extCallPackage = pkgs.lib.callPackageWith (
             pkgs
             // {
@@ -236,11 +235,6 @@
         psql_17 = makePostgres "17" { };
         psql_orioledb-17 = makePostgres "orioledb-17" { };
       };
-      envPackages = {
-        psql_15_env = makePostgres "15" { variant = "env"; };
-        psql_17_env = makePostgres "17" { variant = "env"; };
-        psql_orioledb-17_env = makePostgres "orioledb-17" { variant = "env"; };
-      };
       slimPackages = {
         psql_15_slim = makePostgres "15" { latestOnly = true; };
         psql_17_slim = makePostgres "17" { latestOnly = true; };
@@ -255,10 +249,10 @@
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // envPackages // slimPackages // cliPackages);
+      }) (basePackages // slimPackages // cliPackages);
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // envPackages // slimPackages // cliPackages;
+      legacyPackages = basePackages // slimPackages // cliPackages;
     };
 }
