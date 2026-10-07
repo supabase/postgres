@@ -1,41 +1,25 @@
 - hosts: all
   become: yes
 
-  pre_tasks:
-    - name: Set the platform arch as a fact
-      ansible.builtin.set_fact:
-        platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
-
-    - import_tasks: tasks/setup-system.yml
-  vars_files:
-    - ./vars.yml
-
-  vars:
-    sql_files:
-      - {
-          source: "pgbouncer_config/pgbouncer_auth_schema.sql",
-          dest: "00-schema.sql",
-        }
-      - { source: "stat_extension.sql", dest: "01-extension.sql" }
-    
   environment:
     PATH: /usr/lib/postgresql/bin:{{ ansible_env.PATH }}
 
-  tasks:
-    - set_fact:
-        supabase_internal: true
-      tags:
-        - install-supabase-internal
+  vars_files:
+    - ./vars.yml
 
-    - set_fact:
-        parallel_jobs: 16
-
-    # is_psql_oriole is also (re)computed in stage2-setup-postgres.yml, but the
-    # coredump-processing import below runs in both stage1 and stage2, so the
-    # fact needs to exist before stage2-only tasks have had a chance to set it.
-    - name: Determine postgres flavor from psql_version
+  # Set facts only in here, never in any tasks.
+  # This avoids redefining/duplicates or different values (buggy)
+  # Don't do anything else in the pre_tasks, do any task stuff in tasks
+  pre_tasks:
+    - name: Set global facts
       ansible.builtin.set_fact:
-        is_psql_oriole: "{{ psql_version is defined and psql_version == 'psql_orioledb-17' }}"
+        is_psql_15: "{{ psql_version == 'psql_15' }}"
+        is_psql_17: "{{ psql_version == 'psql_17' }}"
+        is_psql_oriole: "{{ psql_version == 'psql_orioledb-17' }}"
+        platform: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}"
+
+  tasks:
+    - import_tasks: tasks/setup-system.yml
 
     - name: Install tuned
       import_tasks: tasks/setup-tuned.yml
