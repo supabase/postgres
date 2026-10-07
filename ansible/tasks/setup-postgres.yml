@@ -107,20 +107,13 @@
         group: 'postgres'
         src: 'files/postgresql_config/custom_read_replica.conf'
 
-    - name: configure pam
-      block:
-        - name: Check if psql_version is psql_15
-          ansible.builtin.set_fact:
-            is_psql_15: "{{ psql_version in ['psql_15'] }}"
-
-        - name: create placeholder pam config
-          when: not is_psql_15
-          file:
-            path: '/etc/pam.d/postgresql'
-            state: touch
-            owner: postgres
-            group: postgres
-            mode: 0664
+    - name: Create placeholder pam config
+      ansible.builtin.file:
+        path: '/etc/pam.d/postgresql'
+        state: touch
+        owner: postgres
+        group: postgres
+        mode: '0664'
 
     - name: Create directory on data volume
       ansible.builtin.file:
