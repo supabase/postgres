@@ -21,14 +21,16 @@ begin
     this update is backwards compatible with version 1.4.4 but should be removed once we're on
     physical backups everywhere
 */
--- Detach and delete the official function
-if extversion = '1.4.4' then
-  alter extension pgmq drop function pgmq.drop_queue;
-  drop function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq drop function pgmq.drop_queue(TEXT);
-  drop function pgmq.drop_queue(TEXT);
-end if;
+  -- detach both historical drop_queue signatures, if present as extension members
+  if to_regprocedure('pgmq.drop_queue(text)') is not null then
+    alter extension pgmq drop function pgmq.drop_queue(text);
+  end if;
+  if to_regprocedure('pgmq.drop_queue(text, boolean)') is not null then
+    alter extension pgmq drop function pgmq.drop_queue(text, boolean);
+  end if;
+
+  drop function if exists pgmq.drop_queue(text);
+  drop function if exists pgmq.drop_queue(text, boolean);
 
 -- Create and reattach the patched function
 CREATE FUNCTION pgmq.drop_queue(queue_name TEXT)
@@ -143,11 +145,17 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql;
 
-if extversion = '1.4.4' then
-  alter extension pgmq add function pgmq.drop_queue;
-else -- 1.5.1+
-  alter extension pgmq add function pgmq.drop_queue(TEXT);
-end if;
+  alter extension pgmq add function pgmq.drop_queue(text);
+
+-- compat shim, not reattached: keeps ALTER EXTENSION UPDATE from ever touching it
+CREATE OR REPLACE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN)
+RETURNS BOOLEAN AS $shim$
+BEGIN
+    RETURN pgmq.drop_queue(queue_name);
+END;
+$shim$ LANGUAGE plpgsql;
+
+  alter function pgmq.drop_queue(text, boolean) owner to postgres;
 
 
   update pg_extension set extowner = 'postgres'::regrole where extname = 'pgmq';
