@@ -85,6 +85,88 @@ fi
 
 OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
 
+# From step 10 until cleanup, nothing may start the source postgres: pg_upgrade
+# copies the data files without a postmaster holding the directory, and a start
+# in that window (Salt's `service.running`, adminapi, Restart=always, ...)
+# yields a copy that is inconsistent with the dump. Two independent guards:
+#  1. a runtime systemd drop-in that makes `systemctl start` fail;
+#  2. a postmaster.pid in the old data dir holding pg_upgrade's own PID, which
+#     makes any postmaster (systemd or direct pg_ctl) refuse to start while
+#     pg_upgrade lives. The file goes stale when pg_upgrade exits.
+PG_UPGRADE_LOCK_DROPIN_DIR="/run/systemd/system/postgresql.service.d"
+PG_UPGRADE_LOCK_DROPIN="$PG_UPGRADE_LOCK_DROPIN_DIR/pg-upgrade-lock.conf"
+PG_UPGRADE_LOCK_WATCHER_PID=""
+
+block_postgres_start() {
+	mkdir -p "$PG_UPGRADE_LOCK_DROPIN_DIR"
+	printf '[Service]\nExecStartPre=/bin/false\nRestart=no\n' >"$PG_UPGRADE_LOCK_DROPIN"
+	systemctl daemon-reload
+}
+
+# Wait for the new cluster's temp server (the old one is down from then on,
+# its schema dump is done) and then claim the old data dir's postmaster.pid.
+# It must not exist before: pg_upgrade aborts if it finds one at startup.
+start_pid_lock_watcher() {
+	(
+		# set -E would otherwise run cleanup() from this subshell
+		trap - ERR
+		set +e
+		until [ -e "$PGDATANEW/postmaster.pid" ]; do sleep 0.2; done
+		upg_pid=$(pgrep -u postgres -f -- "--old-datadir=${PGDATAOLD}" | head -1)
+		if [ -z "$upg_pid" ]; then
+			exit 0
+		fi
+		if [ -e "$PGDATAOLD/postmaster.pid" ]; then
+			log "WARNING: $PGDATAOLD/postmaster.pid already exists; not creating the pg_upgrade lock"
+			exit 0
+		fi
+		printf '%s\n' "$upg_pid" >"$PGDATAOLD/postmaster.pid"
+		chown postgres:postgres "$PGDATAOLD/postmaster.pid"
+		chmod 0600 "$PGDATAOLD/postmaster.pid"
+		log "Locked $PGDATAOLD with pg_upgrade pid $upg_pid"
+	) &
+	PG_UPGRADE_LOCK_WATCHER_PID=$!
+}
+
+# Idempotent: cleanup() can run before step 10 or more than once.
+unblock_postgres_start() {
+	if [ -n "$PG_UPGRADE_LOCK_WATCHER_PID" ]; then
+		kill "$PG_UPGRADE_LOCK_WATCHER_PID" 2>/dev/null || true
+		PG_UPGRADE_LOCK_WATCHER_PID=""
+	fi
+	# Only remove our own one-line file, never a real postmaster's (6+ lines).
+	local pidfile="${PGDATAOLD:-/nonexistent}/postmaster.pid"
+	if [ -f "$pidfile" ] && [ "$(wc -l <"$pidfile")" -le 1 ]; then
+		rm -f "$pidfile"
+	fi
+	if [ -z "$IS_CI" ]; then
+		if [ -e "$PG_UPGRADE_LOCK_DROPIN" ]; then
+			rm -f "$PG_UPGRADE_LOCK_DROPIN"
+			rmdir --ignore-fail-on-non-empty "$PG_UPGRADE_LOCK_DROPIN_DIR" || true
+			systemctl daemon-reload
+		fi
+		systemctl reset-failed postgresql || true
+	fi
+}
+
+# The source must have stayed down for the whole copy; if not, the copy is
+# inconsistent and the upgrade has to fail (the source data is untouched).
+assert_source_stayed_down() {
+	local state=""
+	if [ -z "$IS_CI" ]; then
+		state=$(systemctl is-active postgresql || true)
+	fi
+	if [ "$state" = "active" ] || [ "$state" = "activating" ] || [ "$state" = "reloading" ]; then
+		log "ERROR: postgresql.service is ${state} after pg_upgrade; the copied data files may be inconsistent"
+		return 1
+	fi
+	# A postmaster writes 6+ lines; our lock is a single line.
+	if [ -f "$PGDATAOLD/postmaster.pid" ] && [ "$(wc -l <"$PGDATAOLD/postmaster.pid")" -gt 1 ]; then
+		log "ERROR: a postmaster ran in $PGDATAOLD during pg_upgrade; the copied data files may be inconsistent"
+		return 1
+	fi
+}
+
 cleanup() {
 	UPGRADE_STATUS=${1:-"failed"}
 	EXIT_CODE=${?:-0}
@@ -127,6 +209,8 @@ cleanup() {
 			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
 		fi
 	fi
+
+	unblock_postgres_start
 
 	log "Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
@@ -616,15 +700,22 @@ EOF
 		sleep 3
 		systemctl stop postgresql
 
+		block_postgres_start
 	else
 		CI_stop_postgres
 	fi
+
+	start_pid_lock_watcher
 
 	# Start the old PostgreSQL instance with version-specific options
 	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	else
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+	fi
+
+	if ! assert_source_stayed_down; then
+		false # not exit: let the ERR trap run cleanup
 	fi
 
 	# copying custom configurations
