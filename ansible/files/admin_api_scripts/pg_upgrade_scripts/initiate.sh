@@ -99,7 +99,9 @@ PG_UPGRADE_LOCK_WATCHER_PID=""
 
 block_postgres_start() {
 	mkdir -p "$PG_UPGRADE_LOCK_DROPIN_DIR"
-	printf '[Service]\nExecStartPre=/bin/false\nRestart=no\n' >"$PG_UPGRADE_LOCK_DROPIN"
+	# The empty ExecStartPre= resets the unit's own list: otherwise a blocked start
+	# would still run postgres_prestart.sh (as root) before /bin/false fails it.
+	printf '[Service]\nExecStartPre=\nExecStartPre=/bin/false\nRestart=no\n' >"$PG_UPGRADE_LOCK_DROPIN"
 	systemctl daemon-reload
 }
 
@@ -109,7 +111,7 @@ block_postgres_start() {
 start_pid_lock_watcher() {
 	(
 		# set -E would otherwise run cleanup() from this subshell
-		trap - ERR
+		trap - ERR EXIT
 		set +e
 		until [ -e "$PGDATANEW/postmaster.pid" ]; do sleep 0.2; done
 		upg_pid=$(pgrep -u postgres -f -- "--old-datadir=${PGDATAOLD}" | head -1)
@@ -139,14 +141,18 @@ unblock_postgres_start() {
 	if [ -f "$pidfile" ] && [ "$(wc -l <"$pidfile")" -le 1 ]; then
 		rm -f "$pidfile"
 	fi
+	# Callers run this under `||` where set -e is off, so report failures through
+	# the return status: a failed daemon-reload leaves the block loaded in systemd.
+	local rc=0
 	if [ -z "$IS_CI" ]; then
 		if [ -e "$PG_UPGRADE_LOCK_DROPIN" ]; then
-			rm -f "$PG_UPGRADE_LOCK_DROPIN"
+			rm -f "$PG_UPGRADE_LOCK_DROPIN" || rc=1
 			rmdir --ignore-fail-on-non-empty "$PG_UPGRADE_LOCK_DROPIN_DIR" || true
-			systemctl daemon-reload
+			systemctl daemon-reload || rc=1
 		fi
 		systemctl reset-failed postgresql || true
 	fi
+	return $rc
 }
 
 # The source must have stayed down for the whole copy; if not, the copy is
@@ -167,7 +173,10 @@ assert_source_stayed_down() {
 	fi
 }
 
+CLEANUP_STARTED=""
+
 cleanup() {
+	CLEANUP_STARTED=1
 	UPGRADE_STATUS=${1:-"failed"}
 	EXIT_CODE=${?:-0}
 
@@ -188,16 +197,8 @@ cleanup() {
 		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
-	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
-		log "Copying pg_upgrade output to /var/log"
-		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
-		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
-		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		ship_logs "$LOG_FILE" || true
-		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
-		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
-	fi
-
+	# Put the old share dir back before the start block is lifted, so a start that
+	# slips in right after it cannot see the new version's files.
 	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
 		rm "/usr/share/postgresql/${PGVERSION}"
 
@@ -210,7 +211,19 @@ cleanup() {
 		fi
 	fi
 
-	unblock_postgres_start
+	# Same reasoning as the timers: lift the start block before anything else that
+	# can fail under set -e, or the restart below would be refused.
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
+	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
+		log "Copying pg_upgrade output to /var/log"
+		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
+		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
+		chmod -R 0750 /var/log/pg_upgrade_output.d/
+		ship_logs "$LOG_FILE" || true
+		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
+		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
+	fi
 
 	log "Restarting postgresql"
 	if [ -z "$IS_CI" ]; then
@@ -267,6 +280,17 @@ EOF
 	fi
 }
 
+# EXIT trap: any exit that did not go through cleanup() (set -u abort, TERM/INT)
+# still restores the source, since step 10 left it stopped and disabled. If
+# cleanup() already ran (or died part way under set -e), only make sure the
+# start block is gone.
+on_exit() {
+	if [ -z "$CLEANUP_STARTED" ]; then
+		cleanup failed
+	fi
+	unblock_postgres_start || true
+}
+
 function handle_extensions {
 	if [ -z "$IS_CI" ]; then
 		retry 5 systemctl restart postgresql
@@ -317,6 +341,11 @@ EOF
 }
 
 function initiate_upgrade {
+	# This runs in a background subshell, where the parent's traps do not apply.
+	trap on_exit EXIT
+	trap 'exit 143' TERM
+	trap 'exit 130' INT
+
 	# Before anything destructive: no || true here, a timer firing mid-upgrade is
 	# exactly what this guards against, and failing now leaves the project untouched.
 	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
