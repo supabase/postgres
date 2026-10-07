@@ -185,8 +185,8 @@
         passno: "2"
         state: mounted
 
-    - name: Initialize the database stage2 (NOT PG17 NOR PG17-OrioleDB)
-      when: psql_version not in ['psql_17', 'psql_orioledb-17']
+    - name: Initialize the database stage2 (PG15)
+      when: is_psql_15
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
@@ -200,8 +200,8 @@
       vars:
         ansible_command_timeout: 60
 
-    - name: Initialize the database stage2 (PG17 OR PG17-OrioleDB)
-      when: psql_version in ['psql_17', 'psql_orioledb-17']
+    - name: Initialize the database stage2 (PG17+)
+      when: not is_psql_15
       become: true
       become_user: 'postgres'
       ansible.builtin.command:
