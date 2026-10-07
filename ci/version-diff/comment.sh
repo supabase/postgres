@@ -2,7 +2,7 @@
 set -euo pipefail
 shopt -s nullglob
 
-desc='Compares built package versions in legacyPackages between this PR and its base commit, per system.'
+desc='Compares built package versions in legacyPackages between this PR and the tip of the base branch, per system.'
 
 all_no_diff=true
 for dir in diffs/diff-*; do
@@ -14,14 +14,10 @@ for dir in diffs/diff-*; do
 done
 
 if [ "$all_no_diff" = "true" ]; then
-	systems=$(for dir in diffs/diff-*; do echo "\`${dir#diffs/diff-}\`"; done | paste -sd', ')
+	systems=$(for dir in diffs/diff-*; do echo "${dir#diffs/diff-}"; done | paste -sd, - | sed 's/,/, /g')
 	{
 		echo "<!-- version-diff -->"
-		echo "## Package version diff: none"
-		echo "$desc"
-		echo
-		echo "### No Package Differences"
-		echo "All packages are hash-identical on all systems (${systems})."
+		echo "## Package version diff: none (${systems})"
 	} >/tmp/comment.md
 else
 	{
