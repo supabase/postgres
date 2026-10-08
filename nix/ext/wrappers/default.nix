@@ -371,6 +371,7 @@ in
     }
   '';
   passthru = {
+    debug = map (p: p.debug) packages;
     perVersion = packagesAttrSet;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;

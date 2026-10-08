@@ -19,18 +19,32 @@
           self'.legacyPackages."psql_${version}".exts.orioledb.debug
         ];
 
+      extDebug =
+        version:
+        let
+          exts = self'.legacyPackages."psql_${version}".exts;
+        in
+        lib.concatMap (e: e.passthru.debug) [
+          exts.wrappers
+          exts.pg_graphql
+          exts.pg_jsonschema
+        ];
+
       makePostgresEnvDebug =
         version:
         pkgs.symlinkJoin {
           name = "postgres-env-${version}-debug";
-          paths = debugPaths version;
+          paths = debugPaths version ++ lib.optionals pkgs.stdenv.isLinux (extDebug version);
         };
 
       realisePostgresDebug =
         version:
-        pkgs.writeShellScriptBin "realise-postgres-debug" ''
-          exec nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath}
-        '';
+        pkgs.writeShellApplication {
+          name = "realise-postgres-debug";
+          text = ''
+            nix-env --profile /nix/var/nix/profiles/postgres-debug --set "$(nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath})"
+          '';
+        };
 
       makePostgresEnv =
         version:
