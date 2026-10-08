@@ -66,12 +66,12 @@ in
                       if ! [[ $version =~ $re ]]; then
                         err "does not match $re"
                       fi
-                    done < <(yq -o props '.postgres_release' ansible/vars.yml)
+                    done < <(yq -o props '.postgres_release' ansible/postgres_release.yml)
                     exit $exit_code
                   '';
                 }
               );
-              files = "^ansible/vars\\.yml$";
+              files = "^ansible/postgres_release\\.yml$";
               language = "system";
               verbose = true;
             };

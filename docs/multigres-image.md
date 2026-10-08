@@ -217,7 +217,7 @@ cp /tmp/tmp.<id>/regression_output/results/z_multigres-orioledb-17_*.out nix/tes
 5. run the tests locally with 
   a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
   b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
-6. release the images by incrementing these values in `ansible/vars.yaml` by 1 
+6. release the images by incrementing these values in `ansible/postgres_release.yml` by 1
 
 # Full version strings for each major version
 ```

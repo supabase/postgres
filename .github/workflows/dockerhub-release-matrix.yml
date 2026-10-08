@@ -6,8 +6,9 @@ on:
       - develop
       - release/*
     paths:
-      - ".github/workflows/dockerhub-release-matrix.yml"
-      - "ansible/vars.yml"
+      - .github/workflows/dockerhub-release-matrix.yml
+      - ansible/postgres_release.yml
+      - ansible/vars.yml
   workflow_dispatch:
 
 permissions:
@@ -122,7 +123,7 @@ jobs:
               } else {
                 $"postgres($base_version)"
               }
-              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
               if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
@@ -136,7 +137,7 @@ jobs:
               } else {
                 $"postgres($base_version)"
               }
-              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
               if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
@@ -180,7 +181,7 @@ jobs:
             } else {
               $"postgres($base_version)"
             }
-            let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
             let pg_version = if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
           '

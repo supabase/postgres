@@ -73,8 +73,8 @@ writeShellApplication {
     RUN_ID=$(date +%s)
 
     # Generate common-nix.vars.pkr.hcl
-    PG_VERSION=$(yq -r ".postgres_release[\"postgres$POSTGRES_VERSION\"]" ansible/vars.yml)
-    echo "postgres-version = \"$PG_VERSION\"" > common-nix.vars.pkr.hcl
+    PG_VERSION=$(yq -r ".postgres_release[\"postgres$POSTGRES_VERSION\"]" ansible/postgres_release.yml)
+    printf 'postgres-version = "%s"\n' "$PG_VERSION" >common-nix.vars.pkr.hcl
 
     # Build AMI Stage 1
     packer init amazon-arm64-nix.pkr.hcl
