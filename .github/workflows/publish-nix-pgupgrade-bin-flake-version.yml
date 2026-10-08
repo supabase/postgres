@@ -57,7 +57,14 @@ jobs:
             echo "Error: git revision '$rev' not found"
             exit 1
           fi
-          VERSION=$(git show "$rev:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+
+          # check if pg versions are in new file location or old
+          file=ansible/postgres_release.yml
+          if ! git cat-file -e "$rev:$file" 2>/dev/null; then
+            file=ansible/vars.yml
+          fi
+
+          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
@@ -114,7 +121,14 @@ jobs:
             echo "Error: git revision '$rev' not found"
             exit 1
           fi
-          VERSION=$(git show "$rev:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
+
+          # check if pg versions are in new file location or old
+          file=ansible/postgres_release.yml
+          if ! git cat-file -e "$rev:$file" 2>/dev/null; then
+            file=ansible/vars.yml
+          fi
+
+          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
