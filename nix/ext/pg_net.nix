@@ -8,10 +8,33 @@
   makeWrapper,
   switch-ext-version,
   curl,
+  libidn2,
+  libpsl,
+  libunistring,
+  libiconv,
   latestOnly ? false,
 }:
 
 let
+  # nixpkgs builds libunistring against gnu libiconv on darwin, which collides with apple's in the cli bundle
+  curlAppleIconv =
+    if stdenv.isDarwin then
+      let
+        libunistringApple = libunistring.override { libiconvReal = libiconv; };
+        libidn2Apple = libidn2.override { libunistring = libunistringApple; };
+        libpslApple =
+          (libpsl.override {
+            libidn2 = libidn2Apple;
+            libunistring = libunistringApple;
+          }).overrideAttrs
+            { env.NIX_LDFLAGS = "-liconv"; };
+      in
+      curl.override {
+        libidn2 = libidn2Apple;
+        libpsl = libpslApple;
+      }
+    else
+      curl;
   pname = "pg_net";
   build =
     version: hash:
@@ -19,7 +42,7 @@ let
       inherit pname version;
 
       buildInputs = [
-        curl
+        curlAppleIconv
         postgresql
       ]
       ++ lib.optional (version == "0.6") libuv;
