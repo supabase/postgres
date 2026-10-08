@@ -954,10 +954,11 @@
                 machine.succeed("su postgres -c '${psql_17}/bin/psql -h /tmp -d postgres -c \"select 1\"'")
                 machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata stop'")
 
-                # activate starts the gc
+                # site-nix-gc starts a transient gc unit
                 machine.succeed("mkdir -p /nix/var/nix/profiles/default")
                 machine.succeed("ln -sfn /run/current-system/sw/bin /nix/var/nix/profiles/default/bin")
                 machine.succeed("${site-env-17}/bin/activate")
+                machine.succeed("${site-env-17}/bin/site-nix-gc")
                 machine.succeed("systemctl is-active site-nix-gc")
                 machine.succeed("systemctl stop site-nix-gc")
               '';

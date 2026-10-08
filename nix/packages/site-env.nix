@@ -39,14 +39,9 @@
           # Site profile activation script. MUST STAY IDEMPOTENT!
           activate = pkgs.writeShellApplication {
             name = "activate";
-            runtimeInputs = [ site-nix-gc ];
             text = ''
               echo "Activating site profile."
               echo "supautils at /nix/var/nix/profiles/site/pg-extensions/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/pg-extensions."
-              echo "Unlinking old site profile generations."
-              nix-env --profile /nix/var/nix/profiles/site --delete-generations +2
-              echo "Scheduling background low priority nix garbage collection."
-              site-nix-gc
               echo "Site profile activated."
             '';
           };

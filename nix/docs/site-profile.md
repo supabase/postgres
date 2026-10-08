@@ -15,7 +15,9 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 /nix/var/nix/profiles/site/bin/activate
 ```
 
-`--set` downloads the path if it is missing. `activate` prunes the profile to its last two generations and starts a throttled `nix-store --gc` through systemd. The GC is skipped without systemd. `activate` must stay idempotent.
+`--set` downloads the path if it is missing. `activate` prints what the profile provides. It does not delete generations or collect garbage. `activate` must stay idempotent.
+
+`site-nix-gc` runs `nix-store --gc` in a throttled transient systemd unit. It is skipped without systemd.
 
 ## Roll back
 
@@ -23,7 +25,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 nix-env --profile /nix/var/nix/profiles/site --rollback
 ```
 
-`activate` keeps two generations, so one rollback step is always available.
+Rollback switches to the previous generation. It is available until old generations are deleted.
 
 ## Test
 
