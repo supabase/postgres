@@ -15,7 +15,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 /nix/var/nix/profiles/site/bin/activate
 ```
 
-`--set` downloads the path if it is missing. `activate` prints what the profile provides. It does not delete generations or collect garbage. `activate` must stay idempotent.
+`--set` downloads the path if it is missing. `activate` sets up supautils, and gatekeeper where present, idempotently.
 
 `site-nix-gc` runs `nix-store --gc` in a throttled transient systemd unit. It is skipped without systemd.
 
