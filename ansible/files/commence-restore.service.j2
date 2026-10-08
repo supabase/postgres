@@ -1,0 +1,11 @@
+[Unit]
+Description=admin-mgr commence-restore (started by admin-api)
+# Keep failed runs loaded so admin-api can read their exit status.
+CollectMode=inactive
+
+[Service]
+Type=notify
+TimeoutStartSec=15
+ExecStart=/usr/bin/admin-mgr commence-restore --run-as-service
+Restart=no
+OOMScoreAdjust=-1000
