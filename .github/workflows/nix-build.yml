@@ -215,6 +215,10 @@ jobs:
       - checks-aarch64-darwin
       - checks-aarch64-linux
       - checks-x86_64-linux
+    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through 
+    # not sure what GH's thinking is there that skipped == passed for the branch protection rule...
+    # insert Mr Incredible meme -> pass is pass, skipped is not passed, PR should not merge
+    if: always()
     steps:
       - name: Check dependent job results
         if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
