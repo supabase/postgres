@@ -36,7 +36,7 @@ jobs:
       - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(yq -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
+          VERSIONS=$(yq -e -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
@@ -73,7 +73,7 @@ jobs:
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(nix run nixpkgs#yq -- -e '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
@@ -107,7 +107,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/postgres_release.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- -er '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml)
           if [[ "$TARGET_ARCH" == amd64 ]]; then
             PG_VERSION="$PG_VERSION-amd64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           fi
