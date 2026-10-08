@@ -936,11 +936,7 @@
               postgresql_17_src
               ;
             psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
-            glibc-collation = collation.compare {
-              old = reference;
-              new = pkgs;
-              locales = collation.shippedLocales;
-            };
+            glibc-collation = collation.compare reference pkgs;
             icu-pin = collation.icuPin {
               inherit reference;
               postgresqls = with self'.packages; [
