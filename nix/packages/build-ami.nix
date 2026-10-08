@@ -18,7 +18,6 @@ let
         (root + "/ansible")
         (root + "/migrations")
         (root + "/packer")
-        (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
     };
 
@@ -151,7 +150,6 @@ writeShellApplication {
       packer init packer/stage2-nix-psql.pkr.hcl
       packer build -on-error $on_error \
         -var-file "packer/development-$ARCH.vars.pkr.hcl" \
-        -var-file "common-nix.vars.pkr.hcl" \
         -var "region=$REGION" \
         -var "source_ami=$STAGE1_AMI_ID" \
         "$@"
