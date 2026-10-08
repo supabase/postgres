@@ -915,16 +915,37 @@
           inherit self;
           inherit pkgs;
         })
-        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
-          inherit (self'.packages)
-            postgresql_15_debug
-            postgresql_15_src
-            postgresql_orioledb-17_debug
-            postgresql_orioledb-17_src
-            postgresql_17_debug
-            postgresql_17_src
-            ;
-          psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
-        };
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) (
+          let
+            collation = import ./tests/collation { inherit pkgs; };
+            # Databases created since 15.14.1.072 / 17.6.1.072 record glibc 2.40
+            # and ICU 75.1 as their collation versions. A library that sorts
+            # differently leaves their indexes mis-ordered.
+            reference = import (builtins.fetchTarball {
+              url = "https://releases.nixos.org/nixos/unstable/nixos-26.05pre921484.fb7944c166a3/nixexprs.tar.xz";
+              sha256 = "sha256-3xDI4xtzovwqE/eAxCwmXxUqBg6Yoam2L1u0IwRNhW4=";
+            }) { inherit (pkgs.stdenv.hostPlatform) system; };
+          in
+          {
+            inherit (self'.packages)
+              postgresql_15_debug
+              postgresql_15_src
+              postgresql_orioledb-17_debug
+              postgresql_orioledb-17_src
+              postgresql_17_debug
+              postgresql_17_src
+              ;
+            psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
+            glibc-collation = collation.compare reference pkgs;
+            icu-pin = collation.icuPin {
+              inherit reference;
+              postgresqls = with self'.packages; [
+                postgresql_15
+                postgresql_17
+                postgresql_orioledb-17
+              ];
+            };
+          }
+        );
     };
 }
