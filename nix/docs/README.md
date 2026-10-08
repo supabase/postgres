@@ -33,6 +33,7 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Update Nix Dependecies](./updating-dependencies.md)** - How to update the Nix dependencies
 - **[New Major PostgreSQL](./new-major-postgres.md)** - Adding support for new PostgreSQL versions
 - **[Nix Overlays](./nix-overlays.md)** - Understanding and using Nix overlays
+- **[Site Profile](./site-profile.md)** - The site profile deployed to instances
 
 ## Testing
 
