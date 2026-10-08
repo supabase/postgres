@@ -133,7 +133,7 @@ writeShellApplication {
         log_info "Reading component versions from ansible/vars.yml..."
         REST_VERSION=$(yq -r '.postgrest_release' "$REPO_ROOT/ansible/vars.yml")
         AUTH_VERSION=$(yq -r '.gotrue_release' "$REPO_ROOT/ansible/vars.yml")
-        PG_RELEASE=$(yq -r ".postgres_release[\"postgres$PG_VERSION\"]" "$REPO_ROOT/ansible/vars.yml")
+        PG_RELEASE=$(yq -r ".postgres_release[\"postgres$PG_VERSION\"]" "$REPO_ROOT/ansible/postgres_release.yml")
 
         log_info "  PostgREST: $REST_VERSION"
         log_info "  GoTrue: $AUTH_VERSION"

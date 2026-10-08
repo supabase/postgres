@@ -33,7 +33,7 @@ extensions not yet ported.
 | Path | Purpose |
 |---|---|
 | `nix/` | Core build system (flake-parts modules). `nix/postgresql/` = PG version configs/patches; `nix/ext/` = one file per extension package; `nix/config.nix` = pinned PG versions/hashes per major (source of truth for "what version are we on"); `nix/tests/` = pg_regress + smoke + migration NixOS tests; `nix/docs/` = the real developer docs (start here, not README) |
-| `ansible/` | Config management for the production AMI. `ansible/playbook.yml` = main playbook (Postgres/PostgREST/pgbouncer/Auth); `ansible/vars.yml` = **source of truth for AMI version tracking** (`postgres_release`, Docker release matrix); `ansible/files/postgresql_config/postgresql.conf.j2` = the actual GUC defaults shipped to customers |
+| `ansible/` | Config management for the production AMI. `ansible/playbook.yml` = main playbook (Postgres/PostgREST/pgbouncer/Auth); `ansible/postgres_release.yml` = **source of truth for the packaged PG release version** (`postgres_release`, used for Docker/AMI tags); `ansible/vars.yml` = AMI component version tracking (PostgREST, pgbouncer, etc.); `ansible/files/postgresql_config/postgresql.conf.j2` = the actual GUC defaults shipped to customers |
 | `migrations/db/` | SQL migrations and `init-scripts/` (what every new project's schema starts with — default-enabled extensions, roles) |
 | `migrations/tests/extensions/` | pgTAP tests, one per extension, run via `pg_prove` against a Nix-built Postgres as part of `nix flake check` (`nix/checks.nix`) — not against a Docker image |
 | `docker/`, `Dockerfile-*` | Container image definitions (`Dockerfile-supabase` is the version-parameterized base; `Dockerfile-multigres` layers `pgctld` + `pgbackrest` on top) |
@@ -78,7 +78,7 @@ pre-commit hook when using `nix develop`/direnv; also enforced in CI, so
 ## Non-obvious conventions and gotchas
 
 - **Version pinning**: `nix/config.nix` pins the exact upstream PG version +
-  source hash per major (`supabase.supportedPostgresVersions`). `ansible/vars.yml`
+  source hash per major (`supabase.supportedPostgresVersions`). `ansible/postgres_release.yml`
   (`postgres_release`) separately pins the *packaged* version string used for
   Docker/AMI tags — the two numbers look similar but serve different layers
   (Nix build input vs. release artifact tag); update both when bumping a PG
