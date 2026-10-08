@@ -1,12 +1,12 @@
 { pkgs, ... }:
 pkgs.buildGoModule {
   pname = "jit-db-gatekeeper";
-  version = "1.0.5";
+  version = "1.0.6";
   src = pkgs.fetchFromGitHub {
     owner = "supabase";
     repo = "jit-db-gatekeeper";
-    rev = "v1.0.5";
-    sha256 = "sha256-z+TE9Cc+NL6nvCIkAKFdSgm4V/1K45tRRnfQdauDjes=";
+    rev = "v1.0.6";
+    sha256 = "sha256-/m34Fl08PyRRIwi1eYkLUQWy+5V87sfE65HjEbVjFSs=";
   };
   vendorHash = null;
 
