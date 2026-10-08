@@ -40,7 +40,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           mkdir -p /tmp/drvpaths
-          for system in x86_64-linux aarch64-linux aarch64-darwin; do
+          for system in x86_64-linux aarch64-linux; do
             nix eval --no-pure-eval --json \
               --expr "(import $PWD/ci/version-diff/drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
               > "/tmp/drvpaths/$system.json"
@@ -286,22 +286,14 @@ jobs:
       - eval
       - builds-x86_64-linux
       - builds-aarch64-linux
-      - builds-aarch64-darwin
     strategy:
       fail-fast: false
       matrix:
         include:
           - system: x86_64-linux
             runs_on: blacksmith-32vcpu-ubuntu-2404
-            installer: ephemeral
           - system: aarch64-linux
             runs_on: blacksmith-4vcpu-ubuntu-2404-arm
-            installer: ephemeral
-          - system: aarch64-darwin
-            runs_on:
-              group: self-hosted-runners-nix
-              labels: [aarch64-darwin]
-            installer: self-hosted
     runs-on: ${{ matrix.runs_on }}
     steps:
       - name: Checkout PR head
@@ -315,13 +307,8 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
 
-      - name: Install nix (ephemeral)
-        if: matrix.installer == 'ephemeral'
+      - name: Install nix
         uses: ./head/.github/actions/nix-install-ephemeral
-
-      - name: Install nix (self-hosted)
-        if: matrix.installer == 'self-hosted'
-        uses: ./head/.github/actions/nix-install-self-hosted
 
       # HEAD side already done in eval
       - name: Download head drvPaths
