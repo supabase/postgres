@@ -18,9 +18,9 @@
 -- the API roles cannot.
 -- the pin lives in the platform config
 show supautils.extensions_parameter_overrides;
-               supautils.extensions_parameter_overrides                
------------------------------------------------------------------------
- {"pg_cron":{"schema":"pg_catalog"},"amcheck":{"schema":"pg_catalog"}}
+                                                                           supautils.extensions_parameter_overrides                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"pg_cron":{"schema":"pg_catalog"},"amcheck":{"schema":"pg_catalog"}, "postgis":{"schema":"extensions"}, "postgis_raster":{"schema":"extensions"}, "postgis_sfcgal":{"schema":"extensions"}}
 (1 row)
 
 -- precondition: postgres must not be a superuser, or nothing below is meaningful
