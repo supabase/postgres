@@ -17,7 +17,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 
 `--set` downloads the path if it is missing. `activate` sets up supautils, and gatekeeper where present, idempotently.
 
-`site-nix-gc` runs `nix-store --gc` in a throttled transient systemd unit. It is skipped without systemd.
+`site-nix-gc` keeps the last 3 site profile generations and the last 2 postgres and default profile generations. It then runs `nix-store --gc` in a throttled transient systemd unit, which is skipped without systemd.
 
 ## Roll back
 
@@ -25,7 +25,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 nix-env --profile /nix/var/nix/profiles/site --rollback
 ```
 
-Rollback switches to the previous generation. It is available until old generations are deleted.
+Rollback switches to the previous generation. `site-nix-gc` keeps the last 3.
 
 ## Test
 
