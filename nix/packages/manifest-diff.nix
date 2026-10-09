@@ -37,7 +37,11 @@ writeShellApplication {
         echo "No changes vs baseline $BASELINE_VERSION."
       else
         echo "baseline: $BASELINE_VERSION"
-        diff -u /tmp/baseline.txt "$MANIFEST_PATH" || true
+        diff \
+          --old-line-format='-%L' \
+          --new-line-format='+%L' \
+          --unchanged-group-format=$'... %dn unchanged\n' \
+          /tmp/baseline.txt "$MANIFEST_PATH" || true
       fi
     } | tee "$DIFF_PATH"
   '';
