@@ -10,10 +10,11 @@
 # Running an upgrade with these extensions enabled will result in errors due to
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"pg_backtrace"
 	"pg_graphql"
 	"pg_stat_monitor"
-	"pg_backtrace"
-	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"plpgsql_check" # old versioned library clashes with the preloaded new one
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -203,6 +204,13 @@ function handle_extensions {
 ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
+
+	# Rescope before dropping extensions: the fixed triggers are carried into the new
+	# cluster by pg_upgrade, so both the post-upgrade re-enable and the failure-path
+	# re-enable below fire them. Fail-soft: a broken rescope should not block the
+	# upgrade — but retry first, since a skipped rescope means the recreation of
+	# these extensions silently loses their wiring.
+	retry 3 rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
 
 	# Disable extensions if they're enabled
 	# Generate SQL script to re-enable them after upgrade
