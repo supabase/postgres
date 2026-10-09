@@ -20,8 +20,9 @@ def required_env(name):
     return value
 
 
-RUN_ID = required_env("EXECUTION_ID")
 AMI_ID = required_env("AMI_ID")
+AWS_REGION = required_env("AWS_REGION")
+RUN_ID = required_env("EXECUTION_ID")
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -133,16 +134,16 @@ GOTRUE_JWT_ADMIN_ROLES=supabase_admin,service_role
 GOTRUE_JWT_AUD=authenticated
 GOTRUE_JWT_SECRET=my_jwt_secret_which_is_not_so_secret
 """
-walg_config_json_content = """
-{
-  "AWS_REGION": "ap-southeast-1",
+walg_config_json_content = f"""
+{{
+  "AWS_REGION": "{AWS_REGION}",
   "WALG_S3_PREFIX": "",
   "PGDATABASE": "postgres",
   "PGUSER": "supabase_admin",
   "PGPORT": 5432,
   "WALG_DELTA_MAX_STEPS": 6,
   "WALG_COMPRESSION_METHOD": "lz4"
-}
+}}
 """
 anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyMjQ5NjYsImV4cCI6MjAxMTgwMDk2Nn0.QW95aRPA-4QuLzuvaIeeoFKlJP9J2hvAIpJ3WJ6G5zo"
 service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjIyNDk2NiwiZXhwIjoyMDExODAwOTY2fQ.Om7yqv15gC3mLGitBmvFRB3M4IsLsX9fXzTQnFM7lu0"
@@ -189,7 +190,7 @@ init_json_content = f"""
   "service_key": "{service_role_key}",
   "supabase_admin_key": "{supabase_admin_key}",
   "common_name": "db.aaaaaaaaaaaaaaaaaaaa.supabase.red",
-  "region": "ap-southeast-1",
+  "region": "{AWS_REGION}",
   "init_database_only": false
 }}
 """
@@ -264,7 +265,7 @@ def upload_file_via_sftp(ssh, local_path, remote_path):
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
 def host():
-    ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
+    ec2 = boto3.resource("ec2", region_name=AWS_REGION)
     image = ec2.Image(AMI_ID)
 
     def gzip_then_base64_encode(s: str) -> str:
@@ -291,7 +292,7 @@ def host():
                 "HttpTokens": "required",
                 "HttpEndpoint": "enabled",
             },
-            IamInstanceProfile={"Name": "pg-ap-southeast-1"},
+            IamInstanceProfile={"Name": f"pg-{AWS_REGION}"},
             InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
             MinCount=1,
             MaxCount=1,
@@ -300,7 +301,7 @@ def host():
                 {
                     "DeviceIndex": 0,
                     "AssociatePublicIpAddress": True,
-                    "Groups": ["sg-0a883ca614ebfbae0", "sg-014d326be5a1627dc"],
+                    "Groups": ["sg-0acb69901c38dd4b4", "sg-0faba7e0368748dbd"],
                 }
             ],
             UserData=f"""#cloud-config
