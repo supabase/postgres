@@ -247,6 +247,11 @@ session_preload_libraries = 'supautils'" \
 -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
 
+# summarize_wal is PostgreSQL 17+; PG15 refuses to start on an unknown GUC
+if [ "$VERSION" == "15" ]; then
+    perl -pi -e 's/^summarize_wal = on/#$&/' "$DATDIR/postgresql.conf"
+fi
+
 # Function to configure OrioleDB specific settings
 orioledb_config_items() {
     if [[ "$1" = "orioledb-17" && "$CURRENT_SYSTEM" != "aarch64-darwin" ]]; then
