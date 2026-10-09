@@ -137,6 +137,14 @@ jobs:
           path: /tmp/manifest-diff.txt
           retention-days: 7
 
+      - name: TEMP seed baseline from PR build
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/cache-manifest
+        with:
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          version_label: pr-${{ github.event.pull_request.head.sha }}
+          manifest_path: /tmp/ami-manifest.txt
+
       - name: Run tests
         timeout-minutes: 10
         env:
