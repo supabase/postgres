@@ -106,6 +106,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.rev value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;
@@ -116,6 +117,8 @@ pkgs.buildEnv {
         "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
     defaultSettings = {
       wal_level = "logical";
+      # PG 15.19 / 17.11+ only load output plugins named here (CVE-2026-6471);
+      output_plugin_libraries = "pgoutput, test_decoding, wal2json";
     };
   };
 }
