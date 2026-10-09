@@ -928,6 +928,7 @@
                 { ... }:
                 {
                   environment.systemPackages = [ site-env-17 ];
+                  virtualisation.additionalPaths = [ psql_17 ];
                   users.users.postgres = {
                     isSystemUser = true;
                     group = "postgres";
@@ -954,13 +955,13 @@
                 machine.succeed("su postgres -c '${psql_17}/bin/psql -h /tmp -d postgres -c \"select 1\"'")
                 machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata stop'")
 
-                # site-nix-gc starts a transient gc unit
+                # site-nix-gc runs to the end and reports what it freed
                 machine.succeed("mkdir -p /nix/var/nix/profiles/default")
                 machine.succeed("ln -sfn /run/current-system/sw/bin /nix/var/nix/profiles/default/bin")
                 machine.succeed("${site-env-17}/bin/activate")
                 machine.succeed("${site-env-17}/bin/site-nix-gc")
-                machine.succeed("systemctl is-active site-nix-gc")
-                machine.succeed("systemctl stop site-nix-gc")
+                machine.wait_until_fails("systemctl is-active site-nix-gc", timeout=1800)
+                print(machine.succeed("journalctl -u site-nix-gc --no-pager | grep freed"))
               '';
             };
         }
