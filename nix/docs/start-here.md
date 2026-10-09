@@ -97,9 +97,9 @@ $ nix run nixpkgs#nix-info -- -m
  - nixpkgs: `/nix/var/nix/profiles/per-user/root/channels/nixpkgs`
 ```
 
-If the above worked, you're now cooking with gas!
+If that worked, you're ready to build.
 
-## Try Nix beyond this repo
+## Take Nix for a spin
 
 Nix is also a package manager that gives you current versions of many tools on
 any Linux distribution or macOS. You need very little Nix knowledge to try it:
