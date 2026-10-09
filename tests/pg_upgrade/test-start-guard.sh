@@ -81,6 +81,8 @@ setup() {
 	PG_UPGRADE_LOCK_DROPIN_DIR="$test_dir/postgresql.service.d"
 	PG_UPGRADE_LOCK_DROPIN="$PG_UPGRADE_LOCK_DROPIN_DIR/pg-upgrade-lock.conf"
 	PG_UPGRADE_PID_LOCK_MARKER="$test_dir/pg-upgrade-source.pid"
+	PG_UPGRADE_INITIATE_PID_FILE="$test_dir/pg-upgrade-initiate.pid"
+	PG_UPGRADE_START_GUARD="$test_dir/pg-upgrade-start-guard.sh"
 	PG_UPGRADE_LOCK_WATCHER_PID=""
 	PG_UPGRADE_START_BLOCKED=""
 	CLEANUP_STARTED=""
@@ -91,6 +93,7 @@ setup() {
 	export IS_LOCAL_UPGRADE PGVERSION PGDATAOLD PGDATANEW MOUNT_POINT LOG_FILE
 	export POSTGRES_SHARE_DIR POST_UPGRADE_EXTENSION_SCRIPT POST_UPGRADE_POSTGRES_PERMS_SCRIPT
 	export PG_UPGRADE_LOCK_DROPIN_DIR PG_UPGRADE_LOCK_DROPIN PG_UPGRADE_PID_LOCK_MARKER
+	export PG_UPGRADE_INITIATE_PID_FILE PG_UPGRADE_START_GUARD
 	export PG_UPGRADE_LOCK_WATCHER_PID PG_UPGRADE_START_BLOCKED CLEANUP_STARTED
 	export SYSTEMCTL_LOG="$test_dir/systemctl.log"
 	export FAIL_RELOAD_ONCE="$test_dir/fail-reload"
@@ -110,11 +113,16 @@ assert() {
 test_dropin() {
 	setup
 	block_postgres_start
-	assert grep -qx 'ExecStartPre=' "$PG_UPGRADE_LOCK_DROPIN"
-	assert grep -qx 'ExecStartPre=/bin/false' "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx "ExecCondition=+/bin/sh $PG_UPGRADE_START_GUARD $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER" "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx "ExecStartPost=-+/bin/rm -f $PG_UPGRADE_LOCK_DROPIN $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER $PG_UPGRADE_START_GUARD" "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx 'ExecStartPost=-+/bin/systemctl daemon-reload' "$PG_UPGRADE_LOCK_DROPIN"
 	assert grep -qx 'Restart=no' "$PG_UPGRADE_LOCK_DROPIN"
+	assert test -s "$PG_UPGRADE_INITIATE_PID_FILE"
+	assert test -s "$PG_UPGRADE_START_GUARD"
 	unblock_postgres_start
 	assert test ! -e "$PG_UPGRADE_LOCK_DROPIN"
+	assert test ! -e "$PG_UPGRADE_INITIATE_PID_FILE"
+	assert test ! -e "$PG_UPGRADE_START_GUARD"
 	assert test "$(grep -c '^daemon-reload$' "$SYSTEMCTL_LOG")" -eq 2
 	assert grep -qx 'reset-failed postgresql' "$SYSTEMCTL_LOG"
 	unblock_postgres_start
@@ -207,6 +215,52 @@ test_active_source() {
 	done
 }
 
+test_start_guard() {
+	local live dead
+	setup
+	block_postgres_start
+	sleep 60 &
+	live=$!
+	(exit 0) &
+	dead=$!
+	wait "$dead"
+	guard_exit() {
+		local exit_code=0
+		sh -c "$(sed -n 's/^ExecCondition=+//p' "$PG_UPGRADE_LOCK_DROPIN")" || exit_code=$?
+		printf '%s\n' "$exit_code"
+	}
+	assert test "$(guard_exit)" -eq 255
+	printf '%s\n' "$dead" >"$PG_UPGRADE_INITIATE_PID_FILE"
+	assert test "$(guard_exit)" -eq 0
+	printf '%s\n' "$live" >"$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test "$(guard_exit)" -eq 255
+	printf '%s\n' "$live" >"$PG_UPGRADE_INITIATE_PID_FILE"
+	printf '%s\n' "$dead" >"$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test "$(guard_exit)" -eq 255
+	printf '%s\n' "$dead" >"$PG_UPGRADE_INITIATE_PID_FILE"
+	printf '%s\n' "$dead" >"$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test "$(guard_exit)" -eq 0
+	printf 'not-a-pid\n' >"$PG_UPGRADE_INITIATE_PID_FILE"
+	: >"$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test "$(guard_exit)" -eq 0
+	rm -f "$PG_UPGRADE_INITIATE_PID_FILE" "$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test "$(guard_exit)" -eq 0
+	kill "$live"
+	wait "$live" 2>/dev/null || true
+}
+
+test_dropin_expiry() {
+	setup
+	block_postgres_start
+	printf '%s\n' 12345 >"$PG_UPGRADE_PID_LOCK_MARKER"
+	sh -c "$(sed -n 's/^ExecStartPost=-+\(\/bin\/rm .*\)$/\1/p' "$PG_UPGRADE_LOCK_DROPIN")"
+	assert test ! -e "$PG_UPGRADE_LOCK_DROPIN"
+	assert test ! -e "$PG_UPGRADE_INITIATE_PID_FILE"
+	assert test ! -e "$PG_UPGRADE_PID_LOCK_MARKER"
+	assert test ! -e "$PG_UPGRADE_START_GUARD"
+	unblock_postgres_start
+}
+
 test_exit_cleanup() {
 	local trigger exit_code expected_code
 	for trigger in failure TERM INT clean-exit cleanup-exit already-cleaned restore-rm restore-mv; do
@@ -270,7 +324,7 @@ test_exit_cleanup() {
 }
 
 export -f log retry block_postgres_start unblock_postgres_start cleanup on_exit
-for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_active_source test_exit_cleanup; do
+for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_active_source test_start_guard test_dropin_expiry test_exit_cleanup; do
 	case_output="$TEST_ROOT/$test_name.log"
 	trap 'exit_code=$?; cat "$case_output"; exit "$exit_code"' ERR
 	(

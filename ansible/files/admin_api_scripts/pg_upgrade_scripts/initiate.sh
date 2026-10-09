@@ -90,21 +90,47 @@ OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid =
 # copies the data files without a postmaster holding the directory, and a start
 # in that window (Salt's `service.running`, adminapi, Restart=always, ...)
 # yields a copy that is inconsistent with the dump. Two independent guards:
-#  1. a runtime systemd drop-in that makes `systemctl start` fail;
+#  1. a runtime systemd drop-in that makes `systemctl start` fail while this
+#     script or pg_upgrade is alive (a SIGKILLed script must not leave the
+#     source blocked until a reboot);
 #  2. a postmaster.pid in the old data dir holding pg_upgrade's own PID, which
 #     makes any postmaster (systemd or direct pg_ctl) refuse to start while
 #     pg_upgrade lives. The file goes stale when pg_upgrade exits.
 PG_UPGRADE_LOCK_DROPIN_DIR="/run/systemd/system/postgresql.service.d"
 PG_UPGRADE_LOCK_DROPIN="$PG_UPGRADE_LOCK_DROPIN_DIR/pg-upgrade-lock.conf"
 PG_UPGRADE_PID_LOCK_MARKER="/run/pg-upgrade-source.pid"
+PG_UPGRADE_INITIATE_PID_FILE="/run/pg-upgrade-initiate.pid"
+PG_UPGRADE_START_GUARD="/run/pg-upgrade-start-guard.sh"
 PG_UPGRADE_LOCK_WATCHER_PID=""
 PG_UPGRADE_START_BLOCKED=""
 
 block_postgres_start() {
 	mkdir -p "$PG_UPGRADE_LOCK_DROPIN_DIR"
-	# The empty ExecStartPre= resets the unit's own list: otherwise a blocked start
-	# would still run postgres_prestart.sh (as root) before /bin/false fails it.
-	printf '[Service]\nExecStartPre=\nExecStartPre=/bin/false\nRestart=no\n' >"$PG_UPGRADE_LOCK_DROPIN"
+	# initiate_upgrade runs in a background subshell: $BASHPID is its own pid, $$ is
+	# the already exited parent.
+	printf '%s\n' "${BASHPID:-$$}" >"$PG_UPGRADE_INITIATE_PID_FILE"
+	# Refuse a start only while the pid in one of the files is alive, so a SIGKILLed
+	# script stops blocking once pg_upgrade is gone too. Run through /bin/sh by the
+	# drop-in because /run is mounted noexec.
+	cat >"$PG_UPGRADE_START_GUARD" <<'GUARD'
+for pid_file in "$@"; do
+	pid=$(cat "$pid_file" 2>/dev/null) || continue
+	if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+		exit 255
+	fi
+done
+exit 0
+GUARD
+	# ExecCondition runs before the unit's own ExecStartPre (postgres_prestart.sh,
+	# as root), which therefore does not run for a refused start. Exit 255 fails the
+	# start, 1-254 would only skip it silently. The unit does not run as root, so
+	# `+` is needed to see root-owned pids and to remove files under /run. A start
+	# that gets past the guard means this script and pg_upgrade are gone: the
+	# ExecStartPost lines then remove the drop-in so Restart=no does not outlive it.
+	printf '[Service]\nExecCondition=+/bin/sh %s %s %s\n' \
+		"$PG_UPGRADE_START_GUARD" "$PG_UPGRADE_INITIATE_PID_FILE" "$PG_UPGRADE_PID_LOCK_MARKER" >"$PG_UPGRADE_LOCK_DROPIN"
+	printf 'ExecStartPost=-+/bin/rm -f %s %s %s %s\nExecStartPost=-+/bin/systemctl daemon-reload\nRestart=no\n' \
+		"$PG_UPGRADE_LOCK_DROPIN" "$PG_UPGRADE_INITIATE_PID_FILE" "$PG_UPGRADE_PID_LOCK_MARKER" "$PG_UPGRADE_START_GUARD" >>"$PG_UPGRADE_LOCK_DROPIN"
 	PG_UPGRADE_START_BLOCKED=1
 	systemctl daemon-reload
 }
@@ -164,6 +190,7 @@ unblock_postgres_start() {
 		if [ -e "$PG_UPGRADE_LOCK_DROPIN" ]; then
 			PG_UPGRADE_START_BLOCKED=1
 			rm -f "$PG_UPGRADE_LOCK_DROPIN" || rc=1
+			rm -f "$PG_UPGRADE_INITIATE_PID_FILE" "$PG_UPGRADE_START_GUARD" || rc=1
 			rmdir --ignore-fail-on-non-empty "$PG_UPGRADE_LOCK_DROPIN_DIR" || true
 		fi
 		systemctl daemon-reload || rc=1
