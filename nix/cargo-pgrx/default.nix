@@ -16,25 +16,27 @@ let
 in
 {
   mkCargoPgrx =
-    args:
+    {
+      version,
+      hash,
+      cargoHash,
+    }:
     (cargo-pgrx.override { inherit rustPlatform; }).overrideAttrs (old: rec {
       # https://github.com/oxalica/rust-overlay/issues/153
       auditable = false;
 
       pname = if lib.versionOlder version "0.7.4" then "cargo-pgx" else "cargo-pgrx";
-      inherit (args) version;
+      inherit version;
 
       # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
       src = fetchCrate {
-        inherit pname;
-        inherit (args) version hash;
+        inherit pname version hash;
         registryDl = "https://static.crates.io/crates";
       };
 
       cargoDeps = rustPlatform.fetchCargoVendor {
-        inherit pname src;
-        inherit (args) version;
-        hash = args.cargoHash;
+        inherit pname src version;
+        hash = cargoHash;
       };
 
       checkFlags = (old.checkFlags or [ ]) ++ [
