@@ -33,23 +33,14 @@
           paths = debugPaths version ++ lib.optionals pkgs.stdenv.isLinux (extDebug version);
         };
 
-      debugProfile = "/nix/var/nix/profiles/postgres-debug";
-
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
           text = ''
-            nix-env --profile ${debugProfile} --set "$(nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath})"
+            nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath}
           '';
         };
-
-      cleanupPostgresDebug = pkgs.writeShellApplication {
-        name = "cleanup-postgres-debug";
-        text = ''
-          rm -f ${debugProfile} ${debugProfile}-*-link
-        '';
-      };
 
       # Make a bundle of packages, as a single derivation, to be installed into the
       # postgres user's nix profile, during image provisioning or instance update.
@@ -63,10 +54,7 @@
             self'.packages.supabase-groonga
           ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
-          ++ lib.optionals pkgs.stdenv.isLinux [
-            (realisePostgresDebug version)
-            cleanupPostgresDebug
-          ];
+          ++ lib.optionals pkgs.stdenv.isLinux [ (realisePostgresDebug version) ];
         };
     in
     {
