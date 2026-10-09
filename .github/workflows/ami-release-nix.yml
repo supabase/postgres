@@ -6,11 +6,7 @@ on:
       - develop
       - release/*
     paths:
-      - .github/workflows/ami-release-nix.yml
-      - ansible/vars.yml
-      - flake.lock
-      - flake.nix
-      - nix/packages/build-ami.nix
+      - ansible/postgres_release.yml
   workflow_dispatch:
 
 permissions:

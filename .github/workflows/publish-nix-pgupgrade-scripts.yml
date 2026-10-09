@@ -6,9 +6,10 @@ on:
       - develop
       - release/*
     paths:
-      - '.github/workflows/publish-nix-pgupgrade-scripts.yml'
-      - 'ansible/vars.yml'
-      - 'ansible/files/admin_api_scripts/pg_upgrade_scripts/**'
+      - .github/workflows/publish-nix-pgupgrade-scripts.yml
+      - ansible/files/admin_api_scripts/pg_upgrade_scripts/**
+      - ansible/postgres_release.yml
+      - ansible/vars.yml
   workflow_dispatch:
     inputs:
       postgresVersion:
@@ -30,18 +31,14 @@ jobs:
       - name: Set PostgreSQL versions
         id: set-versions
         env:
-          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
+          rev: ${{ inputs.postgresVersion || 'HEAD' }}
         run: |
-          set -eo pipefail
-          if [[ -n "$POSTGRES_VERSION" ]]; then
-            git rev-parse --verify "$POSTGRES_VERSION" || {
-              echo "Error: git tag '$POSTGRES_VERSION' not found"
-              exit 1
-            }
-            VERSIONS=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major')
-          else
-            VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
+          set -euo pipefail
+          if ! git rev-parse --verify "$rev"; then
+            echo "Error: git revision '$rev' not found"
+            exit 1
           fi
+          VERSIONS=$(git show "$rev:ansible/vars.yml" | nix run nixpkgs#yq-go -- -e -o=json -I=0 '.postgres_major')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -60,14 +57,21 @@ jobs:
       - name: Grab release version
         id: process_release_version
         env:
-          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
+          rev: ${{ inputs.postgresVersion || 'HEAD' }}
         run: |
-          set -eo pipefail
-          if [[ -n "$POSTGRES_VERSION" ]]; then
-            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
-          else
-            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          set -euo pipefail
+          if ! git rev-parse --verify "$rev"; then
+            echo "Error: git revision '$rev' not found"
+            exit 1
+
+          # check if pg versions are in new file location or old
           fi
+          file=ansible/postgres_release.yml
+          if ! git cat-file -e "$rev:$file" 2>/dev/null; then
+            file=ansible/vars.yml
+          fi
+
+          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -84,8 +88,8 @@ jobs:
 
       - name: Upload pg_upgrade scripts to s3 staging
         run: |
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz 's3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz'
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz 's3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz'
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
@@ -115,14 +119,21 @@ jobs:
       - name: Grab release version
         id: process_release_version
         env:
-          POSTGRES_VERSION: ${{ inputs.postgresVersion }}
+          rev: ${{ inputs.postgresVersion || 'HEAD' }}
         run: |
-          set -eo pipefail
-          if [[ -n "$POSTGRES_VERSION" ]]; then
-            VERSION=$(git show "$POSTGRES_VERSION:ansible/vars.yml" | nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]')
-          else
-            VERSION=$(nix run nixpkgs#yq-go -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          set -euo pipefail
+          if ! git rev-parse --verify "$rev"; then
+            echo "Error: git revision '$rev' not found"
+            exit 1
+
+          # check if pg versions are in new file location or old
           fi
+          file=ansible/postgres_release.yml
+          if ! git cat-file -e "$rev:$file" 2>/dev/null; then
+            file=ansible/vars.yml
+          fi
+
+          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create a tarball containing pg_upgrade scripts
@@ -139,8 +150,8 @@ jobs:
 
       - name: Upload pg_upgrade scripts to s3 prod
         run: |
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
-          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz"
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz 's3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz'
+          aws s3 cp /tmp/pg_upgrade_scripts.tar.gz 's3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades-x86/postgres/supabase-postgres-${{ steps.process_release_version.outputs.version }}/pg_upgrade_scripts.tar.gz'
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

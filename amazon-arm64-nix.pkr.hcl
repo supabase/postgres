@@ -228,11 +228,6 @@ build {
     destination = "/tmp/ansible-playbook"
   }
 
-  provisioner "file" {
-    source      = "ansible/vars.yml"
-    destination = "/tmp/ansible-playbook/vars.yml"
-  }
-
   provisioner "shell" {
     environment_vars = [
       "ARGS=${var.ansible_arguments}",
