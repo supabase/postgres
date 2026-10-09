@@ -6,7 +6,7 @@
   libevent,
   c-ares,
   pkg-config,
-  systemd,
+  systemdLibs,
   nixosTests,
   pandoc,
   python3,
@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
     openssl
     c-ares
   ]
-  ++ lib.optional stdenv.hostPlatform.isLinux systemd;
+  ++ lib.optional stdenv.hostPlatform.isLinux systemdLibs;
   enableParallelBuilding = true;
   configureFlags = lib.optional stdenv.hostPlatform.isLinux "--with-systemd";
 
