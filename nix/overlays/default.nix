@@ -25,15 +25,5 @@
         sha256 = "sha256-8wxb58JaKj6iS8y6q1z2P6/aY8AnnzTX5/izISgh/tY=";
       };
     });
-
-    cargo-pgrx = final.callPackage ../cargo-pgrx/default.nix {
-      inherit (final) lib;
-      inherit (final) fetchCrate;
-      inherit (final) openssl;
-      inherit (final) pkg-config;
-      inherit (final) makeRustPlatform;
-      inherit (final) stdenv;
-      inherit (final) rust-bin;
-    };
   };
 }
