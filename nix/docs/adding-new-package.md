@@ -4,7 +4,6 @@
     To better understand how packages are organized and how `ourExtensions` works with flake-parts, see:
 
     - **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Module structure overview
-    - **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)** - Extension composition patterns
 
 ## Pre-packaging steps
 1. Make sure you have nix installed [Nix installer](https://github.com/DeterminateSystems/nix-installer)

@@ -2,11 +2,7 @@
 
 This document explains the Nix structure used in this repository. The project uses [flake-parts](https://flake.parts/) to split a `flake.nix` into specialized, maintainable modules.
 
-!!! tip "Deep Dive"
-    For a comprehensive explanation of how flake-parts works in this repository, including module scopes, evaluation order, and common patterns, see:
-
-    - **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Module structure and patterns
-    - **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)** - nixpkgs lib foundations
+For code-level examples of each module, see [Flake-Parts Architecture](./flake-parts-architecture.md).
 
 The root `flake.nix` serves only as an entry point that references specialized modules in the `nix/` directory:
 
@@ -76,7 +72,7 @@ Code formatting configuration using [treefmt](https://github.com/numtide/treefmt
 - nixfmt-rfc-style for Nix code formatting
 - deadnix for removing unused nix code
 
-More details in [Code formatter](./nix-formatter.md).
+More details in [Formatting and pre-commit hooks](./nix-formatter.md).
 
 #### `nix/hooks.nix`
 
@@ -86,7 +82,7 @@ Git hooks and pre-commit configuration:
 - Automatic formatting on commit
 - Code quality checks
 
-More details in [Pre-coommit hooks](./pre-commit-hooks.md).
+More details in [Formatting and pre-commit hooks](./nix-formatter.md).
 
 ### Applications and Packages
 
@@ -144,11 +140,11 @@ PostgreSQL extensions:
 
 #### `nix/overlays/`
 
-Nixpkgs overlays for package customization:
+[Nixpkgs overlays](https://nixos.org/manual/nixpkgs/stable/#chap-overlays) for package customization.
+`default.nix` defines the single overlay and applies it in `nix/nixpkgs.nix`.
 
-- `default.nix` - Main overlay that imports all others
-- `cargo-pgrx-0-11-3.nix` - PGRX toolchain overlay
-- `psql_16-oriole.nix` - OrioleDB PostgreSQL variant
+The overlay exposes the OrioleDB build as `postgresql_orioledb-17`, a separate patched Postgres fork.
+Build it with `nix build .#psql_orioledb-17.bin`.
 
 #### `nix/cargo-pgrx/`
 

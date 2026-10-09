@@ -2,36 +2,11 @@
 
 This document explains how this repository uses [flake-parts](https://flake.parts/) to organize its Nix flake into maintainable, composable modules.
 
-!!! info "Deep Dive into nixpkgs lib"
-    For a detailed explanation of how flake-parts leverages nixpkgs lib functions and the module system, see **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)**.
+For the module system, see [flake.parts](https://flake.parts). For the directory layout, see [Nix tree structure](./nix-directory-structure.md).
 
 ## Overview
 
 Flake-parts is a module system for Nix flakes that allows splitting a monolithic `flake.nix` into specialized modules. Instead of one large file with all outputs, we have multiple focused modules that each handle a specific concern.
-
-## Why Flake-Parts?
-
-Traditional flakes can become unwieldy as they grow:
-
-```nix
-{
-  outputs = { nixpkgs, ... }: {
-    packages.x86_64-linux = { ... };
-    packages.aarch64-linux = { ... };
-    packages.aarch64-darwin = { ... };
-    devShells.x86_64-linux = { ... };
-    devShells.aarch64-linux = { ... };
-    # ... hundreds of lines of repetitive code
-  };
-}
-```
-
-Flake-parts solves this by:
-
-1. **Per-system evaluation**: Write code once, evaluate it for each system automatically
-2. **Module composition**: Split concerns into separate files
-3. **Type safety**: Define typed configuration options
-4. **Module system**: Import third-party modules (treefmt, git-hooks, etc.)
 
 ## Entry Point
 
@@ -62,54 +37,6 @@ The root `flake.nix` is minimal and delegates to modules:
 ```
 
 **Key function**: `mkFlake` accepts inputs and a configuration. Each imported module can define outputs.
-
-## Module Scopes
-
-Flake-parts modules operate at two scopes:
-
-### perSystem Scope
-
-Defines outputs for each system (x86_64-linux, aarch64-darwin, etc.):
-
-```nix
-{ ... }:
-{
-  perSystem = { self', pkgs, system, lib, config, inputs', ... }:
-  {
-    # System-specific outputs
-    packages = { ... };
-    apps = { ... };
-    devShells = { ... };
-    checks = { ... };
-  };
-}
-```
-
-**Available arguments**:
-
-| Argument | Description |
-|----------|-------------|
-| `self'` | Outputs from the current system (e.g., `self'.packages.foo`) |
-| `pkgs` | nixpkgs for current system |
-| `system` | Current system string (e.g., `"x86_64-linux"`) |
-| `lib` | nixpkgs library functions |
-| `config` | Module configuration (from `config.nix`) |
-| `inputs'` | Flake inputs for current system |
-
-### Flake Scope
-
-Defines system-independent, flake-wide configuration:
-
-```nix
-{ lib, ... }:
-{
-  flake = {
-    options = { ... };      # Module options
-    config = { ... };       # Configuration values
-    overlays = { ... };     # System-independent overlays
-  };
-}
-```
 
 ## Module Breakdown
 
@@ -552,10 +479,7 @@ in {
 
 ## Nixpkgs Library Functions
 
-!!! tip "In-Depth Coverage"
-    For detailed examples of how these functions work together with flake-parts, including the module system foundations and composition patterns, see **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)**.
-
-Common utilities from `pkgs.lib`:
+Common utilities from `pkgs.lib`. See the [nixpkgs lib reference](https://nixos.org/manual/nixpkgs/stable/#sec-functions-library) for the full list:
 
 | Function | Purpose | Example |
 |----------|---------|---------|
@@ -648,5 +572,5 @@ perSystem = { ... }:
 
 - [Flake-parts documentation](https://flake.parts/)
 - [NixOS module system](https://nixos.org/manual/nixos/stable/#sec-writing-modules)
-- [Nixpkgs lib reference](https://nixos.org/manual/nixpkgs/stable/#chap-functions)
-- [Nix flakes](https://nixos.wiki/wiki/Flakes)
+- [Nixpkgs lib reference](https://nixos.org/manual/nixpkgs/stable/#sec-functions-library)
+- [Nix flakes](https://wiki.nixos.org/wiki/Flakes)

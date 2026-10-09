@@ -46,7 +46,7 @@ Your Nix installation is now configured with the proper build caches and should 
 
 ## Install Nix (Fresh Installation)
 
-We'll use the official Nix installer with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
+We'll use the official Nix installer (see also [nix.dev](https://nix.dev/install-nix)) with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
 
 ### Step 1: Create nix.conf
 
@@ -99,24 +99,6 @@ $ nix run nixpkgs#nix-info -- -m
 
 If the above worked, you're now cooking with gas!
 
-## Do some fun stuff
+## Next steps
 
-One of the best things about Nix that requires _very little_ knowledge of it is
-that it lets you install the latest and greatest versions of many tools _on any
-Linux distribution_. We'll explain more about that later on. But just as a few
-examples:
-
-- **Q**: I want the latest version of Deno. Can we get that?
-- **A**: `nix profile install nixpkgs#deno`, and you're done!
-
-<!-- break bulletpoints -->
-
-- **Q**: What about HTTPie? A nice Python application?
-- **A**: Same idea: `nix profile install nixpkgs#httpie`
-
-<!-- break bulletpoints -->
-
-- **Q**: What about my favorite Rust applications, like ripgrep and bat?
-- **A.1**: `nix profile install nixpkgs#ripgrep`
-- **A.2**: `nix profile install nixpkgs#bat`
-- **A.3**: And yes, you also have exa, fd, hyperfine, and more!
+To learn more about Nix, see [Zero to Nix](https://zero-to-nix.com).

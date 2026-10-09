@@ -40,7 +40,6 @@ extensions not yet ported.
 | `ebssurrogate/`, `*.pkr.hcl` | Packer/EBS-surrogate AMI build pipeline |
 | `testinfra/` | pytest suite (`test_ami_nix.py`) that runs against a live AMI/instance |
 | `audit-specs/` | CIS-benchmark-style compliance specs run against built images |
-| `docs/plans/` | Design docs for in-flight features (profiler, pgbackrest, etc.) |
 | `.claude/skills/pg-security-release-analysis/` | Skill for triaging upstream PG quarterly security releases into a CVE/impact catalog — see below |
 
 ## Building and testing

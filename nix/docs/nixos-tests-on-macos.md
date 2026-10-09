@@ -159,32 +159,7 @@ Subsequent runs benefit from the Nix store cache and the project's binary cache 
 
 ## How it works
 
-The linux-builder is a QEMU virtual machine managed by nix-darwin.
-When you run a build targeting Linux (like NixOS tests), Nix automatically delegates the build to this VM.
+The linux-builder is a QEMU virtual machine managed by nix-darwin, see the [nixpkgs manual](https://nixos.org/manual/nixpkgs/stable/#sec-darwin-builder).
+Nix delegates Linux builds to it, and the `nixos-test` supported feature enables NixOS VM tests.
 
-Key configuration from `nix/hosts/darwin-nixostest/darwin-configuration.nix`:
-
-```nix
-nix.linux-builder = {
-  enable = true;
-  ephemeral = true;
-  maxJobs = 4;
-  supportedFeatures = [
-    "kvm"
-    "benchmark"
-    "big-parallel"
-    "nixos-test"  # Required for NixOS integration tests
-  ];
-  config = {
-    virtualisation = {
-      darwin-builder = {
-        diskSize = 40 * 1024;  # 40GB
-        memorySize = 8 * 1024; # 8GB
-      };
-      cores = 6;
-    };
-  };
-};
-```
-
-The `nixos-test` supported feature is what enables running NixOS VM tests from macOS.
+The configuration is in `nix/hosts/darwin-nixostest/darwin-configuration.nix`.
