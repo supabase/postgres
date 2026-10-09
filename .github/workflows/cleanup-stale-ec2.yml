@@ -1,0 +1,37 @@
+name: Cleanup Stale Build Resources
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Delete stale build resources
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        region:
+          - ap-southeast-1
+          - us-east-1
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ matrix.region }}
+
+      - name: Cleanup stale AMI build resources
+        env:
+          AWS_MAX_ATTEMPTS: 6
+          OK_TO_DESTROY: "false"
+        run: ci/cleanup-stale-ami-build-resources.sh

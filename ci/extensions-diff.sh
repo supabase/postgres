@@ -350,13 +350,13 @@ analyze_variant_extension_deps() {
 			echo "<details>"
 			echo "<summary>Raw Dependency Tree</summary>"
 			echo ""
-			echo "\`\`\`"
+			echo '```'
 			echo "Old ($old_so):"
 			echo "$old_deps"
 			echo ""
 			echo "New ($new_so):"
 			echo "$new_deps"
-			echo "\`\`\`"
+			echo '```'
 			echo ""
 			echo "</details>"
 			echo ""
@@ -406,7 +406,7 @@ SUMMARY_CONTENT=$(generate_summary)
 
 # Insert summary after the header but before PostgreSQL version sections
 # We need to insert it after the header (line with "Analysis Date") and before first "##" heading
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ $OSTYPE == "darwin"* ]]; then
 	# macOS - create temp file with proper structure
 	{
 		# Read header (including bullet point lines)

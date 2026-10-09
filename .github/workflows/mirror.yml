@@ -25,7 +25,7 @@ jobs:
       id-token: write
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 # v2.2.0
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: us-east-1

@@ -81,7 +81,7 @@ writeShellApplication {
     packer build \
       -var "git-head-version=$GIT_SHA" \
       -var "packer-execution-id=$RUN_ID" \
-      -var-file="development-arm.vars.pkr.hcl" \
+      -var-file="development-arm64.vars.pkr.hcl" \
       -var-file="common-nix.vars.pkr.hcl" \
       -var "ansible_arguments=" \
       -var "postgres-version=$RANDOM_STRING" \
@@ -97,7 +97,7 @@ writeShellApplication {
       -var "git-head-version=$GIT_SHA" \
       -var "packer-execution-id=$RUN_ID" \
       -var "postgres_major_version=$POSTGRES_VERSION" \
-      -var-file="development-arm.vars.pkr.hcl" \
+      -var-file="development-arm64.vars.pkr.hcl" \
       -var-file="common-nix.vars.pkr.hcl" \
       -var "postgres-version=$RANDOM_STRING" \
       -var "region=$REGION" \

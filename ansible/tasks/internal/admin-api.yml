@@ -1,8 +1,15 @@
-- name: adminapi - system user
-  user:
+- name: adminapi - system group
+  ansible.builtin.group:
     name: adminapi
-    groups: root,admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,systemd-journal,vector,wal-g
-    append: yes
+    gid: 1011
+    state: present
+
+- name: adminapi - system user
+  ansible.builtin.user:
+    name: adminapi
+    uid: "{{ 1006 if not qemu else 1007 }}"
+    group: adminapi
+    groups: admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,root,systemd-journal,vector,wal-g
 
 - name: Move shell scripts to /root dir
   copy:
@@ -22,24 +29,16 @@
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
     mode: "0440"
+    validate: 'visudo -cf %s'
 
 - name: perms for adminapi
   shell: |
     chmod g+w /etc
 
-- name: Setting arch (amd64)
-  set_fact:
-    arch: "amd64"
-  when: platform == "amd64"
-
-- name: Setting arch (arm)
-  set_fact:
-    arch: "arm64"
-  when: platform == "arm64"
-
 - name: Download adminapi archive
   get_url:
-    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_{{ arch }}.tar.gz"
+    url: "{{ adminapi_artifacts[platform]['url'] }}"
+    checksum: "{{ adminapi_artifacts[platform]['checksum'] }}"
     dest: "/tmp/adminapi.tar.gz"
     timeout: 90
 
@@ -83,8 +82,13 @@
 
 - name: adminapi - create service file for commence backup process
   template:
-     src: files/commence-backup.service.j2
-     dest: /etc/systemd/system/commence-backup.service
+    src: files/commence-backup.service.j2
+    dest: /etc/systemd/system/commence-backup.service
+
+- name: adminapi - create service file for commence restore process
+  template:
+    src: files/commence-restore.service.j2
+    dest: /etc/systemd/system/commence-restore.service
 
 - name: UFW - Allow connections to adminapi ports
   ufw:

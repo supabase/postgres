@@ -1,6 +1,11 @@
 { self, inputs, ... }:
 {
-  imports = [ ./postgres.nix ];
+  imports = [
+    ./postgres.nix
+    ./postgres-env.nix
+    ./site-env.nix
+    ./extension-catalog.nix
+  ];
   perSystem =
     {
       inputs',
@@ -18,6 +23,13 @@
           postgresqlPackage = self'.packages."postgresql_${version}";
         in
         pkgs.callPackage ../ext/pg_regress.nix { postgresql = postgresqlPackage; };
+      # Function to create the pg_isolation_regress package
+      makePgIsolationRegress =
+        version:
+        let
+          postgresqlPackage = self'.packages."postgresql_${version}";
+        in
+        pkgs.callPackage ../ext/pg_isolation_regress.nix { postgresql = postgresqlPackage; };
       pgsqlSuperuser = "supabase_admin";
       supascan-pkgs = pkgs.callPackage ./supascan.nix {
         inherit (pkgs) lib;
@@ -37,6 +49,7 @@
       packages = (
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
+          build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
@@ -60,13 +73,15 @@
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
-          pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
+          pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
+          pg-backrest = pkgs.callPackage ./pg-backrest.nix { };
           pgctld = pkgs.callPackage ./pgctld.nix {
             multigres-src = inputs.multigres;
           };
           pg-restore = pkgs.callPackage ./pg-restore.nix { psql_15 = self'.packages."psql_15/bin"; };
           pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
           pg_regress = makePgRegress activeVersion;
+          pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
@@ -91,6 +106,7 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
+          check-ext-versions = pkgs.callPackage ./check-ext-versions { };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
@@ -105,15 +121,9 @@
             inherit (pkgs) yq;
             postgresql_15 = self'.packages."postgresql_15";
           };
-          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2;
+          inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
-          inherit (pkgs.callPackages ../cargo-pgrx { })
-            cargo-pgrx_0_11_3
-            cargo-pgrx_0_12_6
-            cargo-pgrx_0_12_9
-            cargo-pgrx_0_14_3
-            ;
         }
         // lib.optionalAttrs pkgs.stdenv.isDarwin {
           setup-darwin-linux-builder = pkgs.callPackage ./setup-darwin-linux-builder.nix {

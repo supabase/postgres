@@ -62,13 +62,6 @@ stdenv.mkDerivation rec {
     description = "Translator library for raster geospatial data formats (PostGIS-focused build)";
     homepage = "https://www.gdal.org/";
     license = licenses.mit;
-    maintainers =
-      with maintainers;
-      teams.geospatial.members
-      ++ [
-        marcweber
-        dotlambda
-      ];
     platforms = platforms.unix;
   };
 }

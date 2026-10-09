@@ -40,7 +40,7 @@ COPY . .
 ####################
 FROM nix-base AS nix-builder-17
 
-RUN nix profile add path:.#psql_17_slim/bin path:.#pg-backrest path:.#pgctld
+RUN nix profile add path:.#psql_17_slim/bin path:.#pg-backrest path:.#pg-activity path:.#pgctld
 
 RUN nix store gc
 
@@ -55,7 +55,7 @@ RUN nix store gc
 ####################
 FROM nix-base AS nix-builder-orioledb-17
 
-RUN nix profile add path:.#psql_orioledb-17_slim/bin path:.#pg-backrest path:.#pgctld
+RUN nix profile add path:.#psql_orioledb-17_slim/bin path:.#pg-backrest path:.#pg-activity path:.#pgctld
 
 RUN nix store gc
 
@@ -202,7 +202,7 @@ COPY docker/pgctld/postgresql.conf.tmpl /etc/pgctld-custom/postgresql.conf.tmpl
 # Wrapper: injects --postgres-config-template on every pgctld call AND bridges
 # postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
 # kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
-COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
 ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/postgresql.conf.tmpl
 
 # Strip extensions absent from pg17 vanilla build
@@ -263,14 +263,10 @@ RUN chown -R postgres:postgres /usr/lib/postgresql && \
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' \
     /etc/postgresql-custom/supautils.conf
 
-# Add orioledb to shared_preload_libraries and configure as default table access method
-# Rewind: 1200s window, 100k transactions, 1280 x 8KB = 10MB buffer
-RUN sed -i "s/\(shared_preload_libraries.*\)'/\1, orioledb'/" /etc/postgresql/postgresql.conf && \
-    echo "default_table_access_method = 'orioledb'" >> /etc/postgresql/postgresql.conf && \
-    echo "orioledb.enable_rewind = true" >> /etc/postgresql/postgresql.conf && \
-    echo "orioledb.rewind_max_time = 1200" >> /etc/postgresql/postgresql.conf && \
-    echo "orioledb.rewind_max_transactions = 100000" >> /etc/postgresql/postgresql.conf && \
-    echo "orioledb.rewind_buffers = 1280" >> /etc/postgresql/postgresql.conf
+# OrioleDB configuration
+RUN sed -i /etc/postgresql/postgresql.conf \
+        -e "/shared_preload_libraries/ s|'|'orioledb,|" \
+        -e "$ a default_table_access_method = 'orioledb'"
 
 # Register orioledb before initdb migrations run
 RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
@@ -288,7 +284,7 @@ COPY docker/pgctld/orioledb-postgresql.conf.tmpl /etc/pgctld-custom/orioledb-pos
 # Wrapper: injects --postgres-config-template on every pgctld call AND bridges
 # postgres's JSON log file to container stdout via a /proc/1/fd/1 symlink so
 # kubelet + Vector can ship it without a sidecar. See docker/pgctld/pgctld-wrapper.
-COPY --chmod=755 docker/pgctld/pgctld-wrapper /usr/local/bin/pgctld
+COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
 ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
 # Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/

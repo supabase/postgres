@@ -1,5 +1,6 @@
 {
   lib,
+  pkgs,
   cargo-pgrx,
   fetchCrate,
   makeRustPlatform,
@@ -7,61 +8,41 @@
   rustVersion ? "1.85.1",
 }:
 let
-  rustPlatform = makeRustPlatform {
+  # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
+  rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
-  };
+  });
+in
+{
   mkCargoPgrx =
     args:
-    (cargo-pgrx.override { inherit rustPlatform; }).overrideAttrs rec {
+    (cargo-pgrx.override { inherit rustPlatform; }).overrideAttrs (old: rec {
+      # https://github.com/oxalica/rust-overlay/issues/153
+      auditable = false;
+
       pname = if lib.versionOlder version "0.7.4" then "cargo-pgx" else "cargo-pgrx";
       inherit (args) version;
 
+      # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
       src = fetchCrate {
         inherit pname;
-        inherit (args)
-          version
-          hash
-          ;
+        inherit (args) version hash;
+        registryDl = "https://static.crates.io/crates";
       };
 
       cargoDeps = rustPlatform.fetchCargoVendor {
-        inherit
-          pname
-          src
-          ;
+        inherit pname src;
         inherit (args) version;
         hash = args.cargoHash;
       };
-    };
-in
-lib.mapAttrs (_: mkCargoPgrx) {
-  cargo-pgrx_0_10_2 = {
-    version = "0.10.2";
-    hash = "sha256-FqjfbJmSy5UCpPPPk4bkEyvQCnaH9zYtkI7txgIn+ls=";
-    cargoHash = "sha256-syZ3cQq8qDHBLvqmNDGoxeK6zXHJ47Jwkw3uhaXNCzI=";
-  };
-  cargo-pgrx_0_11_3 = {
-    version = "0.11.3";
-    hash = "sha256-UHIfwOdXoJvR4Svha6ud0FxahP1wPwUtviUwUnTmLXU=";
-    cargoHash = "sha256-j4HnD8Zt9uhlV5N7ldIy9564o9qFEqs5KfXHmnQ1WEw=";
-  };
-  cargo-pgrx_0_12_6 = {
-    version = "0.12.6";
-    hash = "sha256-7aQkrApALZe6EoQGVShGBj0UIATnfOy2DytFj9IWdEA=";
-    cargoHash = "sha256-pnMxWWfvr1/AEp8DvG4awig8zjdHizJHoZ5RJA8CL08=";
-  };
-  cargo-pgrx_0_12_9 = {
-    version = "0.12.9";
-    hash = "sha256-aR3DZAjeEEAjLQfZ0ZxkjLqTVMIEbU0UiZ62T4BkQq8=";
-    cargoHash = "sha256-yZpD3FriL9UbzRtdFkfIfFfYIrRPYxr/lZ5rb0YBTPc=";
-  };
-  cargo-pgrx_0_14_3 = {
-    version = "0.14.3";
-    hash = "sha256-3TsNpEqNm3Uol5XPW1i0XEbP2fF2+RKB2d7lO6BDnvQ=";
-    cargoHash = "sha256-LZUXhjMxkBs3O5feH4X5NQC7Qk4Ja6M5+sAYaSCikrY=";
-  };
-}
-// {
-  inherit mkCargoPgrx;
+
+      checkFlags = (old.checkFlags or [ ]) ++ [
+        "--skip=object_utils::tests::parses_managed_postmasters"
+        # require test fixtures not included in the crates.io source tarball
+        "--skip=command::upgrade::tests::find_package_manifest_in_workspace"
+        "--skip=command::upgrade::tests::process_workspace_manifest"
+        "--skip=command::upgrade::tests::process_workspace_package_manifest"
+      ];
+    });
 }

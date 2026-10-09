@@ -37,7 +37,7 @@ jobs:
         with:
           push-to-cache: "false"
         env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Run dependency analysis
@@ -89,7 +89,7 @@ jobs:
         with:
           push-to-cache: "false"
         env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
       - name: Run extension analysis

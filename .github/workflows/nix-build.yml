@@ -10,7 +10,7 @@ on:
 
 permissions:
   id-token: write
-  # required by testinfra-ami-build dependent workflows
+  # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
 
@@ -19,35 +19,123 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  nix-eval:
-    uses: ./.github/workflows/nix-eval.yml
-    secrets:
-      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+  eval:
+    runs-on: blacksmith-32vcpu-ubuntu-2404
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-  nix-build-packages-aarch64-linux:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (aarch64-linux)
-    needs: nix-eval
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      # shared with version-diff's HEAD side
+      - name: Evaluate drvPaths for version-diff
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p /tmp/drvpaths
+          for system in x86_64-linux aarch64-linux; do
+            nix eval --no-pure-eval --json \
+              --expr "(import $PWD/ci/version-diff/drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
+              > "/tmp/drvpaths/$system.json"
+          done
+
+      - name: Upload drvPaths artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: head-drvpaths
+          path: /tmp/drvpaths/*.json
+          retention-days: 1
+
+      - name: Generate Nix Matrix
+        id: gen-matrix
+        run: |
+          nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
+          echo eval.json:
+          jq -S . eval.json
+          nix run .#github-matrix -- --eval-input checks legacyPackages <eval.json
+
+  builds-aarch64-linux:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs: eval
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux != null }}
+    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_linux }}
+      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_linux }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  checks-aarch64-linux:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs:
+      - eval
+      - builds-aarch64-linux
+    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_linux }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  builds-aarch64-darwin:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs: eval
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_darwin != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_darwin }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix (ephemeral)
         if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: Install nix (self-hosted)
         if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
         uses: ./.github/actions/nix-install-self-hosted
@@ -57,181 +145,233 @@ jobs:
         with:
           attr: .#${{ matrix.attr }}
 
-  nix-build-checks-aarch64-linux:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (aarch64-linux)
-    needs: [nix-eval, nix-build-packages-aarch64-linux]
-    runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux != null }}
-    strategy:
-      fail-fast: false
-      max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_linux }}
-    steps:
-      - name: Checkout Repo
-        if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: Install nix (ephemeral)
-        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
-        uses: ./.github/actions/nix-install-ephemeral
-        with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-      - name: Install nix (self-hosted)
-        if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
-        uses: ./.github/actions/nix-install-self-hosted
-      - name: nix build
-        if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-build-retry
-        with:
-          attr: .#${{ matrix.attr }}
-
-  nix-build-packages-aarch64-darwin:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (aarch64-darwin)
-    needs: nix-eval
+  checks-aarch64-darwin:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs:
+      - eval
+      - builds-aarch64-darwin
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin != null }}
+    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_darwin != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).aarch64_darwin }}
+      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).aarch64_darwin }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: Install nix
-        if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-self-hosted
-      - name: nix build
-        if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-build-retry
-        with:
-          attr: .#${{ matrix.attr }}
-
-  nix-build-checks-aarch64-darwin:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (aarch64-darwin)
-    needs: [nix-eval, nix-build-packages-aarch64-darwin]
-    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin != null }}
-    strategy:
-      fail-fast: false
-      max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).aarch64_darwin }}
-    steps:
-      - name: Checkout Repo
-        if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-      - name: Install nix
-        if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-self-hosted
-      - name: nix build
-        if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-build-retry
-        with:
-          attr: .#${{ matrix.attr }}
-
-  nix-build-packages-x86_64-linux:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (x86_64-linux)
-    needs: nix-eval
-    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux != null }}
-    strategy:
-      fail-fast: false
-      max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.packages_matrix).x86_64_linux }}
-    steps:
-      - name: Checkout Repo
-        if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
         with:
           attr: .#${{ matrix.attr }}
 
-  nix-build-checks-x86_64-linux:
-    name: >-
-      ${{ matrix.name }}${{ matrix.postgresql_version && format(' - Postgres {0}', matrix.postgresql_version) || '' }}
-      (x86_64-linux)
-    needs: [nix-eval, nix-build-packages-x86_64-linux]
+  builds-x86_64-linux:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs: eval
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
-    if: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux != null }}
+    if: ${{ fromJSON(needs.eval.outputs.packages_matrix).x86_64_linux != null }}
     strategy:
       fail-fast: false
       max-parallel: 25
-      matrix: ${{ fromJSON(needs.nix-eval.outputs.checks_matrix).x86_64_linux }}
+      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix).x86_64_linux }}
     steps:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
         with:
           attr: .#${{ matrix.attr }}
 
-  run-testinfra:
-    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
-    if: |
-      !cancelled() &&
-      needs.nix-eval.result == 'success' &&
-      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
-      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success') &&
-      (needs.nix-build-packages-aarch64-darwin.result == 'skipped' || needs.nix-build-packages-aarch64-darwin.result == 'success') &&
-      (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success') &&
-      (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
-      (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
+  checks-x86_64-linux:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    needs:
+      - eval
+      - builds-x86_64-linux
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    if: ${{ fromJSON(needs.eval.outputs.checks_matrix).x86_64_linux != null }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix).x86_64_linux }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-install-ephemeral
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  checks:
+    name: Nix Checks ✅
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    needs:
+      - checks-aarch64-darwin
+      - checks-aarch64-linux
+      - checks-x86_64-linux
+    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through 
+    # not sure what GH's thinking is there that skipped == passed for the branch protection rule...
+    # insert Mr Incredible meme -> pass is pass, skipped is not passed, PR should not merge
+    if: always()
+    steps:
+      - name: Check dependent job results
+        if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
+        run: |
+          jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
+          exit 1
+
+  amis:
+    needs:
+      - builds-aarch64-linux
+      - builds-x86_64-linux
     uses: ./.github/workflows/testinfra-ami-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-  run-tests:
-    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux, nix-build-packages-aarch64-darwin, nix-build-checks-aarch64-darwin, nix-build-packages-x86_64-linux, nix-build-checks-x86_64-linux]
-    if: |
-      !cancelled() &&
-      needs.nix-eval.result == 'success' &&
-      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
-      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success') &&
-      (needs.nix-build-packages-aarch64-darwin.result == 'skipped' || needs.nix-build-packages-aarch64-darwin.result == 'success') &&
-      (needs.nix-build-checks-aarch64-darwin.result == 'skipped' || needs.nix-build-checks-aarch64-darwin.result == 'success') &&
-      (needs.nix-build-packages-x86_64-linux.result == 'skipped' || needs.nix-build-packages-x86_64-linux.result == 'success') &&
-      (needs.nix-build-checks-x86_64-linux.result == 'skipped' || needs.nix-build-checks-x86_64-linux.result == 'success')
+  schema:
+    needs:
+      - builds-aarch64-linux
+      - builds-x86_64-linux
     uses: ./.github/workflows/test.yml
 
-  docker-image-test:
-    needs: [nix-eval, nix-build-packages-aarch64-linux, nix-build-checks-aarch64-linux]
-    if: |
-      !cancelled() &&
-      needs.nix-eval.result == 'success' &&
-      (needs.nix-build-packages-aarch64-linux.result == 'skipped' || needs.nix-build-packages-aarch64-linux.result == 'success') &&
-      (needs.nix-build-checks-aarch64-linux.result == 'skipped' || needs.nix-build-checks-aarch64-linux.result == 'success')
+  containers:
+    needs: builds-aarch64-linux
     uses: ./.github/workflows/docker-image-test.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  check:
+    name: Nix CI ✅
+    if: always()
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    needs:
+      - amis
+      - checks
+      - containers
+      - schema
+    steps:
+      - name: Check dependent job results
+        if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
+        run: |
+          jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
+          exit 1
+
+  version-diff:
+    name: Package version diff
+    if: github.event_name == 'pull_request'
+    needs:
+      - eval
+      - builds-x86_64-linux
+      - builds-aarch64-linux
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runs_on: blacksmith-32vcpu-ubuntu-2404
+          - system: aarch64-linux
+            runs_on: blacksmith-4vcpu-ubuntu-2404-arm
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          path: head
+
+      - name: Checkout PR base
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Install nix
+        uses: ./head/.github/actions/nix-install-ephemeral
+
+      # HEAD side already done in eval
+      - name: Download head drvPaths
+        uses: actions/download-artifact@v4
+        with:
+          name: head-drvpaths
+          path: /tmp/head-drvpaths
+
+      # use HEAD's script, base may predate it
+      - name: Evaluate base drvPaths
+        working-directory: base
+        run: |
+          nix eval --no-pure-eval --json \
+            --expr '(import ${{ github.workspace }}/head/ci/version-diff/drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
+            > /tmp/base-drvpaths.json
+
+      - name: Diff versions with nvd
+        run: ./head/ci/version-diff/diff.sh "${{ matrix.system }}"
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-${{ matrix.system }}
+          path: /tmp/diff.txt
+          retention-days: 7
+
+  version-diff-comment:
+    name: Post package version diff comment
+    if: always() && github.event_name == 'pull_request'
+    needs: version-diff
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Download diff artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: diff-*
+          path: diffs
+          merge-multiple: false
+
+      - name: Assemble collapsed comment body
+        run: ./ci/version-diff/comment.sh
+
+      - name: Find existing version diff comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- version-diff -->"
+
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/comment.md
+          edit-mode: replace
