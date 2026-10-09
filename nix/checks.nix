@@ -927,6 +927,45 @@
             postgresql_17_src
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
+          glibc-version-check =
+            let
+              checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
+                builtins.readFile ./tools/check-glibc-version.nu
+              );
+              # supautils is dlopened into already-running legacy pre-nix postgres, so it needs a lower floor than an AMI build.
+              legacyPaths = [
+                self'.legacyPackages.psql_15.exts.supautils
+                self'.legacyPackages.psql_17.exts.supautils
+                self'.legacyPackages."psql_orioledb-17".exts.supautils
+              ];
+              # gatekeeper is dlopened by the base AMI's own system PAM stack, not postgres's nix
+              # closure, so it isn't covered by "core and extensions share one glibc" — pin it
+              # explicitly so a future nixpkgs glibc bump can't silently outrun the base image.
+              pamPaths = [ self'.packages.gatekeeper ];
+            in
+            pkgs.runCommand "glibc-version-check"
+              {
+                nativeBuildInputs = [ pkgs.binutils ];
+                inherit legacyPaths pamPaths;
+              }
+              ''
+                # 2.31: Ubuntu 20.04's glibc.
+                ${lib.getExe checkScript} 2.31 $legacyPaths
+                # 2.40: current core floor.
+                ${lib.getExe checkScript} 2.40 $pamPaths
+                touch $out
+              '';
+          collation-version-check =
+            let
+              baseline = "glibc-2.40-66";
+              actual = pkgs.glibc.name;
+            in
+            assert lib.assertMsg (actual == baseline) ''
+              glibc collation data changed: baseline is ${baseline}, build has ${actual}.
+              This can change collation versions and require a reindex.
+              If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
+            '';
+            pkgs.runCommand "collation-version-check" { } "touch $out";
         };
     };
 }
