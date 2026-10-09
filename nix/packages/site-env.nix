@@ -9,10 +9,15 @@
       ...
     }:
     let
-      # Runs nix-store --gc in a throttled transient systemd unit.
+      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc in a throttled transient systemd unit.
       site-nix-gc = pkgs.writeShellApplication {
         name = "site-nix-gc";
         text = ''
+          /nix/var/nix/profiles/default/bin/nix-env --profile /nix/var/nix/profiles/site --delete-generations +3
+          /nix/var/nix/profiles/default/bin/nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
+          if [[ -L /var/lib/postgresql/.nix-profile ]]; then
+            /nix/var/nix/profiles/default/bin/nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2
+          fi
           if [[ ! -d /run/systemd/system ]]; then
             echo "Systemd not found. Skipping nix-store --gc."
             exit 0
