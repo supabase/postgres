@@ -6,7 +6,7 @@
     - **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Module structure overview
 
 ## Pre-packaging steps
-1. Make sure you have nix installed [Nix installer](https://github.com/DeterminateSystems/nix-installer)
+1. Install Nix with the [official installer](https://nix.dev/install-nix)
 2. Create a branch off of `develop`
 
 

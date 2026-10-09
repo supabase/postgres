@@ -3,8 +3,8 @@ Nix references and other useful tools:
 - Zero to Nix: <https://zero-to-nix.com>
     - Start here to learn how Nix works and how to use Nixpkgs
 
-- `nix-installer`: <https://github.com/DeterminateSystems/nix-installer>
-    - A way to install Nix
+- Installing Nix: <https://nix.dev/install-nix>
+    - The official installer and its options
 
 - Nix manual: <https://nixos.org/manual/nix/stable/>
     - Useful primarily for option and command references

@@ -99,6 +99,27 @@ $ nix run nixpkgs#nix-info -- -m
 
 If the above worked, you're now cooking with gas!
 
-## Next steps
+## Try Nix beyond this repo
+
+Nix is also a package manager that gives you current versions of many tools on
+any Linux distribution or macOS. You need very little Nix knowledge to try it:
+
+- **Q**: Want the latest Deno?
+- **A**: `nix profile install nixpkgs#deno`
+
+<!-- break bulletpoints -->
+
+- **Q**: A nice Python application like HTTPie?
+- **A**: `nix profile install nixpkgs#httpie`
+
+<!-- break bulletpoints -->
+
+- **Q**: Favorite Rust tools like ripgrep and bat?
+- **A**: `nix profile install nixpkgs#ripgrep nixpkgs#bat`. fd, hyperfine, and eza are there too.
+
+<!-- break bulletpoints -->
+
+- **Q**: Just want to try something once, without installing it?
+- **A**: `nix run nixpkgs#cowsay -- hello`. Nothing stays on your `$PATH`.
 
 To learn more about Nix, see [Zero to Nix](https://zero-to-nix.com).
