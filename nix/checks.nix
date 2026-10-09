@@ -608,6 +608,20 @@
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
           );
+          pg_upgrade_start_guard =
+            let
+              src = lib.fileset.toSource {
+                root = ../.;
+                fileset = lib.fileset.unions [
+                  ../tests/pg_upgrade/test-start-guard.sh
+                  ../ansible/files/admin_api_scripts/pg_upgrade_scripts/initiate.sh
+                ];
+              };
+            in
+            pkgs.runCommand "pg-upgrade-start-guard-test" { } ''
+              bash ${src}/tests/pg_upgrade/test-start-guard.sh
+              touch $out
+            '';
           # Portable CLI bundle portability checks
           psql_17_cli_portable =
             pkgs.runCommand "psql_17_cli_portable-portability-check"
