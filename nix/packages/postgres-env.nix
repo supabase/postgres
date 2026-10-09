@@ -7,16 +7,12 @@
       ...
     }:
     let
-      # Make a bundle of packages, as a single derivation, to be installed into the
-      # postgres user's nix profile, during image provisioning or instance update.
       debugPaths =
         version:
         lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
-        # orioledb.so ships as a separate extension package (nix/ext/orioledb.nix), not
-        # part of the postgresql derivation itself, so its debug output isn't covered by
-        # postgresql_${version}_debug above and has to be pulled in explicitly.
         ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
           self'.legacyPackages."psql_${version}".exts.orioledb.debug
+          self'.packages."postgresql_${version}_src"
         ];
 
       extDebug =
@@ -37,15 +33,26 @@
           paths = debugPaths version ++ lib.optionals pkgs.stdenv.isLinux (extDebug version);
         };
 
+      debugProfile = "/nix/var/nix/profiles/postgres-debug";
+
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
           text = ''
-            nix-env --profile /nix/var/nix/profiles/postgres-debug --set "$(nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath})"
+            nix-env --profile ${debugProfile} --set "$(nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath})"
           '';
         };
 
+      cleanupPostgresDebug = pkgs.writeShellApplication {
+        name = "cleanup-postgres-debug";
+        text = ''
+          rm -f ${debugProfile} ${debugProfile}-*-link
+        '';
+      };
+
+      # Make a bundle of packages, as a single derivation, to be installed into the
+      # postgres user's nix profile, during image provisioning or instance update.
       makePostgresEnv =
         version:
         pkgs.symlinkJoin {
@@ -56,12 +63,10 @@
             self'.packages.supabase-groonga
           ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
-          ++ (
-            if version == "orioledb-17" then
-              [ self'.packages."postgresql_${version}_src" ] ++ debugPaths version
-            else
-              lib.optionals pkgs.stdenv.isLinux [ (realisePostgresDebug version) ]
-          );
+          ++ lib.optionals pkgs.stdenv.isLinux [
+            (realisePostgresDebug version)
+            cleanupPostgresDebug
+          ];
         };
     in
     {
@@ -71,6 +76,7 @@
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
         postgres-env-15-debug = makePostgresEnvDebug "15";
         postgres-env-17-debug = makePostgresEnvDebug "17";
+        postgres-env-orioledb-17-debug = makePostgresEnvDebug "orioledb-17";
       };
     };
 }

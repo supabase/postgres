@@ -25,7 +25,7 @@ EXTRACTION_TIMEOUT=120
 MAX_AGE_DAYS=7
 MAX_TOTAL_BYTES=$((300 * 1024 * 1024)) # independent of systemd-coredump's own MaxUse
 
-GDB_DEBUG_DIR=/var/lib/postgresql/.nix-profile/lib/debug
+GDB_DEBUG_DIR=/nix/var/nix/profiles/postgres-debug/lib/debug
 GDB_CMDS_FILE=/usr/local/sbin/orioledb-coredump-cmds.gdb
 PGDATA_CURRENT_LOGFILES=/var/lib/postgresql/data/current_logfiles
 

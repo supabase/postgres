@@ -16,6 +16,7 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Development Workflow](./development-workflow.md)** - Complete development and testing workflow
 - **[Build PostgreSQL](./build-postgres.md)** - Building PostgreSQL from source
 - **[Receipt Files](./receipt-files.md)** - Understanding build receipts
+- **[Debug Symbols](./debug-symbols.md)** - Download debug symbols on an instance
 - **[Start Client/Server](./start-client-server.md)** - Running PostgreSQL client and server
 - **[Docker](./docker.md)** - Docker integration and usage
 - **[Docker Image Size Analyzer](./image-size-analyzer-usage.md)** - Tool to analyze the Docker image sizes

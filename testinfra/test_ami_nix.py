@@ -1701,13 +1701,23 @@ def _build_id_of(host, path):
     return (match.group(1) if match else None), output
 
 
-def _debug_file_exists_for_build_id(host, build_id):
-    """Check whether the postgres nix-profile's debug output has a
-    .build-id/xx/yyyy...debug file matching the given build-id."""
-    prefix, rest = build_id[:2], build_id[2:]
-    debug_path = (
-        f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+POSTGRES_DEBUG_PROFILE = "/nix/var/nix/profiles/postgres-debug"
+
+
+def _realise_postgres_debug(host):
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo /var/lib/postgresql/.nix-profile/bin/realise-postgres-debug",
     )
+    assert result["succeeded"], f"realise-postgres-debug failed: {result['stderr']}"
+
+
+def _debug_file_exists_for_build_id(host, build_id):
+    """Check whether the postgres-debug profile has a
+    .build-id/xx/yyyy...debug file matching the given build-id."""
+    _realise_postgres_debug(host)
+    prefix, rest = build_id[:2], build_id[2:]
+    debug_path = f"{POSTGRES_DEBUG_PROFILE}/lib/debug/.build-id/{prefix}/{rest}.debug"
     result = run_ssh_command(host["ssh"], f"test -f {debug_path} && echo present")
     return result["succeeded"] and "present" in result["stdout"]
 
@@ -1723,7 +1733,7 @@ def test_postgres_binary_build_id_matches_shipped_debug_symbols(host):
         f"{readelf_output}"
     )
     assert _debug_file_exists_for_build_id(host, build_id), (
-        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f"No debug file found under {POSTGRES_DEBUG_PROFILE}/lib/debug/"
         f".build-id/ matching postgres build-id {build_id} - the shipped "
         f"_debug package may be out of sync with the shipped binary"
     )
@@ -1743,7 +1753,7 @@ def test_orioledb_library_build_id_matches_shipped_debug_symbols(host):
         f"{readelf_output}"
     )
     assert _debug_file_exists_for_build_id(host, build_id), (
-        f"No debug file found under /var/lib/postgresql/.nix-profile/lib/debug/"
+        f"No debug file found under {POSTGRES_DEBUG_PROFILE}/lib/debug/"
         f".build-id/ matching orioledb.so build-id {build_id}"
     )
 
@@ -1761,8 +1771,9 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
         f"{readelf_output}"
     )
     prefix, rest = build_id[:2], build_id[2:]
+    _realise_postgres_debug(host)
     debug_file = (
-        f"/var/lib/postgresql/.nix-profile/lib/debug/.build-id/{prefix}/{rest}.debug"
+        f"{POSTGRES_DEBUG_PROFILE}/lib/debug/.build-id/{prefix}/{rest}.debug"
     )
 
     # DW_AT_comp_dir is recorded per compilation unit, not once globally -
@@ -1803,8 +1814,8 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
         # "Permission denied" on the bare filename before it ever tries the
         # substitute-path'd absolute path.
         "cd /var/lib/postgresql && sudo -u postgres gdb --batch -quiet "
-        "-ex 'set debug-file-directory /var/lib/postgresql/.nix-profile/lib/debug' "
-        f"-ex 'set substitute-path {comp_dir} /var/lib/postgresql/.nix-profile' "
+        f"-ex 'set debug-file-directory {POSTGRES_DEBUG_PROFILE}/lib/debug' "
+        f"-ex 'set substitute-path {comp_dir} {POSTGRES_DEBUG_PROFILE}' "
         f"-ex 'file {postgres_binary}' "
         "-ex 'list main' "
         "2>&1",
@@ -1816,12 +1827,30 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     assert not re.search(r"^\d+\tin /", result["stdout"], re.MULTILINE), (
         f"GDB fell back to the 'in <path>' placeholder, meaning it could not "
         f"actually read the source file even with substitute-path set from "
-        f"{comp_dir} to /var/lib/postgresql/.nix-profile:\n{result['stdout']}"
+        f"{comp_dir} to {POSTGRES_DEBUG_PROFILE}:\n{result['stdout']}"
     )
     numbered_lines = re.findall(r"^\d+\t.+$", result["stdout"], re.MULTILINE)
     assert len(numbered_lines) >= 3, (
         f"Expected 'list main' to print several lines of real source code "
         f"content via the shipped _src package, got:\n{result['stdout']}"
+    )
+
+
+def test_cleanup_postgres_debug_removes_profile_and_generations(host):
+    _skip_if_not_orioledb(host)
+    _realise_postgres_debug(host)
+    result = run_ssh_command(
+        host["ssh"],
+        "sudo /var/lib/postgresql/.nix-profile/bin/cleanup-postgres-debug",
+    )
+    assert result["succeeded"], f"cleanup-postgres-debug failed: {result['stderr']}"
+    leftover = run_ssh_command(
+        host["ssh"],
+        f"ls -d {POSTGRES_DEBUG_PROFILE} {POSTGRES_DEBUG_PROFILE}-*-link 2>/dev/null",
+    )
+    assert leftover["stdout"].strip() == "", (
+        f"Expected the postgres-debug profile and its generations to be gone, "
+        f"but found:\n{leftover['stdout']}"
     )
 
 
@@ -1836,6 +1865,8 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
         pytest.skip(
             "coredump processor not installed on this AMI (not an OrioleDB build)"
         )
+
+    _realise_postgres_debug(host)
 
     before_bundles = set(
         run_ssh_command(
