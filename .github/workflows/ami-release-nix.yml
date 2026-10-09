@@ -10,7 +10,7 @@ on:
       - ansible/vars.yml
       - flake.lock
       - flake.nix
-      - nix/**
+      - nix/packages/build-ami.nix
   workflow_dispatch:
 
 permissions:
