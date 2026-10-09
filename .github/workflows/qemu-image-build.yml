@@ -7,9 +7,8 @@ on:
       - Dockerfile-kubernetes
       - ansible/postgres_release.yml
       - ansible/vars.yml
-      - ebssurrogate/scripts/*
       - nix/packages/build-qemu-image/*
-      - qemu.pkr.hcl
+      - packer/**
   workflow_dispatch:
     inputs:
       arch:

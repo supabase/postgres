@@ -93,7 +93,7 @@ function execute_playbook {
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
 	ansible-playbook ./ansible/playbook.yml --extra-vars '{"stage2": false, "qemu": true}' \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
@@ -156,7 +156,7 @@ function execute_stage2_playbook {
 		--extra-vars '{"stage2": true, "qemu": true}' \
 		--extra-vars "git_commit_sha=$GIT_SHA" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
