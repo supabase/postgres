@@ -110,7 +110,6 @@ jobs:
         with:
           key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
           version_label: ${{ steps.build-ami.outputs.postgres_release_version }}
-          manifest_path: /tmp/ami-manifest.txt
 
       - name: Setup post build env vars
         run: |

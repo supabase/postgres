@@ -166,7 +166,7 @@ build {
 
   provisioner "file" {
     source      = "/tmp/ami-manifest.txt"
-    destination = "/tmp/ami-manifest.txt"
+    destination = "/tmp/manifest.txt"
     direction   = "download"
   }
 }

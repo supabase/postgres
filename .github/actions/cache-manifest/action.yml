@@ -8,10 +8,6 @@ inputs:
   version_label:
     description: 'Version string to stamp into the manifest'
     required: true
-  manifest_path:
-    description: 'Path to the captured manifest file'
-    required: false
-    default: /tmp/manifest.txt
 
 runs:
   using: composite
@@ -20,13 +16,12 @@ runs:
       shell: bash
       env:
         VERSION_LABEL: ${{ inputs.version_label }}
-        MANIFEST_PATH: ${{ inputs.manifest_path }}
       run: |
-        printf '%s\n' "# version: $VERSION_LABEL" | cat - "$MANIFEST_PATH" > "$MANIFEST_PATH.new"
-        mv "$MANIFEST_PATH.new" "$MANIFEST_PATH"
-        echo "value=$(sha256sum "$MANIFEST_PATH" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+        printf '%s\n' "# version: $VERSION_LABEL" | cat - /tmp/manifest.txt > /tmp/manifest.new
+        mv /tmp/manifest.new /tmp/manifest.txt
+        echo "value=$(sha256sum /tmp/manifest.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: ${{ inputs.manifest_path }}
+        path: /tmp/manifest.txt
         key: ${{ inputs.key_prefix }}-${{ steps.hash.outputs.value }}

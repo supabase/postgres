@@ -8,16 +8,15 @@ writeShellApplication {
     coreutils
   ];
   text = ''
-    if [ "$#" -lt 5 ]; then
-      echo "Usage: manifest-comment <marker> <title> <description> <diffs_prefix> <run_url>" >&2
+    if [ "$#" -lt 4 ]; then
+      echo "Usage: manifest-comment <marker> <title> <diffs_prefix> <run_url>" >&2
       exit 1
     fi
     shopt -s nullglob
     MARKER="$1"
     TITLE="$2"
-    DESCRIPTION="$3"
-    PREFIX="$4"
-    RUN_URL="$5"
+    PREFIX="$3"
+    RUN_URL="$4"
 
     fence=$'\x60\x60\x60'
     dirs=("diffs/''${PREFIX}"-*)
@@ -27,7 +26,6 @@ writeShellApplication {
 
     echo "<!-- $MARKER -->"
     echo "## $TITLE"
-    echo "$DESCRIPTION"
     echo
 
     for dir in "''${dirs[@]}"; do

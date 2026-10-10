@@ -8,9 +8,6 @@ inputs:
   title:
     description: 'Comment heading (e.g. AMI manifest diff)'
     required: true
-  description:
-    description: 'One-line explanation shown under the heading'
-    required: true
   artifact_pattern:
     description: 'Glob matching the uploaded per-leg diff artifacts (e.g. ami-manifest-diff-*)'
     required: true
@@ -24,19 +21,17 @@ runs:
       with:
         pattern: ${{ inputs.artifact_pattern }}
         path: diffs
-        merge-multiple: false
 
     - id: render
       shell: bash
       env:
         MARKER: ${{ inputs.marker }}
         TITLE: ${{ inputs.title }}
-        DESCRIPTION: ${{ inputs.description }}
         ARTIFACT_PATTERN: ${{ inputs.artifact_pattern }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         PREFIX="${ARTIFACT_PATTERN%-\*}"
-        nix run .#manifest-comment -- "$MARKER" "$TITLE" "$DESCRIPTION" "$PREFIX" "$RUN_URL" > /tmp/comment.md
+        nix run .#manifest-comment -- "$MARKER" "$TITLE" "$PREFIX" "$RUN_URL" > /tmp/comment.md
         [ -s /tmp/comment.md ] && echo "has_comment=true" >> "$GITHUB_OUTPUT" || true
 
     - uses: peter-evans/find-comment@v3
@@ -44,7 +39,6 @@ runs:
       if: steps.render.outputs.has_comment == 'true'
       with:
         issue-number: ${{ github.event.pull_request.number }}
-        comment-author: "github-actions[bot]"
         body-includes: "<!-- ${{ inputs.marker }} -->"
 
     - uses: peter-evans/create-or-update-comment@v4
