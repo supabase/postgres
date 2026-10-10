@@ -263,6 +263,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-nixos-tests": {
+      "locked": {
+        "lastModified": 1791353474,
+        "narHash": "sha256-v72qr4LsSz61tQki/41nHKZKPY6NSeZavtGlAInOCng=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2efa67fd26b6df417c33e4603185c701f260dd83",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-oldstable": {
       "locked": {
         "lastModified": 1712666087,
@@ -304,6 +320,7 @@
         "nix-eval-jobs": "nix-eval-jobs",
         "nix2container": "nix2container",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-nixos-tests": "nixpkgs-nixos-tests",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix"
