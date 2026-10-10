@@ -384,9 +384,10 @@ EXTRA_NIX_CONF
 
 		log "Store path: $STORE_PATH"
 
-		# Realize the closure from the binary cache.
+		# Realize the closure from the binary cache and root it in the pg-upgrade
+		# profile, so a GC can't remove it mid-upgrade.
 		#
-		# nix-store -r can stall indefinitely on a dropped S3 connection without
+		# The fetch can stall indefinitely on a dropped S3 connection without
 		# erroring out (its own download timeout doesn't reliably fire), so guard each
 		# attempt with a timeout and retry. Each path downloads atomically: already-
 		# registered paths are skipped on retry but an in-flight NAR restarts from
@@ -401,14 +402,14 @@ EXTRA_NIX_CONF
 
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-env --option stalled-download-timeout 60 --profile /nix/var/nix/profiles/pg-upgrade --set "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi
 			if [ "$attempt" -lt 3 ]; then
-				log "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
+				log "WARNING: nix-env --set attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
 			else
-				log "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
+				log "ERROR: nix-env --set failed after 3 attempts for $STORE_PATH"
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
