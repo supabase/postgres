@@ -17,10 +17,14 @@
 
       makePostgresEnvDebug =
         version:
-        pkgs.symlinkJoin {
+        (pkgs.symlinkJoin {
           name = "postgres-env-${version}-debug";
           paths = debugPaths version;
-        };
+        }).overrideAttrs
+          {
+            allowSubstitutes = true;
+            preferLocalBuild = false;
+          };
 
       realisePostgresDebug =
         version:
