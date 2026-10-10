@@ -26,7 +26,8 @@ runs:
         path: diffs
         merge-multiple: false
 
-    - shell: bash
+    - id: render
+      shell: bash
       env:
         MARKER: ${{ inputs.marker }}
         TITLE: ${{ inputs.title }}
@@ -36,15 +37,18 @@ runs:
       run: |
         PREFIX="${ARTIFACT_PATTERN%-\*}"
         nix run .#manifest-comment -- "$MARKER" "$TITLE" "$DESCRIPTION" "$PREFIX" "$RUN_URL" > /tmp/comment.md
+        [ -s /tmp/comment.md ] && echo "has_comment=true" >> "$GITHUB_OUTPUT" || true
 
     - uses: peter-evans/find-comment@v3
       id: fc
+      if: steps.render.outputs.has_comment == 'true'
       with:
         issue-number: ${{ github.event.pull_request.number }}
         comment-author: "github-actions[bot]"
         body-includes: "<!-- ${{ inputs.marker }} -->"
 
     - uses: peter-evans/create-or-update-comment@v4
+      if: steps.render.outputs.has_comment == 'true'
       with:
         comment-id: ${{ steps.fc.outputs.comment-id }}
         issue-number: ${{ github.event.pull_request.number }}

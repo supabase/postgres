@@ -23,12 +23,17 @@ writeShellApplication {
     PREFIX="$4"
     RUN_URL="$5"
 
+    dirs=("diffs/''${PREFIX}"-*)
+    if [ "''${#dirs[@]}" -eq 0 ]; then
+      exit 0
+    fi
+
     echo "<!-- $MARKER -->"
     echo "## $TITLE"
     echo "$DESCRIPTION"
     echo
 
-    for dir in "diffs/''${PREFIX}"-*; do
+    for dir in "''${dirs[@]}"; do
       leg="''${dir#diffs/"''${PREFIX}"-}"
       file="$dir/manifest-diff.txt"
       if [ ! -f "$file" ]; then
