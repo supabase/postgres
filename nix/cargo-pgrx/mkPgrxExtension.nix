@@ -8,7 +8,7 @@
   stdenv,
 }:
 let
-  inherit ((callPackage ./default.nix { inherit rustVersion; })) mkCargoPgrx;
+  inherit ((callPackage ./default.nix { inherit rustVersion rust-bin; })) mkCargoPgrx;
 
   # TODO: drop the fix-cargo.nix import once nixpkgs is bumped past NixOS/nixpkgs#512735
   rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (

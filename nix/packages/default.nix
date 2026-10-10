@@ -42,6 +42,7 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+        inherit (self'.packages) supabase-groonga;
         inherit (self.supabase) defaults;
       };
     in
@@ -65,7 +66,9 @@
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
           gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
-          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
+          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix {
+            inherit (self'.packages) mecab-naist-jdic;
+          };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };

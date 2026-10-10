@@ -3,6 +3,7 @@
   perSystem =
     {
       pkgs,
+      inputs',
       self',
       config,
       lib,
@@ -27,7 +28,7 @@
     in
     {
       devShells = {
-        default = pkgs.devshell.mkShell {
+        default = inputs'.devshell.legacyPackages.mkShell {
           packages = with pkgs; [
             coreutils
             just
