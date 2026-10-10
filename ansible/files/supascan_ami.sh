@@ -19,8 +19,8 @@ echo ""
 
 # Check baselines directory exists
 if [[ ! -d $BASELINES_DIR ]]; then
-  echo "ERROR: Baselines directory not found: $BASELINES_DIR"
-  exit 1
+	echo "ERROR: Baselines directory not found: $BASELINES_DIR"
+	exit 1
 fi
 
 # Add ubuntu user's nix profile to PATH
@@ -28,9 +28,9 @@ export PATH="/home/ubuntu/.nix-profile/bin:$PATH"
 
 # Verify supascan is available
 if ! command -v supascan &>/dev/null; then
-  echo "ERROR: supascan not found in PATH"
-  echo "PATH: $PATH"
-  exit 1
+	echo "ERROR: supascan not found in PATH"
+	echo "PATH: $PATH"
+	exit 1
 fi
 
 # Run supascan validate (it calls sudo goss internally for privileged checks)

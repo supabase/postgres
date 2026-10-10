@@ -15,10 +15,10 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "orioledb";
     repo = "orioledb";
-    rev = "982e11ae62c9e00c0d74f9f8de31d99ff383fd02";
-    sha256 = "sha256-Vz3vfmTGRW+O9aXZxqixHC2CpqZJf/1UCQWoENbAak4=";
+    rev = "beta19";
+    sha256 = "sha256-nLb3UHf2X+BFf5pXvUKW4LsSEtzmGy97Qw8rEkgewso=";
   };
-  version = "982e11ae62c9e00c0d74f9f8de31d99ff383fd02";
+  version = "beta19";
   buildInputs = [
     curl
     libkrb5
@@ -27,8 +27,9 @@ stdenv.mkDerivation rec {
     openssl
   ];
   buildPhase = ''
-    make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=16
+    make USE_PGXS=1 ORIOLEDB_PATCHSET_VERSION=22
   '';
+  separateDebugInfo = true;
   installPhase = ''
     runHook preInstall
 

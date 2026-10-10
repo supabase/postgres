@@ -6,11 +6,9 @@
         is_psql_17: "{{ psql_version in ['psql_17'] }}"
         is_psql_15: "{{ psql_version in ['psql_15'] }}"
 
-    - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2_nix
+    - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2
+      when: stage2 and (is_psql_oriole or is_psql_17)
       become: true
-      when:
-        - (is_psql_oriole or is_psql_17)
-        - stage2_nix
       block:
         - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
@@ -34,11 +32,9 @@
             regexp: 'db_user_namespace\ =\ off'
             replace: '#db_user_namespace\ =\ off'
 
-    - name: Execute things when is_psql_oriole and stage2_nix
+    - name: Execute things when is_psql_oriole and stage2
+      when: stage2 and is_psql_oriole
       become: true
-      when:
-        - is_psql_oriole
-        - stage2_nix
       block:
         - name: Append orioledb to shared_preload_libraries append within closing quote
           ansible.builtin.replace:
@@ -57,22 +53,29 @@
             line: 'ORIOLEDB_ENABLED=true'
             path: '/etc/environment'
 
-- name: Execute things when stage2_nix
+        - name: Add ORIOLEDB_ENABLED environment variable to postgresql.env
+          ansible.builtin.lineinfile:
+            line: 'ORIOLEDB_ENABLED=true'
+            path: '/etc/environment.d/postgresql.env'
+
+- name: Execute things when stage2
+  when: stage2
   become: true
-  when:
-    - stage2_nix
   block:
-    - name: Install packages from nix binary cache
+    - name: Resolve postgres env store path
       ansible.builtin.shell: |
-        sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#{{ nix_item }}"
-      loop:
-        - "{{ psql_version }}/bin"
-        - pg_prove
-        - supabase-groonga
-        - "{{ postgresql_version }}_debug"
-        - "{{ postgresql_version }}_src"
-      loop_control:
-        loop_var: 'nix_item'
+        sudo -u postgres bash -c "
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
+        "
+      register: postgres_env_path
+
+    - name: Install postgres env from nix binary cache
+      ansible.builtin.shell: |
+        sudo -u postgres bash -c "
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+          nix-env --set {{ postgres_env_path.stdout }}
+        "
 
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
@@ -130,15 +133,8 @@
             is_psql_15: "{{ psql_version == 'psql_15' }}"
 
         - name: Install gatekeeper if not pg15
-          when:
-            - stage2_nix
-            - not is_psql_15
+          when: stage2 and not is_psql_15
           block:
-            - name: Install gatekeeper from nix binary cache
-              become: yes
-              shell: |
-                sudo -u postgres bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#gatekeeper"
-
             - name: Create symbolic link for linux-pam to find pam_jit_pg.so
               become: yes
               shell: |

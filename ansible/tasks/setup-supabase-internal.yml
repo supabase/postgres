@@ -4,7 +4,8 @@
 
 - name: download Vector package
   ansible.builtin.get_url:
-    url: "{{ vector_x86_deb if platform == 'amd64' else vector_arm_deb }}"
+    url: "{{ vector_artifacts[platform]['url'] }}"
+    checksum: "{{ vector_artifacts[platform]['checksum'] }}"
     dest: /tmp/vector.deb
     timeout: 120
   become: true
@@ -13,16 +14,32 @@
   register: vector_download
   until: vector_download is success
 
+# Pin the vector group/user before installing the package: its postinst
+# creates them with a dynamically-assigned system gid/uid (whatever is next
+# free at that point), which is not reproducible across AMI variants that
+# install a different set of packages before this point - it has collided
+# with this pinned gid (989) after the systemd-coredump package install
+# (setup-postgres.yml) shifted the "next free system gid" ahead of it.
+- name: add vector system group
+  ansible.builtin.group:
+    name: vector
+    gid: "{{ 989 if not qemu else 990 }}"
+    system: yes
+
+- name: add vector system user
+  ansible.builtin.user:
+    name: vector
+    uid: 994
+    group: vector
+    groups: postgres
+    append: yes
+    create_home: false
+    home: /var/lib/vector
+    system: yes
+
 - name: install Vector for logging
   apt:
     deb: /tmp/vector.deb
-  become: true
-
-- name: add Vector to postgres group
-  ansible.builtin.user:
-    append: true
-    groups: 'postgres'
-    name: 'vector'
   become: true
 
 - name: create service files for Vector

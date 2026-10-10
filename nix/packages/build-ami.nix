@@ -1,10 +1,10 @@
 {
   lib,
   stdenv,
-  writeShellApplication,
-  packer,
   awscli2,
   jq,
+  packer,
+  writeShellApplication,
   ...
 }:
 
@@ -18,10 +18,10 @@ let
         (root + "/ebssurrogate")
         (root + "/ansible")
         (root + "/migrations")
-        (root + "/scripts")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
-        (root + "/development-arm.vars.pkr.hcl")
+        (root + "/development-amd64.vars.pkr.hcl")
+        (root + "/development-arm64.vars.pkr.hcl")
         (lib.fileset.maybeMissing (root + "/common-nix.vars.pkr.hcl"))
       ];
     };
@@ -40,34 +40,64 @@ writeShellApplication {
   name = "build-ami";
 
   runtimeInputs = [
-    packer
     awscli2
     jq
+    packer
   ];
 
   text = ''
-    set -euo pipefail
-
     set -x
 
-    # Parse stage parameter
-    STAGE="''${1:-stage1}"
-    shift || true  # Remove first arg, ignore error if no args
+    # Parse required parameters
+    STAGE=''${1:-stage1}
+    case $STAGE in
+    stage1 | stage2) ;;
+    *) echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'" >&2 && exit 1 ;;
+    esac
+
+    ARCH=$2
+    case $ARCH in
+    amd64 | arm64) ;;
+    *) echo "Error: Invalid arch '$ARCH'. Must be 'amd64' or 'arm64'" >&2 && exit 1 ;;
+    esac
+
+    INPUT_HASH=${placeholder "out"}
+    INPUT_HASH=''${INPUT_HASH#/nix/store/}
+    INPUT_HASH=''${INPUT_HASH%%-*}
+    shift 2
+
+    export PACKER_LOG=''${PACKER_LOG:-''${RUNNER_DEBUG:-0}}
+    on_error=ask
+    if ''${CI:-false}; then
+      echo "::notice::Setting packer build -on-error=abort since this is CI, this is different than non-CI runs!"
+      on_error=abort
+    elif ! [[ -t 0 ]]; then
+      echo "stdin is not a tty, so running packer build -on-error=cleanup (default) since there's no one to ask!" >&2
+      on_error=cleanup
+    fi
 
     REGION="''${AWS_REGION:-ap-southeast-1}"
-    PACKER_SOURCES="${packerSources}"
-    INPUT_HASH=$(basename "$PACKER_SOURCES" | cut -d- -f1)
 
     find_stage1_ami() {
       set +e
+      local arch
+      case $ARCH in
+      amd64) arch=x86_64 ;;
+      arm64) arch=arm64 ;;
+      esac
+      local filters=(
+        "Name=architecture,Values=$arch"
+        "Name=state,Values=available"
+        "Name=tag:inputHash,Values=$INPUT_HASH"
+        "Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1"
+        "Name=tag:sourceSha,Values=$GIT_SHA" # This is set by packer via the git-head-version var which is always passed in by the build-ami action
+      )
+
       local ami_output
       ami_output=$(aws ec2 describe-images \
         --region "$REGION" \
         --owners self \
-        --filters \
-          "Name=tag:inputHash,Values=$INPUT_HASH" \
-          "Name=tag:postgresVersion,Values=$POSTGRES_VERSION-stage1" \
-          "Name=state,Values=available" \
+        --filters "''${filters[@]}" \
         --query 'Images[0].ImageId' \
         --output text 2>&1)
       local exit_code=$?
@@ -87,34 +117,11 @@ writeShellApplication {
 
     if [ "$STAGE" = "stage1" ]; then
       echo "Building stage 1..."
-      echo "Checking for existing AMI..."
 
-      AMI_ID=$(find_stage1_ami)
-      if [ -n "$AMI_ID" ]; then
-        echo "Found existing AMI: $AMI_ID"
-        echo "STAGE1_AMI_ID=$AMI_ID"
-
-        if [ -n "''${GITHUB_OUTPUT:-}" ]; then
-          AMI_NAME=$(aws ec2 describe-images \
-            --region "$REGION" \
-            --image-ids "$AMI_ID" \
-            --query 'Images[0].Name' \
-            --output text)
-
-          if [ -n "$AMI_NAME" ]; then
-            echo "::notice title=Stage 1 AMI Found::AMI '$AMI_NAME' (ID: $AMI_ID) found in region $REGION"
-          fi
-        fi
-
-        exit 0
-      fi
-
-      echo "No cached AMI found"
-
-      cd "$PACKER_SOURCES"
+      cd ${packerSources}
       packer init "$@"
-      packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+      packer build -on-error=$on_error \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var "input-hash=$INPUT_HASH" \
         -var "postgres-version=$POSTGRES_VERSION" \
         -var "region=$REGION" \
@@ -146,12 +153,27 @@ writeShellApplication {
       echo "Found stage 1 AMI: $STAGE1_AMI_ID"
 
       packer init stage2-nix-psql.pkr.hcl
-      packer build \
-        -var-file="development-arm.vars.pkr.hcl" \
+      packer build -on-error=$on_error \
+        -var-file="development-$ARCH.vars.pkr.hcl" \
         -var-file="common-nix.vars.pkr.hcl" \
-        -var "source_ami=$STAGE1_AMI_ID" \
         -var "region=$REGION" \
+        -var "source_ami=$STAGE1_AMI_ID" \
         "$@"
+
+      disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
+      disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'
+      if [[ $disk_usage_notice =~ $disk_usage_notice_pattern ]]; then
+        disk_usage_bytes=''${BASH_REMATCH[1]}
+        disk_usage_human=''${BASH_REMATCH[2]}
+      else
+        echo "Error: Missing or invalid disk usage notice in stage 2 log: '$disk_usage_notice'" >&2
+        exit 1
+      fi
+      echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
+      if [[ -n ''${GITHUB_OUTPUT:-} ]]; then
+        disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
+        echo "disk_usage_json=$disk_usage_json" >>"$GITHUB_OUTPUT"
+      fi
 
       if [ -n "''${PACKER_EXECUTION_ID:-}" ]; then
         STAGE2_AMI_ID=$(aws ec2 describe-images \
@@ -159,6 +181,7 @@ writeShellApplication {
           --owners self \
           --filters \
             "Name=tag:packerExecutionId,Values=''${PACKER_EXECUTION_ID}" \
+            "Name=tag:postgresVersion,Values=$POSTGRES_VERSION" \
             "Name=state,Values=available" \
           --query 'Images[0].ImageId' \
           --output text)
@@ -181,19 +204,16 @@ writeShellApplication {
           fi
         fi
       fi
-    else
-      echo "Error: Invalid stage '$STAGE'. Must be 'stage1' or 'stage2'"
-      exit 1
     fi
   '';
 
   meta = {
-    description = "Build AMI if not cached based on input hash";
+    description = "Build stage-1 and stage-2 AMIs with Packer";
     longDescription = ''
-      The input hash is computed from all source files that affect the build.
-      Before building, we verify the existence of an AMI with the same hash.
-      If found, the build is skipped. Otherwise, a new AMI is created and
-      tagged with the input hash for future cache hits.
+      Stage 1 always builds a new AMI tagged with an input hash computed from
+      the source files that affect the build. Stage 2 finds the matching
+      stage-1 AMI by input hash, PostgreSQL version, architecture, and source SHA
+      and uses it as its source image.
     '';
   };
 }

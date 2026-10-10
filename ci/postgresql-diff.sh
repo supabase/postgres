@@ -164,16 +164,16 @@ ensure_repo_at_commit "$NEW_DIR" "$PR_BRANCH" "$PR_COMMIT"
 # Build all variants in both directories
 echo "Building in $OLD_DIR..."
 cd "$OLD_DIR"
-nix build --accept-flake-config ".#psql_15/bin" -o result-psql_15
-nix build --accept-flake-config ".#psql_17/bin" -o result-psql_17
-nix build --accept-flake-config ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
+nix build ".#psql_15/bin" -o result-psql_15
+nix build ".#psql_17/bin" -o result-psql_17
+nix build ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
 
 echo ""
 echo "Building in $NEW_DIR..."
 cd "$NEW_DIR"
-nix build --accept-flake-config ".#psql_15/bin" -o result-psql_15
-nix build --accept-flake-config ".#psql_17/bin" -o result-psql_17
-nix build --accept-flake-config ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
+nix build ".#psql_15/bin" -o result-psql_15
+nix build ".#psql_17/bin" -o result-psql_17
+nix build ".#psql_orioledb-17/bin" -o result-psql_orioledb-17
 
 echo ""
 
@@ -341,7 +341,7 @@ analyze_variant_deps() {
 	echo "<details>"
 	echo "<summary>Raw Dependency Closure</summary>"
 	echo ""
-	echo "\`\`\`"
+	echo '```'
 	echo "Old Dependencies (closure: ${old_closure_mb:-?} MB):"
 	while read -r path; do
 		dep_size=$(nix path-info -S "$path" --json 2>/dev/null | jq -r '.[].narSize' 2>/dev/null || echo "")
@@ -363,7 +363,7 @@ analyze_variant_deps() {
 			echo "  $path"
 		fi
 	done <"/tmp/new-$variant-deps-$$.txt"
-	echo "\`\`\`"
+	echo '```'
 	echo ""
 	echo "</details>"
 	echo ""

@@ -229,6 +229,8 @@ default_text_search_config = 'pg_catalog.english'
 
 # - Shared Library Preloading -
 
+session_preload_libraries = 'supautils'
+
 jit_provider = 'llvmjit'		# JIT library to use
 
 # - Other Defaults -
@@ -274,6 +276,9 @@ restart_after_crash = off		# reinitialize after backend crash?
 
 # WAL-G specific configurations
 
+# supautils specific configurations
+include = '/etc/postgresql-custom/supautils.conf'
+
 #------------------------------------------------------------------------------
 # CUSTOMIZED OPTIONS
 #------------------------------------------------------------------------------
@@ -281,6 +286,7 @@ restart_after_crash = off		# reinitialize after backend crash?
 # Add settings for extensions here
 auto_explain.log_min_duration = 10s
 cron.database_name = 'postgres'
+pg_net.username = 'postgres'
 pgsodium.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 vault.getkey_script = '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
 wal_log_hints = 'on'
@@ -292,7 +298,7 @@ wal_log_hints = 'on'
 #------------------------------------------------------------------------------
 shared_preload_libraries = 'pg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, auto_explain, pg_tle, plan_filter, supabase_vault, orioledb'
 default_table_access_method = 'orioledb'
-orioledb.enable_rewind = true
-orioledb.rewind_max_time = 1200
-orioledb.rewind_max_transactions = 100000
-orioledb.rewind_buffers = 1280
+# orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+# as an allow-list for logical decoding output plugins.
+output_plugin_libraries = 'pgoutput, test_decoding, wal2json'
+

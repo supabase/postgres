@@ -92,7 +92,6 @@ let
         homepage = "https://github.com/okbob/plpgsql_check";
         changelog = "https://github.com/okbob/plpgsql_check/releases/tag/v${version}";
         license = licenses.mit;
-        maintainers = [ maintainers.marsam ];
         inherit (postgresql.meta) platforms;
       };
     };
@@ -140,6 +139,7 @@ buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash value.revision) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit switch-ext-version latestOnly;

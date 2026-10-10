@@ -34,6 +34,9 @@ let
         (root + "/ansible/files/postgresql_extension_custom_scripts")
         (root + "/ansible/files/walg_helper_scripts")
 
+        # pgctld config templates + wrapper script (copied into the multigres image)
+        (root + "/docker/pgctld")
+
         # Database migrations (copied into images)
         (root + "/migrations/db")
       ];

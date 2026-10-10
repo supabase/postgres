@@ -1,11 +1,9 @@
 {
-  description = "Prototype tooling for deploying PostgreSQL";
-  nixConfig = {
-    extra-substituters = [ "https://nix-postgres-artifacts.s3.amazonaws.com" ];
-    extra-trusted-public-keys = [
-      "nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI="
-    ];
-  };
+  description = "Tools for deploying PostgreSQL and extensions";
+
+  # Skip rebuilding all the packages, download instead.
+  # See nix/docs/binary-cache.nix to set it up.
+
   inputs = {
     devshell.url = "github:numtide/devshell";
     devshell.inputs.nixpkgs.follows = "nixpkgs";
@@ -53,8 +51,9 @@
         nix/hooks.nix
         nix/hosts.nix
         nix/nixpkgs.nix
-        nix/packages
         nix/overlays
+        nix/packages
+        nix/tools
       ];
     });
 }
