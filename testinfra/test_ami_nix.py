@@ -1770,9 +1770,7 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     )
     prefix, rest = build_id[:2], build_id[2:]
     debug_env = _realise_postgres_debug(host)
-    debug_file = (
-        f"{debug_env}/lib/debug/.build-id/{prefix}/{rest}.debug"
-    )
+    debug_file = f"{debug_env}/lib/debug/.build-id/{prefix}/{rest}.debug"
 
     # DW_AT_comp_dir is recorded per compilation unit, not once globally -
     # PostgreSQL's recursive-Makefile build compiles each .c file from its
