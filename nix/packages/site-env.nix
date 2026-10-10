@@ -9,11 +9,57 @@
       ...
     }:
     let
+      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc in a throttled transient systemd unit.
+      site-nix-gc = pkgs.writeShellApplication {
+        name = "site-nix-gc";
+        text = ''
+          nix-env --profile /nix/var/nix/profiles/site --delete-generations +3
+          nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
+          if [[ -L /var/lib/postgresql/.nix-profile ]]; then
+            nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2
+          fi
+          if [[ ! -d /run/systemd/system ]]; then
+            echo "Systemd not found. Skipping nix-store --gc."
+            exit 0
+          fi
+          if systemctl is-active --quiet site-nix-gc; then
+            echo "Garbage collection already running. Skipping nix-store --gc."
+            exit 0
+          fi
+          systemd-run \
+            --unit=site-nix-gc --collect --no-block --setenv=NIX_REMOTE=local \
+            -p Nice=19 -p CPUSchedulingPolicy=idle -p CPUQuota=20% \
+            -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
+            -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
+            -p RuntimeMaxSec=2h \
+            "$(command -v nix-store)" --gc --max-freed 2G \
+            || echo "systemd-run failed. Skipping nix-store --gc."
+        '';
+      };
+
       makeSiteEnv =
         version: extraPaths:
+        let
+          supautils = self'.legacyPackages."psql_${version}".exts.supautils;
+          # Site profile activation script. MUST STAY IDEMPOTENT!
+          activate = pkgs.writeShellApplication {
+            name = "activate";
+            text = ''
+              echo "Activating site profile."
+              echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
+              echo "Site profile activated."
+            '';
+          };
+        in
         pkgs.buildEnv {
           name = "site-env-${version}";
-          paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          paths = [
+            supautils
+            activate
+            site-nix-gc
+          ]
+          ++ extraPaths;
+          passthru = { inherit activate site-nix-gc; };
         };
 
       siteEnvs = {

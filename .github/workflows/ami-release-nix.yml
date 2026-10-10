@@ -203,6 +203,25 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
+      - name: configure aws credentials - public artifacts
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish site-env store path
+        run: |
+          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+          SITE_ENV_NAME="site-env-${POSTGRES_MAJOR_VERSION}"
+          SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
+
+          aws s3 cp - "s3://supabase-public-artifacts-bucket/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}" <<< "$SITE_ENV_PATH"
+
+          if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            aws s3 cp - "s3://supabase-public-artifacts-bucket/nix-catalog/latest-${SITE_ENV_NAME}-${SYSTEM}.sha" <<< "$GIT_SHA"
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
