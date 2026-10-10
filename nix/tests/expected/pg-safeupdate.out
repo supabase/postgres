@@ -1,4 +1,4 @@
-load '$libdir/plugins/safeupdate';
+load 'safeupdate';
 set safeupdate.enabled=1;
 create schema v;
 create table v.foo(
