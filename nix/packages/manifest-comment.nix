@@ -1,14 +1,10 @@
 {
   writeShellApplication,
-  gnused,
-  gnugrep,
   coreutils,
 }:
 writeShellApplication {
   name = "manifest-comment";
   runtimeInputs = [
-    gnused
-    gnugrep
     coreutils
   ];
   text = ''
@@ -23,6 +19,7 @@ writeShellApplication {
     PREFIX="$4"
     RUN_URL="$5"
 
+    fence=$'\x60\x60\x60'
     dirs=("diffs/''${PREFIX}"-*)
     if [ "''${#dirs[@]}" -eq 0 ]; then
       exit 0
@@ -36,43 +33,17 @@ writeShellApplication {
     for dir in "''${dirs[@]}"; do
       leg="''${dir#diffs/"''${PREFIX}"-}"
       file="$dir/manifest-diff.txt"
-      if [ ! -f "$file" ]; then
-        echo "<details>"
-        echo "<summary>''${leg}: diff unavailable (job failed or skipped)</summary>"
-        echo "</details>"
-        echo
+      first="$(head -1 "$file")"
+      if [[ "$first" != "baseline: "* ]]; then
+        printf '<details>\n<summary>%s: %s</summary>\n</details>\n\n' "$leg" "$first"
         continue
       fi
-      if grep -q "^No baseline cached yet" "$file"; then
-        echo "<details>"
-        echo "<summary>''${leg}: no baseline cached yet</summary>"
-        echo
-        cat "$file"
-        echo "</details>"
-        echo
-        continue
-      fi
-      if grep -q "^No changes vs baseline" "$file"; then
-        echo "<details>"
-        echo "<summary>''${leg}: $(cat "$file")</summary>"
-        echo "</details>"
-        echo
-        continue
-      fi
-      baseline="$(sed -n 's/^baseline: //p' "$file" | head -1)"
-      tail -n +2 "$file" > "$file.body"
-      file="$file.body"
-      echo "<details>"
-      echo "<summary>''${leg}: changed (baseline: ''${baseline})</summary>"
-      echo
-      echo '```diff'
-      head -c 6000 "$file"
-      echo '```'
-      if [ "$(wc -c < "$file")" -gt 6000 ]; then
+      body="$(tail -n +2 "$file")"
+      printf '<details>\n<summary>%s: changed (%s)</summary>\n\n%sdiff\n%s\n%s\n' "$leg" "$first" "$fence" "''${body:0:6000}" "$fence"
+      if [ "''${#body}" -gt 6000 ]; then
         echo "truncated, [full output]($RUN_URL)"
       fi
-      echo "</details>"
-      echo
+      printf '</details>\n\n'
     done
   '';
 }

@@ -83,10 +83,9 @@ jobs:
             .
 
       - name: Snapshot Docker image manifest
-        uses: ./.github/actions/snapshot-docker-manifest
-        with:
-          image: pg-docker-test:${{ matrix.name }}
-          manifest_path: /tmp/docker-manifest.txt
+        run: |
+          docker run --rm -v "$PWD/testinfra/manifest-snapshot.sh:/manifest-snapshot.sh:ro" \
+            "pg-docker-test:${{ matrix.name }}" sh /manifest-snapshot.sh > /tmp/docker-manifest.txt
 
       - name: Diff Docker image manifest
         if: github.event_name == 'pull_request'

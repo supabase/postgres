@@ -156,11 +156,10 @@ jobs:
 
       - name: Snapshot Docker image manifest
         if: matrix.arch == 'arm64'
-        uses: ./.github/actions/snapshot-docker-manifest
-        with:
-          image: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}
-          pull: 'true'
-          manifest_path: /tmp/docker-manifest.txt
+        run: |
+          docker pull "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}"
+          docker run --rm -v "$PWD/testinfra/manifest-snapshot.sh:/manifest-snapshot.sh:ro" \
+            "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}" sh /manifest-snapshot.sh > /tmp/docker-manifest.txt
 
       - name: Cache Docker image manifest
         if: matrix.arch == 'arm64'
