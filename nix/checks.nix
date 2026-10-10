@@ -917,7 +917,7 @@
               psql_17 = self.legacyPackages.${system}."psql_17".bin;
               psql_17_slim = self.legacyPackages.${system}."psql_17_slim".bin;
               pgConf = pkgs.writeText "postgresql-test.conf" ''
-                dynamic_library_path = '/nix/var/nix/profiles/site/pg-extensions:$libdir'
+                dynamic_library_path = '/nix/var/nix/profiles/site/lib/postgresql:$libdir'
                 session_preload_libraries = 'supautils'
                 unix_socket_directories = '/tmp'
               '';
@@ -964,10 +964,12 @@
               '';
             };
         }
-        // (import ./ext/tests {
-          inherit self;
-          inherit pkgs;
-        })
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+        )
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug
