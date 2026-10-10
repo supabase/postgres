@@ -119,6 +119,17 @@
       notify:
         - Regenerate grub configuration
 
+    # The kernel ignores unknown params, so zswap options are safe on kernels without zswap.
+    - name: Enable zswap
+      ansible.builtin.copy:
+        content:
+          GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} zswap.enabled=1 zswap.compressor=zstd zswap.max_pool_percent=10"
+        dest: /etc/default/grub.d/52-zswap.cfg
+        owner: root
+        group: root
+      notify:
+        - Regenerate grub configuration
+
 - name: Disable algif_aead module autoload for Copy Fail mitigation
   ansible.builtin.copy:
     content: |
