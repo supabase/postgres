@@ -78,15 +78,6 @@
         ../ext/pg-safeupdate.nix
       ];
 
-      # Hold cgal back to 6.0.2 until nixpkgs bumps sfcgal past 2.2.0 (incompatible with CGAL 6.1+).
-      cgal_6_0_2 = pkgs.cgal.overrideAttrs (_: {
-        version = "6.0.2";
-        src = pkgs.fetchurl {
-          url = "https://github.com/CGAL/cgal/releases/download/v6.0.2/CGAL-6.0.2.tar.xz";
-          sha256 = "sha256-8wxb58JaKj6iS8y6q1z2P6/aY8AnnzTX5/izISgh/tY=";
-        };
-      });
-
       getPostgresqlPackage =
         version: latestOnly:
         let
@@ -151,7 +142,6 @@
               inherit postgresql latestOnly;
               inherit (self'.packages) supabase-groonga mecab-naist-jdic;
               rust-bin = inputs.rust-overlay.lib.mkRustBin { } pkgs;
-              sfcgal = pkgs.sfcgal.override { cgal = cgal_6_0_2; };
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
             }
