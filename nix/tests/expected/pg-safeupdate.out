@@ -10,3 +10,10 @@ update v.foo
 ERROR:  UPDATE requires a WHERE clause
 drop schema v cascade;
 NOTICE:  drop cascades to table v.foo
+alter role postgres in database postgres set safeupdate.enabled = 1;
+\c - postgres
+create temp table t(id int);
+update t set id = 1;
+ERROR:  UPDATE requires a WHERE clause
+\c - supabase_admin
+alter role postgres in database postgres reset safeupdate.enabled;
