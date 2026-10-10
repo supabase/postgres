@@ -1,7 +1,12 @@
 { inputs, ... }:
 {
   perSystem =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      self',
+      ...
+    }:
     let
       # Minimal glibc locales for slim images - only en_US.UTF-8 (~3MB vs ~200MB)
       glibcLocalesMinimal = pkgs.glibcLocales.override {
@@ -76,7 +81,7 @@
       getPostgresqlPackage =
         version: latestOnly:
         let
-          base = pkgs."postgresql_${version}";
+          base = self'.packages."postgresql_${version}";
         in
         if latestOnly then base.override { systemdSupport = false; } else base;
       # Create a 'receipt' file for a given postgresql package. This is a way
@@ -135,6 +140,8 @@
             pkgs
             // {
               inherit postgresql latestOnly;
+              inherit (self'.packages) supabase-groonga mecab-naist-jdic;
+              rust-bin = inputs.rust-overlay.lib.mkRustBin { } pkgs;
               switch-ext-version = extCallPackage ./switch-ext-version.nix { };
               overlayfs-on-package = extCallPackage ./overlayfs-on-package.nix { };
             }
