@@ -2,7 +2,7 @@
 
 The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are deployed to `/nix/var/nix/profiles/site`. They hold supautils, `activate`, and `site-nix-gc`.
 
-`dynamic_library_path` in `postgresql.conf` includes `/nix/var/nix/profiles/site/pg-extensions` first, then `$libdir`. supautils also remains in `$libdir`, pending cleanup.
+`dynamic_library_path` in `postgresql.conf` includes `/nix/var/nix/profiles/site/lib/postgresql` first, then `$libdir`. supautils also remains in `$libdir`, pending cleanup.
 
 ## Publish
 

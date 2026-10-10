@@ -46,7 +46,7 @@
             name = "activate";
             text = ''
               echo "Activating site profile."
-              echo "supautils at /nix/var/nix/profiles/site/pg-extensions/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/pg-extensions."
+              echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
               echo "Site profile activated."
             '';
           };

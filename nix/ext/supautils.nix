@@ -27,10 +27,10 @@ stdenv.mkDerivation rec {
   patches = [ ./patches/supautils-strtol-glibc-compat.patch ];
 
   installPhase = ''
-    mkdir -p $out/lib $out/pg-extensions
+    mkdir -p $out/lib/postgresql
 
     install -D *${postgresql.dlSuffix} -t $out/lib
-    ln -s ../lib/supautils${postgresql.dlSuffix} $out/pg-extensions/supautils${postgresql.dlSuffix}
+    ln -s ../supautils${postgresql.dlSuffix} $out/lib/postgresql/supautils${postgresql.dlSuffix}
   '';
 
   meta = with lib; {
