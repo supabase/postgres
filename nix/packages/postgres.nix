@@ -178,6 +178,7 @@
         {
           variant ? "full",
           latestOnly ? false,
+          withSupautils ? false,
         }:
         let
           # For CLI variant, override PostgreSQL to be portable (no hardcoded /nix/store paths)
@@ -186,7 +187,9 @@
               base = getPostgresqlPackage version latestOnly;
             in
             if variant == "cli" then base.override { portable = true; } else base;
-          postgres-pkgs = makeOurPostgresPkgs version { inherit variant latestOnly; };
+          postgres-pkgs = lib.filter (ext: withSupautils || ext.name != "supautils") (
+            makeOurPostgresPkgs version { inherit variant latestOnly; }
+          );
           ourExts = map (ext: {
             name = ext.name;
             version = ext.version;
@@ -225,34 +228,55 @@
         {
           variant ? "full",
           latestOnly ? false,
+          withSupautils ? false,
         }:
         lib.recurseIntoAttrs {
-          bin = makePostgresBin version { inherit variant latestOnly; };
+          bin = makePostgresBin version { inherit variant latestOnly withSupautils; };
           exts = makeOurPostgresPkgsSet version { inherit variant latestOnly; };
         };
-      basePackages = {
-        psql_15 = makePostgres "15" { };
-        psql_17 = makePostgres "17" { };
-        psql_orioledb-17 = makePostgres "orioledb-17" { };
-      };
-      slimPackages = {
-        psql_15_slim = makePostgres "15" { latestOnly = true; };
-        psql_17_slim = makePostgres "17" { latestOnly = true; };
-        psql_orioledb-17_slim = makePostgres "orioledb-17" { latestOnly = true; };
+      makePackageSet = withSupautils: {
+        psql_15 = makePostgres "15" { inherit withSupautils; };
+        psql_17 = makePostgres "17" { inherit withSupautils; };
+        psql_orioledb-17 = makePostgres "orioledb-17" { inherit withSupautils; };
       };
 
-      # CLI packages - minimal PostgreSQL + supautils only for Supabase CLI
-      cliPackages = {
-        psql_17_cli = makePostgres "17" { variant = "cli"; };
+      slimPackages = {
+        psql_15_slim = makePostgres "15" {
+          latestOnly = true;
+          withSupautils = true;
+        };
+        psql_17_slim = makePostgres "17" {
+          latestOnly = true;
+          withSupautils = true;
+        };
+        psql_orioledb-17_slim = makePostgres "orioledb-17" {
+          latestOnly = true;
+          withSupautils = true;
+        };
       };
+
+      cliPackages = {
+        psql_17_cli = makePostgres "17" {
+          variant = "cli";
+          withSupautils = true;
+        };
+      };
+
+      allPackages =
+        makePackageSet false
+        // lib.mapAttrs' (name: value: lib.nameValuePair "${name}_with_supautils" value) (
+          makePackageSet true
+        )
+        // slimPackages
+        // cliPackages;
 
       binPackages = lib.mapAttrs' (name: value: {
         name = "${name}/bin";
         value = value.bin;
-      }) (basePackages // slimPackages // cliPackages);
+      }) allPackages;
     in
     {
       packages = binPackages;
-      legacyPackages = basePackages // slimPackages // cliPackages;
+      legacyPackages = allPackages;
     };
 }

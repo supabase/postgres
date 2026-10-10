@@ -181,7 +181,7 @@ jobs:
           SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
 
           # Get store path for this build
-          STORE_PATH=$(nix eval --raw ".#psql_${POSTGRES_MAJOR_VERSION}/bin.outPath")
+          STORE_PATH=$(nix eval --raw ".#psql_${POSTGRES_MAJOR_VERSION}_with_supautils/bin.outPath")
 
           # Each postgres version gets its own catalog file (no race conditions)
           CATALOG_S3="s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-psql_${POSTGRES_MAJOR_VERSION}-${SYSTEM}.json"

@@ -44,6 +44,9 @@ let
   # Process the ansible config files into a derivation with @dataDir@ placeholders
   processAnsibleConfig =
     { majorVersion }:
+    let
+      supautils = self.legacyPackages.${system}."psql_${majorVersion}".exts.supautils;
+    in
     pkgs.pkgsLinux.runCommand "processed-postgresql-config-${majorVersion}" { } ''
       mkdir -p $out/conf.d $out/extension-custom-scripts
 
@@ -80,6 +83,8 @@ let
         -e "s|include = '/etc/postgresql-custom/read-replica.conf'|include = '@dataDir@/read-replica.conf'|" \
         -e "\$a\\
       session_preload_libraries = 'supautils'" \
+        -e "\$a\\
+      dynamic_library_path = '${supautils}/lib:\$libdir'" \
         -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '@dataDir@/conf.d'|" \
         -e "\$a\\
       unix_socket_directories = '/run/postgresql'" \
