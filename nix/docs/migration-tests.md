@@ -4,7 +4,7 @@ Migration tests are run similar to running the client and server; see
 Instead, you use the following format to specify the upgrade:
 
 ```
-nix run .#migration-test <from> <to> [pg_dumpall|pg_upgrade]
+nix run .#migrate-tool <from> <to> [pg_dumpall|pg_upgrade]
 ```
 
 The arguments are:
@@ -17,14 +17,14 @@ The arguments are:
 
 The versions for upgrading can be one of two forms:
 
-- A major version number, e.g. `15` or `17`
+- The major version number `15`. Other majors are not wired into the tool yet.
 - A path to `/nix/store`, which points to _any_ version of PostgreSQL, as long
   as it has the "expected" layout and is a postgresql install.
 
 ## Always use the latest version of the migration tool
 
 Unlike the method for starting the client or server, you probably always want to
-use the latest version of the `migration-test` tool from the repository. This is
+use the latest version of `migrate-tool` from the repository. This is
 because it can ensure forwards and backwards compatibility if necessary.
 
 ## Upgrading between arbitrary `/nix/store` versions
@@ -43,7 +43,7 @@ compare, and you could do something like the following:
 OLD_GIT_VERSION=...
 NEW_GIT_VERSION=...
 
-nix run github:supabase/postgres#migration-test \
+nix run github:supabase/postgres#migrate-tool \
   $(nix build --print-out-paths --no-link "github:supabase/postgres/$OLD_GIT_VERSION#psql_15/bin") \
   $(nix build --print-out-paths --no-link "github:supabase/postgres/$NEW_GIT_VERSION#psql_15/bin") \
   pg_upgrade

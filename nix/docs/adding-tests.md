@@ -64,9 +64,6 @@ These files are run using `pg_prove`; they pretty much behave exactly like how
 you expect; you can read
 [the pgTAP documentation](https://pgtap.org/documentation.html) for more.
 
-For a good example of a pgTAP test as a pull request, check out
-[pull request #4](https://github.com/supabase/nix-postgres/pull/4/files).
-
 ## Re-running tests
 
 `nix flake check` gets its results cached, so if you do it again the tests won't rerun. If you change a file then it will run again.
@@ -75,7 +72,7 @@ For a good example of a pgTAP test as a pull request, check out
 
 ```
 nix build .#checks.x86_64-linux.psql_15 --rebuild
-nix build .#checks.x86_64-linux.psql_16 --rebuild
+nix build .#checks.x86_64-linux.psql_17 --rebuild
 ```
 -->
 
@@ -104,5 +101,5 @@ To add data into the database, modify the
 it. This script gets loaded into the old version of the database at startup, and
 it's expected that the new version of the database can handle it.
 
-To run the `migration-test` tool, check out the documentation on
+To run the `migrate-tool`, check out the documentation on
 [migration-tests](./migration-tests.md).

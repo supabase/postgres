@@ -7,7 +7,7 @@ repository:
 nix run .#start-server 15
 ```
 
-Replace the `15` with a `16`, and you'll be using a different version. Optionally you can specify a second argument for the port.
+Replace the `15` with a `17`, and you'll be using a different version. Optionally you can specify a second argument for the port.
 
 You likely have a running postgres, so to not cause a conflict, this uses port 5435 by default.
 
@@ -39,7 +39,7 @@ of the hash character, instead. For example:
 ```bash
 nix run github:supabase/postgres#start-server 15 &
 sleep 5
-nix run github:supabase/postgres#start-client 16
+nix run github:supabase/postgres#start-client -- --version 15
 ```
 
 ## Running a server replica

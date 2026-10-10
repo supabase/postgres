@@ -20,7 +20,7 @@ nix build .#psql_15.bin
 
 ```
 $ readlink result
-/nix/store/zr238w2hwryn8dgs81l2p84clmrm36vx-postgresql-and-plugins-15.14
+/nix/store/<hash>-postgresql-and-plugins-15.19
 ```
 
 ```
@@ -32,7 +32,7 @@ The files in `result/bin` point to paths under `/nix/store`. The `result` direct
 Collectively they form an entire installation directory we can reuse as much as we want.
 
 The path
-`/nix/store/zr238w2hwryn8dgs81l2p84clmrm36vx-postgresql-and-plugins-15.14`
+`/nix/store/<hash>-postgresql-and-plugins-15.19`
 ultimately is a cryptographically hashed, unique name for our installation of
 PostgreSQL with those plugins. This hash includes _everything_ used to build it,
 so even a single change anywhere to any extension or version would result in a
@@ -53,7 +53,7 @@ You're done:
 
 ```
 $ readlink result
-/nix/store/7pqfc0mirnihmnk9dfh1kq86js8pqlxq-postgresql-and-plugins-17.6
+/nix/store/<hash>-postgresql-and-plugins-17.11
 ```
 
 
