@@ -15,22 +15,11 @@
           self'.packages."postgresql_${version}_src"
         ];
 
-      extDebug =
-        version:
-        let
-          exts = self'.legacyPackages."psql_${version}".exts;
-        in
-        lib.concatMap (e: e.passthru.debug) [
-          exts.wrappers
-          exts.pg_graphql
-          exts.pg_jsonschema
-        ];
-
       makePostgresEnvDebug =
         version:
         pkgs.symlinkJoin {
           name = "postgres-env-${version}-debug";
-          paths = debugPaths version ++ lib.optionals pkgs.stdenv.isLinux (extDebug version);
+          paths = debugPaths version;
         };
 
       realisePostgresDebug =
