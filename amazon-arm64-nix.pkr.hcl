@@ -32,27 +32,6 @@ variable "build-vol" {
   default = "xvdc"
 }
 
-# ccache docker image details
-variable "docker_user" {
-  type    = string
-  default = ""
-}
-
-variable "docker_passwd" {
-  type    = string
-  default = ""
-}
-
-variable "docker_image" {
-  type    = string
-  default = ""
-}
-
-variable "docker_image_tag" {
-  type    = string
-  default = "latest"
-}
-
 locals {
   creator = "packer"
 }
@@ -129,6 +108,8 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 10
     volume_type           = "gp3"
+    iops                  = 5000 # gp3 max at 10 GiB: 500 IOPS/GiB * 10
+    throughput            = 1000 # bump to max once https://github.com/hashicorp/packer-plugin-amazon/pull/707 is merged (gp3 max at 0.25 MiB/s per IOPS * 5000 = 1250)
   }
 
   # NOTE: /dev/xvdh is mounted as /data (PostgreSQL data/WAL). The 1 GiB size
@@ -146,6 +127,8 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 16
     volume_type           = "gp3"
+    iops                  = 8000 # gp3 max at 16 GiB: 500 IOPS/GiB * 16
+    throughput            = 1000 # bump to max once https://github.com/hashicorp/packer-plugin-amazon/pull/707 is merged (gp3 max at 0.25 MiB/s per IOPS * 8000 = 2000)
     omit_from_artifact    = true
   }
 
@@ -153,6 +136,7 @@ source "amazon-ebssurrogate" "source" {
     creator           = "packer"
     appType           = "postgres"
     packerExecutionId = "${var.packer-execution-id}"
+    supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
@@ -160,15 +144,17 @@ source "amazon-ebssurrogate" "source" {
     packerExecutionId = "${var.packer-execution-id}"
   }
   snapshot_tags = {
-    creator = "packer"
-    appType = "postgres"
+    creator           = "packer"
+    appType           = "postgres"
+    packerExecutionId = "${var.packer-execution-id}"
   }
   tags = {
-    creator         = "packer"
-    appType         = "postgres"
-    postgresVersion = "${var.postgres-version}-stage1"
-    sourceSha       = "${var.git-head-version}"
-    inputHash       = "${var.input-hash}"
+    creator           = "packer"
+    appType           = "postgres"
+    postgresVersion   = "${var.postgres-version}-stage1"
+    sourceSha         = "${var.git-head-version}"
+    inputHash         = "${var.input-hash}"
+    packerExecutionId = "${var.packer-execution-id}"
   }
 
   communicator = "ssh"
@@ -182,6 +168,7 @@ source "amazon-ebssurrogate" "source" {
     delete_on_termination = true
     volume_size           = 10
     volume_type           = "gp3"
+    iops                  = 5000 # gp3 max at 10 GiB: 500 IOPS/GiB * 10
   }
 
   associate_public_ip_address = true
@@ -190,11 +177,6 @@ source "amazon-ebssurrogate" "source" {
 # a build block invokes sources and runs provisioning steps on them.
 build {
   sources = ["source.amazon-ebssurrogate.source"]
-
-  provisioner "file" {
-    source      = "ebssurrogate/files/sources-arm64.cfg"
-    destination = "/tmp/sources.list"
-  }
 
   provisioner "file" {
     source      = "ebssurrogate/files/ebsnvme-id"
@@ -209,6 +191,11 @@ build {
   provisioner "file" {
     source      = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
     destination = "/tmp/chroot-bootstrap-nix.sh"
+  }
+
+  provisioner "file" {
+    source      = "ebssurrogate/scripts/cleanup.sh"
+    destination = "/tmp/cleanup.sh"
   }
 
   provisioner "file" {
@@ -242,11 +229,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "scripts"
-    destination = "/tmp/ansible-playbook"
-  }
-
-  provisioner "file" {
     source      = "ansible/vars.yml"
     destination = "/tmp/ansible-playbook/vars.yml"
   }
@@ -254,10 +236,6 @@ build {
   provisioner "shell" {
     environment_vars = [
       "ARGS=${var.ansible_arguments}",
-      "DOCKER_USER=${var.docker_user}",
-      "DOCKER_PASSWD=${var.docker_passwd}",
-      "DOCKER_IMAGE=${var.docker_image}",
-      "DOCKER_IMAGE_TAG=${var.docker_image_tag}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}"
     ]
     use_env_var_file    = true

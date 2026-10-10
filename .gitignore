@@ -2,6 +2,7 @@
 !.env
 !.gitignore
 !.gitkeep
+!/.ansible-lint-ignore
 !/.claude/
 !/.coderabbit.yaml
 !/.envrc.recommended
@@ -12,6 +13,9 @@
 # ansible related
 ansible/image-manifest*.json
 
+# packer related
+packer-work-*/
+
 # python related
 *$py.class
 *.py[cod]
@@ -21,5 +25,4 @@ venv/
 #nix related
 common-nix.vars.pkr.hcl
 db/schema.sql
-nixos.qcow2
 result*

@@ -20,7 +20,7 @@ let
 
       src = fetchFromGitHub {
         owner = "eradman";
-        repo = pname;
+        repo = "pg-safeupdate";
         rev = version;
         inherit hash;
       };
@@ -85,6 +85,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

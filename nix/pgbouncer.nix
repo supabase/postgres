@@ -47,7 +47,6 @@ stdenv.mkDerivation rec {
       replaceStrings [ "." ] [ "_" ] version
     }";
     license = licenses.isc;
-    maintainers = with maintainers; [ _1000101 ];
     platforms = platforms.all;
   };
 }

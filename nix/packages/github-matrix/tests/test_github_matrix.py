@@ -10,7 +10,6 @@ from github_matrix import (
     is_extension_pkg,
     is_virt_pkg,
     is_large_pkg,
-    parse_nix_eval_line,
     sort_pkgs_by_closures,
 )
 
@@ -87,29 +86,6 @@ class TestIsVirtPkg:
         assert is_virt_pkg(pkg) is expected
 
 
-class TestNixOSCheck:
-    @pytest.mark.parametrize(
-        "system,expected",
-        [
-            ("aarch64-darwin", False),
-            ("aarch64-linux", True),
-            ("x86_64-linux", False),
-        ],
-    )
-    def test_system(self, system, expected):
-        check = {
-            "attr": f"attr-{system}",
-            "drvPath": f"test_{system}",
-            "system": system,
-            "requiredSystemFeatures": ["nixos-test"],
-        }
-        result = parse_nix_eval_line(json.dumps(check), set())
-        if expected:
-            assert result._value is not None
-        else:
-            assert result._value is None
-
-
 class TestGetRunnerForPackage:
     @pytest.mark.parametrize(
         "system,feature,expected",
@@ -132,7 +108,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-linux",
                 "kvm",
-                {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]},
+                {"labels": ["arm-native-runner"]},
             ),
             (
                 "aarch64-linux",

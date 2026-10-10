@@ -31,7 +31,7 @@ let
       buildInputs = [ postgresql ];
 
       src = fetchFromGitHub {
-        owner = "olirice";
+        owner = "supabase";
         repo = pname;
         rev = "v${version}";
         inherit hash;
@@ -83,6 +83,7 @@ pkgs.buildEnv {
   ];
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

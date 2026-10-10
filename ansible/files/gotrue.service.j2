@@ -90,7 +90,7 @@ Environment=GOTRUE_RELOADING_POLLER_ENABLED=false
 # ensures only 1 reload operation occurs during a burst of config updates.
 Environment=GOTRUE_RELOADING_GRACE_PERIOD_INTERVAL=2s
 
-{% if qemu_mode is defined and qemu_mode %}
+{% if qemu %}
 # v3 does not use filesystem notifications for config reloads.
 Environment=GOTRUE_RELOADING_NOTIFY_ENABLED=false
 {% else %}

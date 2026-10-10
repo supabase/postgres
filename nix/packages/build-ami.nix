@@ -18,7 +18,6 @@ let
         (root + "/ebssurrogate")
         (root + "/ansible")
         (root + "/migrations")
-        (root + "/scripts")
         (root + "/amazon-amd64-nix.pkr.hcl")
         (root + "/amazon-arm64-nix.pkr.hcl")
         (root + "/development-amd64.vars.pkr.hcl")
@@ -118,40 +117,6 @@ writeShellApplication {
 
     if [ "$STAGE" = "stage1" ]; then
       echo "Building stage 1..."
-      echo "Checking for existing AMI..."
-
-      if [ -n "''${BUILD_AMI_NIX_FORCE_BUILD_STAGE1:-}" ]; then
-        if [ "''${BUILD_AMI_NIX_FORCE_BUILD_STAGE1:-}" == true ]; then
-          echo 'BUILD_AMI_NIX_FORCE_BUILD_STAGE1 == true ... skip search for stage1 AMI' >&2
-          find_stage1_ami() {
-            return
-          }
-        else
-          echo 'BUILD_AMI_NIX_FORCE_BUILD_STAGE1 != true ... will search for stage1 AMI' >&2
-        fi
-      fi
-
-      AMI_ID=$(find_stage1_ami)
-      if [ -n "$AMI_ID" ]; then
-        echo "Found existing AMI: $AMI_ID"
-        echo "STAGE1_AMI_ID=$AMI_ID"
-
-        if [ -n "''${GITHUB_OUTPUT:-}" ]; then
-          AMI_NAME=$(aws ec2 describe-images \
-            --region "$REGION" \
-            --image-ids "$AMI_ID" \
-            --query 'Images[0].Name' \
-            --output text)
-
-          if [ -n "$AMI_NAME" ]; then
-            echo "::notice title=Stage 1 AMI Found::AMI '$AMI_NAME' (ID: $AMI_ID) found in region $REGION"
-          fi
-        fi
-
-        exit 0
-      fi
-
-      echo "No cached AMI found"
 
       cd ${packerSources}
       packer init "$@"
@@ -195,12 +160,28 @@ writeShellApplication {
         -var "source_ami=$STAGE1_AMI_ID" \
         "$@"
 
+      disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
+      disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'
+      if [[ $disk_usage_notice =~ $disk_usage_notice_pattern ]]; then
+        disk_usage_bytes=''${BASH_REMATCH[1]}
+        disk_usage_human=''${BASH_REMATCH[2]}
+      else
+        echo "Error: Missing or invalid disk usage notice in stage 2 log: '$disk_usage_notice'" >&2
+        exit 1
+      fi
+      echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
+      if [[ -n ''${GITHUB_OUTPUT:-} ]]; then
+        disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
+        echo "disk_usage_json=$disk_usage_json" >>"$GITHUB_OUTPUT"
+      fi
+
       if [ -n "''${PACKER_EXECUTION_ID:-}" ]; then
         STAGE2_AMI_ID=$(aws ec2 describe-images \
           --region "$REGION" \
           --owners self \
           --filters \
             "Name=tag:packerExecutionId,Values=''${PACKER_EXECUTION_ID}" \
+            "Name=tag:postgresVersion,Values=$POSTGRES_VERSION" \
             "Name=state,Values=available" \
           --query 'Images[0].ImageId' \
           --output text)
@@ -227,12 +208,12 @@ writeShellApplication {
   '';
 
   meta = {
-    description = "Build AMI if not cached based on input hash";
+    description = "Build stage-1 and stage-2 AMIs with Packer";
     longDescription = ''
-      The input hash is computed from all source files that affect the build.
-      Before building, we verify the existence of an AMI with the same hash.
-      If found, the build is skipped. Otherwise, a new AMI is created and
-      tagged with the input hash for future cache hits.
+      Stage 1 always builds a new AMI tagged with an input hash computed from
+      the source files that affect the build. Stage 2 finds the matching
+      stage-1 AMI by input hash, PostgreSQL version, architecture, and source SHA
+      and uses it as its source image.
     '';
   };
 }

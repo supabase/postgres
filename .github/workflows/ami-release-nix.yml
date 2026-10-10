@@ -81,11 +81,16 @@ jobs:
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
         with:
-          push-to-cache: 'true'
+          push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}
-        env:
-          DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
-          NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: ./.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Build AMI
         id: build-ami
@@ -95,6 +100,7 @@ jobs:
           ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
+          packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           instance_type: ${{ matrix.target.instance_type }}
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
@@ -123,7 +129,7 @@ jobs:
 
       - name: Create nix flake revision tarball
         run: |
-          GIT_SHA=${{github.sha}}
+          GIT_SHA=${{ steps.resolve-git-sha.outputs.sha }}
 
           mkdir -p "/tmp/pg_upgrade_bin/${POSTGRES_MAJOR_VERSION}"
           echo "$GIT_SHA" >> "/tmp/pg_upgrade_bin/${POSTGRES_MAJOR_VERSION}/nix_flake_version"
@@ -171,7 +177,7 @@ jobs:
 
       - name: Update nix store path catalog
         run: |
-          GIT_SHA="${{ github.sha }}"
+          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
           SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
 
           # Get store path for this build
@@ -204,7 +210,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
 
-      - name: Create CLI tag for PG 17
+      - name: Create CLI tag for PG 17 & Trigger Release
         if: matrix.postgres_version == '17' && matrix.target.arch == 'arm64' && github.event_name != 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -214,12 +220,7 @@ jobs:
           git tag "${CLI_TAG}" "${{ github.sha }}"
           git push origin "${CLI_TAG}"
 
-      - name: Trigger CLI release workflow for PG 17
-        if: matrix.postgres_version == '17' && github.event_name != 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          CLI_TAG="v${POSTGRES_SUPABASE_VERSION}-cli"
+          echo "Triggering Release Workflow: ${CLI_TAG}"
           gh workflow run cli-release.yml \
             --ref "${CLI_TAG}" \
             -f version="${CLI_TAG}"
@@ -252,21 +253,15 @@ jobs:
           SLACK_MESSAGE: 'Building Postgres AMI failed'
           SLACK_FOOTER: ''
 
-      - name: configure aws credentials for cleanup
-        if: ${{ always() }}
+      - name: Configure AWS credentials for cleanup
+        if: always()
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Cleanup resources after build
-        if: ${{ always() }}
-        run: |
-          aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids
-          aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id
-
-      - name: Cleanup resources on build cancellation
-        if: ${{ cancelled() }}
-        run: |
-          aws ec2 --region "$AWS_REGION" describe-instances --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" --query "Reservations[].Instances[].InstanceId" --output text | xargs -r aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids
-          aws ec2 --region "$AWS_REGION" describe-volumes --filters "Name=tag:packerExecutionId,Values=${PACKER_EXECUTION_ID}" "Name=status,Values=available" --query "Volumes[*].VolumeId" --output text | xargs -r -n1 aws ec2 --region "$AWS_REGION" delete-volume --volume-id
+      - name: Cleanup Packer resources
+        if: always()
+        env:
+          OK_TO_DESTROY: "false"
+        run: ci/cleanup-ami-build-resources.sh "${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.run_id }}"

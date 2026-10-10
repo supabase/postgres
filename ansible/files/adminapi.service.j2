@@ -14,7 +14,7 @@ Restart=always
 RestartSec=3
 TimeoutStopSec=10
 Environment="AWS_USE_DUALSTACK_ENDPOINT=true"
-{% if qemu_mode is defined and qemu_mode %}
+{% if qemu %}
 Environment="AWS_SDK_LOAD_CONFIG=true"
 {% endif %}
 StandardOutput=journal

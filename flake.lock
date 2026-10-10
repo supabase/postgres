@@ -118,11 +118,11 @@
     "multigres": {
       "flake": false,
       "locked": {
-        "lastModified": 1779407344,
-        "narHash": "sha256-UQE/2Ru4V1ip5WI+03NqaceTf2KqVV1xEzQWMtqDc6k=",
+        "lastModified": 1788278524,
+        "narHash": "sha256-7+Mt4T55oxmSd9UoSvir4Z2JzLm6ggVvzH9sgZWGx7E=",
         "owner": "multigres",
         "repo": "multigres",
-        "rev": "96303016e56f172d7bed2450f98cf7466f770b5f",
+        "rev": "b0d11a0125275333187a1502e952c2655c594b0f",
         "type": "github"
       },
       "original": {
@@ -316,11 +316,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1765248027,
-        "narHash": "sha256-ngar+yP06x3+2k2Iey29uU0DWx5ur06h3iPBQXlU+yI=",
+        "lastModified": 1787834454,
+        "narHash": "sha256-jXSvqn04IOecJCvSvl8+g3PsbDVNP6qKs6dKUs/b16k=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "7b50ad68415ae5be7ee4cc68fa570c420741b644",
+        "rev": "dc2fd1acc537f3583744e1373597a5731ff7a6e3",
         "type": "github"
       },
       "original": {

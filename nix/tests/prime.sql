@@ -9,12 +9,13 @@ set client_min_messages = warning;
 -- engines-with-smoke against hosted projects). They live in
 -- prime-superuser.sql instead — that covers:
 --   - the "may be unsafe" list from supautils.conf.j2
---     (amcheck, file_fdw, lo, pageinspect, pg_freespacemap, pg_surgery, pg_visibility)
+--     (file_fdw, lo, pageinspect, pg_freespacemap, pg_surgery, pg_visibility)
 --   - the "deprecated" list from supautils.conf.j2 (intagg, xml2)
 -- Superuser-context harnesses (nix/checks.nix, docker-image-test,
 -- migrate-tool) source prime-superuser.sql in addition to this file.
 create extension if not exists address_standardizer;
 create extension if not exists address_standardizer_data_us;
+create extension if not exists amcheck;
 create extension if not exists autoinc;
 create extension if not exists bloom;
 create extension if not exists btree_gin;

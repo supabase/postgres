@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 BEGIN;
-SELECT plan(4);
+SELECT plan(6);
 
 SELECT results_eq(
     'SELECT count(*)::int FROM public.countries',
@@ -21,6 +21,17 @@ SELECT results_eq(
 SELECT results_eq(
     'SELECT count(*) FROM public.countries where continent = ''Europe''',
     'SELECT count(*) FROM public.european_countries'
+);
+
+SELECT results_eq(
+    'SELECT count(*)::int FROM public.visits',
+    ARRAY[ 100 ]
+);
+
+-- complete.sh must analyze partitioned parents (vacuumdb skips them)
+SELECT ok(
+    (SELECT count(*) FROM pg_statistic WHERE starelid = 'public.visits'::regclass) > 0,
+    'partitioned parent has statistics after upgrade'
 );
 
 SELECT * FROM finish();
