@@ -116,6 +116,18 @@
           ''
         )
       ) perMajor;
+
+      extUpdateRepos = lib.filterAttrs (_: v: v != null) (
+        lib.mapAttrs (
+          _: pkg:
+          let
+            pv = pkg.perVersion or { };
+            entry = if pv != { } then pv.${builtins.head (builtins.attrNames pv)} else { };
+            src = entry.src or { };
+          in
+          if (src ? owner) && (src ? repo) then "${src.owner}/${src.repo}" else null
+        ) self'.legacyPackages."psql_15".exts
+      );
     in
     {
       packages = catalogs // {
@@ -156,6 +168,8 @@
           '';
         };
       };
-      legacyPackages = catalogs;
+      legacyPackages = catalogs // {
+        inherit extUpdateRepos;
+      };
     };
 }
