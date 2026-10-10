@@ -105,6 +105,12 @@ jobs:
           postgres_version: ${{ matrix.postgres_version }}
           region: ${{ env.AWS_REGION }}
 
+      - name: Cache AMI manifest
+        uses: ./.github/actions/cache-manifest
+        with:
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          version_label: ${{ steps.build-ami.outputs.postgres_release_version }}
+
       - name: Setup post build env vars
         run: |
           POSTGRES_SUPABASE_VERSION=${{ steps.build-ami.outputs.postgres_release_version }}

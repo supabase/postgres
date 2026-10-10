@@ -1,0 +1,36 @@
+name: Diff manifest
+description: Restores the cached baseline manifest and diffs it against this build's manifest
+
+inputs:
+  key_prefix:
+    description: 'Cache key prefix matching the one used by cache-manifest (e.g. ami-manifest-15-amd64)'
+    required: true
+  publish_hint:
+    description: 'Shown when no baseline is cached yet, naming what publishes one'
+    required: true
+  artifact_name:
+    description: 'Name of the uploaded diff artifact'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - run: mv /tmp/manifest.txt /tmp/current-manifest.txt
+      shell: bash
+
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: /tmp/manifest.txt
+        key: ${{ inputs.key_prefix }}-
+        restore-keys: ${{ inputs.key_prefix }}-
+
+    - shell: bash
+      env:
+        PUBLISH_HINT: ${{ inputs.publish_hint }}
+      run: nix run .#manifest-diff -- /tmp/manifest.txt /tmp/current-manifest.txt "$PUBLISH_HINT" /tmp/manifest-diff.txt
+
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: /tmp/manifest-diff.txt
+        retention-days: 7

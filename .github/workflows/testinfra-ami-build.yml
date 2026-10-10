@@ -121,6 +121,21 @@ jobs:
           overwrite: true
           retention-days: 1
 
+      - name: Diff AMI manifest
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/diff-manifest
+        with:
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          publish_hint: Publish one by running ami-release-nix.yml (push to develop).
+          artifact_name: ami-manifest-diff-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+
+      - name: TEMP seed baseline from PR build
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/cache-manifest
+        with:
+          key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          version_label: pr-${{ github.event.pull_request.head.sha }}
+
       - name: Run tests
         timeout-minutes: 10
         env:
@@ -166,3 +181,19 @@ jobs:
           cat ami-disk-usage/ami-disk-usage-*.json |
           sort -V |
           jq -rs '.[]|{version,arch,human,bytes}|"| \(join("|")) |"' >>"$GITHUB_STEP_SUMMARY"
+
+  manifest-diff-comment:
+    # always(): post whatever legs succeeded even if some matrix legs failed
+    if: always() && github.event_name == 'pull_request'
+    needs: build
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - uses: ./.github/actions/post-manifest-comment
+        with:
+          marker: ami-manifest-diff
+          title: AMI manifest diff
+          artifact_pattern: ami-manifest-diff-*

@@ -13,6 +13,7 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

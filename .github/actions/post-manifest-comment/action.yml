@@ -1,0 +1,50 @@
+name: Post manifest comment
+description: Assembles per-leg manifest diffs into one collapsed comment and posts it, updating any existing one in place
+
+inputs:
+  marker:
+    description: 'Unique HTML comment marker identifying this comment (e.g. ami-manifest-diff)'
+    required: true
+  title:
+    description: 'Comment heading (e.g. AMI manifest diff)'
+    required: true
+  artifact_pattern:
+    description: 'Glob matching the uploaded per-leg diff artifacts (e.g. ami-manifest-diff-*)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/nix-install-ephemeral
+
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        pattern: ${{ inputs.artifact_pattern }}
+        path: diffs
+
+    - id: render
+      shell: bash
+      env:
+        MARKER: ${{ inputs.marker }}
+        TITLE: ${{ inputs.title }}
+        ARTIFACT_PATTERN: ${{ inputs.artifact_pattern }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        PREFIX="${ARTIFACT_PATTERN%-\*}"
+        nix run .#manifest-comment -- "$MARKER" "$TITLE" "$PREFIX" "$RUN_URL" > /tmp/comment.md
+        [ -s /tmp/comment.md ] && echo "has_comment=true" >> "$GITHUB_OUTPUT" || true
+
+    - uses: peter-evans/find-comment@v3
+      id: fc
+      if: steps.render.outputs.has_comment == 'true'
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: "<!-- ${{ inputs.marker }} -->"
+
+    - uses: peter-evans/create-or-update-comment@v4
+      if: steps.render.outputs.has_comment == 'true'
+      with:
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: /tmp/comment.md
+        edit-mode: replace
