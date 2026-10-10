@@ -160,9 +160,7 @@ build {
 
   provisioner "shell" {
     inline = [
-      "chmod +x /tmp/manifest-snapshot.sh",
-      "sudo /tmp/manifest-snapshot.sh > /tmp/ami-manifest.txt",
-      "rm /tmp/manifest-snapshot.sh"
+      "sudo sh /tmp/manifest-snapshot.sh > /tmp/ami-manifest.txt"
     ]
   }
 

@@ -12,10 +12,9 @@ inputs:
     description: 'Path to the manifest this build captured'
     required: false
     default: /tmp/manifest.txt
-  diff_path:
-    description: 'Path to write the resulting diff to'
-    required: false
-    default: /tmp/manifest-diff.txt
+  artifact_name:
+    description: 'Name of the uploaded diff artifact'
+    required: true
 
 runs:
   using: composite
@@ -34,6 +33,11 @@ runs:
     - shell: bash
       env:
         MANIFEST_PATH: ${{ inputs.manifest_path }}
-        DIFF_PATH: ${{ inputs.diff_path }}
         PUBLISH_HINT: ${{ inputs.publish_hint }}
-      run: nix run .#manifest-diff -- "$MANIFEST_PATH" /tmp/current-manifest.txt "$PUBLISH_HINT" "$DIFF_PATH"
+      run: nix run .#manifest-diff -- "$MANIFEST_PATH" /tmp/current-manifest.txt "$PUBLISH_HINT" /tmp/manifest-diff.txt
+
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: /tmp/manifest-diff.txt
+        retention-days: 7

@@ -128,14 +128,7 @@ jobs:
           key_prefix: ami-manifest-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
           publish_hint: Publish one by running ami-release-nix.yml (push to develop).
           manifest_path: /tmp/ami-manifest.txt
-
-      - name: Upload manifest diff artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: ami-manifest-diff-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
-          path: /tmp/manifest-diff.txt
-          retention-days: 7
+          artifact_name: ami-manifest-diff-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
 
       - name: TEMP seed baseline from PR build
         if: github.event_name == 'pull_request'

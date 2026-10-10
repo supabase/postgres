@@ -94,14 +94,7 @@ jobs:
           key_prefix: docker-manifest-${{ matrix.name }}
           publish_hint: Publish one by running dockerhub-release-matrix.yml (push to develop).
           manifest_path: /tmp/docker-manifest.txt
-
-      - name: Upload Docker manifest diff artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: docker-manifest-diff-${{ matrix.name }}
-          path: /tmp/manifest-diff.txt
-          retention-days: 7
+          artifact_name: docker-manifest-diff-${{ matrix.name }}
 
       - name: Run image size analysis
         if: ${{ matrix.target == '' }}
