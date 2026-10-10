@@ -684,7 +684,7 @@ def test_jit_pam_module_installed(host):
     # Check if gatekeeper is installed via Nix
     result = run_ssh_command(
         host["ssh"],
-        "sudo -u postgres ls -la /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so 2>/dev/null",
+        "ls -la /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so 2>/dev/null",
     )
     if result["succeeded"]:
         print(f"\nJIT PAM module found in Nix profile:\n{result['stdout']}")
@@ -704,7 +704,7 @@ def test_jit_pam_module_installed(host):
 
     # Verify the module is a valid shared library
     result = run_ssh_command(
-        host["ssh"], "file /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so"
+        host["ssh"], "file /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so"
     )
     if result["succeeded"]:
         print(f"\nJIT PAM module file type:\n{result['stdout']}")
@@ -835,7 +835,7 @@ def test_jit_pam_module_dependencies(host):
     # Check dependencies of the PAM module
     result = run_ssh_command(
         host["ssh"],
-        "ldd /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so 2>/dev/null",
+        "ldd /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so 2>/dev/null",
     )
     if result["succeeded"]:
         print(f"\nJIT PAM module dependencies:\n{result['stdout']}")
