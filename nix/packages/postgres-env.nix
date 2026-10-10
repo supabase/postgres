@@ -26,12 +26,24 @@
             preferLocalBuild = false;
           };
 
+      debugEnvPath =
+        version:
+        pkgs.runCommand "postgres-debug-env-path"
+          {
+            debugEnv = makePostgresEnvDebug version;
+            __structuredAttrs = true;
+            unsafeDiscardReferences.out = true;
+          }
+          ''
+            echo -n "$debugEnv" > $out
+          '';
+
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
           text = ''
-            nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath}
+            nix-store --realise "$(cat ${debugEnvPath version})"
           '';
         };
 

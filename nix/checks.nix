@@ -923,6 +923,7 @@
             postgresql_15_src
             postgresql_orioledb-17_debug
             postgresql_orioledb-17_src
+            postgres-env-orioledb-17-debug
             postgresql_17_debug
             postgresql_17_src
             ;
