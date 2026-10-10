@@ -11,7 +11,6 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 ## Development
 
 - **[Nix tree structure](./nix-directory-structure.md)** - Overview of the Nix directory structure
-- **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Deep dive into the flake-parts module system
 - **[Development Workflow](./development-workflow.md)** - Complete development and testing workflow
 - **[Build PostgreSQL](./build-postgres.md)** - Building PostgreSQL from source
 - **[Receipt Files](./receipt-files.md)** - Understanding build receipts

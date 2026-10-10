@@ -2,8 +2,6 @@
 
 This document explains the Nix structure used in this repository. The project uses [flake-parts](https://flake.parts/) to split a `flake.nix` into specialized, maintainable modules.
 
-For code-level examples of each module, see [Flake-Parts Architecture](./flake-parts-architecture.md).
-
 The root `flake.nix` serves only as an entry point that references specialized modules in the `nix/` directory:
 
 ```
@@ -163,3 +161,12 @@ Test suites and expected outputs:
 - `expected/` - Expected test outputs
 - `migrations/` - Migration test data
 - `smoke/` - Smoke tests for quick validation
+
+## How the modules connect
+
+- `nix/nixpkgs.nix` sets `_module.args.pkgs` with the overlays applied. Every other module gets `pkgs` from it.
+- `nix/config.nix` defines `self.supabase`, which holds `defaults` (port, host, superuser) and `supportedPostgresVersions`.
+- `nix/overlays/default.nix` re-exports our `postgresql_*` packages into `pkgs`.
+- `nix/packages/postgres.nix` builds `psql_<version>`. `packages` holds the flat `"psql_15/bin"` names. `legacyPackages` holds the nested sets, so `nix build .#psql_15.exts.rum` works.
+- `apps.nix`, `devShells.nix`, and `checks.nix` read packages through `self'.packages`. `self'` and `inputs'` are the current-system views of `self` and `inputs`.
+- `hooks.nix` uses `config.treefmt.build.wrapper` from `fmt.nix`.

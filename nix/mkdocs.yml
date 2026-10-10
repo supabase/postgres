@@ -12,7 +12,6 @@ nav:
   - Development:
     - Getting Started: start-here.md
     - Nix tree structure: nix-directory-structure.md
-    - Flake-Parts Architecture: flake-parts-architecture.md
     - Workflow: development-workflow.md
     - Build PostgreSQL: build-postgres.md
     - Start Client/Server: start-client-server.md
