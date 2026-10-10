@@ -1,6 +1,10 @@
 #!/bin/sh
 set -eu
 
+if [ "${1:-}" = "--docker" ]; then
+	exec docker run --rm -v "$(realpath "$0"):/manifest-snapshot.sh:ro" "$2" sh /manifest-snapshot.sh
+fi
+
 INSTALLED=0
 if ! command -v bsdtar >/dev/null 2>&1; then
 	if command -v apt-get >/dev/null 2>&1; then

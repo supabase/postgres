@@ -158,8 +158,7 @@ jobs:
         if: matrix.arch == 'arm64'
         run: |
           docker pull "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}"
-          docker run --rm -v "$PWD/testinfra/manifest-snapshot.sh:/manifest-snapshot.sh:ro" \
-            "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}" sh /manifest-snapshot.sh > /tmp/manifest.txt
+          sh testinfra/manifest-snapshot.sh --docker "${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}" > /tmp/manifest.txt
 
       - name: Cache Docker image manifest
         if: matrix.arch == 'arm64'
