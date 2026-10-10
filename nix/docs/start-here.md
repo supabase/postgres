@@ -46,7 +46,7 @@ Your Nix installation is now configured with the proper build caches and should 
 
 ## Install Nix (Fresh Installation)
 
-We'll use the official Nix installer with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
+We'll use the official Nix installer (see also [nix.dev](https://nix.dev/install-nix)) with a custom configuration that includes our build caches and settings. This works on many platforms, including **aarch64 Linux**, **x86_64 Linux**, and **macOS**.
 
 ### Step 1: Create nix.conf
 
@@ -97,26 +97,29 @@ $ nix run nixpkgs#nix-info -- -m
  - nixpkgs: `/nix/var/nix/profiles/per-user/root/channels/nixpkgs`
 ```
 
-If the above worked, you're now cooking with gas!
+If that worked, you're ready to build.
 
-## Do some fun stuff
+## Take Nix for a spin
 
-One of the best things about Nix that requires _very little_ knowledge of it is
-that it lets you install the latest and greatest versions of many tools _on any
-Linux distribution_. We'll explain more about that later on. But just as a few
-examples:
+Nix is also a package manager that gives you current versions of many tools on
+any Linux distribution or macOS. You need very little Nix knowledge to try it:
 
-- **Q**: I want the latest version of Deno. Can we get that?
-- **A**: `nix profile install nixpkgs#deno`, and you're done!
+- **Q**: Want the latest Deno?
+- **A**: `nix profile install nixpkgs#deno`
 
 <!-- break bulletpoints -->
 
-- **Q**: What about HTTPie? A nice Python application?
-- **A**: Same idea: `nix profile install nixpkgs#httpie`
+- **Q**: A nice Python application like HTTPie?
+- **A**: `nix profile install nixpkgs#httpie`
 
 <!-- break bulletpoints -->
 
-- **Q**: What about my favorite Rust applications, like ripgrep and bat?
-- **A.1**: `nix profile install nixpkgs#ripgrep`
-- **A.2**: `nix profile install nixpkgs#bat`
-- **A.3**: And yes, you also have exa, fd, hyperfine, and more!
+- **Q**: Favorite Rust tools like ripgrep and bat?
+- **A**: `nix profile install nixpkgs#ripgrep nixpkgs#bat`. fd, hyperfine, and eza are there too.
+
+<!-- break bulletpoints -->
+
+- **Q**: Just want to try something once, without installing it?
+- **A**: `nix run nixpkgs#cowsay -- hello`. Nothing stays on your `$PATH`.
+
+To learn more about Nix, see [Zero to Nix](https://zero-to-nix.com).

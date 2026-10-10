@@ -1,6 +1,6 @@
 # Creating a new pgrx extension
 
-This guide covers how to set up a new cargo pgrx PostgreSQL extension in this project.
+This guide covers how to set up a new cargo pgrx PostgreSQL extension in this project. The nixpkgs `buildPgrxExtension` is documented in its [cargo-pgrx directory](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/tools/rust/cargo-pgrx).
 
 ## Template: New pgrx extension
 

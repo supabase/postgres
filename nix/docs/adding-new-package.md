@@ -1,13 +1,10 @@
 # Adding a new extension package
 
 !!! tip "Understanding the Module System"
-    To better understand how packages are organized and how `ourExtensions` works with flake-parts, see:
-
-    - **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Module structure overview
-    - **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)** - Extension composition patterns
+    To see how packages are organized and how `ourExtensions` fits into flake-parts, see [Nix tree structure](./nix-directory-structure.md).
 
 ## Pre-packaging steps
-1. Make sure you have nix installed [Nix installer](https://github.com/DeterminateSystems/nix-installer)
+1. Install Nix with the [official installer](https://nix.dev/install-nix)
 2. Create a branch off of `develop`
 
 
@@ -65,8 +62,8 @@ Your build should produce all of the sql and control files needed for the instal
 Extensions like:
 
 * https://github.com/supabase/postgres/blob/develop/nix/ext/wrappers/default.nix
-* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_graphql.nix
-* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_jsonschema.nix
+* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_graphql/default.nix
+* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_jsonschema/default.nix
 
 Are written in Rust, built with `cargo`, and need to use https://github.com/pgcentralfoundation/pgrx to build the extension.
 
@@ -141,9 +138,9 @@ buildPgrxExtension_0_11_3 rec {
 }
 ```
 
-Here we have built support in our overlay to specify and pin the version of `buildPgrxExtension` to a specific version (in this case `buildPgrxExtension_0_11_3`). This is currently the only version we can support, but this can be extended in our overlay https://github.com/supabase/postgres/blob/develop/nix/overlays/cargo-pgrx-0-11-3.nix to support other versions.
+The pgrx version and Rust toolchain are pinned per extension version in `nix/cargo-pgrx/versions.json`. See [Creating a new pgrx extension](./creating-pgrx-extension.md) and [Updating pgrx extensions](./updating-pgrx-extensions.md).
 
-A few things about `buildPgrxExtension_x`:
+A few things about `buildPgrxExtension`:
 
 * It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
 * It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above 
@@ -157,7 +154,7 @@ A few things about `buildPgrxExtension_x`:
 2. You may need to add tests to our test.yml gh action workflow as well.
 3. You can add the package and name and version to `ansible/vars.yml` it is not necessary to add the sha256 hash here, as the package is already built and cached in our release process before these vars are ever run.
 4. to check that all your files will land in the overall build correctly, you can run `nix profile install .#psql_15.bin` on your machine, and check in `~/.nix-profile/bin, ~/.nix-profile/lib, ~/.nix-profile/share/postgresql/*` and you should see your lib, .control and sql files there. 
-5. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#star-client-and-migrate 15` and try to `CREATE EXTENSION <yourname>` and work with it there
+5. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#start-client -- --version 15` and try to `CREATE EXTENSION <yourname>` and work with it there
 6. Check that your extension works with the `pg_upgrade` process (TODO documentation forthcoming)
 7. Now you are ready to PR the extension
 8. From here, the release process should typically take care of the rest. 

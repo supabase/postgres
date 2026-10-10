@@ -11,20 +11,16 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 ## Development
 
 - **[Nix tree structure](./nix-directory-structure.md)** - Overview of the Nix directory structure
-- **[Flake-Parts Architecture](./flake-parts-architecture.md)** - Deep dive into the flake-parts module system
-- **[Flake-Parts and nixpkgs lib](./flake-parts-nixpkgs-lib.md)** - How flake-parts uses nixpkgs lib foundations
 - **[Development Workflow](./development-workflow.md)** - Complete development and testing workflow
 - **[Build PostgreSQL](./build-postgres.md)** - Building PostgreSQL from source
 - **[Receipt Files](./receipt-files.md)** - Understanding build receipts
 - **[Start Client/Server](./start-client-server.md)** - Running PostgreSQL client and server
 - **[Docker](./docker.md)** - Docker integration and usage
+- **[Multigres image](https://github.com/supabase/postgres/blob/develop/docs/multigres-image.md)** - Building the multigres Docker image
 - **[Docker Image Size Analyzer](./image-size-analyzer-usage.md)** - Tool to analyze the Docker image sizes
-- **[Use direnv](./use-direnv.md)** - Development environment with direnv
-- **[Pre-commit Hooks](./pre-commit-hooks.md)** - Automatic formatting and code checks before commits
-- **[Nix Formatter](./nix-formatter.md)** - Code formatting with treefmt
+- **[Formatting and pre-commit hooks](./nix-formatter.md)** - Code formatting with treefmt and git hooks
 - **[Create a New pgrx Extension](./creating-pgrx-extension.md)** - How to set up a new cargo pgrx extension
 - **[Updating pgrx Extensions](./updating-pgrx-extensions.md)** - How to upgrade the cargo pgrx extensions
-- **[Receipt Files](./receipt-files.md)** - Understand what receipt files are
 
 ## Package Management
 
@@ -32,7 +28,6 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 - **[Update Extensions](./update-extension.md)** - How to update existing extensions
 - **[Update Nix Dependecies](./updating-dependencies.md)** - How to update the Nix dependencies
 - **[New Major PostgreSQL](./new-major-postgres.md)** - Adding support for new PostgreSQL versions
-- **[Nix Overlays](./nix-overlays.md)** - Understanding and using Nix overlays
 
 ## Testing
 
@@ -48,3 +43,7 @@ learn how to play with `postgres` in the [build guide](./build-postgres.md).
 ## Reference
 
 - **[References](./references.md)** - Useful links and resources
+
+## Documentation
+
+The docs are Markdown in `nix/docs`, rendered with [mkdocs](https://www.mkdocs.org/). Run `serve-nix-doc` in a development shell to preview them at `http://localhost:8000`. The configuration is in `nix/mkdocs.yml`.
