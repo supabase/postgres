@@ -1,17 +1,63 @@
 { self, pkgs }:
 let
+  inherit (pkgs) lib;
   testsDir = ./.;
   testFiles = builtins.attrNames (builtins.readDir testsDir);
   nixFiles = builtins.filter (
     name: builtins.match ".*\\.nix$" name != null && name != "default.nix" && name != "lib.nix"
   ) testFiles;
+  pg15Test =
+    support_upgrade: pname:
+    let
+      system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
+      testLib = import ./lib.nix { inherit self pkgs; };
+      versions = self.legacyPackages.${system}.psql_15.exts.${pname}.versions;
+    in
+    pkgs.testers.runNixOSTest {
+      name = pname;
+      nodes.server =
+        { ... }:
+        {
+          imports = [
+            (testLib.makeSupabaseTestConfig {
+              majorVersion = "15";
+            })
+          ];
+        };
+      testScript = ''
+        from pathlib import Path
+        versions = {
+          "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') versions)}],
+        }
+        extension_name = "${pname}"
+        support_upgrade = ${if support_upgrade then "True" else "False"}
+        sql_test_directory = Path("${../../tests}")
+
+        ${builtins.readFile ./lib.py}
+
+        start_all()
+
+        server.wait_for_unit("supabase-db-init.service")
+
+        test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+
+        with subtest("Check upgrade path with postgresql 15"):
+          test.check_upgrade_path("15")
+
+        with subtest("Check the install of the last version of the extension"):
+          test.check_install_last_version("15")
+      '';
+    };
   extTest =
+    {
+      support_upgrade ? true,
+      extraNode ? { },
+    }:
     extension_name:
     let
       pname = extension_name;
       inherit (pkgs) lib;
 
-      support_upgrade = true;
       run_pg_regress = true;
 
       installedExtension =
@@ -74,6 +120,8 @@ let
           # VM resources — sized for nested virtualisation on ephemeral CI runners
           virtualisation.memorySize = 4096;
           virtualisation.cores = 2;
+
+          imports = [ extraNode ];
 
           services.openssh = {
             enable = true;
@@ -370,10 +418,15 @@ builtins.listToAttrs (
   map
     (extName: {
       name = "ext-${extName}";
-      value = extTest extName;
+      value = extTest { } extName;
     })
     [
       "hypopg"
+      "index_advisor"
+      "pgmq"
+      "pgrouting"
+      "postgis"
+      "supabase_vault"
       "pg_cron"
       "pg_graphql"
       "pg_hashids"
@@ -389,3 +442,45 @@ builtins.listToAttrs (
       "wrappers"
     ]
 )
+// builtins.listToAttrs (
+  map
+    (extName: {
+      name = "ext-${extName}";
+      value = extTest { support_upgrade = false; } extName;
+    })
+    [
+      "pg_repack"
+      "pgjwt"
+      "pgsodium"
+      "plpgsql_check"
+    ]
+)
+// builtins.listToAttrs (
+  map
+    (a: {
+      name = "ext-${a.name}";
+      value = pg15Test a.upgrade a.name;
+    })
+    [
+      {
+        name = "plv8";
+        upgrade = false;
+      }
+      {
+        name = "timescaledb";
+        upgrade = true;
+      }
+    ]
+)
+// {
+  ext-pgroonga = extTest {
+    extraNode = {
+      systemd.services.postgresql.environment = {
+        MECAB_DICDIR = "${
+          self.packages.${pkgs.pkgsLinux.stdenv.hostPlatform.system}.mecab-naist-jdic
+        }/lib/mecab/dic/naist-jdic";
+        MECAB_CONFIG = "${pkgs.pkgsLinux.mecab}/bin/mecab-config";
+      };
+    };
+  } "pgroonga";
+}
