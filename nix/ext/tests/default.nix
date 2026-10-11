@@ -51,6 +51,7 @@ let
   libTest =
     {
       support_upgrade ? true,
+      check_install_all_versions ? true,
       extraNode ? { },
     }:
     pname:
@@ -96,6 +97,7 @@ let
           }
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
+          check_install_all_versions = ${if check_install_all_versions then "True" else "False"}
           pg17_configuration = "${pg17-configuration}"
           orioledb17_configuration = "${orioledb17-configuration}"
           sql_test_directory = Path("${../../tests}")
@@ -109,7 +111,7 @@ let
           test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
           with subtest("Check upgrade path with postgresql 15"):
-            if support_upgrade:
+            if check_install_all_versions:
               test.check_upgrade_path("15")
 
           last_version = None
@@ -144,7 +146,7 @@ let
             test.assert_version_matches(last_version)
 
           with subtest("Check upgrade path with postgresql 17"):
-            if support_upgrade:
+            if check_install_all_versions:
               test.check_upgrade_path("17")
 
           with subtest("switch to orioledb 17"):
@@ -176,7 +178,7 @@ let
               assert role in roles, f"Expected role {role} to exist, got: {roles}"
 
           with subtest("Check upgrade path with orioledb 17"):
-            if support_upgrade:
+            if check_install_all_versions:
               test.check_upgrade_path("orioledb-17")
         '';
     };
@@ -589,11 +591,17 @@ builtins.listToAttrs (
       }
       {
         pname = "pgsodium";
-        args.support_upgrade = false;
+        args = {
+          support_upgrade = false;
+          check_install_all_versions = false;
+        };
       }
       {
         pname = "plpgsql_check";
-        args.support_upgrade = false;
+        args = {
+          support_upgrade = false;
+          check_install_all_versions = false;
+        };
       }
       {
         pname = "pgroonga";
