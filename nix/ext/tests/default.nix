@@ -109,7 +109,8 @@ let
           test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
 
           with subtest("Check upgrade path with postgresql 15"):
-            test.check_upgrade_path("15")
+            if support_upgrade:
+              test.check_upgrade_path("15")
 
           last_version = None
           with subtest("Check the install of the last version of the extension"):
@@ -143,7 +144,8 @@ let
             test.assert_version_matches(last_version)
 
           with subtest("Check upgrade path with postgresql 17"):
-            test.check_upgrade_path("17")
+            if support_upgrade:
+              test.check_upgrade_path("17")
 
           with subtest("switch to orioledb 17"):
             server.execute(
@@ -174,7 +176,8 @@ let
               assert role in roles, f"Expected role {role} to exist, got: {roles}"
 
           with subtest("Check upgrade path with orioledb 17"):
-            test.check_upgrade_path("orioledb-17")
+            if support_upgrade:
+              test.check_upgrade_path("orioledb-17")
         '';
     };
   extTest =
