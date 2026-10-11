@@ -39,6 +39,14 @@ if [[ -e /dev/kvm ]]; then
 	echo 'extra-system-features = kvm' >>"$tmpdir/nix.conf"
 fi
 
+if [[ $(uname) == Linux ]]; then
+	cat >>"$tmpdir/nix.conf" <<-EOF
+		extra-experimental-features = auto-allocate-uids cgroups
+		auto-allocate-uids = true
+		extra-system-features = uid-range
+	EOF
+fi
+
 if [[ ${PUSH_TO_CACHE:?} == true ]]; then
 	set -x
 	maybesudo NIXCONFDIR="$nixconfdir" NIXBINDIR="$path" ./setup-push.sh >>"$tmpdir/nix.conf"
