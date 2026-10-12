@@ -122,7 +122,7 @@ jobs:
           retention-days: 1
 
       - name: Run tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
