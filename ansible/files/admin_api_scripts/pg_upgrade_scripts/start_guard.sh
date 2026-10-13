@@ -48,7 +48,11 @@ block_postgres_start() {
 	cat >"$PG_UPGRADE_START_GUARD" <<'GUARD'
 for pid_file in "$@"; do
 	pid=$(cat "$pid_file" 2>/dev/null) || continue
-	if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+	# not a number: some shells' kill treat it as a job name, not an error
+	case "$pid" in
+	'' | *[!0-9]*) continue ;;
+	esac
+	if kill -0 "$pid" 2>/dev/null; then
 		exit 255
 	fi
 done

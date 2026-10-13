@@ -220,6 +220,7 @@ test_watcher_abandoned() {
 	watcher_pid_file="$PGDATAOLD/../watcher.pid"
 	# a separate shell stands in for a SIGKILLed initiate.sh: it exits, the watcher
 	# stays (BASHPID is missing on bash 3.2, so a subshell would not work here)
+	# shellcheck disable=SC2016
 	"$BASH" -c 'log() { :; }; source "$1"; start_pid_lock_watcher; printf "%s\n" "$PG_UPGRADE_LOCK_WATCHER_PID" >"$2"' _ \
 		"$SCRIPTS_DIR/start_guard.sh" "$watcher_pid_file"
 	while kill -0 "$(cat "$watcher_pid_file")" 2>/dev/null; do
