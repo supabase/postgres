@@ -13,7 +13,7 @@ bash tests/pg_upgrade/test-start-guard.sh
 The suite uses temporary directories and command shims, not a live PostgreSQL
 instance or systemd. It covers PID lock ownership, drop-in install/removal,
 reload retries, share-directory restoration failures, and ERR/EXIT/TERM/INT
-cleanup. It is not run in CI. A full non-CI upgrade still requires a Linux
+cleanup. It is run in CI as `nix flake check`. A full non-CI upgrade still requires a Linux
 staging host with real systemd.
 
 ## Prerequisites
