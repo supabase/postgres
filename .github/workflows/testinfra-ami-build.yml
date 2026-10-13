@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ap-southeast-1
+  AWS_REGION: us-east-1
 
 jobs:
   gen-matrix:
@@ -122,7 +122,7 @@ jobs:
           retention-days: 1
 
       - name: Run tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
