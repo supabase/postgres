@@ -7,20 +7,10 @@ let
   dataOld = "/var/lib/postgresql/data";
   dataNew = "/var/lib/postgresql/data-17";
 
-  initiate = builtins.path {
-    path = ../../../ansible/files/admin_api_scripts/pg_upgrade_scripts/initiate.sh;
-    name = "initiate.sh";
+  guard = builtins.path {
+    path = ../../../ansible/files/admin_api_scripts/pg_upgrade_scripts/start_guard.sh;
+    name = "start_guard.sh";
   };
-
-  # initiate.sh runs the upgrade when sourced, so extract only the guard.
-  guard = pkgs.pkgsLinux.runCommand "start-guard.sh" { } ''
-    awk '
-      /^PG_UPGRADE_(LOCK|PID|INITIATE|START)_[A-Z_]+=/ { print }
-      /^(block_postgres_start|start_pid_lock_watcher|unblock_postgres_start|assert_source_stayed_down)\(\) \{/ { printing = 1 }
-      printing { print }
-      printing && /^}/ { printing = 0 }
-    ' ${initiate} >$out
-  '';
 
   drive = pkgs.pkgsLinux.writeShellApplication {
     name = "drive";
@@ -38,15 +28,6 @@ let
       PGDATAOLD=${dataOld}
       PGDATANEW=${dataNew}
       log() { echo "[$(date +%T)] $*"; }
-      retry() {
-        local n=$1 i
-        shift
-        for i in $(seq 1 "$n"); do
-          "$@" && return 0
-          sleep 1
-        done
-        return 1
-      }
       . ${guard}
 
       hold_block() {
