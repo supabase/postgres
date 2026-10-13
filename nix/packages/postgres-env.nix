@@ -59,7 +59,10 @@
             self'.packages.supabase-groonga
           ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
-          ++ lib.optionals pkgs.stdenv.isLinux [ (realisePostgresDebug version) ];
+          ++ lib.optionals pkgs.stdenv.isLinux [ (realisePostgresDebug version) ]
+          ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
+            (makePostgresEnvDebug version)
+          ];
         };
     in
     {
