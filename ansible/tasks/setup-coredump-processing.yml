@@ -101,14 +101,16 @@
         - Regenerate grub configuration
 
     # gdb and binutils (readelf) are only used by the processor script below.
-    # jq parses coredumpctl's --json output instead of scraping its text
-    # tables.
-    - name: Ensure gdb, binutils, and jq are installed
+    # attr (getfattr) reads the metadata systemd-coredump stores on each core
+    # file, and zstd decompresses it: the processor works from the core files
+    # alone, since the journal can lose a core's entries before it runs.
+    - name: Ensure gdb, binutils, attr, and zstd are installed
       ansible.builtin.apt:
         name:
           - gdb
           - binutils
-          - jq
+          - attr
+          - zstd
 
     - name: Create orioledb-coredumps state/output directories
       ansible.builtin.file:

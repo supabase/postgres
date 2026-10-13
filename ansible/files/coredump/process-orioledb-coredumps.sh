@@ -13,9 +13,13 @@
 #    oversight.
 #  - Cores are deleted after a successful run or quarantined (metadata only)
 #    after MAX_ATTEMPTS failures.
+#  - Works from the core files alone, not the journal: journald can drop a
+#    core's entries within minutes on a small root fs (SystemKeepFree), and
+#    coredumpctl can't list or export a core without them.
 
 set -euo pipefail
 
+COREDUMP_DIR=/var/lib/systemd/coredump
 STATE_DIR=/var/lib/orioledb-coredumps/state
 OUTPUT_DIR=/var/lib/orioledb-coredumps/diagnostics
 QUARANTINE_DIR=/var/lib/orioledb-coredumps/quarantine
@@ -25,7 +29,7 @@ EXTRACTION_TIMEOUT=120
 MAX_AGE_DAYS=7
 MAX_TOTAL_BYTES=$((300 * 1024 * 1024)) # independent of systemd-coredump's own MaxUse
 
-GDB_DEBUG_DIR="$(/var/lib/postgresql/.nix-profile/bin/realise-postgres-debug || true)/lib/debug"
+REALISE_POSTGRES_DEBUG=/var/lib/postgresql/.nix-profile/bin/realise-postgres-debug
 GDB_CMDS_FILE=/usr/local/sbin/orioledb-coredump-cmds.gdb
 PGDATA_CURRENT_LOGFILES=/var/lib/postgresql/data/current_logfiles
 
@@ -52,9 +56,7 @@ orioledb_lib_path() {
 	printf '%s/lib/orioledb.so' "$exe_dir"
 }
 
-# coredumpctl on this systemd version (255.4) has no "rm"/"delete" verb - the
-# only reliable way to remove a core is to delete its on-disk Filename path
-# directly. Returns success only if the path is actually gone afterward.
+# Returns success only if the path is actually gone afterward.
 delete_core() {
 	local path="$1"
 	[ -z "$path" ] && return 1
@@ -75,6 +77,67 @@ current_postgres_log() {
 	awk '$1 == "csvlog" {p = $2} $1 == "stderr" && !p {p = $2} END {print p}' "$PGDATA_CURRENT_LOGFILES"
 }
 
+# realise-postgres-debug returns the debug env, downloading it from the
+# binary cache if it isn't already in the store. Resolve it at most once per
+# run, and only once there is a postgres core to process.
+#
+# It refuses to download (exit 3) if that would leave less free space than
+# systemd-coredump's KeepFree, the same threshold at which systemd-coredump
+# starts deleting cores. That doesn't go away by retrying, unlike the cache
+# being unreachable.
+DEBUG_ENV=
+DEBUG_ENV_RESOLVED=
+DEBUG_ENV_PERMANENT_FAILURE=
+DEBUG_ENV_UNAVAILABLE_REASON=
+resolve_debug_env() {
+	[ -n "$DEBUG_ENV_RESOLVED" ] && return 0
+	DEBUG_ENV_RESOLVED=1
+	local keep_free reserve
+	keep_free=$(systemd-analyze cat-config systemd/coredump.conf 2>/dev/null | awk -F= '/^KeepFree=/ {v = $2} END {print v}')
+	reserve=$(numfmt --from=iec "${keep_free:-1G}" 2>/dev/null) || reserve=$((1024 * 1024 * 1024))
+
+	# nix's own progress/errors go to stderr, i.e. straight to the journal
+	local out rc=0
+	out=$(POSTGRES_DEBUG_RESERVE_BYTES="$reserve" timeout -k 10s "$EXTRACTION_TIMEOUT" "$REALISE_POSTGRES_DEBUG") || rc=$?
+	if [ "$rc" -eq 0 ] && [ -d "${out}/lib/debug" ]; then
+		DEBUG_ENV="$out"
+		log "debug symbols: ${DEBUG_ENV}"
+	elif [ "$rc" -eq 3 ]; then
+		DEBUG_ENV_PERMANENT_FAILURE=1
+		DEBUG_ENV_UNAVAILABLE_REASON="not enough disk space to download them"
+		log "debug symbols unavailable: not enough disk space to download them"
+	else
+		DEBUG_ENV_UNAVAILABLE_REASON="download failed"
+		log "debug symbols unavailable (realise-postgres-debug exit ${rc}, output: '${out}')"
+	fi
+}
+
+# Whether the debug env has a .debug file for the ELF at $1, by build-id
+debug_file_for() {
+	local build_id
+	build_id=$(readelf -n "$1" 2>/dev/null | awk '/Build ID/ {print $3}')
+	[ -n "$build_id" ] && [ -n "$DEBUG_ENV" ] &&
+		[ -f "${DEBUG_ENV}/lib/debug/.build-id/${build_id:0:2}/${build_id:2}.debug" ]
+}
+
+# Metadata systemd-coredump attaches to each core file (pid, exe, signal,
+# timestamp, ...), one "name=value" per line
+core_xattr() {
+	getfattr --absolute-names --only-values -n "user.coredump.$2" "$1" 2>/dev/null
+}
+
+# Decompress a stored core to $2, by the compression systemd-coredump used
+decompress_core() {
+	local -a cmd
+	case "$1" in
+	*.zst) cmd=(zstd -q -d -c --) ;;
+	*.xz) cmd=(xz -d -c --) ;;
+	*.lz4) cmd=(lz4 -q -d -c --) ;;
+	*) cmd=(cat --) ;;
+	esac
+	timeout "$EXTRACTION_TIMEOUT" "${cmd[@]}" "$1" >"$2"
+}
+
 enforce_retention() {
 	find "$OUTPUT_DIR" -maxdepth 1 -type f -mtime "+${MAX_AGE_DAYS}" -delete 2>/dev/null || true
 
@@ -89,64 +152,29 @@ enforce_retention() {
 	done
 }
 
-# Handles one candidate crash, given its PID: decide whether it's ours to
-# process, extract a diagnostic bundle via GDB, then delete the raw core.
-# (1) look up the crash via coredumpctl
+# Handles one stored core file: decide whether it's ours to process, extract
+# a diagnostic bundle via GDB, then delete the raw core.
+# (1) read the crash's metadata from the core file's xattrs
 # (2) decide keep/ignore/quarantine based on prior attempts
-# (3) export the core and run GDB against it
+# (3) decompress the core and run GDB against it
 # (4) write the bundle and delete the raw core. Returns 1 only for failures
 #     worth retrying next run (main() logs those); every other outcome is
 #     ignored, quarantined, or successfully processed - returns 0.
 process_one() {
-	local pid="$1"
-
-	# `coredumpctl --json=short info` silently IGNORES --json on this
-	# systemd version (255.4) and falls back to the old plain-text format -
-	# confirmed against a real build, not just docs. jq then fails to parse
-	# it as JSON at all, so every field below would come out empty (wrong
-	# boot_id, no storage path, core never gets deleted) with no visible
-	# error anywhere except this script's own log. `coredumpctl --json=short
-	# list` (used in main()) is unaffected - only the info verb's --json
-	# support is broken on this version. Query the journal directly instead
-	# - COREDUMP_* fields are systemd-coredump's own structured record of
-	# the crash, independent of coredumpctl's info-rendering bug, and
-	# journalctl's -o json has no version-specific gap like this. Only the
-	# fields actually used below are requested - COREDUMP_ENVIRON in
-	# particular is deliberately left out, matching "no environment
-	# variables are ever collected" above.
-	local journal_json
-	journal_json=$(journalctl -o json \
-		MESSAGE_ID=fc2e22bc6ee647b6b90729ab34a250b1 \
-		"COREDUMP_PID=${pid}" \
-		--output-fields=COREDUMP_EXE,COREDUMP_SIGNAL,COREDUMP_SIGNAL_NAME,COREDUMP_TIMESTAMP,COREDUMP_FILENAME,_BOOT_ID \
-		2>/dev/null | tail -n 1)
-	if [ -z "$journal_json" ]; then
-		log "pid ${pid}: no matching journal entry for this coredump"
-		return 1
-	fi
-
-	# join() (not @tsv) because @tsv double-escapes backslashes, which would
-	# corrupt systemd-coredump filenames (e.g. "\x2e") and prevent core
-	# deletion - none of these fields can contain a literal tab/newline.
-	local exe boot_id signal signal_name timestamp_usec filename
-	IFS=$'\t' read -r exe boot_id signal signal_name timestamp_usec filename < <(
-		jq -r '[.COREDUMP_EXE, ._BOOT_ID, .COREDUMP_SIGNAL, .COREDUMP_SIGNAL_NAME, .COREDUMP_TIMESTAMP, (.COREDUMP_FILENAME // "")] | join("\t")' <<<"$journal_json"
-	)
-	# Unlike coredumpctl info's derived "Storage: present/missing" status,
-	# COREDUMP_FILENAME is just the path recorded at capture time, with no
-	# guarantee it's still on disk - delete_core already treats "already
-	# gone" as success (rm -f + existence check), so no separate presence
-	# check is needed here.
-	local storage_path="$filename"
-	# PID alone isn't a safe dedup key long-term (PIDs get reused across
-	# boots), so pair it with boot ID - matches "state keyed by boot ID plus
-	# dump identifier" from the original design.
-	local key="${boot_id}-${pid}"
+	local storage_path="$1" key="$2"
+	local pid exe signal timestamp signal_name boot_id
+	pid=$(core_xattr "$storage_path" pid)
+	exe=$(core_xattr "$storage_path" exe)
+	signal=$(core_xattr "$storage_path" signal)
+	timestamp=$(core_xattr "$storage_path" timestamp)
+	boot_id=${key%-*}
+	signal_name=unknown
+	[[ $signal =~ ^[0-9]+$ ]] && signal_name="SIG$(kill -l "$signal")"
 	local state_file="${STATE_DIR}/${key}"
 
 	# .done means "final decision made, never look at this dump again"
 	# (processed successfully or quarantined - non-postgres cores are never
-	# enumerated in the first place, see main()'s list filter).
+	# enumerated in the first place, see main()'s exe filter).
 	# .attempts only counts *failed* tries, to cap retries before quarantine.
 	[ -f "${state_file}.done" ] && return 0
 
@@ -154,7 +182,7 @@ process_one() {
 	[ -f "${state_file}.attempts" ] && attempts=$(cat "${state_file}.attempts")
 	if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
 		log "pid ${pid}: exceeded ${MAX_ATTEMPTS} attempts, discarding core (metadata kept in ${QUARANTINE_DIR})"
-		jq . <<<"$journal_json" >"${QUARANTINE_DIR}/${key}.info"
+		getfattr --absolute-names -d -m '^user\.coredump\.' "$storage_path" >"${QUARANTINE_DIR}/${key}.info" 2>&1 || true
 		if delete_core "$storage_path"; then
 			log "pid ${pid}: raw core deleted"
 		else
@@ -170,8 +198,18 @@ process_one() {
 	# to MAX_ATTEMPTS
 	echo $((attempts + 1)) >"${state_file}.attempts"
 
-	# coredumpctl stores the core compressed; pull a private, working copy
-	# out into a root-only scratch dir before handing it to GDB. The trap
+	# A symbol-less backtrace is much less useful, so leave the core for a
+	# later run while there are attempts left, in case the binary cache was
+	# only briefly unreachable. The last attempt writes the bundle anyway.
+	resolve_debug_env
+	if [ -z "$DEBUG_ENV" ] && [ -z "$DEBUG_ENV_PERMANENT_FAILURE" ] &&
+		[ $((attempts + 1)) -lt "$MAX_ATTEMPTS" ]; then
+		log "pid ${pid}: debug symbols unavailable, will retry"
+		return 1
+	fi
+
+	# systemd-coredump stores the core compressed; decompress a private,
+	# working copy into a root-only scratch dir before handing it to GDB. The trap
 	# guarantees that scratch dir is removed when this function returns, no
 	# matter which of the several `return`s below fires. `trap ... RETURN`
 	# is NOT scoped to this function - it fires on the next return from ANY
@@ -184,8 +222,8 @@ process_one() {
 	chmod 700 "$tmpdir"
 	trap 'rm -rf "$tmpdir"; trap - RETURN' RETURN
 
-	if ! timeout "$EXTRACTION_TIMEOUT" coredumpctl dump "$pid" --output "${tmpdir}/core" >/dev/null 2>&1; then
-		log "pid ${pid}: export failed or timed out"
+	if ! decompress_core "$storage_path" "${tmpdir}/core"; then
+		log "pid ${pid}: decompressing ${storage_path} failed or timed out"
 		return 1
 	fi
 
@@ -193,12 +231,12 @@ process_one() {
 	# itself, one section at a time, redirected straight to $bundle -
 	# there's no in-memory buffering of it, so a slow/hanging step just
 	# shows up as a truncated file rather than blocking the whole write.
-	# Timestamp from coredumpctl JSON is microseconds since the epoch, so it
-	# converts straight to a UTC date/time with no string parsing - and that
+	# The timestamp xattr is microseconds since the epoch, so it converts
+	# straight to a UTC date/time with no string parsing - and that
 	# same "YYYY-MM-DD HH:MM:SS" form is what postgres's own log line prefix
 	# starts with, so it doubles as the grep key below.
 	local crash_timestamp
-	crash_timestamp=$(date -u -d "@$((timestamp_usec / 1000000))" '+%Y-%m-%d %H:%M:%S')
+	crash_timestamp=$(date -u -d "@$((timestamp / 1000000))" '+%Y-%m-%d %H:%M:%S')
 
 	local bundle="${OUTPUT_DIR}/${key}.txt"
 	{
@@ -209,21 +247,24 @@ process_one() {
 		echo "signal: ${signal} (${signal_name})"
 		echo "crash_timestamp: ${crash_timestamp} UTC"
 		echo "executable: ${exe}"
+		echo "debug_symbols: ${DEBUG_ENV:-UNAVAILABLE, ${DEBUG_ENV_UNAVAILABLE_REASON} (backtrace has function names only)}"
 		echo
 
 		echo "== build ids =="
 		echo "postgres (${exe}):"
 		readelf -n "$exe" 2>/dev/null | grep 'Build ID' || echo "  (could not read build id)"
+		if debug_file_for "$exe"; then echo "    debug file: present"; else echo "    debug file: MISSING"; fi
 		orioledb_lib=$(orioledb_lib_path "$exe")
 		if [ -f "$orioledb_lib" ]; then
 			echo "orioledb.so (${orioledb_lib}):"
 			readelf -n "$orioledb_lib" 2>/dev/null | grep 'Build ID' || echo "  (could not read build id)"
+			if debug_file_for "$orioledb_lib"; then echo "    debug file: present"; else echo "    debug file: MISSING"; fi
 		fi
 		echo
 
-		echo "== gdb backtrace (full), lwlocks, locked pages, argv, shared libraries, registers =="
+		echo "== gdb backtrace (full), shared libraries, registers, argv, lwlocks, locked pages =="
 		timeout "$EXTRACTION_TIMEOUT" gdb --batch -quiet \
-			-ex "set debug-file-directory ${GDB_DEBUG_DIR}" \
+			-ex "set debug-file-directory ${DEBUG_ENV:-/nonexistent}/lib/debug" \
 			-ex "file ${exe}" \
 			-ex "core-file ${tmpdir}/core" \
 			-x "$GDB_CMDS_FILE" \
@@ -258,16 +299,37 @@ main() {
 
 	enforce_retention
 
-	# Enumerate via coredumpctl and filter out non-postgres cores
-	local rc=0
-	local pid
-	while read -r pid; do
-		[ -z "$pid" ] && continue
-		process_one "$pid" || {
+	# Core files are named core.<comm>.<uid>.<boot id>.<pid>.<usec>[.<ext>],
+	# with any "." in comm escaped. Only postgres's own cores are processed;
+	# anything else is left to systemd-coredump's own cleanup.
+	local rc=0 core exe key boot_id pid
+	local -A present=()
+	while IFS= read -r -d '' core; do
+		exe=$(core_xattr "$core" exe) || continue
+		[[ $exe == */.postgres-wrapped ]] || continue
+		IFS=. read -r _ _ _ boot_id pid _ <<<"${core##*/}"
+		key="${boot_id}-${pid}"
+		present[$key]=1
+		process_one "$core" "$key" || {
 			log "pid ${pid}: processing failed, will retry on next run"
 			rc=1
 		}
-	done < <(coredumpctl --no-pager --json=short list 2>/dev/null | jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid')
+	done < <(find "$COREDUMP_DIR" -maxdepth 1 -type f -name 'core.*' -print0 2>/dev/null)
+
+	# A core with a failed attempt behind it that's no longer on disk was
+	# deleted before we could process it, e.g. by systemd-coredump's KeepFree
+	# cleanup when something else crashed. Record that rather than leave it
+	# looking like a pending retry forever.
+	local attempts_file
+	for attempts_file in "$STATE_DIR"/*.attempts; do
+		[ -e "$attempts_file" ] || continue
+		key=$(basename "$attempts_file" .attempts)
+		[ -f "${STATE_DIR}/${key}.done" ] && continue
+		[ -n "${present[$key]:-}" ] && continue
+		log "${key}: core was removed before it could be processed, no bundle written"
+		echo "core was removed from ${COREDUMP_DIR} before it could be processed" >"${QUARANTINE_DIR}/${key}.info"
+		touch "${STATE_DIR}/${key}.done"
+	done
 
 	return "$rc"
 }
