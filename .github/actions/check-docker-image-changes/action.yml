@@ -28,7 +28,7 @@ runs:
       id: current
       shell: bash
       run: |
-        HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash)
+        HASH=$(nix run .#docker-image-inputs -- hash)
         echo "hash=$HASH" >> "$GITHUB_OUTPUT"
         echo "Current Docker image inputs hash: $HASH"
 
@@ -44,7 +44,7 @@ runs:
         git checkout FETCH_HEAD -- . 2>/dev/null || true
 
         # Get hash from base branch
-        BASE_HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash 2>/dev/null || echo "")
+        BASE_HASH=$(nix run .#docker-image-inputs -- hash 2>/dev/null || echo "")
 
         # Restore current branch
         git checkout HEAD -- .

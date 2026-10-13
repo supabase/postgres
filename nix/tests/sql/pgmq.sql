@@ -104,3 +104,32 @@ order by
 
 -- assert search_path is preserved after after-create script is run
 show search_path;
+
+-- The following test code verifies that a shadowed temp table can't hijack
+-- pg_tle's objects when pgmq/after-create.sql runs as superuser.
+drop extension pgmq cascade;
+
+create temp table pg_extension (oid oid, extname text, extversion text, extowner oid);
+insert into pg_extension
+  values ('pgtle.pg_tle_features'::regtype::oid, 'pgmq', '1.5.1', 'postgres'::regrole);
+
+create extension pgmq;
+
+drop table pg_temp.pg_extension;
+
+-- pg_tle's objects must still be owned by supabase_admin
+select 'pgtle.feature_info'::regclass::text as obj, relowner::regrole as owner
+from pg_class
+where oid = 'pgtle.feature_info'::regclass
+union all
+select p.oid::regprocedure::text, p.proowner::regrole
+from pg_proc p
+where p.oid = 'pgtle.register_feature(regproc,pgtle.pg_tle_features)'::regprocedure;
+
+-- pgmq's own objects must have been reassigned to postgres
+select count(*) as pgmq_functions_not_owned_by_postgres
+from pg_proc p
+where p.pronamespace = 'pgmq'::regnamespace and p.proowner != 'postgres'::regrole;
+
+-- restore the 'Foo' queue dropped by the cascade above
+select pgmq.create('Foo');

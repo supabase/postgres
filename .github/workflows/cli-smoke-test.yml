@@ -70,14 +70,14 @@ jobs:
       - name: Run CLI smoke test
         run: |
           echo "Running CLI smoke test for PostgreSQL ${{ matrix.pg_version }}..."
-          nix run --accept-flake-config .#cli-smoke-test -- --no-build ${{ matrix.pg_version }}
+          nix run .#cli-smoke-test -- --no-build ${{ matrix.pg_version }}
         timeout-minutes: 10
 
       - name: Show logs on failure
         if: failure()
         run: |
           echo "=== Supabase Status ==="
-          nix run --accept-flake-config .#supabase-cli -- status || true
+          nix run .#supabase-cli -- status || true
 
           echo "=== Docker containers ==="
           docker ps -a
@@ -88,7 +88,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          nix run --accept-flake-config .#supabase-cli -- stop --no-backup || true
+          nix run .#supabase-cli -- stop --no-backup || true
 
   skip-notification:
     name: CLI Smoke Test (Skipped)

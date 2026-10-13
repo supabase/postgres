@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Supabase <support@supabase.com>
+Date: Wed, 8 Oct 2026 00:00:00 +0000
+Subject: [PATCH] fix: detach drop_queue(text, boolean) before dropping it
+
+after-create.sql now attaches drop_queue(text, boolean) to the pgmq
+extension. A plain DROP FUNCTION IF EXISTS can't remove an extension
+member, so ALTER EXTENSION UPDATE would abort here for anyone
+upgrading from pgmq 1.4.4. Detach it first if it's currently a member.
+---
+ pgmq-extension/sql/pgmq--1.4.5--1.5.0.sql | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/pgmq-extension/sql/pgmq--1.4.5--1.5.0.sql b/pgmq-extension/sql/pgmq--1.4.5--1.5.0.sql
+--- a/pgmq-extension/sql/pgmq--1.4.5--1.5.0.sql
++++ b/pgmq-extension/sql/pgmq--1.4.5--1.5.0.sql
+@@ -104,5 +104,12 @@ END;
+ $$ LANGUAGE plpgsql;
+
++DO $$
++BEGIN
++  IF to_regprocedure('pgmq.drop_queue(text, boolean)') IS NOT NULL THEN
++    ALTER EXTENSION pgmq DROP FUNCTION pgmq.drop_queue(text, boolean);
++  END IF;
++END $$;
++
+ DROP FUNCTION IF EXISTS pgmq.drop_queue(TEXT, BOOLEAN);
+
+ CREATE FUNCTION pgmq.drop_queue(queue_name TEXT, partitioned BOOLEAN)
+--
+2.51.0

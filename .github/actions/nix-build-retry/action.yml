@@ -1,6 +1,6 @@
 name: 'Nix build with retry'
 description: |
-  Runs `nix build --accept-flake-config -L` and retries on transient network
+  Runs `nix build -L` and retries on transient network
   errors (codeload.github.com 5xx, DNS, TLS, connection resets). Genuine build
   failures exit immediately without retrying.
 inputs:
@@ -47,7 +47,7 @@ runs:
           echo "::group::nix build attempt ${attempt}/${ATTEMPTS}: ${ATTR} ${EXTRA_ARGS}"
           # Stream to console AND capture for post-hoc pattern matching.
           # PIPESTATUS preserves nix's exit code through the tee.
-          nix build --accept-flake-config -L ${EXTRA_ARGS} "${ATTR}" 2>&1 | tee "$log_file"
+          nix build -L ${EXTRA_ARGS} "${ATTR}" 2>&1 | tee "$log_file"
           rc=${PIPESTATUS[0]}
           echo "::endgroup::"
 

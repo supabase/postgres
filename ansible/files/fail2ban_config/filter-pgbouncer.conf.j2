@@ -5,4 +5,6 @@ maxlines = 3
 failregex = ^.+@<HOST>:.+password authentication failed$
             ^.+@<HOST>:.+pooler error: no such user$
             ^.+@<HOST>:.+registered new auto-database.*\n.*\n.*server login failed: FATAL database ".+" does not exist.*$
+            ^.*no pg_hba\.conf entry for host "<HOST>",.*$
+ignoreregex = ^.*,.*,.*,.*,"127\.0\.0\.1.*password authentication failed for user.*$
 journalmatch = _SYSTEMD_UNIT=pgbouncer.service

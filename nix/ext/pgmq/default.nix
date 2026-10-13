@@ -36,7 +36,7 @@ let
       inherit pname version;
       buildInputs = [ postgresql ];
       src = fetchFromGitHub {
-        owner = "tembo-io";
+        owner = "pgmq";
         repo = pname;
         rev = "v${version}";
         inherit hash;
@@ -44,6 +44,7 @@ let
 
       patches = lib.optionals (version == latestVersion) [
         ./0001-fix-replace-drop_queue-function-if-exists.patch
+        ./0002-detach-drop_queue-shim-before-drop.patch
       ];
 
       buildPhase = ''
