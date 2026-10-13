@@ -47,7 +47,7 @@
           -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
           -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
           -p RuntimeMaxSec=2h \
-          "$(command -v nix-store)" --gc --max-freed 2G \
+          "$(command -v nix-store)" --gc --quiet --max-freed 2G \
           || echo "systemd-run failed. Skipping nix-store --gc."
       '';
 
