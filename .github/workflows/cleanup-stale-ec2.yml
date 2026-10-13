@@ -33,5 +33,5 @@ jobs:
       - name: Cleanup stale AMI build resources
         env:
           AWS_MAX_ATTEMPTS: 6
-          OK_TO_DESTROY: "false"
+          OK_TO_DESTROY: "true"
         run: ci/cleanup-stale-ami-build-resources.sh
