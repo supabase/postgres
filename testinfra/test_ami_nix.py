@@ -471,6 +471,36 @@ def test_postgrest_is_running(host):
     )
 
 
+def _tcp_connect_as(ssh, user, port):
+    """Try a TCP connect to 127.0.0.1:<port> as <user>; True if it connects."""
+    return run_ssh_command(
+        ssh, f"sudo -u {user} timeout 3 bash -c '</dev/tcp/127.0.0.1/{port}'"
+    )["succeeded"]
+
+
+def test_per_user_egress_filters_loaded(host):
+    """The pgfilter/authfilter nftables tables are loaded."""
+    for table in ("pgfilter", "authfilter"):
+        result = run_ssh_command(host["ssh"], f"sudo nft list table inet {table}")
+        assert result["succeeded"], (
+            f"nftables table inet {table} is not loaded: {result['stderr']}"
+        )
+
+
+def test_postgres_user_loopback_egress_is_restricted(host):
+    """postgres may reach loopback :5432 only; other loopback ports are rejected."""
+    ssh = host["ssh"]
+    assert _tcp_connect_as(ssh, "root", 6543), (
+        "precondition failed: pgbouncer is not reachable on 127.0.0.1:6543"
+    )
+    assert _tcp_connect_as(ssh, "postgres", 5432), (
+        "postgres user can no longer reach Postgres on loopback :5432"
+    )
+    assert not _tcp_connect_as(ssh, "postgres", 6543), (
+        "postgres user can reach pgbouncer on loopback :6543; pgfilter is not blocking it"
+    )
+
+
 def test_postgrest_responds_to_requests(host):
     """Test if PostgREST responds to requests."""
     res = requests.get(
