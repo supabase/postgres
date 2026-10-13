@@ -26,24 +26,60 @@
             preferLocalBuild = false;
           };
 
-      debugEnvPath =
+      # First line: the debug env's store path. Then "<bytes> <path>" for each
+      # path in its closure, so realise-postgres-debug can tell how much it is
+      # about to add to the disk. Bytes are the NAR size plus a 4KiB block per
+      # file/dir, since the source tree is thousands of small files. References
+      # are discarded so that this doesn't pull the debug env in.
+      debugEnvManifest =
         version:
-        pkgs.runCommand "postgres-debug-env-path"
+        pkgs.runCommand "postgres-debug-env-manifest"
           {
             debugEnv = makePostgresEnvDebug version;
+            exportReferencesGraph.closure = [ (makePostgresEnvDebug version) ];
             __structuredAttrs = true;
             unsafeDiscardReferences.out = true;
+            nativeBuildInputs = [ pkgs.jq ];
           }
           ''
-            echo -n "$debugEnv" > $out
+            echo "$debugEnv" > $out
+            jq -r '.closure[] | "\(.narSize) \(.path)"' "$NIX_ATTRS_JSON_FILE" |
+              while read -r size path; do
+                echo "$((size + 4096 * $(find "$path" | wc -l))) $path"
+              done >> $out
           '';
 
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
+          runtimeInputs = [ pkgs.coreutils ];
+          # Called from orioledb-coredump.service, whose PATH doesn't include
+          # nix. NIX_REMOTE=daemon makes root go through the daemon too, since
+          # that unit's ProtectSystem=strict leaves /nix read-only.
+          #
+          # Exits 3 without downloading anything if the download would leave
+          # less than POSTGRES_DEBUG_RESERVE_BYTES (default 1GiB) free.
           text = ''
-            nix-store --realise "$(cat ${debugEnvPath version})"
+            manifest=${debugEnvManifest version}
+            debug_env=$(head -n 1 "$manifest")
+            reserve=''${POSTGRES_DEBUG_RESERVE_BYTES:-1073741824}
+
+            needed=0
+            while read -r size path; do
+              [ -e "$path" ] || needed=$((needed + size))
+            done < <(tail -n +2 "$manifest")
+            if [ "$needed" -gt 0 ]; then
+              avail=$(df --output=avail -B1 /nix/store | tail -n 1 | tr -d ' ')
+              if [ $((avail - needed)) -lt "$reserve" ]; then
+                echo "realise-postgres-debug: not enough space on /nix/store: needs $needed bytes, $avail available, $reserve must stay free" >&2
+                exit 3
+              fi
+            fi
+
+            nix_store=/nix/var/nix/profiles/default/bin/nix-store
+            [ -x "$nix_store" ] || nix_store=nix-store
+            NIX_REMOTE=daemon "$nix_store" --realise "$debug_env"
           '';
         };
 
@@ -63,6 +99,9 @@
           ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
             (makePostgresEnvDebug version)
           ];
+          passthru = lib.optionalAttrs pkgs.stdenv.isLinux {
+            realise-postgres-debug = realisePostgresDebug version;
+          };
         };
     in
     {
