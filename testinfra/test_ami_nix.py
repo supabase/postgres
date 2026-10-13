@@ -1832,10 +1832,211 @@ def test_gdb_resolves_postgres_source_via_shipped_src_package(host):
     )
 
 
+NIX_STORE = "/nix/var/nix/profiles/default/bin/nix-store"
+NIX = "/nix/var/nix/profiles/default/bin/nix"
+DIAGNOSTICS_DIR = "/var/lib/orioledb-coredumps/diagnostics"
+COREDUMP_DIR = "/var/lib/systemd/coredump"
+
+
+def _debug_env_installed(host, debug_env):
+    """Whether the postgres profile ships the debug env itself, rather than
+    leaving realise-postgres-debug to download it on the first crash."""
+    result = run_ssh_command(
+        host["ssh"],
+        f'{NIX_STORE} -qR "$(readlink -f /var/lib/postgresql/.nix-profile)" '
+        f"| grep -qxF {debug_env}",
+    )
+    return result["succeeded"]
+
+
+def _drop_postgres_debug_env(host, debug_env):
+    """Delete the debug env and whatever of its closure isn't used by
+    anything else, as a nix GC would, so the coredump processor has to
+    fetch it again."""
+    result = run_ssh_command(
+        host["ssh"],
+        f"sudo bash -c 'comm -12 <({NIX_STORE} --gc --print-dead 2>/dev/null | sort) "
+        f"<({NIX_STORE} -qR {debug_env} | sort) | xargs -r {NIX_STORE} --delete'",
+    )
+    assert result["succeeded"], f"could not delete the debug env: {result['stderr']}"
+    assert not run_ssh_command(host["ssh"], f"test -e {debug_env}")["succeeded"], (
+        f"{debug_env} still exists after deleting it"
+    )
+
+
+def _crash_orioledb_bgwriter_and_wait_for_recovery(host):
+    """SIGSEGV the orioledb background writer, whose stack always has an
+    orioledb.so frame (bgwriter_main), and wait for crash recovery."""
+    pid = run_ssh_command(
+        host["ssh"], "pgrep -o -f 'postgres: orioledb background writer'"
+    )["stdout"].strip()
+    assert pid.isdigit(), f"Could not find the orioledb background writer: {pid}"
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {pid}")
+
+    for _ in range(30):
+        sleep(2)
+        probe = run_ssh_command(
+            host["ssh"],
+            "sudo -u postgres psql -U supabase_admin -h localhost -d postgres "
+            "-tAc 'select 1'",
+        )
+        if probe["succeeded"] and probe["stdout"].strip() == "1":
+            return pid
+    raise AssertionError(
+        "PostgreSQL did not come back up within 60s after crashing the orioledb "
+        "background writer"
+    )
+
+
+def _crash_unrelated_process(host):
+    """SIGSEGV a throwaway process with LimitCORE=0, like every service but
+    postgres on this AMI. Returns its pid."""
+    run_ssh_command(
+        host["ssh"],
+        "sudo systemd-run --unit=testinfra-unrelated-crash --collect /bin/sleep 600",
+    )
+    sleep(1)
+    pid = run_ssh_command(
+        host["ssh"], "systemctl show testinfra-unrelated-crash -p MainPID --value"
+    )["stdout"].strip()
+    assert pid.isdigit() and pid != "0", f"Could not start the unrelated unit: {pid}"
+    run_ssh_command(host["ssh"], f"sudo kill -SEGV {pid}")
+    sleep(3)
+    return pid
+
+
+def _list_bundles(host):
+    return set(
+        run_ssh_command(
+            host["ssh"], f"sudo find {DIAGNOSTICS_DIR} -maxdepth 1 -type f"
+        )["stdout"].splitlines()
+    )
+
+
+def _list_postgres_cores(host):
+    return set(
+        run_ssh_command(
+            host["ssh"], f"sudo find {COREDUMP_DIR} -maxdepth 1 -name 'core.*postgres*'"
+        )["stdout"].splitlines()
+    )
+
+
+def _wait_for_complete_bundle(host, before, what):
+    """Return the contents of the first new bundle once it's fully written
+    (the postgresql.log section comes after gdb)."""
+    for _ in range(90):
+        sleep(2)
+        new = _list_bundles(host) - before
+        if not new:
+            continue
+        contents = run_ssh_command(host["ssh"], f"sudo cat {sorted(new)[0]}")["stdout"]
+        if "== postgresql.log excerpt" in contents:
+            return contents
+    raise AssertionError(
+        f"No complete diagnostic bundle appeared under {DIAGNOSTICS_DIR} within "
+        f"180s after {what}"
+    )
+
+
+def _assert_bundle_symbolized(bundle, what):
+    """Function names alone prove nothing: postgres exports its symbols, so
+    they show up even without debug info. Check for what only debug info
+    gives: file:line, arguments, and the cmds.gdb steps that need symbols."""
+    import re
+
+    def check(cond, msg):
+        assert cond, f"{what}: {msg}. Bundle:\n{bundle}"
+
+    check(
+        re.search(r"^debug_symbols: /nix/store/\S+-debug$", bundle, re.MULTILINE),
+        "bundle does not name the debug env it used",
+    )
+    check(
+        "debug file: MISSING" not in bundle
+        and len(re.findall(r"^    debug file: present$", bundle, re.MULTILINE)) == 2,
+        "the debug env has no .debug file for the postgres or orioledb.so build-id",
+    )
+    check(
+        re.search(
+            r"^#\d+ .*PostmasterMain \(argc=.* at postmaster\.c:\d+$",
+            bundle,
+            re.MULTILINE,
+        ),
+        "PostmasterMain frame has no arguments or file:line (postgres symbols missing)",
+    )
+    # argv[0] printed via `p argv[$i++]`, which needs postgres's symbols
+    check(
+        re.search(r'^\$1 = 0x[0-9a-f]+ ".*postgres', bundle, re.MULTILINE),
+        "argv was not printed (postgres symbols missing)",
+    )
+    check(
+        not re.search(r"^#\d+ .* from \S*orioledb\.so$", bundle, re.MULTILINE),
+        "an orioledb.so frame has no debug info",
+    )
+    # gdb stops a sourced file at the first failing command. The last one
+    # dumps myLockedPages, which only resolves with orioledb.so's symbols.
+    check(
+        "Error in sourced command file" not in bundle,
+        "cmds.gdb stopped early (postgres or orioledb symbols missing)",
+    )
+    check(
+        re.search(r"^(rip|pc)\s+0x", bundle, re.MULTILINE),
+        "registers were not printed",
+    )
+
+
+def test_coredump_config_keeps_postgres_cores(host):
+    """Only postgres may store cores, and a low-ish free space must not make
+    systemd-coredump delete them: Ubuntu's core_pattern hides the process's
+    RLIMIT_CORE from systemd-coredump, and every systemd-coredump run deletes
+    stored cores while free space is below KeepFree."""
+    _skip_if_not_orioledb(host)
+    pattern = run_ssh_command(host["ssh"], "cat /proc/sys/kernel/core_pattern")[
+        "stdout"
+    ].split()
+    assert len(pattern) >= 7 and pattern[6] == "%c", (
+        f"kernel.core_pattern must pass the real core limit (%c) to "
+        f"systemd-coredump, got: {' '.join(pattern)}"
+    )
+    keep_free = run_ssh_command(
+        host["ssh"],
+        "systemd-analyze cat-config systemd/coredump.conf "
+        "| awk -F= '/^KeepFree=/ {v = $2} END {print v}'",
+    )["stdout"].strip()
+    assert keep_free == "1G", f"Expected coredump KeepFree=1G, got {keep_free!r}"
+
+
+def test_postgres_debug_env_is_downloadable(host):
+    """realise-postgres-debug must be able to fetch the debug env from the
+    binary cache, even while the AMI ships it. Otherwise dropping it from the
+    AMI would leave crash bundles without symbols."""
+    _skip_if_not_orioledb(host)
+    debug_env = _realise_postgres_debug(host)
+    substituters = run_ssh_command(host["ssh"], f"{NIX} config show substituters")[
+        "stdout"
+    ].split()
+    assert substituters, "no nix substituters configured"
+    results = {}
+    for substituter in substituters:
+        result = run_ssh_command(
+            host["ssh"], f"{NIX} path-info -r --store {substituter} {debug_env}"
+        )
+        if result["succeeded"]:
+            return
+        results[substituter] = result["stderr"].strip()[-300:]
+    raise AssertionError(
+        f"{debug_env} (or part of its closure) is not in any binary cache: {results}"
+    )
+
+
 def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host):
-    """Verify that after a real Postgres backend crash, the
-    orioledb-coredump.path-triggered processor turns the raw core into a
-    diagnostic bundle and deletes the raw core."""
+    """Verify that after real Postgres crashes, the
+    orioledb-coredump.path-triggered processor turns each raw core into a
+    symbolized diagnostic bundle and deletes the raw core, fetching the debug
+    symbols itself if the AMI doesn't ship them. A core waiting to be
+    processed must survive another process crashing meanwhile."""
+    import re
+
     unit_check = run_ssh_command(
         host["ssh"], "systemctl list-unit-files orioledb-coredump.path --no-legend"
     )
@@ -1844,45 +2045,57 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
             "coredump processor not installed on this AMI (not an OrioleDB build)"
         )
 
-    _realise_postgres_debug(host)
+    # If the AMI doesn't ship the debug env, earlier tests fetched it; drop it
+    # so this one covers the processor fetching it, as on a fresh instance.
+    debug_env = _realise_postgres_debug(host)
+    if not _debug_env_installed(host, debug_env):
+        _drop_postgres_debug_env(host, debug_env)
 
-    before_bundles = set(
+    # Hold off processing so the core is still waiting when something else
+    # crashes.
+    run_ssh_command(
+        host["ssh"],
+        "sudo systemctl stop orioledb-coredump.path orioledb-coredump.timer",
+    )
+    try:
+        before = _list_bundles(host)
+        cores_before = _list_postgres_cores(host)
+        _crash_a_backend_and_wait_for_recovery(host)
+        new_cores = _list_postgres_cores(host) - cores_before
+        assert new_cores, "the backend crash did not leave a core"
+        _crash_unrelated_process(host)
+        assert new_cores <= _list_postgres_cores(host), (
+            f"the postgres core {new_cores} was deleted when an unrelated process "
+            f"crashed (systemd-coredump's KeepFree cleanup)"
+        )
+    finally:
         run_ssh_command(
             host["ssh"],
-            "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f",
-        )["stdout"].splitlines()
-    )
-
-    _crash_a_backend_and_wait_for_recovery(host)
-
-    new_bundle = None
-    for _ in range(30):
-        sleep(2)
-        current = set(
-            run_ssh_command(
-                host["ssh"],
-                "sudo find /var/lib/orioledb-coredumps/diagnostics -maxdepth 1 -type f",
-            )["stdout"].splitlines()
+            "sudo systemctl start orioledb-coredump.path orioledb-coredump.timer "
+            "orioledb-coredump.service",
         )
-        new = current - before_bundles
-        if new:
-            new_bundle = sorted(new)[0]
-            break
-    assert new_bundle, (
-        "Expected a new diagnostic bundle under /var/lib/orioledb-coredumps/diagnostics "
-        "after the induced backend crash, but none appeared within 60s"
+    bundle = _wait_for_complete_bundle(host, before, "the induced backend crash")
+    _assert_bundle_symbolized(bundle, "backend crash")
+    assert re.search(r"^#\d+ .*pg_sleep \(.* at misc\.c:\d+$", bundle, re.MULTILINE), (
+        f"Expected a symbolized pg_sleep frame in the backend crash bundle:\n{bundle}"
     )
 
-    bundle_contents = run_ssh_command(host["ssh"], f"sudo cat {new_bundle}")["stdout"]
-    assert "gdb backtrace" in bundle_contents, (
-        f"Expected the diagnostic bundle to contain a gdb backtrace section, got:\n"
-        f"{bundle_contents[:500]}"
+    before = _list_bundles(host)
+    _crash_orioledb_bgwriter_and_wait_for_recovery(host)
+    bundle = _wait_for_complete_bundle(
+        host, before, "crashing the orioledb background writer"
     )
+    _assert_bundle_symbolized(bundle, "orioledb background writer crash")
+    assert re.search(
+        r"^#\d+ .*bgwriter_main \(.* at src/workers/bgwriter\.c:\d+$",
+        bundle,
+        re.MULTILINE,
+    ), f"Expected a symbolized orioledb bgwriter_main frame in the bundle:\n{bundle}"
 
     remaining_cores = run_ssh_command(
-        host["ssh"], "sudo find /var/lib/systemd/coredump -maxdepth 1 -type f"
+        host["ssh"], f"sudo find {COREDUMP_DIR} -maxdepth 1 -type f"
     )["stdout"].strip()
     assert remaining_cores == "", (
-        f"Expected the raw core to be deleted after successful processing, but "
-        f"/var/lib/systemd/coredump still has:\n{remaining_cores}"
+        f"Expected the raw cores to be deleted after successful processing, but "
+        f"{COREDUMP_DIR} still has:\n{remaining_cores}"
     )

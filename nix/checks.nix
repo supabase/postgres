@@ -917,6 +917,9 @@
             inherit pkgs;
           }
         )
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+          coredump-processor = import ./tests/coredump-processor.nix { inherit self' pkgs; };
+        }
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug

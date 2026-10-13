@@ -71,6 +71,16 @@
         owner: 'root'
         src: 'files/postgresql_config/coredump-storage.conf'
 
+    # Applied by systemd-sysctl at boot. Not applied here: stage1 runs in a
+    # chroot, where sysctl would change the build host's kernel instead.
+    - name: Pass the real core limit to systemd-coredump
+      ansible.builtin.copy:
+        dest: '/etc/sysctl.d/60-coredump-core-pattern.conf'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/postgresql_config/coredump-core-pattern.conf'
+
 # Processing: turns a captured core into a diagnostic bundle. stage2-only -
 # unlike capture above, this needs the debug symbols that
 # stage2-setup-postgres.yml installs, so there's no point enabling it earlier.
@@ -91,14 +101,16 @@
         - Regenerate grub configuration
 
     # gdb and binutils (readelf) are only used by the processor script below.
-    # jq parses coredumpctl's --json output instead of scraping its text
-    # tables.
-    - name: Ensure gdb, binutils, and jq are installed
+    # attr (getfattr) reads the metadata systemd-coredump stores on each core
+    # file, and zstd decompresses it: the processor works from the core files
+    # alone, since the journal can lose a core's entries before it runs.
+    - name: Ensure gdb, binutils, attr, and zstd are installed
       ansible.builtin.apt:
         name:
           - gdb
           - binutils
-          - jq
+          - attr
+          - zstd
 
     - name: Create orioledb-coredumps state/output directories
       ansible.builtin.file:
