@@ -20,22 +20,18 @@
 
 - name: install per-user egress filters
   copy:
-    src: "files/nftables/{{ item }}"
-    dest: "/etc/nftables/{{ item }}"
-    owner: adminapi
+    src: files/nftables/egressfilter.conf
+    dest: /etc/nftables/egressfilter.conf
+    owner: root
     mode: '0644'
     validate: /usr/sbin/nft -c -f %s
-  loop:
-    - pgfilter.conf
-    - authfilter.conf
 
 - name: include per-user egress filters
   blockinfile:
     path: /etc/nftables.conf
     marker: "# {mark} ANSIBLE MANAGED BLOCK: per-user egress filters"
     block: |
-      include "/etc/nftables/pgfilter.conf";
-      include "/etc/nftables/authfilter.conf";
+      include "/etc/nftables/egressfilter.conf";
 
 # A broken /etc/nftables.conf fails nftables.service at boot, and ufw Requires= it.
 # The rules are not loaded during the build; they apply on first boot.
