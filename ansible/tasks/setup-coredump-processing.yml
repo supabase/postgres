@@ -71,6 +71,16 @@
         owner: 'root'
         src: 'files/postgresql_config/coredump-storage.conf'
 
+    # Applied by systemd-sysctl at boot. Not applied here: stage1 runs in a
+    # chroot, where sysctl would change the build host's kernel instead.
+    - name: Pass the real core limit to systemd-coredump
+      ansible.builtin.copy:
+        dest: '/etc/sysctl.d/60-coredump-core-pattern.conf'
+        group: 'root'
+        mode: '0644'
+        owner: 'root'
+        src: 'files/postgresql_config/coredump-core-pattern.conf'
+
 # Processing: turns a captured core into a diagnostic bundle. stage2-only -
 # unlike capture above, this needs the debug symbols that
 # stage2-setup-postgres.yml installs, so there's no point enabling it earlier.
