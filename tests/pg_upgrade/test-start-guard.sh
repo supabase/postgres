@@ -6,11 +6,14 @@ REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 TEST_ROOT=$(mktemp -d)
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
+SCRIPTS_DIR="$REPO_ROOT/ansible/files/admin_api_scripts/pg_upgrade_scripts"
+
+# cleanup and on_exit are part of initiate.sh itself, which cannot be sourced.
 eval "$(awk '
-	/^(block_postgres_start|start_pid_lock_watcher|unblock_postgres_start|assert_source_stayed_down|cleanup|on_exit)\(\) \{/ { printing = 1 }
+	/^(cleanup|on_exit)\(\) \{/ { printing = 1 }
 	printing { print }
 	printing && /^}/ { printing = 0 }
-' "$REPO_ROOT/ansible/files/admin_api_scripts/pg_upgrade_scripts/initiate.sh")"
+' "$SCRIPTS_DIR/initiate.sh")"
 
 mkdir "$TEST_ROOT/bin"
 cat >"$TEST_ROOT/bin/systemctl" <<'SHIM'
@@ -30,34 +33,37 @@ esac
 SHIM
 cat >"$TEST_ROOT/bin/pgrep" <<'SHIM'
 #!/usr/bin/env bash
+if [ -n "${PGREP_EMPTY:-}" ]; then
+	exit 1
+fi
 printf '12345\n'
 SHIM
 cat >"$TEST_ROOT/bin/chown" <<'SHIM'
 #!/usr/bin/env bash
 exit 0
 SHIM
-cat >"$TEST_ROOT/bin/rmdir" <<'SHIM'
+cat >"$TEST_ROOT/bin/rmdir" <<SHIM
 #!/usr/bin/env bash
-if [ "$1" = --ignore-fail-on-non-empty ]; then
+if [ "\$1" = --ignore-fail-on-non-empty ]; then
 	shift
 fi
-exec /bin/rmdir "$@"
+exec $(type -P rmdir) "\$@"
 SHIM
-cat >"$TEST_ROOT/bin/rm" <<'SHIM'
+cat >"$TEST_ROOT/bin/rm" <<SHIM
 #!/usr/bin/env bash
-if [ "${FAIL_SHARE_RESTORE:-}" = rm ] && [ "$1" = "$POSTGRES_SHARE_DIR" ]; then
-	printf 'restore-rm\n' >>"$SYSTEMCTL_LOG"
+if [ "\${FAIL_SHARE_RESTORE:-}" = rm ] && [ "\$1" = "\$POSTGRES_SHARE_DIR" ]; then
+	printf 'restore-rm\n' >>"\$SYSTEMCTL_LOG"
 	exit 1
 fi
-exec /bin/rm "$@"
+exec $(type -P rm) "\$@"
 SHIM
-cat >"$TEST_ROOT/bin/mv" <<'SHIM'
+cat >"$TEST_ROOT/bin/mv" <<SHIM
 #!/usr/bin/env bash
-if [ "${FAIL_SHARE_RESTORE:-}" = mv ] && [ "$1" = "${POSTGRES_SHARE_DIR}.bak" ]; then
-	printf 'restore-mv\n' >>"$SYSTEMCTL_LOG"
+if [ "\${FAIL_SHARE_RESTORE:-}" = mv ] && [ "\$1" = "\${POSTGRES_SHARE_DIR}.bak" ]; then
+	printf 'restore-mv\n' >>"\$SYSTEMCTL_LOG"
 	exit 1
 fi
-exec /bin/mv "$@"
+exec $(type -P mv) "\$@"
 SHIM
 chmod +x "$TEST_ROOT/bin/"*
 export PATH="$TEST_ROOT/bin:$PATH"
@@ -67,6 +73,9 @@ retry() {
 	printf 'cleanup-abort\n' >>"$SYSTEMCTL_LOG"
 	exit 1
 }
+
+# shellcheck disable=SC1091
+source "$SCRIPTS_DIR/start_guard.sh"
 
 setup() {
 	local test_dir
@@ -113,9 +122,9 @@ assert() {
 test_dropin() {
 	setup
 	block_postgres_start
-	assert grep -qx "ExecCondition=+/bin/sh $PG_UPGRADE_START_GUARD $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER" "$PG_UPGRADE_LOCK_DROPIN"
-	assert grep -qx "ExecStartPost=-+/bin/rm -f $PG_UPGRADE_LOCK_DROPIN $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER $PG_UPGRADE_START_GUARD" "$PG_UPGRADE_LOCK_DROPIN"
-	assert grep -qx 'ExecStartPost=-+/bin/systemctl daemon-reload' "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx "ExecCondition=+$(type -P sh) $PG_UPGRADE_START_GUARD $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER" "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx "ExecStartPost=-+$TEST_ROOT/bin/rm -f $PG_UPGRADE_LOCK_DROPIN $PG_UPGRADE_INITIATE_PID_FILE $PG_UPGRADE_PID_LOCK_MARKER $PG_UPGRADE_START_GUARD" "$PG_UPGRADE_LOCK_DROPIN"
+	assert grep -qx "ExecStartPost=-+$TEST_ROOT/bin/systemctl daemon-reload" "$PG_UPGRADE_LOCK_DROPIN"
 	assert grep -qx 'Restart=no' "$PG_UPGRADE_LOCK_DROPIN"
 	assert test -s "$PG_UPGRADE_INITIATE_PID_FILE"
 	assert test -s "$PG_UPGRADE_START_GUARD"
@@ -204,6 +213,24 @@ test_watcher_existing_pid() {
 	assert test "$(cat "$PGDATAOLD/postmaster.pid")" = 54321
 }
 
+test_watcher_abandoned() {
+	local watcher_pid_file tries=0
+	setup
+	export PGREP_EMPTY=1
+	watcher_pid_file="$PGDATAOLD/../watcher.pid"
+	# a separate shell stands in for a SIGKILLed initiate.sh: it exits, the watcher
+	# stays (BASHPID is missing on bash 3.2, so a subshell would not work here)
+	"$BASH" -c 'log() { :; }; source "$1"; start_pid_lock_watcher; printf "%s\n" "$PG_UPGRADE_LOCK_WATCHER_PID" >"$2"' _ \
+		"$SCRIPTS_DIR/start_guard.sh" "$watcher_pid_file"
+	while kill -0 "$(cat "$watcher_pid_file")" 2>/dev/null; do
+		tries=$((tries + 1))
+		assert test "$tries" -lt 50
+		sleep 0.2
+	done
+	assert test ! -e "$PG_UPGRADE_PID_LOCK_MARKER"
+	unset PGREP_EMPTY
+}
+
 test_active_source() {
 	local state
 	for state in active activating reloading; do
@@ -250,10 +277,12 @@ test_start_guard() {
 }
 
 test_dropin_expiry() {
+	local exec_start_post
 	setup
 	block_postgres_start
 	printf '%s\n' 12345 >"$PG_UPGRADE_PID_LOCK_MARKER"
-	sh -c "$(sed -n 's/^ExecStartPost=-+\(\/bin\/rm .*\)$/\1/p' "$PG_UPGRADE_LOCK_DROPIN")"
+	exec_start_post=$(grep -F "ExecStartPost=-+$TEST_ROOT/bin/rm " "$PG_UPGRADE_LOCK_DROPIN")
+	sh -c "${exec_start_post#ExecStartPost=-+}"
 	assert test ! -e "$PG_UPGRADE_LOCK_DROPIN"
 	assert test ! -e "$PG_UPGRADE_INITIATE_PID_FILE"
 	assert test ! -e "$PG_UPGRADE_PID_LOCK_MARKER"
@@ -323,8 +352,8 @@ test_exit_cleanup() {
 	done
 }
 
-export -f log retry block_postgres_start unblock_postgres_start cleanup on_exit
-for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_active_source test_start_guard test_dropin_expiry test_exit_cleanup; do
+export -f log retry block_postgres_start unblock_postgres_start assert_source_stayed_down cleanup on_exit
+for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_watcher_abandoned test_active_source test_start_guard test_dropin_expiry test_exit_cleanup; do
 	case_output="$TEST_ROOT/$test_name.log"
 	trap 'exit_code=$?; cat "$case_output"; exit "$exit_code"' ERR
 	(

@@ -615,6 +615,7 @@
                 fileset = lib.fileset.unions [
                   ../tests/pg_upgrade/test-start-guard.sh
                   ../ansible/files/admin_api_scripts/pg_upgrade_scripts/initiate.sh
+                  ../ansible/files/admin_api_scripts/pg_upgrade_scripts/start_guard.sh
                 ];
               };
             in
