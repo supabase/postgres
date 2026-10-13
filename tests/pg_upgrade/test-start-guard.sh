@@ -65,6 +65,14 @@ if [ "\${FAIL_SHARE_RESTORE:-}" = mv ] && [ "\$1" = "\${POSTGRES_SHARE_DIR}.bak"
 fi
 exec $(type -P mv) "\$@"
 SHIM
+# The Nix build sandbox on Linux has no /usr/bin/env: point the shims at this bash.
+for shim in "$TEST_ROOT/bin/"*; do
+	{
+		printf '#!%s\n' "$BASH"
+		tail -n +2 "$shim"
+	} >"$shim.tmp"
+	mv "$shim.tmp" "$shim"
+done
 chmod +x "$TEST_ROOT/bin/"*
 export PATH="$TEST_ROOT/bin:$PATH"
 
