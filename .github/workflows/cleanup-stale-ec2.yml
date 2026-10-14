@@ -32,6 +32,7 @@ jobs:
 
       - name: Cleanup stale AMI build resources
         shell: bash
+        timeout-minutes: 60 # AWS creds expire after 1h
         env:
           AWS_MAX_ATTEMPTS: 6
           OK_TO_DESTROY: "true"
