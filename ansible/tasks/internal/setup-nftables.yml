@@ -22,7 +22,7 @@
   copy:
     src: files/nftables/egressfilter.conf
     dest: /etc/nftables/egressfilter.conf
-    owner: root
+    owner: adminapi
     mode: '0644'
     validate: /usr/sbin/nft -c -f %s
 
