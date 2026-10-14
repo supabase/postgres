@@ -21,8 +21,9 @@ fi
 cutoff=$(date -u -d '48 hours ago' '+%Y-%m-%dT%H:%M:%SZ')
 msg "Looking for Packer and testinfra executions with resources created before $cutoff..."
 
-failures=0
-failed() { failures=$((failures + 1)); }
+# Each failure touches .failed/<id> (or .failed/gather) so it survives xargs subshells.
+rm -rf .failed
+mkdir -p .failed
 
 readarray -t ids < <(
 	{
@@ -59,25 +60,35 @@ readarray -t ids < <(
 		sort -Vu
 )
 
+max=10
 if ! wait $!; then
 	msg "Encountered at least one error discovering stale executions, proceeding anyway"
-	failed
+	touch .failed/gather
 fi
 if ((${#ids[@]} == 0)); then
 	msg "No stale Packer or testinfra executions found"
+else
+	msg "${#ids[@]} stale executions found, cleaning up $max"
 fi
 
 cleaner=$(dirname "$0")/cleanup-ami-build-resources.sh
-for id in "${ids[@]}"; do
-	if "$cleaner" "$id"; then
-		continue
-	else
-		status=$?
-		failed
-		msg "Cleanup failed for execution $id with exit code $status"
-	fi
-done
+# shellcheck disable=SC2016
+printf '%s\n' "${ids[@]::max}" |
+	xargs --no-run-if-empty -P"$(nproc)" -n1 bash -c '
+		set -euo pipefail
+		cleaner=$1
+		id=$2
 
+		sleep $((RANDOM%3)).$RANDOM # add some small jitter to try to avoid aws throttling
+
+		"$cleaner" "$id" |& sed "s|^|$id |" && exit 0
+		status=$?
+		touch ".failed/$id"
+		echo "Cleanup failed for execution $id with exit code $status" >&2
+		exit 0
+	' -- "$cleaner"
+
+failures=$(find .failed -type f | wc -l)
 if ((failures)); then
 	msg "Stale cleanup completed with $failures error(s)"
 	exit 1
