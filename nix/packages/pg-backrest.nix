@@ -7,13 +7,13 @@
 }:
 pgbackrest.overrideAttrs (
   finalAttrs: prevAttrs: {
-    version = "2.59.1";
+    version = "2.59.3";
 
     src = fetchFromGitHub {
       owner = "pgbackrest";
       repo = "pgbackrest";
       rev = "release/${finalAttrs.version}";
-      hash = "sha256-bCHjIQ0WIlvjGg1b4jNwWKzxLg+YIDswKx/Jt6EwAdQ=";
+      hash = "sha256-RIRzSRDMa+qM3IDkV0PHngEls5Li6PeNu3AHJ4oSZzM=";
     };
 
     # 2.59.0 adds an optional libsystemd dependency for systemd notify support.
