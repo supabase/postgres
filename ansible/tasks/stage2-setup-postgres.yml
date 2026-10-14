@@ -152,11 +152,11 @@
             - name: Create symbolic link for linux-pam to find pam_jit_pg.so
               become: yes
               shell: |
-                sudo ln -s /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
+                sudo ln -s /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
 
             - name: Get gatekeeper version
               ansible.builtin.shell: |
-                sudo -u postgres bash -c "/nix/var/nix/profiles/default/bin/nix-store -q --requisites ~/.nix-profile | awk -F- '/gatekeeper/{print \$NF}'"
+                /nix/var/nix/profiles/default/bin/nix-store -q --requisites /nix/var/nix/profiles/site | awk -F- '/gatekeeper/{print $NF}'
               register: gatekeeper_version
 
             - name: Write version file
