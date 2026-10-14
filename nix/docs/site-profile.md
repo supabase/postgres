@@ -6,7 +6,7 @@ The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are de
 
 ## Publish
 
-`ami-release-nix.yml` uploads each store path as a string to the public artifacts bucket, in the object `nix-catalog/<sha>-site-env-<major>-<system>`. Release branches also upload the git sha as a string to `latest-site-env-<major>-<system>.sha`. The AMI bake installs the env and runs `activate`.
+`ami-release-nix.yml` uploads each store path as a string to the public artifacts bucket, in the object `nix-catalog/<sha>-site-env-<major>-<system>`. Release branches also upload the git sha as a string to `latest-site-env-<major>-<system>.sha`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`.
 
 ## Update
 
@@ -15,7 +15,9 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 /nix/var/nix/profiles/site/bin/activate
 ```
 
-`--set` downloads the path if it is missing. `activate` sets up supautils, and gatekeeper where present, idempotently.
+`--set` downloads the closure from the binary cache if it is missing, adds a generation, and points `/nix/var/nix/profiles/site` at it. If the download fails, `nix-env` exits non-zero and the profile is unchanged.
+
+`activate` runs after the switch. It sets up supautils, and gatekeeper where present, idempotently. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
 `site-nix-gc` keeps the last 3 site profile generations and the last 2 postgres and default profile generations. It then runs `nix-store --gc` in a throttled transient systemd unit, which is skipped without systemd.
 

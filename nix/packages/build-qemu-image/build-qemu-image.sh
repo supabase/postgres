@@ -50,6 +50,8 @@ install --mode 444 "$code" "$workdir/ovmf_code.fd"
 install --mode 644 "$vars" "$workdir/ovmf_vars.fd" # qemu writes to the vars pflash during boot
 
 git_sha=${GIT_SHA:-$(git rev-parse HEAD)}
+system=$([[ $arch == arm64 ]] && echo aarch64-linux || echo x86_64-linux)
+site_env_path=$(nix eval --raw "github:supabase/postgres/$git_sha#packages.$system.site-env-$postgres_major_version.outPath")
 postgres_version=$(yq -r ".postgres_release[\"postgres$postgres_major_version\"]" ansible/vars.yml)
 
 # Build the cloud-init seed ISO before invoking packer.
@@ -64,6 +66,7 @@ PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
 	-var "postgres-version=$postgres_version" \
+	-var "site_env_path=$site_env_path" \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
 	-var "workdir=$workdir" \
