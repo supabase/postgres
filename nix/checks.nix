@@ -924,6 +924,14 @@
             wal-g-3
             ;
           devShell = self'.devShells.default;
+        }
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+        )
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           site =
             let
               system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
@@ -977,14 +985,6 @@
                 print(machine.succeed("journalctl -u site-nix-gc --no-pager | grep freed"))
               '';
             };
-        }
-        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
-          import ./ext/tests {
-            inherit self;
-            inherit pkgs;
-          }
-        )
-        // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug
             postgresql_15_src
