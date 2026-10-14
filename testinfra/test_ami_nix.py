@@ -522,19 +522,20 @@ def test_restricted_user_local_egress(host, host_private_ip, user, addr):
     )
 
 
-def test_gotrue_imds_blocked(host):
-    """gotrue cannot reach instance metadata; postgres still can (wal-g needs
-    IAM credentials)."""
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_imds_blocked(host, user):
+    """Restricted users cannot reach instance metadata. wal-g runs as its own
+    'wal-g' user, so it is unaffected; root is the control."""
     ssh = host["ssh"]
     imds = "169.254.169.254"
     if not _tcp_connect_as(ssh, "root", 80, imds):
         pytest.skip("instance metadata is not reachable even as root")
 
-    assert not _tcp_connect_as(ssh, "gotrue", 80, imds), (
-        "gotrue can reach instance metadata; egressfilter is not blocking it"
+    assert not _tcp_connect_as(ssh, user, 80, imds), (
+        f"{user} can reach instance metadata; egressfilter is not blocking it"
     )
-    assert _tcp_connect_as(ssh, "postgres", 80, imds), (
-        "postgres can no longer reach instance metadata; wal-g needs it"
+    assert _tcp_connect_as(ssh, "wal-g", 80, imds), (
+        "wal-g can no longer reach instance metadata; it needs IAM credentials"
     )
 
 
