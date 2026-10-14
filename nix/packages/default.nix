@@ -39,9 +39,9 @@
         inherit (pkgs) lib;
       };
       pkgs-lib = pkgs.callPackage ./lib.nix {
-        psql_15 = self'.packages."psql_15/bin";
-        psql_17 = self'.packages."psql_17/bin";
-        psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+        psql_15 = self'.packages."psql_15_with_supautils/bin";
+        psql_17 = self'.packages."psql_17_with_supautils/bin";
+        psql_orioledb-17 = self'.packages."psql_orioledb-17_with_supautils/bin";
         inherit (self.supabase) defaults;
       };
     in
