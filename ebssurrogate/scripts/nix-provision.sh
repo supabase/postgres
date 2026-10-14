@@ -59,6 +59,7 @@ function execute_stage2_playbook {
 	ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":true, "qemu":false}' \
 		--extra-vars "git_commit_sha=$GIT_SHA" \
+		--extra-vars "site_env_path=$SITE_ENV_PATH" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
