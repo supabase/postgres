@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ap-southeast-1
+  AWS_REGION: us-east-1
 
 jobs:
   gen-matrix:
@@ -137,7 +137,7 @@ jobs:
           version_label: pr-${{ github.event.pull_request.head.sha }}
 
       - name: Run tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
@@ -156,7 +156,7 @@ jobs:
       - name: Cleanup Packer resources
         if: always()
         env:
-          OK_TO_DESTROY: "false"
+          OK_TO_DESTROY: "true"
         run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
