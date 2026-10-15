@@ -152,6 +152,7 @@ RUN sed -i \
 # Remove timescaledb, plv8, postgis, pgrouting references (not available in orioledb build)
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/^#summarize_wal = off/summarize_wal = on/' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/ timescaledb,//g; s/ plv8,//g; s/ postgis,//g; s/ pgrouting,//g' "/etc/postgresql-custom/supautils.conf"
 
 # OrioleDB configuration
