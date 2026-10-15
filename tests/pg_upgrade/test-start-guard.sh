@@ -9,9 +9,9 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 SCRIPTS_DIR="$REPO_ROOT/ansible/files/admin_api_scripts/pg_upgrade_scripts"
 
 # cleanup and on_exit are part of initiate.sh itself, which cannot be sourced.
-eval "$(awk '
+eval "$(awk -v status_file="$TEST_ROOT/pg-upgrade-status" '
 	/^(cleanup|on_exit)\(\) \{/ { printing = 1 }
-	printing { print }
+	printing { gsub("/tmp/pg-upgrade-status", status_file); print }
 	printing && /^}/ { printing = 0 }
 ' "$SCRIPTS_DIR/initiate.sh")"
 
@@ -110,7 +110,7 @@ setup() {
 	export IS_LOCAL_UPGRADE PGVERSION PGDATAOLD PGDATANEW MOUNT_POINT LOG_FILE
 	export POSTGRES_SHARE_DIR POST_UPGRADE_EXTENSION_SCRIPT POST_UPGRADE_POSTGRES_PERMS_SCRIPT
 	export PG_UPGRADE_LOCK_DROPIN_DIR PG_UPGRADE_LOCK_DROPIN PG_UPGRADE_PID_LOCK_MARKER
-	export PG_UPGRADE_INITIATE_PID_FILE PG_UPGRADE_START_GUARD
+	export PG_UPGRADE_INITIATE_PID_FILE PG_UPGRADE_START_GUARD PG_UPGRADE_PID_LOCK_TMP_NAME
 	export PG_UPGRADE_LOCK_WATCHER_PID PG_UPGRADE_START_BLOCKED CLEANUP_STARTED
 	export SYSTEMCTL_LOG="$test_dir/systemctl.log"
 	export FAIL_RELOAD_ONCE="$test_dir/fail-reload"
@@ -177,11 +177,23 @@ test_unblock_reload_retry() {
 	assert test "$(grep -c '^daemon-reload$' "$SYSTEMCTL_LOG")" -eq 3
 }
 
+# Not `wait`: it reports a child's status once, and assert_source_stayed_down
+# needs it.
+wait_for_watcher() {
+	local tries=0
+	while kill -0 "$PG_UPGRADE_LOCK_WATCHER_PID" 2>/dev/null; do
+		tries=$((tries + 1))
+		assert test "$tries" -lt 50
+		sleep 0.1
+	done
+}
+
 test_owned_pid() {
 	setup
 	touch "$PGDATANEW/postmaster.pid"
 	start_pid_lock_watcher
-	wait "$PG_UPGRADE_LOCK_WATCHER_PID"
+	wait_for_watcher
+	assert test ! -e "$PGDATAOLD/$PG_UPGRADE_PID_LOCK_TMP_NAME"
 	assert cmp -s "$PG_UPGRADE_PID_LOCK_MARKER" "$PGDATAOLD/postmaster.pid"
 	assert_source_stayed_down
 	unblock_postgres_start
@@ -216,9 +228,46 @@ test_watcher_existing_pid() {
 	touch "$PGDATANEW/postmaster.pid"
 	printf '54321\n' >"$PGDATAOLD/postmaster.pid"
 	start_pid_lock_watcher
-	wait "$PG_UPGRADE_LOCK_WATCHER_PID"
+	wait_for_watcher
+	# the watcher could not take the lock: the upgrade must fail
+	if assert_source_stayed_down; then
+		exit 1
+	fi
 	unblock_postgres_start
 	assert test "$(cat "$PGDATAOLD/postmaster.pid")" = 54321
+}
+
+# pg_upgrade is gone by the time the new cluster's pid file shows up
+test_watcher_no_pg_upgrade() {
+	setup
+	export PGREP_EMPTY=1
+	touch "$PGDATANEW/postmaster.pid"
+	# initiate_pid is this shell, so the watcher does not abandon the wait
+	start_pid_lock_watcher
+	wait_for_watcher
+	unset PGREP_EMPTY
+	if assert_source_stayed_down; then
+		exit 1
+	fi
+	assert test ! -e "$PGDATAOLD/postmaster.pid"
+}
+
+# a watcher still polling is not a failure
+test_watcher_still_polling() {
+	setup
+	start_pid_lock_watcher
+	assert_source_stayed_down
+	unblock_postgres_start
+	assert test -z "$PG_UPGRADE_LOCK_WATCHER_PID"
+}
+
+# the watcher killed between writing and linking leaves no pid file behind
+test_unblock_removes_lock_tmp() {
+	setup
+	printf '1\n' >"$PGDATAOLD/$PG_UPGRADE_PID_LOCK_TMP_NAME"
+	unblock_postgres_start
+	assert test ! -e "$PGDATAOLD/$PG_UPGRADE_PID_LOCK_TMP_NAME"
+	assert test ! -e "$PGDATAOLD/postmaster.pid"
 }
 
 test_watcher_abandoned() {
@@ -361,8 +410,8 @@ test_exit_cleanup() {
 	done
 }
 
-export -f log retry block_postgres_start unblock_postgres_start assert_source_stayed_down cleanup on_exit
-for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_watcher_abandoned test_active_source test_start_guard test_dropin_expiry test_exit_cleanup; do
+export -f log retry assert block_postgres_start unblock_postgres_start assert_source_stayed_down cleanup on_exit
+for test_name in test_dropin test_no_block_reset test_block_reload_failure test_unblock_reload_retry test_owned_pid test_foreign_pid test_watcher_existing_pid test_watcher_no_pg_upgrade test_watcher_still_polling test_unblock_removes_lock_tmp test_watcher_abandoned test_active_source test_start_guard test_dropin_expiry test_exit_cleanup; do
 	case_output="$TEST_ROOT/$test_name.log"
 	trap 'exit_code=$?; cat "$case_output"; exit "$exit_code"' ERR
 	(

@@ -17,6 +17,7 @@
 PG_UPGRADE_LOCK_DROPIN_DIR="/run/systemd/system/postgresql.service.d"
 PG_UPGRADE_LOCK_DROPIN="$PG_UPGRADE_LOCK_DROPIN_DIR/pg-upgrade-lock.conf"
 PG_UPGRADE_PID_LOCK_MARKER="/run/pg-upgrade-source.pid"
+PG_UPGRADE_PID_LOCK_TMP_NAME="postmaster.pid.pg-upgrade-lock"
 PG_UPGRADE_INITIATE_PID_FILE="/run/pg-upgrade-initiate.pid"
 PG_UPGRADE_START_GUARD="/run/pg-upgrade-start-guard.sh"
 PG_UPGRADE_LOCK_WATCHER_PID=""
@@ -75,7 +76,11 @@ GUARD
 
 # Wait for the new cluster's temp server (the old one is down from then on,
 # its schema dump is done) and then claim the old data dir's postmaster.pid.
-# It must not exist before: pg_upgrade aborts if it finds one at startup.
+# It must not exist before: pg_upgrade aborts if it finds one at startup, so
+# finding one now means a postmaster started during the copy.
+# The watcher exits 0 when it took the lock or when there is nothing left to
+# lock (initiate.sh and pg_upgrade are gone), and non-zero when it could not
+# take the lock: assert_source_stayed_down turns that into a failed upgrade.
 start_pid_lock_watcher() {
 	local initiate_pid=${BASHPID:-$$}
 	(
@@ -91,22 +96,29 @@ start_pid_lock_watcher() {
 		done
 		upg_pid=$(pgrep -u postgres -f -- "--old-datadir=${PGDATAOLD}" | head -1)
 		if [ -z "$upg_pid" ]; then
-			exit 0
-		fi
-		if [ -e "$PGDATAOLD/postmaster.pid" ]; then
-			log "WARNING: $PGDATAOLD/postmaster.pid already exists; not creating the pg_upgrade lock"
-			exit 0
-		fi
-		printf '%s\n' "$upg_pid" >"$PG_UPGRADE_PID_LOCK_MARKER" || exit 1
-		if ! (
-			set -o noclobber
-			cat "$PG_UPGRADE_PID_LOCK_MARKER" >"$PGDATAOLD/postmaster.pid"
-		); then
-			log "WARNING: could not create the pg_upgrade PID lock"
+			log "WARNING: pg_upgrade not found; not creating the pg_upgrade lock"
 			exit 1
 		fi
-		chown postgres:postgres "$PGDATAOLD/postmaster.pid"
-		chmod 0600 "$PGDATAOLD/postmaster.pid"
+		if [ -e "$PGDATAOLD/postmaster.pid" ]; then
+			log "ERROR: $PGDATAOLD/postmaster.pid already exists; a postmaster ran during the copy"
+			exit 1
+		fi
+		printf '%s\n' "$upg_pid" >"$PG_UPGRADE_PID_LOCK_MARKER" || exit 1
+		# Build the file aside and link it into place: the link is atomic and fails
+		# if the name exists, so a watcher killed by unblock_postgres_start can never
+		# leave a truncated postmaster.pid behind (cmp would not match it).
+		lock_tmp="$PGDATAOLD/$PG_UPGRADE_PID_LOCK_TMP_NAME"
+		if ! {
+			cat "$PG_UPGRADE_PID_LOCK_MARKER" >"$lock_tmp" &&
+				chown postgres:postgres "$lock_tmp" &&
+				chmod 0600 "$lock_tmp" &&
+				ln "$lock_tmp" "$PGDATAOLD/postmaster.pid"
+		}; then
+			rm -f "$lock_tmp"
+			log "ERROR: could not create the pg_upgrade PID lock"
+			exit 1
+		fi
+		rm -f "$lock_tmp"
 		log "Locked $PGDATAOLD with pg_upgrade pid $upg_pid"
 	) &
 	PG_UPGRADE_LOCK_WATCHER_PID=$!
@@ -120,6 +132,8 @@ unblock_postgres_start() {
 		PG_UPGRADE_LOCK_WATCHER_PID=""
 	fi
 	local pidfile="${PGDATAOLD:-/nonexistent}/postmaster.pid"
+	# a watcher killed between writing and linking leaves only this temp file
+	rm -f "${PGDATAOLD:-/nonexistent}/$PG_UPGRADE_PID_LOCK_TMP_NAME"
 	# Callers run this under `||` where set -e is off, so report failures through
 	# the return status: a failed daemon-reload leaves the block loaded in systemd.
 	local rc=0
@@ -155,7 +169,18 @@ unblock_postgres_start() {
 # The source must have stayed down for the whole copy; if not, the copy is
 # inconsistent and the upgrade has to fail (the source data is untouched).
 assert_source_stayed_down() {
-	local state=""
+	local state="" watcher_rc=0
+	# A watcher that is still polling is fine; one that is gone must have exited 0.
+	# `wait` reports a child's status only once, so nothing may wait on the watcher
+	# before this check (unblock_postgres_start does, and runs after it). 127 means
+	# the status is not available (already reaped), not that the watcher failed.
+	if [ -n "$PG_UPGRADE_LOCK_WATCHER_PID" ] && ! kill -0 "$PG_UPGRADE_LOCK_WATCHER_PID" 2>/dev/null; then
+		wait "$PG_UPGRADE_LOCK_WATCHER_PID" || watcher_rc=$?
+		if [ "$watcher_rc" -ne 0 ] && [ "$watcher_rc" -ne 127 ]; then
+			log "ERROR: the pg_upgrade lock could not be taken; the copied data files may be inconsistent"
+			return 1
+		fi
+	fi
 	if [ -z "$IS_CI" ]; then
 		state=$(systemctl is-active postgresql || true)
 	fi
