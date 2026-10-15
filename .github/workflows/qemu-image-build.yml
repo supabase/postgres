@@ -114,7 +114,7 @@ jobs:
 
       - name: configure aws credentials - staging
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
           aws-region: "us-east-1"
@@ -122,7 +122,7 @@ jobs:
       - name: Login to Amazon ECR Staging
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         id: login-ecr-private-dev
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Build image
         env:
@@ -143,7 +143,7 @@ jobs:
       # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
       - name: configure aws credentials - prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
           aws-region: "us-east-1"
@@ -151,7 +151,7 @@ jobs:
       - name: Login to Amazon ECR Prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
         id: login-ecr-private-prod
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Push docker image to Amazon ECR Prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
@@ -165,7 +165,7 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
+        uses: rtCamp/action-slack-notify@33ca3be66c6f378fe1610fd1d5258632dbed5e58 # v2.4.0
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           SLACK_USERNAME: 'gha-failures-notifier'

@@ -23,7 +23,7 @@ jobs:
       base_hash: ${{ steps.check.outputs.base_hash }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
@@ -47,7 +47,7 @@ jobs:
         pg_version: ['15', '17']
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
@@ -56,7 +56,7 @@ jobs:
         run: docker context create builders
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           endpoint: builders
 
