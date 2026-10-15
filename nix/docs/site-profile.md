@@ -19,7 +19,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 
 `activate` runs after the switch. It sets up supautils, and gatekeeper where present, idempotently. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
-`site-nix-gc` keeps the last 3 site profile generations and the last 2 postgres and default profile generations. It then runs `nix-store --gc` in a throttled transient systemd unit, which is skipped without systemd.
+`site-nix-gc` keeps the last 3 site profile generations and the last 2 postgres and default profile generations. It then runs `nix-store --gc` to completion. With systemd it runs in a throttled transient unit. Without systemd it runs under `nice` and `ionice`.
 
 ## Roll back
 

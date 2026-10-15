@@ -26,16 +26,19 @@
           '';
         };
 
-      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc in a throttled transient systemd unit.
+      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc, in a throttled transient systemd unit where systemd exists and under nice and ionice otherwise.
       site-nix-gc = writeHostBash "site-nix-gc" ''
         nix-env --profile /nix/var/nix/profiles/site --delete-generations +3
         nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
         if [[ -L /var/lib/postgresql/.nix-profile ]]; then
           nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2
         fi
+        export NIX_REMOTE=local
+        gc=("$(command -v nix-store)" --gc --quiet)
         if [[ ! -d /run/systemd/system ]]; then
-          echo "Systemd not found. Skipping nix-store --gc."
-          exit 0
+          throttle=(nice -n 19)
+          if command -v ionice >/dev/null; then throttle+=(ionice -c 3); fi
+          exec "''${throttle[@]}" "''${gc[@]}"
         fi
         if systemctl is-active --quiet site-nix-gc; then
           echo "Garbage collection already running. Skipping nix-store --gc."
@@ -47,7 +50,7 @@
           -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
           -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
           -p RuntimeMaxSec=2h \
-          "$(command -v nix-store)" --gc --quiet --max-freed 2G \
+          "''${gc[@]}" \
           || echo "systemd-run failed. Skipping nix-store --gc."
       '';
 

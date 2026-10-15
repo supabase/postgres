@@ -49,5 +49,9 @@ pkgs.testers.runNixOSTest {
     machine.succeed("${site-env-17}/bin/site-nix-gc")
     machine.wait_until_fails("systemctl is-active site-nix-gc", timeout=1800)
     print(machine.succeed("journalctl -u site-nix-gc --no-pager | grep freed"))
+
+    # without systemd the gc runs in the foreground
+    machine.succeed("mount -t tmpfs none /run/systemd")
+    machine.succeed("${site-env-17}/bin/site-nix-gc 2>&1 | grep freed")
   '';
 }
