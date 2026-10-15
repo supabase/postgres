@@ -28,7 +28,7 @@
 
       # Prunes old site, postgres, and default profile generations, then runs nix-store --gc, in a throttled transient systemd unit where systemd exists and under nice and ionice otherwise.
       site-nix-gc = writeHostBash "site-nix-gc" ''
-        nix-env --profile /nix/var/nix/profiles/site --delete-generations +3
+        nix-env --profile /nix/var/nix/profiles/site --delete-generations +2
         nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
         if [[ -L /var/lib/postgresql/.nix-profile ]]; then
           nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2

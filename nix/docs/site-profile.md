@@ -15,11 +15,11 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 /nix/var/nix/profiles/site/bin/activate
 ```
 
-`--set` downloads the closure from the binary cache if it is missing, adds a generation, and points `/nix/var/nix/profiles/site` at it. If the download fails, `nix-env` exits non-zero and the profile is unchanged.
+`--set` downloads the closure from the binary cache if it is missing. It then creates the generation link `site-<N>-link` to the store path and repoints the `site` symlink at that link. If the download fails, `nix-env` exits non-zero and the profile is unchanged.
 
 `activate` runs after the switch. It sets up supautils, and gatekeeper where present, idempotently. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
-`site-nix-gc` keeps the last 3 site profile generations and the last 2 postgres and default profile generations. It then runs `nix-store --gc` to completion. With systemd it runs in a throttled transient unit. Without systemd it runs under `nice` and `ionice`.
+`site-nix-gc` keeps the current generation and one older one for the site, postgres, and default profiles. It then runs `nix-store --gc` to completion. With systemd it runs in a throttled transient unit. Without systemd it runs under `nice` and `ionice`.
 
 ## Roll back
 
@@ -27,7 +27,7 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 nix-env --profile /nix/var/nix/profiles/site --rollback
 ```
 
-Rollback switches to the previous generation. `site-nix-gc` keeps the last 3.
+Rollback switches to the previous generation. `site-nix-gc` keeps one.
 
 ## Test
 
