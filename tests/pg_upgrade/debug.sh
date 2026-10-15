@@ -71,6 +71,12 @@ if ! docker exec -it pg_upgrade_test bash -c 'rm -f /tmp/pg-upgrade-status; /tmp
 	exit 1
 fi
 
+echo "Checking the upgraded cluster took the old one's place"
+if ! docker exec -it pg_upgrade_test bash -c '[ ! -e /data/pgdata_old ] && [ "$(cat /data/pgdata/PG_VERSION)" = "$PG_MAJOR_VERSION" ]'; then
+	echo "/data/pgdata is not the upgraded cluster, or /data/pgdata_old was left behind. Exiting."
+	exit 1
+fi
+
 pg_prove tests/01-schema.sql
 pg_prove tests/02-data.sql
 pg_prove tests/03-settings.sql

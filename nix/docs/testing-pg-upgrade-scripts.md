@@ -56,9 +56,10 @@ This document describes how to test changes to the PostgreSQL upgrade scripts on
 
 6. **Check Results**
    In local mode, the script will:
-   - Create a new data directory at `/data_migration/pgdata`
-   - Run pg_upgrade to test the upgrade process
-   - Generate SQL files in `/data_migration/sql/` for any needed post-upgrade steps
+   - Initialise the new cluster at `/data/pgdata_new`
+   - Run `pg_upgrade --link` against the existing cluster at `/data/pgdata`
+   - Swap the clusters: the old one moves to `/data/pgdata_old`, the new one takes `/data/pgdata`
+   - Generate SQL files in `/data/sql/` for any needed post-upgrade steps
    - Log the results in `/var/log/pg-upgrade-initiate.log`
    
    To verify success:
@@ -67,23 +68,23 @@ This document describes how to test changes to the PostgreSQL upgrade scripts on
    grep "Upgrade complete" /var/log/pg-upgrade-initiate.log
    
    # Check for any generated SQL files
-   ls -l /data_migration/sql/
+   ls -l /data/sql/
    
    # Check the new data directory
-   ls -l /data_migration/pgdata/
+   cat /data/pgdata/PG_VERSION
    ```
    
-   Note: The instance will not be upgraded to the new version in local mode. This is just a test run to verify the upgrade process works correctly.
+   **Warning:** the upgrade is destructive and in place. Once `pg_upgrade --link` has run, the old cluster at `/data/pgdata_old` shares its relation files with the new one and cannot be started again; the only way back is the EBS snapshot the worker takes before `/initiate`, which does not exist when you run the script by hand. Only run local mode against an instance whose data you can lose, or snapshot its data volume yourself first.
 
 ## Important Notes
 
-- The `IS_LOCAL_UPGRADE=true` flag makes the script run in the foreground and skip disk mounting steps
-- The script will use the existing data directory
+- The `IS_LOCAL_UPGRADE=true` flag makes the script run in the foreground and skip the guard against a copy-mode worker (a migration volume at `xvdp`)
+- The script upgrades the existing data directory in place
 - All output is logged to `/var/log/pg-upgrade-initiate.log`
-- The script will automatically restart PostgreSQL after completion or failure
+- PostgreSQL is only restarted after a failure that happened before `pg_upgrade --link` ran; after success, or a failure past that point, it stays stopped
 - For testing, you can edit the script directly on the server - the GitHub Actions workflows are only needed for deploying to new instances
 - Run the script as the ubuntu user with sudo privileges - the script will handle user switching internally
-- Local mode is for testing only - it will not actually upgrade the instance
+- Local mode is for testing only - it leaves the instance with an upgraded cluster its own binaries cannot run
 - The Nix flake version must include the PostgreSQL version you're testing (e.g., 17)
 - In local mode, only the PostgreSQL binaries are downloaded from the flake - the upgrade scripts are used from the local filesystem
 - You can override the flake version by setting the NIX_FLAKE_VERSION environment variable when running the script

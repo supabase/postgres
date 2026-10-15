@@ -14,26 +14,28 @@ source "$SCRIPT_DIR/common.sh"
 IS_CI=${IS_CI:-}
 LOG_FILE="/var/log/pg-upgrade-complete.log"
 
-# Wait for the volume mapped to /data to appear before attempting to mount it
-function wait_for_data_device {
-	local fstab_src dev=""
-	fstab_src=$(awk '$2 == "/data" {print $1}' /etc/fstab)
-	if [ -z "$fstab_src" ]; then
-		log "No /data entry in /etc/fstab"
+# The upgraded data volume arrives from the original instance at /dev/xvdh. The AMI's fstab
+# entry for /data names the UUID of a volume this instance never had, so point it at the one
+# actually attached before mounting; that also makes the mount survive a reboot.
+function mount_data_volume {
+	local dev uuid
+	log "Waiting for the /data volume (xvdh) to appear"
+	dev=$(find_block_device xvdh 60) || {
+		log "Timed out waiting for the /data volume (xvdh)"
+		return 1
+	}
+	log "Checking the filesystem on $dev"
+	# 1 means errors were corrected, which is fine
+	e2fsck -pf "$dev" || [ $? -eq 1 ]
+	uuid=$(blkid -s UUID -o value "$dev")
+	if [ -z "$uuid" ]; then
+		log "No filesystem UUID on $dev"
 		return 1
 	fi
-
-	log "Waiting for /data device ($fstab_src) to appear"
-	for _ in $(seq 1 60); do
-		dev=$(findfs "$fstab_src" 2>/dev/null) || dev=""
-		if [ -n "$dev" ] && [ -b "$dev" ]; then
-			log "/data device ($dev) is available"
-			return 0
-		fi
-		sleep 1
-	done
-	log "Timed out waiting for /data device ($fstab_src)"
-	return 1
+	sed -i '\#[[:space:]]/data[[:space:]]#d' /etc/fstab
+	echo "UUID=$uuid /data ext4 defaults,discard,nofail,x-systemd.device-timeout=5s 0 2" >>/etc/fstab
+	systemctl daemon-reload
+	mount /data
 }
 
 function cleanup {
@@ -292,11 +294,9 @@ function complete_pg_upgrade {
 	if [ -z "$IS_CI" ]; then
 		# Let udev finish detecting the vollume before mounting
 		udevadm settle --timeout=60 || true
-		wait_for_data_device
+		# Already mounted on a retry, or after a reboot through the rewritten fstab
+		mountpoint -q /data || mount_data_volume
 
-		retry 8 mount -a -v
-
-		# `nofail` in /etc/fstab makes `mount -a` exit with a code of 0 even when the volume is absent
 		# In the offchance of the volume not being mounted or detected, explicitly fail here
 		if ! mountpoint -q /data; then
 			log "FATAL: /data is not a mountpoint"
@@ -362,6 +362,14 @@ function complete_pg_upgrade {
 		retry 3 CI_stop_postgres || true
 		retry 3 CI_start_postgres
 	fi
+
+	log "5.2. Removing the pre-upgrade cluster"
+	# Its relation files are hard links shared with the new cluster (pg_upgrade --link), so this
+	# only frees the old catalog; not worth failing a live upgrade over
+	rm -rf /data/pgdata_old || {
+		log "WARNING: failed to remove /data/pgdata_old"
+		warnings=1
+	}
 
 	log "6. Starting vacuum analyze"
 	# A failed analyze is not worth failing the whole upgrade for; the status file already reads "complete" and the ERR trap would flip it to "failed"
@@ -506,10 +514,6 @@ else
 	CI_stop_postgres || true
 
 	rm -f /tmp/pg-upgrade-status
-	mv /data_migration /data
-
-	rm -rf /var/lib/postgresql/data
-	ln -s /data/pgdata /var/lib/postgresql/data
 
 	complete_pg_upgrade
 fi

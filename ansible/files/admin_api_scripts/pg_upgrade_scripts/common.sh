@@ -170,25 +170,54 @@ function ship_logs {
 			--data-binary @-
 }
 
-# Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade
-# store path onto / before the mounted data disk is touched, so a full root
-# partition otherwise fails the upgrade mid-flight instead of at the start.
+# Aborts if path (default /) has less than required_kb free. Nix realizes the
+# new pg_upgrade store path onto / before the data disk is touched, so a full
+# root partition otherwise fails the upgrade mid-flight instead of at the start.
 function check_free_space {
-	local required_kb=$1
+	local required_kb=$1 path=${2:-/}
 	local available_kb
 	# -P forces POSIX single-line output; plain `df -k` wraps onto a second
 	# line when the source device name is long, which would misalign NR==2.
-	available_kb=$(df -Pk / | awk 'NR==2 {print $4}')
+	available_kb=$(df -Pk "$path" | awk 'NR==2 {print $4}')
 
 	if ! [[ $available_kb =~ ^[0-9]+$ ]]; then
-		log "ERROR: could not determine free space on /; aborting upgrade."
+		log "ERROR: could not determine free space on $path; aborting upgrade."
 		return 1
 	fi
 
 	if ((available_kb < required_kb)); then
-		log "ERROR: only ${available_kb}KB free on / but ${required_kb}KB required; aborting upgrade."
+		log "ERROR: only ${available_kb}KB free on $path but ${required_kb}KB required; aborting upgrade."
 		return 1
 	fi
+}
+
+# Prints the block device of the EBS volume attached as /dev/<name> (e.g. xvdh), polling for up
+# to timeout_s (default 0: one look) for it to appear; returns 1 if it never does. ebsnvme-id
+# maps NVMe devices to their attachment name; hosts without it (pre Ubuntu 20.04) fall back to
+# the first disk that is neither the root disk nor mounted.
+function find_block_device {
+	local name=$1 timeout_s=${2:-0} deadline dev mapping
+	deadline=$((SECONDS + timeout_s))
+	while :; do
+		dev=""
+		if command -v ebsnvme-id >/dev/null 2>&1; then
+			for dev in $(lsblk -dprno name,type | awk '$2 == "disk" { print $1 }'); do
+				mapping=$(ebsnvme-id -b "$dev" 2>/dev/null || true)
+				[[ $mapping == "$name" || $mapping == "/dev/$name" ]] && break
+				dev=""
+			done
+		fi
+		if [ -z "$dev" ]; then
+			# NF==3: the mountpoint column is empty, so the device is not mounted anywhere
+			dev=$(lsblk -dprno name,size,mountpoint,type | awk '$NF == "disk" && $1 !~ /nvme0/ && NF == 3 { print $1; exit }' || true)
+		fi
+		if [ -n "$dev" ]; then
+			echo "$dev"
+			return 0
+		fi
+		((SECONDS < deadline)) || return 1
+		sleep 2
+	done
 }
 
 function retry {

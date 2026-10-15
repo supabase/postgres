@@ -71,7 +71,6 @@
     - { file: "check.sh" }
     - { file: "complete.sh" }
     - { file: "initiate.sh" }
-    - { file: "prepare.sh" }
     - { file: "pgsodium_getkey.sh" }
     - { file: "common.sh" }
 

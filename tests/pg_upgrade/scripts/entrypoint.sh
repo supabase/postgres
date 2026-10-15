@@ -12,6 +12,9 @@ cp "$SCRIPT_DIR/pg_upgrade_bin.tar.gz" /tmp/persistent
 pg_bindir=$(pg_config --bindir)
 export PATH=$pg_bindir:$PATH
 
+# The cluster has to live where initiate.sh upgrades it in place (see PGDATA in .env)
+sed -i "s|^data_directory = .*|data_directory = '/data/pgdata'|" /etc/postgresql/postgresql.conf
+
 sed -i "s/|--version//g" /usr/local/bin/docker-entrypoint.sh
 /usr/local/bin/docker-entrypoint.sh postgres --version || true
 

@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 
-## This script is run on the old (source) instance, mounting the data disk
-## of the newly launched instance, disabling extensions containing regtypes,
-## and running pg_upgrade.
+## This script is run on the old (source) instance, disabling extensions
+## containing regtypes and running pg_upgrade --link in place on its own data
+## volume, which the worker then moves to the newly launched instance.
 ## It reports the current status of the upgrade process to /tmp/pg-upgrade-status,
 ## which can then be subsequently checked through check.sh.
 
@@ -38,8 +38,12 @@ IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
-MOUNT_POINT="/data_migration"
+DATA_ROOT="/data"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
+# Set once pg_upgrade --link runs for real: from then on the old cluster shares its files with the
+# new one and must not be started again, so a failure is rolled back by the worker from the
+# snapshot it took before /initiate, not by restarting Postgres here.
+LINK_STARTED=""
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
@@ -106,15 +110,19 @@ cleanup() {
 		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
-	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
-		log "Copying pg_upgrade output to /var/log"
-		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
-		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
-		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		ship_logs "$LOG_FILE" || true
-		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
-		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
-	fi
+	# pg_upgrade writes into the new cluster's directory: pgdata_new until the swap, pgdata after
+	for output_dir in "$DATA_ROOT/pgdata_new" "$DATA_ROOT/pgdata"; do
+		if [ -d "$output_dir/pg_upgrade_output.d/" ]; then
+			log "Copying pg_upgrade output from $output_dir to /var/log"
+			cp -R "$output_dir/pg_upgrade_output.d/" /var/log/ || true
+			chown -R postgres:postgres /var/log/pg_upgrade_output.d/ || true
+			chmod -R 0750 /var/log/pg_upgrade_output.d/ || true
+			ship_logs "$LOG_FILE" || true
+			tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
+			ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
+			break
+		fi
+	done
 
 	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
 		rm "/usr/share/postgresql/${PGVERSION}"
@@ -128,26 +136,54 @@ cleanup() {
 		fi
 	fi
 
-	log "Restarting postgresql"
+	# Always, whatever happened: the worker restores a failed original from the snapshot and
+	# starts it, and Postgres has to come up with it
 	if [ -z "$IS_CI" ]; then
-		systemctl enable postgresql
-		retry 5 systemctl restart postgresql
-	else
-		CI_start_postgres
+		systemctl enable postgresql || log "WARNING: failed to re-enable the postgresql unit"
 	fi
 
-	retry 8 pg_isready -h localhost -U supabase_admin
+	# Only while the old cluster is still intact. Warn-only so a failing restore still flips the
+	# status to failed instead of leaving it stuck at running; the worker restores from the
+	# snapshot either way.
+	if [ "$UPGRADE_STATUS" = "failed" ] && [ -z "$LINK_STARTED" ]; then
+		restore_old_cluster || log "WARNING: failed to bring the old cluster back; the worker restores it from the snapshot"
+	fi
+
+	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
+
+	if [ -z "$IS_CI" ]; then
+		exit "$EXIT_CODE"
+	else
+		log "CI run complete with code ${EXIT_CODE}. Exiting."
+		exit "$EXIT_CODE"
+	fi
+}
+
+# Brings the untouched old cluster back into service after a failure before pg_upgrade --link ran.
+# Failures are tracked in rc rather than left to set -e: this is called as the left operand of
+# ||, which disables errexit for the whole body (see complete.sh's execute_patches).
+restore_old_cluster() {
+	local rc=0
+
+	log "Restarting postgresql"
+	if [ -z "$IS_CI" ]; then
+		retry 5 systemctl restart postgresql || rc=1
+	else
+		CI_start_postgres || rc=1
+	fi
+
+	retry 8 pg_isready -h localhost -U supabase_admin || rc=1
 
 	log "Re-enabling extensions"
 	if [ -f $POST_UPGRADE_EXTENSION_SCRIPT ]; then
-		retry 5 run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT
+		retry 5 run_sql -f $POST_UPGRADE_EXTENSION_SCRIPT || rc=1
 	fi
 
 	log "Removing SUPERUSER grant from postgres"
-	retry 5 run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
+	retry 5 run_sql -c "ALTER USER postgres WITH NOSUPERUSER;" || rc=1
 
 	log "Resetting postgres database connection limit"
-	retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;"
+	retry 5 run_sql -c "ALTER DATABASE postgres CONNECTION LIMIT -1;" || rc=1
 
 	log "Making sure postgres still has access to pg_shadow"
 	cat <<EOF >>$POST_UPGRADE_POSTGRES_PERMS_SCRIPT
@@ -162,25 +198,10 @@ grant pg_signal_backend to postgres;
 EOF
 
 	if [ -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT ]; then
-		retry 5 run_sql -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT
+		retry 5 run_sql -f $POST_UPGRADE_POSTGRES_PERMS_SCRIPT || rc=1
 	fi
 
-	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-		log "Unmounting data disk from ${MOUNT_POINT}"
-		# check_free_space (and other pre-mount failures) can trigger this trap before
-		# $MOUNT_POINT is ever mounted. Without || true, set -e aborts cleanup() right here
-		# under retry's non-zero exit, so UPGRADE_STATUS is never written and the status file
-		# is stuck at "running" forever instead of reporting the real failure.
-		retry 3 umount $MOUNT_POINT || true
-	fi
-	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
-
-	if [ -z "$IS_CI" ]; then
-		exit "$EXIT_CODE"
-	else
-		log "CI run complete with code ${EXIT_CODE}. Exiting."
-		exit "$EXIT_CODE"
-	fi
+	return $rc
 }
 
 function handle_extensions {
@@ -245,7 +266,6 @@ function initiate_upgrade {
 	# 2 GiB: enough headroom for the Nix store realize onto / (see check_free_space)
 	check_free_space $((2 * 1024 * 1024))
 
-	mkdir -p "$MOUNT_POINT"
 	SHARED_PRELOAD_LIBRARIES=$(grep '^[[:space:]]*shared_preload_libraries' "$POSTGRES_CONFIG_PATH" | sed "s/shared_preload_libraries =\s\{0,1\}'\(.*\)'.*/\1/")
 
 	# Wrappers officially launched in PG15; PG14 version is incompatible
@@ -277,6 +297,27 @@ function initiate_upgrade {
 
 	PGDATAOLD=$(grep '^[[:space:]]*data_directory' "$POSTGRES_CONFIG_PATH" | sed "s/data_directory = '\(.*\)'.*/\1/")
 
+	# Older AMIs point data_directory at the /var/lib/postgresql/data symlink; the directory swap
+	# after pg_upgrade needs the real path on the data volume
+	PGDATAOLD_REAL=$(readlink -f "$PGDATAOLD")
+	if [ "$PGDATAOLD_REAL" != "$DATA_ROOT/pgdata" ]; then
+		log "ERROR: data_directory $PGDATAOLD resolves to $PGDATAOLD_REAL, expected $DATA_ROOT/pgdata; aborting upgrade."
+		false
+	fi
+	if [ -e "$DATA_ROOT/pgdata_old" ]; then
+		log "ERROR: $DATA_ROOT/pgdata_old exists: an earlier in-place upgrade left this volume in an unknown state; aborting upgrade."
+		false
+	fi
+	# A worker still running the copy-mode flow attaches the new instance's volume here and
+	# expects the upgrade to land on it; fail before touching anything instead
+	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ] && find_block_device xvdp >/dev/null; then
+		log "ERROR: a migration volume is attached at xvdp, but these scripts upgrade in place; aborting upgrade."
+		false
+	fi
+	# 1 GiB on the data volume: --link shares the relation files, but initdb and the new catalog
+	# still need room
+	check_free_space $((1024 * 1024)) "$DATA_ROOT"
+
 	# Check if old cluster has data checksums enabled
 	CHECKSUM_VERSION=$("$PGBINOLD/pg_controldata" "$PGDATAOLD" | grep -i checksum | awk '{print $NF}')
 	if [ "$CHECKSUM_VERSION" != "0" ]; then
@@ -285,7 +326,7 @@ function initiate_upgrade {
 		CHECKSUM_FLAG=""
 	fi
 
-	PGDATANEW="$MOUNT_POINT/pgdata"
+	PGDATANEW="$DATA_ROOT/pgdata_new"
 
 	# running upgrade using at least 1 cpu core
 	WORKERS=$(nproc | awk '{ print ($1 == 1 ? 1 : $1 - 1) }')
@@ -463,59 +504,6 @@ EXTRA_NIX_CONF
 	fi
 	locale-gen
 
-	if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-		# DATABASE_UPGRADE_DATA_MIGRATION_DEVICE_NAME = '/dev/xvdp' can be derived from the worker mount
-		log "5. Determining block device to mount"
-		# lsb release
-		UBUNTU_VERSION=$(lsb_release -rs)
-		# install amazon disk utilities if not present on 24.04
-		if [ "${UBUNTU_VERSION}" = "24.04" ] && ! /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
-			apt-get -o DPkg::Lock::Timeout=600 update
-			apt-get -o DPkg::Lock::Timeout=600 install -y amazon-ec2-utils || true
-		fi
-		if command -v ebsnvme-id >/dev/null 2>&1 && /usr/bin/dpkg-query -W amazon-ec2-utils >/dev/null 2>&1; then
-			for nvme_dev in $(lsblk -dprno name,size,mountpoint,type | grep disk | awk '{print $1}'); do
-				if [ -b "$nvme_dev" ]; then
-					mapping=$(ebsnvme-id -b "$nvme_dev" 2>/dev/null)
-					if [[ $mapping == "xvdp" || $mapping == "/dev/xvdp" ]]; then
-						BLOCK_DEVICE="$nvme_dev"
-						break
-					fi
-				fi
-			done
-		fi
-
-		# Fallback to lsblk if ebsnvme-id is not available or no mapping found, pre ubuntu 20.04
-		if [ -z "${BLOCK_DEVICE:-}" ]; then
-			log "No block device found using ebsnvme-id, falling back to lsblk"
-			# awk NF==3 prints lines with exactly 3 fields, which are the block devices currently not mounted anywhere
-			# excluding nvme0 since it is the root disk
-			BLOCK_DEVICE=$(lsblk -dprno name,size,mountpoint,type | grep "disk" | grep -v "nvme0" | awk 'NF==3 { print $1; exit }') # exit ensures we grab the first only
-		fi
-
-		log "Block device found: $BLOCK_DEVICE"
-
-		mkdir -p "$MOUNT_POINT"
-		log "6. Mounting block device"
-
-		sleep 5
-		e2fsck -pf "$BLOCK_DEVICE"
-
-		sleep 1
-		mount "$BLOCK_DEVICE" "$MOUNT_POINT"
-
-		sleep 1
-		resize2fs "$BLOCK_DEVICE"
-	else
-		mkdir -p "$MOUNT_POINT"
-	fi
-
-	if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
-		cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
-		chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
-		chmod 600 /etc/postgresql-custom/pgsodium_root.key
-	fi
-
 	log "7. Disabling extensions and generating post-upgrade script"
 	handle_extensions
 
@@ -540,8 +528,8 @@ EXTRA_NIX_CONF
 	fi
 
 	log "9. Creating new data directory, initializing database"
-	chown -R postgres:postgres "$MOUNT_POINT/"
-	rm -rf "${PGDATANEW:?}/"
+	rm -rf "${PGDATANEW:?}"
+	install -d -o postgres -g postgres -m 0750 "$PGDATANEW"
 
 	if [ "$IS_NIX_UPGRADE" = "true" ]; then
 		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
@@ -586,7 +574,7 @@ $(cat /etc/postgresql/pg_hba.conf)" >/etc/postgresql/pg_hba.conf
     --old-datadir=${PGDATAOLD} \
     --new-datadir=${PGDATANEW} \
     --username=supabase_admin \
-    --jobs="${WORKERS}" -r \
+    --jobs="${WORKERS}" -k -r \
     --old-options="-c config_file=$TMP_CONFIG" \
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
@@ -620,6 +608,7 @@ EOF
 		CI_stop_postgres
 	fi
 
+	LINK_STARTED=true
 	# Start the old PostgreSQL instance with version-specific options
 	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
@@ -627,22 +616,30 @@ EOF
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	fi
 
+	# The new cluster takes the old one's place on the volume; complete.sh removes pgdata_old on
+	# the new instance once it is up
+	log "10.1. Swapping the new cluster into $PGDATAOLD_REAL"
+	mv "$PGDATAOLD_REAL" "$DATA_ROOT/pgdata_old"
+	mv "$PGDATANEW" "$PGDATAOLD_REAL"
+
 	# copying custom configurations
 	log "11. Copying custom configurations"
-	mkdir -p "$MOUNT_POINT/conf"
-	cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
+	# Stale from the volume's last copy-mode upgrade, when it was the migration target
+	rm -rf "$DATA_ROOT/conf" "$DATA_ROOT/sql"
+	mkdir -p "$DATA_ROOT/conf"
+	cp -R /etc/postgresql-custom/* "$DATA_ROOT/conf/"
 	# removing supautils config as to allow the latest one provided by the latest image to be used
-	rm -f "$MOUNT_POINT/conf/supautils.conf" || true
-	rm -rf "$MOUNT_POINT/conf/extension-custom-scripts" || true
+	rm -f "$DATA_ROOT/conf/supautils.conf" || true
+	rm -rf "$DATA_ROOT/conf/extension-custom-scripts" || true
 
 	# removing wal-g config as to allow it to be explicitly enabled on the new instance
-	rm -f "$MOUNT_POINT/conf/wal-g.conf"
+	rm -f "$DATA_ROOT/conf/wal-g.conf"
 
 	# copy sql files generated by pg_upgrade
 	log "12. Copying sql files generated by pg_upgrade"
-	mkdir -p "$MOUNT_POINT/sql"
-	cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
-	chown -R postgres:postgres "$MOUNT_POINT/sql/"
+	mkdir -p "$DATA_ROOT/sql"
+	cp /tmp/pg_upgrade/*.sql "$DATA_ROOT/sql/" || true
+	chown -R postgres:postgres "$DATA_ROOT/sql/"
 
 	log "13. Cleaning up"
 	cleanup "complete"
