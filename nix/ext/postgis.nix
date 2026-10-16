@@ -21,10 +21,18 @@
   writeShellApplication,
   coreutils,
   sfcgal,
+  boost,
+  cgal,
+  icu75,
   latestOnly ? false,
 }:
 
 let
+  boostIcu75 = boost.override { icu = icu75; };
+  sfcgalIcu75 = sfcgal.override {
+    boost = boostIcu75;
+    cgal = cgal.override { boost = boostIcu75; };
+  };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
   pname = "postgis";
 
@@ -121,7 +129,7 @@ let
         json_c
         protobufc
         pcre2.dev
-        sfcgal
+        sfcgalIcu75
       ]
       ++ lib.optional stdenv.isDarwin libiconv;
       nativeBuildInputs = [
