@@ -6,7 +6,7 @@ The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are de
 
 ## Publish
 
-`ami-release-nix.yml` uploads each store path as a string to the public artifacts bucket, in the object `nix-catalog/<sha>-site-env-<major>-<system>`. Release branches also upload the git sha as a string to `latest-site-env-<major>-<system>.sha`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`.
+`ami-release-nix.yml` uploads each store path as a string to the shared artifacts bucket, in the object `nix-catalog/<sha>-site-env-<major>-<system>`. Release branches also upload the git sha as a string to `latest-site-env-<major>-<system>.sha`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`.
 
 ## Update
 
