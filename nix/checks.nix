@@ -204,7 +204,6 @@
                 "pg_partman"
                 "pg_repack"
                 "pg_tle"
-                "pg_tle_dependencies"
                 "pgtap"
                 "pgmq"
                 "pgroonga"
@@ -221,10 +220,6 @@
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
                 "amcheck" # needs the postgres/anon/authenticated/service_role roles and the default privileges from the full migrations, plus amcheck primed by prime.sql
-                "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
-                "btree_gist_nan" # needs btree_gist, not in the CLI prime file
-                "hstore_copy_binary" # needs hstore
-                "pgrst_watch_triggers" # needs dblink, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
@@ -261,23 +256,24 @@
                 "pipefail"
               ];
               runtimeInputs = with pkgs; [
-                bash
                 coreutils
-                getkey-script
-                netcat
+                bash
                 perl
-                pg_isolation_regress
+                pgpkg
                 pg_prove
                 pg_regress
-                pgpkg
+                pg_isolation_regress
                 procps
-                python3
                 start-postgres-server-bin
-                supabase-groonga
                 which
+                getkey-script
+                supabase-groonga
+                python3
+                netcat
               ];
 
               text = ''
+
                 #shellcheck disable=SC1091
                 source ${bashlog}
                 #shellcheck disable=SC1091
@@ -369,48 +365,44 @@
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey" \
                   --subst-var-by PRELOAD_LIBRARIES "$PRELOAD_LIBRARIES"
-
-                # Check if postgresql.conf exists
-                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-                  log error "postgresql.conf is missing!"
-                  exit 1
-                fi
-
                 {
                   echo "listen_addresses = '127.0.0.1'"
                   echo "port = ${pgPort}"
-
-                  echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
-                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'"
                   echo "session_preload_libraries = 'supautils'"
+                  echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
                 } >> "$PGTAP_CLUSTER"/postgresql.conf
+                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
+                log info "Checking shared_preload_libraries setting:"
+                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
 
                 # Configure OrioleDB if running orioledb-17 check
                 if ${lib.boolToString isOrioleDB}; then
                   log info "Configuring OrioleDB..."
-
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
+                  # orioledb-17 is pinned to 17.11+, which added output_plugin_libraries
+                  # as an allow-list for logical decoding output plugins.
+                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" >> "$PGTAP_CLUSTER/postgresql.conf"
                 fi
 
-                log info "Checking shared_preload_libraries setting:"
-                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
-
-                log info "Configuring local auth"
-                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
+                # Check if postgresql.conf exists
+                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
+                    log error "postgresql.conf is missing!"
+                    exit 1
+                fi
 
                 # PostgreSQL startup
                 if [[ "$(uname)" == "Darwin" ]]; then
-                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
+                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
                 else
-                  mkdir -p "$PGTAP_CLUSTER/sockets"
-                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
+                mkdir -p "$PGTAP_CLUSTER/sockets"
+                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
                 fi || {
-                  log error "pg_ctl failed to start PostgreSQL"
-                  log error "Contents of postgresql.log:"
-                  cat "$PGTAP_CLUSTER"/postgresql.log
-                  exit 1
+                log error "pg_ctl failed to start PostgreSQL"
+                log error "Contents of postgresql.log:"
+                cat "$PGTAP_CLUSTER"/postgresql.log
+                exit 1
                 }
 
                 log info "Waiting for PostgreSQL to be ready..."
@@ -925,12 +917,10 @@
             ;
           devShell = self'.devShells.default;
         }
-        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
-          import ./ext/tests {
-            inherit self;
-            inherit pkgs;
-          }
-        )
+        // (import ./ext/tests {
+          inherit self;
+          inherit pkgs;
+        })
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug

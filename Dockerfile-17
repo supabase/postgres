@@ -152,6 +152,7 @@ RUN sed -i \
 # Remove timescaledb and plv8 references (not in pg17)
 RUN sed -i 's/ timescaledb,//g;' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/db_user_namespace = off/#db_user_namespace = off/g;' "/etc/postgresql/postgresql.conf" && \
+    sed -i 's/^#summarize_wal = off/summarize_wal = on/' "/etc/postgresql/postgresql.conf" && \
     sed -i 's/ timescaledb,//g; s/ plv8,//g' "/etc/postgresql-custom/supautils.conf"
 
 # Include schema migrations
