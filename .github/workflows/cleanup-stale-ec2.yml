@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ matrix.region }}
@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload summary
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: cleanup-summary-${{ matrix.region }}
           path: ${{ runner.temp }}/summary.txt
@@ -61,13 +61,13 @@ jobs:
 
     steps:
       - name: Checkout scripts
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v6.0.1
         with:
           sparse-checkout: ci
           persist-credentials: false
 
       - name: Download summaries
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v4.3.0
         with:
           pattern: cleanup-summary-*
           path: summaries
@@ -96,7 +96,7 @@ jobs:
           ci/build-slack-payload.sh summaries/*/summary.txt | tee "$RUNNER_TEMP/payload.json"
 
       - name: Slack Notification
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           webhook-type: incoming-webhook
