@@ -19,11 +19,21 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - name: Configure AWS credentials
+      - name: GitHub OIDC Auth
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
-          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
+          role-session-name: shared-services-jump
+
+      - name: Assume destination role
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::279559813984:role/supabase-nix-catalog-artifacts-role-6387512
+          role-skip-session-tagging: true
+          role-session-name: upload-assets
+          role-chaining: true
 
       - name: Install nix
         uses: ./.github/actions/nix-install-ephemeral
