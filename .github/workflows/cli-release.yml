@@ -31,7 +31,7 @@ jobs:
             arch: linux-arm64
     steps:
       - name: Checkout repository
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Nix
         uses: $/.github/actions/nix-install-ephemeral
