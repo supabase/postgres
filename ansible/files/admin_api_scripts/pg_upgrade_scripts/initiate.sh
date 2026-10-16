@@ -10,10 +10,11 @@
 # Running an upgrade with these extensions enabled will result in errors due to
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"pg_backtrace"
 	"pg_graphql"
 	"pg_stat_monitor"
-	"pg_backtrace"
-	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"plpgsql_check" # old versioned library clashes with the preloaded new one
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -400,7 +401,7 @@ EXTRA_NIX_CONF
 
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-store -r --quiet "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi

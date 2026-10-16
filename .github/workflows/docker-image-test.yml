@@ -86,19 +86,19 @@ jobs:
         if: ${{ matrix.target == '' }}
         run: |
           echo "=== Image Size Analysis for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#image-size-analyzer -- --image Dockerfile-${{ matrix.name }} --no-build
+          nix run .#image-size-analyzer -- --image Dockerfile-${{ matrix.name }} --no-build
 
       - name: Run Docker image tests
         if: ${{ matrix.target == '' }}
         run: |
           echo "=== Running tests for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#docker-image-test -- --no-build Dockerfile-${{ matrix.name }}
+          nix run .#docker-image-test -- --no-build Dockerfile-${{ matrix.name }}
 
       - name: Run multigres Docker image tests
         if: ${{ matrix.target != '' }}
         run: |
           echo "=== Running tests for ${{ matrix.name }} ==="
-          nix run --accept-flake-config .#docker-image-test -- --no-build --target ${{ matrix.target }} ${{ matrix.dockerfile }}
+          nix run .#docker-image-test -- --no-build --target ${{ matrix.target }} ${{ matrix.dockerfile }}
 
       - name: Show container logs on failure
         if: failure()

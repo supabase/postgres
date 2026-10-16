@@ -371,6 +371,7 @@ in
     }
   '';
   passthru = {
+    perVersion = packagesAttrSet;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     pname = "${pname}";
