@@ -30,7 +30,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404-arm
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install Nix
         uses: $/.github/actions/nix-install-ephemeral
@@ -60,7 +60,7 @@ jobs:
           fi
 
       - name: Find existing dependency comment
-        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
+        uses: peter-evans/find-comment@v4.0.0
         id: fc-dep
         if: github.event_name == 'pull_request'
         with:
@@ -69,7 +69,7 @@ jobs:
           body-includes: "<!-- dependency-diff-analysis -->"
 
       - name: Create or update dependency comment
-        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        uses: peter-evans/create-or-update-comment@v5.0.0
         if: github.event_name == 'pull_request'
         with:
           comment-id: ${{ steps.fc-dep.outputs.comment-id }}
@@ -82,7 +82,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install Nix
         uses: $/.github/actions/nix-install-ephemeral
@@ -112,7 +112,7 @@ jobs:
           fi
 
       - name: Find existing extension comment
-        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
+        uses: peter-evans/find-comment@v4.0.0
         id: fc-ext
         if: github.event_name == 'pull_request'
         with:
@@ -121,7 +121,7 @@ jobs:
           body-includes: "<!-- extension-diff-analysis -->"
 
       - name: Create or update extension comment
-        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        uses: peter-evans/create-or-update-comment@v5.0.0
         if: github.event_name == 'pull_request'
         with:
           comment-id: ${{ steps.fc-ext.outputs.comment-id }}
