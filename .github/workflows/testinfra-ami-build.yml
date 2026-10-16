@@ -44,10 +44,8 @@ jobs:
         postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
         target:
           - arch: amd64
-            instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
           - arch: arm64
-            instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
@@ -69,7 +67,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
@@ -77,7 +74,6 @@ jobs:
         uses: ./.github/actions/nix-install-ephemeral
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
@@ -91,14 +87,10 @@ jobs:
         id: build-ami
         uses: ./.github/actions/build-ami
         with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
-          ami_regions: '["${{ env.AWS_REGION }}"]'
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
-          postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
+          postgres_major_version: ${{ matrix.postgres_version }}
 
       - name: Save AMI disk usage
         env:
@@ -136,7 +128,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()

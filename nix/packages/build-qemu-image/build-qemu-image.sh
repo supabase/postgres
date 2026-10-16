@@ -57,7 +57,7 @@ cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
 export LC_ALL=C.UTF-8
 export TZ=UTC
-packer init qemu.pkr.hcl
+packer init packer/qemu.pkr.hcl
 PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "arch=$arch" \
 	-var "cpu=$cpu" \
@@ -67,4 +67,4 @@ PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
 	-var "workdir=$workdir" \
-	qemu.pkr.hcl
+	packer/qemu.pkr.hcl

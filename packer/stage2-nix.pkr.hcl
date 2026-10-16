@@ -1,35 +1,25 @@
-variable "region" {
+variable "ami_name" {
   type = string
 }
 
-variable "ami_name" {
-  type    = string
-  default = "supabase-postgres"
-}
-
-variable "postgres-version" {
-  type    = string
-  default = ""
-}
-
 variable "git-head-version" {
-  type    = string
-  default = "unknown"
+  type = string
+}
+
+variable "packages_git_sha" {
+  type = string
 }
 
 variable "packer-execution-id" {
-  type    = string
-  default = "unknown"
-}
-
-variable "git_sha" {
-  type    = string
-  default = env("GIT_SHA")
+  type = string
 }
 
 variable "postgres_major_version" {
-  type    = string
-  default = ""
+  type = string
+}
+
+variable "postgres-version" {
+  type = string
 }
 
 variable "source_ami" {
@@ -37,9 +27,26 @@ variable "source_ami" {
   description = "Source AMI ID from stage 1"
 }
 
+# These come from $arch.vars.pkr.hcl, don't need to pass in explicitly
+variable "arch" {
+  type        = string
+  description = "Ubuntu image arch suffix (amd64|arm64), used to build the source AMI filter"
+}
+
+variable "instance_arch" {
+  type        = string
+  description = "AWS AMI architecture (x86_64|arm64)"
+}
+
 variable "instance_type" {
+  type        = string
+  description = "EC2 instance type used for the build instance"
+}
+
+# defined as variable because packer doesn't allow env() directly, not meant to be passed in
+variable "region" {
   type    = string
-  default = "c6g.4xlarge"
+  default = env("AWS_REGION")
 }
 
 packer {
@@ -55,10 +62,10 @@ packer {
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "${var.ami_name}-${var.postgres-version}"
+  ami_name      = var.ami_name
   instance_type = var.instance_type
-  region        = "${var.region}"
-  source_ami    = "${var.source_ami}"
+  region        = var.region
+  source_ami    = var.source_ami
 
   communicator = "ssh"
   ssh_pty      = true
@@ -89,25 +96,25 @@ source "amazon-ebs" "ubuntu" {
   run_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
     supaCreatedAt     = timestamp()
   }
   run_volume_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   snapshot_tags = {
     creator           = "packer"
     appType           = "postgres"
-    packerExecutionId = "${var.packer-execution-id}"
+    packerExecutionId = var.packer-execution-id
   }
   tags = {
     creator           = "packer"
     appType           = "postgres"
-    postgresVersion   = "${var.postgres-version}"
-    sourceSha         = "${var.git-head-version}"
-    packerExecutionId = "${var.packer-execution-id}"
+    postgresVersion   = var.postgres-version
+    sourceSha         = var.git-head-version
+    packerExecutionId = var.packer-execution-id
   }
 }
 
@@ -139,11 +146,11 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "GIT_SHA=${var.git_sha}",
+      "GIT_SHA=${var.packages_git_sha}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file = true
-    script           = "ebssurrogate/scripts/nix-provision.sh"
+    script           = "packer/scripts/nix-provision.sh"
     execute_command  = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
   }
 
