@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
       - name: Set PostgreSQL versions
         id: set-versions
         run: |
@@ -35,11 +35,11 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 

@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
       - name: Generate build matrix
         id: set-matrix
         run: |
@@ -75,7 +75,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
       
@@ -100,7 +100,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
       - run: docker context create builders
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
@@ -162,7 +162,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -209,7 +209,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: $/.github/actions/nix-install-ephemeral
 
       - name: Debug Input from Prepare
         run: |
@@ -276,7 +276,7 @@ jobs:
         id-token: write
       strategy:
         matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
-      uses: ./.github/workflows/mirror.yml
+      uses: $/.github/workflows/mirror.yml
       with:
         version: ${{ matrix.version }}
       secrets: inherit

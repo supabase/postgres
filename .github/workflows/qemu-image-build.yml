@@ -67,7 +67,7 @@ jobs:
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/nix-install-ephemeral
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
