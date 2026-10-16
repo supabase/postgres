@@ -1,0 +1,5 @@
+---
+postgres_release:
+  postgresorioledb-17: "17.11.0.004-orioledb-mmlb0"
+  postgres17: "17.11.0.004-mmlb0"
+  postgres15: "15.19.0.004-mmlb0"
