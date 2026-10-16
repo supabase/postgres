@@ -25,9 +25,33 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 
 ```sh
 nix-env --profile /nix/var/nix/profiles/site --rollback
+/nix/var/nix/profiles/site/bin/activate
 ```
 
-Rollback switches to the previous generation. `site-nix-gc` keeps one.
+Rollback switches to the previous generation. `activate` then runs from that generation and makes the machine match it. There is no separate rollback script.
+
+`site-nix-gc` keeps the current generation and one older one. To go further back, install an older version by path.
+
+New sessions load supautils from the rolled-back profile. Open sessions keep the copy they loaded until they reconnect. Postgres does not restart. A restart applies the change to every session at once.
+
+## Install any version by path
+
+```sh
+nix-env --profile /nix/var/nix/profiles/site --set <older store path>
+/nix/var/nix/profiles/site/bin/activate
+```
+
+This is the way to roll back past the one kept generation. It is the same as an update with an older path.
+
+## What `activate` may do
+
+`activate` must be idempotent, and the previous generation's `activate` must be able to converge the machine back. A step is allowed when:
+
+1. It links through the profile path, such as `/nix/var/nix/profiles/site/lib/…`. The link follows the profile and needs no undo.
+2. It is harmless when it dangles after a rollback to a profile that lacks the target.
+3. Otherwise it has its own undo, decided case by case. Treat any such step as a flag in review.
+
+The roundtrip test compares a manifest before the update and after the rollback. A step that breaks these rules fails it.
 
 ## Test
 
