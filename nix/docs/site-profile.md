@@ -1,6 +1,6 @@
 # Site profile
 
-The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are deployed to `/nix/var/nix/profiles/site`. They hold supautils, and `activate`.
+The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are deployed to `/nix/var/nix/profiles/site`. They hold supautils, `activate`, and `site-nix-gc`.
 
 `dynamic_library_path` in `postgresql.conf` includes `/nix/var/nix/profiles/site/lib/postgresql` first, then `$libdir`. supautils also remains in `$libdir`, pending cleanup.
 
@@ -19,6 +19,8 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 
 `activate` runs after the switch. It sets up supautils, and gatekeeper where present, idempotently. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
+`site-nix-gc` keeps the current generation and one older one for the site, postgres, and default profiles. It then runs `nix-store --gc` to completion. With systemd it runs in a throttled transient unit. Without systemd it runs under `nice` and `ionice`.
+
 ## Roll back
 
 ```sh
@@ -28,7 +30,7 @@ nix-env --profile /nix/var/nix/profiles/site --rollback
 
 Rollback switches to the previous generation. `activate` then runs from that generation and makes the machine match it. There is no separate rollback script.
 
-To go further back than the previous generation, install an older version by path.
+`site-nix-gc` keeps the current generation and one older one. To go further back, install an older version by path.
 
 New sessions load supautils from the rolled-back profile. Open sessions keep the copy they loaded until they reconnect. Postgres does not restart. A restart applies the change to every session at once.
 
