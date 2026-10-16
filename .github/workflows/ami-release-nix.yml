@@ -31,7 +31,7 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -79,7 +79,7 @@ jobs:
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
         with:
           push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}
@@ -88,13 +88,13 @@ jobs:
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Build AMI
         id: build-ami
-        uses: ./.github/actions/build-ami
+        uses: $/.github/actions/build-ami
         with:
           ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
           ami_regions: '["${{ env.AWS_REGION }}"]'

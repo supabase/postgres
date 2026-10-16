@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/install-nix
+      - uses: $/.github/actions/install-nix
       - name: Set PostgreSQL versions
         id: set-versions
         env:
@@ -55,7 +55,7 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/install-nix
+      - uses: $/.github/actions/install-nix
 
       - name: Grab release version
         id: process_release_version
@@ -110,7 +110,7 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/install-nix
+      - uses: $/.github/actions/install-nix
 
       - name: Grab release version
         id: process_release_version

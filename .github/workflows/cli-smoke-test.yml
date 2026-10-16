@@ -26,11 +26,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Check Docker image changes
         id: check
-        uses: ./.github/actions/check-docker-image-changes
+        uses: $/.github/actions/check-docker-image-changes
         with:
           event_name: ${{ github.event_name }}
           base_ref: ${{ github.base_ref }}
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Create Docker context
         run: docker context create builders
