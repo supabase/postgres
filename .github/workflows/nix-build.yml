@@ -231,7 +231,7 @@ jobs:
       - checks-aarch64-darwin
       - checks-aarch64-linux
       - checks-x86_64-linux
-    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through 
+    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through
     # not sure what GH's thinking is there that skipped == passed for the branch protection rule...
     # insert Mr Incredible meme -> pass is pass, skipped is not passed, PR should not merge
     if: always()
@@ -264,6 +264,10 @@ jobs:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
+  qemu:
+    needs: builds-aarch64-linux
+    uses: $/.github/workflows/qemu-image-build.yml
+
   check:
     name: Nix CI ✅
     if: always()
@@ -272,6 +276,7 @@ jobs:
       - amis
       - checks
       - containers
+      - qemu
       - schema
     steps:
       - name: Check dependent job results
