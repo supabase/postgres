@@ -4,6 +4,9 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+# shellcheck source=/dev/null
+source /tmp/provision-common.sh
+
 #################
 # stage1 things #
 #################
@@ -42,17 +45,6 @@ function setup_apt {
 	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
 }
 
-function cleanup_apt {
-	apt-get clean
-	apt-get autoremove --purge --yes
-	rm -rf /var/lib/apt/lists/*
-}
-
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get dist-upgrade --yes
-}
-
 function waitfor_boot_finished {
 	# Wait for cloudinit on the surrogate to complete before making progress
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
@@ -81,21 +73,8 @@ function install_packages {
 }
 
 function execute_playbook {
-	sed -i 's/- hosts: all/- hosts: localhost/' ansible/playbook.yml
-
-	mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<-EOF
-		[defaults]
-		callbacks_enabled = timer, profile_tasks, profile_roles
-	EOF
-
-	# Run Ansible playbook
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/mnt/tmp
-	ansible-playbook ./ansible/playbook.yml --extra-vars '{"stage2": false, "qemu": true}' \
-		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+	run_playbook ./ansible/playbook.yml /mnt/tmp false true \
 		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
@@ -129,36 +108,9 @@ function setup_locale {
 # stage2 things #
 #################
 
-function install_nix() {
-	curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
-		cat <<-EOF
-			extra-experimental-features = nix-command flakes
-			extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-			extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
-		EOF
-	)
-
-	# shellcheck disable=SC1091
-	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-	nix --version
-}
-
 function execute_stage2_playbook {
-	mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<-EOF
-		[defaults]
-		callbacks_enabled = timer, profile_tasks, profile_roles
-	EOF
-
-	# Run Ansible playbook
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
-	ansible-playbook ./ansible/playbook.yml \
-		--extra-vars '{"stage2": true, "qemu": true}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
+	run_playbook ./ansible/playbook.yml /tmp true true \
 		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
@@ -225,23 +177,6 @@ function clean_system {
 		echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
 		exit 1
 	fi
-}
-
-function clean_nix {
-	nix-collect-garbage -d
-	nix-store --optimise -v
-}
-
-function report_packages {
-	# shellcheck disable=SC2016
-	dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
-	find /nix/store -maxdepth 1 | LC_COLLATE=C.UTF-8 sort -t- -k2
-}
-
-function report_disk_usage {
-	read -r dub _ < <(du -sx -B1 /)
-	read -r duh _ < <(du -sx -h /)
-	printf '::notice::disk_usage bytes=%s human=%s\n' "$dub" "$duh" | tee -a /tmp/ansible.log
 }
 
 #################
