@@ -26,32 +26,36 @@
           '';
         };
 
-      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc, in a throttled transient systemd unit where systemd exists and under nice and ionice otherwise.
+      # Prunes old generations, then runs nix-store --gc. Throttled by a transient systemd unit, or by nice and ionice without systemd.
       site-nix-gc = writeHostBash "site-nix-gc" ''
-        nix-env --profile /nix/var/nix/profiles/site --delete-generations +2
-        nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
+        prune() { nix-env --profile "$1" --delete-generations +2; }
+        prune /nix/var/nix/profiles/site
+        prune /nix/var/nix/profiles/default
         if [[ -L /var/lib/postgresql/.nix-profile ]]; then
-          nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2
+          prune "$(readlink /var/lib/postgresql/.nix-profile)"
         fi
+
         export NIX_REMOTE=local
         gc=("$(command -v nix-store)" --gc --quiet)
-        if [[ ! -d /run/systemd/system ]]; then
-          throttle=(nice -n 19)
-          if command -v ionice >/dev/null; then throttle+=(ionice -c 3); fi
-          exec "''${throttle[@]}" "''${gc[@]}"
+
+        if [[ -d /run/systemd/system ]]; then
+          if systemctl is-active --quiet site-nix-gc; then
+            echo "Garbage collection already running."
+            exit 0
+          fi
+          systemd-run \
+            --unit=site-nix-gc --collect --no-block --setenv=NIX_REMOTE=local \
+            -p Nice=19 -p CPUSchedulingPolicy=idle -p CPUQuota=20% \
+            -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
+            -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
+            -p RuntimeMaxSec=2h \
+            "''${gc[@]}" && exit 0
+          echo "systemd-run failed. Running in the foreground."
         fi
-        if systemctl is-active --quiet site-nix-gc; then
-          echo "Garbage collection already running. Skipping nix-store --gc."
-          exit 0
-        fi
-        systemd-run \
-          --unit=site-nix-gc --collect --no-block --setenv=NIX_REMOTE=local \
-          -p Nice=19 -p CPUSchedulingPolicy=idle -p CPUQuota=20% \
-          -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
-          -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
-          -p RuntimeMaxSec=2h \
-          "''${gc[@]}" \
-          || echo "systemd-run failed. Skipping nix-store --gc."
+
+        throttle=(nice -n 19)
+        command -v ionice >/dev/null && throttle+=(ionice -c 3)
+        exec "''${throttle[@]}" "''${gc[@]}"
       '';
 
       makeSiteEnv =
