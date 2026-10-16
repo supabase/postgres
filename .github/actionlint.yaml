@@ -1,3 +1,8 @@
+paths: # https://github.com/rhysd/actionlint/issues/711
+  .github/*/*.yml:
+    ignore:
+      - 'reusable workflow call "\$/\.github/workflows/[a-z0-9-]+\.yml" at "uses" is not following the format'
+      - 'specifying action "\$/\.github/actions/[a-z0-9-]+" in invalid format'
 self-hosted-runner:
   labels:
     - aarch64-darwin

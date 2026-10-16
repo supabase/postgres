@@ -28,7 +28,7 @@ jobs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
         uses: $/.github/actions/install-nix
@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Debug AWS role secret
         run: |
@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -136,7 +136,7 @@ jobs:
           tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -148,7 +148,7 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/upgrade_bundle.tar.gz"
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -160,14 +160,14 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/upgrade_bundle.tar.gz"
 
       - name: GitHub OIDC Auth
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
           role-session-name: shared-services-jump
 
       - name: Assume destination role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-nix-catalog-artifacts-role-6387512
@@ -204,7 +204,7 @@ jobs:
           echo "Catalog uploaded to ${CATALOG_S3}"
 
       - name: Create release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        uses: softprops/action-gh-release@v3.0.3
         with:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
@@ -245,7 +245,7 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@33ca3be66c6f378fe1610fd1d5258632dbed5e58 # v2.4.0
+        uses: rtCamp/action-slack-notify@v2.4.0
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           SLACK_USERNAME: 'gha-failures-notifier'
@@ -255,7 +255,7 @@ jobs:
 
       - name: Configure AWS credentials for cleanup
         if: always()
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}

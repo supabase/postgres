@@ -18,9 +18,9 @@ jobs:
       postgrest_release: ${{ steps.args.outputs.result }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
       - id: args
-        uses: mikefarah/yq@504fc38780cc46be8444ea1b72fb55919fc0bfb0 # v4.54.1
+        uses: mikefarah/yq@v4.54.1
         with:
           cmd: yq '.postgrest_release' 'ansible/vars.yml'
 

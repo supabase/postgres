@@ -16,13 +16,13 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
       - name: Merging migration files
         run: cat $(ls -1) > ../migration-output.sql
         working-directory: ${{ github.workspace }}/migrations/db/migrations
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: "us-east-1"

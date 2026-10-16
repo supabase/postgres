@@ -14,7 +14,7 @@ jobs:
       postgres_major_versions: ${{ steps.set-versions.outputs.postgres_major_versions }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
       - uses: $/.github/actions/install-nix
       - name: Set PostgreSQL versions
         id: set-versions
@@ -33,7 +33,7 @@ jobs:
       POSTGRES_PASSWORD: password
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - uses: $/.github/actions/install-nix
 

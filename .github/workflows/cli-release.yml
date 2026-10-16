@@ -31,7 +31,7 @@ jobs:
             arch: linux-arm64
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
@@ -72,7 +72,7 @@ jobs:
           shopt -u dotglob
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: supabase-postgres-${{ matrix.arch }}
           path: supabase-postgres-${{ steps.version.outputs.version }}-${{ matrix.arch }}
@@ -95,7 +95,7 @@ jobs:
             arch: linux-arm64
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           name: supabase-postgres-${{ matrix.arch }}
           path: .
@@ -398,7 +398,7 @@ jobs:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
 
@@ -453,7 +453,7 @@ jobs:
           fi
 
       - name: Create Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: release/*
