@@ -1,0 +1,129 @@
+name: Release QEMU image
+
+on:
+  push:
+    branches:
+      - develop
+      - release/*
+    paths:
+      - ansible/postgres_release.yml
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: Guest architecture (amd64 is experimental and publishes only to staging)
+        type: choice
+        default: arm64
+        options:
+          - arm64
+          - amd64
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: $/.github/workflows/qemu-image-build.yml
+    with:
+      arch: ${{ inputs.arch || 'arm64' }}
+      publish: true
+
+  publish:
+    needs: build
+    runs-on: ${{ inputs.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'arm-native-runner' }}
+    timeout-minutes: 60
+    env:
+      POSTGRES_MAJOR_VERSION: "17"
+      TARGET_ARCH: ${{ inputs.arch || 'arm64' }}
+      IMAGE_TAG: ${{ needs.build.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7.0.1
+
+      - name: Install Nix
+        uses: $/.github/actions/install-nix
+
+      - name: Run checks if publishing manually
+        if: github.event_name == 'workflow_dispatch' && env.TARGET_ARCH == 'arm64'
+        run: |
+          SUFFIX=$(nix run nixpkgs#yq -- -e ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          if [[ -z $SUFFIX ]] ; then
+            echo "Version must include non-numeric characters if published manually."
+            exit 1
+          fi
+
+      - name: Download disk image
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: ${{ runner.temp }}/disk-image
+
+      - name: Build image
+        run: |
+          mkdir -p image-context/output-cloudimg
+          nix run nixpkgs#zstd -- -d -o image-context/output-cloudimg/packer-cloudimg "$RUNNER_TEMP/disk-image/packer-cloudimg.zst"
+          docker build --platform "linux/$TARGET_ARCH" -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" image-context
+
+      - name: configure aws credentials - staging
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Login to Amazon ECR Staging
+        id: login-ecr-private-dev
+        uses: aws-actions/amazon-ecr-login@v2.1.7
+
+      - name: Push docker image to Amazon ECR
+        env:
+          REGISTRY: 812073016711.dkr.ecr.us-east-1.amazonaws.com
+          REPOSITORY: postgres-vm-image
+        run: |
+          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+      # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
+      - name: configure aws credentials - prod
+        if: env.TARGET_ARCH == 'arm64'
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
+          aws-region: "us-east-1"
+
+      - name: Login to Amazon ECR Prod
+        if: env.TARGET_ARCH == 'arm64'
+        id: login-ecr-private-prod
+        uses: aws-actions/amazon-ecr-login@v2.1.7
+
+      - name: Push docker image to Amazon ECR Prod
+        if: env.TARGET_ARCH == 'arm64'
+        env:
+          REGISTRY: 156470330064.dkr.ecr.us-east-1.amazonaws.com
+          REPOSITORY: postgres-vm-image
+        run: |
+          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+  notify:
+    needs: [build, publish]
+    if: failure()
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Slack Notification on Failure
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Building Postgres QEMU artifact failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
