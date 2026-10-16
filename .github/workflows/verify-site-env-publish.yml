@@ -1,0 +1,42 @@
+name: Verify site-env publish
+
+on:
+  push:
+    branches:
+      - ci/verify-site-env-publish
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  publish:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Checkout Repo
+        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install nix
+        uses: ./.github/actions/nix-install-ephemeral
+
+      - name: Publish site-env store path
+        run: |
+          GIT_SHA="${{ github.sha }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+          SITE_ENV_NAME="site-env-17"
+          SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
+          PREFIX="s3://supabase-public-artifacts-bucket/nix-catalog/ci-test/${GITHUB_RUN_ID}"
+
+          aws s3 cp - "${PREFIX}-${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}" <<< "$SITE_ENV_PATH"
+
+          echo "published:"
+          aws s3 cp "${PREFIX}-${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}" -
