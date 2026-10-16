@@ -184,7 +184,7 @@ $$;
 
 CREATE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 BEGIN
   IF EXISTS (
@@ -230,7 +230,7 @@ COMMENT ON FUNCTION extensions.grant_pg_cron_access() IS 'Grants access to pg_cr
 
 CREATE FUNCTION extensions.grant_pg_graphql_access() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $_$
 begin
     if not exists (
@@ -285,7 +285,7 @@ COMMENT ON FUNCTION extensions.grant_pg_graphql_access() IS 'Grants access to pg
 
 CREATE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 BEGIN
   IF EXISTS (
@@ -344,7 +344,7 @@ COMMENT ON FUNCTION extensions.grant_pg_net_access() IS 'Grants access to pg_net
 
 CREATE FUNCTION extensions.pgrst_ddl_watch() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 DECLARE
   cmd record;
@@ -388,7 +388,7 @@ END; $$;
 
 CREATE FUNCTION extensions.pgrst_drop_watch() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 DECLARE
   obj record;
@@ -430,7 +430,7 @@ END; $$;
 
 CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $_$
     DECLARE
     graphql_is_dropped bool;

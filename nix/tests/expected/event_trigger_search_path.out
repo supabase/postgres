@@ -3,9 +3,14 @@
 -- Event triggers fire as superuser on DDL run by any role, so an event trigger function
 -- that resolves names through the caller's search_path can be hijacked by objects the
 -- caller creates. A migration that redefines one of these functions with CREATE OR REPLACE
--- and omits `SET search_path TO ''` silently drops the pin (this happened with
--- 20260923021047_update_pgrst_watch_triggers.sql). Extension-owned event triggers are
--- excluded: their functions ship with the extension and are not ours to change.
+-- and omits the SET clause silently drops the pin (this happened with
+-- 20260923021047_update_pgrst_watch_triggers.sql).
+--
+-- The pin must be exactly `pg_catalog, pg_temp`. An empty search_path is NOT enough: when
+-- pg_temp is not listed it is searched first for relation and type names, so a caller's
+-- `create temp table pg_extension (...)` would shadow the catalog. Listing pg_temp
+-- explicitly moves it last. Extension-owned event triggers are excluded: their functions
+-- ship with the extension and are not ours to change.
 -- Silent on success, raises on regression.
 do $$
 declare
@@ -36,7 +41,7 @@ begin
     string_agg(
       format('%s -> %s', evtname, fn::regprocedure),
       ', ' order by evtname
-    ) filter (where not ('search_path=""' = any(coalesce(proconfig, '{}'))))
+    ) filter (where not ('search_path=pg_catalog, pg_temp' = any(coalesce(proconfig, '{}'))))
   into _checked, _offenders
   from supabase_event_triggers;
 
@@ -46,7 +51,7 @@ begin
   end if;
 
   if _offenders is not null then
-    raise exception 'event trigger functions without SET search_path TO '''': %', _offenders;
+    raise exception 'event trigger functions without SET search_path TO pg_catalog, pg_temp: %', _offenders;
   end if;
 end
 $$;

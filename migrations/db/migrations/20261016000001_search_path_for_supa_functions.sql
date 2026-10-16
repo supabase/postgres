@@ -3,7 +3,7 @@
 create or replace function extensions.grant_pg_graphql_access()
     returns event_trigger
     language plpgsql
-    set search_path to ''
+    set search_path to pg_catalog, pg_temp
 as $func$
 begin
     if not exists (
@@ -47,7 +47,7 @@ $func$;
 
 CREATE OR REPLACE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path to ''
+    SET search_path to pg_catalog, pg_temp
     AS $$
 BEGIN
   IF EXISTS (
@@ -81,7 +81,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path to ''
+    SET search_path to pg_catalog, pg_temp
     AS $$
 BEGIN
   IF EXISTS (
@@ -128,7 +128,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION extensions.pgrst_ddl_watch() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO pg_catalog, pg_temp
     AS $$
 DECLARE
   cmd record;
@@ -168,7 +168,7 @@ END; $$;
 
 CREATE OR REPLACE FUNCTION extensions.pgrst_drop_watch() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO pg_catalog, pg_temp
     AS $$
 DECLARE
   obj record;
@@ -205,7 +205,7 @@ END; $$;
 
 CREATE OR REPLACE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
     LANGUAGE plpgsql
-    SET search_path TO ''
+    SET search_path TO pg_catalog, pg_temp
     AS $_$
     DECLARE
     graphql_is_dropped bool;
