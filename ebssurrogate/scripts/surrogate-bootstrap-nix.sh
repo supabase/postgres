@@ -207,6 +207,7 @@ function setup_chroot_environment {
 	cp -r /tmp/migrations /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
+	cp /tmp/provision-common.sh /mnt/tmp/provision-common.sh
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh
 	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
@@ -270,6 +271,7 @@ function update_systemd_services {
 
 function clean_system {
 	# Copy cleanup scripts
+	cp -v /tmp/provision-common.sh /mnt/tmp
 	cp -v /tmp/cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/cleanup.sh
 	chroot /mnt /tmp/cleanup.sh

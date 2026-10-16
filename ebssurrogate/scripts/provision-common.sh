@@ -69,3 +69,74 @@ function report_disk_usage {
 	read -r duh _ < <(du -sx -h /)
 	printf '::notice::disk_usage bytes=%s human=%s\n' "$dub" "$duh" | tee -a /tmp/ansible.log
 }
+
+function setup_locale {
+	cat >>/etc/locale.gen <<-EOF
+		en_US.UTF-8 UTF-8
+	EOF
+	cat >/etc/default/locale <<-EOF
+		LANG="C.UTF-8"
+		LC_CTYPE="C.UTF-8"
+	EOF
+	locale-gen en_US.UTF-8
+}
+
+function setup_postgesql_env {
+	mkdir -p /etc/environment.d
+
+	tee /etc/environment.d/postgresql.env >/dev/null <<-EOF
+		LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+		LANG="en_US.UTF-8"
+		LANGUAGE="en_US.UTF-8"
+		LC_ALL="en_US.UTF-8"
+		LC_CTYPE="en_US.UTF-8"
+	EOF
+}
+
+function disable_sshd_passwd_auth {
+	sed -i -E \
+		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
+		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
+		/etc/ssh/sshd_config
+}
+
+function ensure_tmp_dir {
+	# https://github.com/digitalocean/marketplace-partners/issues/94
+	if [[ ! -d /tmp ]]; then
+		mkdir /tmp
+	fi
+	chmod 1777 /tmp
+}
+
+function scrub_history {
+	rm -rf /tmp/* /var/tmp/*
+	history -c
+	cat /dev/null >/root/.bash_history
+	unset HISTFILE
+}
+
+function scrub_logs_and_keys {
+	find /var/log -mtime -1 -type f -exec truncate -s 0 {} \;
+	rm -rf /var/log/*.gz /var/log/*.[0-9] /var/log/*-????????
+	rm -rf /var/lib/cloud/instances/*
+	rm -f /root/.ssh/authorized_keys /etc/ssh/*key*
+	touch /etc/ssh/revoked_keys
+	chmod 600 /etc/ssh/revoked_keys
+}
+
+function zero_free_space {
+	dd if=/dev/zero of=/zerofile &
+	PID=$!
+	while [ -d /proc/$PID ]; do
+		printf "."
+		sleep 5
+	done
+	sync
+	rm /zerofile
+	sync
+}
+
+function empty_login_records {
+	cat /dev/null >/var/log/lastlog
+	cat /dev/null >/var/log/wtmp
+}

@@ -78,32 +78,6 @@ function execute_playbook {
 		--extra-vars @./ansible/qemu-vars.yaml
 }
 
-function setup_postgesql_env {
-	# Create the directory if it doesn't exist
-	mkdir -p /etc/environment.d
-
-	# Define the contents of the PostgreSQL environment file
-	tee /etc/environment.d/postgresql.env >/dev/null <<-EOF
-		LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-		LANG="en_US.UTF-8"
-		LANGUAGE="en_US.UTF-8"
-		LC_ALL="en_US.UTF-8"
-		LC_CTYPE="en_US.UTF-8"
-	EOF
-}
-
-function setup_locale {
-	cat >>/etc/locale.gen <<-EOF
-		en_US.UTF-8 UTF-8
-	EOF
-
-	cat >/etc/default/locale <<-EOF
-		LANG="C.UTF-8"
-		LC_CTYPE="C.UTF-8"
-	EOF
-	locale-gen en_US.UTF-8
-}
-
 #################
 # stage2 things #
 #################
@@ -168,10 +142,7 @@ function clean_system {
 
 	# Ensure that PasswordAuthentication is off
 	# From chroot-boostrap-nix.sh
-	sed -i -E \
-		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
-		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
-		/etc/ssh/sshd_config
+	disable_sshd_passwd_auth
 
 	if ! grep -qE "^PasswordAuthentication\s+no" /etc/ssh/sshd_config; then
 		echo "ERROR: PasswordAuthentication is not disabled in sshd_config"
