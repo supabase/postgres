@@ -140,3 +140,32 @@ function empty_login_records {
 	cat /dev/null >/var/log/lastlog
 	cat /dev/null >/var/log/wtmp
 }
+
+function setup_image_logs {
+	local root=${1:-} run=()
+	if [[ -n $root ]]; then
+		run=(chroot "$root")
+	fi
+
+	rm -rf "$root"/var/log/*
+	# https://github.com/fail2ban/fail2ban/issues/1593
+	touch "$root/var/log/auth.log"
+
+	touch "$root/var/log/pgbouncer.log"
+	"${run[@]}" chown pgbouncer:postgres /var/log/pgbouncer.log
+
+	mkdir -p "$root/var/log/postgresql"
+	"${run[@]}" chown postgres:postgres /var/log/postgresql
+
+	mkdir "$root/var/log/wal-g"
+	touch "$root"/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
+
+	mkdir "$root/var/log/sysstat"
+
+	"${run[@]}" chown -R postgres:postgres /var/log/wal-g
+	# vector reads pitr.log; modes match the salt vector formula
+	"${run[@]}" chmod -R 0310 /var/log/wal-g
+	"${run[@]}" chmod 0340 /var/log/wal-g/pitr.log
+
+	mkdir "$root/var/log/audit"
+}

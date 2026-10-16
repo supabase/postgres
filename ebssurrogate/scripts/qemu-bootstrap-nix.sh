@@ -104,31 +104,7 @@ function clean_system {
 	chmod +x /tmp/cleanup-qemu.sh
 	/tmp/cleanup-qemu.sh
 
-	# Cleanup logs
-	rm -rf /var/log/*
-	# https://github.com/fail2ban/fail2ban/issues/1593
-	touch /var/log/auth.log
-
-	touch /var/log/pgbouncer.log
-	chown pgbouncer:postgres /var/log/pgbouncer.log
-
-	# Setup postgresql logs
-	mkdir -p /var/log/postgresql
-	chown postgres:postgres /var/log/postgresql
-	# Setup wal-g logs
-	mkdir /var/log/wal-g
-	touch /var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
-
-	# Creatre Sysstat directory for SAR
-	mkdir /var/log/sysstat
-
-	chown -R postgres:postgres /var/log/wal-g
-	# moving up fixes from init scripts
-	chmod -R 0310 /var/log/wal-g
-	chmod 0340 /var/log/wal-g/pitr.log
-
-	# audit logs directory for apparmor
-	mkdir /var/log/audit
+	setup_image_logs
 
 	# unwanted files
 	rm -rf /root/.cache
