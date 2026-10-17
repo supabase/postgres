@@ -103,6 +103,7 @@ writeShellApplication {
       -var "region=$REGION" \
       -var 'ami_regions=["'"$REGION"'"]' \
       -var "git_sha=$GIT_SHA" \
+      -var "postgres_env_path=$(nix eval --raw "github:supabase/postgres/$GIT_SHA#packages.aarch64-linux.postgres-env-$POSTGRES_VERSION.outPath")" \
       stage2-nix-psql.pkr.hcl
 
     # Cleanup instances from AMI builds
