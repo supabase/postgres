@@ -70,6 +70,7 @@ writeShellApplication {
     POSTGRES_VERSION="$1"
     RANDOM_STRING=$(openssl rand -hex 8)
     GIT_SHA=$(git rev-parse HEAD)
+    SITE_ENV_PATH=$(nix eval --raw "github:supabase/postgres/$GIT_SHA#packages.aarch64-linux.site-env-$POSTGRES_VERSION.outPath")
     RUN_ID=$(date +%s)
 
     # Generate common-nix.vars.pkr.hcl
@@ -103,6 +104,7 @@ writeShellApplication {
       -var "region=$REGION" \
       -var 'ami_regions=["'"$REGION"'"]' \
       -var "git_sha=$GIT_SHA" \
+      -var "site_env_path=$SITE_ENV_PATH" \
       stage2-nix-psql.pkr.hcl
 
     # Cleanup instances from AMI builds

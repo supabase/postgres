@@ -932,6 +932,7 @@
           }
         )
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
+          site = import ./tests/site.nix { inherit self pkgs; };
           inherit (self'.packages)
             postgresql_15_debug
             postgresql_15_src
