@@ -5,14 +5,17 @@ let
   inherit (pkgs) lib;
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
   testLib = import ./lib.nix { inherit self pkgs; };
+  testPkgs = import self.inputs.nixpkgs-nixos-tests {
+    inherit (pkgs.pkgsLinux.stdenv.hostPlatform) system;
+  };
 
   installedExtension =
     postgresMajorVersion: self.legacyPackages.${system}."psql_${postgresMajorVersion}".exts."${pname}";
   versions = (installedExtension "15").versions;
 in
-pkgs.testers.runNixOSTest {
+testPkgs.testers.runNixOSTest {
   name = pname;
-  nodes.server =
+  containers.server =
     { ... }:
     {
       imports = [

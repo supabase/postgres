@@ -113,8 +113,23 @@ in
       "benchmark"
       "big-parallel"
       "nixos-test"
+      "uid-range"
     ];
     config = {
+      nix.settings = {
+        experimental-features = [
+          "auto-allocate-uids"
+          "cgroups"
+        ];
+        auto-allocate-uids = true;
+        system-features = [
+          "kvm"
+          "benchmark"
+          "big-parallel"
+          "nixos-test"
+          "uid-range"
+        ];
+      };
       virtualisation = {
         darwin-builder = {
           diskSize = 40 * 1024;

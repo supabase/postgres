@@ -32,6 +32,7 @@ The linux-builder VM is configured with:
 - 40GB disk
 - Support for both x86_64-linux and aarch64-linux builds
 - The `nixos-test` feature required for running NixOS tests
+- The `uid-range` feature required for container-based NixOS tests
 
 After setup completes, restart your shell to access the helper commands.
 
@@ -54,7 +55,7 @@ The verification script checks:
 
 1. Launchd service status (running vs loaded-but-stopped)
 2. Nix configuration via `nix config show` (substituters, trusted keys, experimental features)
-3. Builder features (`/etc/nix/machines` includes `nixos-test`)
+3. Builder features (`/etc/nix/machines` includes `nixos-test` and `uid-range`)
 4. Builder responsiveness (test build of `nixpkgs#hello` for aarch64-linux)
 
 Each check reports pass/fail with actionable guidance on failures.
@@ -174,6 +175,7 @@ nix.linux-builder = {
     "benchmark"
     "big-parallel"
     "nixos-test"  # Required for NixOS integration tests
+    "uid-range"  # Required for container-based NixOS tests
   ];
   config = {
     virtualisation = {
