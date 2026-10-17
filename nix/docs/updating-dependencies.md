@@ -67,3 +67,9 @@ Similar patterns can be followed for other dependencies defined in the nix packa
 2. Update version numbers and hashes
 3. Run local tests
 4. Verify functionality before creating PR
+
+## Updating nixpkgs
+
+`nixpkgs` tracks the current NixOS stable channel and builds everything, including Postgres and its extensions. Update it with `nix flake update nixpkgs`. When the stable release changes, also move `nix-darwin` to the matching `nix-darwin-YY.MM` branch.
+
+A nixpkgs update can change glibc. After a glibc change, Postgres warns that the collation version stored in each database differs from the running one, until each database runs `ALTER DATABASE ... REFRESH COLLATION VERSION`.
