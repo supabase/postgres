@@ -69,6 +69,8 @@
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
+          manifest-diff = pkgs.callPackage ./manifest-diff.nix { };
+          manifest-comment = pkgs.callPackage ./manifest-comment.nix { };
           mecab-naist-jdic = pkgs.callPackage ./mecab-naist-jdic.nix { };
           migrate-tool = pkgs.callPackage ./migrate-tool.nix { psql_15 = self'.packages."psql_15/bin"; };
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
