@@ -127,7 +127,9 @@ profile sbpostgres flags=(attach_disconnected) {
         /var/lib/postgresql/data/standby.signal rw,
         /var/lib/pgbackrest rw,
         /etc/pgbackrest/conf.d/** rw,
-        /var/spool/pgbackrest/** rw,
+        # bare-dir grant needed alongside ** (same as /data/pgdata/pg_wal/) since ** doesn't cover the directory inode itself; path must match spool-path in ansible/files/pgbackrest_config/pgbackrest.conf, which has the full cross-file sync note
+        /data/pgbackrest_spool/ rw,
+        /data/pgbackrest_spool/** rw,
         /var/log/pgbackrest/** rw,
         /etc/** r,
         /usr/local/** r,
@@ -190,7 +192,9 @@ profile sbpostgres flags=(attach_disconnected) {
         /var/lib/postgresql/data/standby.signal rw,
         /var/lib/pgbackrest rw,
         /etc/pgbackrest/conf.d/** rw,
-        /var/spool/pgbackrest/** rw,
+        # bare-dir grant needed alongside ** (same as /data/pgdata/pg_wal/) since ** doesn't cover the directory inode itself; path must match spool-path in ansible/files/pgbackrest_config/pgbackrest.conf, which has the full cross-file sync note
+        /data/pgbackrest_spool/ rw,
+        /data/pgbackrest_spool/** rw,
         /var/log/pgbackrest/** rw,
         /etc/** r,
         /usr/local/** r,
