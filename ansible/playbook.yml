@@ -212,10 +212,14 @@
       shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
 
-    - name: Setup Swap
+    - name: Tune Swap
+      when: stage2
+      import_tasks: tasks/stage2/tune-swap.yml
+
+    - name: Setup Swapfile
       when: stage2 and not qemu
       become: yes
-      import_tasks: tasks/stage2/setup-swap.yml
+      import_tasks: tasks/stage2/setup-swapfile.yml
 
   handlers:
     - name: Import handlers
