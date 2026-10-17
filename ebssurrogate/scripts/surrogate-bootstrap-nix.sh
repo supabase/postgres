@@ -207,6 +207,7 @@ function setup_chroot_environment {
 	cp -r /tmp/migrations /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
+	cp /tmp/provision-common.sh /mnt/tmp/provision-common.sh
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh
 	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
@@ -270,40 +271,12 @@ function update_systemd_services {
 
 function clean_system {
 	# Copy cleanup scripts
+	cp -v /tmp/provision-common.sh /mnt/tmp
 	cp -v /tmp/cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/cleanup.sh
 	chroot /mnt /tmp/cleanup.sh
 
-	# Cleanup logs
-	rm -rf /mnt/var/log/*
-	# https://github.com/fail2ban/fail2ban/issues/1593
-	touch /mnt/var/log/auth.log
-
-	touch /mnt/var/log/pgbouncer.log
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
-	fi
-
-	# Setup postgresql logs
-	mkdir -p /mnt/var/log/postgresql
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
-	fi
-
-	# Setup wal-g logs
-	mkdir /mnt/var/log/wal-g
-	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
-
-	#Creatre Sysstat directory for SAR
-	mkdir /mnt/var/log/sysstat
-
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
-		chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
-	fi
-
-	# audit logs directory for apparmor
-	mkdir /mnt/var/log/audit
+	setup_image_logs /mnt
 
 	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*

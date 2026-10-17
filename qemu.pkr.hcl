@@ -106,6 +106,11 @@ build {
     destination = "/tmp/cleanup-qemu.sh"
   }
 
+  provisioner "file" {
+    source      = "ebssurrogate/scripts/provision-common.sh"
+    destination = "/tmp/provision-common.sh"
+  }
+
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
