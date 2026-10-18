@@ -9,33 +9,27 @@
       ...
     }:
     let
-      # Scripts run on the host bash to keep Nix's bash and glibc out of the closure.
-      writeHostBash =
-        name: text:
-        pkgs.writeTextFile {
-          inherit name;
-          executable = true;
-          destination = "/bin/${name}";
-          text = ''
-            #!/usr/bin/env bash
-            set -euo pipefail
-            ${text}
-          '';
-          checkPhase = ''
-            ${pkgs.shellcheck}/bin/shellcheck "$target"
-          '';
-        };
-
       makeSiteEnv =
         version: extraPaths:
         let
           supautils = self'.legacyPackages."psql_${version}".exts.supautils;
           # Site profile activation script. MUST STAY IDEMPOTENT!
-          activate = writeHostBash "activate" ''
-            echo "Activating site profile."
-            echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
-            echo "Site profile activated."
-          '';
+          activate = pkgs.writeTextFile {
+            name = "activate";
+            executable = true;
+            destination = "/bin/activate";
+            # Runs on the host bash to keep Nix's bash and glibc out of the closure.
+            text = ''
+              #!/usr/bin/env bash
+              set -euo pipefail
+              echo "Activating site profile."
+              echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
+              echo "Site profile activated."
+            '';
+            checkPhase = ''
+              ${pkgs.shellcheck}/bin/shellcheck "$target"
+            '';
+          };
         in
         pkgs.buildEnv {
           name = "site-env-${version}";
