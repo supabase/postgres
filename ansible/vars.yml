@@ -1,12 +1,15 @@
 ---
-supabase_internal: true
-ebssurrogate_mode: true
-async_mode: true
 # If you're looking for the postgres_release versions, thats moved to ansible/postgres_release.yml
 postgres_major:
   - "15"
   - "17"
   - orioledb-17
+sql_files:
+  - source: "pgbouncer_config/pgbouncer_auth_schema.sql"
+    dest: "00-schema.sql"
+  - source: "stat_extension.sql"
+    dest: "01-extension.sql"
+pg_bindir: /usr/lib/postgresql/bin
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
