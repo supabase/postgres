@@ -27,7 +27,7 @@ variable "git_sha" {
   default = env("GIT_SHA")
 }
 
-variable "postgres_env_path" {
+variable "nix_store_paths" {
   type = string
 }
 
@@ -144,7 +144,7 @@ build {
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
-      "POSTGRES_ENV_PATH=${var.postgres_env_path}",
+      "NIX_STORE_PATHS=${var.nix_store_paths}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file = true

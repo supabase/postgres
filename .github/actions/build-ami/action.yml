@@ -110,7 +110,7 @@ runs:
           -var "git_sha=${{ inputs.packages_git_sha }}" \
           -var "instance_type=${{ inputs.instance_type }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
-          -var "postgres_env_path=$(nix eval --raw "github:supabase/postgres/${{ inputs.packages_git_sha }}#packages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux.postgres-env-${{ inputs.postgres_version }}.outPath")" \
+          -var "nix_store_paths=$(nix eval --json "github:supabase/postgres/${{ inputs.packages_git_sha }}#packages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux" --apply 'p: builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-${{ inputs.postgres_version }}; }')" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
           stage2-nix-psql.pkr.hcl
 

@@ -66,12 +66,12 @@
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix-env --quiet --set {{ postgres_env_path }}
+          nix-env --quiet --set {{ nix_store_paths['postgres-env'] }}
         "
 
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
+        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install {{ nix_store_paths['supascan'] }}"
 
     - name: nix collect garbage after supascan install
       ansible.builtin.shell:

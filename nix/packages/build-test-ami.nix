@@ -103,7 +103,7 @@ writeShellApplication {
       -var "region=$REGION" \
       -var 'ami_regions=["'"$REGION"'"]' \
       -var "git_sha=$GIT_SHA" \
-      -var "postgres_env_path=$(nix eval --raw "github:supabase/postgres/$GIT_SHA#packages.aarch64-linux.postgres-env-$POSTGRES_VERSION.outPath")" \
+      -var "nix_store_paths=$(nix eval --json "github:supabase/postgres/$GIT_SHA#packages.aarch64-linux" --apply 'p: builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-'"$POSTGRES_VERSION"'; }')" \
       stage2-nix-psql.pkr.hcl
 
     # Cleanup instances from AMI builds
