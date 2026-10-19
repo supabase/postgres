@@ -33,30 +33,25 @@ If you're on a feature different branch, you'll be prompted to confirm before pr
 
 ### 2. Build AMI
 
-After the build is complete and cached, build the AMI:
+After the build is complete and cached, build the AMI. AMI builds run in CI only. The local `build-test-ami` script has been removed.
+
+Run the `Testinfra Integration Tests Nix` workflow (`.github/workflows/testinfra-ami-build.yml`) from the GitHub Actions tab, or with the `gh` CLI:
 
 ```bash
-# Build AMI for PostgreSQL 15
-aws-vault exec <profile-name> -- nix run .#build-test-ami 15
-
-# Or for PostgreSQL 17
-aws-vault exec <profile-name> -- nix run .#build-test-ami 17
-
-# Or for PostgreSQL orioledb-17
-aws-vault exec  <profile-name> -- nix run .#build-test-ami orioledb-17
+gh workflow run testinfra-ami-build.yml --ref <your-branch>
 ```
 
-This will:
+For each PostgreSQL major version and architecture, the workflow will:
 
-- Build two AMI stages using Packer
-- Clean up temporary instances after AMI builds
-- Output the final AMI name (e.g., `supabase-postgres-abc123`)
+- Build two AMI stages with `nix run .#build-ami` (via the `.github/actions/build-ami` action)
+- Run `testinfra/test_ami_nix.py` against the new AMI
+- Clean up the temporary instances and AMIs, even if the tests fail
 
-**Important**: Take note of the AMI name output at the end, as you'll need it for the next step.
+Because the workflow runs the tests and cleans up after itself, you only need steps 3 and 4 below to test an AMI you already have.
 
-### 3. Run Testinfra
+### 3. Optional: Run Testinfra Locally
 
-Run the testinfra tests against the AMI:
+To run the testinfra tests against an existing AMI:
 
 ```bash
 # Run tests against the AMI

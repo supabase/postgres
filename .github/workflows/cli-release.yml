@@ -34,7 +34,7 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
 
       - name: Run portability check
         uses: ./.github/actions/nix-build-retry

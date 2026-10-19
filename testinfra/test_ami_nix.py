@@ -20,8 +20,9 @@ def required_env(name):
     return value
 
 
-RUN_ID = required_env("EXECUTION_ID")
 AMI_ID = required_env("AMI_ID")
+AWS_REGION = required_env("AWS_REGION")
+RUN_ID = required_env("EXECUTION_ID")
 
 postgresql_schema_sql_content = """
 ALTER DATABASE postgres SET "app.settings.jwt_secret" TO  'my_jwt_secret_which_is_not_so_secret';
@@ -133,16 +134,16 @@ GOTRUE_JWT_ADMIN_ROLES=supabase_admin,service_role
 GOTRUE_JWT_AUD=authenticated
 GOTRUE_JWT_SECRET=my_jwt_secret_which_is_not_so_secret
 """
-walg_config_json_content = """
-{
-  "AWS_REGION": "ap-southeast-1",
+walg_config_json_content = f"""
+{{
+  "AWS_REGION": "{AWS_REGION}",
   "WALG_S3_PREFIX": "",
   "PGDATABASE": "postgres",
   "PGUSER": "supabase_admin",
   "PGPORT": 5432,
   "WALG_DELTA_MAX_STEPS": 6,
   "WALG_COMPRESSION_METHOD": "lz4"
-}
+}}
 """
 anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyMjQ5NjYsImV4cCI6MjAxMTgwMDk2Nn0.QW95aRPA-4QuLzuvaIeeoFKlJP9J2hvAIpJ3WJ6G5zo"
 service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY5NjIyNDk2NiwiZXhwIjoyMDExODAwOTY2fQ.Om7yqv15gC3mLGitBmvFRB3M4IsLsX9fXzTQnFM7lu0"
@@ -189,7 +190,7 @@ init_json_content = f"""
   "service_key": "{service_role_key}",
   "supabase_admin_key": "{supabase_admin_key}",
   "common_name": "db.aaaaaaaaaaaaaaaaaaaa.supabase.red",
-  "region": "ap-southeast-1",
+  "region": "{AWS_REGION}",
   "init_database_only": false
 }}
 """
@@ -264,7 +265,7 @@ def upload_file_via_sftp(ssh, local_path, remote_path):
 # scope='function' uses a new container per test function.
 @pytest.fixture(scope="session")
 def host():
-    ec2 = boto3.resource("ec2", region_name="ap-southeast-1")
+    ec2 = boto3.resource("ec2", region_name=AWS_REGION)
     image = ec2.Image(AMI_ID)
 
     def gzip_then_base64_encode(s: str) -> str:
@@ -291,7 +292,10 @@ def host():
                 "HttpTokens": "required",
                 "HttpEndpoint": "enabled",
             },
-            IamInstanceProfile={"Name": "pg-ap-southeast-1"},
+            IamInstanceProfile={
+                # "Name": f"pg-{AWS_REGION}"
+                "Name": "pg-ap-southeast-1"  # switch back to ^ when perms for this profile are fixed
+            },
             InstanceType="t4g.micro" if image.architecture == "arm64" else "t3.small",
             MinCount=1,
             MaxCount=1,
@@ -300,7 +304,7 @@ def host():
                 {
                     "DeviceIndex": 0,
                     "AssociatePublicIpAddress": True,
-                    "Groups": ["sg-0a883ca614ebfbae0", "sg-014d326be5a1627dc"],
+                    "Groups": ["sg-0acb69901c38dd4b4", "sg-0faba7e0368748dbd"],
                 }
             ],
             UserData=f"""#cloud-config
@@ -464,6 +468,85 @@ def test_postgrest_is_running(host):
     result = run_ssh_command(host["ssh"], "systemctl is-active postgrest")
     assert result["succeeded"] and result["stdout"].strip() == "active", (
         "PostgREST service is not running"
+    )
+
+
+def _tcp_connect_as(ssh, user, port, addr="127.0.0.1"):
+    """Try a TCP connect to <addr>:<port> as <user>; True if it connects."""
+    return run_ssh_command(
+        ssh, f"sudo -u {user} timeout 3 bash -c '</dev/tcp/{addr}/{port}'"
+    )["succeeded"]
+
+
+@pytest.fixture(scope="session")
+def host_private_ip(host):
+    """The instance's own interface IP. Traffic to it routes via lo, unlike the
+    public IP in host["ip"], which AWS NATs."""
+    return run_ssh_command(host["ssh"], "hostname -I | awk '{print $1}'")[
+        "stdout"
+    ].strip()
+
+
+def test_egress_filter_loaded(host):
+    """The per-user egress filter table is loaded."""
+    result = run_ssh_command(host["ssh"], "sudo nft list table inet egressfilter")
+    assert result["succeeded"], (
+        f"nftables table inet egressfilter is not loaded: {result['stderr']}"
+    )
+
+
+# Every way to reach a local listener; the filter matches oif lo, so all of
+# these must be covered, not just 127.0.0.1.
+LOCAL_ADDRS = ["127.0.0.1", "127.0.0.2", "0.0.0.0", "::1", "::", "host-private-ip"]
+
+
+@pytest.mark.parametrize("addr", LOCAL_ADDRS)
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_local_egress(host, host_private_ip, user, addr):
+    """Restricted users reach local :5432 only; pgbouncer (:6543, listening on
+    all addresses) is rejected on every local address. root is the control."""
+    ssh = host["ssh"]
+    if addr == "host-private-ip":
+        addr = host_private_ip
+    if not (
+        _tcp_connect_as(ssh, "root", 5432, addr)
+        and _tcp_connect_as(ssh, "root", 6543, addr)
+    ):
+        pytest.skip(f"no listener reachable on {addr} even as root")
+
+    assert _tcp_connect_as(ssh, user, 5432, addr), (
+        f"{user} can no longer reach Postgres on {addr}:5432"
+    )
+    assert not _tcp_connect_as(ssh, user, 6543, addr), (
+        f"{user} can reach pgbouncer on {addr}:6543; egressfilter is not blocking it"
+    )
+
+
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_imds_blocked(host, user):
+    """Restricted users cannot reach instance metadata. wal-g runs as its own
+    'wal-g' user, so it is unaffected; root is the control."""
+    ssh = host["ssh"]
+    imds = "169.254.169.254"
+    if not _tcp_connect_as(ssh, "root", 80, imds):
+        pytest.skip("instance metadata is not reachable even as root")
+
+    assert not _tcp_connect_as(ssh, user, 80, imds), (
+        f"{user} can reach instance metadata; egressfilter is not blocking it"
+    )
+    assert _tcp_connect_as(ssh, "wal-g", 80, imds), (
+        "wal-g can no longer reach instance metadata; it needs IAM credentials"
+    )
+
+
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_dns_resolves(host, user):
+    """Name resolution through the systemd-resolved stub is still allowed."""
+    result = run_ssh_command(
+        host["ssh"], f"sudo -u {user} timeout 5 getent ahosts aws.amazon.com"
+    )
+    assert result["succeeded"] and result["stdout"].strip(), (
+        f"{user} can no longer resolve hostnames: {result['stderr']}"
     )
 
 

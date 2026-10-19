@@ -6,8 +6,9 @@ on:
       - develop
       - release/*
     paths:
-      - ".github/workflows/dockerhub-release-matrix.yml"
-      - "ansible/vars.yml"
+      - .github/workflows/dockerhub-release-matrix.yml
+      - ansible/postgres_release.yml
+      - ansible/vars.yml
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
       - name: Generate build matrix
         id: set-matrix
         run: |
@@ -75,7 +76,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
       
@@ -100,7 +101,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
       - run: docker context create builders
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
         with:
@@ -122,7 +123,7 @@ jobs:
               } else {
                 $"postgres($base_version)"
               }
-              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
               if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
@@ -136,7 +137,7 @@ jobs:
               } else {
                 $"postgres($base_version)"
               }
-              let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+              let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
               if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
@@ -162,7 +163,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
@@ -180,7 +181,7 @@ jobs:
             } else {
               $"postgres($base_version)"
             }
-            let base_tag = (open ansible/vars.yml | get postgres_release | get $release_key | str trim)
+            let base_tag = (open ansible/postgres_release.yml | get postgres_release | get $release_key | str trim)
             let pg_version = if $is_multigres { $"($base_tag)-multigres" } else { $base_tag }
             $"pg_version=supabase/postgres:($pg_version)" | save --append $env.GITHUB_OUTPUT
           '
@@ -209,7 +210,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
 
       - name: Debug Input from Prepare
         run: |

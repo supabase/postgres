@@ -70,11 +70,12 @@ If both commands succeed, the linux-builder is ready for NixOS tests.
 
 ## Running NixOS tests
 
-NixOS tests are defined in `nix/ext/tests/` and exposed as flake checks.
-To run a test on macOS, use the `aarch64-darwin` system attribute:
+NixOS tests are defined in `nix/ext/tests/` and are only exposed as flake checks
+for Linux systems (they're built via the linux-builder regardless of host, so
+there's no separate `aarch64-darwin` copy). From macOS, target `aarch64-linux`:
 
 ```bash
-nix build .#checks.aarch64-darwin.ext-pgjwt -L
+nix build .#checks.aarch64-linux.ext-pgjwt -L
 ```
 
 The `-L` flag shows logs during the build, which is helpful for seeing test progress and debugging failures.
@@ -83,7 +84,7 @@ If the nix build exit immediately with success, it means that the result was fet
 To force a re-run of the test, use the `--rebuild` flag:
 
 ```bash
-nix build .#checks.aarch64-darwin.ext-pgjwt -L --rebuild
+nix build .#checks.aarch64-linux.ext-pgjwt -L --rebuild
 ```
 
 ### Available tests
@@ -91,16 +92,16 @@ nix build .#checks.aarch64-darwin.ext-pgjwt -L --rebuild
 List all available checks with:
 
 ```bash
-nix flake show --json 2>/dev/null | jq -r '.checks["aarch64-darwin"] | keys[]' | sort
+nix flake show --json 2>/dev/null | jq -r '.checks["aarch64-linux"] | keys[]' | sort
 ```
 
 Extension tests follow the naming pattern `ext-<extension_name>`:
 
 ```bash
-nix build .#checks.aarch64-darwin.ext-pgjwt -L
-nix build .#checks.aarch64-darwin.ext-postgis -L
-nix build .#checks.aarch64-darwin.ext-vector -L
-nix build .#checks.aarch64-darwin.ext-pg_graphql -L
+nix build .#checks.aarch64-linux.ext-pgjwt -L
+nix build .#checks.aarch64-linux.ext-postgis -L
+nix build .#checks.aarch64-linux.ext-vector -L
+nix build .#checks.aarch64-linux.ext-pg_graphql -L
 ```
 
 ## Managing the linux-builder VM
@@ -158,32 +159,7 @@ Subsequent runs benefit from the Nix store cache and the project's binary cache 
 
 ## How it works
 
-The linux-builder is a QEMU virtual machine managed by nix-darwin.
-When you run a build targeting Linux (like NixOS tests), Nix automatically delegates the build to this VM.
+The linux-builder is a QEMU virtual machine managed by nix-darwin, see the [nixpkgs manual](https://nixos.org/manual/nixpkgs/stable/#sec-darwin-builder).
+Nix delegates Linux builds to it, and the `nixos-test` supported feature enables NixOS VM tests.
 
-Key configuration from `nix/hosts/darwin-nixostest/darwin-configuration.nix`:
-
-```nix
-nix.linux-builder = {
-  enable = true;
-  ephemeral = true;
-  maxJobs = 4;
-  supportedFeatures = [
-    "kvm"
-    "benchmark"
-    "big-parallel"
-    "nixos-test"  # Required for NixOS integration tests
-  ];
-  config = {
-    virtualisation = {
-      darwin-builder = {
-        diskSize = 40 * 1024;  # 40GB
-        memorySize = 8 * 1024; # 8GB
-      };
-      cores = 6;
-    };
-  };
-};
-```
-
-The `nixos-test` supported feature is what enables running NixOS VM tests from macOS.
+The configuration is in `nix/hosts/darwin-nixostest/darwin-configuration.nix`.
