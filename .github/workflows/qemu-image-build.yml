@@ -2,14 +2,11 @@ name: Build QEMU image
 
 on:
   push:
+    branches:
+      - develop
+      - release/*
     paths:
-      - .github/workflows/qemu-image-build.yml
-      - Dockerfile-kubernetes
       - ansible/postgres_release.yml
-      - ansible/vars.yml
-      - ebssurrogate/scripts/*
-      - nix/packages/build-qemu-image/*
-      - qemu.pkr.hcl
   workflow_dispatch:
     inputs:
       arch:
