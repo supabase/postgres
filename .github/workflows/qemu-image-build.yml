@@ -138,6 +138,10 @@ jobs:
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "$REPOSITORY:$IMAGE_TAG already exists, skipping push"
+            exit 0
+          fi
           docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
@@ -161,6 +165,10 @@ jobs:
           REPOSITORY: postgres-vm-image
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "$REPOSITORY:$IMAGE_TAG already exists, skipping push"
+            exit 0
+          fi
           docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
           docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
 
