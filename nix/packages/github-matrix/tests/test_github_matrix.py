@@ -93,7 +93,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-darwin",
                 "apple-virt",
-                {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
+                {"labels": ["blacksmith-6vcpu-macos-26"]},
             ),
             (
                 "aarch64-darwin",

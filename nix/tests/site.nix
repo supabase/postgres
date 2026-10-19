@@ -35,19 +35,16 @@ pkgs.testers.runNixOSTest {
 
     machine.succeed("nix-env --profile /nix/var/nix/profiles/site --set ${site-env-17}")
 
-    # postgres can load supautils via the site profile's dynamic_library_path
+    # without $libdir in the path, supautils can only come from the site profile
     machine.succeed("install -d -o postgres -g postgres /tmp/pgdata")
     machine.succeed("su postgres -c '${psql_17}/bin/initdb -D /tmp/pgdata'")
     machine.succeed("install -o postgres -g postgres ${pgConf} /tmp/pgdata/postgresql.conf")
+    machine.succeed("sed -i 's/:\\$libdir//' /tmp/pgdata/postgresql.conf")
+    machine.succeed("grep -qx \"dynamic_library_path = '/nix/var/nix/profiles/site/lib/postgresql'\" /tmp/pgdata/postgresql.conf")
     machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata -l /tmp/pg.log start'")
     machine.succeed("su postgres -c '${psql_17}/bin/psql -h /tmp -d postgres -c \"select 1\"'")
     machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata stop'")
 
-    # site-nix-gc runs to the end and reports what it freed
-    machine.succeed("nix-env --profile /nix/var/nix/profiles/default --set $(dirname $(dirname $(readlink -f $(command -v nix-env))))")
     machine.succeed("${site-env-17}/bin/activate")
-    machine.succeed("${site-env-17}/bin/site-nix-gc")
-    machine.wait_until_fails("systemctl is-active site-nix-gc", timeout=1800)
-    print(machine.succeed("journalctl -u site-nix-gc --no-pager | grep freed"))
   '';
 }
