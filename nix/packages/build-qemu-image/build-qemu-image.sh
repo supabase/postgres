@@ -63,6 +63,7 @@ PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "cpu=$cpu" \
 	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
+	-var "nix_store_paths=$(nix eval --json "github:supabase/postgres/$git_sha#packages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux" --apply 'p: builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-'"$postgres_major_version"'; }')" \
 	-var "postgres-version=$postgres_version" \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
