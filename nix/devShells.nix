@@ -3,6 +3,7 @@
   perSystem =
     {
       pkgs,
+      inputs',
       self',
       config,
       lib,
@@ -27,7 +28,7 @@
     in
     {
       devShells = {
-        default = pkgs.devshell.mkShell {
+        default = inputs'.devshell.legacyPackages.mkShell {
           packages = with pkgs; [
             coreutils
             just
@@ -90,12 +91,6 @@
               name = "cleanup-ami";
               help = "Deregister AMIs by name";
               command = "${lib.getExe self'.packages.cleanup-ami} $@";
-              category = "ami";
-            }
-            {
-              name = "build-test-ami";
-              help = "Build AMI images for PostgreSQL testing";
-              command = "${lib.getExe self'.packages.build-test-ami} $@";
               category = "ami";
             }
             {
