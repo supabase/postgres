@@ -27,15 +27,18 @@
 
 let
   # Hold cgal back to 6.0.2 until nixpkgs bumps sfcgal past 2.2.0 (incompatible with CGAL 6.1+).
-  sfcgal' = sfcgal.override {
-    cgal = cgal.overrideAttrs (_: {
-      version = "6.0.2";
-      src = fetchurl {
-        url = "https://github.com/CGAL/cgal/releases/download/v6.0.2/CGAL-6.0.2.tar.xz";
-        sha256 = "sha256-8wxb58JaKj6iS8y6q1z2P6/aY8AnnzTX5/izISgh/tY=";
-      };
-    });
-  };
+  sfcgal' =
+    assert lib.assertMsg (lib.versionAtLeast "2.2.0" sfcgal.version)
+      "sfcgal ${sfcgal.version} is newer than 2.2.0, drop the cgal 6.0.2 pin";
+    sfcgal.override {
+      cgal = cgal.overrideAttrs (_: {
+        version = "6.0.2";
+        src = fetchurl {
+          url = "https://github.com/CGAL/cgal/releases/download/v6.0.2/CGAL-6.0.2.tar.xz";
+          sha256 = "sha256-8wxb58JaKj6iS8y6q1z2P6/aY8AnnzTX5/izISgh/tY=";
+        };
+      });
+    };
   gdal = callPackage ./gdal.nix { inherit postgresql; };
   pname = "postgis";
 
