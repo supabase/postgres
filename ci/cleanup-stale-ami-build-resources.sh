@@ -60,7 +60,6 @@ readarray -t ids < <(
 		sort -Vu
 )
 
-max=10
 if ! wait $!; then
 	msg "Encountered at least one error discovering stale executions, proceeding anyway"
 	touch .failed/gather
@@ -68,12 +67,12 @@ fi
 if ((${#ids[@]} == 0)); then
 	msg "No stale Packer or testinfra executions found"
 else
-	msg "${#ids[@]} stale executions found, cleaning up $max"
+	msg "${#ids[@]} stale executions found"
 fi
 
 cleaner=$(dirname "$0")/cleanup-ami-build-resources.sh
 # shellcheck disable=SC2016
-printf '%s\n' "${ids[@]::max}" |
+printf '%s\n' "${ids[@]}" |
 	xargs --no-run-if-empty -P"$(nproc)" -n1 bash -c '
 		set -euo pipefail
 		cleaner=$1
