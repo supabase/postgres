@@ -209,7 +209,7 @@ jobs:
           aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}/${SYSTEM}/${SITE_ENV_NAME}" <<< "$SITE_ENV_PATH"
 
           if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
-            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${SYSTEM}/${SITE_ENV_NAME}/latest" <<< "$GIT_SHA"
+            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/latest/${SYSTEM}/${SITE_ENV_NAME}" <<< "$GIT_SHA"
           fi
 
       - name: Create release
