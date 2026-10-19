@@ -940,15 +940,19 @@
               # closure, so it isn't covered by "core and extensions share one glibc" — pin it
               # explicitly so a future nixpkgs glibc bump can't silently outrun the base image.
               pamPaths = [ self'.packages.gatekeeper ];
+              # ships to end users' own machines, not our fleet's nix closure
+              portablePaths = [ self'.packages.psql_17_cli_portable ];
             in
             pkgs.runCommand "glibc-version-check"
               {
                 nativeBuildInputs = [ pkgs.binutils ];
-                inherit legacyPaths pamPaths;
+                inherit legacyPaths pamPaths portablePaths;
               }
               ''
                 # 2.31: Ubuntu 20.04's glibc.
                 ${lib.getExe checkScript} 2.31 $legacyPaths
+                # 2.39: Ubuntu 24.04's glibc.
+                ${lib.getExe checkScript} 2.39 $portablePaths
                 # 2.40: current core floor.
                 ${lib.getExe checkScript} 2.40 $pamPaths
                 touch $out
@@ -956,13 +960,16 @@
           collation-version-check =
             let
               baseline = "glibc-2.40-66";
-              actual = pkgs.glibc.name;
+              check =
+                name: actual:
+                lib.assertMsg (actual == baseline) ''
+                  glibc collation data changed: baseline is ${baseline}, ${name} has ${actual}.
+                  This can change collation versions and require a reindex.
+                  If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
+                '';
             in
-            assert lib.assertMsg (actual == baseline) ''
-              glibc collation data changed: baseline is ${baseline}, build has ${actual}.
-              This can change collation versions and require a reindex.
-              If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
-            '';
+            assert check "postgresql_15" self'.packages.postgresql_15.stdenv.cc.libc.name;
+            assert check "postgresql_17" self'.packages.postgresql_17.stdenv.cc.libc.name;
             pkgs.runCommand "collation-version-check" { } "touch $out";
         };
     };
