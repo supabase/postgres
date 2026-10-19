@@ -1,6 +1,6 @@
 # Updating cargo-pgrx Extensions
 
-This guide covers the complete process for updating Rust-based PostgreSQL extensions that use `pgrx` (formerly `pgx`). These extensions include `wrappers`, `pg_graphql`, and `pg_jsonschema`.
+This guide covers the complete process for updating Rust-based PostgreSQL extensions that use `pgrx` (formerly `pgx`). These extensions include `wrappers`, `pg_graphql`, and `pg_jsonschema`. The nixpkgs `buildPgrxExtension` is documented in its [cargo-pgrx directory](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/tools/rust/cargo-pgrx).
 
 ## Overview
 
