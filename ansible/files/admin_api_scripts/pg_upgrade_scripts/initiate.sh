@@ -401,7 +401,7 @@ EXTRA_NIX_CONF
 
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-store -r --quiet "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi

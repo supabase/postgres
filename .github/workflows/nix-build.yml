@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -105,7 +105,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -129,16 +129,13 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - name: Install nix (ephemeral)
-        if: ${{ matrix.attr != '' && matrix.runs_on.group != 'self-hosted-runners-nix' }}
-        uses: ./.github/actions/nix-install-ephemeral
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-      - name: Install nix (self-hosted)
-        if: ${{ matrix.attr != '' && matrix.runs_on.group == 'self-hosted-runners-nix' }}
-        uses: ./.github/actions/nix-install-self-hosted
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: ./.github/actions/nix-build-retry
@@ -162,7 +159,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -188,7 +185,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -216,7 +213,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Install nix
         if: ${{ matrix.attr != '' }}
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
@@ -312,7 +309,7 @@ jobs:
           path: base
 
       - name: Install nix
-        uses: ./head/.github/actions/nix-install-ephemeral
+        uses: ./head/.github/actions/install-nix
 
       # HEAD side already done in eval
       - name: Download head drvPaths
