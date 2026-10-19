@@ -60,7 +60,13 @@
             echo "Activating site profile."
             echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
             ${lib.optionalString (extraPaths != [ ]) ''
-              echo "gatekeeper at /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so: loaded by PAM if linked from ${builtins.unsafeDiscardStringContext (toString pkgs.pam)}/lib/security/pam_jit_pg.so."
+              pam_dir=$(/nix/var/nix/profiles/default/bin/nix-store -q --requisites /var/lib/postgresql/.nix-profile | grep -m1 -E -- '-linux-pam-[0-9.]+$' || true)
+              if [[ -z "$pam_dir" ]]; then
+                echo "linux-pam not found in the postgres profile. Skipping the gatekeeper link."
+              else
+                ln -sf /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so "$pam_dir/lib/security/pam_jit_pg.so"
+                echo "gatekeeper linked at $pam_dir/lib/security/pam_jit_pg.so."
+              fi
             ''}
             echo "Site profile activated."
           '';
