@@ -979,7 +979,8 @@
               check =
                 name: actual:
                 lib.assertMsg (actual == baseline) ''
-                  glibc collation data changed: baseline is ${baseline}, ${name} has ${actual}.
+                  glibc version changed: baseline is ${baseline}, ${name} has ${actual}. Checked
+                  glibc version, not actual collation data, as a proxy for collation drift.
                   This can change collation versions and require a reindex.
                   If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
                 '';
