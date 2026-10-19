@@ -56,9 +56,6 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 ```bash
 # Run directly
 nix run github:supabase/postgres#supascan -- --help
-
-# Install to profile
-nix profile install github:supabase/postgres#supascan
 ```
 
 ### Development Environment
