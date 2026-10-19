@@ -604,6 +604,20 @@
           psql_orioledb-17_slim = pkgs.runCommand "run-check-harness-psql-orioledb-17-slim" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" { isSlim = true; })
           );
+          pg_upgrade_ship_logs =
+            pkgs.runCommand "pg-upgrade-ship-logs"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.jq
+                  pkgs.coreutils
+                  pkgs.hostname
+                ];
+              }
+              ''
+                bash ${./tests/util/test-ship-logs.sh} ${../ansible/files/admin_api_scripts/pg_upgrade_scripts/common.sh}
+                touch $out
+              '';
           # CLI variant checks
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
@@ -911,10 +925,12 @@
             ;
           devShell = self'.devShells.default;
         }
-        // (import ./ext/tests {
-          inherit self;
-          inherit pkgs;
-        })
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+        )
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
           inherit (self'.packages)
             postgresql_15_debug
