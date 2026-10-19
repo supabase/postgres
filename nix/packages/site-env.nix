@@ -9,77 +9,48 @@
       ...
     }:
     let
-      # Scripts run on the host bash to keep Nix's bash and glibc out of the closure.
-      writeHostBash =
-        name: text:
-        pkgs.writeTextFile {
-          inherit name;
-          executable = true;
-          destination = "/bin/${name}";
-          text = ''
-            #!/usr/bin/env bash
-            set -euo pipefail
-            ${text}
-          '';
-          checkPhase = ''
-            ${pkgs.shellcheck}/bin/shellcheck "$target"
-          '';
-        };
-
-      # Prunes old site, postgres, and default profile generations, then runs nix-store --gc in a throttled transient systemd unit.
-      site-nix-gc = writeHostBash "site-nix-gc" ''
-        nix-env --profile /nix/var/nix/profiles/site --delete-generations +3
-        nix-env --profile /nix/var/nix/profiles/default --delete-generations +2
-        if [[ -L /var/lib/postgresql/.nix-profile ]]; then
-          nix-env --profile "$(readlink /var/lib/postgresql/.nix-profile)" --delete-generations +2
-        fi
-        if [[ ! -d /run/systemd/system ]]; then
-          echo "Systemd not found. Skipping nix-store --gc."
-          exit 0
-        fi
-        if systemctl is-active --quiet site-nix-gc; then
-          echo "Garbage collection already running. Skipping nix-store --gc."
-          exit 0
-        fi
-        systemd-run \
-          --unit=site-nix-gc --collect --no-block --setenv=NIX_REMOTE=local \
-          -p Nice=19 -p CPUSchedulingPolicy=idle -p CPUQuota=20% \
-          -p IOSchedulingClass=idle -p IOWeight=1 -p IOWriteBandwidthMax="/nix 20M" \
-          -p MemoryHigh=10% -p MemoryMax=15% -p OOMScoreAdjust=1000 \
-          -p RuntimeMaxSec=2h \
-          "$(command -v nix-store)" --gc --quiet --max-freed 2G \
-          || echo "systemd-run failed. Skipping nix-store --gc."
-      '';
-
       makeSiteEnv =
         version: extraPaths:
         let
           supautils = self'.legacyPackages."psql_${version}".exts.supautils;
           # Site profile activation script. MUST STAY IDEMPOTENT!
-          activate = writeHostBash "activate" ''
-            echo "Activating site profile."
-            echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
-            ${lib.optionalString (extraPaths != [ ]) ''
-              pam_dir=$(/nix/var/nix/profiles/default/bin/nix-store -q --requisites /var/lib/postgresql/.nix-profile | grep -m1 -E -- '-linux-pam-[0-9.]+$' || true)
-              if [[ -z "$pam_dir" ]]; then
-                echo "linux-pam not found in the postgres profile. Skipping the gatekeeper link."
-              else
-                ln -sf /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so "$pam_dir/lib/security/pam_jit_pg.so"
-                echo "gatekeeper linked at $pam_dir/lib/security/pam_jit_pg.so."
-              fi
-            ''}
-            echo "Site profile activated."
-          '';
+          activate = pkgs.writeTextFile {
+            name = "activate";
+            executable = true;
+            destination = "/bin/activate";
+            # Runs on the host bash to keep Nix's bash and glibc out of the closure.
+            text = ''
+              #!/usr/bin/env bash
+              set -euo pipefail
+              echo "Activating site profile."
+              echo "Configured in /etc/postgresql/postgresql.conf (runtime could differ):"
+              for guc in dynamic_library_path session_preload_libraries; do
+                grep -h "^$guc" /etc/postgresql/postgresql.conf 2>/dev/null || echo "$guc is not set"
+              done
+              ${lib.optionalString (extraPaths != [ ]) ''
+                pam_dir=$(/nix/var/nix/profiles/default/bin/nix-store -q --requisites /var/lib/postgresql/.nix-profile | grep -m1 -E -- '-linux-pam-[0-9.]+$' || true)
+                if [[ -z "$pam_dir" ]]; then
+                  echo "linux-pam not found in the postgres profile. Skipping the gatekeeper link."
+                else
+                  ln -sf /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so "$pam_dir/lib/security/pam_jit_pg.so"
+                  echo "gatekeeper linked at $pam_dir/lib/security/pam_jit_pg.so."
+                fi
+              ''}
+              echo "Site profile activated."
+            '';
+            checkPhase = ''
+              ${pkgs.shellcheck}/bin/shellcheck "$target"
+            '';
+          };
         in
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [
             supautils
             activate
-            site-nix-gc
           ]
           ++ extraPaths;
-          passthru = { inherit activate site-nix-gc; };
+          passthru = { inherit activate; };
         };
 
       siteEnvs = {

@@ -471,6 +471,85 @@ def test_postgrest_is_running(host):
     )
 
 
+def _tcp_connect_as(ssh, user, port, addr="127.0.0.1"):
+    """Try a TCP connect to <addr>:<port> as <user>; True if it connects."""
+    return run_ssh_command(
+        ssh, f"sudo -u {user} timeout 3 bash -c '</dev/tcp/{addr}/{port}'"
+    )["succeeded"]
+
+
+@pytest.fixture(scope="session")
+def host_private_ip(host):
+    """The instance's own interface IP. Traffic to it routes via lo, unlike the
+    public IP in host["ip"], which AWS NATs."""
+    return run_ssh_command(host["ssh"], "hostname -I | awk '{print $1}'")[
+        "stdout"
+    ].strip()
+
+
+def test_egress_filter_loaded(host):
+    """The per-user egress filter table is loaded."""
+    result = run_ssh_command(host["ssh"], "sudo nft list table inet egressfilter")
+    assert result["succeeded"], (
+        f"nftables table inet egressfilter is not loaded: {result['stderr']}"
+    )
+
+
+# Every way to reach a local listener; the filter matches oif lo, so all of
+# these must be covered, not just 127.0.0.1.
+LOCAL_ADDRS = ["127.0.0.1", "127.0.0.2", "0.0.0.0", "::1", "::", "host-private-ip"]
+
+
+@pytest.mark.parametrize("addr", LOCAL_ADDRS)
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_local_egress(host, host_private_ip, user, addr):
+    """Restricted users reach local :5432 only; pgbouncer (:6543, listening on
+    all addresses) is rejected on every local address. root is the control."""
+    ssh = host["ssh"]
+    if addr == "host-private-ip":
+        addr = host_private_ip
+    if not (
+        _tcp_connect_as(ssh, "root", 5432, addr)
+        and _tcp_connect_as(ssh, "root", 6543, addr)
+    ):
+        pytest.skip(f"no listener reachable on {addr} even as root")
+
+    assert _tcp_connect_as(ssh, user, 5432, addr), (
+        f"{user} can no longer reach Postgres on {addr}:5432"
+    )
+    assert not _tcp_connect_as(ssh, user, 6543, addr), (
+        f"{user} can reach pgbouncer on {addr}:6543; egressfilter is not blocking it"
+    )
+
+
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_imds_blocked(host, user):
+    """Restricted users cannot reach instance metadata. wal-g runs as its own
+    'wal-g' user, so it is unaffected; root is the control."""
+    ssh = host["ssh"]
+    imds = "169.254.169.254"
+    if not _tcp_connect_as(ssh, "root", 80, imds):
+        pytest.skip("instance metadata is not reachable even as root")
+
+    assert not _tcp_connect_as(ssh, user, 80, imds), (
+        f"{user} can reach instance metadata; egressfilter is not blocking it"
+    )
+    assert _tcp_connect_as(ssh, "wal-g", 80, imds), (
+        "wal-g can no longer reach instance metadata; it needs IAM credentials"
+    )
+
+
+@pytest.mark.parametrize("user", ["postgres", "gotrue"])
+def test_restricted_user_dns_resolves(host, user):
+    """Name resolution through the systemd-resolved stub is still allowed."""
+    result = run_ssh_command(
+        host["ssh"], f"sudo -u {user} timeout 5 getent ahosts aws.amazon.com"
+    )
+    assert result["succeeded"] and result["stdout"].strip(), (
+        f"{user} can no longer resolve hostnames: {result['stderr']}"
+    )
+
+
 def test_postgrest_responds_to_requests(host):
     """Test if PostgREST responds to requests."""
     res = requests.get(
