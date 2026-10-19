@@ -56,10 +56,9 @@ Conceptually, this workflow evaluates the `legacyPackages` and `checks` flake ou
 
 Implementation-wise, most of the code lives in the `/nix/packages/github-matrix/github_matrix.py` python script. The script starts an instance of `nix-eval-jobs` and parses its output. Each parsed job is associated with a builder tag using the following order:
 
-1. KVM packages -> self-hosted runners
-2. Large packages on Linux -> 32vcpu ephemeral runners
-3. Darwin packages -> self-hosted runners
-4. Default -> ephemeral runners
+1. KVM packages on Linux -> 16vcpu ephemeral runners (arm-native-runner on aarch64)
+2. Large packages -> 12vcpu (Darwin) / 32vcpu (Linux) ephemeral runners
+3. Default -> 6vcpu (Darwin) / 8vcpu (Linux) ephemeral runners
 
 KVM packages and large packages are determined respectively by the `kvm` and `big-parallel` Nix attributes.
 

@@ -19,7 +19,7 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -49,7 +49,7 @@ jobs:
       - name: Checkout Repo
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
-      - uses: ./.github/actions/nix-install-ephemeral
+      - uses: ./.github/actions/install-nix
 
       - name: Grab release version
         id: process_release_version
