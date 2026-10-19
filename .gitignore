@@ -24,5 +24,6 @@ venv/
 
 #nix related
 common-nix.vars.pkr.hcl
+ansible/nix-store-paths.json
 db/schema.sql
 result*

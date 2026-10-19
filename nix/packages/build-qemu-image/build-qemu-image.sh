@@ -55,6 +55,7 @@ postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" an
 # Build the cloud-init seed ISO before invoking packer.
 cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
+nix eval --json "github:supabase/postgres/$git_sha#packages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux" --apply 'p: { nix_store_paths = builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-'"$postgres_major_version"'; }; }' >ansible/nix-store-paths.json
 export LC_ALL=C.UTF-8
 export TZ=UTC
 packer init qemu.pkr.hcl
@@ -63,7 +64,6 @@ PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "cpu=$cpu" \
 	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
-	-var "nix_store_paths=$(nix eval --json "github:supabase/postgres/$git_sha#packages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux" --apply 'p: builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-'"$postgres_major_version"'; }')" \
 	-var "postgres-version=$postgres_version" \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
