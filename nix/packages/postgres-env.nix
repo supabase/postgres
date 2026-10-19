@@ -9,12 +9,6 @@
     let
       # Make a bundle of packages, as a single derivation, to be installed into the
       # postgres user's nix profile, during image provisioning or instance update.
-      makeCollationRefresh =
-        version:
-        pkgs.callPackage ./postgres-collation-refresh.nix {
-          psql = self'.packages."psql_${version}/bin";
-        };
-
       makePostgresEnv =
         version:
         pkgs.symlinkJoin {
@@ -27,7 +21,7 @@
           ]
           ++ lib.optionals pkgs.stdenv.isLinux [
             self'.packages."postgresql_${version}_debug"
-            self'.packages."postgres-collation-refresh-${version}"
+            self'.packages.postgres-collation-refresh
           ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
           # orioledb.so ships as a separate extension package (nix/ext/orioledb.nix), not
@@ -45,9 +39,7 @@
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
       }
       // lib.optionalAttrs pkgs.stdenv.isLinux {
-        postgres-collation-refresh-15 = makeCollationRefresh "15";
-        postgres-collation-refresh-17 = makeCollationRefresh "17";
-        postgres-collation-refresh-orioledb-17 = makeCollationRefresh "orioledb-17";
+        postgres-collation-refresh = pkgs.callPackage ./postgres-collation-refresh.nix { };
       };
     };
 }

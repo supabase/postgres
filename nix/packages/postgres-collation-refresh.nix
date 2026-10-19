@@ -5,7 +5,6 @@
   writeTextDir,
   symlinkJoin,
   coreutils,
-  psql,
 }:
 let
   minGlibc = "2.31";
@@ -13,10 +12,7 @@ let
 
   script = writeShellApplication {
     name = "postgres_collation_refresh";
-    runtimeInputs = [
-      coreutils
-      psql
-    ];
+    runtimeInputs = [ coreutils ];
     runtimeEnv = {
       MIN_GLIBC = minGlibc;
       MAX_GLIBC = maxGlibc;
@@ -29,14 +25,13 @@ let
     Description=Refresh default collation version
     After=postgresql.service
     PartOf=postgresql.service
-    ConditionHost=!hibernation-*
 
     [Service]
     Type=oneshot
     RemainAfterExit=yes
     User=postgres
     TimeoutStartSec=120
-    Nice=19
+    Environment=PATH=/var/lib/postgresql/.nix-profile/bin
     ExecStart=${lib.getExe script}
   '';
 in

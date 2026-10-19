@@ -2,7 +2,8 @@
 let
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
   testLib = import ./lib.nix { inherit self pkgs; };
-  refresh = self.packages.${system}."postgres-collation-refresh-17";
+  refresh = self.packages.${system}.postgres-collation-refresh;
+  psql = self.packages.${system}."psql_17/bin";
 in
 pkgs.testers.runNixOSTest {
   name = "collation-refresh";
@@ -23,6 +24,7 @@ pkgs.testers.runNixOSTest {
 
       systemd.packages = [ refresh ];
       systemd.services.postgresql.wants = [ "postgresql-collation-refresh.service" ];
+      systemd.services.postgresql-collation-refresh.path = [ psql ];
     };
   testScript = ''
     PSQL = "psql -h localhost -U supabase_admin -d postgres -At -v ON_ERROR_STOP=1"
@@ -74,15 +76,6 @@ pkgs.testers.runNixOSTest {
       assert recorded("c") == "-"
       set_recorded("i", icu_actual)
 
-    with subtest("A glibc database older than 2.31 fails the run and the other databases are still refreshed"):
-      fresh()
-      set_recorded("old", "2.28")
-      set_recorded("g", "2.31")
-      status, _ = server.execute(REFRESH)
-      assert status == 1, f"expected exit 1, got {status}"
-      assert recorded("old") == "2.28"
-      assert recorded("g") == actual, f"expected {actual}, got {recorded('g')}"
-
     with subtest("A database that fails to refresh does not stop the others"):
       fresh()
       sql("create role refresher login")
@@ -101,19 +94,14 @@ pkgs.testers.runNixOSTest {
       server.succeed(REFRESH)
       assert recorded("template0") == "-"
 
-    with subtest("A postgres restart reruns the unit and refreshes"):
+    with subtest("A postgres restart reruns the unit: it refreshes what it can, fails on a glibc database older than 2.31, and leaves postgres active"):
       fresh()
+      set_recorded("old", "2.28")
       set_recorded("g", "2.31")
       server.succeed("systemctl restart postgresql")
       server.wait_until_succeeds(
         PSQL + " -c \"select 1 from pg_database where datname = 'g' and datcollversion = '" + actual + "'\" | grep -q 1"
       )
-
-    with subtest("A refused database fails the unit and leaves postgres active"):
-      fresh()
-      set_recorded("old", "2.28")
-      server.succeed("systemctl restart postgresql")
-      server.wait_for_unit("postgresql.service")
       server.wait_until_succeeds("systemctl is-failed postgresql-collation-refresh.service")
       server.succeed("systemctl is-active postgresql.service")
       assert recorded("old") == "2.28"
