@@ -23,14 +23,14 @@ jobs:
       base_hash: ${{ steps.check.outputs.base_hash }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
       - name: Check Docker image changes
         id: check
-        uses: ./.github/actions/check-docker-image-changes
+        uses: $/.github/actions/check-docker-image-changes
         with:
           event_name: ${{ github.event_name }}
           base_ref: ${{ github.base_ref }}
@@ -47,16 +47,16 @@ jobs:
         pg_version: ['15', '17']
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
       - name: Create Docker context
         run: docker context create builders
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        uses: docker/setup-buildx-action@v4.4.1
         with:
           endpoint: builders
 
