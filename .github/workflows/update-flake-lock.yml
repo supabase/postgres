@@ -26,7 +26,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
 
       - name: Update flake.lock and open PR
         uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28

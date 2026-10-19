@@ -28,7 +28,7 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -74,7 +74,7 @@ jobs:
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}

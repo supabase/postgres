@@ -33,7 +33,7 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: "false"
         env:
@@ -85,7 +85,7 @@ jobs:
         uses: supabase/postgres/.github/actions/shared-checkout@HEAD
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
         with:
           push-to-cache: "false"
         env:

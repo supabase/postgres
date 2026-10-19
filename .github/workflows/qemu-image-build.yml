@@ -67,7 +67,7 @@ jobs:
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Install Nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: ./.github/actions/install-nix
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}

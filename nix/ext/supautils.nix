@@ -24,6 +24,7 @@ stdenv.mkDerivation rec {
     hash = "sha256-Wsou5U7/Tuwj2E6aPEmlHg7uz7kGyBOGrb7UkjfEo9U=";
   };
 
+  # remove once all Ubuntu 20.04 (glibc 2.31) hosts are decommissioned
   patches = [ ./patches/supautils-strtol-glibc-compat.patch ];
 
   installPhase = ''
