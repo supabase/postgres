@@ -210,10 +210,10 @@ jobs:
           SITE_ENV_NAME="site-env-${POSTGRES_MAJOR_VERSION}"
           SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
 
-          aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}-${SITE_ENV_NAME}-${SYSTEM}" <<< "$SITE_ENV_PATH"
+          aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${SYSTEM}/${SITE_ENV_NAME}/${GIT_SHA}" <<< "$SITE_ENV_PATH"
 
           if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
-            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/latest-${SITE_ENV_NAME}-${SYSTEM}.sha" <<< "$GIT_SHA"
+            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${SYSTEM}/${SITE_ENV_NAME}/latest" <<< "$GIT_SHA"
           fi
 
       - name: Create release
