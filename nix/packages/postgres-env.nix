@@ -7,9 +7,25 @@
       ...
     }:
     let
+      pgrxDebugPaths =
+        version:
+        lib.concatMap
+          (
+            name:
+            lib.mapAttrsToList (_: drv: drv.debug) (
+              (self'.legacyPackages."psql_${version}".exts.${name} or { }).perVersion or { }
+            )
+          )
+          [
+            "wrappers"
+            "pg_graphql"
+            "pg_jsonschema"
+          ];
+
       debugPaths =
         version:
         lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
+        ++ lib.optionals (pkgs.stdenv.isLinux && version != "orioledb-17") (pgrxDebugPaths version)
         ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
           self'.legacyPackages."psql_${version}".exts.orioledb.debug
           self'.packages."postgresql_${version}_src"
