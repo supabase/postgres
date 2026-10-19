@@ -36,17 +36,16 @@ jobs:
       - name: Install Nix
         uses: $/.github/actions/install-nix
 
-      - name: Run portability check
-        uses: $/.github/actions/nix-build-retry
-        with:
-          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
-          extra-args: --system ${{ matrix.system }}
-
       - name: Build portable CLI bundle
         uses: $/.github/actions/nix-build-retry
         with:
           attr: .#psql_17_cli_portable
-          extra-args: --system ${{ matrix.system }}
+
+      - name: Run portability check
+        uses: $/.github/actions/nix-build-retry
+        with:
+          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
+          extra-args: --no-link
 
       - name: Determine version
         id: version
