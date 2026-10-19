@@ -65,7 +65,10 @@
           # Site profile activation script. MUST STAY IDEMPOTENT!
           activate = writeHostBash "activate" ''
             echo "Activating site profile."
-            echo "supautils at /nix/var/nix/profiles/site/lib/postgresql/supautils.so: picked up next session via session_preload_libraries, if dynamic_library_path includes /nix/var/nix/profiles/site/lib/postgresql."
+            echo "Configured in /etc/postgresql/postgresql.conf (runtime could differ):"
+            for guc in dynamic_library_path session_preload_libraries; do
+              grep -h "^$guc" /etc/postgresql/postgresql.conf 2>/dev/null || echo "$guc is not set"
+            done
             echo "Site profile activated."
           '';
         in
