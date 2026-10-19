@@ -101,25 +101,21 @@ If that worked, you're ready to build.
 
 ## Take Nix for a spin
 
-Nix is also a package manager that gives you current versions of many tools on
-any Linux distribution or macOS. You need very little Nix knowledge to try it:
+Nix gives you current versions of many tools on any Linux distribution or macOS, and you need very little Nix knowledge to try it. `nix run` fetches a tool and runs it once. Nothing stays on your `$PATH`.
 
 - **Q**: Want the latest Deno?
-- **A**: `nix profile install nixpkgs#deno`
+- **A**: `nix run nixpkgs#deno -- --version`
 
 <!-- break bulletpoints -->
 
 - **Q**: A nice Python application like HTTPie?
-- **A**: `nix profile install nixpkgs#httpie`
+- **A**: `nix run nixpkgs#httpie -- --version`
 
 <!-- break bulletpoints -->
 
 - **Q**: Favorite Rust tools like ripgrep and bat?
-- **A**: `nix profile install nixpkgs#ripgrep nixpkgs#bat`. fd, hyperfine, and eza are there too.
+- **A**: `nix run nixpkgs#ripgrep -- --version` and `nix run nixpkgs#bat -- --version`. fd, hyperfine, and eza are there too.
 
-<!-- break bulletpoints -->
-
-- **Q**: Just want to try something once, without installing it?
-- **A**: `nix run nixpkgs#cowsay -- hello`. Nothing stays on your `$PATH`.
+> **Note**: `nix profile` installs the binaries so you do not need to `nix run` them each time, however this is not recommended. If curious about its use please consult your nearest nix mentor/advanced user.
 
 To learn more about Nix, see [Zero to Nix](https://zero-to-nix.com).
