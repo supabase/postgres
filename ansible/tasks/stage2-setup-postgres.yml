@@ -77,28 +77,6 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
-    # Link through .nix-profile, not the store path: `systemctl enable` resolves
-    # the symlink and pins the unit to the store path of this generation.
-    - name: Link collation refresh unit from the postgres env profile
-      ansible.builtin.file:
-        src: /var/lib/postgresql/.nix-profile/lib/systemd/system/postgresql-collation-refresh.service
-        dest: /etc/systemd/system/postgresql-collation-refresh.service
-        state: link
-
-    - name: Make postgresql want the collation refresh unit
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/postgresql.service.d/collation-refresh.conf
-        content: |
-          [Unit]
-          Wants=postgresql-collation-refresh.service
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Reload systemd for the collation refresh unit
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-
     - name: Install supascan for baseline validation
       ansible.builtin.shell: |
         sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"

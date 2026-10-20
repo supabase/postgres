@@ -19,10 +19,7 @@
             self'.packages.supabase-groonga
             self'.packages."postgresql_${version}_src"
           ]
-          ++ lib.optionals pkgs.stdenv.isLinux [
-            self'.packages."postgresql_${version}_debug"
-            self'.packages.postgres-collation-refresh
-          ]
+          ++ lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
           # orioledb.so ships as a separate extension package (nix/ext/orioledb.nix), not
           # part of the postgresql derivation itself, so its debug output isn't covered by
@@ -37,9 +34,6 @@
         postgres-env-15 = makePostgresEnv "15";
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
-      }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
-        postgres-collation-refresh = pkgs.callPackage ./postgres-collation-refresh.nix { };
       };
     };
 }

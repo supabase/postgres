@@ -61,6 +61,7 @@
           };
           docs = pkgs.callPackage ./docs.nix { };
           pgbouncer = pkgs.callPackage ../pgbouncer.nix { };
+          postgres-collation-refresh = pkgs.callPackage ./postgres-collation-refresh { };
           github-matrix = pkgs.callPackage ./github-matrix {
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };

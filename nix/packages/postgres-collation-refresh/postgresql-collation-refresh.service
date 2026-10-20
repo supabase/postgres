@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh default collation version
+After=postgresql.service
+PartOf=postgresql.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=postgres
+TimeoutStartSec=120
+Environment=PATH=/var/lib/postgresql/.nix-profile/bin
+ExecStart=/nix/var/nix/profiles/site/bin/postgres_collation_refresh

@@ -13,7 +13,11 @@
         version: extraPaths:
         pkgs.buildEnv {
           name = "site-env-${version}";
-          paths = [ self'.legacyPackages."psql_${version}".exts.supautils ] ++ extraPaths;
+          paths = [
+            self'.legacyPackages."psql_${version}".exts.supautils
+            self'.packages.postgres-collation-refresh
+          ]
+          ++ extraPaths;
         };
 
       siteEnvs = {

@@ -3,7 +3,6 @@ let
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
   testLib = import ./lib.nix { inherit self pkgs; };
   refresh = self.packages.${system}.postgres-collation-refresh;
-  psql = self.packages.${system}."psql_17/bin";
 in
 pkgs.testers.runNixOSTest {
   name = "collation-refresh";
@@ -22,9 +21,12 @@ pkgs.testers.runNixOSTest {
         "de_DE.UTF-8/UTF-8"
       ];
 
+      systemd.tmpfiles.rules = [
+        "L+ /var/lib/postgresql/.nix-profile - - - - ${self.packages.${system}."psql_17/bin"}"
+        "L+ /nix/var/nix/profiles/site - - - - ${refresh}"
+      ];
       systemd.packages = [ refresh ];
       systemd.services.postgresql.wants = [ "postgresql-collation-refresh.service" ];
-      systemd.services.postgresql-collation-refresh.path = [ psql ];
     };
   testScript = ''
     PSQL = "psql -h localhost -U supabase_admin -d postgres -At -v ON_ERROR_STOP=1"
