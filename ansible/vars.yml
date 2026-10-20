@@ -1,15 +1,15 @@
 ---
-supabase_internal: true
-ebssurrogate_mode: true
-async_mode: true
+# If you're looking for the postgres_release versions, thats moved to ansible/postgres_release.yml
 postgres_major:
   - "15"
   - "17"
   - orioledb-17
-postgres_release:
-  postgresorioledb-17: "17.11.0.004-orioledb"
-  postgres17: "17.11.0.004"
-  postgres15: "15.19.0.004"
+sql_files:
+  - source: "pgbouncer_config/pgbouncer_auth_schema.sql"
+    dest: "00-schema.sql"
+  - source: "stat_extension.sql"
+    dest: "01-extension.sql"
+pg_bindir: /usr/lib/postgresql/bin
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
@@ -29,14 +29,14 @@ adminapi_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
     checksum: sha256:8078844641304ae10480b3120f6e51d6921be16d34ef1a7373433a3e65be6b5b
-adminmgr_release: 0.48.1
+adminmgr_release: 0.49.1
 adminmgr_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
-    checksum: sha256:fbbed5448fb8864f9656aaa2e37baaf31d56cbaf378444040a2a45c03b87cc22
+    checksum: sha256:4e42214ce35b6431a11595c4c3642376eb17be218620e390d33638a84f69278f
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
-    checksum: sha256:c09b37abc48a028e21ce673827a68131f49f65dbc1a6f05b407566175dfd2efe
+    checksum: sha256:3477bb0c4dc8e6fea72b1237558cf048de675e211021f9790ef7c134e7452cf3
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
@@ -95,14 +95,14 @@ salt_release: "3007.14" # keep this as an *explicit* string, otherwise gets trea
 salt_artifacts:
   url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
   checksum: sha256:36decef986477acb8ba2a1fc4041bcf9f22229ef6c939d0317c9e36a9d142b34
-supabase_admin_agent_release: 1.14.4
+supabase_admin_agent_release: 1.19.3
 supabase_admin_agent_artifacts:
   amd64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-amd64.tar.gz
-    checksum: sha256:7b0c03c3d2401f2ac41d82fad1d44a917c6f7a81ea8f8090f5c42c802b83ba21
+    checksum: sha256:5edac916486edc4a35eba3885022b282c70531849b3d4a73c12c24f1017bfe62
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-arm64.tar.gz
-    checksum: sha256:7db4e9849d7d6131c79cc9bba21a7bb2e0949b59367b390f58d4dc526ce766c3
+    checksum: sha256:b7eb2f3d94a22c47f7d5ee309f9a3841fd7b41f6df5ab9c071f56935365e21e1
 vector_release: 0.48.0-1
 vector_artifacts:
   amd64:
