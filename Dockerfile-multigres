@@ -78,6 +78,7 @@ FROM alpine:3.23 AS base
 
 RUN apk add --no-cache \
     bash \
+    'ca-certificates-bundle>=20261020-r0' \
     curl \
     openssh \
     procps \
