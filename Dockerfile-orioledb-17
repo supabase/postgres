@@ -73,7 +73,13 @@ RUN git clone --depth 1 --branch "${GOSU_VERSION}" https://github.com/tianon/gos
     chmod +x /usr/local/bin/gosu
 
 ####################
-# Stage 3: Final production image
+# Stage 3: Upstream entrypoint
+####################
+# Pinned to an image whose entrypoint matches docker-library/postgres@6edb0a8c.
+FROM postgres:17.8-alpine3.23@sha256:3430fe182f5065a6ea505c3d432d2c7fff18fbab954df8f277c1dbf4c70124af AS entrypoint
+
+####################
+# Stage 4: Final production image
 ####################
 FROM alpine:3.23 AS production
 
@@ -175,9 +181,7 @@ RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
 # Add entrypoint script
-ADD --chmod=0755 \
-    https://raw.githubusercontent.com/docker-library/postgres/6edb0a8c4def40c371514b34aef9037ec82d9110/17/alpine3.23/docker-entrypoint.sh \
-    /usr/local/bin/docker-entrypoint.sh
+COPY --from=entrypoint --chmod=0755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Setup pgsodium key script
 RUN mkdir -p /usr/share/postgresql/extension/ && \

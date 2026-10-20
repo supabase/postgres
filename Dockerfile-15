@@ -73,7 +73,13 @@ RUN git clone --depth 1 --branch "${GOSU_VERSION}" https://github.com/tianon/gos
     chmod +x /usr/local/bin/gosu
 
 ####################
-# Stage 3: Final production image
+# Stage 3: Upstream entrypoint
+####################
+# Pinned to an image whose entrypoint matches docker-library/postgres@6edb0a8c.
+FROM postgres:15.16-alpine3.23@sha256:5fe8ca7fc662071188c30271cb870d1ce9a6ec4578c934b064697ae77a9241e1 AS entrypoint
+
+####################
+# Stage 4: Final production image
 ####################
 FROM alpine:3.23 AS production
 
@@ -160,9 +166,7 @@ COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Add entrypoint script
-ADD --chmod=0755 \
-    https://raw.githubusercontent.com/docker-library/postgres/6edb0a8c4def40c371514b34aef9037ec82d9110/15/alpine3.23/docker-entrypoint.sh \
-    /usr/local/bin/docker-entrypoint.sh
+COPY --from=entrypoint --chmod=0755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Setup pgsodium key script
 RUN mkdir -p /usr/share/postgresql/extension/ && \
