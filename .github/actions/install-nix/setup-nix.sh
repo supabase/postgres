@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+readonly version=2.34.6
 set -euo pipefail
 
 if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
@@ -46,7 +47,7 @@ fi
 
 maybesudo NIXCONFDIR="$nixconfdir" ./setup-github-access.sh >>"$tmpdir/nix.conf"
 
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- $daemon --yes --nix-extra-conf-file "$tmpdir/nix.conf"
+curl -L https://releases.nixos.org/nix/nix-$version/install | sh -s -- $daemon --yes --nix-extra-conf-file "$tmpdir/nix.conf"
 cat "$nixconfdir/nix.conf"
 
 # Add nix to PATH for subsequent steps
