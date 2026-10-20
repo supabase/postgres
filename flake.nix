@@ -51,7 +51,6 @@
         nix/hooks.nix
         nix/hosts.nix
         nix/nixpkgs.nix
-        nix/overlays
         nix/packages
         nix/tools
       ];
