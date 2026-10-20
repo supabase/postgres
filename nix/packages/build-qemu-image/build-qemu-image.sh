@@ -52,7 +52,7 @@ install --mode 644 "$vars" "$workdir/ovmf_vars.fd" # qemu writes to the vars pfl
 git_sha=${GIT_SHA:-$(git rev-parse HEAD)}
 system=$([[ $arch == arm64 ]] && echo aarch64-linux || echo x86_64-linux)
 site_env_path=$(nix eval --raw "github:supabase/postgres/$git_sha#packages.$system.site-env-$postgres_major_version.outPath")
-postgres_version=$(yq -r ".postgres_release[\"postgres$postgres_major_version\"]" ansible/vars.yml)
+postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" ansible/postgres_release.yml)
 
 # Build the cloud-init seed ISO before invoking packer.
 cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
