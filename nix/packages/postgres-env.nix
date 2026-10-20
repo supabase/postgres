@@ -39,7 +39,7 @@
       legacyPackages = builtins.listToAttrs (
         map
           (version: {
-            name = "stage2-store-paths-${version}";
+            name = "nix-store-paths-${version}";
             value.nix_store_paths = builtins.mapAttrs (_: drv: drv.outPath) {
               inherit (self'.packages)
                 supascan

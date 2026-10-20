@@ -103,7 +103,7 @@ runs:
       run: |
         echo "::group::AMI Build: Stage 2"
 
-        nix eval --json "github:supabase/postgres/${{ inputs.packages_git_sha }}#legacyPackages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux.stage2-store-paths-${{ inputs.postgres_version }}" >ansible/nix-store-paths.json
+        nix eval --json "github:supabase/postgres/${{ inputs.packages_git_sha }}#legacyPackages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux.nix-store-paths-${{ inputs.postgres_version }}" >ansible/nix-store-paths.json
         git add -f ansible/nix-store-paths.json
 
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
