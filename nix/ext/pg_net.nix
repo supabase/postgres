@@ -18,23 +18,20 @@
 let
   # nixpkgs builds libunistring against gnu libiconv on darwin, which collides with apple's in the cli bundle
   curlAppleIconv =
-    if stdenv.isDarwin then
-      let
-        libunistringApple = libunistring.override { libiconvReal = libiconv; };
-        libidn2Apple = libidn2.override { libunistring = libunistringApple; };
-        libpslApple =
-          (libpsl.override {
-            libidn2 = libidn2Apple;
-            libunistring = libunistringApple;
-          }).overrideAttrs
-            { env.NIX_LDFLAGS = "-liconv"; };
-      in
-      curl.override {
-        libidn2 = libidn2Apple;
-        libpsl = libpslApple;
-      }
-    else
-      curl;
+    let
+      libunistringApple = libunistring.override { libiconvReal = libiconv; };
+      libidn2Apple = libidn2.override { libunistring = libunistringApple; };
+      libpslApple =
+        (libpsl.override {
+          libidn2 = libidn2Apple;
+          libunistring = libunistringApple;
+        }).overrideAttrs
+          { env.NIX_LDFLAGS = "-liconv"; };
+    in
+    curl.override {
+      libidn2 = libidn2Apple;
+      libpsl = libpslApple;
+    };
   pname = "pg_net";
   build =
     version: hash:
@@ -42,7 +39,7 @@ let
       inherit pname version;
 
       buildInputs = [
-        curlAppleIconv
+        (if stdenv.isDarwin then curlAppleIconv else curl)
         postgresql
       ]
       ++ lib.optional (version == "0.6") libuv;
