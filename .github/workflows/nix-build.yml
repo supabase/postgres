@@ -340,7 +340,7 @@ jobs:
     name: Post package version diff comment
     if: always() && github.event_name == 'pull_request'
     needs: version-diff
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pull-requests: write
     steps:

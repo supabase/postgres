@@ -24,7 +24,7 @@ jobs:
             runner: macos-14
             arch: darwin-arm64
           - system: x86_64-linux
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
             arch: linux-x64
           - system: aarch64-linux
             runner: ubuntu-24.04-arm
@@ -89,7 +89,7 @@ jobs:
         include:
           - runner: macos-14
             arch: darwin-arm64
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             arch: linux-x64
           - runner: ubuntu-24.04-arm
             arch: linux-arm64
@@ -392,7 +392,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [build-native, test-portability]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
