@@ -63,14 +63,13 @@ function waitfor_boot_finished {
 
 function install_packages {
 	packages=(
-		ansible
 		debootstrap
 		e2fsprogs
 		gdisk
 		nvme-cli
 	)
 	apt-get install --yes "${packages[@]}"
-	ansible-galaxy collection install community.general
+	install_ansible
 }
 
 # Partition the new root EBS volume

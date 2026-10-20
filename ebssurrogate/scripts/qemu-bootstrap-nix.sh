@@ -55,7 +55,6 @@ function waitfor_boot_finished {
 
 function install_packages {
 	packages=(
-		ansible
 		arptables
 		e2fsprogs
 		ebtables
@@ -69,13 +68,12 @@ function install_packages {
 		ufw
 	)
 	apt-get install --yes "${packages[@]}"
-	ansible-galaxy collection install community.general
+	install_ansible
 }
 
 function execute_playbook {
 	run_playbook ./ansible/playbook.yml /mnt/tmp false true \
-		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
-		--extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION"
 }
 
 #################
@@ -84,8 +82,7 @@ function execute_playbook {
 
 function execute_stage2_playbook {
 	run_playbook ./ansible/playbook.yml /tmp true true \
-		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \
-		--extra-vars @./ansible/qemu-vars.yaml
+		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION"
 }
 
 function clean_legacy_things {

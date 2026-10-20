@@ -11,6 +11,11 @@ function cleanup_apt {
 	rm -rf /var/lib/apt/lists/*
 }
 
+function install_ansible {
+	apt-get install --yes ansible
+	ansible-galaxy collection install community.general
+}
+
 function install_nix() {
 	curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
 		cat <<-EOF

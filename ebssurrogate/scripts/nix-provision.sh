@@ -14,11 +14,6 @@ function setup_apt {
 	export DEBIAN_FRONTEND=noninteractive
 }
 
-function install_packages {
-	apt-get install -y ansible
-	ansible-galaxy collection install community.general
-}
-
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
 	echo "GIT_SHA: $GIT_SHA"
@@ -33,7 +28,7 @@ function cleanup_packages {
 
 setup_apt
 update_and_upgrade_apt
-install_packages
+install_ansible
 install_nix
 execute_stage2_playbook
 cleanup_packages
