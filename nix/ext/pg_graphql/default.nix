@@ -19,7 +19,7 @@ let
     let
       cargo = rust-bin.stable.${rustVersion}.default;
       mkPgrxExtension = callPackages ../../cargo-pgrx/mkPgrxExtension.nix {
-        inherit rustVersion pgrxVersion;
+        inherit rustVersion pgrxVersion rust-bin;
       };
       src = fetchFromGitHub {
         owner = "supabase";
