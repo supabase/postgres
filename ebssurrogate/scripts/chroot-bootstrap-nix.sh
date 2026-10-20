@@ -11,10 +11,6 @@ set -o xtrace
 # shellcheck source=/dev/null
 source /tmp/provision-common.sh
 
-function setup_apt {
-	export DEBIAN_FRONTEND=noninteractive
-}
-
 function clean_apt_cache {
 	apt-get clean
 	apt-get autoremove --purge --yes

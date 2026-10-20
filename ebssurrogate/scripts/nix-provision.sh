@@ -10,10 +10,6 @@ source /tmp/provision-common.sh
 
 exec 1>&2
 
-function setup_apt {
-	export DEBIAN_FRONTEND=noninteractive
-}
-
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
 	echo "GIT_SHA: $GIT_SHA"
