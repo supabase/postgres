@@ -2,8 +2,6 @@
 
 The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are deployed to `/nix/var/nix/profiles/site`. They hold supautils, and `activate`.
 
-`dynamic_library_path` in `postgresql.conf` includes `/nix/var/nix/profiles/site/lib/postgresql` first, then `$libdir`. supautils also remains in `$libdir`, pending cleanup.
-
 ## Publish
 
 `ami-release-nix.yml` uploads each store path as a string to the shared artifacts bucket, in the object `nix-catalog/<sha>/<system>/site-env-<major>`. Release branches also upload the git sha as a string to `nix-catalog/latest/<system>/site-env-<major>`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`.
@@ -19,6 +17,8 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 
 `activate` runs after the switch. It prints the library settings configured in `postgresql.conf`, and is idempotent. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
+New sessions load supautils from the new profile. Open sessions keep the copy they loaded until they reconnect. Postgres does not restart. A restart applies the change to every session at once. The same holds after a rollback.
+
 ## Roll back
 
 ```sh
@@ -30,8 +30,6 @@ Rollback switches to the previous generation. `activate` then runs from that gen
 
 To go further back than the previous generation, install an older version by path.
 
-New sessions load supautils from the rolled-back profile. Open sessions keep the copy they loaded until they reconnect. Postgres does not restart. A restart applies the change to every session at once.
-
 ## Install any version by path
 
 ```sh
@@ -41,15 +39,9 @@ nix-env --profile /nix/var/nix/profiles/site --set <older store path>
 
 This is the way to roll back past the one kept generation. It is the same as an update with an older path.
 
-## What `activate` may do
+## `activate` safety
 
-`activate` must be idempotent, and the previous generation's `activate` must be able to converge the machine back. A step is allowed when:
-
-1. It links through the profile path, such as `/nix/var/nix/profiles/site/lib/…`. The link follows the profile and needs no undo.
-2. It is harmless when it dangles after a rollback to a profile that lacks the target.
-3. Otherwise it has its own undo, decided case by case. Treat any such step as a flag in review.
-
-The roundtrip test compares a manifest before the update and after the rollback. A step that breaks these rules fails it.
+`activate` must be idempotent, and the previous generation's `activate` must be able to converge the machine back. Safety shall be ensured by comparing snapshots in tests before and after an update and a rollback.
 
 ## Test
 
