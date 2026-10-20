@@ -16,13 +16,9 @@ ensure_tmp_dir
 
 # Cleanup more packages
 packages=(
-	ansible
 	ansible-core
 	apport
 	appstream
-	autoconf
-	automake
-	autotools-dev
 	bash-completion
 	bcache-tools
 	bind9-dnsutils
@@ -31,11 +27,8 @@ packages=(
 	bolt
 	btrfs-progs
 	byobu
-	cmake-data
 	command-not-found
 	console-setup
-	cpp-10
-	cpp-9
 	distro-info
 	eject
 	'fonts-dejavu*'
@@ -44,19 +37,12 @@ packages=(
 	ftp
 	fwupd
 	gawk
-	gcc-10
-	gcc-9
 	gdisk
-	git
-	git-man
 	gnupg
 	keyboard-configuration
 	libc6-dev
-	libcgal-dev
 	libclang-cpp18
 	libevent-dev
-	libgcc-9-dev
-	libicu-dev
 	libicu74
 	libpcre3-dev
 	libssl-dev
@@ -102,11 +88,7 @@ packages=(
 )
 
 apt-mark manual libevent-2.1-7t64
-apt-get --yes remove --purge "${packages[@]}"
-apt-get --yes autoremove
-apt-get --yes autoclean
-apt-get --yes update
-apt-get --yes upgrade
+purge_packages "${packages[@]}"
 
 systemctl set-default multi-user.target
 systemctl disable getty@tty1.service

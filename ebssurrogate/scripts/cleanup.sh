@@ -14,30 +14,7 @@ source /tmp/provision-common.sh
 # https://github.com/digitalocean/marketplace-partners/issues/94
 ensure_tmp_dir
 
-# Cleanup more packages
-packages=(
-	ansible
-	ansible
-	autoconf
-	automake
-	autotools-dev
-	cmake-data
-	cpp-10
-	cpp-9
-	gcc-10
-	gcc-9
-	git
-	git-man
-	libcgal-dev
-	libgcc-9-dev
-	libicu-dev
-)
-
-apt-get --yes remove --purge "${packages[@]}"
-apt-get --yes autoremove
-apt-get --yes autoclean
-apt-get --yes update
-apt-get --yes upgrade
+purge_packages
 
 scrub_history
 scrub_logs_and_keys

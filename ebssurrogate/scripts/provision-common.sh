@@ -225,3 +225,28 @@ function remove_unwanted_files {
 	rm -rf "$root"/root/go
 	rm -rf "$root"/usr/share/doc
 }
+
+function purge_packages {
+	local common=(
+		ansible
+		autoconf
+		automake
+		autotools-dev
+		cmake-data
+		cpp-10
+		cpp-9
+		gcc-10
+		gcc-9
+		git
+		git-man
+		libcgal-dev
+		libgcc-9-dev
+		libicu-dev
+	)
+
+	apt-get --yes remove --purge "${common[@]}" "$@"
+	apt-get --yes autoremove
+	apt-get --yes autoclean
+	apt-get --yes update
+	apt-get --yes upgrade
+}
