@@ -953,11 +953,9 @@
                 self'.legacyPackages.psql_17.exts.supautils
                 self'.legacyPackages."psql_orioledb-17".exts.supautils
               ];
-              # gatekeeper is dlopened by the base AMI's own system PAM stack, not postgres's nix
-              # closure, so it isn't covered by "core and extensions share one glibc" — pin it
-              # explicitly so a future nixpkgs glibc bump can't silently outrun the base image.
+              # gatekeeper is dlopened by the base os pam stack; pin it
               pamPaths = [ self'.packages.gatekeeper ];
-              # ships to end users' own machines, not our fleet's nix closure
+              # ships to user's development machines, not our fleet
               portablePaths = [ self'.packages.psql_17_cli_portable ];
             in
             pkgs.runCommand "glibc-version-check"
