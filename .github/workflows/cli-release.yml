@@ -21,32 +21,31 @@ jobs:
       matrix:
         include:
           - system: aarch64-darwin
-            runner: macos-14
+            runner: blacksmith-6vcpu-macos-26
             arch: darwin-arm64
           - system: x86_64-linux
-            runner: ubuntu-latest
+            runner: blacksmith-8vcpu-ubuntu-2404
             arch: linux-x64
           - system: aarch64-linux
-            runner: ubuntu-24.04-arm
+            runner: blacksmith-8vcpu-ubuntu-2404-arm
             arch: linux-arm64
     steps:
       - name: Checkout repository
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Install Nix
-        uses: ./.github/actions/install-nix
-
-      - name: Run portability check
-        uses: ./.github/actions/nix-build-retry
-        with:
-          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
-          extra-args: --system ${{ matrix.system }}
+        uses: $/.github/actions/install-nix
 
       - name: Build portable CLI bundle
-        uses: ./.github/actions/nix-build-retry
+        uses: $/.github/actions/nix-build-retry
         with:
           attr: .#psql_17_cli_portable
-          extra-args: --system ${{ matrix.system }}
+
+      - name: Run portability check
+        uses: $/.github/actions/nix-build-retry
+        with:
+          attr: .#checks.${{ matrix.system }}.psql_17_cli_portable
+          extra-args: --no-link
 
       - name: Determine version
         id: version
@@ -72,7 +71,7 @@ jobs:
           shopt -u dotglob
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: supabase-postgres-${{ matrix.arch }}
           path: supabase-postgres-${{ steps.version.outputs.version }}-${{ matrix.arch }}
@@ -87,15 +86,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-14
+          - runner: blacksmith-6vcpu-macos-26
             arch: darwin-arm64
-          - runner: ubuntu-latest
+          - runner: blacksmith-8vcpu-ubuntu-2404
             arch: linux-x64
-          - runner: ubuntu-24.04-arm
+          - runner: blacksmith-8vcpu-ubuntu-2404-arm
             arch: linux-arm64
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           name: supabase-postgres-${{ matrix.arch }}
           path: .
@@ -392,13 +391,13 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [build-native, test-portability]
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
 
@@ -453,7 +452,7 @@ jobs:
           fi
 
       - name: Create Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: release/*

@@ -12,7 +12,7 @@ if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
 	tmpdir=$(mktemp -d)
 	trap 'cd; rm -rf $tmpdir' EXIT
 
-	function maybesudo { sudo -EH env "$@"; }
+	function maybesudo { sudo -H --preserve-env=GITHUB_TOKEN,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,NIX_SIGN_SECRET_KEY env "$@"; }
 else
 	# systemd is *not* running so we must install in single-user mode
 	daemon=--no-daemon

@@ -2,13 +2,11 @@ name: Build QEMU image
 
 on:
   push:
+    branches:
+      - develop
+      - release/*
     paths:
-      - .github/workflows/qemu-image-build.yml
-      - Dockerfile-kubernetes
-      - ansible/vars.yml
-      - ebssurrogate/scripts/*
-      - nix/packages/build-qemu-image/*
-      - qemu.pkr.hcl
+      - ansible/postgres_release.yml
   workflow_dispatch:
     inputs:
       arch:
@@ -25,17 +23,17 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Set PostgreSQL versions - only builds pg17 atm
         id: set-versions
         run: |
-          VERSIONS=$(yq -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
+          VERSIONS=$(yq -e -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   build:
@@ -55,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: enable KVM support
         run: |
@@ -67,12 +65,12 @@ jobs:
           echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Install Nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- ".postgres_release[\"postgres${{ matrix.postgres_version }}\"]" ansible/vars.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(nix run nixpkgs#yq -- -e '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]] ; then
             echo "Version must include non-numeric characters if built manually."
             exit 1
@@ -94,7 +92,7 @@ jobs:
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
@@ -106,7 +104,7 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- -r '.postgres_release["postgres'${{ matrix.postgres_version }}'"]' ansible/vars.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- -er '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml)
           if [[ "$TARGET_ARCH" == amd64 ]]; then
             PG_VERSION="$PG_VERSION-amd64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           fi
@@ -114,7 +112,7 @@ jobs:
 
       - name: configure aws credentials - staging
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
           aws-region: "us-east-1"
@@ -122,7 +120,7 @@ jobs:
       - name: Login to Amazon ECR Staging
         if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
         id: login-ecr-private-dev
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Build image
         env:
@@ -143,7 +141,7 @@ jobs:
       # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
       - name: configure aws credentials - prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
           aws-region: "us-east-1"
@@ -151,7 +149,7 @@ jobs:
       - name: Login to Amazon ECR Prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
         id: login-ecr-private-prod
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Push docker image to Amazon ECR Prod
         if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
@@ -165,10 +163,17 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
-          SLACK_FOOTER: ''
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Building Postgres QEMU artifact failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
