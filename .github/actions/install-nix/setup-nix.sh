@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-readonly version=2.34.6
+readonly version=2.35.3
 set -euo pipefail
 
 if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
