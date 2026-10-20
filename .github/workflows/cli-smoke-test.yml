@@ -94,7 +94,7 @@ jobs:
     name: CLI Smoke Test (Skipped)
     needs: check-changes
     if: needs.check-changes.outputs.should_run == 'false'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Report skipped
         run: |
