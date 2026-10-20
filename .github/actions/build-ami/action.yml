@@ -103,7 +103,7 @@ runs:
       run: |
         echo "::group::AMI Build: Stage 2"
 
-        nix eval --json "github:supabase/postgres/${{ inputs.packages_git_sha }}#packages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux" --apply 'p: { nix_store_paths = builtins.mapAttrs (_: d: d.outPath) { inherit (p) supascan pgbouncer pg-backrest wal-g-2 wal-g-3; postgres-env = p.postgres-env-${{ inputs.postgres_version }}; }; }' >ansible/nix-store-paths.json
+        nix eval --json "github:supabase/postgres/${{ inputs.packages_git_sha }}#legacyPackages.${{ inputs.arch == 'arm64' && 'aarch64' || 'x86_64' }}-linux.stage2-store-paths-${{ inputs.postgres_version }}" >ansible/nix-store-paths.json
         git add -f ansible/nix-store-paths.json
 
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \

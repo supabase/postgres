@@ -35,5 +35,27 @@
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
       };
+
+      legacyPackages = builtins.listToAttrs (
+        map
+          (version: {
+            name = "stage2-store-paths-${version}";
+            value.nix_store_paths = builtins.mapAttrs (_: drv: drv.outPath) {
+              inherit (self'.packages)
+                supascan
+                pgbouncer
+                pg-backrest
+                wal-g-2
+                wal-g-3
+                ;
+              postgres-env = self'.packages."postgres-env-${version}";
+            };
+          })
+          [
+            "15"
+            "17"
+            "orioledb-17"
+          ]
+      );
     };
 }
