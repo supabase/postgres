@@ -10,6 +10,9 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+# shellcheck source=/dev/null
+source /tmp/provision-common.sh
+
 exec 1>&2
 
 function setup_apt {
