@@ -19,7 +19,7 @@ function execute_stage2_playbook {
 	echo "GIT_SHA: $GIT_SHA"
 
 	# shellcheck disable=SC2086
-	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /tmp true false $ARGS
+	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /tmp true false localhost local $ARGS
 }
 
 function cleanup_packages {

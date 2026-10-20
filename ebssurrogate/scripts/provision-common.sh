@@ -31,8 +31,8 @@ function install_nix() {
 }
 
 function run_playbook {
-	local playbook=$1 remote_tmp=$2 stage2=$3 qemu=$4
-	shift 4
+	local playbook=$1 remote_tmp=$2 stage2=$3 qemu=$4 host=$5 connection=$6
+	shift 6
 
 	local sha_args=()
 	if [[ $stage2 == true ]]; then
@@ -44,12 +44,11 @@ function run_playbook {
 		[defaults]
 		callbacks_enabled = timer, profile_tasks, profile_roles
 	EOF
-	sed -i 's/- hosts: all/- hosts: localhost/' "$playbook"
 
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log
 	export ANSIBLE_REMOTE_TEMP=$remote_tmp
 
-	ansible-playbook "$playbook" \
+	ansible-playbook -c "$connection" -i "$host," "$playbook" \
 		--extra-vars "{\"stage2\":$stage2,\"qemu\":$qemu}" \
 		"${sha_args[@]}" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \

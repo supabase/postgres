@@ -237,23 +237,10 @@ function setup_chroot_environment {
 }
 
 function execute_playbook {
-	mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<-EOF
-		[defaults]
-		callbacks_enabled = timer, profile_tasks, profile_roles
-		pipelining = True
-	EOF
-
-	# Run Ansible playbook
-	# export ANSIBLE_DEBUG=True
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log
-	export ANSIBLE_REMOTE_TEMP=/mnt/tmp
+	export ANSIBLE_PIPELINING=True
 
 	# shellcheck disable=SC2086
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
-		--extra-vars '{"stage2":false, "qemu":false} ' \
-		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
-		$ARGS
+	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /mnt/tmp false false /mnt chroot $ARGS
 }
 
 function update_systemd_services {
