@@ -1,11 +1,7 @@
 ---
-# Capture: lets PostgreSQL actually produce a core on crash. Depends on
-# setup-postgres.yml having already created
-# /etc/systemd/system/postgresql.service.d (used by the drop-in below).
-# Runs in both stage1 and stage2 - is_psql_oriole is already known by then
-# (see playbook.yml's pre-tasks).
+# Capture: lets PostgreSQL actually produce a core on crash.
+# Depends on setup-postgres.yml having already created /etc/systemd/system/postgresql.service.d (used by the drop-in below).
 - name: Set up PostgreSQL coredump capture (OrioleDB only)
-  when: is_psql_oriole
   block:
     # Pin the systemd-coredump group/user before installing the package: its
     # postinst creates them with a dynamically-assigned system gid/uid (whatever
@@ -71,11 +67,8 @@
         owner: 'root'
         src: 'files/postgresql_config/coredump-storage.conf'
 
-# Processing: turns a captured core into a diagnostic bundle. stage2-only -
-# unlike capture above, this needs the debug symbols that
-# stage2-setup-postgres.yml installs, so there's no point enabling it earlier.
+# Processing: turns a captured core into a diagnostic bundle.
 - name: Set up PostgreSQL/OrioleDB coredump processing (OrioleDB only)
-  when: stage2 and is_psql_oriole
   block:
     # Sets the kernel's *default* coredump_filter (normally 0x33) to 0x31,
     # excluding shared_buffers.

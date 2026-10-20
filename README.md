@@ -58,6 +58,7 @@ Here's a comprehensive overview of the project's directory structure:
 | ansible/playbook.yml | Main Ansible playbook for PostgreSQL/PostgREST/pgbouncer/Auth server setup |
 | ansible/tasks/ | Modular Ansible tasks for specific configuration steps |
 | ansible/files/ | Static files, scripts, and templates used by Ansible |
+| ansible/postgres_release.yml | Packaged Postgres release version per major (Docker/AMI tags) |
 | ansible/vars.yml | AMI version tracking, legacy package version tracking |
 | **migrations/** | Database migration management and upgrade tools |
 | migrations/db/ | Database schema migrations |
