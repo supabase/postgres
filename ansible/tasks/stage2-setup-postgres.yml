@@ -1,11 +1,5 @@
 - name: Check psql_version and modify supautils.conf and postgresql.conf if necessary
   block:
-    - name: Check if psql_version is psql_orioledb-17 and if psql_version is psql_15 or psql_17
-      ansible.builtin.set_fact:
-        is_psql_oriole: "{{ psql_version in ['psql_orioledb-17'] }}"
-        is_psql_17: "{{ psql_version in ['psql_17'] }}"
-        is_psql_15: "{{ psql_version in ['psql_15'] }}"
-
     - name: Execute tasks when (is_psql_oriole or is_psql_17) and stage2
       when: stage2 and (is_psql_oriole or is_psql_17)
       become: true
@@ -77,21 +71,11 @@
           nix-env --set {{ postgres_env_path.stdout }}
         "
 
-    - name: Install site env from nix binary cache
+    - name: Install and activate site env from nix binary cache
       ansible.builtin.shell: |
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-        nix-env --profile /nix/var/nix/profiles/site --set {{ site_env_path }}
-
-    - name: Activate site env
-      ansible.builtin.command: /nix/var/nix/profiles/site/bin/activate
-
-    - name: Install supascan for baseline validation
-      ansible.builtin.shell: |
-        sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#supascan"
-
-    - name: nix collect garbage after supascan install
-      ansible.builtin.shell:
-        cmd: sudo -u ubuntu bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d"
+        nix-env --profile /nix/var/nix/profiles/site --set {{ site_env_path }} &&
+        /nix/var/nix/profiles/site/bin/activate
 
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
@@ -136,10 +120,6 @@
 
     - name: setup gatekeeper
       block:
-        - name: Check if psql_version is psql_15
-          ansible.builtin.set_fact:
-            is_psql_15: "{{ psql_version == 'psql_15' }}"
-
         - name: Install gatekeeper if not pg15
           when: stage2 and not is_psql_15
           block:
@@ -230,10 +210,6 @@
         path: '/usr/lib/postgresql/share/postgresql/contrib/'
         recurse: true
         state: 'directory'
-
-    - name: Set the PG bin dir as a fact
-      ansible.builtin.set_fact:
-        pg_bindir: '/usr/lib/postgresql/bin'
 
     # script is expected to be placed by finalization tasks for different target platforms
     - name: pgsodium - set pgsodium.getkey_script
