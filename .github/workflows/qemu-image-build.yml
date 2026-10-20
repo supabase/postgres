@@ -2,14 +2,11 @@ name: Build QEMU image
 
 on:
   push:
+    branches:
+      - develop
+      - release/*
     paths:
-      - .github/workflows/qemu-image-build.yml
-      - Dockerfile-kubernetes
       - ansible/postgres_release.yml
-      - ansible/vars.yml
-      - ebssurrogate/scripts/*
-      - nix/packages/build-qemu-image/*
-      - qemu.pkr.hcl
   workflow_dispatch:
     inputs:
       arch:
@@ -26,7 +23,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
@@ -166,10 +163,17 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2.4.0
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres QEMU artifact failed'
-          SLACK_FOOTER: ''
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Building Postgres QEMU artifact failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
