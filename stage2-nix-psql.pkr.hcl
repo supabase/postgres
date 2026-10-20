@@ -27,6 +27,10 @@ variable "git_sha" {
   default = env("GIT_SHA")
 }
 
+variable "nix_store_paths" {
+  type = map(string)
+}
+
 variable "postgres_major_version" {
   type    = string
   default = ""
@@ -125,6 +129,11 @@ build {
   provisioner "file" {
     source      = "ansible"
     destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    content     = jsonencode({ nix_store_paths = var.nix_store_paths })
+    destination = "/tmp/ansible-playbook/ansible/nix-store-paths.json"
   }
 
   provisioner "file" {

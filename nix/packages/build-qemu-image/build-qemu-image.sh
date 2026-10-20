@@ -55,7 +55,8 @@ postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" an
 # Build the cloud-init seed ISO before invoking packer.
 cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
-nix eval --json "github:supabase/postgres/$git_sha#legacyPackages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux.nix-store-paths-$postgres_major_version" >ansible/nix-store-paths.json
+PKR_VAR_nix_store_paths=$(nix eval --json "github:supabase/postgres/$git_sha#legacyPackages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux.nix-store-paths-$postgres_major_version")
+export PKR_VAR_nix_store_paths
 export LC_ALL=C.UTF-8
 export TZ=UTC
 packer init qemu.pkr.hcl

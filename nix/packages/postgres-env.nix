@@ -40,7 +40,7 @@
         map
           (version: {
             name = "nix-store-paths-${version}";
-            value.nix_store_paths = builtins.mapAttrs (_: drv: drv.outPath) {
+            value = builtins.mapAttrs (_: drv: drv.outPath) {
               inherit (self'.packages)
                 supascan
                 pgbouncer
