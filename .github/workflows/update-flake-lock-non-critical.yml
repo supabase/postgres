@@ -7,16 +7,16 @@ on:
 
 jobs:
   update-flake-lock-non-critical:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install Nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Update non-critical flake inputs
         run: |
@@ -31,7 +31,7 @@ jobs:
             treefmt-nix
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        uses: peter-evans/create-pull-request@v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update flake.lock non-critical inputs (bimonthly)"
