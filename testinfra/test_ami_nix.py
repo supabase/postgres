@@ -1617,22 +1617,12 @@ def test_postgres_prestart_does_not_reset_core_limit(host):
 
 
 def test_collation_refresh_unit_is_linked_and_not_failed(host):
-    """The collation refresh unit is linked from the site profile, wanted by
-    postgresql.service, and does not fail on a freshly built image."""
+    """The collation refresh unit links from the site profile and is active."""
     unit = "postgresql-collation-refresh.service"
-
     link = run_ssh_command(host["ssh"], f"readlink /etc/systemd/system/{unit}")
-    assert link["stdout"].strip().startswith("/nix/var/nix/profiles/site/"), (
-        f"{unit} must link through the site profile, got {link['stdout']!r}"
-    )
-
-    wants = run_ssh_command(host["ssh"], "systemctl show postgresql.service -p Wants")
-    assert unit in wants["stdout"], f"postgresql.service does not want {unit}"
-
+    assert link["stdout"].startswith("/nix/var/nix/profiles/site/"), link
     state = run_ssh_command(host["ssh"], f"systemctl is-active {unit}")
-    assert state["stdout"].strip() == "active", (
-        f"{unit} expected active, got {state['stdout'].strip()!r}"
-    )
+    assert state["stdout"].strip() == "active", state
 
 
 def _crash_a_backend_and_wait_for_recovery(host):

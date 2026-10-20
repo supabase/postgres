@@ -253,6 +253,13 @@
   loop_control:
     loop_var: 'systemd_svc_item'
 
+- name: Link the collation refresh unit from the site profile
+  when: stage2
+  ansible.builtin.file:
+    src: /nix/var/nix/profiles/site/lib/systemd/system/postgresql-collation-refresh.service
+    dest: /etc/systemd/system/postgresql-collation-refresh.service
+    state: link
+
 - name: initialize pg required state
   ansible.builtin.file:
     group: 'postgres'
@@ -317,31 +324,6 @@
     daemon_reload: true
     enabled: true
     name: 'postgresql'
-
-# Link through the site profile, not the store path: `systemctl enable` resolves
-# the symlink and pins the unit to the store path of the current generation.
-- name: Link the collation refresh unit from the site profile
-  when: stage2
-  ansible.builtin.file:
-    src: /nix/var/nix/profiles/site/lib/systemd/system/postgresql-collation-refresh.service
-    dest: /etc/systemd/system/postgresql-collation-refresh.service
-    state: link
-
-- name: Make postgresql want the collation refresh unit
-  when: stage2
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/postgresql.service.d/collation-refresh.conf
-    content: |
-      [Unit]
-      Wants=postgresql-collation-refresh.service
-    owner: root
-    group: root
-    mode: '0644'
-
-- name: Reload systemd for the collation refresh unit
-  when: stage2
-  ansible.builtin.systemd_service:
-    daemon_reload: true
 
 - name: Add lang and locale items to .bashrc
   when: not stage2

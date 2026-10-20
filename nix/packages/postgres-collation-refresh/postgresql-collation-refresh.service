@@ -8,5 +8,4 @@ Type=oneshot
 RemainAfterExit=yes
 User=postgres
 TimeoutStartSec=120
-Environment=PATH=/var/lib/postgresql/.nix-profile/bin
-ExecStart=/nix/var/nix/profiles/site/bin/postgres_collation_refresh
+ExecStart=/var/lib/postgresql/.nix-profile/bin/psql -X -q -h localhost -U supabase_admin -d postgres -f /nix/var/nix/profiles/site/share/postgres-collation-refresh.sql
