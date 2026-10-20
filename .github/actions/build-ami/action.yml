@@ -103,10 +103,14 @@ runs:
       run: |
         echo "::group::AMI Build: Stage 2"
 
+        system=$([[ ${{ inputs.arch }} == arm64 ]] && echo aarch64-linux || echo x86_64-linux)
+        site_env_path=$(nix eval --raw "github:supabase/postgres/${{ inputs.packages_git_sha }}#packages.$system.site-env-${{ inputs.postgres_version }}.outPath")
+
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var "git-head-version=${{ inputs.git_sha }}" \
           -var "git_sha=${{ inputs.packages_git_sha }}" \
+          -var "site_env_path=$site_env_path" \
           -var "instance_type=${{ inputs.instance_type }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \
           -var "postgres_major_version=${{ inputs.postgres_version }}" \
