@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+readonly version=2.35.3
 set -euo pipefail
 
 if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
@@ -12,7 +13,7 @@ if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
 	tmpdir=$(mktemp -d)
 	trap 'cd; rm -rf $tmpdir' EXIT
 
-	function maybesudo { sudo -EH env "$@"; }
+	function maybesudo { sudo -H --preserve-env=GITHUB_TOKEN,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,NIX_SIGN_SECRET_KEY env "$@"; }
 else
 	# systemd is *not* running so we must install in single-user mode
 	daemon=--no-daemon
@@ -46,7 +47,7 @@ fi
 
 maybesudo NIXCONFDIR="$nixconfdir" ./setup-github-access.sh >>"$tmpdir/nix.conf"
 
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- $daemon --yes --nix-extra-conf-file "$tmpdir/nix.conf"
+curl -L https://releases.nixos.org/nix/nix-$version/install | sh -s -- $daemon --yes --nix-extra-conf-file "$tmpdir/nix.conf"
 cat "$nixconfdir/nix.conf"
 
 # Add nix to PATH for subsequent steps

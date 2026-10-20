@@ -12,17 +12,12 @@ nav:
   - Development:
     - Getting Started: start-here.md
     - Nix tree structure: nix-directory-structure.md
-    - Flake-Parts Architecture: flake-parts-architecture.md
-    - Flake-Parts and nixpkgs lib: flake-parts-nixpkgs-lib.md
     - Workflow: development-workflow.md
     - Build PostgreSQL: build-postgres.md
     - Start Client/Server: start-client-server.md
     - Docker: docker.md
     - Docker Image Size Analyzer: image-size-analyzer-usage.md
-    - Use direnv: use-direnv.md
-    - Code Formatter: nix-formatter.md
-    - Pre-commit Hooks: pre-commit-hooks.md
-    - Documentation: documentation.md
+    - Formatting and pre-commit hooks: nix-formatter.md
     - Create pgrx Extension: creating-pgrx-extension.md
     - Update pgrx Extensions: updating-pgrx-extensions.md
     - Receipt Files: receipt-files.md
@@ -31,7 +26,6 @@ nav:
     - Update Extensions: update-extension.md
     - Update Nix Dependencies: updating-dependencies.md
     - New Major PostgreSQL: new-major-postgres.md
-    - Nix Overlays: nix-overlays.md
   - Testing:
     - Adding Tests: adding-tests.md
     - Migration Tests: migration-tests.md

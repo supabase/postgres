@@ -24,7 +24,6 @@
         image-size-analyzer = mkApp "image-size-analyzer";
         update-readme = mkApp "update-readme";
         show-commands = mkApp "show-commands";
-        build-test-ami = mkApp "build-test-ami";
         run-testinfra = mkApp "run-testinfra";
         cleanup-ami = mkApp "cleanup-ami";
         trigger-nix-build = mkApp "trigger-nix-build";
