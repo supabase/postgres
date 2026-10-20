@@ -223,4 +223,5 @@ function remove_unwanted_files {
 	rm -rf "$root"/root/.cache
 	rm -rf "$root"/root/.vpython*
 	rm -rf "$root"/root/go
+	rm -rf "$root"/usr/share/doc
 }

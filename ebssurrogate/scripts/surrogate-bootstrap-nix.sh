@@ -223,7 +223,6 @@ function clean_system {
 
 	rm -rf /mnt/var/lib/apt/lists/*
 	remove_unwanted_files /mnt
-	rm -rf /mnt/usr/share/doc
 }
 
 function report_chroot_packages {

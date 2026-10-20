@@ -62,7 +62,6 @@ function clean_system {
 	setup_image_logs
 
 	remove_unwanted_files
-	rm -rf /mnt/usr/share/doc
 
 	# remove passwords in user-data-cloudimg.img (required for Packer login)
 	usermod -p '*' ubuntu

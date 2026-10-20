@@ -101,10 +101,6 @@ packages=(
 	xfsprogs
 )
 
-if [[ $(uname -m) == aarch64 ]]; then
-	packages+=(libgcc-8-dev)
-fi
-
 apt-mark manual libevent-2.1-7t64
 apt-get --yes remove --purge "${packages[@]}"
 apt-get --yes autoremove
