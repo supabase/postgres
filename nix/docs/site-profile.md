@@ -15,9 +15,9 @@ nix-env --profile /nix/var/nix/profiles/site --set <store path>
 /nix/var/nix/profiles/site/bin/activate
 ```
 
-`--set` downloads the closure from the binary cache if it is missing. It then creates the generation link `site-<N>-link` to the store path and repoints the `site` symlink at that link. If the download fails, `nix-env` exits non-zero and the profile is unchanged.
+`--set` downloads the closure from the binary cache if it is missing. It then creates the generation link `site-<N>-link` to the store path and repoints the `site` symlink at that link. If it fails, `nix-env` exits with 1 and the profile is unchanged. This holds when the path can't be fetched, isn't a store path, or the profile directory isn't writable.
 
-`activate` runs after the switch. It sets up supautils, and gatekeeper where present, idempotently. If it fails, the new generation stays active. Run `activate` again, or roll back.
+`activate` runs after the switch. It prints the library settings configured in `postgresql.conf`, and is idempotent. If it fails, the new generation stays active. Run `activate` again, or roll back.
 
 ## Roll back
 
