@@ -94,13 +94,20 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2.4.0
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Publishing pg_upgrade binaries flake version failed'
-          SLACK_FOOTER: ''
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Publishing pg_upgrade binaries flake version failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
 
   publish-prod:
     runs-on: large-linux-x86
@@ -158,10 +165,17 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@v2.4.0
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Publishing pg_upgrade binaries flake version failed'
-          SLACK_FOOTER: ''
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Publishing pg_upgrade binaries flake version failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
