@@ -46,6 +46,9 @@ if [[ -x "$PROFILE/bin/deactivate" ]]; then
 	"$PROFILE/bin/deactivate"
 fi
 nix-env --profile "$PROFILE" --rollback
+if [[ -x "$PROFILE/bin/activate" ]]; then
+	"$PROFILE/bin/activate"
+fi
 snapshot m3
 expect_same m0 m3
 "$SANITY" rolled-back
