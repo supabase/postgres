@@ -49,11 +49,6 @@ function setup_apt {
 	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
 }
 
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get dist-upgrade --yes
-}
-
 function waitfor_boot_finished {
 	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
 		echo 'Waiting for cloud-init...'
@@ -275,7 +270,7 @@ function clean_system {
 	rm -rf /mnt/usr/share/doc
 }
 
-function report_packages {
+function report_chroot_packages {
 	# shellcheck disable=SC2016
 	chroot /mnt dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
 }
@@ -317,5 +312,5 @@ setup_chroot_environment
 execute_playbook
 update_systemd_services
 clean_system
-report_packages
+report_chroot_packages
 umount_reset_mappings

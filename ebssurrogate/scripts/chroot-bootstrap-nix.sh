@@ -15,14 +15,9 @@ function setup_apt {
 	export DEBIAN_FRONTEND=noninteractive
 }
 
-function cleanup_apt {
+function clean_apt_cache {
 	apt-get clean
 	apt-get autoremove --purge --yes
-}
-
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get dist-upgrade --yes
 }
 
 function install_initial_packages {
@@ -198,5 +193,5 @@ set_default_target
 setup_eth0_interface
 disable_sshd_passwd_auth
 disable_fsck
-cleanup_apt
+clean_apt_cache
 enable_services
