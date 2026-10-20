@@ -42,6 +42,7 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+        inherit (self'.packages) supabase-groonga;
         inherit (self.supabase) defaults;
       };
     in
@@ -50,7 +51,6 @@
         {
           build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
           build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
-          build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
@@ -65,7 +65,9 @@
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
           gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
-          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
+          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix {
+            inherit (self'.packages) mecab-naist-jdic;
+          };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
