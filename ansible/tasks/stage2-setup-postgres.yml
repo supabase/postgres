@@ -58,10 +58,10 @@
   block:
     - name: Install postgres env from nix binary cache
       ansible.builtin.shell: |
-        sudo -u postgres bash -c "
-          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix-env --quiet --set {{ nix_store_paths['postgres-env'] }}
-        "
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --quiet --set {{ nix_store_paths['postgres-env'] }}
+      become: true
+      become_user: postgres
 
     - name: Install and activate site env from nix binary cache
       ansible.builtin.shell: |
