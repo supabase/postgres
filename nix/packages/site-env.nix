@@ -27,6 +27,15 @@
               for guc in dynamic_library_path session_preload_libraries; do
                 grep -h "^$guc" /etc/postgresql/postgresql.conf 2>/dev/null || echo "$guc is not set"
               done
+              ${lib.optionalString (extraPaths != [ ]) ''
+                pam_dir=$(/nix/var/nix/profiles/default/bin/nix-store -q --requisites /var/lib/postgresql/.nix-profile | grep -m1 -E -- '-linux-pam-[0-9.]+$' || true)
+                if [[ -z "$pam_dir" ]]; then
+                  echo "linux-pam not found in the postgres profile. Skipping the gatekeeper link."
+                else
+                  ln -sf /nix/var/nix/profiles/site/lib/security/pam_jit_pg.so "$pam_dir/lib/security/pam_jit_pg.so"
+                  echo "gatekeeper linked at $pam_dir/lib/security/pam_jit_pg.so."
+                fi
+              ''}
               echo "Site profile activated."
             '';
             checkPhase = ''
