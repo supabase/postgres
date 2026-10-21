@@ -71,7 +71,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
 
 8. **Ready for PR review**
 
-9. **Once approved**: If you want the change in a release, update `common-nix.vars.yml` with the new version prior to merging
+9. **Once approved**: If you want the change in a release, bump the version in `ansible/postgres_release.yml` prior to merging
 
 ### For Rust/pgrx Extensions (e.g., wrappers, pg_jsonschema, pg_graphql)
 
@@ -140,7 +140,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 
 9.  **Ready for PR review**
 
-10. **Once approved**: Update `common-nix.vars.yml` if releasing
+10. **Once approved**: Bump `ansible/postgres_release.yml` if releasing
 
 > **Need to update pgrx or Rust versions?** See [Updating cargo-pgrx Extensions](./updating-pgrx-extensions.md) for the complete guide covering pgrx version updates, Rust toolchain updates (including `nix flake update rust-overlay`), and troubleshooting.
 
@@ -192,7 +192,7 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
    nix flake check -L
    ```
 
-10. **PR review and merge** (update `common-nix.vars.yml` if releasing)
+10. **PR review and merge** (bump `ansible/postgres_release.yml` if releasing)
 
 ---
 
