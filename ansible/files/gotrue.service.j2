@@ -90,15 +90,10 @@ Environment=GOTRUE_RELOADING_POLLER_ENABLED=false
 # ensures only 1 reload operation occurs during a burst of config updates.
 Environment=GOTRUE_RELOADING_GRACE_PERIOD_INTERVAL=2s
 
-{% if qemu %}
-# v3 does not use filesystem notifications for config reloads.
-Environment=GOTRUE_RELOADING_NOTIFY_ENABLED=false
-{% else %}
-# v2 currently relies on notify support, so we will enable it until both v2 / v3
-# have migrated to strictly use signals across all projects. The default is true
-# in gotrue but we will set it defensively here.
-Environment=GOTRUE_RELOADING_NOTIFY_ENABLED=true
-{% endif %}
+{% for line in gotrue_reloading_notify_comment %}
+# {{ line }}
+{% endfor %}
+Environment=GOTRUE_RELOADING_NOTIFY_ENABLED={{ gotrue_reloading_notify_enabled | lower }}
 
 Slice=services.slice
 

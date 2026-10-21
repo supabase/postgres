@@ -10,64 +10,20 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+# shellcheck source=/dev/null
+source /tmp/provision-common.sh
+
 exec 1>&2
-
-function setup_apt {
-	export DEBIAN_FRONTEND=noninteractive
-
-	# This function assumes deb822 formatted sources are in use, which is the case in both qemu and aws images
-	# In aws cloud-init creates a sources file with regional mirrors for "default" Suites but keeps ubuntu for security suite
-	# So we grab the first (only) URI from security and append it to non-security's URI
-	# This ends up giving us fastest mirror for installs and falls back to ubuntu if there's an issue
-	#
-	# Note: Ubuntu amd64 mirrors have different hostnames for security vs non but aarch64 are the same, hence the amd64 specific line
-
-	# ensure deb822 format sources are in use
-	tail -n+1 /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources >&2
-
-	local sources defmirror ubumirror
-	sources=$(grep -e '^URIs\s*:' -e '^Suites\s*:' /etc/apt/sources.list.d/ubuntu.sources)
-	defmirror=$(grep -B1 "$CODENAME-updates" <<<"$sources" | awk '/URIs/ {print $2}')
-	ubumirror=$(grep -B1 "$CODENAME-security" <<<"$sources" | awk '/URIs/ {print $2}')
-	if [[ $ARCH == amd64 ]]; then
-		# amd64 hosts use security.ubuntu.com for security but archive.ubuntu.com for everything else
-		ubumirror=${ubumirror/security/archive}
-	fi
-
-	if [[ $ubumirror == "$defmirror" ]]; then
-		# Only using one mirror so nothing to add as fallback, not running in AWS maybe?
-		return
-	fi
-
-	if grep -q "^URIs:.*$defmirror.*$ubumirror" /etc/apt/sources.list.d/ubuntu.sources; then
-		echo "Ubuntu upstream is already a fallback, this is unexpected and needs source changes" >&2
-		exit 1
-	fi
-	sed -i "s|$defmirror|& $ubumirror|" /etc/apt/sources.list.d/ubuntu.sources
-}
-
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get dist-upgrade --yes
-}
-
-function waitfor_boot_finished {
-	while [[ ! -f /var/lib/cloud/instance/boot-finished ]]; do
-		echo 'Waiting for cloud-init...'
-		sleep 1
-	done
-}
 
 function install_packages {
 	packages=(
-		ansible
 		debootstrap
 		e2fsprogs
 		gdisk
 		nvme-cli
 	)
 	apt-get install --yes "${packages[@]}"
-	ansible-galaxy collection install community.general
+	install_ansible
 }
 
 # Partition the new root EBS volume
@@ -207,6 +163,7 @@ function setup_chroot_environment {
 	cp -r /tmp/migrations /mnt/tmp/
 
 	# Copy the bootstrap script into place and execute inside chroot
+	cp /tmp/provision-common.sh /mnt/tmp/provision-common.sh
 	cp /tmp/chroot-bootstrap-nix.sh /mnt/tmp/chroot-bootstrap-nix.sh
 	chroot /mnt /tmp/chroot-bootstrap-nix.sh
 	rm -f /mnt/tmp/chroot-bootstrap-nix.sh
@@ -234,23 +191,10 @@ function setup_chroot_environment {
 }
 
 function execute_playbook {
-	mkdir -p /etc/ansible
-	tee /etc/ansible/ansible.cfg <<-EOF
-		[defaults]
-		callbacks_enabled = timer, profile_tasks, profile_roles
-		pipelining = True
-	EOF
-
-	# Run Ansible playbook
-	# export ANSIBLE_DEBUG=True
-	export ANSIBLE_LOG_PATH=/tmp/ansible.log
-	export ANSIBLE_REMOTE_TEMP=/mnt/tmp
+	export ANSIBLE_PIPELINING=True
 
 	# shellcheck disable=SC2086
-	ansible-playbook -c chroot -i '/mnt,' /tmp/ansible-playbook/ansible/playbook.yml \
-		--extra-vars '{"stage2":false, "qemu":false} ' \
-		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
-		$ARGS
+	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /mnt/tmp false false /mnt chroot $ARGS
 }
 
 function update_systemd_services {
@@ -270,50 +214,18 @@ function update_systemd_services {
 
 function clean_system {
 	# Copy cleanup scripts
+	cp -v /tmp/provision-common.sh /mnt/tmp
 	cp -v /tmp/cleanup.sh /mnt/tmp
 	chmod +x /mnt/tmp/cleanup.sh
 	chroot /mnt /tmp/cleanup.sh
 
-	# Cleanup logs
-	rm -rf /mnt/var/log/*
-	# https://github.com/fail2ban/fail2ban/issues/1593
-	touch /mnt/var/log/auth.log
+	setup_image_logs /mnt
 
-	touch /mnt/var/log/pgbouncer.log
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown pgbouncer:postgres /var/log/pgbouncer.log
-	fi
-
-	# Setup postgresql logs
-	mkdir -p /mnt/var/log/postgresql
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown postgres:postgres /var/log/postgresql
-	fi
-
-	# Setup wal-g logs
-	mkdir /mnt/var/log/wal-g
-	touch /mnt/var/log/wal-g/{backup-push.log,backup-fetch.log,wal-push.log,wal-fetch.log,pitr.log}
-
-	#Creatre Sysstat directory for SAR
-	mkdir /mnt/var/log/sysstat
-
-	if [[ -f /usr/bin/chown ]]; then
-		chroot /mnt /usr/bin/chown -R postgres:postgres /var/log/wal-g
-		chroot /mnt /usr/bin/chmod -R 0300 /var/log/wal-g
-	fi
-
-	# audit logs directory for apparmor
-	mkdir /mnt/var/log/audit
-
-	# unwanted files
 	rm -rf /mnt/var/lib/apt/lists/*
-	rm -rf /mnt/root/.cache
-	rm -rf /mnt/root/.vpython*
-	rm -rf /mnt/root/go
-	rm -rf /mnt/usr/share/doc
+	remove_unwanted_files /mnt
 }
 
-function report_packages {
+function report_chroot_packages {
 	# shellcheck disable=SC2016
 	chroot /mnt dpkg-query -W -f='${Package}\t${Version}\t${Architecture}\n' | LC_COLLATE=C.UTF-8 sort
 }
@@ -346,6 +258,7 @@ CODENAME=$(source /etc/os-release && echo "$VERSION_CODENAME")
 
 waitfor_boot_finished
 setup_apt
+add_apt_mirror_fallback
 update_and_upgrade_apt
 install_packages
 device_partition_mappings
@@ -355,5 +268,5 @@ setup_chroot_environment
 execute_playbook
 update_systemd_services
 clean_system
-report_packages
+report_chroot_packages
 umount_reset_mappings

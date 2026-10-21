@@ -194,6 +194,11 @@ build {
   }
 
   provisioner "file" {
+    source      = "ebssurrogate/scripts/provision-common.sh"
+    destination = "/tmp/provision-common.sh"
+  }
+
+  provisioner "file" {
     source      = "ebssurrogate/scripts/chroot-bootstrap-nix.sh"
     destination = "/tmp/chroot-bootstrap-nix.sh"
   }
