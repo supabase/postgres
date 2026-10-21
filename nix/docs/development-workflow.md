@@ -43,7 +43,7 @@ gh workflow run testinfra-ami-build.yml --ref <your-branch>
 
 For each PostgreSQL major version and architecture, the workflow will:
 
-- Build two AMI stages with `nix run .#build-ami` (via the `.github/actions/build-ami` action)
+- Build both AMI stages with `nix run .#build-ami`
 - Run `testinfra/test_ami_nix.py` against the new AMI
 - Clean up the temporary instances and AMIs, even if the tests fail
 

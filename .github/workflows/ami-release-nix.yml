@@ -84,14 +84,21 @@ jobs:
 
       - name: Build AMI
         id: build-ami
-        uses: $/.github/actions/build-ami
         env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
           AMI_RELEASE: "true"
-        with:
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           postgres_major_version: ${{ matrix.postgres_version }}
+        run: |
+          nix run .#build-ami -- \
+            --arch "$arch" \
+            --git-sha "$git_sha" \
+            --packages-git-sha "$packages_git_sha" \
+            --postgres-major-version "$postgres_major_version" \
+            ;
 
       - name: Setup post build env vars
         run: |
