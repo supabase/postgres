@@ -59,6 +59,8 @@ PGBINOLD="/usr/lib/postgresql/bin"
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
 NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
+NIX_VERSION="2.34.6"
+NIX_OFFICIAL_INSTALLER_SHA256="bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
 	BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
@@ -331,11 +333,15 @@ function initiate_upgrade {
 							--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 					else
 						log "1.1.1. Installing Nix using the official installer"
-						sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+						NIX_OFFICIAL_INSTALLER=$(mktemp)
+						curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o "$NIX_OFFICIAL_INSTALLER"
+						echo "${NIX_OFFICIAL_INSTALLER_SHA256}  ${NIX_OFFICIAL_INSTALLER}" | sha256sum -c -
+						sh "$NIX_OFFICIAL_INSTALLER" --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EXTRA_NIX_CONF
+						rm -f "$NIX_OFFICIAL_INSTALLER"
 					fi
 				else
 					log "1.1. Nix is installed; moving on."
