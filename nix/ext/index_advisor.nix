@@ -5,6 +5,7 @@
   fetchFromGitHub,
   postgresql,
   callPackage,
+  switch-ext-version,
   latestOnly ? false,
 }:
 
@@ -76,7 +77,7 @@ in
 pkgs.buildEnv {
   name = pname;
   # Add dependency on hypopg for the extension to work
-  paths = packages ++ [ (callPackage ./hypopg.nix { inherit postgresql; }) ];
+  paths = packages ++ [ (callPackage ./hypopg.nix { inherit postgresql switch-ext-version; }) ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
