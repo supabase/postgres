@@ -6,9 +6,7 @@ on:
       - develop
       - release/*
     paths:
-      - .github/workflows/dockerhub-release-matrix.yml
       - ansible/postgres_release.yml
-      - ansible/vars.yml
   workflow_dispatch:
 
 permissions:
