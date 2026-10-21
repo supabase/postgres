@@ -34,9 +34,9 @@ function run_playbook {
 	local playbook=$1 remote_tmp=$2 stage2=$3 qemu=$4 host=$5 connection=$6
 	shift 6
 
-	local sha_args=()
+	local stage2_args=()
 	if [[ $stage2 == true ]]; then
-		sha_args=(--extra-vars "git_commit_sha=$GIT_SHA")
+		stage2_args=(--extra-vars "git_commit_sha=$GIT_SHA" --extra-vars "site_env_path=$SITE_ENV_PATH")
 	fi
 
 	mkdir -p /etc/ansible
@@ -50,7 +50,7 @@ function run_playbook {
 
 	ansible-playbook -c "$connection" -i "$host," "$playbook" \
 		--extra-vars "{\"stage2\":$stage2,\"qemu\":$qemu}" \
-		"${sha_args[@]}" \
+		"${stage2_args[@]}" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
