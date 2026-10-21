@@ -8,28 +8,28 @@ on:
 
 jobs:
   update-flake-lock:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: write
       pull-requests: write
     steps:
       - name: Generate app token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@v3.3.0
         with:
           client-id: ${{ secrets.UPDATE_APP_ID }}
           private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Install Nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Update flake.lock and open PR
-        uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
+        uses: DeterminateSystems/update-flake-lock@v29
         with:
           token: ${{ steps.app-token.outputs.token }}
           commit-msg: "chore: update flake.lock (monthly)"

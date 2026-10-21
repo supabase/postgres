@@ -1,15 +1,15 @@
 ---
-supabase_internal: true
-ebssurrogate_mode: true
-async_mode: true
+# If you're looking for the postgres_release versions, thats moved to ansible/postgres_release.yml
 postgres_major:
   - "15"
   - "17"
   - orioledb-17
-postgres_release:
-  postgresorioledb-17: "17.11.0.005-orioledb"
-  postgres17: "17.11.0.005"
-  postgres15: "15.19.0.005"
+sql_files:
+  - source: "pgbouncer_config/pgbouncer_auth_schema.sql"
+    dest: "00-schema.sql"
+  - source: "stat_extension.sql"
+    dest: "01-extension.sql"
+pg_bindir: /usr/lib/postgresql/bin
 supabase_admin_agent_splay: 30s
 ###############################################################################################################
 # The following block of yaml is for get_url and co throughout the playbook                                   #
@@ -21,14 +21,14 @@ supabase_admin_agent_splay: 30s
 # Checksums can be verified or updated by running:                                                            #
 # nix run .#update-ansible-artifacts                                                                          #
 ###############################################################################################################
-adminapi_release: 0.122.1
+adminapi_release: 0.122.3
 adminapi_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
-    checksum: sha256:fd0724f12c444c2a6e92805712db2528cc574ebfc6ece4e31d4d24c5d459e3b1
+    checksum: sha256:a0c1aa66ef27201ffbe773e241ff6e3c40a249b74e146213691a5f49c3394fbb
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
-    checksum: sha256:8078844641304ae10480b3120f6e51d6921be16d34ef1a7373433a3e65be6b5b
+    checksum: sha256:24b59bd6ed372175a1ec0bff25d4f0986e65b86f3fc27eea38ab06b17cddf22d
 adminmgr_release: 0.49.1
 adminmgr_artifacts:
   amd64:

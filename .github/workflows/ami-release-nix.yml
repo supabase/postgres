@@ -6,11 +6,7 @@ on:
       - develop
       - release/*
     paths:
-      - .github/workflows/ami-release-nix.yml
-      - ansible/vars.yml
-      - flake.lock
-      - flake.nix
-      - nix/packages/build-ami.nix
+      - ansible/postgres_release.yml
   workflow_dispatch:
 
 permissions:
@@ -28,10 +24,10 @@ jobs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -59,7 +55,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Debug AWS role secret
         run: |
@@ -71,7 +67,7 @@ jobs:
           fi
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -79,7 +75,7 @@ jobs:
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: ./.github/actions/install-nix
+        uses: $/.github/actions/install-nix
         with:
           push-to-cache: true
           aws-region: ${{ env.AWS_REGION }}
@@ -88,13 +84,13 @@ jobs:
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Build AMI
         id: build-ami
-        uses: ./.github/actions/build-ami
+        uses: $/.github/actions/build-ami
         with:
           ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
           ami_regions: '["${{ env.AWS_REGION }}"]'
@@ -142,7 +138,7 @@ jobs:
           tar -czf "/tmp/pg_binaries.tar.gz" -C "/tmp/pg_upgrade_bin" .
 
       - name: configure aws credentials - staging
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -154,7 +150,7 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/upgrade_bundle.tar.gz"
 
       - name: configure aws credentials - prod
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
@@ -166,14 +162,14 @@ jobs:
           aws s3 cp /tmp/pg_binaries.tar.gz "s3://${{ secrets.PROD_ARTIFACTS_BUCKET }}/upgrades$ARCH_SUFFIX/postgres/supabase-postgres-$POSTGRES_SUPABASE_VERSION/upgrade_bundle.tar.gz"
 
       - name: GitHub OIDC Auth
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
           role-session-name: shared-services-jump
 
       - name: Assume destination role
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-nix-catalog-artifacts-role-6387512
@@ -209,8 +205,21 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
+      - name: Publish site-env store path
+        run: |
+          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+          SITE_ENV_NAME="site-env-${POSTGRES_MAJOR_VERSION}"
+          SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
+
+          aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}/${SYSTEM}/${SITE_ENV_NAME}" <<< "$SITE_ENV_PATH"
+
+          if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/latest/${SYSTEM}/${SITE_ENV_NAME}" <<< "$GIT_SHA"
+          fi
+
       - name: Create release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        uses: softprops/action-gh-release@v3.0.3
         with:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
@@ -251,17 +260,24 @@ jobs:
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}
-        uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          SLACK_USERNAME: 'gha-failures-notifier'
-          SLACK_COLOR: 'danger'
-          SLACK_MESSAGE: 'Building Postgres AMI failed'
-          SLACK_FOOTER: ''
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            username: gha-failure
+            icon_emoji: ':old_man_yells_at_github_actions:'
+            channel: C0C16MJ8WHX
+            text: |
+              *Building Postgres AMI failed*
+              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
+              *Event:* ${{ github.event_name }}
+              *Ref:* ${{ github.ref }}
+              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
 
       - name: Configure AWS credentials for cleanup
         if: always()
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
