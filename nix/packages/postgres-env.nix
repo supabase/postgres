@@ -28,35 +28,31 @@
             self'.legacyPackages."psql_${version}".exts.orioledb.debug
           ];
         };
+
+      makeNixStorePaths =
+        version:
+        pkgs.writeText "nix-store-paths-${version}.json" (
+          builtins.toJSON {
+            inherit (self'.packages)
+              supascan
+              pgbouncer
+              pg-backrest
+              wal-g-2
+              wal-g-3
+              ;
+            postgres-env = self'.packages."postgres-env-${version}";
+            site-env = self'.packages."site-env-${version}";
+          }
+        );
     in
     {
       packages = {
         postgres-env-15 = makePostgresEnv "15";
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
+        nix-store-paths-15 = makeNixStorePaths "15";
+        nix-store-paths-17 = makeNixStorePaths "17";
+        nix-store-paths-orioledb-17 = makeNixStorePaths "orioledb-17";
       };
-
-      legacyPackages = builtins.listToAttrs (
-        map
-          (version: {
-            name = "nix-store-paths-${version}";
-            value = builtins.mapAttrs (_: drv: drv.outPath) {
-              inherit (self'.packages)
-                supascan
-                pgbouncer
-                pg-backrest
-                wal-g-2
-                wal-g-3
-                ;
-              postgres-env = self'.packages."postgres-env-${version}";
-              site-env = self'.packages."site-env-${version}";
-            };
-          })
-          [
-            "15"
-            "17"
-            "orioledb-17"
-          ]
-      );
     };
 }

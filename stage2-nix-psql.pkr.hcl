@@ -27,9 +27,7 @@ variable "git_sha" {
   default = env("GIT_SHA")
 }
 
-variable "nix_store_paths" {
-  type = map(string)
-}
+variable "nix_store_paths" { type = map(string) }
 
 variable "postgres_major_version" {
   type    = string

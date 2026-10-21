@@ -2,9 +2,7 @@ variable "git_sha" {
   type = string
 }
 
-variable "nix_store_paths" {
-  type = map(string)
-}
+variable "nix_store_paths" { type = map(string) }
 
 variable "postgres-version" {
   type    = string
