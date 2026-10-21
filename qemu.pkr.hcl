@@ -94,11 +94,6 @@ build {
   }
 
   provisioner "file" {
-    content     = jsonencode({ nix_store_paths = var.nix_store_paths })
-    destination = "/tmp/ansible-playbook/ansible/nix-store-paths.json"
-  }
-
-  provisioner "file" {
     source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
@@ -116,6 +111,7 @@ build {
   provisioner "shell" {
     environment_vars = [
       "GIT_SHA=${var.git_sha}",
+      "NIX_STORE_PATHS=${jsonencode(var.nix_store_paths)}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file    = true

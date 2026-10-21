@@ -58,8 +58,7 @@ function execute_stage2_playbook {
 	# shellcheck disable=SC2086
 	ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":true, "qemu":false}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars @/tmp/ansible-playbook/ansible/nix-store-paths.json \
+		--extra-vars "{\"nix_store_paths\": $NIX_STORE_PATHS}" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
