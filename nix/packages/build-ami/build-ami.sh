@@ -10,7 +10,7 @@ die() {
 [[ -n ${AWS_REGION:-} ]] || die "AWS_REGION is required but unset"
 export PACKER_LOG=${RUNNER_DEBUG:-0}
 
-declare arch='' git_sha='' packages_git_sha='' postgres_major_version='' stage=''
+declare arch='' git_sha='' packages_git_sha='' postgres_major_version=''
 while (($#)); do
 	value=${2:-}
 	case $1 in
@@ -18,7 +18,6 @@ while (($#)); do
 	--git-sha) git_sha=$value ;;
 	--packages-git-sha) packages_git_sha=$value ;;
 	--postgres-major-version) postgres_major_version=$value ;;
-	--stage) stage=$value ;;
 	*) die "unknown option '$1'" ;;
 	esac
 	[[ -n $value && $value != --* ]] || die "missing value for $1"
@@ -44,12 +43,6 @@ case $postgres_major_version in
 *) die "invalid PostgreSQL major version '$postgres_major_version', must be '15'; '17'; or 'orioledb-17'" ;;
 esac
 
-required_arg stage "$stage"
-case $stage in
-1 | 2) ;;
-*) die "invalid stage '$stage', must be '1' or '2'" ;;
-esac
-
 on_error=cleanup
 if [[ ${CI:-false} == true ]]; then
 	[[ -n ${GITHUB_RUN_ID:-} ]] || die "GITHUB_RUN_ID is required when CI=true"
@@ -65,9 +58,8 @@ input_hash=@out@
 input_hash=${input_hash#/nix/store/}
 input_hash=${input_hash%%-*}
 
-if ((stage == 2)); then
-	site_env_path=$(nix eval --raw "github:supabase/postgres/$packages_git_sha#packages.$system.site-env-$postgres_major_version.outPath")
-fi
+# must run before the cd otherwise we get an error like `error: installable '/nix/store/...-amiSources' does not correspond to a Nix language value`
+site_env_path=$(nix eval --raw "github:supabase/postgres/$packages_git_sha#packages.$system.site-env-$postgres_major_version.outPath")
 
 cd @amiSources@
 
@@ -109,15 +101,13 @@ find_ami() {
 }
 
 show_ami_info() {
-	local id=$1
+	local stage=$1 id=$2 name=$3
 	if [[ -z $id ]]; then
 		echo "Error: Stage $stage AMI not found, was there an error?" >&2
 		exit 1
 	fi
 
-	local ami_name
-	ami_name=$(aws ec2 describe-images --image-ids "$id" --query 'Images[0].Name' --output text)
-	echo "::notice title=Stage $stage AMI Built::AMI '$ami_name' (ID: $id) built in region $AWS_REGION"
+	echo "::notice title=Stage $stage AMI Built::AMI '$name' (ID: $id) built in region $AWS_REGION"
 	write_output "stage${stage}_ami_id" "$id"
 }
 
@@ -130,54 +120,47 @@ common_packer_args=(
 	-var-file "packer/$arch.vars.pkr.hcl"
 )
 
-if ((stage == 1)); then
-	echo "Building stage 1..."
+# both templates require the same plugins, so one init covers both stages
+packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 
-	packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
-	packer build "${common_packer_args[@]}" \
-		-var "ami_name=$ami_name-stage-1" \
-		-var "input-hash=$input_hash" \
-		packer/stage1-nix.pkr.hcl
+echo "::group::AMI Build: Stage 1"
 
-	STAGE1_AMI_ID=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
-	show_ami_info "$STAGE1_AMI_ID"
+packer build "${common_packer_args[@]}" \
+	-var "ami_name=$ami_name-stage-1" \
+	-var "input-hash=$input_hash" \
+	packer/stage1-nix.pkr.hcl
 
-elif ((stage == 2)); then
-	echo "Building stage 2..."
+stage1_ami_id=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
+show_ami_info 1 "$stage1_ami_id" "$ami_name-stage-1"
 
-	STAGE1_AMI_ID=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
-	if [[ -z $STAGE1_AMI_ID ]]; then
-		echo "Error: Stage 1 AMI not found. Please build stage 1 first."
-		exit 1
-	fi
+echo "::endgroup::"
 
-	echo "Found stage 1 AMI: $STAGE1_AMI_ID"
+echo "::group::AMI Build: Stage 2"
 
-	packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage2-nix.pkr.hcl
-	packer build "${common_packer_args[@]}" \
-		-var "ami_name=$ami_name" \
-		-var "packages_git_sha=$packages_git_sha" \
-		-var "site_env_path=$site_env_path" \
-		-var "source_ami=$STAGE1_AMI_ID" \
-		packer/stage2-nix.pkr.hcl
+packer build "${common_packer_args[@]}" \
+	-var "ami_name=$ami_name" \
+	-var "packages_git_sha=$packages_git_sha" \
+	-var "site_env_path=$site_env_path" \
+	-var "source_ami=$stage1_ami_id" \
+	packer/stage2-nix.pkr.hcl
 
-	disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
-	disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'
-	if [[ $disk_usage_notice =~ $disk_usage_notice_pattern ]]; then
-		disk_usage_bytes=${BASH_REMATCH[1]}
-		disk_usage_human=${BASH_REMATCH[2]}
-	else
-		echo "Error: Missing or invalid disk usage notice in stage 2 log: '$disk_usage_notice'" >&2
-		exit 1
-	fi
-	echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
-
-	disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
-	write_output disk_usage_json "$disk_usage_json"
-
-	STAGE2_AMI_ID=$(find_ami "$postgres_release_version")
-	show_ami_info "$STAGE2_AMI_ID"
+disk_usage_notice=$(grep '^::notice::disk_usage ' /tmp/ansible-stage2.log | tail -n 1 || true)
+disk_usage_notice_pattern='^::notice::disk_usage bytes=([0-9]+) human=([0-9]+(\.[0-9]+)?[MGT]?)$'
+if [[ $disk_usage_notice =~ $disk_usage_notice_pattern ]]; then
+	disk_usage_bytes=${BASH_REMATCH[1]}
+	disk_usage_human=${BASH_REMATCH[2]}
+else
+	die "missing or invalid disk usage notice in stage 2 log: '$disk_usage_notice'"
 fi
+echo "::notice::AMI Disk Usage $disk_usage_human $disk_usage_bytes"
+
+disk_usage_json=$(jq -cnr --arg bytes "$disk_usage_bytes" --arg human "$disk_usage_human" '{$bytes,$human}')
+write_output disk_usage_json "$disk_usage_json"
+
+stage2_ami_id=$(find_ami "$postgres_release_version")
+show_ami_info 2 "$stage2_ami_id" "$ami_name"
+
+echo "::endgroup::"
 
 write_output postgres_release_version "$postgres_release_version"
 write_output execution_id "$packer_execution_id"

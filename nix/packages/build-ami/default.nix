@@ -52,8 +52,9 @@ writeShellApplication {
   meta = {
     description = "Build stage-1 and stage-2 AMIs with Packer";
     longDescription = ''
+      Builds both stages in one run.
       Stage 1 always builds a new AMI tagged with an input hash computed from the source files that affect the build.
-      Stage 2 finds the matching stage-1 AMI by input hash, PostgreSQL version, architecture, source SHA, and execution ID and uses it as its source image.
+      Stage 2 uses the stage-1 AMI, found by input hash, PostgreSQL version, architecture, source SHA, and execution ID, as its source image.
     '';
   };
 }

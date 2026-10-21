@@ -18,42 +18,22 @@ inputs:
 outputs:
   stage2_ami_id:
     description: 'The AMI ID of the stage 2 build'
-    value: ${{ steps.build-stage2.outputs.stage2_ami_id }}
+    value: ${{ steps.build-ami.outputs.stage2_ami_id }}
   postgres_release_version:
     description: 'The PostgreSQL release version'
-    value: ${{ steps.build-stage2.outputs.postgres_release_version }}
+    value: ${{ steps.build-ami.outputs.postgres_release_version }}
   execution_id:
     description: 'The execution ID for this build'
-    value: ${{ steps.build-stage2.outputs.execution_id }}
+    value: ${{ steps.build-ami.outputs.execution_id }}
   disk_usage_json:
     description: 'The stage 2 AMI root disk usage as json'
-    value: ${{ steps.build-stage2.outputs.disk_usage_json }}
+    value: ${{ steps.build-ami.outputs.disk_usage_json }}
 
 runs:
   using: "composite"
   steps:
-    - name: Build AMI stage 1
-      shell: bash
-      env:
-        AWS_MAX_ATTEMPTS: 10
-        AWS_RETRY_MODE: adaptive
-        arch: ${{ inputs.arch }}
-        git_sha: ${{ inputs.git_sha }}
-        postgres_major_version: ${{ inputs.postgres_major_version }}
-      run: |
-        echo "::group::AMI Build: Stage 1"
-
-        nix run .#build-ami -- \
-          --stage 1 \
-          --arch "$arch" \
-          --git-sha "$git_sha" \
-          --postgres-major-version "$postgres_major_version" \
-          ;
-
-        echo "::endgroup::"
-
-    - name: Build AMI stage 2
-      id: build-stage2
+    - name: Build AMI
+      id: build-ami
       shell: bash
       env:
         AWS_MAX_ATTEMPTS: 10
@@ -63,14 +43,9 @@ runs:
         packages_git_sha: ${{ inputs.packages_git_sha }}
         postgres_major_version: ${{ inputs.postgres_major_version }}
       run: |
-        echo "::group::AMI Build: Stage 2"
-
         nix run .#build-ami -- \
-          --stage 2 \
           --arch "$arch" \
           --git-sha "$git_sha" \
           --packages-git-sha "$packages_git_sha" \
           --postgres-major-version "$postgres_major_version" \
           ;
-
-        echo "::endgroup::"
