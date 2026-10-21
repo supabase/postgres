@@ -6,7 +6,7 @@ workflows:
     '.github/workflows/ami-release-nix.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
-        - 'rtcamp/action-slack-notify@v2.4.0'
+        - 'slackapi/slack-github-action@v4.0.0'
         - 'softprops/action-gh-release@v3.0.3'
     '.github/workflows/check-extension-versions.yml':
         - 'actions/checkout@v7.0.1'
@@ -77,16 +77,16 @@ workflows:
     '.github/workflows/publish-nix-pgupgrade-bin-flake-version.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
-        - 'rtcamp/action-slack-notify@v2.4.0'
+        - 'slackapi/slack-github-action@v4.0.0'
     '.github/workflows/publish-nix-pgupgrade-scripts.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
-        - 'rtcamp/action-slack-notify@v2.4.0'
+        - 'slackapi/slack-github-action@v4.0.0'
     '.github/workflows/qemu-image-build.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/amazon-ecr-login@v2.1.7'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
-        - 'rtcamp/action-slack-notify@v2.4.0'
+        - 'slackapi/slack-github-action@v4.0.0'
     '.github/workflows/test.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
@@ -231,11 +231,6 @@ dependencies:
         commit: 'sha1-b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad'
         owner_id: 18365890
         repo_id: 256447541
-    'rtcamp/action-slack-notify@v2.4.0':
-        ref: 'v2.4.0'
-        commit: 'sha1-33ca3be66c6f378fe1610fd1d5258632dbed5e58'
-        owner_id: 1128395
-        repo_id: 173934970
         uses:
             - 'lovetoknow/slackify-markdown-action@698a1d4d0ff1794152a93c03ee8ca5e03a310d4e'
     'slackapi/slack-github-action@v4.0.0':
