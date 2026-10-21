@@ -47,6 +47,12 @@
       import_tasks:
         file: tasks/setup-pgbackrest.yml
 
+    - name: Collect nix garbage
+      when: stage2
+      ansible.builtin.shell:
+        cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix-collect-garbage -d
+      changed_when: true
+
     - name: Install Gotrue
       when: not stage2
       import_tasks: tasks/setup-gotrue.yml
@@ -185,10 +191,14 @@
         /tmp/ansible-playbook/ansible/files/supascan_ami.sh
         /tmp/ansible-playbook/audit-specs/baselines/$baseline
 
-    - name: Setup Swap
+    - name: Tune Swap
+      when: stage2
+      import_tasks: tasks/stage2/tune-swap.yml
+
+    - name: Setup Swapfile
       when: stage2 and not qemu
       become: yes
-      import_tasks: tasks/stage2/setup-swap.yml
+      import_tasks: tasks/stage2/setup-swapfile.yml
 
   handlers:
     - name: Import handlers

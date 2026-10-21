@@ -944,6 +944,51 @@
             postgresql_17_src
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
+          glibc-version-check =
+            let
+              checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
+                builtins.readFile ./tools/check-glibc-version.nu
+              );
+              # supautils is dlopened into already-running legacy pre-nix postgres, so it needs a lower floor than an AMI build.
+              legacyPaths = [
+                self'.legacyPackages.psql_15.exts.supautils
+                self'.legacyPackages.psql_17.exts.supautils
+                self'.legacyPackages."psql_orioledb-17".exts.supautils
+              ];
+              # gatekeeper is dlopened by the base os pam stack; pin it
+              pamPaths = [ self'.packages.gatekeeper ];
+              # ships to user's development machines, not our fleet
+              portablePaths = [ self'.packages.psql_17_cli_portable ];
+            in
+            pkgs.runCommand "glibc-version-check"
+              {
+                nativeBuildInputs = [ pkgs.binutils ];
+                inherit legacyPaths pamPaths portablePaths;
+              }
+              ''
+                # 2.31: Ubuntu 20.04's glibc.
+                ${lib.getExe checkScript} 2.31 $legacyPaths
+                # 2.39: Ubuntu 24.04's glibc.
+                ${lib.getExe checkScript} 2.39 $portablePaths
+                # 2.40: current core floor.
+                ${lib.getExe checkScript} 2.40 $pamPaths
+                touch $out
+              '';
+          collation-version-check =
+            let
+              baseline = "glibc-2.40-66";
+              check =
+                name: actual:
+                lib.assertMsg (actual == baseline) ''
+                  glibc version changed: baseline is ${baseline}, ${name} has ${actual}. Checked
+                  glibc version, not actual collation data, as a proxy for collation drift.
+                  This can change collation versions and require a reindex.
+                  If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
+                '';
+            in
+            assert check "postgresql_15" self'.packages.postgresql_15.stdenv.cc.libc.name;
+            assert check "postgresql_17" self'.packages.postgresql_17.stdenv.cc.libc.name;
+            pkgs.runCommand "collation-version-check" { } "touch $out";
         };
     };
 }
