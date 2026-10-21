@@ -63,6 +63,12 @@
           nix-env --quiet --set {{ nix_store_paths['postgres-env'] }}
         "
 
+    - name: Install and activate site env from nix binary cache
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/site --set {{ nix_store_paths['site-env'] }} &&
+        /nix/var/nix/profiles/site/bin/activate
+
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
         group: 'postgres'

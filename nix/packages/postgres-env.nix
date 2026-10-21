@@ -49,6 +49,7 @@
                 wal-g-3
                 ;
               postgres-env = self'.packages."postgres-env-${version}";
+              site-env = self'.packages."site-env-${version}";
             };
           })
           [

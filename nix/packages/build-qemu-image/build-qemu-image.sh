@@ -50,12 +50,13 @@ install --mode 444 "$code" "$workdir/ovmf_code.fd"
 install --mode 644 "$vars" "$workdir/ovmf_vars.fd" # qemu writes to the vars pflash during boot
 
 git_sha=${GIT_SHA:-$(git rev-parse HEAD)}
+system=$([[ $arch == arm64 ]] && echo aarch64-linux || echo x86_64-linux)
 postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" ansible/postgres_release.yml)
 
 # Build the cloud-init seed ISO before invoking packer.
 cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
-PKR_VAR_nix_store_paths=$(nix eval --json "github:supabase/postgres/$git_sha#legacyPackages.$([ "$arch" = arm64 ] && echo aarch64 || echo x86_64)-linux.nix-store-paths-$postgres_major_version")
+PKR_VAR_nix_store_paths=$(nix eval --json "github:supabase/postgres/$git_sha#legacyPackages.$system.nix-store-paths-$postgres_major_version")
 export PKR_VAR_nix_store_paths
 export LC_ALL=C.UTF-8
 export TZ=UTC
