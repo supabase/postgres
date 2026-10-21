@@ -1,0 +1,37 @@
+---
+uids:
+  pgbouncer: 1001
+  gotrue: 1002
+  postgrest: 1003
+  envoy: 1004
+  kong: 1005
+  adminapi: 1007
+  ubuntu: 1000
+gids:
+  ubuntu: 1000
+  vector: 990
+  supabase_admin_agent: 988
+
+supascan_baseline_prefix: qemu
+
+adminapi_extra_env:
+  - AWS_SDK_LOAD_CONFIG=true
+
+gotrue_reloading_notify_enabled: false
+gotrue_reloading_notify_comment:
+  - v3 does not use filesystem notifications for config reloads.
+
+postgres_exporter_extra_flags:
+  - --no-collector.database
+
+supabase_admin_agent_salt:
+  args: salt --apply --store-result --targets-key  targetsv3-main.yaml
+  user: root
+  group: root
+# We're using a significantly lower frequency for triggering this agent on qemu
+# images for the moment. Once we've performed additional validations re: the
+# aggregate impact of running it more frequently, the frequency can be increased.
+supabase_admin_agent_timer:
+  on_calendar: "*-*-* 0,6,12,18:00:00"
+  accuracy_sec: 1h
+  on_boot_sec: 5m

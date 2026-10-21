@@ -6,6 +6,7 @@
 
   vars_files:
     - ./vars.yml
+    - "./vars/{{ 'qemu' if qemu else 'aws' }}.yml"
 
   # Set facts only in here, never in any tasks.
   # This avoids redefining/duplicates or different values (buggy)
@@ -180,7 +181,7 @@
     - name: Run supascan baseline validation
       when: stage2
       shell: >-
-        baseline={{ 'ami' if not qemu else 'qemu' }}-build-{{ platform }}
+        baseline={{ supascan_baseline_prefix }}-build-{{ platform }}
         nix shell github:supabase/postgres/{{ git_commit_sha }}#supascan --command
         /tmp/ansible-playbook/ansible/files/supascan_ami.sh
         /tmp/ansible-playbook/audit-specs/baselines/$baseline

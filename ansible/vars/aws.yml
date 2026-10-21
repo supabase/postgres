@@ -1,0 +1,34 @@
+---
+uids:
+  pgbouncer: 1000
+  gotrue: 1001
+  postgrest: 1002
+  envoy: 1003
+  kong: 1004
+  adminapi: 1006
+  ubuntu: 1007
+gids:
+  ubuntu: 1014
+  vector: 989
+  supabase_admin_agent: 987
+
+supascan_baseline_prefix: ami
+
+adminapi_extra_env: []
+
+gotrue_reloading_notify_enabled: true
+gotrue_reloading_notify_comment:
+  - v2 currently relies on notify support, so we will enable it until both v2 / v3
+  - have migrated to strictly use signals across all projects. The default is true
+  - in gotrue but we will set it defensively here.
+
+postgres_exporter_extra_flags: []
+
+supabase_admin_agent_salt:
+  args: salt --apply --store-result
+  user: supabase-admin-agent
+  group: supabase-admin-agent
+supabase_admin_agent_timer:
+  on_calendar: "*:0/10"
+  accuracy_sec: 1s
+  on_boot_sec: ""
