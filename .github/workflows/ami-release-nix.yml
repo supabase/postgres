@@ -199,6 +199,19 @@ jobs:
 
           echo "Catalog uploaded to ${CATALOG_S3}"
 
+      - name: Publish site-env store path
+        run: |
+          GIT_SHA="${{ steps.resolve-git-sha.outputs.sha }}"
+          SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+          SITE_ENV_NAME="site-env-${POSTGRES_MAJOR_VERSION}"
+          SITE_ENV_PATH=$(nix eval --raw ".#${SITE_ENV_NAME}.outPath")
+
+          aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/${GIT_SHA}/${SYSTEM}/${SITE_ENV_NAME}" <<< "$SITE_ENV_PATH"
+
+          if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            aws s3 cp - "s3://${{ secrets.SHARED_AWS_ARTIFACTS_BUCKET }}/nix-catalog/latest/${SYSTEM}/${SITE_ENV_NAME}" <<< "$GIT_SHA"
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@v3.0.3
         with:

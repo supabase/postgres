@@ -11,13 +11,38 @@
     let
       makeSiteEnv =
         version: extraPaths:
+        let
+          supautils = self'.legacyPackages."psql_${version}".exts.supautils;
+          # Site profile activation script. MUST STAY IDEMPOTENT!
+          activate = pkgs.writeTextFile {
+            name = "activate";
+            executable = true;
+            destination = "/bin/activate";
+            # Runs on the host bash to keep Nix's bash and glibc out of the closure.
+            text = ''
+              #!/usr/bin/env bash
+              set -euo pipefail
+              echo "Activating site profile."
+              echo "Configured in /etc/postgresql/postgresql.conf (runtime could differ):"
+              for guc in dynamic_library_path session_preload_libraries; do
+                grep -h "^$guc" /etc/postgresql/postgresql.conf 2>/dev/null || echo "$guc is not set"
+              done
+              echo "Site profile activated."
+            '';
+            checkPhase = ''
+              ${pkgs.shellcheck}/bin/shellcheck "$target"
+            '';
+          };
+        in
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [
-            self'.legacyPackages."psql_${version}".exts.supautils
+            supautils
+            activate
             self'.packages.postgres-collation-refresh
           ]
           ++ extraPaths;
+          passthru = { inherit activate; };
         };
 
       siteEnvs = {
