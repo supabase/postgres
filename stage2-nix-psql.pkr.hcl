@@ -165,7 +165,6 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sudo touch /etc/manifest-diff-test",
       "sudo sh /tmp/manifest-snapshot.sh > /tmp/ami-manifest.txt"
     ]
   }
