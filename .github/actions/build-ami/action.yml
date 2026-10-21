@@ -108,7 +108,6 @@ runs:
         nix run .#build-ami -- stage2 ${{ inputs.arch }} \
           -var "ami_name=${{ inputs.ami_name_prefix }}" \
           -var "git-head-version=${{ inputs.git_sha }}" \
-          -var "git_sha=${{ inputs.packages_git_sha }}" \
           -var "nix_store_paths=$nix_store_paths" \
           -var "instance_type=${{ inputs.instance_type }}" \
           -var "packer-execution-id=$PACKER_EXECUTION_ID" \

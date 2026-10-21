@@ -43,7 +43,6 @@ function install_nix() {
 
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
-	echo "GIT_SHA: $GIT_SHA"
 	mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<-EOF
 		[defaults]

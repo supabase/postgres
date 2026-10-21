@@ -63,7 +63,6 @@ packer init qemu.pkr.hcl
 PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "arch=$arch" \
 	-var "cpu=$cpu" \
-	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
 	-var "nix_store_paths=$nix_store_paths" \
 	-var "postgres-version=$postgres_version" \
