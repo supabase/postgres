@@ -43,13 +43,9 @@ jobs:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
         target:
           - arch: amd64
-            instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
-            ami_name_prefix: supabase-postgres-x86_64
           - arch: arm64
-            instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
-            ami_name_prefix: supabase-postgres-arm64
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
@@ -70,7 +66,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
@@ -78,7 +73,6 @@ jobs:
         uses: $/.github/actions/install-nix
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
@@ -90,16 +84,21 @@ jobs:
 
       - name: Build AMI
         id: build-ami
-        uses: $/.github/actions/build-ami
-        with:
-          ami_name_prefix: ${{ matrix.target.ami_name_prefix }}
-          ami_regions: '["${{ env.AWS_REGION }}"]'
+        env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
+          AMI_RELEASE: "true"
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
-          postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
+          postgres_major_version: ${{ matrix.postgres_version }}
+        run: |
+          nix run .#build-ami -- \
+            --arch "$arch" \
+            --git-sha "$git_sha" \
+            --packages-git-sha "$packages_git_sha" \
+            --postgres-major-version "$postgres_major_version" \
+            ;
 
       - name: Setup post build env vars
         run: |
@@ -135,7 +134,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload nix flake revision to s3 staging
         run: |
@@ -147,7 +145,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.PROD_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Upload nix flake revision to s3 prod
         run: |
@@ -158,14 +155,12 @@ jobs:
       - name: GitHub OIDC Auth
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-github-oidc-role
           role-session-name: shared-services-jump
 
       - name: Assume destination role
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          aws-region: us-east-1
           role-to-assume: arn:aws:iam::279559813984:role/supabase-nix-catalog-artifacts-role-6387512
           role-skip-session-tagging: true
           role-session-name: upload-assets
@@ -274,7 +269,6 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()

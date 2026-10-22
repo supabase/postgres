@@ -28,13 +28,20 @@ function install_packages {
 }
 
 function install_nix() {
-	curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --yes --daemon --nix-extra-conf-file <(
+	local nix_version=2.35.3
+	local nix_installer_sha256=69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9
+	local nix_installer
+	nix_installer=$(mktemp)
+	curl -fsSL "https://releases.nixos.org/nix/nix-${nix_version}/install" -o "$nix_installer"
+	echo "${nix_installer_sha256}  ${nix_installer}" | sha256sum -c -
+	sh "$nix_installer" --yes --daemon --nix-extra-conf-file <(
 		cat <<-EOF
 			extra-experimental-features = nix-command flakes
 			extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 			extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 		EOF
 	)
+	rm -f "$nix_installer"
 
 	#shellcheck disable=SC1091
 	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
@@ -43,7 +50,6 @@ function install_nix() {
 
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
-	echo "GIT_SHA: $GIT_SHA"
 	mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<-EOF
 		[defaults]
@@ -55,15 +61,12 @@ function execute_stage2_playbook {
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log
 	export ANSIBLE_REMOTE_TEMP=/tmp
 
-	# shellcheck disable=SC2086
 	ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":true, "qemu":false}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "site_env_path=$SITE_ENV_PATH" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
-		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
-		$ARGS
+		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION"
 }
 
 function cleanup_packages {

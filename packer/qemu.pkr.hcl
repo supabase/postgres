@@ -1,10 +1,4 @@
-variable "git_sha" {
-  type = string
-}
-
-variable "site_env_path" {
-  type = string
-}
+variable "nix_store_paths" { type = map(string) }
 
 variable "postgres-version" {
   type    = string
@@ -106,18 +100,17 @@ build {
   }
 
   provisioner "file" {
-    source      = "ebssurrogate/scripts/cleanup-qemu.sh"
+    source      = "packer/scripts/cleanup-qemu.sh"
     destination = "/tmp/cleanup-qemu.sh"
   }
 
   provisioner "shell" {
     environment_vars = [
-      "GIT_SHA=${var.git_sha}",
-      "SITE_ENV_PATH=${var.site_env_path}",
+      "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file    = true
-    script              = "ebssurrogate/scripts/qemu-bootstrap-nix.sh"
+    script              = "packer/scripts/qemu-bootstrap-nix.sh"
     execute_command     = "sudo -S sh -c '. {{.EnvVarFile}} && cd /tmp/ansible-playbook && {{.Path}}'"
     start_retry_timeout = "5m"
     skip_clean          = true
