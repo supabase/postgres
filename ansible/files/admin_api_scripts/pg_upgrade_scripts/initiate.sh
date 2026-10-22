@@ -60,8 +60,8 @@ PGBINOLD="/usr/lib/postgresql/bin"
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
 NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
-NIX_VERSION="2.34.6"
-NIX_OFFICIAL_INSTALLER_SHA256="bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a"
+NIX_VERSION="2.35.3"
+NIX_OFFICIAL_INSTALLER_SHA256="69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
 	BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")

@@ -27,8 +27,8 @@ extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EOF
-ARG NIX_VERSION=2.34.6
-ARG NIX_INSTALLER_HASH=bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a
+ARG NIX_VERSION=2.35.3
+ARG NIX_INSTALLER_HASH=69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9
 RUN curl -fsSL "https://releases.nixos.org/nix/nix-$NIX_VERSION/install" -o /tmp/nix-install && \
     echo "$NIX_INSTALLER_HASH  /tmp/nix-install" | sha256sum -c - && \
     sh /tmp/nix-install --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf && \
