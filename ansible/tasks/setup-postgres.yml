@@ -246,6 +246,13 @@
   loop_control:
     loop_var: 'systemd_svc_item'
 
+- name: Link the collation refresh unit from the site profile
+  when: stage2
+  ansible.builtin.file:
+    src: /nix/var/nix/profiles/site/lib/systemd/system/postgresql-collation-refresh.service
+    dest: /etc/systemd/system/postgresql-collation-refresh.service
+    state: link
+
 - name: initialize pg required state
   ansible.builtin.file:
     group: 'postgres'
