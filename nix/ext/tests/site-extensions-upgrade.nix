@@ -12,14 +12,22 @@ let
   inherit (pkgs) lib;
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
 
-  # Only catalog extension with >1 version on PG17; base install hardcodes
-  # default_version to latest (17.1), so pinning 17.0 is a guaranteed mismatch today.
   pinnedExtension = "pgaudit";
-  pinnedVersion = "17.0";
+  pinnedVersion = "99.0"; # fake: distinguishable from any real pgaudit version
 
-  catalog17 = self.legacyPackages.${system}."site-extensions-catalog-17";
-  pinnedPackage =
-    self.legacyPackages.${system}."site-extensions-versions-17".${pinnedExtension}.${pinnedVersion};
+  # A throwaway package standing in for what the real catalog would resolve
+  # pinnedExtension@pinnedVersion to — avoids coupling this test to the real
+  # catalog's content-addressed hashes (which it can't fetch, the VM is
+  # offline) and to the multi-GB real catalog build. The mechanism under
+  # test (resolve -> nix-store -r -> nix-env --install) doesn't care what's
+  # inside; the final assertion only needs postgres's real pgaudit untouched.
+  placeholderPackage = pkgs.pkgsLinux.runCommand "pgaudit-${pinnedVersion}-generic" { } ''
+    mkdir -p "$out/lib" "$out/share/postgresql/extension"
+    echo "default_version = '${pinnedVersion}'" > "$out/share/postgresql/extension/pgaudit.control"
+  '';
+  fakeCatalog = pkgs.pkgsLinux.writeText "pg-extensions-catalog.json" (
+    builtins.toJSON { ${pinnedExtension} = { ${pinnedVersion} = "${placeholderPackage}"; }; }
+  );
 
   prestartScript = pkgs.pkgsLinux.writeShellScript "postgres-prestart-site-extensions" ''
     #!/bin/bash
@@ -71,11 +79,13 @@ pkgs.testers.runNixOSTest {
     imports = [ (testLib.makeSupabaseTestConfig { majorVersion = "17"; }) ];
 
     # systemd units don't inherit /run/current-system/sw/bin from systemPackages.
-    environment.systemPackages = [ catalog17 ];
-    systemd.services.postgresql.path = [ catalog17 ];
+    environment.systemPackages = [ self.packages.${system}.site-extensions-update ];
+    systemd.services.postgresql.path = [ self.packages.${system}.site-extensions-update ];
+    systemd.services.postgresql.environment.PG_EXTENSIONS_CATALOG = "${fakeCatalog}";
 
-    # VM has no network; pre-seed what site-extensions-update would otherwise fetch.
-    virtualisation.additionalPaths = [ pinnedPackage ];
+    # VM has no network; placeholderPackage is a normal build input, so it's
+    # already realized and gets copied in — no fetch needed at runtime.
+    virtualisation.additionalPaths = [ placeholderPackage ];
 
     environment.etc."adminapi/pg-extensions.json".text = builtins.toJSON {
       ${pinnedExtension} = pinnedVersion;
