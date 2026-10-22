@@ -41,7 +41,8 @@ service:
     running: true
   ssh:
     enabled: false
-    running: true
+  ssh.socket:
+    enabled: true
   atd:
     enabled: false
     running: false
