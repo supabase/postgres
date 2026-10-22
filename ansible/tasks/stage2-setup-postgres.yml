@@ -60,7 +60,7 @@
       ansible.builtin.shell: |
         sudo -u postgres bash -c "
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
+          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgres_major_version }}
         "
       register: postgres_env_path
 
@@ -70,6 +70,12 @@
           . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
           nix-env --set {{ postgres_env_path.stdout }}
         "
+
+    - name: Install and activate site env from nix binary cache
+      ansible.builtin.shell: |
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --profile /nix/var/nix/profiles/site --set {{ site_env_path }} &&
+        /nix/var/nix/profiles/site/bin/activate
 
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:

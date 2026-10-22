@@ -26,6 +26,7 @@ nav:
     - Update Extensions: update-extension.md
     - Update Nix Dependencies: updating-dependencies.md
     - New Major PostgreSQL: new-major-postgres.md
+    - Site Profile: site-profile.md
   - Testing:
     - Adding Tests: adding-tests.md
     - Migration Tests: migration-tests.md

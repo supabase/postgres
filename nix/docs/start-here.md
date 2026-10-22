@@ -68,8 +68,12 @@ Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cach
 Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf
+curl -fsSL https://releases.nixos.org/nix/nix-2.34.6/install -o nix-install
+echo "bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a  nix-install" | sha256sum -c -
+sh nix-install --daemon --yes --nix-extra-conf-file ./nix.conf
 ```
+
+The checksum check makes sure the installer script is the one we pinned. On macOS, use `shasum -a 256 -c -` instead of `sha256sum -c -`.
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
 
