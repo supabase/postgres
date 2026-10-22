@@ -154,7 +154,7 @@ function execute_stage2_playbook {
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
 		--extra-vars '{"stage2": true, "qemu": true}' \
-		--extra-vars "{\"nix_store_paths\": $NIX_STORE_PATHS}" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION" \

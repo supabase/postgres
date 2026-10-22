@@ -136,7 +136,7 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "NIX_STORE_PATHS=${jsonencode(var.nix_store_paths)}",
+      "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file = true
