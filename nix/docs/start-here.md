@@ -63,13 +63,13 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 
 Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cache.md).
 
-### Step 2: Install Nix 2.34.6
+### Step 2: Install Nix
 
-Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
+Run the following command to install the Nix version used in CI (pinned in `.github/actions/install-nix/setup-nix.sh`) with the custom configuration:
 
 ```bash
-curl -fsSL https://releases.nixos.org/nix/nix-2.34.6/install -o nix-install
-echo "bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a  nix-install" | sha256sum -c -
+curl -fsSL https://releases.nixos.org/nix/nix-2.35.3/install -o nix-install
+echo "69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9  nix-install" | sha256sum -c -
 sh nix-install --daemon --yes --nix-extra-conf-file ./nix.conf
 ```
 
@@ -83,7 +83,7 @@ the Nix tools installed on `$PATH` and so that your user shell can see the
 extra settings.
 
 You should now be able to do something like the following; try running these
-same commands on your machine:
+same commands on your machine. Your versions are likely different from the ones shown:
 
 ```
 $ nix --version
