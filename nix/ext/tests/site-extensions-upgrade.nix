@@ -1,6 +1,3 @@
-# Last subtest EXPECTED TO FAIL until dynamic_library_path/extension_control_path
-# point at /nix/var/nix/profiles/site-extensions. #2424 wires a different
-# profile (site/pg-extensions, supautils only), not this one.
 { self, pkgs }:
 let
   testLib = import ./lib.nix { inherit self pkgs; };
@@ -10,7 +7,6 @@ let
   pinnedExtension = "pgaudit";
   pinnedVersion = "99.0";
 
-  # Stands in for a real catalog entry, which the offline test VM can't fetch.
   placeholderPackage = pkgs.pkgsLinux.runCommand "pgaudit-${pinnedVersion}-generic" { } ''
     mkdir -p "$out/lib" "$out/share/postgresql/extension"
     echo "default_version = '${pinnedVersion}'" > "$out/share/postgresql/extension/pgaudit.control"
@@ -32,8 +28,6 @@ pkgs.testers.runNixOSTest {
   nodes.server = {
     imports = [ (testLib.makeSupabaseTestConfig { majorVersion = "17"; }) ];
 
-    # systemd units need their own PATH; update-site-extensions also expects
-    # nix on PATH already, true on real hosts, not this VM.
     environment.systemPackages = [ self.packages.${system}.update-site-extensions ];
     systemd.services.postgresql.path = [
       self.packages.${system}.update-site-extensions
@@ -41,7 +35,7 @@ pkgs.testers.runNixOSTest {
     ];
     systemd.services.postgresql.environment.PG_EXTENSIONS_CATALOG = "${fakeCatalog}";
 
-    # Pre-realize it: the VM has no network to fetch it at runtime.
+    # No network in the VM, so pre-realize it.
     virtualisation.additionalPaths = [ placeholderPackage ];
 
     environment.etc."adminapi/pg-extensions.json".text = builtins.toJSON {
