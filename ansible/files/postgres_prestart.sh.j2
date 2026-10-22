@@ -16,7 +16,8 @@ handle_extension_versions() {
     if update-site-extensions "$extensions_file"; then
         log "extensions: profile updated"
     else
-        log "extensions: update failed, profile unchanged"
+        log "extensions: update failed"
+        return 1
     fi
 }
 
@@ -24,7 +25,7 @@ main() {
    log "Starting prestart script"
    
    # 1. Handle all extension versions from config file
-   handle_extension_versions
+   handle_extension_versions || return 1
 
    log "Prestart script completed"
 }
