@@ -28,12 +28,15 @@
             self'.legacyPackages."psql_${version}".exts.orioledb.debug
           ];
         };
-    in
-    {
-      packages = {
+      postgresEnvs = {
         postgres-env-15 = makePostgresEnv "15";
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
       };
+    in
+    {
+      packages = postgresEnvs;
+      # The CI build matrix comes from legacyPackages, so this is what gets cached.
+      legacyPackages = postgresEnvs;
     };
 }
