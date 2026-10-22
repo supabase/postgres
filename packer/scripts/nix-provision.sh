@@ -28,8 +28,8 @@ function install_packages {
 }
 
 function install_nix() {
-	local nix_version=2.34.6
-	local nix_installer_sha256=bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a
+	local nix_version=2.35.3
+	local nix_installer_sha256=69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9
 	local nix_installer
 	nix_installer=$(mktemp)
 	curl -fsSL "https://releases.nixos.org/nix/nix-${nix_version}/install" -o "$nix_installer"
@@ -50,7 +50,6 @@ function install_nix() {
 
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
-	echo "GIT_SHA: $GIT_SHA"
 	mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<-EOF
 		[defaults]
@@ -64,8 +63,7 @@ function execute_stage2_playbook {
 
 	ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":true, "qemu":false}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "site_env_path=$SITE_ENV_PATH" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION"

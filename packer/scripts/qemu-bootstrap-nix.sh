@@ -129,8 +129,8 @@ function setup_locale {
 #################
 
 function install_nix() {
-	local nix_version=2.34.6
-	local nix_installer_sha256=bf6d12da4aeaae38ab509dc736df648597bcdee051046ea76d3d53d5b18fa54a
+	local nix_version=2.35.3
+	local nix_installer_sha256=69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9
 	local nix_installer
 	nix_installer=$(mktemp)
 	curl -fsSL "https://releases.nixos.org/nix/nix-${nix_version}/install" -o "$nix_installer"
@@ -160,8 +160,7 @@ function execute_stage2_playbook {
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
 		--extra-vars '{"stage2": true, "qemu": true}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "site_env_path=$SITE_ENV_PATH" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \

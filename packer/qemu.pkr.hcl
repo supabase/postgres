@@ -1,10 +1,4 @@
-variable "git_sha" {
-  type = string
-}
-
-variable "site_env_path" {
-  type = string
-}
+variable "nix_store_paths" { type = map(string) }
 
 variable "postgres-version" {
   type    = string
@@ -112,8 +106,7 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "GIT_SHA=${var.git_sha}",
-      "SITE_ENV_PATH=${var.site_env_path}",
+      "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
     ]
     use_env_var_file    = true
