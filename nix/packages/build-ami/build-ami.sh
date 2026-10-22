@@ -59,7 +59,7 @@ input_hash=${input_hash#/nix/store/}
 input_hash=${input_hash%%-*}
 
 # must run before the cd otherwise we get an error like `error: installable '/nix/store/...-amiSources' does not correspond to a Nix language value`
-site_env_path=$(nix eval --raw "github:supabase/postgres/$packages_git_sha#packages.$system.site-env-$postgres_major_version.outPath")
+nix_store_paths=$(cat "$(nix build --no-link --print-out-paths "github:supabase/postgres/$packages_git_sha#packages.$system.nix-store-paths-$postgres_major_version")")
 
 cd @amiSources@
 
@@ -139,8 +139,7 @@ echo "::group::AMI Build: Stage 2"
 
 packer build "${common_packer_args[@]}" \
 	-var "ami_name=$ami_name" \
-	-var "packages_git_sha=$packages_git_sha" \
-	-var "site_env_path=$site_env_path" \
+	-var "nix_store_paths=$nix_store_paths" \
 	-var "source_ami=$stage1_ami_id" \
 	packer/stage2-nix.pkr.hcl
 

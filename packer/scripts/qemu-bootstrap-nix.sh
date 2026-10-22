@@ -160,8 +160,7 @@ function execute_stage2_playbook {
 	export ANSIBLE_LOG_PATH=/tmp/ansible.log && export ANSIBLE_REMOTE_TEMP=/tmp
 	ansible-playbook ./ansible/playbook.yml \
 		--extra-vars '{"stage2": true, "qemu": true}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "site_env_path=$SITE_ENV_PATH" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \

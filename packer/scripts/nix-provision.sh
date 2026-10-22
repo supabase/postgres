@@ -50,7 +50,6 @@ function install_nix() {
 
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
-	echo "GIT_SHA: $GIT_SHA"
 	mkdir -p /etc/ansible
 	tee /etc/ansible/ansible.cfg <<-EOF
 		[defaults]
@@ -64,8 +63,7 @@ function execute_stage2_playbook {
 
 	ansible-playbook /tmp/ansible-playbook/ansible/playbook.yml \
 		--extra-vars '{"stage2":true, "qemu":false}' \
-		--extra-vars "git_commit_sha=$GIT_SHA" \
-		--extra-vars "site_env_path=$SITE_ENV_PATH" \
+		--extra-vars "$NIX_STORE_PATHS" \
 		--extra-vars "psql_version=psql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgresql_version=postgresql_$POSTGRES_MAJOR_VERSION" \
 		--extra-vars "postgres_major_version=$POSTGRES_MAJOR_VERSION"
