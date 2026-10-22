@@ -27,7 +27,12 @@ extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EOF
-RUN curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf
+ARG NIX_VERSION=2.35.3
+ARG NIX_INSTALLER_HASH=69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9
+RUN curl -fsSL "https://releases.nixos.org/nix/nix-$NIX_VERSION/install" -o /tmp/nix-install && \
+    echo "$NIX_INSTALLER_HASH  /tmp/nix-install" | sha256sum -c - && \
+    sh /tmp/nix-install --daemon --no-channel-add --yes --nix-extra-conf-file /tmp/extra-nix.conf && \
+    rm /tmp/nix-install
 ENV PATH="${PATH}:/nix/var/nix/profiles/default/bin"
 RUN nix --version
 
@@ -47,25 +52,14 @@ RUN nix profile add path:.#supabase-groonga && \
 RUN nix store gc
 
 ####################
-# Stage 2: Gosu builder
+# Stage 2: Upstream entrypoint
 ####################
-FROM alpine:3.23 AS gosu-builder
+# Pinned to an image whose entrypoint matches docker-library/postgres@6edb0a8c.
+FROM postgres:17.8-alpine3.23@sha256:3430fe182f5065a6ea505c3d432d2c7fff18fbab954df8f277c1dbf4c70124af AS entrypoint
 
-ARG TARGETARCH
-ARG GOSU_VERSION=1.19
-ARG GO_VERSION=1.26.1
-
-RUN apk add --no-cache curl git
-
-# Install Go
-RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" | tar -C /usr/local -xz
-ENV PATH="/usr/local/go/bin:${PATH}"
-
-# Build gosu from source
-RUN git clone --depth 1 --branch "${GOSU_VERSION}" https://github.com/tianon/gosu.git /gosu && \
-    cd /gosu && \
-    CGO_ENABLED=0 go build -ldflags="-s -w" -o /usr/local/bin/gosu . && \
-    chmod +x /usr/local/bin/gosu
+# Upstream drops privileges with gosu; we use su-exec from Alpine instead
+RUN sed -i 's/exec gosu postgres/exec su-exec postgres/' /usr/local/bin/docker-entrypoint.sh && \
+    ! grep -q gosu /usr/local/bin/docker-entrypoint.sh
 
 ####################
 # Stage 3: Final production image
@@ -75,6 +69,7 @@ FROM alpine:3.23 AS production
 # Install minimal runtime dependencies
 RUN apk add --no-cache \
     bash \
+    'ca-certificates-bundle>=20261020-r0' \
     curl \
     shadow \
     su-exec \
@@ -95,9 +90,6 @@ COPY --from=nix-builder /nix /nix
 
 # Copy groonga plugins
 COPY --from=nix-builder /tmp/groonga-plugins/plugins /usr/lib/groonga/plugins
-
-# Copy gosu
-COPY --from=gosu-builder /usr/local/bin/gosu /usr/local/bin/gosu
 
 # Setup PostgreSQL directories
 RUN mkdir -p /usr/lib/postgresql/bin \
@@ -170,9 +162,7 @@ RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
 # Add entrypoint script
-ADD --chmod=0755 \
-    https://raw.githubusercontent.com/docker-library/postgres/6edb0a8c4def40c371514b34aef9037ec82d9110/17/alpine3.23/docker-entrypoint.sh \
-    /usr/local/bin/docker-entrypoint.sh
+COPY --from=entrypoint --chmod=0755 /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Setup pgsodium key script
 RUN mkdir -p /usr/share/postgresql/extension/ && \
