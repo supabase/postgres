@@ -1,0 +1,49 @@
+name: Await nixbot
+description: |
+  Waits for the nixbot `nix-eval` and `nix-build` check runs to finish.
+  Returns early if nixbot posts no check run within a minute. Always succeeds,
+  so callers fall back to building what is missing from the cache.
+
+outputs:
+  built:
+    description: '`true` if nixbot built all checks successfully'
+    value: ${{ steps.await.outputs.built }}
+
+runs:
+  using: composite
+  steps:
+    - id: await
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      run: |
+        state() {
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" \
+            | jq -r '[.[].check_runs[] | {
+                  key: .name,
+                  value: (if .status != "completed" then "pending" elif .conclusion == "success" then "success" else "failure" end)
+                }] | from_entries
+                | "\(.["nixbot/nix-eval"] // "")/\(.["nixbot/nix-build"] // "")"'
+        }
+
+        deadline=$((SECONDS + 60))
+        while :; do
+          s=$(state)
+          echo "nix-eval/nix-build: $s"
+
+          case "$s" in
+            success/success)
+              sleep 5
+              [[ $(state) == success/success ]] && echo built=true >> "$GITHUB_OUTPUT" && exit 0 ;;
+            failure/* | */failure)
+              echo "::warning::nixbot failed, the GitHub matrix builds what is missing from the cache"
+              exit 0 ;;
+            /)
+              if (( SECONDS >= deadline )); then
+                echo "::notice::nixbot unavailable, building with the GitHub matrix"
+                exit 0
+              fi ;;
+          esac
+          sleep 30
+        done
