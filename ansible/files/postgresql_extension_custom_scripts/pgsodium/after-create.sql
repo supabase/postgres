@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION pgsodium.mask_role(masked_role regrole, source_name t
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO ''
+SET search_path TO pg_catalog, pg_temp
 AS $function$
 BEGIN
   EXECUTE format(
