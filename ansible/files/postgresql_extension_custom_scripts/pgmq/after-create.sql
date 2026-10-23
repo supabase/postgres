@@ -142,7 +142,7 @@ BEGIN
 
     RETURN TRUE;
 END;
-$func$ LANGUAGE plpgsql;
+$func$ LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp;
 
   alter extension pgmq add function pgmq.drop_queue(text);
 
@@ -152,7 +152,7 @@ RETURNS BOOLEAN AS $shim$
 BEGIN
     RETURN pgmq.drop_queue(queue_name);
 END;
-$shim$ LANGUAGE plpgsql;
+$shim$ LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp;
 
   alter extension pgmq add function pgmq.drop_queue(text, boolean);
 

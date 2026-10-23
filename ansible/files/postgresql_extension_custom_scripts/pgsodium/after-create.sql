@@ -1,5 +1,5 @@
-grant execute on function pgsodium.crypto_aead_det_decrypt(bytea, bytea, uuid, bytea) to service_role;
-grant execute on function pgsodium.crypto_aead_det_encrypt(bytea, bytea, uuid, bytea) to service_role;
+grant execute on function pgsodium.crypto_aead_det_decrypt(pg_catalog.bytea, pg_catalog.bytea, pg_catalog.uuid, pg_catalog.bytea) to service_role;
+grant execute on function pgsodium.crypto_aead_det_encrypt(pg_catalog.bytea, pg_catalog.bytea, pg_catalog.uuid, pg_catalog.bytea) to service_role;
 grant execute on function pgsodium.crypto_aead_det_keygen to service_role;
 
 CREATE OR REPLACE FUNCTION pgsodium.mask_role(masked_role regrole, source_name text, view_name text)

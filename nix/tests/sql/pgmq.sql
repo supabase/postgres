@@ -133,3 +133,10 @@ where p.pronamespace = 'pgmq'::regnamespace and p.proowner != 'postgres'::regrol
 
 -- restore the 'Foo' queue dropped by the cascade above
 select pgmq.create('Foo');
+
+-- drop_queue and its compat shim are created by pgmq/after-create.sql and must
+-- pin search_path, otherwise they resolve names through the caller's
+select p.oid::regprocedure::text as func, p.proconfig
+from pg_proc p
+where p.oid in ('pgmq.drop_queue(text)'::regprocedure, 'pgmq.drop_queue(text,boolean)'::regprocedure)
+order by 1;

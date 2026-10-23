@@ -2,7 +2,6 @@ do $$
 declare
   saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
   _extversion pg_catalog.text := @extversion@;
-  _r pg_catalog.record;
 begin
   perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
 
