@@ -139,4 +139,4 @@ select pgmq.create('Foo');
 select p.oid::regprocedure::text as func, p.proconfig
 from pg_proc p
 where p.oid in ('pgmq.drop_queue(text)'::regprocedure, 'pgmq.drop_queue(text,boolean)'::regprocedure)
-order by 1;
+order by p.pronargs;
