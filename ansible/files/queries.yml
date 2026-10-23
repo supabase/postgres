@@ -1,0 +1,34 @@
+pg_table_size:
+  query: |
+    SELECT
+      n.nspname AS schema,
+      c.relname AS table,
+      c.reltuples AS row_estimate,
+      pg_total_relation_size(c.oid) AS total_bytes,
+      pg_relation_size(c.oid) AS table_bytes,
+      pg_indexes_size(c.oid) AS index_bytes,
+      COALESCE(pg_total_relation_size(NULLIF(c.reltoastrelid, 0)), 0) AS toast_bytes
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'r'
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  metrics:
+    - schema:
+        usage: LABEL
+    - table:
+        usage: LABEL
+    - row_estimate:
+        usage: GAUGE
+        description: "Estimated row count from pg_class.reltuples"
+    - total_bytes:
+        usage: GAUGE
+        description: "Total size including indexes and toast"
+    - table_bytes:
+        usage: GAUGE
+        description: "Table data size"
+    - index_bytes:
+        usage: GAUGE
+        description: "Total index size"
+    - toast_bytes:
+        usage: GAUGE
+        description: "Toast size"
