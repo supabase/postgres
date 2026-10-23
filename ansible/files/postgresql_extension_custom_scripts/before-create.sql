@@ -8,15 +8,15 @@
 -- extension` statement.
 do $$
 declare
-  search_path text;
-  _extname text;
-  _extschema text;
-  _extversion text;
-  _extcascade bool;
-  _r record;
+  saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
+  _extname pg_catalog.text;
+  _extschema pg_catalog.text;
+  _extversion pg_catalog.text;
+  _extcascade pg_catalog.bool;
+  _r pg_catalog.record;
+  _sql pg_catalog.text;
 begin
-  search_path := current_setting('search_path');
-  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+  perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
 
   _extname := @extname@;
   _extschema := @extschema@;
@@ -24,17 +24,17 @@ begin
   _extcascade := @extcascade@;
 
   if not _extcascade then
-    perform set_config('search_path', search_path, true);
+    perform pg_catalog.set_config('search_path', saved_search_path, true);
     return;
   end if;
 
   if not exists (select from pg_extension where extname = 'pg_tle') then
-    perform set_config('search_path', search_path, true);
+    perform pg_catalog.set_config('search_path', saved_search_path, true);
     return;
   end if;
 
   if not exists (select from pgtle.available_extensions() where name = _extname) then
-    perform set_config('search_path', search_path, true);
+    perform pg_catalog.set_config('search_path', saved_search_path, true);
     return;
   end if;
 
@@ -91,19 +91,22 @@ begin
     where name in (select name from pg_available_extensions)
     intersect
     select name
-    from regexp_split_to_table(current_setting('supautils.privileged_extensions', true), '\s*,\s*') as t(name)
+    from regexp_split_to_table(pg_catalog.current_setting('supautils.privileged_extensions', true), '\s*,\s*') as t(name)
   ) loop
+    -- Build the statement while search_path is still locked down, so format()
+    -- cannot be resolved through the caller's search_path.
+    if _extschema is null then
+      _sql := pg_catalog.format('create extension if not exists %I cascade', _r.name);
+    else
+      _sql := pg_catalog.format('create extension if not exists %I schema %I cascade', _r.name, _extschema);
+    end if;
     -- Create the dependency with the caller's search_path. Otherwise, when no
     -- schema is specified, the dependency would be created in pg_catalog, the
     -- first schema in our locked down search_path.
-    perform set_config('search_path', search_path, true);
-    if _extschema is null then
-      execute(format('create extension if not exists %I cascade', _r.name));
-    else
-      execute(format('create extension if not exists %I schema %I cascade', _r.name, _extschema));
-    end if;
-    perform set_config('search_path', 'pg_catalog, pg_temp', true);
+    perform pg_catalog.set_config('search_path', saved_search_path, true);
+    execute _sql;
+    perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
   end loop;
 
-  perform set_config('search_path', search_path, true);
+  perform pg_catalog.set_config('search_path', saved_search_path, true);
 end $$;
