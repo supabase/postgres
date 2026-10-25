@@ -43,7 +43,7 @@ function execute_stage2_playbook {
 
 function clean_legacy_things {
 	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
-	apt-mark auto zlib1g-dev
+	apt-mark auto zlib1g zlib1g-dev
 	apt-get purge --yes kong
 }
 
