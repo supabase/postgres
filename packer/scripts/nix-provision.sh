@@ -12,10 +12,7 @@ exec 1>&2
 
 function execute_stage2_playbook {
 	echo "POSTGRES_MAJOR_VERSION: $POSTGRES_MAJOR_VERSION"
-	echo "GIT_SHA: $GIT_SHA"
-
-	# shellcheck disable=SC2086
-	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /tmp true false localhost local $ARGS
+	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /tmp true false localhost local --extra-vars "$NIX_STORE_PATHS"
 }
 
 function cleanup_packages {

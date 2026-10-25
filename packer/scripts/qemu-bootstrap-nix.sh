@@ -30,8 +30,7 @@ function install_packages {
 }
 
 function execute_playbook {
-	run_playbook ./ansible/playbook.yml /mnt/tmp false true localhost local \
-		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION"
+	run_playbook ./ansible/playbook.yml /mnt/tmp false true localhost local
 }
 
 #################
@@ -39,8 +38,7 @@ function execute_playbook {
 #################
 
 function execute_stage2_playbook {
-	run_playbook ./ansible/playbook.yml /tmp true true localhost local \
-		--extra-vars "postgresql_major=$POSTGRES_MAJOR_VERSION"
+	run_playbook ./ansible/playbook.yml /tmp true true localhost local --extra-vars "$NIX_STORE_PATHS"
 }
 
 function clean_legacy_things {

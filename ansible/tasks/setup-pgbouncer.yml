@@ -18,8 +18,9 @@
 - name: Install PgBouncer from nix binary cache
   when: stage2
   ansible.builtin.shell:
-    cmd: sudo -u pgbouncer bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pgbouncer"
+    cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install {{ nix_store_paths['pgbouncer'] }}
   become: true
+  become_user: pgbouncer
 
 - name: Link PgBouncer into /usr/local/bin
   when: stage2

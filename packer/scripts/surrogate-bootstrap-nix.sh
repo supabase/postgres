@@ -193,8 +193,7 @@ function setup_chroot_environment {
 function execute_playbook {
 	export ANSIBLE_PIPELINING=True
 
-	# shellcheck disable=SC2086
-	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /mnt/tmp false false /mnt chroot $ARGS
+	run_playbook /tmp/ansible-playbook/ansible/playbook.yml /mnt/tmp false false /mnt chroot
 }
 
 function update_systemd_services {

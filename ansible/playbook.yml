@@ -188,7 +188,7 @@
       when: stage2
       shell: >-
         baseline={{ supascan_baseline_prefix }}-build-{{ platform }}
-        nix shell github:supabase/postgres/{{ git_commit_sha }}#supascan --command
+        nix shell {{ nix_store_paths['supascan'] }} --command
         /tmp/ansible-playbook/ansible/files/supascan_ami.sh
         /tmp/ansible-playbook/audit-specs/baselines/$baseline
 
