@@ -5,8 +5,10 @@ on:
     branches:
       - develop
       - release/*
+      - martonboros/mpg-1383-qemu-validate
     paths:
       - ansible/postgres_release.yml
+      - .github/workflows/qemu-image-build.yml
   workflow_dispatch:
     inputs:
       arch:
