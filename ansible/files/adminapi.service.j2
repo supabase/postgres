@@ -3,15 +3,14 @@ Description=AdminAPI
 Requires=network-online.target
 After=network-online.target
 
-StartLimitIntervalSec=0
-StartLimitBurst=0
-
 [Service]
 Type=simple
 ExecStart=/opt/supabase-admin-api
 User=adminapi
 Restart=always
-RestartSec=3
+RestartSec=1
+RestartSteps=4
+RestartMaxDelaySec=16s
 TimeoutStopSec=10
 Environment="AWS_USE_DUALSTACK_ENDPOINT=true"
 {% if qemu %}
