@@ -90,9 +90,9 @@ Environment=GOTRUE_RELOADING_POLLER_ENABLED=false
 # ensures only 1 reload operation occurs during a burst of config updates.
 Environment=GOTRUE_RELOADING_GRACE_PERIOD_INTERVAL=2s
 
-{% for line in gotrue_reloading_notify_comment %}
-# {{ line }}
-{% endfor %}
+# v3 does not use filesystem notifications for config reloads. v2 relies on
+# notify support until both have migrated to strictly use signals. The default
+# is true in gotrue, but it is set explicitly here.
 Environment=GOTRUE_RELOADING_NOTIFY_ENABLED={{ gotrue_reloading_notify_enabled | lower }}
 
 Slice=services.slice

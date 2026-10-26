@@ -18,8 +18,6 @@ adminapi_extra_env:
   - AWS_SDK_LOAD_CONFIG=true
 
 gotrue_reloading_notify_enabled: false
-gotrue_reloading_notify_comment:
-  - v3 does not use filesystem notifications for config reloads.
 
 postgres_exporter_extra_flags:
   - --no-collector.database

@@ -17,10 +17,6 @@ supascan_baseline_prefix: ami
 adminapi_extra_env: []
 
 gotrue_reloading_notify_enabled: true
-gotrue_reloading_notify_comment:
-  - v2 currently relies on notify support, so we will enable it until both v2 / v3
-  - have migrated to strictly use signals across all projects. The default is true
-  - in gotrue but we will set it defensively here.
 
 postgres_exporter_extra_flags: []
 
