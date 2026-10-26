@@ -1,0 +1,357 @@
+diff --git a/src/roles.c b/src/roles.c
+index d9762c1..2047c5b 100644
+--- a/src/roles.c
++++ b/src/roles.c
+@@ -2,6 +2,10 @@
+ 
+ #include "utils.h"
+ 
++#include <catalog/pg_auth_members.h>
++#include <storage/lmgr.h>
++#include <utils/inval.h>
++
+ #define EREPORT_RESERVED_MEMBERSHIP(name)                                      \
+   ereport(ERROR,                                                               \
+           (errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),                            \
+@@ -16,11 +20,39 @@
+                   "it",                                                        \
+                   name)))
+ 
++static bool is_reserved_role_member(const char *target,
++                                    const char *reserved_role_members) {
++  List     *roles;
++  ListCell *cell;
++  Oid       target_oid;
++
++  if (target == NULL || reserved_role_members == NULL) return false;
++
++  target_oid = get_role_oid(target, true);
++  SplitIdentifierString(pstrdup(reserved_role_members), ',', &roles);
++  foreach (cell, roles) {
++    const char *name     = lfirst(cell);
++    Oid         role_oid = get_role_oid(name, true);
++    // Also reserve the root name before creation; ignore INHERIT/SET options.
++    if (strcmp(target, name) == 0 ||
++        (OidIsValid(target_oid) && OidIsValid(role_oid) &&
++         is_member_of_role_nosuper(target_oid, role_oid))) {
++      list_free(roles);
++      return true;
++    }
++  }
++  list_free(roles);
++  return false;
++}
++
+ bool is_reserved_role(const char *target, bool allow_configurable_roles,
+-                      const char *reserved_roles) {
++                      const char *reserved_roles,
++                      const char *reserved_role_members) {
+   List     *reserved_roles_list;
+   ListCell *role;
+ 
++  if (is_reserved_role_member(target, reserved_role_members)) return true;
++
+   if (reserved_roles) {
+     SplitIdentifierString(pstrdup(reserved_roles), ',', &reserved_roles_list);
+ 
+@@ -46,10 +78,14 @@ bool is_reserved_role(const char *target, bool allow_configurable_roles,
+ }
+ 
+ static void confirm_reserved_memberships(const char *target,
+-                                         const char *reserved_memberships) {
++                                         const char *reserved_memberships,
++                                         const char *reserved_role_members) {
+   List     *reserved_memberships_list;
+   ListCell *membership;
+ 
++  if (is_reserved_role_member(target, reserved_role_members))
++    EREPORT_RESERVED_MEMBERSHIP(target);
++
+   if (reserved_memberships) {
+     SplitIdentifierString(pstrdup(reserved_memberships), ',',
+                           &reserved_memberships_list);
+@@ -66,6 +102,23 @@ static void confirm_reserved_memberships(const char *target,
+   }
+ }
+ 
++static void check_option_members(List *options, const role_policy *policy) {
++  ListCell *option_cell;
++  foreach (option_cell, options) {
++    DefElem *option = lfirst_node(DefElem, option_cell);
++    if (strcmp(option->defname, "rolemembers") == 0 ||
++        strcmp(option->defname, "adminmembers") == 0) {
++      ListCell *member_cell;
++      foreach (member_cell, (List *)option->arg) {
++        const char *name =
++            get_rolespec_name(lfirst_node(RoleSpec, member_cell));
++        if (is_reserved_role_member(name, policy->reserved_role_members))
++          EREPORT_RESERVED_ROLE(name);
++      }
++    }
++  }
++}
++
+ /*
+  * ALTER ROLE <role> NOLOGIN NOINHERIT..
+  */
+@@ -82,7 +135,9 @@ static bool alter_role(AlterRoleStmt *stmt, const utility_hook_args *args,
+ 
+   char *role_name = get_rolespec_name(stmt->role);
+ 
+-  if (is_reserved_role(role_name, false, policy->reserved_roles))
++  check_option_members(stmt->options, policy);
++  if (is_reserved_role(role_name, false, policy->reserved_roles,
++                       policy->reserved_role_members))
+     EREPORT_RESERVED_ROLE(role_name);
+ 
+   if (!is_current_role_privileged(policy->privileged_role)) {
+@@ -132,7 +187,8 @@ static bool alter_role_set(AlterRoleSetStmt        *stmt,
+ 
+   char *role_name = get_rolespec_name(stmt->role);
+ 
+-  if (is_reserved_role(role_name, role_is_privileged, policy->reserved_roles))
++  if (is_reserved_role(role_name, role_is_privileged, policy->reserved_roles,
++                       policy->reserved_role_members))
+     EREPORT_RESERVED_ROLE(role_name);
+ 
+   if (!role_is_privileged) {
+@@ -172,9 +228,12 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+   if (OidIsValid(get_role_oid(created_role, true))) return false;
+ 
+   /* CREATE ROLE <reserved_role> */
+-  if (is_reserved_role(created_role, false, policy->reserved_roles))
++  if (is_reserved_role(created_role, false, policy->reserved_roles,
++                       policy->reserved_role_members))
+     EREPORT_RESERVED_ROLE(created_role);
+ 
++  check_option_members(stmt->options, policy);
++
+   /* Check to see if there are any descriptions related to membership. */
+   foreach (option_cell, stmt->options) {
+     DefElem *defel = lfirst_node(DefElem, option_cell);
+@@ -182,8 +241,9 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+       addroleto = (List *)defel->arg;
+ 
+     if (strcmp(defel->defname, "rolemembers") == 0 ||
+-        strcmp(defel->defname, "adminmembers") == 0)
++        strcmp(defel->defname, "adminmembers") == 0) {
+       hasrolemembers = true;
++    }
+ 
+     // Setting the superuser attribute is not allowed.
+     if (strcmp(defel->defname, "superuser") == 0 && defGetBoolean(defel)) {
+@@ -201,7 +261,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+     foreach (role_cell, addroleto) {
+       RoleSpec *rolemember = lfirst_node(RoleSpec, role_cell);
+       confirm_reserved_memberships(get_rolespec_name(rolemember),
+-                                   policy->reserved_memberships);
++                                   policy->reserved_memberships,
++                                   policy->reserved_role_members);
+     }
+   }
+ 
+@@ -212,7 +273,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+    * should already exist, but handle it anyway.
+    */
+   if (hasrolemembers)
+-    confirm_reserved_memberships(created_role, policy->reserved_memberships);
++    confirm_reserved_memberships(created_role, policy->reserved_memberships,
++                                 policy->reserved_role_members);
+ 
+   // We don't want to switch to superuser on PG16+ because the
+   // creating role is implicitly granted ADMIN on the new
+@@ -260,7 +322,8 @@ static void check_drop_role(DropRoleStmt *stmt, const role_policy *policy) {
+      */
+     if (role->roletype != ROLESPEC_CSTRING) break;
+ 
+-    if (is_reserved_role(role->rolename, false, policy->reserved_roles))
++    if (is_reserved_role(role->rolename, false, policy->reserved_roles,
++                         policy->reserved_role_members))
+       EREPORT_RESERVED_ROLE(role->rolename);
+   }
+ }
+@@ -277,12 +340,20 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
+     return;
+   }
+ 
++  // Revocation must not detach a protected member and make it customer-managed.
++  foreach (role_cell, stmt->granted_roles) {
++    AccessPriv *priv = lfirst_node(AccessPriv, role_cell);
++    if (is_reserved_role_member(priv->priv_name, policy->reserved_role_members))
++      EREPORT_RESERVED_MEMBERSHIP(priv->priv_name);
++  }
++
+   /* GRANT <reserved_role> TO <role> */
+   if (stmt->is_grant) {
+     foreach (role_cell, stmt->granted_roles) {
+       AccessPriv *priv = lfirst_node(AccessPriv, role_cell);
+       confirm_reserved_memberships(priv->priv_name,
+-                                   policy->reserved_memberships);
++                                   policy->reserved_memberships,
++                                   policy->reserved_role_members);
+     }
+   }
+ 
+@@ -296,7 +367,8 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
+     RoleSpec *spec      = lfirst_node(RoleSpec, grantee_role_cell);
+     char     *role_name = get_rolespec_name(spec);
+     // privileged_role can do GRANT <role> to <reserved_role>
+-    if (is_reserved_role(role_name, role_is_privileged, policy->reserved_roles))
++    if (is_reserved_role(role_name, role_is_privileged, policy->reserved_roles,
++                         policy->reserved_role_members))
+       EREPORT_RESERVED_ROLE(role_name);
+   }
+ }
+@@ -312,16 +384,62 @@ static void check_rename_role(RenameStmt *stmt, const role_policy *policy) {
+   /* Make sure we only catch "ALTER ROLE <role> RENAME TO" */
+   if (stmt->renameType != OBJECT_ROLE) return;
+ 
+-  if (is_reserved_role(stmt->subname, false, policy->reserved_roles))
++  if (is_reserved_role(stmt->subname, false, policy->reserved_roles,
++                       policy->reserved_role_members))
+     EREPORT_RESERVED_ROLE(stmt->subname);
+ 
+-  if (is_reserved_role(stmt->newname, false, policy->reserved_roles))
++  if (is_reserved_role(stmt->newname, false, policy->reserved_roles,
++                       policy->reserved_role_members))
+     EREPORT_RESERVED_ROLE(stmt->newname);
+ }
+ 
+ bool handle_role_stmt(Node *stmt, const utility_hook_args *args,
+                       const role_policy *policy) {
++  if ((IsA(stmt, RenameStmt) &&
++       ((RenameStmt *)stmt)->renameType != OBJECT_ROLE) ||
++      (IsA(stmt, CommentStmt) &&
++       ((CommentStmt *)stmt)->objtype != OBJECT_ROLE) ||
++      (IsA(stmt, SecLabelStmt) &&
++       ((SecLabelStmt *)stmt)->objtype != OBJECT_ROLE))
++    return false;
++
++  switch (nodeTag(stmt)) {
++  case T_AlterRoleStmt:
++  case T_AlterRoleSetStmt:
++  case T_CreateRoleStmt:
++  case T_DropRoleStmt:
++  case T_GrantRoleStmt:
++  case T_RenameStmt:
++  case T_CommentStmt:
++  case T_SecLabelStmt:
++    if (IsTransactionState() && policy->reserved_role_members &&
++        policy->reserved_role_members[0] != '\0') {
++      // Serialize the check with admin grants: a concurrent grant must not
++      // protect a role between a customer's check and membership mutation.
++      LockRelationOid(AuthMemRelationId, ShareRowExclusiveLock);
++      AcceptInvalidationMessages();
++    }
++    break;
++  default: return false;
++  }
++
+   switch (nodeTag(stmt)) {
++  case T_CommentStmt: {
++    CommentStmt *comment = (CommentStmt *)stmt;
++    if (comment->objtype == OBJECT_ROLE && !superuser() &&
++        is_reserved_role_member(strVal(comment->object),
++                                policy->reserved_role_members))
++      EREPORT_RESERVED_ROLE(strVal(comment->object));
++    return false;
++  }
++  case T_SecLabelStmt: {
++    SecLabelStmt *label = (SecLabelStmt *)stmt;
++    if (label->objtype == OBJECT_ROLE && !superuser() &&
++        is_reserved_role_member(strVal(label->object),
++                                policy->reserved_role_members))
++      EREPORT_RESERVED_ROLE(strVal(label->object));
++    return false;
++  }
+   case T_AlterRoleStmt: return alter_role((AlterRoleStmt *)stmt, args, policy);
+   case T_AlterRoleSetStmt:
+     return alter_role_set((AlterRoleSetStmt *)stmt, args, policy);
+diff --git a/src/roles.h b/src/roles.h
+index 2949996..41e41b0 100644
+--- a/src/roles.h
++++ b/src/roles.h
+@@ -9,16 +9,19 @@ typedef struct {
+   const char *privileged_role;
+   const char *reserved_roles;
+   const char *reserved_memberships;
++  const char *reserved_role_members;
+   const char *privileged_role_allowed_configs;
+ } role_policy;
+ 
+ /**
+  * Whether `target` is one of the reserved roles. Roles listed with a trailing
+  * `*` are configurable: they still count as reserved unless
+- * `allow_configurable_roles` is set.
++ * `allow_configurable_roles` is set. The roots in `reserved_role_members` and
++ * their transitive members are always reserved.
+  */
+ extern bool is_reserved_role(const char *target, bool allow_configurable_roles,
+-                             const char *reserved_roles);
++                             const char *reserved_roles,
++                             const char *reserved_role_members);
+ 
+ /**
+  * Handles the role DDL that supautils intercepts: CREATE, ALTER, ALTER ... SET,
+diff --git a/src/supautils.c b/src/supautils.c
+index 89b4012..9197a2b 100644
+--- a/src/supautils.c
++++ b/src/supautils.c
+@@ -29,6 +29,7 @@ PG_MODULE_MAGIC;
+ 
+ static char *reserved_roles                 = NULL;
+ static char *reserved_memberships           = NULL;
++static char *reserved_role_members          = NULL;
+ static char *placeholders                   = NULL;
+ static char *placeholders_disallowed_values = NULL;
+ static char *empty_placeholder              = NULL;
+@@ -134,9 +135,9 @@ static void supautils_fmgr_hook(FmgrHookEventType event, FmgrInfo *flinfo,
+               : GetUserId();
+       const char *current_role_name =
+           GetUserNameFromId(current_role_oid, false);
+-      const bool role_is_super = superuser_arg(current_role_oid);
+-      const bool role_is_reserved =
+-          is_reserved_role(current_role_name, false, reserved_roles);
++      const bool role_is_super    = superuser_arg(current_role_oid);
++      const bool role_is_reserved = is_reserved_role(
++          current_role_name, false, reserved_roles, reserved_role_members);
+       const bool  function_is_owned_by_super = superuser_arg(fattrs.owner);
+       const bool  role_is_function_owner     = current_role_oid == fattrs.owner;
+       const char *func_name                  = get_func_name(flinfo->fn_oid);
+@@ -280,6 +281,7 @@ static void supautils_hook_internal(PROCESS_UTILITY_PARAMS) {
+     .privileged_role                 = privileged_role,
+     .reserved_roles                  = reserved_roles,
+     .reserved_memberships            = reserved_memberships,
++    .reserved_role_members           = reserved_role_members,
+     .privileged_role_allowed_configs = privileged_role_allowed_configs,
+   };
+ 
+@@ -432,6 +434,14 @@ reserved_memberships_check_hook(char                            **newval,
+   return true;
+ }
+ 
++static bool
++reserved_role_members_check_hook(char                            **newval,
++                                 __attribute__((unused)) void    **extra,
++                                 __attribute__((unused)) GucSource source) {
++  check_parameter(*newval, "supautils.reserved_role_members");
++  return true;
++}
++
+ static bool placeholders_disallowed_values_check_hook(
+     char **newval, __attribute__((unused)) void **extra,
+     __attribute__((unused)) GucSource source) {
+@@ -655,6 +665,13 @@ void _PG_init(void) {
+       &reserved_memberships, NULL, PGC_SIGHUP, 0,
+       reserved_memberships_check_hook, NULL, NULL);
+ 
++  DefineCustomStringVariable(
++      "supautils.reserved_role_members",
++      "Comma-separated list of roles whose transitive members and memberships "
++      "can only be managed by superusers",
++      NULL, &reserved_role_members, NULL, PGC_SIGHUP, 0,
++      reserved_role_members_check_hook, NULL, NULL);
++
+   DefineCustomStringVariable(
+       "supautils.placeholders",
+       "GUC placeholders which will get values disallowed according to "

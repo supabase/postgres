@@ -1,0 +1,54 @@
+BEGIN;
+CREATE ROLE supabase_warehouse_writer NOLOGIN;
+CREATE ROLE supabase_warehouse_writer_test NOLOGIN IN ROLE supabase_warehouse_writer;
+CREATE ROLE warehouse_writer_test_login LOGIN;
+GRANT supabase_warehouse_writer_test TO warehouse_writer_test_login;
+SET ROLE postgres;
+SAVEPOINT denied;
+GRANT supabase_warehouse_writer_test TO postgres;
+ERROR:  "supabase_warehouse_writer_test" role memberships are reserved, only superusers can grant them
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+GRANT warehouse_writer_test_login TO postgres;
+ERROR:  "warehouse_writer_test_login" role memberships are reserved, only superusers can grant them
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+GRANT pg_write_all_data TO postgres;
+ERROR:  "pg_write_all_data" role memberships are reserved, only superusers can grant them
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+ALTER ROLE pg_write_all_data LOGIN;
+ERROR:  "pg_write_all_data" is a reserved role, only superusers can modify it
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+ALTER ROLE supabase_warehouse_writer_test LOGIN;
+ERROR:  "supabase_warehouse_writer_test" is a reserved role, only superusers can modify it
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+COMMENT ON ROLE supabase_warehouse_writer_test IS 'forged';
+ERROR:  "supabase_warehouse_writer_test" is a reserved role, only superusers can modify it
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+DROP ROLE supabase_warehouse_writer_test;
+ERROR:  "supabase_warehouse_writer_test" is a reserved role, only superusers can modify it
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+REVOKE supabase_warehouse_writer_test FROM warehouse_writer_test_login;
+ERROR:  "supabase_warehouse_writer_test" role memberships are reserved, only superusers can grant them
+ROLLBACK TO SAVEPOINT denied;
+SAVEPOINT denied;
+REVOKE supabase_warehouse_writer FROM supabase_warehouse_writer_test;
+ERROR:  "supabase_warehouse_writer" role memberships are reserved, only superusers can grant them
+ROLLBACK TO SAVEPOINT denied;
+RESET ROLE;
+REVOKE supabase_warehouse_writer_test FROM warehouse_writer_test_login;
+SELECT pg_has_role('warehouse_writer_test_login', 'supabase_warehouse_writer_test', 'MEMBER') AS still_authorized;
+ still_authorized 
+------------------
+ f
+(1 row)
+
+DROP ROLE warehouse_writer_test_login;
+DROP ROLE supabase_warehouse_writer_test;
+DROP ROLE supabase_warehouse_writer;
+ROLLBACK;
