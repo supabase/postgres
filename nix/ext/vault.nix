@@ -73,7 +73,6 @@ let
               cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
             } > $out/share/postgresql/extension/${pname}.control
         fi
-        ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
       '';
 
       meta = with lib; {
@@ -94,6 +93,9 @@ pkgs.buildEnv {
   ];
 
   postBuild = ''
+    # Point the generic library name at the latest version
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
     makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
