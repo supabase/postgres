@@ -1,5 +1,5 @@
 diff --git a/src/roles.c b/src/roles.c
-index d9762c1..2047c5b 100644
+index d9762c1..5794a4a 100644
 --- a/src/roles.c
 +++ b/src/roles.c
 @@ -2,6 +2,10 @@
@@ -70,7 +70,7 @@ index d9762c1..2047c5b 100644
    if (reserved_memberships) {
      SplitIdentifierString(pstrdup(reserved_memberships), ',',
                            &reserved_memberships_list);
-@@ -66,6 +102,23 @@ static void confirm_reserved_memberships(const char *target,
+@@ -66,6 +102,25 @@ static void confirm_reserved_memberships(const char *target,
    }
  }
  
@@ -82,8 +82,10 @@ index d9762c1..2047c5b 100644
 +        strcmp(option->defname, "adminmembers") == 0) {
 +      ListCell *member_cell;
 +      foreach (member_cell, (List *)option->arg) {
-+        const char *name =
-+            get_rolespec_name(lfirst_node(RoleSpec, member_cell));
++        RoleSpec   *member = lfirst_node(RoleSpec, member_cell);
++        const char *name   = member->roletype == ROLESPEC_CSTRING
++                                 ? member->rolename
++                                 : get_rolespec_name(member);
 +        if (is_reserved_role_member(name, policy->reserved_role_members))
 +          EREPORT_RESERVED_ROLE(name);
 +      }
@@ -94,7 +96,7 @@ index d9762c1..2047c5b 100644
  /*
   * ALTER ROLE <role> NOLOGIN NOINHERIT..
   */
-@@ -82,7 +135,9 @@ static bool alter_role(AlterRoleStmt *stmt, const utility_hook_args *args,
+@@ -82,7 +137,9 @@ static bool alter_role(AlterRoleStmt *stmt, const utility_hook_args *args,
  
    char *role_name = get_rolespec_name(stmt->role);
  
@@ -105,7 +107,7 @@ index d9762c1..2047c5b 100644
      EREPORT_RESERVED_ROLE(role_name);
  
    if (!is_current_role_privileged(policy->privileged_role)) {
-@@ -132,7 +187,8 @@ static bool alter_role_set(AlterRoleSetStmt        *stmt,
+@@ -132,7 +189,8 @@ static bool alter_role_set(AlterRoleSetStmt        *stmt,
  
    char *role_name = get_rolespec_name(stmt->role);
  
@@ -115,7 +117,7 @@ index d9762c1..2047c5b 100644
      EREPORT_RESERVED_ROLE(role_name);
  
    if (!role_is_privileged) {
-@@ -172,9 +228,12 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+@@ -172,9 +230,12 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
    if (OidIsValid(get_role_oid(created_role, true))) return false;
  
    /* CREATE ROLE <reserved_role> */
@@ -129,7 +131,7 @@ index d9762c1..2047c5b 100644
    /* Check to see if there are any descriptions related to membership. */
    foreach (option_cell, stmt->options) {
      DefElem *defel = lfirst_node(DefElem, option_cell);
-@@ -182,8 +241,9 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+@@ -182,8 +243,9 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
        addroleto = (List *)defel->arg;
  
      if (strcmp(defel->defname, "rolemembers") == 0 ||
@@ -140,7 +142,7 @@ index d9762c1..2047c5b 100644
  
      // Setting the superuser attribute is not allowed.
      if (strcmp(defel->defname, "superuser") == 0 && defGetBoolean(defel)) {
-@@ -201,7 +261,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+@@ -201,7 +263,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
      foreach (role_cell, addroleto) {
        RoleSpec *rolemember = lfirst_node(RoleSpec, role_cell);
        confirm_reserved_memberships(get_rolespec_name(rolemember),
@@ -150,7 +152,7 @@ index d9762c1..2047c5b 100644
      }
    }
  
-@@ -212,7 +273,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
+@@ -212,7 +275,8 @@ static bool create_role(CreateRoleStmt *stmt, const utility_hook_args *args,
     * should already exist, but handle it anyway.
     */
    if (hasrolemembers)
@@ -160,7 +162,7 @@ index d9762c1..2047c5b 100644
  
    // We don't want to switch to superuser on PG16+ because the
    // creating role is implicitly granted ADMIN on the new
-@@ -260,7 +322,8 @@ static void check_drop_role(DropRoleStmt *stmt, const role_policy *policy) {
+@@ -260,7 +324,8 @@ static void check_drop_role(DropRoleStmt *stmt, const role_policy *policy) {
       */
      if (role->roletype != ROLESPEC_CSTRING) break;
  
@@ -170,7 +172,7 @@ index d9762c1..2047c5b 100644
        EREPORT_RESERVED_ROLE(role->rolename);
    }
  }
-@@ -277,12 +340,20 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
+@@ -277,12 +342,20 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
      return;
    }
  
@@ -192,7 +194,7 @@ index d9762c1..2047c5b 100644
      }
    }
  
-@@ -296,7 +367,8 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
+@@ -296,7 +369,8 @@ static void check_grant_role(GrantRoleStmt *stmt, const role_policy *policy) {
      RoleSpec *spec      = lfirst_node(RoleSpec, grantee_role_cell);
      char     *role_name = get_rolespec_name(spec);
      // privileged_role can do GRANT <role> to <reserved_role>
@@ -202,7 +204,7 @@ index d9762c1..2047c5b 100644
        EREPORT_RESERVED_ROLE(role_name);
    }
  }
-@@ -312,16 +384,62 @@ static void check_rename_role(RenameStmt *stmt, const role_policy *policy) {
+@@ -312,16 +386,62 @@ static void check_rename_role(RenameStmt *stmt, const role_policy *policy) {
    /* Make sure we only catch "ALTER ROLE <role> RENAME TO" */
    if (stmt->renameType != OBJECT_ROLE) return;
  
