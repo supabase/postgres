@@ -48,7 +48,7 @@ pkgs.testers.runNixOSTest {
 
     DBS = {
       "g": "libc locale = 'en_US.UTF-8'",
-      "old": "libc locale = 'en_US.UTF-8'",
+      "out": "libc locale = 'en_US.UTF-8'",
       "de": "libc locale = 'de_DE.UTF-8'",
       "c": "libc locale = 'C'",
       "i": "icu locale = 'en_US.UTF-8' icu_locale = 'en-US'",
@@ -56,7 +56,7 @@ pkgs.testers.runNixOSTest {
     for db, options in DBS.items():
       sql("create database " + db + " locale_provider = " + options + " template template0")
     actual = recorded("g")
-    fresh = {"g": actual, "old": actual, "de": actual, "i": recorded("i")}
+    fresh = {"g": actual, "out": actual, "de": actual, "i": recorded("i")}
 
     def reset(stale):
       for db, version in {**fresh, **stale}.items():
@@ -75,7 +75,8 @@ pkgs.testers.runNixOSTest {
     check("Nothing stale", {}, [], False)
     check("A stale glibc en_US database inside the bounds is refreshed", {"g": "2.31"}, ["g"], False)
     check("ICU and non-English glibc databases are left alone", {"de": "2.31", "i": "1.0"}, [], False)
-    check("A database older than 2.31 fails the unit, the others are refreshed", {"old": "2.28", "g": "2.31"}, ["g"], True)
+    check("A database above 2.44 fails the unit, the others are refreshed", {"out": "2.99", "g": "2.31"}, ["g"], True)
+    check("A database below 2.31 fails the unit", {"out": "2.28"}, [], True)
 
     with subtest("A database that fails to refresh does not stop the others"):
       sql("create role refresher login")
@@ -88,12 +89,12 @@ pkgs.testers.runNixOSTest {
       assert recorded("b_owned") == actual
 
     with subtest("A postgres restart reruns the unit and leaves postgres active when it fails"):
-      reset({"old": "2.28", "g": "2.31", "a_other": actual})
+      reset({"out": "2.99", "g": "2.31", "a_other": actual})
       server.succeed("systemctl reset-failed " + UNIT)
       server.succeed("systemctl restart postgresql")
       server.wait_until_succeeds("systemctl is-failed " + UNIT)
       server.succeed("systemctl is-active postgresql.service")
       assert recorded("g") == actual
-      assert recorded("old") == "2.28"
+      assert recorded("out") == "2.99"
   '';
 }
