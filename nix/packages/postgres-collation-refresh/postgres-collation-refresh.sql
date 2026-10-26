@@ -18,8 +18,11 @@ select format('alter database %I refresh collation version', datname) from stale
 \gexec
 
 \set ON_ERROR_STOP on
-do $$ begin
-  if exists (select from stale) then
-    raise exception 'collation_refresh: % database(s) still stale', (select count(*) from stale);
+do $$
+declare names text;
+begin
+  select string_agg(format('%I', datname), ', ' order by datname) into names from stale;
+  if names is not null then
+    raise exception 'collation_refresh: still stale: %', names;
   end if;
 end $$;
