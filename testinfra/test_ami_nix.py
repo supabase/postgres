@@ -1622,7 +1622,8 @@ def test_collation_refresh_unit_is_linked_and_not_failed(host):
     link = run_ssh_command(host["ssh"], f"readlink /etc/systemd/system/{unit}")
     assert link["stdout"].startswith("/nix/var/nix/profiles/site/"), link
     state = run_ssh_command(host["ssh"], f"systemctl is-active {unit}")
-    assert state["stdout"].strip() == "active", state
+    journal = run_ssh_command(host["ssh"], f"journalctl -u {unit} --no-pager -n 40")
+    assert state["stdout"].strip() == "active", journal["stdout"]
 
 
 def _crash_a_backend_and_wait_for_recovery(host):

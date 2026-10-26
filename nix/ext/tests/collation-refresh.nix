@@ -89,6 +89,7 @@ pkgs.testers.runNixOSTest {
 
     with subtest("A postgres restart reruns the unit and leaves postgres active when it fails"):
       reset({"old": "2.28", "g": "2.31", "a_other": actual})
+      server.succeed("systemctl reset-failed " + UNIT)
       server.succeed("systemctl restart postgresql")
       server.wait_until_succeeds("systemctl is-failed " + UNIT)
       server.succeed("systemctl is-active postgresql.service")
