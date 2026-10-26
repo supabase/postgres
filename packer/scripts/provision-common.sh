@@ -151,12 +151,14 @@ function zero_free_space {
 }
 
 function finalize_disk {
-	local root=${1:-} zero=${2:-true}
+	local root=${1:-} zero=${2:-true} trim=${3:-true}
 
 	if [[ $zero == true ]]; then
 		zero_free_space "$root"
 	fi
-	fstrim "${root:-/}"
+	if [[ $trim == true ]]; then
+		fstrim "${root:-/}"
+	fi
 }
 
 function empty_login_records {

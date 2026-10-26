@@ -25,4 +25,3 @@ update_and_upgrade_apt
 cleanup_apt
 report_packages
 report_disk_usage
-finalize_disk "" false
