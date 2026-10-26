@@ -17,7 +17,6 @@
               };
             in
             _final: _prev: {
-              curl_8_6 = oldstable.curl;
               v8_oldstable = oldstable.v8;
             }
           )
