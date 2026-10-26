@@ -129,15 +129,34 @@ function scrub_logs_and_keys {
 }
 
 function zero_free_space {
-	dd if=/dev/zero of=/zerofile &
+	local root=${1:-}
+
+	cat <<-EOF
+		Writing zeros to the remaining disk space to securely erase the unused portion of the file system.
+		Depending on your disk size this may take several minutes.
+		The secure erase will complete successfully when you see:
+		    dd: writing to '/zerofile': No space left on device
+		Beginning secure erase now
+	EOF
+
+	dd if=/dev/zero of="$root/zerofile" &
 	PID=$!
 	while [ -d /proc/$PID ]; do
 		printf "."
 		sleep 5
 	done
 	sync
-	rm /zerofile
+	rm "$root/zerofile"
 	sync
+}
+
+function finalize_disk {
+	local root=${1:-} zero=${2:-true}
+
+	if [[ $zero == true ]]; then
+		zero_free_space "$root"
+	fi
+	fstrim "${root:-/}"
 }
 
 function empty_login_records {

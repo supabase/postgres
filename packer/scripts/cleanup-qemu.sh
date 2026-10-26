@@ -101,7 +101,4 @@ journalctl --rotate
 journalctl --vacuum-time=1s
 scrub_logs_and_keys
 
-zero_free_space
 empty_login_records
-
-fstrim /

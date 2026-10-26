@@ -19,14 +19,4 @@ purge_packages
 scrub_history
 scrub_logs_and_keys
 
-# Securely erase the unused portion of the filesystem
-cat <<-EOF
-	Writing zeros to the remaining disk space to securely erase the unused portion of the file system.
-	Depending on your disk size this may take several minutes.
-	The secure erase will complete successfully when you see:
-	    dd: writing to '/zerofile': No space left on device
-	Beginning secure erase now
-EOF
-
-zero_free_space
 empty_login_records

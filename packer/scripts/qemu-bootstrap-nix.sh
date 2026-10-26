@@ -106,3 +106,4 @@ clean_nix
 cleanup_apt
 report_packages
 report_disk_usage
+finalize_disk

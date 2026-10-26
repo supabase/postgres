@@ -222,6 +222,7 @@ function clean_system {
 
 	rm -rf /mnt/var/lib/apt/lists/*
 	remove_unwanted_files /mnt
+	finalize_disk /mnt
 }
 
 function report_chroot_packages {
