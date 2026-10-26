@@ -14,19 +14,19 @@
 
 set client_min_messages = warning;
 
-select public.dblink_connect(
+select extensions.dblink_connect(
   'pgrst_listener',
   format('host=localhost port=%s dbname=%s user=supabase_admin',
          current_setting('port'), current_database())
 );
-select public.dblink_exec('pgrst_listener', 'LISTEN pgrst');
+select extensions.dblink_exec('pgrst_listener', 'LISTEN pgrst');
 
 create function pg_temp.pgrst_reloads() returns bigint
 language plpgsql as $$
 begin
   -- round trip so the listener has flushed any pending notification
-  perform from public.dblink('pgrst_listener', 'SELECT 1') as t(x int);
-  return (select count(*) from public.dblink_get_notify('pgrst_listener')
+  perform from extensions.dblink('pgrst_listener', 'SELECT 1') as t(x int);
+  return (select count(*) from extensions.dblink_get_notify('pgrst_listener')
           where notify_name = 'pgrst' and extra = 'reload schema');
 end $$;
 
@@ -173,4 +173,4 @@ select pg_temp.pgrst_reloads() as drop_schema;
 
 -- Cleanup
 drop schema _realtime;
-select public.dblink_disconnect('pgrst_listener');
+select extensions.dblink_disconnect('pgrst_listener');
