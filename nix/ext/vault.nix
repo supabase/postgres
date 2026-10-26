@@ -59,6 +59,14 @@ let
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
+        # Install this version's base install script from its own source.
+        # Newer sources drop deprecated base scripts (e.g. 0.3.2 removed
+        # supabase_vault--0.2.8.sql), so the latest version's sql/ alone
+        # can't install every packaged version.
+        if [ -f sql/${pname}--${version}.sql ]; then
+          install -D -t $out/share/postgresql/extension sql/${pname}--${version}.sql
+        fi
+
       ''
       # for versions <= 0.2.8, we don't have a library to install
       + lib.optionalString (builtins.compareVersions "0.2.8" version < 0) ''
