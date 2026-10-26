@@ -20,8 +20,8 @@ order by e.evtname;
  issue_pg_graphql_access                | supabase_admin | extensions         | grant_pg_graphql_access            | supabase_admin
  issue_pg_net_access                    | supabase_admin | extensions         | grant_pg_net_access                | supabase_admin
  pg_tle_event_trigger_for_drop_function | supabase_admin | pgtle              | pgtle.pg_tle_feature_info_sql_drop | supabase_admin
- pgaudit_ddl_command_end                | supabase_admin | extensions         | pgaudit_ddl_command_end            | supabase_admin
- pgaudit_sql_drop                       | supabase_admin | extensions         | pgaudit_sql_drop                   | supabase_admin
+ pgaudit_ddl_command_end                | supabase_admin | public             | pgaudit_ddl_command_end            | supabase_admin
+ pgaudit_sql_drop                       | supabase_admin | public             | pgaudit_sql_drop                   | supabase_admin
  pgrst_ddl_watch                        | supabase_admin | extensions         | pgrst_ddl_watch                    | supabase_admin
  pgrst_drop_watch                       | supabase_admin | extensions         | pgrst_drop_watch                   | supabase_admin
  pgsodium_trg_mask_update               | supabase_admin | pgsodium           | pgsodium.trg_mask_update           | supabase_admin
