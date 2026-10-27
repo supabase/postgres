@@ -33,13 +33,7 @@ If you're on a feature different branch, you'll be prompted to confirm before pr
 
 ### 2. Build AMI
 
-After the build is complete and cached, build the AMI. The usual path is the CI workflow below. To build one locally with `nix run .#build-ami`, see [`testinfra/README.md`](../../testinfra/README.md).
-
-Run the `Testinfra Integration Tests Nix` workflow (`.github/workflows/testinfra-ami-build.yml`) from the GitHub Actions tab, or with the `gh` CLI:
-
-```bash
-gh workflow run testinfra-ami-build.yml --ref <your-branch>
-```
+The Nix CI run from step 1 also builds the AMIs: once the packages are built, its `amis` job runs the `Testinfra Integration Tests Nix` workflow (`.github/workflows/testinfra-ami-build.yml`). Opening or updating a pull request runs it too. To build one locally with `nix run .#build-ami`, see [`testinfra/README.md`](../../testinfra/README.md).
 
 For each PostgreSQL major version and architecture, the workflow will:
 
