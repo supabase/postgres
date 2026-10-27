@@ -20,10 +20,10 @@ profile sbpostgres flags=(attach_disconnected) {
     / wr,
 
     # /nix/store is immutable: postgres may read and execute from it, never modify it.
-    deny /nix/store/** wal,
-    deny /nix/var/nix/profiles/** wal,
-    deny /var/lib/postgresql/.nix-profile{,/,/**} wal,
-    deny /var/lib/postgresql/.local/state/nix/** wal,
+    deny /nix/store/** wl,
+    deny /nix/var/nix/profiles/** wl,
+    deny /var/lib/postgresql/.nix-profile{,/,/**} wl,
+    deny /var/lib/postgresql/.local/state/nix/** wl,
     /nix/store/** mr,
 
     deny /tmp/** mx,
