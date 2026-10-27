@@ -40,6 +40,9 @@ For each PostgreSQL major version and architecture, the workflow will:
 - Build both AMI stages with `nix run .#build-ami`
 - Run `testinfra/test_ami_nix.py` against the new AMI
 - Clean up the temporary instances and AMIs, even if the tests fail
+- Push an `ami-test-stamp-<major>` package to the binary cache if the tests pass
+
+The workflow skips any AMI whose stamp is already in the binary cache. The stamp changes whenever the AMI sources (`build-ami`), the packages installed on the AMI (`nix-store-paths-<major>`), or the tests change, so an AMI is only rebuilt when something that affects it changed.
 
 Because the workflow runs the tests and cleans up after itself, you only need steps 3 and 4 below to test an AMI you already have.
 

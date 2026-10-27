@@ -18,10 +18,14 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
+  # Always runs and succeeds (unless eval fails), so callers can require this workflow without it
+  # counting as skipped. build only gets the AMIs whose ami-test-stamp is not in the binary cache yet,
+  # and is skipped entirely when every stamp is cached.
   gen-matrix:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
-      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+      matrix: ${{ steps.gen-matrix.outputs.matrix }}
+      should_run: ${{ steps.gen-matrix.outputs.should_run }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
@@ -29,24 +33,57 @@ jobs:
       - name: Install nix
         uses: $/.github/actions/install-nix
 
-      - name: Set PostgreSQL versions
-        id: set-versions
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
+      - name: Generate matrix
+        id: gen-matrix
+        env:
+          CACHE_URL: https://nix-postgres-artifacts.s3.amazonaws.com
+          GIT_SHA: ${{ github.sha }}
+          PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: |
-          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
-          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+
+          # stamps describe this checkout's packages, so they can't vouch for AMIs built from another sha
+          check_cache=true
+          if [[ $PACKAGES_GIT_SHA != "$GIT_SHA" ]]; then
+            echo "::notice::packages come from $PACKAGES_GIT_SHA, not $GIT_SHA: building all AMIs"
+            check_cache=false
+          fi
+
+          # plain assignments so set -e catches a failing substitution; an empty should_run would skip every AMI
+          versions=$(nix run nixpkgs#yq-go -- '.postgres_major[]' ansible/vars.yml)
+          include='[]'
+          for version in $versions; do
+            for target in amd64:x86_64-linux:blacksmith-2vcpu-ubuntu-2404 arm64:aarch64-linux:blacksmith-2vcpu-ubuntu-2404-arm; do
+              IFS=: read -r arch system runner <<<"$target"
+              stamp=$(nix eval --raw ".#packages.$system.ami-test-stamp-$version")
+              if [[ $check_cache == true ]] && nix path-info --store "$CACHE_URL" "$stamp" &>/dev/null; then
+                echo "::notice::$version-$arch: already passed testinfra ($stamp), skipping"
+                continue
+              fi
+              echo "$version-$arch: building ($stamp)"
+              include=$(jq -c --arg version "$version" --arg arch "$arch" --arg system "$system" --arg runner "$runner" \
+                '. + [{postgres_version: $version, arch: $arch, system: $system, runner: $runner}]' <<<"$include")
+            done
+          done
+
+          matrix=$(jq -c '{include: .}' <<<"$include")
+          should_run=$(jq 'length > 0' <<<"$include")
+          echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
+          echo "should_run=$should_run" >>"$GITHUB_OUTPUT"
 
   build:
     needs: gen-matrix
+    if: needs.gen-matrix.outputs.should_run == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
-        target:
-          - arch: amd64
-            runner: blacksmith-2vcpu-ubuntu-2404
-          - arch: arm64
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
-    runs-on: ${{ matrix.target.runner }}
+      matrix: ${{ fromJson(needs.gen-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
 
     steps:
@@ -87,7 +124,7 @@ jobs:
         env:
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
-          arch: ${{ matrix.target.arch }}
+          arch: ${{ matrix.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
           postgres_major_version: ${{ matrix.postgres_version }}
@@ -101,7 +138,7 @@ jobs:
 
       - name: Save AMI disk usage
         env:
-          ARCH: ${{ matrix.target.arch }}
+          ARCH: ${{ matrix.arch }}
           DISK_USAGE_JSON: ${{ steps.build-ami.outputs.disk_usage_json }}
           POSTGRES_VERSION: ${{ matrix.postgres_version }}
         run: >-
@@ -115,7 +152,7 @@ jobs:
       - name: Upload AMI disk usage
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.arch }}
           path: ami-disk-usage-*.json
           overwrite: true
           retention-days: 1
@@ -130,6 +167,21 @@ jobs:
           pip3 install boto3 'boto3-stubs[essential]' ec2instanceconnectcli pytest 'pytest-testinfra[paramiko]' requests
           pytest -vv -s testinfra/test_ami_nix.py
 
+      # the post-build-hook from install-nix pushes the stamp, so later runs with the same inputs skip this AMI
+      # --no-pure-eval lets the stamp read AMI_ID_FILE; it refuses to build without the tested AMI's ID
+      - name: Record passing tests in the binary cache
+        if: steps.resolve-git-sha.outputs.sha == github.sha
+        env:
+          AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
+          POSTGRES_VERSION: ${{ matrix.postgres_version }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          set -euo pipefail
+          AMI_ID_FILE=$RUNNER_TEMP/ami-id
+          printf '%s' "$AMI_ID" >"$AMI_ID_FILE"
+          export AMI_ID_FILE
+          nix build --no-pure-eval --no-link -L ".#packages.$SYSTEM.ami-test-stamp-$POSTGRES_VERSION"
+
       - name: Configure AWS credentials for cleanup
         if: always()
         uses: aws-actions/configure-aws-credentials@v6.3.0
@@ -140,7 +192,7 @@ jobs:
         if: always()
         env:
           OK_TO_DESTROY: "true"
-        run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.run_id }}"
+        run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
     needs: build
