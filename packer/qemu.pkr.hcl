@@ -104,6 +104,11 @@ build {
     destination = "/tmp/cleanup-qemu.sh"
   }
 
+  provisioner "file" {
+    source      = "packer/scripts/provision-common.sh"
+    destination = "/tmp/provision-common.sh"
+  }
+
   provisioner "shell" {
     environment_vars = [
       "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
