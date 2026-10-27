@@ -38,6 +38,7 @@ IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
+POSTGRES_SHARE_DIR="/usr/share/postgresql/${PGVERSION}"
 MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
@@ -59,6 +60,8 @@ PGBINOLD="/usr/lib/postgresql/bin"
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
 NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
+NIX_VERSION="2.35.3"
+NIX_OFFICIAL_INSTALLER_SHA256="69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
 	BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
@@ -85,7 +88,13 @@ fi
 
 OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
 
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/start_guard.sh"
+
+CLEANUP_STARTED=""
+
 cleanup() {
+	CLEANUP_STARTED=1
 	UPGRADE_STATUS=${1:-"failed"}
 	EXIT_CODE=${?:-0}
 
@@ -106,6 +115,24 @@ cleanup() {
 		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
+	# Put the old share dir back before the start block is lifted, so a start that
+	# slips in right after it cannot see the new version's files.
+	if [ -L "$POSTGRES_SHARE_DIR" ]; then
+		rm "$POSTGRES_SHARE_DIR" || log "WARNING: failed to remove the postgres share symlink"
+
+		if [ -f "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
+		fi
+
+		if [ -d "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
+		fi
+	fi
+
+	# Same reasoning as the timers: lift the start block before anything else that
+	# can fail under set -e, or the restart below would be refused.
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
@@ -114,18 +141,6 @@ cleanup() {
 		ship_logs "$LOG_FILE" || true
 		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
 		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
-	fi
-
-	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
-		rm "/usr/share/postgresql/${PGVERSION}"
-
-		if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
-		fi
-
-		if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
-		fi
 	fi
 
 	log "Restarting postgresql"
@@ -183,6 +198,28 @@ EOF
 	fi
 }
 
+# EXIT trap: any exit that did not go through cleanup() (set -u abort, TERM/INT)
+# still restores the source, since step 10 left it stopped and disabled. If
+# cleanup() already ran (or died part way under set -e), only make sure the
+# start block is gone.
+on_exit() {
+	local exit_code=$?
+	trap - ERR
+	set +e
+	if [ -z "$CLEANUP_STARTED" ]; then
+		(
+			trap - ERR EXIT
+			set -e
+			cleanup failed
+		)
+		if [ "$exit_code" -eq 0 ]; then
+			exit_code=1
+		fi
+	fi
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+	exit "$exit_code"
+}
+
 function handle_extensions {
 	if [ -z "$IS_CI" ]; then
 		retry 5 systemctl restart postgresql
@@ -233,6 +270,11 @@ EOF
 }
 
 function initiate_upgrade {
+	# This runs in a background subshell, where the parent's traps do not apply.
+	trap on_exit EXIT
+	trap 'exit 143' TERM
+	trap 'exit 130' INT
+
 	# Before anything destructive: no || true here, a timer firing mid-upgrade is
 	# exactly what this guards against, and failing now leaves the project untouched.
 	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
@@ -331,11 +373,15 @@ function initiate_upgrade {
 							--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 					else
 						log "1.1.1. Installing Nix using the official installer"
-						sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+						NIX_OFFICIAL_INSTALLER=$(mktemp)
+						curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o "$NIX_OFFICIAL_INSTALLER"
+						echo "${NIX_OFFICIAL_INSTALLER_SHA256}  ${NIX_OFFICIAL_INSTALLER}" | sha256sum -c -
+						sh "$NIX_OFFICIAL_INSTALLER" --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EXTRA_NIX_CONF
+						rm -f "$NIX_OFFICIAL_INSTALLER"
 					fi
 				else
 					log "1.1. Nix is installed; moving on."
@@ -384,9 +430,10 @@ EXTRA_NIX_CONF
 
 		log "Store path: $STORE_PATH"
 
-		# Realize the closure from the binary cache.
+		# Realize the closure from the binary cache and root it in the pg-upgrade
+		# profile, so a GC can't remove it mid-upgrade.
 		#
-		# nix-store -r can stall indefinitely on a dropped S3 connection without
+		# The fetch can stall indefinitely on a dropped S3 connection without
 		# erroring out (its own download timeout doesn't reliably fire), so guard each
 		# attempt with a timeout and retry. Each path downloads atomically: already-
 		# registered paths are skipped on retry but an in-flight NAR restarts from
@@ -401,14 +448,14 @@ EXTRA_NIX_CONF
 
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10s 120s nix-store -r --quiet "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-env --option stalled-download-timeout 60 --profile /nix/var/nix/profiles/pg-upgrade --set "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi
 			if [ "$attempt" -lt 3 ]; then
-				log "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
+				log "WARNING: nix-env --set attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
 			else
-				log "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
+				log "ERROR: nix-env --set failed after 3 attempts for $STORE_PATH"
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
@@ -616,15 +663,22 @@ EOF
 		sleep 3
 		systemctl stop postgresql
 
+		block_postgres_start
 	else
 		CI_stop_postgres
 	fi
+
+	start_pid_lock_watcher
 
 	# Start the old PostgreSQL instance with version-specific options
 	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	else
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
+	fi
+
+	if ! assert_source_stayed_down; then
+		false # not exit: let the ERR trap run cleanup
 	fi
 
 	# copying custom configurations
