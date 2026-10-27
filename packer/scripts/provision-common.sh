@@ -129,7 +129,7 @@ function scrub_logs_and_keys {
 }
 
 function zero_free_space {
-	local root=${1:-}
+	local root=${1:-/}
 
 	cat <<-EOF
 		Writing zeros to the remaining disk space to securely erase the unused portion of the file system.
@@ -151,13 +151,13 @@ function zero_free_space {
 }
 
 function finalize_disk {
-	local root=${1:-} zero=${2:-true} trim=${3:-true}
+	local root=${1:-/} zero=${2:-true} trim=${3:-true}
 
 	if [[ $zero == true ]]; then
 		zero_free_space "$root"
 	fi
 	if [[ $trim == true ]]; then
-		fstrim "${root:-/}"
+		fstrim "$root"
 	fi
 }
 
