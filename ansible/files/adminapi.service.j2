@@ -14,9 +14,9 @@ Restart=always
 RestartSec=3
 TimeoutStopSec=10
 Environment="AWS_USE_DUALSTACK_ENDPOINT=true"
-{% if qemu %}
-Environment="AWS_SDK_LOAD_CONFIG=true"
-{% endif %}
+{% for env in adminapi_extra_env %}
+Environment="{{ env }}"
+{% endfor %}
 StandardOutput=journal
 StandardError=journal
 
