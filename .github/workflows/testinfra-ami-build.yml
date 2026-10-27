@@ -25,10 +25,10 @@ jobs:
       postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
       - name: Set PostgreSQL versions
         id: set-versions
@@ -44,17 +44,15 @@ jobs:
         postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
         target:
           - arch: amd64
-            instance_type: c6i.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404
           - arch: arm64
-            instance_type: c6g.4xlarge
             runner: blacksmith-2vcpu-ubuntu-2404-arm
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 150
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Debug AWS role secret
         run: |
@@ -66,39 +64,41 @@ jobs:
           fi
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Build AMI
         id: build-ami
-        uses: ./.github/actions/build-ami
-        with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
-          ami_regions: '["${{ env.AWS_REGION }}"]'
+        env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
-          postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
+          postgres_major_version: ${{ matrix.postgres_version }}
+        run: |
+          nix run .#build-ami -- \
+            --arch "$arch" \
+            --git-sha "$git_sha" \
+            --packages-git-sha "$packages_git_sha" \
+            --postgres-major-version "$postgres_major_version" \
+            ;
 
       - name: Save AMI disk usage
         env:
@@ -114,7 +114,7 @@ jobs:
           >"ami-disk-usage-$POSTGRES_VERSION-$ARCH.json"
 
       - name: Upload AMI disk usage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
           path: ami-disk-usage-*.json
@@ -133,10 +133,9 @@ jobs:
 
       - name: Configure AWS credentials for cleanup
         if: always()
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()
@@ -149,7 +148,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Download AMI disk usage
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: ami-disk-usage-*
           path: ami-disk-usage

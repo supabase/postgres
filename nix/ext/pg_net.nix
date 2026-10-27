@@ -8,10 +8,30 @@
   makeWrapper,
   switch-ext-version,
   curl,
+  libidn2,
+  libpsl,
+  libunistring,
+  libiconv,
   latestOnly ? false,
 }:
 
 let
+  # nixpkgs builds libunistring against gnu libiconv on darwin, which collides with apple's in the cli bundle
+  curlAppleIconv =
+    let
+      libunistringApple = libunistring.override { libiconvReal = libiconv; };
+      libidn2Apple = libidn2.override { libunistring = libunistringApple; };
+      libpslApple =
+        (libpsl.override {
+          libidn2 = libidn2Apple;
+          libunistring = libunistringApple;
+        }).overrideAttrs
+          { env.NIX_LDFLAGS = "-liconv"; };
+    in
+    curl.override {
+      libidn2 = libidn2Apple;
+      libpsl = libpslApple;
+    };
   pname = "pg_net";
   build =
     version: hash:
@@ -19,7 +39,7 @@ let
       inherit pname version;
 
       buildInputs = [
-        curl
+        (if stdenv.isDarwin then curlAppleIconv else curl)
         postgresql
       ]
       ++ lib.optional (version == "0.6") libuv;
@@ -32,6 +52,9 @@ let
       };
 
       buildPhase = ''
+        ${lib.optionalString (lib.versionOlder version "0.20.4") ''
+          export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -DCURL_DISABLE_TYPECHECK"
+        ''}
         make PG_CONFIG=${postgresql}/bin/pg_config
       '';
 
@@ -47,28 +70,23 @@ let
           rm sql/pg_net--0.5.1--0.6.sql
         '';
 
-      # curl >= 8.17 makes <curl/multi.h> pull in the curl_multi_setopt
-      # typecheck macro, which breaks the declaration in multi.h before 0.20.4.
       env.NIX_CFLAGS_COMPILE =
-        lib.optionalString (lib.versionOlder version "0.20.4") "-DCURL_DISABLE_TYPECHECK "
-        + (
-          if (lib.versionOlder version "0.19.1") then
-            "-Wno-error"
-          else if
-            (
-              builtins.elem version [
-                "0.19.5"
-                "0.20.0"
-              ]
-              && stdenv.isDarwin
-            )
-          then
-            # Fix for dangling pointer warning on darwin with newer clang
-            # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
-            "-Wno-error=dangling-assignment"
-          else
-            ""
-        );
+        if (lib.versionOlder version "0.19.1") then
+          "-Wno-error"
+        else if
+          (
+            builtins.elem version [
+              "0.19.5"
+              "0.20.0"
+            ]
+            && stdenv.isDarwin
+          )
+        then
+          # Fix for dangling pointer warning on darwin with newer clang
+          # 0.19.5: src/core.c:177, 0.20.0: src/core.c:317
+          "-Wno-error=dangling-assignment"
+        else
+          "";
 
       installPhase = ''
         mkdir -p $out/{lib,share/postgresql/extension}
