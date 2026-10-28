@@ -24,6 +24,9 @@ profile sbpostgres flags=(attach_disconnected) {
     deny /nix/var/nix/profiles/** wl,
     deny /var/lib/postgresql/.nix-profile{,/,/**} wl,
     deny /var/lib/postgresql/.local/state/nix/** wl,
+    deny /var/lib/postgresql/.local{,/} wl,
+    deny /var/lib/postgresql/.local/state{,/} wl,
+    deny /var/lib/postgresql/.local/state/nix{,/} wl,
     /nix/store/** mr,
 
     deny /tmp/** mx,
