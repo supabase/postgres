@@ -8,18 +8,12 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-function setup_apt {
-	export DEBIAN_FRONTEND=noninteractive
-}
+# shellcheck source=/dev/null
+source /tmp/provision-common.sh
 
-function cleanup_apt {
+function clean_apt_cache {
 	apt-get clean
 	apt-get autoremove --purge --yes
-}
-
-function update_and_upgrade_apt {
-	apt-get update --yes
-	apt-get dist-upgrade --yes
 }
 
 function install_initial_packages {
@@ -92,31 +86,6 @@ function install_initial_packages {
 	fi
 }
 
-function setup_locale {
-	cat >>/etc/locale.gen <<-EOF
-		en_US.UTF-8 UTF-8
-	EOF
-	cat >/etc/default/locale <<-EOF
-		LANG="C.UTF-8"
-		LC_CTYPE="C.UTF-8"
-	EOF
-	locale-gen en_US.UTF-8
-}
-
-function setup_postgesql_env {
-	# Create the directory if it doesn't exist
-	mkdir -p /etc/environment.d
-
-	# Define the contents of the PostgreSQL environment file
-	tee /etc/environment.d/postgresql.env >/dev/null <<-EOF
-		LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-		LANG="en_US.UTF-8"
-		LANGUAGE="en_US.UTF-8"
-		LC_ALL="en_US.UTF-8"
-		LC_CTYPE="en_US.UTF-8"
-	EOF
-}
-
 function setup_apparmor {
 	# Copy apparmor profiles
 	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
@@ -176,13 +145,6 @@ function setup_eth0_interface {
 	chmod 600 /etc/netplan/eth0.yaml
 }
 
-function disable_sshd_passwd_auth {
-	sed -i -E \
-		-e 's/^#?\s*PasswordAuthentication\s+(yes|no)\s*$/PasswordAuthentication no/g' \
-		-e 's/^#?\s*ChallengeResponseAuthentication\s+(yes|no)\s*$/ChallengeResponseAuthentication no/g' \
-		/etc/ssh/sshd_config
-}
-
 function create_admin_account {
 	groupadd admin
 }
@@ -224,5 +186,5 @@ set_default_target
 setup_eth0_interface
 disable_sshd_passwd_auth
 disable_fsck
-cleanup_apt
+clean_apt_cache
 enable_services
