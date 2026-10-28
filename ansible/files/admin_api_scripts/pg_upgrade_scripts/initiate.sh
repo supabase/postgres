@@ -638,6 +638,7 @@ $(cat /etc/postgresql/pg_hba.conf)" >/etc/postgresql/pg_hba.conf
     --old-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'" \
     --new-options="-c data_directory=${PGDATANEW}" \
     --new-options="-c config_file=$TMP_CONFIG" \
+    --new-options="-c dynamic_library_path='\\\$libdir'" \
     --new-options="-c shared_preload_libraries='${SHARED_PRELOAD_LIBRARIES}'"
 EOF
 	)
