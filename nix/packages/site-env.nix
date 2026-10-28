@@ -37,6 +37,7 @@
         pkgs.buildEnv {
           name = "site-env-${version}";
           paths = [
+            # Remove supautils from postgres-env only after initiate.sh and existing hosts use the site profile.
             supautils
             activate
           ]
