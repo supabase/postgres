@@ -54,6 +54,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: $/.github/actions/install-nix
 
@@ -123,6 +126,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: $/.github/actions/install-nix
 
