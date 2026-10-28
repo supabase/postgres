@@ -243,6 +243,7 @@ jobs:
           exit 1
 
   amis:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     needs:
       - builds-aarch64-linux
       - builds-x86_64-linux
@@ -275,10 +276,15 @@ jobs:
       - schema
     steps:
       - name: Check dependent job results
-        if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
+        env:
+          ALLOW_SKIPPED_AMIS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
-          jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
-          exit 1
+          errors=$(jq -rn --argjson needs '${{ toJSON(needs) }}' --arg allow_skipped_amis "$ALLOW_SKIPPED_AMIS" \
+            '$needs|to_entries[]|select(.value.result!="success" and (.key!="amis" or .value.result!="skipped" or $allow_skipped_amis!="true"))|"::error::"+.key+": "+.value.result')
+          if [ -n "$errors" ]; then
+            echo "$errors"
+            exit 1
+          fi
 
   version-diff:
     name: Package version diff
@@ -338,7 +344,7 @@ jobs:
 
   version-diff-comment:
     name: Post package version diff comment
-    if: always() && github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     needs: version-diff
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
