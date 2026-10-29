@@ -937,6 +937,8 @@
               ;
             psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
             glibc-collation = collation.compare reference pkgs;
+            ubuntu-24-04-collation = collation.compareUbuntu "24.04" reference pkgs;
+            ubuntu-20-04-collation = collation.compareUbuntu "20.04" reference pkgs;
             icu-pin = collation.icuPin {
               inherit reference;
               postgresqls = with self'.packages; [
