@@ -59,6 +59,14 @@ let
             -e "s|^module_pathname = .*|module_pathname = '\$libdir/${pname}'|" \
           ${pname}.control > $out/share/postgresql/extension/${pname}--${version}.control
 
+        # Install this version's base install script from its own source.
+        # Newer sources drop deprecated base scripts (e.g. 0.3.2 removed
+        # supabase_vault--0.2.8.sql), so the latest version's sql/ alone
+        # can't install every packaged version.
+        if [ -f sql/${pname}--${version}.sql ]; then
+          install -D -t $out/share/postgresql/extension sql/${pname}--${version}.sql
+        fi
+
       ''
       # for versions <= 0.2.8, we don't have a library to install
       + lib.optionalString (builtins.compareVersions "0.2.8" version < 0) ''
@@ -73,7 +81,6 @@ let
               cat $out/share/postgresql/extension/${pname}--${latestVersion}.control
             } > $out/share/postgresql/extension/${pname}.control
         fi
-        ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
       '';
 
       meta = with lib; {
@@ -94,6 +101,9 @@ pkgs.buildEnv {
   ];
 
   postBuild = ''
+    # Point the generic library name at the latest version
+    ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
+
     makeWrapper ${lib.getExe switch-ext-version} $out/bin/switch_${pname}_version \
       --prefix EXT_WRAPPER : "$out" --prefix EXT_NAME : "${pname}"
   '';
