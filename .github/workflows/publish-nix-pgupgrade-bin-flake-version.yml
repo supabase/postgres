@@ -71,11 +71,19 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
       - name: Create a tarball containing the latest nix flake version
         working-directory: /tmp/
+        env:
+          PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: |
           mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
-          echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
+          echo "$PACKAGES_GIT_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
           tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
       - name: configure aws credentials - staging
@@ -142,11 +150,19 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
       - name: Create a tarball containing the latest nix flake version
         working-directory: /tmp/
+        env:
+          PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: |
           mkdir -p "${{ steps.process_release_version.outputs.major_version }}"
-          echo "$GITHUB_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
+          echo "$PACKAGES_GIT_SHA" > "${{ steps.process_release_version.outputs.major_version }}/nix_flake_version"
           tar -czvf pg_upgrade_bin.tar.gz "${{ steps.process_release_version.outputs.major_version }}"
 
       - name: configure aws credentials - prod
