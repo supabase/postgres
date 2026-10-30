@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "security:only-security-updates"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions in ansible/vars.yml annotated with a '# renovate:' comment",
+      "managerFilePatterns": ["/^ansible/vars\\.yml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) packageName=(?<packageName>\\S+)\\n(?<depName>\\w+)_release: \"?(?<currentValue>[^\"\\s#]+)\"?"
+      ],
+      "extractVersionTemplate": "^v?(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "ansible/vars.yml artifacts: allow regular (non-security) updates and refresh checksums",
+      "matchFileNames": ["ansible/vars.yml"],
+      "enabled": true,
+      "postUpgradeTasks": {
+        "commands": [
+          "nix run .#update-ansible-artifacts -- {{{depName}}} {{{newVersion}}}"
+        ],
+        "fileFilters": ["ansible/vars.yml"],
+        "executionMode": "update"
+      }
+    },
+    {
+      "description": "Kong download URLs are pinned to the gateway-28 (2.8.x) repo",
+      "matchFileNames": ["ansible/vars.yml"],
+      "matchDepNames": ["kong"],
+      "allowedVersions": "/^2\\.8\\./"
+    },
+    {
+      "description": "Only the v2 line of the AWS CLI is installed",
+      "matchFileNames": ["ansible/vars.yml"],
+      "matchDepNames": ["aws_cli"],
+      "allowedVersions": "/^2\\./"
+    },
+    {
+      "description": "GitHub Actions: regular updates after a cool-off (pins are tracked in .github/workflows/actions.lock)",
+      "matchManagers": ["github-actions"],
+      "enabled": true,
+      "minimumReleaseAge": "7 days"
+    }
+  ]
+}

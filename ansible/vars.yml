@@ -37,6 +37,7 @@ adminmgr_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
     checksum: sha256:175a351a394ced27fec9ae8c9289be8f1f0a4c321732b8cbabaa48fa4cba727f
+# renovate: datasource=github-tags packageName=aws/aws-cli
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
@@ -45,6 +46,7 @@ aws_cli_artifacts:
   arm64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
     checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
+# renovate: datasource=github-releases packageName=envoyproxy/envoy
 envoy_release: 1.28.0
 envoy_artifacts:
   amd64:
@@ -56,6 +58,7 @@ envoy_artifacts:
   hot_restarter:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
     checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
+# renovate: datasource=github-releases packageName=Kong/kong
 kong_release: 2.8.1
 kong_artifacts:
   amd64:
@@ -64,14 +67,16 @@ kong_artifacts:
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
+# renovate: datasource=github-releases packageName=supabase/auth
 gotrue_release: 2.197.0
 gotrue_artifacts:
   amd64:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
+    url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
     checksum: sha256:9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3
   arm64:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
+    url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
     checksum: sha256:b129d0b32520a975a4f0576eb1b7836b82043997d2d021676ff24cec54eb5381
+# renovate: datasource=github-releases packageName=PostgREST/postgrest
 postgrest_release: "16.5" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
@@ -83,6 +88,7 @@ postgrest_artifacts:
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
+# renovate: datasource=github-releases packageName=prometheus-community/postgres_exporter
 postgres_exporter_release: 0.15.0
 postgres_exporter_artifacts:
   amd64:
@@ -91,6 +97,7 @@ postgres_exporter_artifacts:
   arm64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
     checksum: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+# renovate: datasource=github-releases packageName=saltstack/salt
 salt_release: "3007.14" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 salt_artifacts:
   url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
