@@ -29,14 +29,14 @@ adminapi_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
     checksum: sha256:5e9d0e2585968dc10e573e7b72252c38004994640906c9c2e6929c17af8cf923
-adminmgr_release: 0.49.1
+adminmgr_release: 0.50.0
 adminmgr_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
-    checksum: sha256:4e42214ce35b6431a11595c4c3642376eb17be218620e390d33638a84f69278f
+    checksum: sha256:56f555339136f8cd0c1f1d9c331c3197d00add39996de6821268924c90d3acb4
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
-    checksum: sha256:3477bb0c4dc8e6fea72b1237558cf048de675e211021f9790ef7c134e7452cf3
+    checksum: sha256:175a351a394ced27fec9ae8c9289be8f1f0a4c321732b8cbabaa48fa4cba727f
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
