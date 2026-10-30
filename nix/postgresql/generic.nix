@@ -19,6 +19,7 @@ let
       libossp_uuid,
       pkg-config,
       libxml2,
+      tzdata,
       libkrb5,
       replaceVars,
       darwin,
@@ -163,6 +164,7 @@ let
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
       ]
+      ++ lib.optionals (!portable) [ "--with-system-tzdata=${tzdata}/share/zoneinfo" ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
       ++ lib.optionals gssSupport [ "--with-gssapi" ]
