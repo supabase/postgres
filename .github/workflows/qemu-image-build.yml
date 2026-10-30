@@ -1,16 +1,27 @@
 name: Build QEMU image
 
 on:
-  push:
-    branches:
-      - develop
-      - release/*
-    paths:
-      - ansible/postgres_release.yml
+  workflow_call:
+    inputs:
+      arch:
+        description: Guest architecture (amd64 is experimental and publishes only to staging)
+        type: string
+        default: arm64
+      publish:
+        description: Upload the built disk image as an artifact for the release workflow
+        type: boolean
+        default: false
+    outputs:
+      version:
+        description: Image tag for this build
+        value: ${{ jobs.build.outputs.version }}
+      artifact:
+        description: Name of the uploaded disk image artifact (empty unless publish was set)
+        value: ${{ jobs.build.outputs.artifact }}
   workflow_dispatch:
     inputs:
       arch:
-        description: 'Guest architecture (amd64 is experimental and publishes only to staging)'
+        description: Guest architecture (amd64 is experimental and publishes only to staging)
         type: choice
         default: arm64
         options:
@@ -19,66 +30,27 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  prepare:
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    outputs:
-      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v7.0.1
-
-      - name: Set PostgreSQL versions - only builds pg17 atm
-        id: set-versions
-        run: |
-          VERSIONS=$(yq -e -o=json -I=0 '[.postgres_major[1]]' ansible/vars.yml)
-          echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
-
   build:
-    needs: prepare
-    strategy:
-      matrix:
-        postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-        arch: ["${{ inputs.arch || 'arm64' }}"]
-    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'arm-native-runner' }}
+    runs-on: ${{ inputs.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'arm-native-runner' }}
     env:
-      TARGET_ARCH: ${{ matrix.arch }}
+      # only builds pg17 atm
+      POSTGRES_MAJOR_VERSION: "17"
+      TARGET_ARCH: ${{ inputs.arch || 'arm64' }}
     timeout-minutes: 150
+    outputs:
+      version: ${{ steps.process_release_version.outputs.version }}
+      artifact: ${{ inputs.publish && format('qemu-image-{0}', inputs.arch || 'arm64') || '' }}
     permissions:
-      contents: write
-      packages: write
-      id-token: write
+      contents: read
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
-
-      - name: enable KVM support
-        run: |
-          sudo chown runner /dev/kvm
-          sudo chmod 666 /dev/kvm
-
-      - name: Set PostgreSQL version environment variable
-        run: |
-          echo "POSTGRES_MAJOR_VERSION=${{ matrix.postgres_version }}" >> $GITHUB_ENV
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
-        with:
-          push-to-cache: true
-          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
-          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-
-      - name: Run checks if triggered manually
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}
-        run: |
-          SUFFIX=$(nix run nixpkgs#yq -- -e '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
-          if [[ -z $SUFFIX ]] ; then
-            echo "Version must include non-numeric characters if built manually."
-            exit 1
-          fi
 
       - name: Verify QEMU can use KVM
         shell: bash
@@ -103,28 +75,16 @@ jobs:
       - name: Build QEMU artifact
         env:
           GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
-        run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "${{ matrix.postgres_version }}" "$TARGET_ARCH"
+        run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "$POSTGRES_MAJOR_VERSION" "$TARGET_ARCH"
 
       - name: Grab release version
         id: process_release_version
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- -er '.postgres_release.postgres${{ matrix.postgres_version }}' ansible/postgres_release.yml)
+          PG_VERSION=$(nix run nixpkgs#yq -- -er ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml)
           if [[ "$TARGET_ARCH" == amd64 ]]; then
             PG_VERSION="$PG_VERSION-amd64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           fi
           echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
-
-      - name: configure aws credentials - staging
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
-        uses: aws-actions/configure-aws-credentials@v6.3.0
-        with:
-          role-to-assume: ${{ secrets.CONTROL_PLANE_DEV_ROLE }}
-          aws-region: "us-east-1"
-
-      - name: Login to Amazon ECR Staging
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
-        id: login-ecr-private-dev
-        uses: aws-actions/amazon-ecr-login@v2.1.7
 
       - name: Build image
         env:
@@ -132,52 +92,18 @@ jobs:
         run: |
           docker build --platform "linux/$TARGET_ARCH" -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" packer-work-qemu-*
 
-      - name: Push docker image to Amazon ECR
-        if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/') }}
-        env:
-          REGISTRY: 812073016711.dkr.ecr.us-east-1.amazonaws.com
-          REPOSITORY: postgres-vm-image
-          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
+      - name: Compress disk image
+        if: inputs.publish
         run: |
-          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+          nix run nixpkgs#zstd -- -T0 -o "$RUNNER_TEMP/packer-cloudimg.zst" packer-work-qemu-*/output-cloudimg/packer-cloudimg
 
-      # TODO (darora): temporarily also push to prod account from here - add a guard to only publish proper tagged releases to prod?
-      - name: configure aws credentials - prod
-        if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+      - name: Upload disk image
+        if: inputs.publish
+        uses: actions/upload-artifact@v7.0.2
         with:
-          role-to-assume: ${{ secrets.CONTROL_PLANE_PROD_ROLE }}
-          aws-region: "us-east-1"
-
-      - name: Login to Amazon ECR Prod
-        if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
-        id: login-ecr-private-prod
-        uses: aws-actions/amazon-ecr-login@v2.1.7
-
-      - name: Push docker image to Amazon ECR Prod
-        if: ${{ matrix.arch == 'arm64' && (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
-        env:
-          REGISTRY: 156470330064.dkr.ecr.us-east-1.amazonaws.com
-          REPOSITORY: postgres-vm-image
-          IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
-        run: |
-          docker tag "postgres:$IMAGE_TAG" "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-          docker push "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
-
-      - name: Slack Notification on Failure
-        if: ${{ failure() }}
-        uses: slackapi/slack-github-action@v4.0.0
-        with:
-          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
-          webhook-type: incoming-webhook
-          payload: |
-            username: gha-failure
-            icon_emoji: ':old_man_yells_at_github_actions:'
-            channel: C0C16MJ8WHX
-            text: |
-              *Building Postgres QEMU artifact failed*
-              *Actions URL:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}/checks|${{ github.workflow }}>
-              *Event:* ${{ github.event_name }}
-              *Ref:* ${{ github.ref }}
-              *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
+          name: qemu-image-${{ env.TARGET_ARCH }}
+          path: ${{ runner.temp }}/packer-cloudimg.zst
+          # already zstd-compressed
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: error
