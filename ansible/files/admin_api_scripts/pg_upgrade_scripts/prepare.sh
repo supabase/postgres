@@ -10,26 +10,41 @@
 ## Code hardened see
 ## https://linear.app/supabase/issue/MPG-1283/harden-a-bit-preparesh
 
+#! /usr/bin/env bash
 set -Eeuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0")
 
-# Define the log file BEFORE anything else and create it now,
-# so it exists even if a later step (including sourcing common.sh) fails.
+# The log file is never truncated: when the script is retried by the caller,
+# each attempt appends to the same file. It is created right away so that it
+# exists even if a later step fails.
 LOG_FILE="/var/log/pg-upgrade-prepare.log"
 touch "$LOG_FILE"
 chmod 640 "$LOG_FILE"
+
+# Detect a retry BEFORE writing anything: if "started" is already in the
+# file, a previous attempt has run and failed.
+RETRY=0
+if grep -qF "prepare.sh started" "$LOG_FILE"; then
+  RETRY=1
+fi
 
 # From here on, everything written to stdout/stderr (log messages, but also
 # errors from systemctl, install, sync, etc.) is appended to the log file.
 exec >>"$LOG_FILE" 2>&1
 
-# Source the shared helpers (log and ship_logs functions). If this fails,
-# "log" is not available yet, so we write a timestamped message by hand
-# before exiting.
+# Minimal fallback so that "log" exists even if common.sh cannot be sourced.
+# common.sh redefines it with the real implementation.
+log() { echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"; }
+
+# Log any unexpected failure (set -e) with the line number and failing command,
+# so that no error can end the script silently.
+trap 'log "prepare.sh FAILED at line $LINENO: \"$BASH_COMMAND\" (exit code $?)"' ERR
+
+# Source the shared helpers (log and ship_logs functions)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh" || {
-  echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') cannot source $SCRIPT_DIR/common.sh"
+  log "cannot source $SCRIPT_DIR/common.sh"
   exit 1
 }
 
@@ -39,23 +54,35 @@ source "$SCRIPT_DIR/common.sh" || {
 : "${REPORTING_ANON_KEY:=}"
 : "${REPORTING_PROJECT_REF:=}"
 
-# Log any unexpected failure (set -e) with the line number and failing command,
-# so that no error can end the script silently.
-trap 'log "prepare.sh FAILED at line $LINENO: \"$BASH_COMMAND\" (exit code $?)"' ERR
-
 # Runs on every exit (success, explicit "exit 1" or set -e failure).
-# It uploads the log file, but never changes the script's exit code and never
-# lets an upload failure turn into a script failure.
+#   - success: final message + single upload of the log file
+#   - failure: nothing more is written (the error is already in the log) and
+#     nothing is uploaded: the script cannot know whether the caller will
+#     retry, so the caller handles the "gave up" case.
+# The script's exit code is always preserved for the caller.
 on_exit() {
   local rc=$?
   trap - EXIT ERR   # avoid re-entering the traps from inside this handler
-  # uploading the log in REPORTING_PROJECT_REF (see common.sh)
-  ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+
+  if [ "$rc" -eq 0 ]; then
+    if [ "$RETRY" -eq 0 ]; then
+      log "prepare.sh ended with no errors."
+    else
+      log "prepare.sh finally ended without error this time."
+    fi
+    # Single upload of the log file; never fatal
+    if declare -F ship_logs >/dev/null; then
+      ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+    else
+      log "ship_logs is not available, log upload skipped."
+    fi
+  fi
   exit "$rc"
 }
 trap on_exit EXIT
 
-# starting log
+# Written at every attempt. It is also the marker used above to detect
+# retries, so do not change its wording.
 log "prepare.sh started."
 
 # check that /data is actually mounted
@@ -94,7 +121,5 @@ if ! umount_out=$(umount /data 2>&1); then
   exit 1
 fi
 
-# final log if everything went well
-# (we don't get here unless there were no previous errors)
-log "prepare.sh ended with no errors."
-# ship_logs is then called automatically by the EXIT trap (on_exit)
+# Reaching this point means success: the final message and the log upload
+# are handled by the EXIT trap (on_exit).
