@@ -162,4 +162,21 @@ build {
     destination = "/tmp/ansible-stage2.log"
     direction   = "download"
   }
+
+  provisioner "file" {
+    source      = "testinfra/manifest-snapshot.sh"
+    destination = "/tmp/manifest-snapshot.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo sh /tmp/manifest-snapshot.sh > /tmp/ami-manifest.txt"
+    ]
+  }
+
+  provisioner "file" {
+    source      = "/tmp/ami-manifest.txt"
+    destination = "/tmp/manifest.txt"
+    direction   = "download"
+  }
 }
