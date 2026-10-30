@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh default collation version
+After=postgresql.service
+PartOf=postgresql.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=postgres
+TimeoutStartSec=120
+ExecStart=/var/lib/postgresql/.nix-profile/bin/psql -X -q -h localhost -U supabase_admin -d postgres -f /nix/var/nix/profiles/site/share/postgres-collation-refresh.sql

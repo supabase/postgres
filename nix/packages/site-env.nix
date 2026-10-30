@@ -39,6 +39,7 @@
           paths = [
             supautils
             activate
+            self'.packages.postgres-collation-refresh
           ]
           ++ extraPaths;
           passthru = { inherit activate; };

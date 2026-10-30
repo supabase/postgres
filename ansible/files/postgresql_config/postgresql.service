@@ -1,6 +1,7 @@
 [Unit]
 Description=PostgreSQL database server
 Documentation=man:postgres(1)
+Wants=postgresql-collation-refresh.service
 Requires=database-optimizations.service
 After=database-optimizations.service
 

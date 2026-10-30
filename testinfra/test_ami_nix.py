@@ -1616,6 +1616,16 @@ def test_postgres_prestart_does_not_reset_core_limit(host):
     )
 
 
+def test_collation_refresh_unit_is_linked_and_not_failed(host):
+    """The collation refresh unit links from the site profile and is active."""
+    unit = "postgresql-collation-refresh.service"
+    link = run_ssh_command(host["ssh"], f"readlink /etc/systemd/system/{unit}")
+    assert link["stdout"].startswith("/nix/var/nix/profiles/site/"), link
+    state = run_ssh_command(host["ssh"], f"systemctl is-active {unit}")
+    journal = run_ssh_command(host["ssh"], f"journalctl -u {unit} --no-pager -n 40")
+    assert state["stdout"].strip() == "active", journal["stdout"]
+
+
 def _crash_a_backend_and_wait_for_recovery(host):
     """Grab a real Postgres backend pid, SIGSEGV it, and wait for PostgreSQL's
     normal crash-recovery to bring the instance back on its own. Returns the
