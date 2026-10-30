@@ -1,10 +1,10 @@
 -- Grant postgres EXECUTE on amcheck functions in pg_catalog.
 do $$
 declare
-  saved_search_path text := (select current_setting('search_path'));
-  r record;
+  saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
+  r pg_catalog.record;
 begin
-  perform set_config('search_path', '', true);
+  perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
 
   for r in
     select p.oid::regprocedure as sig
@@ -16,5 +16,5 @@ begin
     execute format('grant execute on routine %s to postgres', r.sig);
   end loop;
 
-  perform set_config('search_path', saved_search_path, true);
+  perform pg_catalog.set_config('search_path', saved_search_path, true);
 end $$;
