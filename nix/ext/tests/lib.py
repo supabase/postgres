@@ -7,7 +7,7 @@ installation, upgrades, and version verification of PostgreSQL extensions.
 
 from typing import Sequence, Mapping, Optional
 from pathlib import Path
-from test_driver.machine import Machine
+from test_driver.machine import QemuMachine
 
 Versions = Mapping[str, Sequence[str]]
 
@@ -15,7 +15,7 @@ Versions = Mapping[str, Sequence[str]]
 class PostgresExtensionTest(object):
     def __init__(
         self,
-        vm: Machine,
+        vm: QemuMachine,
         extension_name: str,
         versions: Versions,
         sql_test_dir: Path,

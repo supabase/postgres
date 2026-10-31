@@ -7,7 +7,7 @@
   msgpack-c,
   mecab,
   makeWrapper,
-  xxHash,
+  xxhash,
   buildEnv,
   supabase-groonga,
   mecab-naist-jdic,
@@ -64,7 +64,7 @@ let
         supabase-groonga
         mecab
       ]
-      ++ lib.optionals stdenv.isDarwin [ xxHash ];
+      ++ lib.optionals stdenv.isDarwin [ xxhash ];
 
       propagatedBuildInputs = [
         supabase-groonga
@@ -89,7 +89,7 @@ let
           "-Wno-error=format"
           "-Wno-format"
           "-I${supabase-groonga}/include/groonga"
-          "-I${xxHash}/include"
+          "-I${xxhash}/include"
           "-DPGRN_VERSION=\"${version}\""
         ]
       );
@@ -100,8 +100,8 @@ let
         export MECAB_CONFIG="${mecab}/bin/mecab-config"
         export MECAB_DICDIR="${mecab-naist-jdic}/lib/mecab/dic/naist-jdic"
         ${lib.optionalString stdenv.isDarwin ''
-          export CPPFLAGS="-I${supabase-groonga}/include/groonga -I${xxHash}/include -DPGRN_VERSION=\"${version}\""
-          export CFLAGS="-I${supabase-groonga}/include/groonga -I${xxHash}/include -DPGRN_VERSION=\"${version}\""
+          export CPPFLAGS="-I${supabase-groonga}/include/groonga -I${xxhash}/include -DPGRN_VERSION=\"${version}\""
+          export CFLAGS="-I${supabase-groonga}/include/groonga -I${xxhash}/include -DPGRN_VERSION=\"${version}\""
           export PG_CPPFLAGS="-Wno-error=incompatible-function-pointer-types -Wno-error=format"
         ''}
       '';
