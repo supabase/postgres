@@ -234,18 +234,57 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run publish-nix-pgupgrade-scripts.yml \
-            --ref "${{ github.ref_name }}" \
-            -f postgresVersion="$POSTGRES_SUPABASE_VERSION"
+          set -euo pipefail
+          out=$(
+            gh workflow run publish-nix-pgupgrade-scripts.yml \
+              --ref "${{ github.ref_name }}" \
+              -f postgresVersion="$POSTGRES_SUPABASE_VERSION" \
+              ;
+          )
+          echo "$out"
+          run_id=$(grep -oE 'actions/runs/[0-9]+' <<<"$out" | tail -n1 | cut -d/ -f3 || true)
+          if [[ -z "$run_id" ]]; then
+            echo "::error::could not determine run id of dispatched pg_upgrade_scripts workflow"
+            exit 1
+          fi
+          echo "PG_UPGRADE_SCRIPTS_RUN_ID=$run_id" >>"$GITHUB_ENV"
 
       - name: Trigger pg_upgrade_bin flake version workflow
         if: matrix.target.arch == 'arm64'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run publish-nix-pgupgrade-bin-flake-version.yml \
-            --ref "${{ github.ref_name }}" \
-            -f postgresVersion="$POSTGRES_SUPABASE_VERSION"
+          set -euo pipefail
+          out=$(
+            gh workflow run publish-nix-pgupgrade-bin-flake-version.yml \
+              --ref "${{ github.ref_name }}" \
+              -f postgresVersion="$POSTGRES_SUPABASE_VERSION" \
+              ;
+          )
+          echo "$out"
+          run_id=$(grep -oE 'actions/runs/[0-9]+' <<<"$out" | tail -n1 | cut -d/ -f3 || true)
+          if [[ -z "$run_id" ]]; then
+            echo "::error::could not determine run id of dispatched pg_upgrade_bin flake version workflow"
+            exit 1
+          fi
+          echo "PG_UPGRADE_BIN_RUN_ID=$run_id" >>"$GITHUB_ENV"
+
+      - name: Wait for pg_upgrade publish workflows
+        if: matrix.target.arch == 'arm64'
+        timeout-minutes: 30
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          rc=0
+          for run_id in "$PG_UPGRADE_SCRIPTS_RUN_ID" "$PG_UPGRADE_BIN_RUN_ID"; do
+            echo "Waiting for ${{ github.server_url }}/${{ github.repository }}/actions/runs/$run_id"
+            if ! gh run watch "$run_id" --exit-status --interval 30 >/dev/null; then
+              echo "::error::dispatched workflow run $run_id failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/$run_id"
+              rc=1
+            fi
+          done
+          exit "$rc"
 
       - name: Slack Notification on Failure
         if: ${{ failure() }}

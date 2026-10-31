@@ -29,14 +29,14 @@ adminapi_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
     checksum: sha256:5e9d0e2585968dc10e573e7b72252c38004994640906c9c2e6929c17af8cf923
-adminmgr_release: 0.49.1
+adminmgr_release: 0.50.0
 adminmgr_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
-    checksum: sha256:4e42214ce35b6431a11595c4c3642376eb17be218620e390d33638a84f69278f
+    checksum: sha256:56f555339136f8cd0c1f1d9c331c3197d00add39996de6821268924c90d3acb4
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
-    checksum: sha256:3477bb0c4dc8e6fea72b1237558cf048de675e211021f9790ef7c134e7452cf3
+    checksum: sha256:175a351a394ced27fec9ae8c9289be8f1f0a4c321732b8cbabaa48fa4cba727f
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
@@ -64,22 +64,22 @@ kong_artifacts:
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
-gotrue_release: 2.190.0
+gotrue_release: 2.197.0
 gotrue_artifacts:
   amd64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
-    checksum: sha256:dfe8e2dee872747f60fe10ecec6ee8d368ee4d7eef3acd5af95aa88a2e7e6141
+    checksum: sha256:9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3
   arm64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
-    checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
-postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+    checksum: sha256:b129d0b32520a975a4f0576eb1b7836b82043997d2d021676ff24cec54eb5381
+postgrest_release: "16.5" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
     url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
-    checksum: sha256:98de1c0be7787aea5f5e11a25f303ea0077634d6fc1000b687bfa825fd27d299
+    checksum: sha256:5099e7ada38f9f6846cd87c14c5f158b7c165f1e9959665ad412e61f4dceba95
   arm64:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-    checksum: sha256:960676de3fb8102393adfff7f74d40aa131b52abe0ba63b6a5594c44c3a67569
+    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-aarch64.tar.xz"
+    checksum: sha256:96d75a34c7c095d5f97b87f88042f898192724350861328db9e1509e696ea057
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
