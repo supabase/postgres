@@ -151,14 +151,17 @@
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
+        ],
+        "utils": [
+          "flake-utils"
         ]
       },
       "locked": {
-        "lastModified": 1772115726,
-        "narHash": "sha256-9CP5NPGPNEJZCAIUytdXrvDXUBaOKaw6uAKJwvonJBI=",
+        "lastModified": 1703105021,
+        "narHash": "sha256-Ne9NG7x45a8aJyAN+yYWbr/6mQHBVVkwZZ72EZHHRqw=",
         "owner": "snowfallorg",
         "repo": "nix-editor",
-        "rev": "a72c7d695d5568fe19ff34d161a22c716ffbdc07",
+        "rev": "b5017f8d61753ce6a3a1a2aa7e474d59146a8ae3",
         "type": "github"
       },
       "original": {
