@@ -15,7 +15,7 @@ let
       icu75,
       lz4,
       zstd,
-      systemd,
+      systemdLibs,
       libossp_uuid,
       pkg-config,
       libxml2,
@@ -33,7 +33,8 @@ let
       libxslt,
 
       # This is important to obtain a version of `libpq` that does not depend on systemd.
-      systemdSupport ? lib.meta.availableOn stdenv.hostPlatform systemd && !stdenv.hostPlatform.isStatic,
+      systemdSupport ?
+        lib.meta.availableOn stdenv.hostPlatform systemdLibs && !stdenv.hostPlatform.isStatic,
       enableSystemd ? null,
       gssSupport ? with stdenv.hostPlatform; !isWindows && !isStatic,
 
@@ -120,7 +121,7 @@ let
       ++ lib.optionals (olderThan "13") [ libxcrypt ]
       ++ lib.optionals lz4Enabled [ lz4 ]
       ++ lib.optionals zstdEnabled [ zstd ]
-      ++ lib.optionals systemdSupport' [ systemd ]
+      ++ lib.optionals systemdSupport' [ systemdLibs ]
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv.isLinux [ linux-pam ]

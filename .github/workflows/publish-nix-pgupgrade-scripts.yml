@@ -46,7 +46,7 @@ jobs:
 
   publish-staging:
     needs: prepare
-    runs-on: large-linux-x86
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
@@ -54,6 +54,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: $/.github/actions/install-nix
 
@@ -112,7 +115,7 @@ jobs:
               *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
   publish-prod:
     needs: prepare
-    runs-on: large-linux-x86
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.ref_name == 'develop' || startsWith(github.ref_name, 'release/')
 
     strategy:
@@ -123,6 +126,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: $/.github/actions/install-nix
 

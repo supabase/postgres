@@ -66,6 +66,10 @@ jobs:
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
       - name: Run checks if triggered manually
         if: ${{ github.event_name == 'workflow_dispatch' && matrix.arch == 'arm64' }}
