@@ -1,6 +1,5 @@
 {
   lib,
-  pkgs,
   fetchCrate,
   openssl,
   pkg-config,
@@ -10,11 +9,10 @@
   rustVersion ? "1.85.1",
 }:
 let
-  # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
-  rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (makeRustPlatform {
+  rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
-  });
+  };
 in
 {
   mkCargoPgrx =
@@ -34,11 +32,7 @@ in
       auditable = false;
       inherit pname;
       inherit version;
-      # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
-      src = fetchCrate {
-        inherit version pname hash;
-        registryDl = "https://static.crates.io/crates";
-      };
+      src = fetchCrate { inherit version pname hash; };
       inherit cargoHash;
       nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [ pkg-config ];
       buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ openssl ];

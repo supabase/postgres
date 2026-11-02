@@ -23,8 +23,7 @@
     nix-eval-jobs.url = "github:nix-community/nix-eval-jobs";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix2container.url = "github:nlewo/nix2container";
-    # Pin to a specific nixpkgs version that has compatible v8 and curl versions
-    # for extensions that require older package versions
+    # Pin to a specific nixpkgs version that still has the v8 version plv8 needs
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
     nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
