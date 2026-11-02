@@ -18,6 +18,27 @@
 
     EOF
 
+- name: install per-user egress filters
+  copy:
+    src: files/nftables/egressfilter.conf
+    dest: /etc/nftables/egressfilter.conf
+    owner: adminapi
+    mode: '0644'
+    validate: /usr/sbin/nft -c -f %s
+
+- name: include per-user egress filters
+  blockinfile:
+    path: /etc/nftables.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: per-user egress filters"
+    block: |
+      include "/etc/nftables/egressfilter.conf";
+
+# A broken /etc/nftables.conf fails nftables.service at boot, and ufw Requires= it.
+# The rules are not loaded during the build; they apply on first boot.
+- name: check the full nftables config parses
+  command: /usr/sbin/nft -c -f /etc/nftables.conf
+  changed_when: false
+
 - name: ufw overrides dir
   file:
     state: directory

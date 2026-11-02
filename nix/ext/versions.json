@@ -37,6 +37,14 @@
         "orioledb-17"
       ],
       "hash": "sha256-G0eQk2bY5CNPMeokN/nb05g03CuiplRf902YXFVQFbs="
+    },
+    "0.2.1": {
+      "postgresql": [
+        "15",
+        "17",
+        "orioledb-17"
+      ],
+      "hash": "sha256-l/Og7R63Boh6W8GmyR6l6yzE2Sn6zEhI6boUmPCQDDo="
     }
   },
   "pg_jsonschema": {
@@ -266,6 +274,15 @@
         "17"
       ],
       "hash": "sha256-/qpAfou/shsLKyUmJsya/Zph9nhdtQwXOcXpqmsOnIw=",
+      "pgrx": "0.19.2",
+      "rust": "1.97.1"
+    },
+    "1.6.3": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-fQJumk5P9C6NqyS2FmUFeOS24Rp89upyVUyyT87pPOg=",
       "pgrx": "0.19.2",
       "rust": "1.97.1"
     }
@@ -565,6 +582,13 @@
         "17"
       ],
       "hash": "sha256-MC87bqgtynnDhmNZAu96jvfCpsGDCPB0g5TZfRQHd30="
+    },
+    "0.3.2": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-TH5caaDajqZosEuv50o0ec5vxQI1TkIIprKDCFF4z1k="
     }
   },
   "timescaledb": {

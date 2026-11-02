@@ -8,50 +8,11 @@ Packer is used for creating machine images and is defined in `nix/packages/packe
 
 ### Steps to update Packer version:
 
-1. Create a branch off of `develop`
-2. Navigate to `nix/packages/packer.nix`
-3. Update the version field:
-   ```nix
-   version = "1.15.0"; # Update to desired version
-   ```
-4. Update the git revision to match the new version:
-   ```nix
-   rev = "v${version}";
-   ```
-5. Temporarily clear the hash to get the new SHA256:
-   ```nix
-   hash = ""; # Clear this temporarily
-   ```
-6. Save the file and run:
-   ```bash
-   nix build .#packer
-   ```
-7. Nix will fail and output the correct SHA256 hash. Copy this hash and update the file:
-   ```nix
-   hash = "sha256-NEWHASHHEREFROMBUILDOUTPUT";
-   ```
-8. Update the vendorHash if needed. If the build fails due to vendor hash mismatch, temporarily set:
-   ```nix
-   vendorHash = ""; # Clear this temporarily
-   ```
-9. Run `nix build .#packer` again to get the correct vendorHash, then update:
-   ```nix
-   vendorHash = "sha256-NEWVENDORHASHHEREFROMBUILDOUTPUT";
-   ```
-10. Verify the build works:
-    ```bash
-    nix build .#packer
-    ```
-11. Test the packer binary:
-    ```bash
-    ./result/bin/packer version
-    ```
-12. Run the full test suite to ensure nothing is broken:
-    ```bash
-    nix flake check -L
-    ```
-13. Commit your changes and create a PR for review
-14. Update any CI/CD workflows or documentation that reference the old Packer version
+1. Bump `version` in `nix/packages/packer.nix`.
+2. Set `hash = lib.fakeHash;`, or an empty string.
+3. Run `nix build .#packer`, then copy the hash from the error into `hash`.
+4. Do the same for `vendorHash`.
+5. Run `nix flake check -L`.
 
 ### Notes:
 - Always check the [Packer changelog](https://github.com/hashicorp/packer/releases) for breaking changes

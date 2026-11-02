@@ -1,4 +1,4 @@
-{ self, inputs, ... }:
+{ inputs, ... }:
 {
   perSystem =
     { system, ... }:
@@ -8,8 +8,6 @@
         config.allowUnfree = true;
         permittedInsecurePackages = [ "v8-9.7.106.18" ];
         overlays = [
-          (import inputs.rust-overlay)
-          self.overlays.default
           (
             let
               # Provide older versions of packages required by some extensions
@@ -19,11 +17,9 @@
               };
             in
             _final: _prev: {
-              curl_8_6 = oldstable.curl;
               v8_oldstable = oldstable.v8;
             }
           )
-          inputs.devshell.overlays.default
         ];
       };
     };

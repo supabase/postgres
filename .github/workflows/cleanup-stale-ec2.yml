@@ -9,7 +9,7 @@ on:
 jobs:
   cleanup:
     name: Delete stale build resources
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       matrix:
         region:
@@ -22,16 +22,83 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
           aws-region: ${{ matrix.region }}
 
       - name: Cleanup stale AMI build resources
+        shell: bash
+        timeout-minutes: 60 # AWS creds expire after 1h
         env:
           AWS_MAX_ATTEMPTS: 6
-          OK_TO_DESTROY: "false"
-        run: ci/cleanup-stale-ami-build-resources.sh
+          OK_TO_DESTROY: "true"
+        run: ci/cleanup-stale-ami-build-resources.sh 2>&1 | tee "$RUNNER_TEMP/cleanup.log"
+
+      - name: Summarize cleanup
+        if: always()
+        run: ci/summarize-cleanup-log.sh "${{ matrix.region }}" "$RUNNER_TEMP/cleanup.log" > "$RUNNER_TEMP/summary.txt"
+
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: cleanup-summary-${{ matrix.region }}
+          path: ${{ runner.temp }}/summary.txt
+          if-no-files-found: ignore
+
+  notify:
+    name: Notify Slack
+    needs: cleanup
+    if: always()
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      actions: read # to read the cleanup jobs' durations
+      contents: read
+
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@v6.0.1
+        with:
+          sparse-checkout: ci
+          persist-credentials: false
+
+      - name: Download summaries
+        uses: actions/download-artifact@v4.3.0
+        with:
+          pattern: cleanup-summary-*
+          path: summaries
+
+      - name: Add job durations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          # one "region<TAB>seconds" line per cleanup job; a failed lookup just leaves durations as n/a
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+            --jq '.jobs[] | select(.name | startswith("Delete stale build resources")) | [(.name | capture("\\((?<region>[^)]+)\\)").region), ((.completed_at | fromdate) - (.started_at | fromdate))] | @tsv' \
+            >"$RUNNER_TEMP/durations.tsv" || : >"$RUNNER_TEMP/durations.tsv"
+          summaries=(summaries/*/summary.txt)
+          if ((${#summaries[@]} > 0)); then
+            ci/add-job-durations.sh "$RUNNER_TEMP/durations.tsv" "${summaries[@]}"
+          fi
+
+      - name: Build Slack payload
+        env:
+          CLEANUP_RESULT: ${{ needs.cleanup.result }}
+          SLACK_CHANNEL: C0C16MJ8WHX
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          shopt -s nullglob
+          ci/build-slack-payload.sh summaries/*/summary.txt | tee "$RUNNER_TEMP/payload.json"
+
+      - name: Slack Notification
+        uses: slackapi/slack-github-action@v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
+          webhook-type: incoming-webhook
+          errors: true
+          payload-file-path: ${{ runner.temp }}/payload.json
