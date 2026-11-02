@@ -72,7 +72,24 @@ let
       // (pkgs.lib.mapAttrs' (
         version: _:
         pkgs.lib.nameValuePair "${flavor.namePrefix}${version}_debug" (
-          self'.packages."${flavor.namePrefix}${version}".debug
+          let
+            postgresql = self'.packages."${flavor.namePrefix}${version}";
+          in
+          if flavor.isOrioleDB then
+            (pkgs.symlinkJoin {
+              name = "${postgresql.name}-debug";
+              paths = [
+                postgresql.debug
+                self'.legacyPackages."psql_orioledb-${version}".exts.orioledb.debug
+                self'.packages."${flavor.namePrefix}${version}_src"
+              ];
+            }).overrideAttrs
+              {
+                allowSubstitutes = true;
+                preferLocalBuild = false;
+              }
+          else
+            postgresql.debug
         )
       ) flavor.versions)
     ) { } flavors;
