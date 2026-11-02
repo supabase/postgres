@@ -15,6 +15,10 @@
           # vde2 is only here because of the tzdata override causing wolfssl to be rebuilt.
           # wolfssl's own test suite fails on the CI runners.
           # vde2 only uses wolfssl for vde_cryptcab, which the VM tests don't need, so build vde2 without it.
+          #
+          # pre-commit is only here because the tzdata override causes it to be rebuilt.
+          # Its test suite needs dotnet-sdk, which would then be built from source and fails.
+          # Skip the tests.
           (
             final: prev:
             let
@@ -62,6 +66,16 @@
                 {
                   buildInputs = final.lib.remove final.wolfssl old.buildInputs;
                   configureFlags = (old.configureFlags or [ ]) ++ [ "--disable-cryptcab" ];
+                }
+              );
+              pre-commit = prev.pre-commit.overridePythonAttrs (
+                _:
+                assert final.lib.assertMsg (prev.tzdata.version < version)
+                  "nixpkgs tzdata ${prev.tzdata.version} is not older than ${version}; remove the pre-commit override";
+                {
+                  doCheck = false;
+                  dontUsePytestCheck = true;
+                  preCheck = "";
                 }
               );
             }
