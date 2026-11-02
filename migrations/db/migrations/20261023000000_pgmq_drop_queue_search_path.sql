@@ -8,7 +8,7 @@
 -- one an instance currently has.
 do $$
 begin
-  if to_regprocedure('pgmq.drop_queue(text)') is not null then
+  if pg_catalog.to_regprocedure('pgmq.drop_queue(text)') is not null then
     alter function pgmq.drop_queue(text) set search_path = pg_catalog, pg_temp;
   end if;
   if to_regprocedure('pgmq.drop_queue(text, boolean)') is not null then
