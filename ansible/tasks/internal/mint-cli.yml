@@ -1,0 +1,31 @@
+- name: Download mint-cli archive
+  ansible.builtin.get_url:
+    url: "{{ mint_cli_artifacts[platform]['url'] }}"
+    checksum: "{{ mint_cli_artifacts[platform]['checksum'] }}"
+    dest: /tmp/mint-cli.tar.xz
+    timeout: 90
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
+
+# The archive holds one member, renamed on extract so the task does not depend on its name.
+- name: mint-cli - unpack binary in /usr/local/bin
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: /tmp/mint-cli.tar.xz
+    dest: /usr/local/bin/
+    extra_opts:
+      - --transform=s,.*,mint-cli,
+
+- name: mint-cli - set owner and mode
+  ansible.builtin.file:
+    path: /usr/local/bin/mint-cli
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: mint-cli - remove archive
+  ansible.builtin.file:
+    path: /tmp/mint-cli.tar.xz
+    state: absent
