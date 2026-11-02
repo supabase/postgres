@@ -24,8 +24,12 @@
 
       debugPaths =
         version:
-        [ self'.packages."postgresql_${version}_debug" ]
-        ++ lib.optionals (version != "orioledb-17") (pgrxDebugPaths version);
+        lib.optionals pkgs.stdenv.isLinux [ self'.packages."postgresql_${version}_debug" ]
+        ++ lib.optionals (pkgs.stdenv.isLinux && version != "orioledb-17") (pgrxDebugPaths version)
+        ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
+          self'.legacyPackages."psql_${version}".exts.orioledb.debug
+          self'.packages."postgresql_${version}_src"
+        ];
 
       makePostgresEnvDebug =
         version:
@@ -38,12 +42,24 @@
             preferLocalBuild = false;
           };
 
+      debugEnvPath =
+        version:
+        pkgs.runCommand "postgres-debug-env-path"
+          {
+            debugEnv = makePostgresEnvDebug version;
+            __structuredAttrs = true;
+            unsafeDiscardReferences.out = true;
+          }
+          ''
+            echo -n "$debugEnv" > $out
+          '';
+
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
           text = ''
-            nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath}
+            nix-store --realise "$(cat ${debugEnvPath version})"
           '';
         };
 
@@ -86,14 +102,12 @@
         postgres-env-15 = makePostgresEnv "15";
         postgres-env-17 = makePostgresEnv "17";
         postgres-env-orioledb-17 = makePostgresEnv "orioledb-17";
-        nix-store-paths-15 = makeNixStorePaths "15";
-        nix-store-paths-17 = makeNixStorePaths "17";
-        nix-store-paths-orioledb-17 = makeNixStorePaths "orioledb-17";
-      }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
         postgres-env-15-debug = makePostgresEnvDebug "15";
         postgres-env-17-debug = makePostgresEnvDebug "17";
         postgres-env-orioledb-17-debug = makePostgresEnvDebug "orioledb-17";
+        nix-store-paths-15 = makeNixStorePaths "15";
+        nix-store-paths-17 = makeNixStorePaths "17";
+        nix-store-paths-orioledb-17 = makeNixStorePaths "orioledb-17";
       };
     };
 }
