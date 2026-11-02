@@ -16,6 +16,14 @@
           nix-store-paths = self'.packages."nix-store-paths-${version}";
           postgresMajorVersion = version;
         };
+      makeQemuImageTestStamp =
+        version:
+        pkgs.callPackage ./qemu-image-test-stamp.nix {
+          inherit mkStamped;
+          inherit (self'.packages) build-qemu-image;
+          nix-store-paths = self'.packages."nix-store-paths-${version}";
+          postgresMajorVersion = version;
+        };
     in
     {
       packages = {
@@ -24,6 +32,7 @@
         ami-test-stamp-orioledb-17 = makeAmiTestStamp "orioledb-17";
         build-ami = pkgs.callPackage ./build-ami { inherit (self'.packages) packer; };
         build-qemu-image = pkgs.callPackage ./build-qemu-image { inherit (self'.packages) packer; };
+        qemu-image-stamp-17 = makeQemuImageTestStamp "17";
       };
       legacyPackages = lib.optionalAttrs pkgs.stdenv.isLinux {
         inherit (self'.packages) build-ami build-qemu-image;
