@@ -225,7 +225,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   checks:
-    name: Nix Checks ✅
+    name: Checks ✅
     runs-on: blacksmith-2vcpu-ubuntu-2404
     needs:
       - checks-aarch64-darwin
