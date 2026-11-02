@@ -164,7 +164,7 @@ build {
   }
 
   provisioner "file" {
-    source      = "testinfra/manifest-snapshot.sh"
+    source      = "packer/scripts/manifest-snapshot.sh"
     destination = "/tmp/manifest-snapshot.sh"
   }
 
