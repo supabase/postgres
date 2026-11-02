@@ -58,7 +58,9 @@ create role test_valid_user_password with login password 'valid_password' valid 
 -- Update the pg_authid catalog directly to replace with a known SCRAM hash
 update pg_authid set rolpassword = 'SCRAM-SHA-256$4096:testsaltbase64$storedkeybase64$serverkeybase64' where rolname = 'test_valid_user_password';
 
-select pgbouncer.get_auth('test_expired_user_password');
+-- Expand the result so psql can display a null password explicitly.
+\pset null '<null>'
+select * from pgbouncer.get_auth('test_expired_user_password');
 
 select pgbouncer.get_auth('test_valid_user_password');
 
