@@ -7,9 +7,11 @@
       ...
     }:
     let
+      mkStamped = pkgs.callPackage ./mk-stamped.nix { };
       makeAmiTestStamp =
         version:
         pkgs.callPackage ./ami-test-stamp.nix {
+          inherit mkStamped;
           inherit (self'.packages) build-ami;
           nix-store-paths = self'.packages."nix-store-paths-${version}";
           postgresMajorVersion = version;
