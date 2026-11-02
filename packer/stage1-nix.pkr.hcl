@@ -1,3 +1,7 @@
+variable "supa_tripwire_dir" {
+  type = string
+}
+
 variable "ami_name" {
   type = string
 }
@@ -227,6 +231,11 @@ build {
   provisioner "file" {
     source      = "ansible"
     destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    source      = "${var.supa_tripwire_dir}/"
+    destination = "/tmp/ansible-playbook/ansible/files/supa_tripwire/"
   }
 
   provisioner "shell" {

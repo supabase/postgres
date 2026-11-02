@@ -1,4 +1,5 @@
 {
+  awscli2,
   cloud-utils,
   coreutils,
   gitMinimal,
@@ -11,6 +12,7 @@ writeShellApplication {
   name = "build-qemu-image";
 
   runtimeInputs = [
+    awscli2
     cloud-utils
     coreutils
     gitMinimal

@@ -56,6 +56,8 @@ postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" an
 # Build the cloud-init seed ISO before invoking packer.
 cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
 
+bash packer/scripts/fetch-supa-tripwire.sh "$arch" "$workdir/supa-tripwire"
+
 nix_store_paths=$(cat "$(nix build --no-link --print-out-paths "github:supabase/postgres/$git_sha#packages.$system.nix-store-paths-$postgres_major_version")")
 export LC_ALL=C.UTF-8
 export TZ=UTC
@@ -68,5 +70,6 @@ PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "postgres-version=$postgres_version" \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
+	-var "supa_tripwire_dir=$workdir/supa-tripwire" \
 	-var "workdir=$workdir" \
 	packer/qemu.pkr.hcl

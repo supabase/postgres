@@ -1,14 +1,18 @@
-- name: Supa-tripwire - download archive
-  ansible.builtin.get_url:
-    url: "{{ supa_tripwire_artifacts[platform]['url'] }}"
-    checksum: "{{ supa_tripwire_artifacts[platform]['checksum'] }}"
-    dest: "/tmp/supa-tripwire.tar.xz"
+- name: Supa-tripwire - copy archive
+  ansible.builtin.copy:
+    src: "files/supa_tripwire/supa-tripwire-v{{ supa_tripwire_release }}-{{ platform }}.tar.xz"
+    dest: /tmp/supa-tripwire.tar.xz
     mode: "0600"
-    timeout: 90
-  register: download_result
-  until: download_result is succeeded
-  retries: 3
-  delay: 2
+
+- name: Supa-tripwire - checksum archive
+  ansible.builtin.stat:
+    path: /tmp/supa-tripwire.tar.xz
+    checksum_algorithm: sha256
+  register: supa_tripwire_archive
+
+- name: Supa-tripwire - verify archive
+  ansible.builtin.assert:
+    that: supa_tripwire_archive.stat.checksum == supa_tripwire_sha256[platform]
 
 - name: Supa-tripwire - extract binary
   ansible.builtin.unarchive:

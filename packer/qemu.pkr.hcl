@@ -10,6 +10,10 @@ variable "postgres_major_version" {
   default = ""
 }
 
+variable "supa_tripwire_dir" {
+  type = string
+}
+
 # Working dir to pick up non-source files and put output files
 variable "workdir" {
   type = string
@@ -87,6 +91,11 @@ build {
   provisioner "file" {
     source      = "ansible"
     destination = "/tmp/ansible-playbook"
+  }
+
+  provisioner "file" {
+    source      = "${var.supa_tripwire_dir}/"
+    destination = "/tmp/ansible-playbook/ansible/files/supa_tripwire/"
   }
 
   provisioner "file" {

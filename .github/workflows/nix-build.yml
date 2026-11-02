@@ -267,6 +267,8 @@ jobs:
   qemu:
     needs: builds-aarch64-linux
     uses: $/.github/workflows/qemu-image-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
 
   check:
     name: CI ✅

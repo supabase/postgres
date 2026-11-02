@@ -97,6 +97,9 @@
 - name: Install supa-tripwire
   ansible.builtin.import_tasks:
     file: internal/supa-tripwire.yml
+  when: >-
+    lookup('ansible.builtin.fileglob',
+    playbook_dir ~ '/files/supa_tripwire/supa-tripwire-v' ~ supa_tripwire_release ~ '-' ~ platform ~ '.tar.xz') | length > 0
 
 - name: Install adminapi
   ansible.builtin.import_tasks:

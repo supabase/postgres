@@ -2,6 +2,10 @@ name: Build QEMU image
 
 on:
   workflow_call:
+    secrets:
+      DEV_AWS_ROLE:
+        description: AWS role used to fetch the supa-tripwire archive
+        required: true
     inputs:
       arch:
         description: Guest architecture (amd64 is experimental and publishes only to staging)
@@ -44,10 +48,17 @@ jobs:
       artifact: ${{ inputs.publish && format('qemu-image-{0}', inputs.arch || 'arm64') || '' }}
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: us-east-1
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
@@ -84,6 +95,7 @@ jobs:
       - name: Build QEMU artifact
         env:
           GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
+          SUPA_TRIPWIRE_REQUIRED: ${{ inputs.publish && '1' || '' }}
         run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "$POSTGRES_MAJOR_VERSION" "$TARGET_ARCH"
 
       - name: Grab release version

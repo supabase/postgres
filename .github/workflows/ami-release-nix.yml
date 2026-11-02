@@ -88,6 +88,7 @@ jobs:
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
           AMI_RELEASE: "true"
+          SUPA_TRIPWIRE_REQUIRED: "1"
           arch: ${{ matrix.target.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}

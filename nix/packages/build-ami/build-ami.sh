@@ -125,9 +125,13 @@ packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 
 echo "::group::AMI Build: Stage 1"
 
+supa_tripwire_dir=$(mktemp -d)
+bash packer/scripts/fetch-supa-tripwire.sh "$arch" "$supa_tripwire_dir"
+
 packer build "${common_packer_args[@]}" \
 	-var "ami_name=$ami_name-stage-1" \
 	-var "input-hash=$input_hash" \
+	-var "supa_tripwire_dir=$supa_tripwire_dir" \
 	packer/stage1-nix.pkr.hcl
 
 stage1_ami_id=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
