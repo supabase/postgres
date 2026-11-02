@@ -53,6 +53,7 @@
         ../ext/hypopg.nix
         ../ext/pg_tle.nix
         ../ext/wrappers/default.nix
+        # Remove only after initiate.sh and existing hosts use the site profile.
         ../ext/supautils.nix
         ../ext/plv8
       ];
