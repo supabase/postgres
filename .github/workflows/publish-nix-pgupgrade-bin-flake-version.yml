@@ -1,4 +1,4 @@
-name: Publish nix pg_upgrade_bin flake version
+name: Publish pg_upgrade_bin flake version
 
 on:
   workflow_dispatch:

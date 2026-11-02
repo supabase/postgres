@@ -62,7 +62,7 @@ Implementation-wise, most of the code lives in the `/nix/packages/github-matrix/
 
 KVM packages and large packages are determined respectively by the `kvm` and `big-parallel` Nix attributes.
 
-GHA-wise, `github_matrix.py` is instantiated in the `Generate Nix Matrix` step of `.github/workflows/nix-build.yml` through a `nix run` call. The resulting json map is stored in the workflow output and later used by the subsequent steps.
+GHA-wise, `github_matrix.py` is instantiated in the `Generate Build Matrix` step of `.github/workflows/nix-build.yml` through a `nix run` call. The resulting json map is stored in the workflow output and later used by the subsequent steps.
 
 ### Step 2: Build
 

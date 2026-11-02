@@ -54,7 +54,7 @@ jobs:
           path: /tmp/drvpaths/*.json
           retention-days: 1
 
-      - name: Generate Nix Matrix
+      - name: Generate Build Matrix
         id: gen-matrix
         run: |
           nix run .#github-matrix -- --eval-output=eval.json checks legacyPackages
@@ -265,7 +265,7 @@ jobs:
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   check:
-    name: Nix CI ✅
+    name: CI ✅
     if: always()
     runs-on: blacksmith-2vcpu-ubuntu-2404
     needs:
