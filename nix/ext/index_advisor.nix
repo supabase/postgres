@@ -67,7 +67,7 @@ let
 
       meta = with lib; {
         description = "Recommend indexes to improve query performance in PostgreSQL";
-        homepage = "https://github.com/olirice/index_advisor";
+        homepage = "https://github.com/supabase/index_advisor";
         license = licenses.postgresql;
         inherit (postgresql.meta) platforms;
       };

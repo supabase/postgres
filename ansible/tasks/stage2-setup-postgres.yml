@@ -26,6 +26,12 @@
             regexp: 'db_user_namespace\ =\ off'
             replace: '#db_user_namespace\ =\ off'
 
+        - name: Enable summarize_wal in postgresql.conf if orioledb-17 or 17 build
+          ansible.builtin.replace:
+            path: '/etc/postgresql/postgresql.conf'
+            regexp: '^#summarize_wal = off'
+            replace: 'summarize_wal = on'
+
     - name: Execute things when is_psql_oriole and stage2
       when: stage2 and is_psql_oriole
       become: true
@@ -56,25 +62,17 @@
   when: stage2
   become: true
   block:
-    - name: Resolve postgres env store path
-      ansible.builtin.shell: |
-        sudo -u postgres bash -c "
-          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix build --no-link --print-out-paths github:supabase/postgres/{{ git_commit_sha }}#postgres-env-{{ postgresql_major_version }}
-        "
-      register: postgres_env_path
-
     - name: Install postgres env from nix binary cache
       ansible.builtin.shell: |
-        sudo -u postgres bash -c "
-          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-          nix-env --set {{ postgres_env_path.stdout }}
-        "
+        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
+        nix-env --quiet --set {{ nix_store_paths['postgres-env'] }}
+      become: true
+      become_user: postgres
 
     - name: Install and activate site env from nix binary cache
       ansible.builtin.shell: |
         . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh &&
-        nix-env --profile /nix/var/nix/profiles/site --set {{ site_env_path }} &&
+        nix-env --profile /nix/var/nix/profiles/site --set {{ nix_store_paths['site-env'] }} &&
         /nix/var/nix/profiles/site/bin/activate
 
     - name: Set ownership and permissions for file and dirs
@@ -126,11 +124,13 @@
             - name: Create symbolic link for linux-pam to find pam_jit_pg.so
               become: yes
               shell: |
-                sudo ln -s /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
+                ln -s /var/lib/postgresql/.nix-profile/lib/security/pam_jit_pg.so $(find /nix/store -type d -path "/nix/store/*-linux-pam-*/lib/security" -print -quit)/pam_jit_pg.so
 
             - name: Get gatekeeper version
               ansible.builtin.shell: |
-                sudo -u postgres bash -c "/nix/var/nix/profiles/default/bin/nix-store -q --requisites ~/.nix-profile | awk -F- '/gatekeeper/{print \$NF}'"
+                /nix/var/nix/profiles/default/bin/nix-store -q --requisites /var/lib/postgresql/.nix-profile | awk -F- '/gatekeeper/{print $NF}'
+              become: true
+              become_user: postgres
               register: gatekeeper_version
 
             - name: Write version file
