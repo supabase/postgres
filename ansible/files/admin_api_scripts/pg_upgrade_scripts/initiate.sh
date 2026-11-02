@@ -623,6 +623,10 @@ $(cat /etc/postgresql/pg_hba.conf)" >/etc/postgresql/pg_hba.conf
 		sed -i '/^db_user_namespace/d' "$TMP_CONFIG"
 	fi
 
+	# The site profile link (/nix/var/nix/profiles/site/lib/postgresql) holds extensions (supautils) built for the old major version, which the new cluster can't load.
+	# Without this config both clusters load the copies bundled with their own postgres package from $libdir.
+	sed -i '/^dynamic_library_path/d' "$TMP_CONFIG"
+
 	chown postgres:postgres "$TMP_CONFIG"
 
 	UPGRADE_COMMAND=$(
