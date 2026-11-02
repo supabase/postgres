@@ -1,4 +1,4 @@
-name: Testinfra Integration Tests Nix
+name: Testinfra Integration Tests
 
 on:
   workflow_call:
