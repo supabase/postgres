@@ -37,6 +37,14 @@ adminmgr_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
     checksum: sha256:3477bb0c4dc8e6fea72b1237558cf048de675e211021f9790ef7c134e7452cf3
+supa_tripwire_release: 0.2.0
+supa_tripwire_artifacts:
+  amd64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supa-tripwire/supa-tripwire-v{{ supa_tripwire_release }}-amd64.tar.xz"
+    checksum: sha256:7d81ce39815d8f1f1732153b753987271f6e9a84838cfdc4e538f44927b746ef
+  arm64:
+    url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supa-tripwire/supa-tripwire-v{{ supa_tripwire_release }}-arm64.tar.xz"
+    checksum: sha256:cf2e6486d53626fff1312f45500bcacad418dd49eed83560dd58e28a0ec9432d
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
