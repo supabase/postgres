@@ -42,24 +42,12 @@
             preferLocalBuild = false;
           };
 
-      debugEnvPath =
-        version:
-        pkgs.runCommand "postgres-debug-env-path"
-          {
-            debugEnv = makePostgresEnvDebug version;
-            __structuredAttrs = true;
-            unsafeDiscardReferences.out = true;
-          }
-          ''
-            echo -n "$debugEnv" > $out
-          '';
-
       realisePostgresDebug =
         version:
         pkgs.writeShellApplication {
           name = "realise-postgres-debug";
           text = ''
-            nix-store --realise "$(cat ${debugEnvPath version})"
+            nix-store --realise ${builtins.unsafeDiscardStringContext (makePostgresEnvDebug version).outPath}
           '';
         };
 
@@ -76,6 +64,7 @@
           ]
           ++ lib.optionals (pkgs.stdenv.isLinux && version != "15") [ self'.packages.gatekeeper ]
           ++ lib.optionals pkgs.stdenv.isLinux [ (realisePostgresDebug version) ]
+          # The orioledb coredump processor reads symbols from the profile, so they must be installed.
           ++ lib.optionals (pkgs.stdenv.isLinux && version == "orioledb-17") [
             (makePostgresEnvDebug version)
           ];
