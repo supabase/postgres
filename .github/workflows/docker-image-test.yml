@@ -89,7 +89,7 @@ jobs:
 
       - name: Diff Docker image manifest
         if: github.event_name == 'pull_request'
-        uses: ./.github/actions/diff-manifest
+        uses: $/.github/actions/diff-manifest
         with:
           key_prefix: docker-manifest-${{ matrix.name }}
           publish_hint: Publish one by running dockerhub-release-matrix.yml (push to develop).
@@ -136,9 +136,9 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@v7.0.1
 
-      - uses: ./.github/actions/post-manifest-comment
+      - uses: $/.github/actions/post-manifest-comment
         with:
           marker: docker-manifest-diff
           title: Docker image manifest diff

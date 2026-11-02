@@ -162,7 +162,7 @@ jobs:
 
       - name: Cache Docker image manifest
         if: matrix.arch == 'arm64'
-        uses: ./.github/actions/cache-manifest
+        uses: $/.github/actions/cache-manifest
         with:
           key_prefix: docker-manifest-${{ matrix.postgres.version }}
           version_label: ${{ steps.image.outputs.pg_version }}_${{ matrix.arch }}

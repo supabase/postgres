@@ -18,7 +18,7 @@ runs:
     - run: mv /tmp/manifest.txt /tmp/current-manifest.txt
       shell: bash
 
-    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - uses: actions/cache/restore@v6.1.0
       with:
         path: /tmp/manifest.txt
         key: ${{ inputs.key_prefix }}-
@@ -29,7 +29,7 @@ runs:
         PUBLISH_HINT: ${{ inputs.publish_hint }}
       run: nix run .#manifest-diff -- /tmp/manifest.txt /tmp/current-manifest.txt "$PUBLISH_HINT" /tmp/manifest-diff.txt
 
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+    - uses: actions/upload-artifact@v7.0.2
       with:
         name: ${{ inputs.artifact_name }}
         path: /tmp/manifest-diff.txt
