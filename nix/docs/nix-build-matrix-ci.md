@@ -2,7 +2,7 @@
 
 ## Incident Q/A
 
-Something broke the Nix CI, you need a quick and dirty fix to unblock you as fast as possible, follow these guides.
+Something broke the CI, you need a quick and dirty fix to unblock you as fast as possible, follow these guides.
 
 ### **Q:** A test is failing; how to ignore it and generate an AMI image anyway?
 
@@ -46,7 +46,7 @@ Both flags can be combined for tighter control over total memory consumption.
 
 ## Walkthrough the CI
 
-The Nix artifacts are built from the `Nix CI` workflow defined in the `.github/workflows/nix-build.yml` file.
+The Nix artifacts are built from the `CI` workflow defined in the `.github/workflows/nix-build.yml` file.
 
 It's performed in 4 steps. Each step depending on the previous one.
 
