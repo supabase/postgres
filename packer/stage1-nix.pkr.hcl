@@ -1,7 +1,3 @@
-variable "supa_tripwire_dir" {
-  type = string
-}
-
 variable "ami_name" {
   type = string
 }
@@ -233,15 +229,11 @@ build {
     destination = "/tmp/ansible-playbook"
   }
 
-  provisioner "file" {
-    source      = "${var.supa_tripwire_dir}/"
-    destination = "/tmp/ansible-playbook/ansible/files/supa_tripwire/"
-  }
-
   provisioner "shell" {
     environment_vars = [
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
+      "SUPA_TRIPWIRE_URL=${env("SUPA_TRIPWIRE_URL")}",
     ]
     use_env_var_file    = true
     script              = "packer/scripts/surrogate-bootstrap-nix.sh"

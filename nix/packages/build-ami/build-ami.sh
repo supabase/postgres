@@ -123,15 +123,14 @@ common_packer_args=(
 # both templates require the same plugins, so one init covers both stages
 packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 
-echo "::group::AMI Build: Stage 1"
+SUPA_TRIPWIRE_URL=$(aws s3 presign --region ap-southeast-1 --expires-in 3600 "s3://supabase-internal-artifacts/supa-tripwire/supa-tripwire-v$(yq -er .supa_tripwire_release ansible/vars.yml)-$arch.tar.xz" || true)
+export SUPA_TRIPWIRE_URL
 
-supa_tripwire_dir=$(mktemp -d)
-bash packer/scripts/fetch-supa-tripwire.sh "$arch" "$supa_tripwire_dir"
+echo "::group::AMI Build: Stage 1"
 
 packer build "${common_packer_args[@]}" \
 	-var "ami_name=$ami_name-stage-1" \
 	-var "input-hash=$input_hash" \
-	-var "supa_tripwire_dir=$supa_tripwire_dir" \
 	packer/stage1-nix.pkr.hcl
 
 stage1_ami_id=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")

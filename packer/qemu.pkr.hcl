@@ -10,10 +10,6 @@ variable "postgres_major_version" {
   default = ""
 }
 
-variable "supa_tripwire_dir" {
-  type = string
-}
-
 # Working dir to pick up non-source files and put output files
 variable "workdir" {
   type = string
@@ -94,11 +90,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "${var.supa_tripwire_dir}/"
-    destination = "/tmp/ansible-playbook/ansible/files/supa_tripwire/"
-  }
-
-  provisioner "file" {
     source      = "audit-specs"
     destination = "/tmp/ansible-playbook"
   }
@@ -121,7 +112,8 @@ build {
   provisioner "shell" {
     environment_vars = [
       "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
-      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
+      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
+      "SUPA_TRIPWIRE_URL=${env("SUPA_TRIPWIRE_URL")}"
     ]
     use_env_var_file    = true
     script              = "packer/scripts/qemu-bootstrap-nix.sh"

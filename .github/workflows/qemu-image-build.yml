@@ -95,7 +95,6 @@ jobs:
       - name: Build QEMU artifact
         env:
           GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
-          SUPA_TRIPWIRE_REQUIRED: ${{ inputs.publish && '1' || '' }}
         run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "$POSTGRES_MAJOR_VERSION" "$TARGET_ARCH"
 
       - name: Grab release version
