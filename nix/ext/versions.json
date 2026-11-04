@@ -276,15 +276,6 @@
       "hash": "sha256-/qpAfou/shsLKyUmJsya/Zph9nhdtQwXOcXpqmsOnIw=",
       "pgrx": "0.19.2",
       "rust": "1.97.1"
-    },
-    "1.6.3": {
-      "postgresql": [
-        "15",
-        "17"
-      ],
-      "hash": "sha256-fQJumk5P9C6NqyS2FmUFeOS24Rp89upyVUyyT87pPOg=",
-      "pgrx": "0.19.2",
-      "rust": "1.97.1"
     }
   },
   "pg_net": {
@@ -582,13 +573,6 @@
         "17"
       ],
       "hash": "sha256-MC87bqgtynnDhmNZAu96jvfCpsGDCPB0g5TZfRQHd30="
-    },
-    "0.3.2": {
-      "postgresql": [
-        "15",
-        "17"
-      ],
-      "hash": "sha256-TH5caaDajqZosEuv50o0ec5vxQI1TkIIprKDCFF4z1k="
     }
   },
   "timescaledb": {
