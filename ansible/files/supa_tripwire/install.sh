@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Usage: install.sh <version> <amd64|arm64> <sha256> [url]
-# url is a presigned URL, or an s3:// URL to presign with the caller's AWS credentials.
+# Usage: [SUPA_TRIPWIRE_URL=<url>] install.sh <version> <amd64|arm64> <sha256>
+# SUPA_TRIPWIRE_URL is a presigned URL, or an s3:// URL to presign with the caller's AWS credentials.
 # Defaults to the internal artifacts bucket. Safe to rerun on a live host.
 set -euo pipefail
 
@@ -12,7 +12,7 @@ archive=supa-tripwire-v$version-$arch.tar.xz
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-url=${4:-s3://supabase-internal-artifacts/supa-tripwire/$archive}
+url=${SUPA_TRIPWIRE_URL:-s3://supabase-internal-artifacts/supa-tripwire/$archive}
 [[ $url != s3://* ]] || url=$(aws s3 presign --region ap-southeast-1 "$url")
 curl -fsSL --retry 3 -o "$tmp/$archive" "$url"
 echo "$sha256  $tmp/$archive" | sha256sum -c --quiet -

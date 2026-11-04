@@ -96,9 +96,10 @@
 
 - name: Install supa-tripwire
   ansible.builtin.script:
-    cmd: "files/supa_tripwire/install.sh {{ supa_tripwire_release }} {{ platform }} {{ supa_tripwire_sha256[platform] }} {{ lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') }}"
+    cmd: "files/supa_tripwire/install.sh {{ supa_tripwire_release }} {{ platform }} {{ supa_tripwire_sha256[platform] }}"
+  environment:
+    SUPA_TRIPWIRE_URL: "{{ lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') }}"
   when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
-  no_log: true
 
 - name: Install adminapi
   ansible.builtin.import_tasks:
