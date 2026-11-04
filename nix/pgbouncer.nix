@@ -17,7 +17,7 @@ let
   # The Git tags look like pgbouncer_1_25_1.
   # We keep the tag here and build the version from it.
   # renovate: datasource=github-tags depName=pgbouncer packageName=pgbouncer/pgbouncer versioning=regex:^pgbouncer_(?<major>\d+)_(?<minor>\d+)_(?<patch>\d+)$
-  tag = "pgbouncer_1_25_1";
+  tag = "pgbouncer_1_26_1";
 in
 stdenv.mkDerivation rec {
   pname = "pgbouncer";
@@ -25,7 +25,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://www.pgbouncer.org/downloads/files/${version}/${pname}-${version}.tar.gz";
-    hash = "sha256-blZq6S/j739qG54m1gSffXyjnEDinns49tVQCuFdhGU=";
+    hash = "sha256-AIhqKZS0hEzTcRCXDfd3dyz8QqdMQAUiyC+6UJo/Qtk==";
   };
 
   nativeBuildInputs = [
