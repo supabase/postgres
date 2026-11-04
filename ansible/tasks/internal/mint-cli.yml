@@ -30,3 +30,26 @@
   ansible.builtin.file:
     path: /tmp/mint-cli.tar.xz
     state: absent
+
+# Salt's formula.mint owns these units and the renew script they run, and
+# enables the timer only in listed regions.
+- name: Install mint-token systemd units
+  ansible.builtin.copy:
+    src: "files/mint_cli/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - mint-token.service
+    - mint-token.timer
+
+- name: Reload systemd for mint-token units
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Disable the mint-token timer
+  ansible.builtin.systemd:
+    name: mint-token.timer
+    enabled: false
+    state: stopped

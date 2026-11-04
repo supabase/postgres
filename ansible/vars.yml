@@ -72,14 +72,14 @@ gotrue_artifacts:
   arm64:
     url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
     checksum: sha256:b129d0b32520a975a4f0576eb1b7836b82043997d2d021676ff24cec54eb5381
-mint_cli_release: 0.1.0
+mint_cli_release: 0.2.0
 mint_cli_artifacts:
   amd64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-amd64.tar.xz
-    checksum: sha256:dac0ac8faf84f8ab9dfde261c530590f2784f5c3dc91ac364b3b8ec0fd5d6260
+    checksum: sha256:804f154dc571778c8b9a009b978e09b3e5b0222e287abbe92c76f0bebdfb2759
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-arm64.tar.xz
-    checksum: sha256:13040280f8dfe1155b8460d7f35e6a1e04d0167fdf2867678dfb1b117485c581
+    checksum: sha256:afc4dc6256806acb346ecd43b94e7400f707f8cbcd88cb8cb43a0785833ca777
 postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
