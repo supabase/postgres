@@ -149,6 +149,8 @@ let
   # we forgot parentheses
   finalArgs = argsForBuildRustPackage // {
     buildInputs = (args.buildInputs or [ ]);
+    separateDebugInfo = true;
+    stripAllList = args.stripAllList or [ "lib" ];
 
     nativeBuildInputs =
       (args.nativeBuildInputs or [ ])
