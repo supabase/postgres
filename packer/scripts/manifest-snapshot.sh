@@ -13,10 +13,19 @@ if ! command -v bsdtar >/dev/null 2>&1; then
 fi
 
 cd /
-bsdtar --format=mtree \
-	--options='!all,type,mode,uid,gid,sha256digest,link' \
-	--exclude=./dev --exclude=./proc --exclude=./run --exclude=./sys --exclude=./tmp --exclude=./var/log --exclude=./data \
-	-cf - . 2>/dev/null | sort
+{
+	bsdtar --format=mtree \
+		--options='!all,type,mode,uid,gid,sha256digest,link' \
+		--exclude=./dev --exclude=./proc --exclude=./run --exclude=./sys --exclude=./tmp --exclude=./var/log --exclude=./data \
+		--exclude='./etc/ssh/ssh_host_*' --exclude=./etc/machine-id --exclude=./nix/store/.links \
+		--exclude=./etc/fstab --exclude=./boot/grub/grub.cfg \
+		-cf - . 2>/dev/null
+	for f in ./etc/fstab ./boot/grub/grub.cfg; do
+		[ -f "$f" ] || continue
+		h=$(sed -E 's/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|[0-9A-F]{4}-[0-9A-F]{4}/UUID/g' "$f" | sha256sum | cut -d' ' -f1)
+		echo "$f type=file uuid-normalized sha256digest=$h"
+	done
+} | sort
 
 if [ "$INSTALLED" = 1 ]; then
 	if command -v apt-get >/dev/null 2>&1; then

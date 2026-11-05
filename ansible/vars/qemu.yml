@@ -23,7 +23,7 @@ postgres_exporter_extra_flags:
   - --no-collector.database
 
 supabase_admin_agent_salt:
-  args: salt --apply --store-result --targets-key  targetsv3-main.yaml
+  args: salt --apply --store-result --targets-key targetsv3-main.yaml
   user: root
   group: root
 # We're using a significantly lower frequency for triggering this agent on qemu
