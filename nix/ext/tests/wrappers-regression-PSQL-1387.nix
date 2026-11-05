@@ -3,6 +3,9 @@ let
   pname = "wrappers";
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
   testLib = import ./lib.nix { inherit self pkgs; };
+  testPkgs = import self.inputs.nixpkgs-nixos-tests {
+    inherit (pkgs.pkgsLinux.stdenv.hostPlatform) system;
+  };
 
   pgUpgradeScripts = builtins.path {
     path = ../../../ansible/files/admin_api_scripts/pg_upgrade_scripts;
@@ -18,10 +21,10 @@ let
 
   versions = builtins.toJSON { "15" = self.legacyPackages.${system}.psql_15.exts.${pname}.versions; };
 in
-pkgs.testers.runNixOSTest {
+testPkgs.testers.runNixOSTest {
   name = "wrappers-regression-PSQL-1387";
   extraPythonPackages = _: [ testsLibPy ];
-  nodes.server = {
+  containers.server = {
     imports = [
       (testLib.makeSupabaseTestConfig {
         majorVersion = "15";

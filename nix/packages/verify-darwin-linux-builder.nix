@@ -90,6 +90,12 @@ writeShellApplication {
         check_fail "nixos-test feature not configured" \
           "Expected: nixos-test in $MACHINES_FILE"
       fi
+      if grep -q "uid-range" "$MACHINES_FILE"; then
+        check_pass "uid-range feature supported"
+      else
+        check_fail "uid-range feature not configured" \
+          "Expected: uid-range in $MACHINES_FILE"
+      fi
     else
       check_fail "machines file not found" \
         "Expected: $MACHINES_FILE"

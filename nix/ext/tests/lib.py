@@ -5,9 +5,9 @@ tested across multiple PostgreSQL versions and extension versions. It handles
 installation, upgrades, and version verification of PostgreSQL extensions.
 """
 
-from typing import Sequence, Mapping, Optional
+from typing import Any, Sequence, Mapping, Optional
 from pathlib import Path
-from test_driver.machine import Machine
+
 
 Versions = Mapping[str, Sequence[str]]
 
@@ -15,7 +15,7 @@ Versions = Mapping[str, Sequence[str]]
 class PostgresExtensionTest(object):
     def __init__(
         self,
-        vm: Machine,
+        vm: Any,
         extension_name: str,
         versions: Versions,
         sql_test_dir: Path,
