@@ -35,6 +35,32 @@ jobs:
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
+      - name: Push flake inputs to binary cache
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          script=
+          for dir in /etc/nix "$HOME/.config/nix"; do
+            if [[ -x $dir/upload-to-cache.sh ]]; then
+              script=$dir/upload-to-cache.sh
+              break
+            fi
+          done
+          if [[ -z $script ]]; then
+            exit 0
+          fi
+          cmd=()
+          if [[ ! -O $script ]]; then
+            cmd=(sudo -H)
+          fi
+          # xargs appends the store paths as args; the script reads them space-separated from OUT_PATHS
+          # shellcheck disable=SC2016
+          cmd+=(bash -c 'OUT_PATHS=$* exec "$0"' "$script")
+          nix flake archive --json \
+            | jq -r '.inputs | .. | .path? // empty' \
+            | sort -u \
+            | xargs --no-run-if-empty "${cmd[@]}"
+
       # shared with version-diff's HEAD side
       - name: Evaluate drvPaths for version-diff
         if: github.event_name == 'pull_request'
