@@ -23,6 +23,11 @@ permissions:
 jobs:
   build:
     uses: $/.github/workflows/qemu-image-build.yml
+    permissions:
+      contents: read
+      id-token: write
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
     with:
       arch: ${{ inputs.arch || 'arm64' }}
       publish: true

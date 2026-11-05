@@ -1,3 +1,8 @@
+variable "supa_tripwire_url" {
+  type    = string
+  default = env("SUPA_TRIPWIRE_URL")
+}
+
 variable "ami_name" {
   type = string
 }
@@ -233,6 +238,7 @@ build {
     environment_vars = [
       "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
       "POSTGRES_SUPABASE_VERSION=${var.postgres-version}",
+      "SUPA_TRIPWIRE_URL=${var.supa_tripwire_url}",
     ]
     use_env_var_file    = true
     script              = "packer/scripts/surrogate-bootstrap-nix.sh"
