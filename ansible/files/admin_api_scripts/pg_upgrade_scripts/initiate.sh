@@ -133,12 +133,18 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
+  # jparem : $LOG_FILE exists, even if directory
+  # ${MOUNT_POINT}/pgdata/pg_upgrade_output.d/ does not!
+  # so removing the ship-ing of the log here rather than the conditional block
+  # down there..
+  # https://linear.app/supabase/issue/MPG-1531/initiatesh-call-ship-logs-no-matter-what
+	ship_logs "$LOG_FILE" || true
+
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		ship_logs "$LOG_FILE" || true
 		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
 		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
 	fi
@@ -586,21 +592,6 @@ EXTRA_NIX_CONF
 		export LD_LIBRARY_PATH="${PGLIBNEW}"
 	fi
 
-	log "9. Creating new data directory, initializing database"
-	chown -R postgres:postgres "$MOUNT_POINT/"
-	rm -rf "${PGDATANEW:?}/"
-
-	if [ "$IS_NIX_UPGRADE" = "true" ]; then
-		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
-			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-		else
-			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-		fi
-	else
-		su -c "$PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-
-	fi
-
 	# This line avoids the need to supply the supabase_admin password on the old
 	# instance, since pg_upgrade connects to the db as supabase_admin using unix
 	# sockets, which is gated behind scram-sha-256 per pg_hba.conf.j2. The new
@@ -625,6 +616,10 @@ $(cat /etc/postgresql/pg_hba.conf)" >/etc/postgresql/pg_hba.conf
 
 	chown postgres:postgres "$TMP_CONFIG"
 
+	# The site profile link (/nix/var/nix/profiles/site/lib/postgresql) holds extensions (supautils) built for the old major version, which the new cluster can't load.
+	# Without this config both clusters load the copies bundled with their own postgres package from $libdir.
+	sed -i '/^dynamic_library_path/d' "$TMP_CONFIG"
+
 	UPGRADE_COMMAND=$(
 		cat <<EOF
     time ${PGBINNEW}/pg_upgrade \
@@ -646,13 +641,7 @@ EOF
 		UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
 	fi
 
-	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
-		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
-	else
-		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
-	fi
-
-	log "10. Stopping postgres; running pg_upgrade"
+	log "9. Stopping SOURCE postgres and ensuring it says stopped"
 	# Extra work to ensure postgres is actually stopped
 	#  Mostly needed for PG12 projects with odd systemd unit behavior
 	if [ -z "$IS_CI" ]; then
@@ -668,9 +657,97 @@ EOF
 		CI_stop_postgres
 	fi
 
+  #CHECKSUM_FLAG="--data-checksums" if the SOURCE cluster has checksums
+  #CHECKSUM_FLAG=""                 if the SOURCE doesn't have them (yet)
+  #                                 in this case the following code adds them
+
+  if [[ "$CHECKSUM_FLAG" == "" ]]; then
+
+		# old db hasn't got checksum, we will enable it its overall size 
+    # (${PGDATAOLD}) is <= 20 Gb
+
+    # 20 gb = 20 x 1024 x 1024 = 20971520 
+    MAX_SIZE=20971520
+  
+    PGDATAOLD_SIZE=$(du -sk "${PGDATAOLD}" | cut -f1)
+
+    if [[ "$PGDATAOLD_SIZE" -le "$MAX_SIZE" ]]; then
+
+      log "9.1 adding checksums to SOURCE PG (<20 Gb)"
+
+		  # we're adding a timer: the "pg_checksum -e" operation on ${PGDATAOLD} must
+      # not run for more than 10 minutes otherwise we exist this code on error
+      # ofc, if the pg_checksums detects a physical corruption, we have to exit
+      # the program with a consistent message explaining the corruption
+  
+      MAX_DURATION="10m"
+      KILL_AFTER="15s"
+
+      timeout -k "${KILL_AFTER}" "${MAX_DURATION}" ${PGBINOLD}/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
+
+      # if everything is fine, $STATUS hasn't been defined, 
+      # so we initialize it with 0 because it's a success 
+      STATUS=${STATUS:-0}
+
+			# we'll manage ERROR codes down there, to actually log anything
+			# properly, for later diagnostic reading the $LOG_FILE into project
+			# where it has been shipped ship_logs() in common.sh
+
+      case $STATUS in
+         0) 
+           log "adding checksums SUCCEEDED."
+           ;;
+         124|137) 
+           log "adding checksums FAILED. Max time (${MAX_DURATION}) reached! Process killed."
+           exit 124
+           ;;
+         *)
+           log  "adding checksum FAILED with Error code ${STATUS}"
+           exit "$STATUS"
+           ;;
+      esac
+
+      # we're here if everything went well with STATUS=0
+      # so now, checksums are enabled on the SOURCE!  
+      CHECKSUM_FLAG="--data-checksums"
+      
+    else
+
+      log "9.1 did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+
+    fi
+
+  else
+  
+    log "9.1 checksums already present on SOURCE"
+
+  fi
+
+	log "10. Creating new data directory, initializing database"
+	chown -R postgres:postgres "$MOUNT_POINT/"
+	rm -rf "${PGDATANEW:?}/"
+
+	if [ "$IS_NIX_UPGRADE" = "true" ]; then
+		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
+			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+		else
+			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+		fi
+	else
+		su -c "$PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+	fi
+
+	log "11. pg_upgrade --check(ing) compatibility of old/new clusters"
+	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
+		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+	else
+		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+	fi
+
 	start_pid_lock_watcher
 
-	# Start the old PostgreSQL instance with version-specific options
+	# Start the pg_upgrade from PGDATAOLD to PGDATANEW..
+	log "12. pg_upgrade PGDATAOLD to PGDATANEW"
 	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	else
@@ -682,7 +759,7 @@ EOF
 	fi
 
 	# copying custom configurations
-	log "11. Copying custom configurations"
+	log "13. Copying custom configurations"
 	mkdir -p "$MOUNT_POINT/conf"
 	cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
 	# removing supautils config as to allow the latest one provided by the latest image to be used
@@ -693,12 +770,12 @@ EOF
 	rm -f "$MOUNT_POINT/conf/wal-g.conf"
 
 	# copy sql files generated by pg_upgrade
-	log "12. Copying sql files generated by pg_upgrade"
+	log "14. Copying sql files generated by pg_upgrade"
 	mkdir -p "$MOUNT_POINT/sql"
 	cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
 	chown -R postgres:postgres "$MOUNT_POINT/sql/"
 
-	log "13. Cleaning up"
+	log "15. Cleaning up"
 	cleanup "complete"
 }
 

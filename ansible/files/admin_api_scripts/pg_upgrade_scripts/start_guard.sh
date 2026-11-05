@@ -4,10 +4,15 @@
 # file copy. Sourced by initiate.sh and tests/pg_upgrade/test-start-guard.sh.
 # Expects log, IS_CI, PGDATAOLD and PGDATANEW from the caller.
 
-# From step 10 until cleanup, nothing may start the source postgres: pg_upgrade
-# copies the data files without a postmaster holding the directory, and a start
-# in that window (Salt's `service.running`, adminapi, Restart=always, ...)
-# yields a copy that is inconsistent with the dump. Two independent guards:
+# From step 9 until cleanup, nothing may start the source postgres: 
+# 
+# If it has to run, "pg_checksums -e" will operate on the source postgres, and 
+# this one has to stay stopped during the whole operation
+#
+# pg_upgrade copies the data files without a postmaster holding the directory,
+# and a start in that window (Salt's `service.running`, adminapi,
+# Restart=always, ...) yields a copy that is inconsistent with the dump. Two
+# independent guards:
 #  1. a runtime systemd drop-in that makes `systemctl start` fail while this
 #     script or pg_upgrade is alive (a SIGKILLed script must not leave the
 #     source blocked until a reboot);
