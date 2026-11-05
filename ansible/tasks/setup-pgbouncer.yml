@@ -62,7 +62,7 @@
 - name: PgBouncer - adjust pgbouncer.ini
   ansible.builtin.copy:
     dest: '/etc/pgbouncer/pgbouncer.ini'
-    mode: '0700'
+    mode: '0600'
     owner: 'pgbouncer'
     src: 'files/pgbouncer_config/pgbouncer.ini.j2'
 
