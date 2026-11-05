@@ -8,7 +8,7 @@
   mecab,
   pkg-config,
   rapidjson,
-  xxHash,
+  xxhash,
   zstd,
   makeWrapper,
   suggestSupport ? false,
@@ -38,14 +38,14 @@ stdenv.mkDerivation (finalAttrs: {
   ];
   buildInputs = [
     rapidjson
-    xxHash
+    xxhash
     zstd
     mecab
     kytea
     msgpack-c
   ]
   ++ lib.optionals lz4Support [ lz4 ]
-  ++ lib.optional zlibSupport [ zlib ]
+  ++ lib.optionals zlibSupport [ zlib ]
   ++ lib.optionals suggestSupport [
     zeromq
     libevent
