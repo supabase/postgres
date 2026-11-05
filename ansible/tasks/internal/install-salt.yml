@@ -33,7 +33,7 @@
 - name: Pin salt packages at major version
   ansible.builtin.copy:
     content: |
-      Package: salt-common salt-minion
+      Package: salt-minion salt-common
       Pin: version {{ salt_release.split('.')[0] }}.*
       Pin-Priority: 1001
     dest: /etc/apt/preferences.d/saltstack-pin
