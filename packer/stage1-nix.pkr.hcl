@@ -185,6 +185,11 @@ build {
   }
 
   provisioner "file" {
+    source      = "packer/scripts/provision-common.sh"
+    destination = "/tmp/provision-common.sh"
+  }
+
+  provisioner "file" {
     source      = "packer/scripts/chroot-bootstrap-nix.sh"
     destination = "/tmp/chroot-bootstrap-nix.sh"
   }
