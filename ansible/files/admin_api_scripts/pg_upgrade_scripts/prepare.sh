@@ -117,7 +117,7 @@ if ! umount_out=$(umount /data 2>&1); then
   # List the processes still using /data ("|| true" so a fuser failure
   # does not trigger the ERR trap and mask the real cause)
   log "Processes using /data:"
-  log "$(ls -l /proc/* 2>/dev/null | grep "data" || true)"
+  log "$(ls -l /proc/* 2>/dev/null | grep 'data' || true)"
   exit 1
 fi
 
