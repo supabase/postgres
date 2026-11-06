@@ -21,14 +21,14 @@ supabase_admin_agent_splay: 30s
 # Checksums can be verified or updated by running:                                                            #
 # nix run .#update-ansible-artifacts                                                                          #
 ###############################################################################################################
-adminapi_release: 0.124.0
+adminapi_release: 0.124.2
 adminapi_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
-    checksum: sha256:b63212ad15acc99c5f8cab0f80da1229ace14a8391252be7ffc53ce877da2976
+    checksum: sha256:5d2f1caa69425345acc6b4781f492742e95cc348acee567a5a786fdb9a42f328
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
-    checksum: sha256:5e9d0e2585968dc10e573e7b72252c38004994640906c9c2e6929c17af8cf923
+    checksum: sha256:c8762f6f12af6dd407157f410412f1894c2aabb3194881d64c224d9f193a2ed1
 adminmgr_release: 0.49.1
 adminmgr_artifacts:
   amd64:
