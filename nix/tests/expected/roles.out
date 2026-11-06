@@ -381,10 +381,7 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  information_schema | CREATE         | supabase_admin           | supabase_admin
  information_schema | USAGE          | supabase_admin           | supabase_admin
  net                | CREATE         | supabase_admin           | supabase_admin
- net                | USAGE          | anon                     | supabase_admin
- net                | USAGE          | authenticated            | supabase_admin
  net                | USAGE          | postgres                 | supabase_admin
- net                | USAGE          | service_role             | supabase_admin
  net                | USAGE          | supabase_admin           | supabase_admin
  net                | USAGE          | supabase_functions_admin | supabase_admin
  pg_catalog         | CREATE         | supabase_admin           | supabase_admin
@@ -523,7 +520,7 @@ order by schema_order, schema_name, privilege_type, grantee, default_for;
  vault              | USAGE          | postgres                 | supabase_admin
  vault              | USAGE          | service_role             | supabase_admin
  vault              | USAGE          | supabase_admin           | supabase_admin
-(389 rows)
+(386 rows)
 
 -- postgres can alter API roles' timeout
 set role postgres;
