@@ -26,3 +26,13 @@ create event trigger issue_pg_cron_access
     on ddl_command_end
     when tag in ('CREATE SCHEMA')
     execute procedure extensions.grant_pg_cron_access();
+
+-- simulate a running project that never received the pg_net grants migration: no routine, and
+-- the old upgrade script granted pg_net to anon, authenticated and service_role as supabase_admin,
+-- then support revoked anon by hand. The upgrade must ship the routine, hand the grants of
+-- authenticated and service_role to postgres and leave anon without one.
+drop function extensions.apply_pg_net_grants();
+grant usage on schema net to anon, authenticated, service_role;
+grant execute on function net.http_get, net.http_post to anon, authenticated, service_role;
+revoke usage on schema net from anon;
+revoke execute on function net.http_get, net.http_post from anon;

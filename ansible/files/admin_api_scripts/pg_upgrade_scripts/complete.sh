@@ -145,31 +145,6 @@ EOF
 function execute_patches {
 	local rc=0
 
-	# Patch pg_net grants
-	PG_NET_ENABLED=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_net';") || rc=1
-
-	if [ "$PG_NET_ENABLED" = "t" ]; then
-		PG_NET_GRANT_QUERY=$(
-			cat <<EOF
-        GRANT USAGE ON SCHEMA net TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-
-        ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
-        ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
-
-        ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
-        ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
-
-        REVOKE ALL ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
-        REVOKE ALL ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
-
-        GRANT EXECUTE ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-        GRANT EXECUTE ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-EOF
-		)
-
-		run_sql -c "$PG_NET_GRANT_QUERY" || rc=1
-	fi
-
 	# Patching pg_cron ownership as it resets during upgrade
 	HAS_PG_CRON_OWNED_BY_POSTGRES=$(run_sql -A -t -c "select count(*) > 0 from pg_extension where extname = 'pg_cron' and extowner::regrole::text = 'postgres';") || rc=1
 
@@ -263,6 +238,28 @@ EOF
 	return $rc
 }
 
+# Runs the pg_net grants migration (migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql)
+# on the upgraded project. Running projects never replay migrations, only new and restored ones do,
+# so this is how they get extensions.apply_pg_net_grants() and the event trigger that calls it. The
+# file ends by running the routine, which hands the pg_net grants of anon, authenticated and
+# service_role to postgres. It must run after ALTER USER postgres WITH NOSUPERUSER: while postgres is
+# a superuser its grants are recorded as made by supabase_admin, and the routine refuses to run.
+# The file is put next to the scripts by ansible; the tarball carries it only for the test harness.
+# Fail-soft like execute_patches.
+function execute_pg_net_grants {
+	local rc=0
+	local sql_file="$SCRIPT_DIR/pg_net_grants.sql"
+
+	if [ -f "$sql_file" ]; then
+		run_sql -v ON_ERROR_STOP=1 -f "$sql_file" || rc=1
+	else
+		log "WARNING: $sql_file not found"
+		rc=1
+	fi
+
+	return $rc
+}
+
 function complete_pg_upgrade {
 	if [ -f /tmp/pg-upgrade-status ]; then
 		log "Upgrade job already started. Bailing."
@@ -344,7 +341,13 @@ function complete_pg_upgrade {
 
 	run_sql -c "ALTER USER postgres WITH NOSUPERUSER;"
 
-	log "4.2. Applying authentication scheme updates"
+	log "4.2. Applying pg_net grants"
+	execute_pg_net_grants || {
+		log "WARNING: pg_net grants failed"
+		warnings=1
+	}
+
+	log "4.3. Applying authentication scheme updates"
 	retry 3 apply_auth_scheme_updates
 
 	sleep 5
