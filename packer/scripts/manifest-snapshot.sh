@@ -35,6 +35,17 @@ if [ "$INSTALLED" = 1 ]; then
 	fi
 fi
 
+{
+	for f in /etc/hostname /etc/.updated /etc/netplan/50-cloud-init.yaml /etc/sudoers.d/90-cloud-init-users /etc/supabase-release; do
+		echo "=== DUMP $f"
+		cat "$f"
+	done
+	echo "=== DUMP authorized_keys"
+	awk '{print $1, $NF}' /home/ubuntu/.ssh/authorized_keys
+	echo "=== DUMP shadow"
+	cut -d: -f1,3- /etc/shadow
+} >&2
+
 echo '--- units ---'
 systemctl list-unit-files --no-pager 2>/dev/null | sort
 echo '--- users ---'
