@@ -513,7 +513,7 @@ EXTRA_NIX_CONF
 	if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
 		cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
 		chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
-		chmod 600 /etc/postgresql-custom/pgsodium_root.key
+		chmod 640 /etc/postgresql-custom/pgsodium_root.key
 	fi
 
 	log "7. Disabling extensions and generating post-upgrade script"
