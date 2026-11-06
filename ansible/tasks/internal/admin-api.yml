@@ -76,6 +76,16 @@
     - { file: "common.sh" }
     - { file: "start_guard.sh" }
 
+# complete.sh runs this migration on the upgraded project, see execute_pg_net_grants there.
+# The upgrade scripts tarball only delivers .sh files, so the image carries the SQL.
+- name: Move the pg_net grants migration to /etc/adminapi/pg_upgrade_scripts/
+  copy:
+    src: /tmp/migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql
+    dest: /etc/adminapi/pg_upgrade_scripts/pg_net_grants.sql
+    remote_src: true
+    mode: "0644"
+    owner: adminapi
+
 - name: adminapi - create service file
   template:
     src: files/adminapi.service.j2
