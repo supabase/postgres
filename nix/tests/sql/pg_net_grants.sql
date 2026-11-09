@@ -41,7 +41,7 @@ group by r.rolname
 order by r.rolname collate "C";
 
 -- 1. fresh project: anon, authenticated and service_role have no grant of their own, postgres can
---    grant onward, supabase_functions_admin keeps its grant from supabase_admin
+--    grant onward, supabase_functions_admin keeps its grants from supabase_admin
 select * from net_acl;
 select * from net_access;
 
