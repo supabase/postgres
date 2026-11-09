@@ -1,6 +1,5 @@
 {
   coreutils,
-  openssl,
   writeShellApplication,
 }:
 # TODO(mmlb): consolidate the pgsodium getkey scripts onto this one.
@@ -10,10 +9,7 @@
 writeShellApplication {
   name = "pgsodium-getkey";
 
-  runtimeInputs = [
-    coreutils
-    openssl
-  ];
+  runtimeInputs = [ coreutils ];
 
   text = builtins.readFile ./getkey-script.sh;
 
