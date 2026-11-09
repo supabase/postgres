@@ -903,6 +903,11 @@
             ;
           devShell = self'.devShells.default;
         }
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+          schema-15 = self'.packages.schema-check-15;
+          schema-17 = self'.packages.schema-check-17;
+          schema-orioledb-17 = self'.packages.schema-check-orioledb-17;
+        }
         // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
           import ./ext/tests {
             inherit self;

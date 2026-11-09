@@ -101,7 +101,7 @@ Directory containing custom package definitions such as:
   - `start-replica.nix` - Replication tools
   - `migrate-tool.nix` - Migration utilities
   - `dbmate-tool/` - Regenerates `migrations/schema-<version>.sql` from the `schema-dump-<version>` packages
-  - `schema-dump/` - Dumps the schema the migrations produce, in a sandboxed build
+  - `schema-dump/`, `schema-check/` - Dump the migrated schema in a sandboxed build, and check it against the committed `schema-<version>.sql` (the `schema-<version>` checks)
   - `postgres.nix` - Postgres extension registry and ourExtensions list
 
 #### `nix/checks.nix`

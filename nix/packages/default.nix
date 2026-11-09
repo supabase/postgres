@@ -75,6 +75,12 @@
             };
           };
         };
+      makeSchemaCheck =
+        version:
+        pkgs.callPackage ./schema-check {
+          inherit version;
+          schemaDump = self'.packages."schema-dump-${version}";
+        };
     in
     {
       packages = (
@@ -119,6 +125,9 @@
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
+          schema-check-15 = makeSchemaCheck "15";
+          schema-check-17 = makeSchemaCheck "17";
+          schema-check-orioledb-17 = makeSchemaCheck "orioledb-17";
           schema-dump-15 = makeSchemaDump "15";
           schema-dump-17 = makeSchemaDump "17";
           schema-dump-orioledb-17 = makeSchemaDump "orioledb-17";
