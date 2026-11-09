@@ -7,10 +7,6 @@
 # service and unmount the data disk off the newly launched instance, to be
 # re-attached to the source instance and run the upgrade there.
 
-## Code hardened see
-## https://linear.app/supabase/issue/MPG-1283/harden-a-bit-preparesh
-
-#! /usr/bin/env bash
 set -Eeuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0")
