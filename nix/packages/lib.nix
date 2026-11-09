@@ -7,7 +7,7 @@
   stdenv,
 }:
 {
-  # TODO: make this into a proper package that uses writeShellApplication or so to pass in PATH deps and drop perl since we can use gnused
+  # TODO(mmlb): make this into a proper package that uses writeShellApplication or so to pass in PATH deps and drop perl since we can use gnused
   makePostgresDevSetup =
     {
       pkgs,

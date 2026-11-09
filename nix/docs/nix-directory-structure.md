@@ -100,7 +100,7 @@ Directory containing custom package definitions such as:
   - `start-client.nix` - PostgreSQL client tools
   - `start-replica.nix` - Replication tools
   - `migrate-tool.nix` - Migration utilities
-  - `dbmate-tool.nix` - Database migration tool
+  - `dbmate-tool/` - Database migration tool
   - `postgres.nix` - Postgres extension registry and ourExtensions list
 
 #### `nix/checks.nix`
