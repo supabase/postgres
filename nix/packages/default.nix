@@ -52,6 +52,28 @@
           nix-store-paths = self'.packages."nix-store-paths-${version}";
           postgresMajorVersion = version;
         };
+      # one port each so the schema checks can also run side by side outside the linux sandbox
+      schemaPorts = {
+        "15" = "5550";
+        "17" = "5551";
+        "orioledb-17" = "5552";
+      };
+      makeSchemaDump =
+        version:
+        pkgs.callPackage ./schema-dump {
+          inherit version;
+          port = schemaPorts.${version};
+          postgresql = self'.packages."psql_${version}/bin";
+          startServer = pkgs-lib.makePostgresDevSetup {
+            inherit pkgs;
+            name = "start-postgres-server-schema-${version}";
+            pgroonga = self'.legacyPackages."psql_${version}".exts.pgroonga;
+            extraSubstitutions = {
+              PGSODIUM_GETKEY = "${self'.packages.getkey-script}/bin/pgsodium-getkey";
+              PGSQL_DEFAULT_PORT = schemaPorts.${version};
+            };
+          };
+        };
     in
     {
       packages = (
@@ -63,7 +85,7 @@
           build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
           getkey-script = pkgs.callPackage ./getkey-script { };
-          dbmate-tool = pkgs.callPackage ./dbmate-tool { inherit (self.supabase) defaults; };
+          dbmate-tool = pkgs.callPackage ./dbmate-tool { };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
             psql_17_slim = self'.packages."psql_17_slim/bin";
@@ -96,6 +118,9 @@
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
+          schema-dump-15 = makeSchemaDump "15";
+          schema-dump-17 = makeSchemaDump "17";
+          schema-dump-orioledb-17 = makeSchemaDump "orioledb-17";
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";

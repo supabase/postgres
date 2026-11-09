@@ -7,18 +7,20 @@ from the root of the `supabase/postgres` project, you can run the following comm
 Usage: nix run .#dbmate-tool -- [options]
 
 Options:
-  -v, --version [15|16|orioledb-17|all]  Specify the PostgreSQL version to use (required defaults to --version all)
-  -p, --port PORT                    Specify the port number to use (default: 5435)
-  -h, --help                         Show this help message
+  -v, --version [15|17|orioledb-17|all]  PostgreSQL version to regenerate the schema for, repeatable (default: all)
+  -f, --flake-url URL                    Flake to build the schema from (default: .)
+  -h, --help                             Show this help message
 
 Description:
-  Runs 'dbmate up' against a locally running the version of database you specify. Or 'all' to run against all versions.
+  Builds schema-dump-<version>, which runs the init scripts and migrations with dbmate against a
+  throwaway Postgres and dumps the schema, then copies the dump to migrations/schema-<version>.sql.
+  CI checks that file against the same package. Run it from the root of the repository.
   NOTE: To create a migration, you must run 'nix develop' and then 'dbmate new <migration_name>' to create a new migration file.
 
 Examples:
   nix run .#dbmate-tool
   nix run .#dbmate-tool -- --version 15
-  nix run .#dbmate-tool -- --version 16 --port 5433
+  nix run .#dbmate-tool -- --version 17 --flake-url github:supabase/postgres/<commithash>
 
 ```
 
@@ -119,7 +121,7 @@ After making changes to migrations, you should update the schema.sql files for e
 ```shell
 # First, stop any running PostgreSQL servers
 # Then from the root of supabase/postgres run:
-nix run .#dbmate-tool -- --version all
+nix run .#dbmate-tool
 ```
 
 This will create automatically  schema.sql file for each major version of PostgreSQL and OrioleDB (the files are named like `schema-<ver>`, `schema-oriole-<ver>`). Commit these changes to your repository and push to your branch. The workflow in `.github/workflows/test.yml`  will re-run this command in CI, and perform a git diff to verify the idempotency of the migrations, and that the latest changes have been committed.
