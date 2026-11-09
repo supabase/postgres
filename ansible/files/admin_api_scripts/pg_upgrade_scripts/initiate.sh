@@ -133,11 +133,10 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-	# jparem : $LOG_FILE exists, even if directory
+	# $LOG_FILE exists, even if directory
 	# ${MOUNT_POINT}/pgdata/pg_upgrade_output.d/ does not!
 	# so removing the ship-ing of the log here rather than the conditional block
 	# down there..
-	# https://linear.app/supabase/issue/MPG-1531/initiatesh-call-ship-logs-no-matter-what
 	ship_logs "$LOG_FILE" || true
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
