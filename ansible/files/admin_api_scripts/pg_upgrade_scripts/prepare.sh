@@ -61,17 +61,10 @@ on_exit() {
   trap - EXIT ERR   # avoid re-entering the traps from inside this handler
 
   if [ "$rc" -eq 0 ]; then
-    if [ "$RETRY" -eq 0 ]; then
-      log "prepare.sh ended with no errors."
-    else
-      log "prepare.sh finally ended without error this time."
-    fi
-    # Single upload of the log file; never fatal
-    if declare -F ship_logs >/dev/null; then
-      ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
-    else
-      log "ship_logs is not available, log upload skipped."
-    fi
+    log "prepare.sh ended with no errors."
+    ship_logs "$LOG_FILE" completion || log "Log upload failed (non-blocking)."
+  else
+    ship_logs "$LOG_FILE" prepare-failed || log "Log upload failed (non-blocking)."
   fi
   exit "$rc"
 }
