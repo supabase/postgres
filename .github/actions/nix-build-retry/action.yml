@@ -36,6 +36,21 @@ runs:
         log_file=$(mktemp)
         trap 'rm -f "$log_file"' EXIT
 
+        # When a check fails, nix/checks.nix prints pg_regress/isolation diffs
+        # between REGRESSION DIFFS markers. Surface them in the job summary so
+        # they do not require digging through the raw build log.
+        summarize_regression_diffs() {
+          local summary script
+          summary="${GITHUB_STEP_SUMMARY:-}"
+          if [ -z "$summary" ]; then
+            return 0
+          fi
+          script="${GITHUB_WORKSPACE:-.}/ci/regression-diffs-to-summary.sh"
+          if [ -f "$script" ]; then
+            bash "$script" "$log_file" >> "$summary" || true
+          fi
+        }
+
         # Patterns that indicate a transient network/upstream failure rather
         # than a real build error. Keep conservative — false positives waste
         # CI minutes by re-running deterministic build failures.
@@ -56,6 +71,7 @@ runs:
           fi
 
           if [ "$attempt" -ge "$ATTEMPTS" ]; then
+            summarize_regression_diffs
             echo "::error::nix build failed after ${attempt} attempt(s) (exit ${rc})"
             exit "$rc"
           fi
@@ -65,6 +81,7 @@ runs:
             sleep "$delay"
             delay=$((delay * 2))
           else
+            summarize_regression_diffs
             echo "::error::nix build failed with non-transient error on attempt ${attempt} (exit ${rc}); not retrying"
             exit "$rc"
           fi
