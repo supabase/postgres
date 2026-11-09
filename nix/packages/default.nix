@@ -62,6 +62,7 @@
           build-ami = pkgs.callPackage ./build-ami { packer = self'.packages.packer; };
           build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
+          getkey-script = pkgs.callPackage ./getkey-script { };
           dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
