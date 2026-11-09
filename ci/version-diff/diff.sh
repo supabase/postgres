@@ -3,7 +3,7 @@ set -euo pipefail
 
 system="$1"
 head_json="/tmp/head-drvpaths/$system.json"
-base_json="/tmp/base-drvpaths.json"
+base_json="/tmp/base-drvpaths/$system.json"
 
 if diff -q <(jq -S . "$head_json") <(jq -S . "$base_json") >/dev/null; then
 	echo "No \`legacyPackages.$system\` version changes in this PR." >/tmp/diff.txt

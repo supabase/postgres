@@ -13,6 +13,8 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
+  # version-diff downloads the base commit's drvPaths from its merge queue run
+  actions: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -61,25 +63,6 @@ jobs:
             | sort -u \
             | xargs --no-run-if-empty "${cmd[@]}"
 
-      # shared with version-diff's HEAD side
-      - name: Evaluate drvPaths for version-diff
-        if: github.event_name == 'pull_request'
-        run: |
-          mkdir -p /tmp/drvpaths
-          for system in x86_64-linux aarch64-linux; do
-            nix eval --no-pure-eval --json \
-              --expr "(import $PWD/ci/version-diff/drvpaths.nix { dir = toString ./.; system = \"$system\"; })" \
-              > "/tmp/drvpaths/$system.json"
-          done
-
-      - name: Upload drvPaths artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: head-drvpaths
-          path: /tmp/drvpaths/*.json
-          retention-days: 1
-
       - name: Generate Build Matrix
         id: gen-matrix
         run: |
@@ -87,6 +70,27 @@ jobs:
           echo eval.json:
           jq -S . eval.json
           nix run .#github-matrix -- --eval-input checks legacyPackages <eval.json
+
+      - name: Extract drvPaths for version-diff
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: |
+          mkdir -p /tmp/drvpaths
+          for system in x86_64-linux aarch64-linux; do
+            jq -s --arg sys "$system" '
+              [ .[]
+                | select(has("drvPath"))
+                | select(.attr | startswith("legacyPackages.\($sys)."))
+                | {key: (.attr | ltrimstr("legacyPackages.\($sys).")), value: .drvPath} ]
+              | from_entries' eval.json > "/tmp/drvpaths/$system.json"
+          done
+
+      - name: Upload drvPaths artifact
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: drvpaths
+          path: /tmp/drvpaths/*.json
+          retention-days: ${{ github.event_name == 'merge_group' && 90 || 1 }}
 
   builds-aarch64-linux:
     name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
@@ -342,23 +346,25 @@ jobs:
       - name: Install nix
         uses: $/.github/actions/install-nix
 
-      # HEAD side already done in eval
       - name: Download head drvPaths
         uses: actions/download-artifact@v8.0.2
         with:
-          name: head-drvpaths
+          name: drvpaths
           path: /tmp/head-drvpaths
 
-      # use HEAD's script, base may predate it
-      - name: Evaluate base drvPaths
-        working-directory: base
-        run: |
-          nix eval --no-pure-eval --json \
-            --expr '(import ${{ github.workspace }}/head/ci/version-diff/drvpaths.nix { dir = toString ./.; system = "${{ matrix.system }}"; })' \
-            > /tmp/base-drvpaths.json
-
       - name: Diff versions with nvd
-        run: ./head/ci/version-diff/diff.sh "${{ matrix.system }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          # BASE side comes from the merge queue run that evaluated the base commit
+          run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nix-build.yml --event merge_group --commit "$BASE_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [[ -n $run_id ]] && gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name drvpaths --dir /tmp/base-drvpaths; then
+            ./head/ci/version-diff/diff.sh "$SYSTEM"
+          else
+            echo "Baseline unavailable for \`${BASE_SHA:0:9}\`, version diff skipped (no successful merge queue run, or it expired)." >/tmp/diff.txt
+          fi
 
       - name: Upload diff artifact
         uses: actions/upload-artifact@v7.0.2
