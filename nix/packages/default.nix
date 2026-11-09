@@ -61,6 +61,7 @@
       makeSchemaDump =
         version:
         pkgs.callPackage ./schema-dump {
+          inherit (self.supabase) defaults;
           inherit version;
           port = schemaPorts.${version};
           postgresql = self'.packages."psql_${version}/bin";
