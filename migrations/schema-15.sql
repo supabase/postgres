@@ -229,10 +229,13 @@ begin
         end loop;
     end loop;
 
-    -- 3. Database Webhooks run as supabase_functions_admin. Its grant stays with supabase_admin,
-    --    so a customer cannot break them.
+    -- 3. Database Webhooks run as supabase_functions_admin. Its grants stay with supabase_admin,
+    --    so a customer cannot break them, and it gets them here rather than through PUBLIC.
     if exists (select from pg_roles where rolname = 'supabase_functions_admin') then
         grant usage on schema net to supabase_functions_admin;
+        foreach http_function in array http_functions loop
+            execute format('grant execute on function %s to supabase_functions_admin', http_function);
+        end loop;
     end if;
 exception when others then
     raise warning 'apply_pg_net_grants: % (%)', sqlerrm, sqlstate;
