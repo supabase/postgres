@@ -31,11 +31,20 @@
       case "$-" in
         *i*)
           case "$TERM" in
-            tmux*) export TMOUT=86400 ;;
+            tmux*) export TMOUT=43200 ;;
           esac
           ;;
       esac
     dest: '/etc/profile.d/12-tmux_logout.sh'
+    group: 'root'
+    mode: '0755'
+    owner: 'root'
+  become: true
+
+- name: tmux - Add demo marker
+  ansible.builtin.copy:
+    content: "manifest diff demo\n"
+    dest: '/etc/profile.d/13-manifest-demo.sh'
     group: 'root'
     mode: '0644'
     owner: 'root'
