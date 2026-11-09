@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Common functions and variables used by 
+# Common functions and variables used by
 # prepare.sh, initiate.sh and complete.sh
 
 #staging/prod

@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# This script is runs in advance of the database version upgrade, on the newly
+# This script runs in advance of the database version upgrade, on the newly
 # launched instance which will eventually be promoted to become the primary
 # database instance once the upgrade successfully completes, terminating the
 # previous (source) instance.  The following commands safely stop the Postgres
@@ -18,16 +18,9 @@ LOG_FILE="/var/log/pg-upgrade-prepare.log"
 touch "$LOG_FILE"
 chmod 640 "$LOG_FILE"
 
-# Detect a retry BEFORE writing anything: if "started" is already in the
-# file, a previous attempt has run and failed.
-RETRY=0
-if grep -qF "prepare.sh started" "$LOG_FILE"; then
-  RETRY=1
-fi
-
 # From here on, everything written to stdout/stderr (log messages, but also
-# errors from systemctl, install, sync, etc.) is appended to the log file.
-exec >>"$LOG_FILE" 2>&1
+# errors from systemctl, install, sync, etc.) is written to the log file.
+exec >"$LOG_FILE" 2>&1
 
 # Minimal fallback so that "log" exists even if common.sh cannot be sourced.
 # common.sh redefines it with the real implementation.
@@ -40,8 +33,8 @@ trap 'log "prepare.sh FAILED at line $LINENO: \"$BASH_COMMAND\" (exit code $?)"'
 # Source the shared helpers (log and ship_logs functions)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh" || {
-  log "cannot source $SCRIPT_DIR/common.sh"
-  exit 1
+	log "cannot source $SCRIPT_DIR/common.sh"
+	exit 1
 }
 
 # ship_logs reads these variables, and "set -u" would abort the script on an
@@ -57,44 +50,48 @@ source "$SCRIPT_DIR/common.sh" || {
 #     retry, so the caller handles the "gave up" case.
 # The script's exit code is always preserved for the caller.
 on_exit() {
-  local rc=$?
-  trap - EXIT ERR   # avoid re-entering the traps from inside this handler
+	local rc=$?
+	trap - EXIT ERR # avoid re-entering the traps from inside this handler
 
-  if [ "$rc" -eq 0 ]; then
-    log "prepare.sh ended with no errors."
-    ship_logs "$LOG_FILE" completion || log "Log upload failed (non-blocking)."
-  else
-    ship_logs "$LOG_FILE" prepare-failed || log "Log upload failed (non-blocking)."
-  fi
-  exit "$rc"
+	if [ "$rc" -eq 0 ]; then
+		log "prepare.sh ended with no errors."
+		ship_logs "$LOG_FILE" completion || log "Log upload failed (non-blocking)."
+	else
+		ship_logs "$LOG_FILE" prepare-failed || log "Log upload failed (non-blocking)."
+	fi
+	exit "$rc"
 }
 trap on_exit EXIT
 
 # Written at every attempt. It is also the marker used above to detect
 # retries, so do not change its wording.
-log "prepare.sh started."
+log "prepare.sh started"
 
 # check that /data is actually mounted
-mountpoint -q /data || { log "/data is not mounted"; exit 1; }
+mountpoint -q /data || {
+	log "/data is not mounted"
+	exit 1
+}
 
 # stop postgresql: "systemctl stop blocks until the unit has fully stopped"
-# https://linear.app/supabase/issue/MPG-1283/harden-a-bit-preparesh#comment-cea7446f
 # so there is no need to check pg_isready afterwards...
 systemctl stop postgresql
 
 # ...but let's still verify that the service is explicitly stopped
 if systemctl is-active --quiet postgresql; then
-  log "postgresql service is still active!"; exit 1
+	log "postgresql service is still active!"
+	exit 1
 fi
 
 # ...and that there are no remaining postgres processes
 if pgrep -x postgres >/dev/null; then
-  log "postgres processes are still alive!"; exit 1
+	log "postgres processes are still alive!"
+	exit 1
 fi
 
 # copy the pgsodium root key with proper owner and permissions
 install -m 600 -o postgres -g postgres \
-  /etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+	/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
 
 # flush cached writes to persistent storage
 sync
@@ -102,12 +99,36 @@ sync
 # Unmount /data. Capture the native umount error message and route it through
 # "log" so that it is timestamped like the rest of the log entries.
 if ! umount_out=$(umount /data 2>&1); then
-  log "Unable to unmount /data: $umount_out"
-  # List the processes still using /data ("|| true" so a fuser failure
-  # does not trigger the ERR trap and mask the real cause)
-  log "Processes using /data:"
-  log "$(ls -l /proc/*/fd /proc/*/cwd 2>/dev/null | grep ' /data' || true)"
-  exit 1
+	log "Unable to unmount /data: $umount_out"
+	# List the processes still using /data ("|| true" so a fuser failure
+	# does not trigger the ERR trap and mask the real cause)
+	log "Processes using /data:"
+
+	# activate nullglob to avoid errors if /proc is not accessible
+	shopt -s nullglob
+
+	# go thru /proc on numeric PIDs
+	for pid_dir in /proc/[0-9]*/; do
+
+		# extract pid from dir name
+		pid="${pid_dir#/proc/}"
+		pid="${pid%/}"
+
+		# secure read from symbolink link cwd
+		if cwd=$(readlink -f "$pid_dir/cwd" 2>/dev/null); then
+			if [[ $cwd == "/data" || $cwd == "/data"/* ]]; then
+				# get user and name of the current command
+				stat_info=$(stat -c "%U" "$pid_dir" 2>/dev/null || true)
+				cmd_info=$(cat "$pid_dir/comm" 2>/dev/null || true)
+
+				if [[ -n $stat_info && -n $cmd_info ]]; then
+					log "user: ${stat_info} pid: ${pid} command: ${cmd_info}"
+				fi
+			fi
+		fi
+	done
+
+	exit 1
 fi
 
 # Reaching this point means success: the final message and the log upload

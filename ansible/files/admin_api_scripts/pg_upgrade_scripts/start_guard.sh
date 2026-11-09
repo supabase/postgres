@@ -4,9 +4,9 @@
 # file copy. Sourced by initiate.sh and tests/pg_upgrade/test-start-guard.sh.
 # Expects log, IS_CI, PGDATAOLD and PGDATANEW from the caller.
 
-# From step 9 until cleanup, nothing may start the source postgres: 
-# 
-# If it has to run, "pg_checksums -e" will operate on the source postgres, and 
+# From step 9 until cleanup, nothing may start the source postgres:
+#
+# If it has to run, "pg_checksums -e" will operate on the source postgres, and
 # this one has to stay stopped during the whole operation
 #
 # pg_upgrade copies the data files without a postmaster holding the directory,

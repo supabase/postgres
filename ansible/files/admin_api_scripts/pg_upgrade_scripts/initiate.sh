@@ -133,11 +133,11 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-  # jparem : $LOG_FILE exists, even if directory
-  # ${MOUNT_POINT}/pgdata/pg_upgrade_output.d/ does not!
-  # so removing the ship-ing of the log here rather than the conditional block
-  # down there..
-  # https://linear.app/supabase/issue/MPG-1531/initiatesh-call-ship-logs-no-matter-what
+	# jparem : $LOG_FILE exists, even if directory
+	# ${MOUNT_POINT}/pgdata/pg_upgrade_output.d/ does not!
+	# so removing the ship-ing of the log here rather than the conditional block
+	# down there..
+	# https://linear.app/supabase/issue/MPG-1531/initiatesh-call-ship-logs-no-matter-what
 	ship_logs "$LOG_FILE" || true
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
@@ -657,71 +657,71 @@ EOF
 		CI_stop_postgres
 	fi
 
-  #CHECKSUM_FLAG="--data-checksums" if the SOURCE cluster has checksums
-  #CHECKSUM_FLAG=""                 if the SOURCE doesn't have them (yet)
-  #                                 in this case the following code adds them
+	#CHECKSUM_FLAG="--data-checksums" if the SOURCE cluster has checksums
+	#CHECKSUM_FLAG=""                 if the SOURCE doesn't have them (yet)
+	#                                 in this case the following code adds them
 
-  if [[ "$CHECKSUM_FLAG" == "" ]]; then
+	if [[ $CHECKSUM_FLAG == "" ]]; then
 
-		# old db hasn't got checksum, we will enable it its overall size 
-    # (${PGDATAOLD}) is <= 20 Gb
+		# old db hasn't got checksum, we will enable it its overall size
+		# (${PGDATAOLD}) is <= 20 Gb
 
-    # 20 gb = 20 x 1024 x 1024 = 20971520 
-    MAX_SIZE=20971520
-  
-    PGDATAOLD_SIZE=$(du -sk "${PGDATAOLD}" | cut -f1)
+		# 20 gb = 20 x 1024 x 1024 = 20971520
+		MAX_SIZE=20971520
 
-    if [[ "$PGDATAOLD_SIZE" -le "$MAX_SIZE" ]]; then
+		PGDATAOLD_SIZE=$(du -sk "${PGDATAOLD}" | cut -f1)
 
-      log "9.1 adding checksums to SOURCE PG (<20 Gb)"
+		if [[ $PGDATAOLD_SIZE -le $MAX_SIZE ]]; then
 
-		  # we're adding a timer: the "pg_checksum -e" operation on ${PGDATAOLD} must
-      # not run for more than 10 minutes otherwise we exist this code on error
-      # ofc, if the pg_checksums detects a physical corruption, we have to exit
-      # the program with a consistent message explaining the corruption
-  
-      MAX_DURATION="10m"
-      KILL_AFTER="15s"
+			log "9.1 adding checksums to SOURCE PG (<20 Gb)"
 
-      timeout -k "${KILL_AFTER}" "${MAX_DURATION}" ${PGBINOLD}/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
+			# we're adding a timer: the "pg_checksum -e" operation on ${PGDATAOLD} must
+			# not run for more than 10 minutes otherwise we exist this code on error
+			# ofc, if the pg_checksums detects a physical corruption, we have to exit
+			# the program with a consistent message explaining the corruption
 
-      # if everything is fine, $STATUS hasn't been defined, 
-      # so we initialize it with 0 because it's a success 
-      STATUS=${STATUS:-0}
+			MAX_DURATION="10m"
+			KILL_AFTER="15s"
+
+			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
+
+			# if everything is fine, $STATUS hasn't been defined,
+			# so we initialize it with 0 because it's a success
+			STATUS=${STATUS:-0}
 
 			# we'll manage ERROR codes down there, to actually log anything
 			# properly, for later diagnostic reading the $LOG_FILE into project
 			# where it has been shipped ship_logs() in common.sh
 
-      case $STATUS in
-         0) 
-           log "adding checksums SUCCEEDED."
-           ;;
-         124|137) 
-           log "adding checksums FAILED. Max time (${MAX_DURATION}) reached! Process killed."
-           exit 124
-           ;;
-         *)
-           log  "adding checksum FAILED with Error code ${STATUS}"
-           exit "$STATUS"
-           ;;
-      esac
+			case $STATUS in
+			0)
+				log "adding checksums SUCCEEDED."
+				;;
+			124 | 137)
+				log "adding checksums FAILED. Max time (${MAX_DURATION}) reached! Process killed."
+				exit 124
+				;;
+			*)
+				log "adding checksum FAILED with Error code ${STATUS}"
+				exit "$STATUS"
+				;;
+			esac
 
-      # we're here if everything went well with STATUS=0
-      # so now, checksums are enabled on the SOURCE!  
-      CHECKSUM_FLAG="--data-checksums"
-      
-    else
+			# we're here if everything went well with STATUS=0
+			# so now, checksums are enabled on the SOURCE!
+			CHECKSUM_FLAG="--data-checksums"
 
-      log "9.1 did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+		else
 
-    fi
+			log "9.1 did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
 
-  else
-  
-    log "9.1 checksums already present on SOURCE"
+		fi
 
-  fi
+	else
+
+		log "9.1 checksums already present on SOURCE"
+
+	fi
 
 	log "10. Creating new data directory, initializing database"
 	chown -R postgres:postgres "$MOUNT_POINT/"
