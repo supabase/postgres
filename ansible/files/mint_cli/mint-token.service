@@ -1,0 +1,13 @@
+[Unit]
+Description=Fetch a MINT token for regional ingest
+After=network-online.target
+Wants=network-online.target
+# The timer retries every run, so a failing exchange must never trip the start limit.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+# systemd sets no HOME here. On v3 this file holds the VM's IRSA role; on v2 it
+# is absent and the SDK falls back to the instance profile.
+Environment=AWS_CONFIG_FILE=/root/.aws/config
+ExecStart=/usr/local/bin/mint-renew.sh
