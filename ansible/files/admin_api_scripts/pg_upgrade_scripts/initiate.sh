@@ -672,10 +672,7 @@ EOF
 
 			log "9.1 adding checksums to SOURCE PG (<20 Gb)"
 
-			# we're adding a timer: the "pg_checksum -e" operation on ${PGDATAOLD} must
-			# not run for more than 10 minutes otherwise we exist this code on error
-			# ofc, if the pg_checksums detects a physical corruption, we have to exit
-			# the program with a consistent message explaining the corruption
+			# pg_checksums -e does not verify existing pages. A run over MAX_DURATION fails the upgrade.
 
 			MAX_DURATION="10m"
 			KILL_AFTER="15s"
