@@ -201,7 +201,7 @@ EOF
 }
 
 # EXIT trap: any exit that did not go through cleanup() (set -u abort, TERM/INT)
-# still restores the source, since step 10 left it stopped and disabled. If
+# still restores the source, since step 9 left it stopped and disabled. If
 # cleanup() already ran (or died part way under set -e), only make sure the
 # start block is gone.
 on_exit() {
