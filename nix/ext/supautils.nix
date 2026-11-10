@@ -8,7 +8,7 @@
 stdenv.mkDerivation rec {
   pname = "supautils";
   name = pname;
-  version = "3.4.4";
+  version = "4.0.0";
 
   buildInputs = [ postgresql ];
 
@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-Wsou5U7/Tuwj2E6aPEmlHg7uz7kGyBOGrb7UkjfEo9U=";
+    hash = "sha256-2tH34+JdgNqaR5ihtdJJQSIdT7zI4NTRHlYuEEO6/f8=";
   };
 
   # remove once all Ubuntu 20.04 (glibc 2.31) hosts are decommissioned

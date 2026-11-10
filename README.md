@@ -135,7 +135,7 @@ nix build .#psql_15/bin
 nix build .#psql_17/bin
 
 # Build a specific extension
-nix build .#psql_17/exts/pg_graphql
+nix build .#psql_17.exts.pg_graphql
 ```
 
 ### Running Tests

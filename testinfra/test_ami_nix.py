@@ -2,6 +2,7 @@ import base64
 import gzip
 import logging
 import os
+import shlex
 from pathlib import Path
 from time import sleep
 
@@ -1358,6 +1359,19 @@ def test_apparmor_sbpostgres_profile_enforced(host):
     )
 
 
+def run_in_postgres_shell(host, command):
+    """Run a shell command confined by the postgres_shell AppArmor sub-profile.
+
+    COPY TO PROGRAM is killed by supa-tripwire before AppArmor sees it, so the
+    profile is entered directly with aa-exec instead.
+    """
+    return run_ssh_command(
+        host["ssh"],
+        "sudo -u postgres aa-exec -p 'sbpostgres//postgres_shell' "
+        f"-- /usr/bin/sh -c {shlex.quote(command)}",
+    )
+
+
 def test_apparmor_blocks_disallowed_shell_commands(host):
     """Verify AppArmor's postgres_shell sub-profile blocks execution of
     commands not on the allowlist (e.g. /usr/bin/id).
@@ -1385,10 +1399,7 @@ def test_apparmor_permits_allowlisted_commands(host):
     path (avoiding the /bin -> /usr/bin symlink issue on Ubuntu 22.04+), and
     writes only to the pipe so no file-write permissions are needed.
     """
-    result = run_ssh_command(
-        host["ssh"],
-        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c \"COPY (SELECT 1) TO PROGRAM '/usr/bin/cat';\"",
-    )
+    result = run_in_postgres_shell(host, "echo ok | /usr/bin/cat")
     assert result["succeeded"], (
         f"AppArmor unexpectedly blocked /usr/bin/cat.\n"
         f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
@@ -1418,11 +1429,7 @@ def test_apparmor_allows_pg_dump(host):
 
     /usr/bin/pg_dump is explicitly listed as 'ix' in postgres_shell.
     """
-    result = run_ssh_command(
-        host["ssh"],
-        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c "
-        "\"COPY (SELECT 1) TO PROGRAM '/usr/bin/pg_dump --version';\"",
-    )
+    result = run_in_postgres_shell(host, "/usr/bin/pg_dump --version")
     assert result["succeeded"], (
         f"pg_dump was blocked by AppArmor.\n"
         f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
@@ -1446,11 +1453,7 @@ def test_apparmor_allows_walg(host, walg_binary):
         print(f"{walg_binary} not found in Nix store, skipping")
         return
 
-    result = run_ssh_command(
-        host["ssh"],
-        f"sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c "
-        f"\"COPY (SELECT 1) TO PROGRAM '{walg_path} --version';\"",
-    )
+    result = run_in_postgres_shell(host, f"{walg_path} --version")
     assert result["succeeded"], (
         f"{walg_binary} was blocked by AppArmor.\n"
         f"stdout: {result['stdout']}\nstderr: {result['stderr']}"
@@ -1478,15 +1481,8 @@ def test_apparmor_denies_access_to_sensitive_paths(host):
 
     for base in denied_paths:
         test_file = f"{base}/apparmor_test.txt"
-        result = run_ssh_command(
-            host["ssh"],
-            f"sudo -u postgres psql -U supabase_admin -h localhost -d postgres -c "
-            f"\"COPY (SELECT 1) TO PROGRAM '/usr/bin/cat {test_file}';\" 2>&1 || true",
-        )
-        combined = result["stdout"] + result["stderr"]
-        assert (
-            "failed" in combined.lower() or "child process exited" in combined.lower()
-        ), (
+        result = run_in_postgres_shell(host, f"/usr/bin/cat {test_file}")
+        assert not result["succeeded"] and "denied" in result["stderr"].lower(), (
             f"Expected AppArmor to deny access to {test_file} but the command appears "
             f"to have succeeded.\nstdout: {result['stdout']}\nstderr: {result['stderr']}"
         )

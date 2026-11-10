@@ -129,6 +129,10 @@
   tags:
     - aws-only
 
+- name: Install mint-cli
+  ansible.builtin.import_tasks:
+    file: internal/mint-cli.yml
+
 - name: Envoy - use lds.supabase.yaml for /etc/envoy/lds.yaml
   ansible.builtin.command:
     cmd: mv /etc/envoy/lds.supabase.yaml /etc/envoy/lds.yaml
