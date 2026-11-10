@@ -133,10 +133,7 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-	# $LOG_FILE exists, even if directory
-	# ${MOUNT_POINT}/pgdata/pg_upgrade_output.d/ does not!
-	# so removing the ship-ing of the log here rather than the conditional block
-	# down there..
+	# ship $LOG_FILE content to reporting project (see common.sh)
 	ship_logs "$LOG_FILE" || true
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
@@ -222,6 +219,7 @@ on_exit() {
 		fi
 	fi
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
 	exit "$exit_code"
 }
 

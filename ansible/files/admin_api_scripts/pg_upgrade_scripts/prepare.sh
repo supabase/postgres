@@ -55,9 +55,9 @@ on_exit() {
 
 	if [ "$rc" -eq 0 ]; then
 		log "prepare.sh ended with no errors."
-		ship_logs "$LOG_FILE" completion || log "Log upload failed (non-blocking)."
+		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	else
-		ship_logs "$LOG_FILE" prepare-failed || log "Log upload failed (non-blocking)."
+		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	fi
 	exit "$rc"
 }
