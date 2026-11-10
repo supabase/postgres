@@ -378,6 +378,13 @@
         "17"
       ],
       "hash": "sha256-wtNihaJX9NlTEC/uoaCeA6gNwiGCU3mr2qun8KI2kyY="
+    },
+    "0.20.5": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "hash": "sha256-UMSojamXUTTqzqUrm2WqeAOZigDwQcXCzevCdEOqjT8="
     }
   },
   "pgaudit": {
