@@ -193,12 +193,14 @@ ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/postgresql.conf.tmpl
 RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.conf
 
 # Generate a single SQL manifest that pgctld runs via --init-db-sql-file after initdb.
-# Creates the postgres role, runs init-scripts as postgres (matching migrate.sh),
-# then runs migrations as supabase_admin.
+# Creates the postgres and multigres_probe roles, runs init-scripts as postgres
+# (matching migrate.sh), then runs migrations as supabase_admin.
 RUN set -e && \
     manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
     printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN\n    CREATE ROLE postgres SUPERUSER LOGIN;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'multigres_probe') THEN\n    CREATE ROLE multigres_probe LOGIN NOBYPASSRLS CONNECTION LIMIT 2;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "ALTER ROLE multigres_probe SET statement_timeout = '2s';\n" >> "$manifest" && \
     printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
     printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
@@ -275,6 +277,8 @@ RUN set -e && \
     manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
     printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN\n    CREATE ROLE postgres SUPERUSER LOGIN;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "DO \$\$ BEGIN\n  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'multigres_probe') THEN\n    CREATE ROLE multigres_probe LOGIN NOBYPASSRLS CONNECTION LIMIT 2;\n  END IF;\nEND \$\$;\n" >> "$manifest" && \
+    printf "ALTER ROLE multigres_probe SET statement_timeout = '2s';\n" >> "$manifest" && \
     printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
     printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
