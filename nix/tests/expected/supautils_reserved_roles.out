@@ -15,3 +15,20 @@ SELECT rolname FROM pg_roles WHERE rolname = 'supabase_privileged_role';
 (1 row)
 
 ROLLBACK;
+-- verify non-superuser postgres role cannot claim the reserved multigres_probe
+-- name. The role only exists on Multigres images, so CREATE must be refused
+-- by name before the role exists anywhere else.
+BEGIN;
+SET ROLE postgres;
+SAVEPOINT before_create;
+CREATE ROLE multigres_probe;
+ERROR:  "multigres_probe" is a reserved role, only superusers can modify it
+ROLLBACK TO SAVEPOINT before_create;
+RESET ROLE;
+SELECT count(*) FROM pg_roles WHERE rolname = 'multigres_probe';
+ count 
+-------
+     0
+(1 row)
+
+ROLLBACK;
