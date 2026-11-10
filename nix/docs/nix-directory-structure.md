@@ -96,13 +96,13 @@ Application definitions accessible via `nix run`:
 
 Directory containing custom package definitions such as:
 
-  - `default.nix` - Main package exports and basePackages
-  - `start-client.nix` - PostgreSQL client tools
-  - `start-replica.nix` - Replication tools
-  - `migrate-tool.nix` - Migration utilities
-  - `dbmate-tool/` - Regenerates `migrations/schema-<version>.sql` from the `schema-dump-<version>` packages
-  - `schema-dump/`, `schema-check/` - Dump the migrated schema in a sandboxed build, and check it against the committed `schema-<version>.sql` (the `schema-<version>` checks)
-  - `postgres.nix` - Postgres extension registry and ourExtensions list
+- `default.nix` - Main package exports and basePackages
+- `start-client.nix` - PostgreSQL client tools
+- `start-replica.nix` - Replication tools
+- `migrate-tool.nix` - Migration utilities
+- `dbmate-tool/` - Regenerates `migrations/schema-<version>.sql` from the `schema-dump-<version>` packages
+- `schema-dump/`, `schema-check/` - Dump the migrated schema in a sandboxed build, and check it against the committed `schema-<version>.sql` (the `schema-<version>` checks)
+- `postgres.nix` - Postgres extension registry and ourExtensions list
 
 #### `nix/checks.nix`
 
@@ -165,9 +165,10 @@ Test suites and expected outputs:
 
 ## How the modules connect
 
-- `nix/nixpkgs.nix` sets `_module.args.pkgs` with the overlays applied. Every other module gets `pkgs` from it.
 - `nix/config.nix` defines `self.supabase`, which holds `defaults` (port, host, superuser) and `supportedPostgresVersions`.
+- `nix/nixpkgs.nix` sets `_module.args.pkgs` with the overlays applied. Every other module gets `pkgs` from it.
 - `nix/overlays/default.nix` re-exports our `postgresql_*` packages into `pkgs`.
+- `nix/packages/images.nix` defines `build-ami` and `build-qemu-image` in `packages`. It also puts them in `legacyPackages` on Linux, so CI builds and caches them.
 - `nix/packages/postgres.nix` builds `psql_<version>`. `packages` holds the flat `"psql_15/bin"` names. `legacyPackages` holds the nested sets, so `nix build .#psql_15.exts.rum` works.
 - `apps.nix`, `devShells.nix`, and `checks.nix` read packages through `self'.packages`. `self'` and `inputs'` are the current-system views of `self` and `inputs`.
 - `hooks.nix` uses `config.treefmt.build.wrapper` from `fmt.nix`.
