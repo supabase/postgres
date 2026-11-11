@@ -1,6 +1,6 @@
 # Usage
 
-from the root of the `supabase/postgres` project, you can run the following commands:
+From the root of the `supabase/postgres` project, you can run the following commands:
 
 ```shell
 Usage: nix run .#dbmate-tool -- [options]
@@ -23,16 +23,6 @@ Examples:
 
 ```
 
-This can also be run from a github "flake url" for example:
-
-```shell
-nix run github:supabase/postgres#dbmate-tool -- --version 15
-
-or
-
-nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
-```
-
 ## supabase/migrations
 
 `supabase/migrations` is a consolidation of SQL migrations from:
@@ -42,38 +32,59 @@ nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
 - supabase/cli
 - supabase/platform (internal)
 
-aiming to provide a single source of truth for migrations on the platform that can be depended upon by those components.
+aiming to provide a single source of truth for migrations on the platform that those components can depend on.
 For more information on goals see [the RFC](https://www.notion.so/supabase/Centralize-SQL-Migrations-cd3847ae027d4f2bba9defb2cc82f69a)
 
-### How it was Created
+### Where the migrations came from
 
-Migrations were pulled (in order) from:
+We pulled the migrations, in order, from:
 
 1. [init-scripts/postgres](https://github.com/supabase/platform/tree/develop/init-scripts/postgres) => [db/init-scripts](db/init-scripts)
 2. [init-scripts/migrations](https://github.com/supabase/platform/tree/develop/init-scripts/migrations) => [db/migrations](db/migrations)
 
-For compatibility with hosted projects, we include [migrate.sh](migrate.sh) that executes migrations in the same order as ami build:
+For compatibility with hosted projects, we include [migrate.sh](db/migrate.sh), which runs the migrations in the same order as the AMI build:
 
 1. Run all `db/init-scripts` with `postgres` superuser role.
 2. Run all `db/migrations` with `supabase_admin` superuser role.
-3. Finalize role passwords with `/etc/postgresql.schema.sql` if present.
+3. Set role passwords with `/etc/postgresql.schema.sql`, if it exists.
 
 Additionally, [supabase/postgres](https://github.com/supabase/postgres/blob/develop/ansible/playbook-docker.yml#L9) image contains several migration scripts to configure default extensions.
-These are run first by docker entrypoint and included in ami by ansible.
+The Docker entrypoint runs these first, and Ansible includes them in the AMI.
+
+### Where migrations run
+
+The SQL files in `db/` set up a new, empty database.
+This repository uses them for nothing else.
+Most uses run them through [migrate.sh](db/migrate.sh):
+
+Nothing in this repository applies new migrations to a database that is already running.
+
+| Where                                                      | When                                                                                                              |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| AMI and qemu builds (`ansible/tasks/setup-migrations.yml`) | Stage 2 of the image build. The image keeps the result.                                                           |
+| Docker images (`Dockerfile-*`)                             | The first time a container starts with an empty data directory.                                                   |
+| CLI package (`nix/packages/postgres-portable.nix`)         | `cli-release.yml` runs it. The package ships a copy for the CLI.                                                  |
+| `nix/packages/schema-dump`                                 | It runs the migrations to dump the schema, then runs them a second time to check that they are safe to run again. |
+
+### Other files in this directory
+
+- `tests/` holds the pgTAP tests.
+  `nix flake check` runs them against a Postgres built by Nix (see `nix/checks.nix`).
+  No image includes them.
+- `schema-<version>.sql` is a saved copy of the schema that `db/` creates, one for each Postgres version.
+  It comes from `schmea-dump-<version>` nix package.
+  It lets a reviewer see what a migration changes.
+  CI (`schema-check-<version>`) fails when the file no longer matches the migrations.
+  Nothing loads it into a database.
+  It has no owners, grants, or data, so it cannot replace the migrations.
 
 ### Guidelines
 
 - Migrations are append only.
   Never edit existing migrations once they are on master.
 - Migrations in `migrations/db/migrations` have to be idempotent.
-- Self contained components (gotrue, storage, realtime) may contain their own migrations.
-- Self hosted Supabase users should update role passwords separately after running all migrations.
-- Prod release is done by publishing a new GitHub release on master branch.
-
-### Requirements
-
-- [dbmate](https://github.com/amacneil/dbmate)
-- [docker-compose](https://docs.docker.com/compose/)
+- Self-contained components (gotrue, storage, realtime) may contain their own migrations.
+- Self-hosted Supabase users should update role passwords separately after running all migrations.
 
 ### Usage
 
@@ -89,11 +100,8 @@ nix run .#start-server 15
 Then, in your main terminal window, run:
 
 ```shell
-
 nix develop
 ```
-
-in the root of `supabase/postgres`.
 
 Next run:
 
@@ -113,11 +121,14 @@ dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" up
 dbmate --no-dump-schema --migrations-dir="migrations/db/migrations" -u "postgres://supabase_admin:postgres@localhost:5435/postgres?sslmode=disable" up
 ```
 
-Note: Migrations are applied using the `supabase_admin` superuser role, as specified in the "How it was Created" section above.
+Note: Run migrations as the `supabase_admin` superuser, as the "Where the migrations came from" section above explains.
 
 #### Updating schema.sql for each major version
 
 After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:
+
+> **Note:** Run `git add migrations/db/migrations/<migration_file>` on every new migration file before you run the command below.
+> The local flake sees only files that git tracks, so it silently skips new ones.
 
 ```shell
 nix run .#dbmate-tool
@@ -129,7 +140,8 @@ The `schema-<version>` nix checks rebuild the schema in CI and fail if the commi
 
 ### Testing
 
-In addition to ci test mentioned above, you can test migrations locally by running the following test for each major version of postgres one at a time.
+CI also tests the migrations.
+To test them locally, run the following for each major Postgres version, one at a time.
 
 Examples:
 
@@ -139,7 +151,7 @@ nix build .#checks.aarch64-darwin.psql_17 -L
 nix build .#checks.aarch64-darwin.psql_orioledb-17 -L
 ```
 
-(Note that the evaluation and nix build of the postgres packages "bundle" of each major version must succeed here, even though we run one version at a time.
+(Note that the postgres "bundle" for each major version must evaluate and build here, even though you run one version at a time.
 If you made changes to postgres or extensions, or wrappers those may rebuild here when you run this.
 Otherwise they will usually download the prebuilt version from the supabase nix binary cache)
 
