@@ -23,16 +23,6 @@ Examples:
 
 ```
 
-This can also be run from a github "flake url" for example:
-
-```shell
-nix run github:supabase/postgres#dbmate-tool -- --version 15
-
-or
-
-nix run github:supabase/postgres/mybranch#dbmate-tool -- --version 15
-```
-
 ## supabase/migrations
 
 `supabase/migrations` is a consolidation of SQL migrations from:
@@ -118,6 +108,9 @@ Note: Migrations are applied using the `supabase_admin` superuser role, as speci
 #### Updating schema.sql for each major version
 
 After making changes to migrations, you should update the schema.sql files for each major version of PostgreSQL:
+
+> **Note:** Run `git add migrations/db/migrations/<migration_file>` on every new migration file before you run the command below.
+> The local flake sees only files that git tracks, so it silently skips new ones.
 
 ```shell
 nix run .#dbmate-tool
