@@ -25,7 +25,7 @@ jobs:
       - name: Generate build matrix
         id: set-matrix
         run: |
-          nix run nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
+          nix run --inputs-from . nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
           let base_matrix = ($versions | each { |ver|
             let version = ($ver | str trim)
             let dockerfile = $"Dockerfile-($version)"
@@ -80,7 +80,7 @@ jobs:
       
       - id: args
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             open ansible/vars.yml 
             | items { |key value| {name: $key, item: $value} } 
             | where { |it| ($it.item | describe) == "string" } 
@@ -112,7 +112,7 @@ jobs:
         id: image
         run: |
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            pg_version=$(nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run --inputs-from . nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let is_multigres = ($version | str starts-with "multigres-")
               let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -126,7 +126,7 @@ jobs:
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           else
-            pg_version=$(nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run --inputs-from . nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let is_multigres = ($version | str starts-with "multigres-")
               let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -170,7 +170,7 @@ jobs:
       - name: Get image tag
         id: get_version
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             let version = "${{ matrix.version }}"
             let is_multigres = ($version | str starts-with "multigres-")
             let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -217,7 +217,7 @@ jobs:
       - name: Get Versions from Matrix Config
         id: get_versions
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             # Parse the matrix configuration directly
             let matrix_config = (${{ toJson(needs.prepare.outputs.matrix_config) }} | from json)
       
@@ -237,7 +237,7 @@ jobs:
       - name: Combine Results
         id: combine
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             # Get all results files and process them in one go
             let files = (ls **/results.txt | get name)
             echo $"Found files: ($files)"
