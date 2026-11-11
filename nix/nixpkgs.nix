@@ -97,9 +97,11 @@
             let
               # Provide older versions of packages required by some extensions
               oldstable = import inputs.nixpkgs-oldstable { inherit system; };
+              nixos2211 = import inputs.nixpkgs-2211 { inherit system; };
             in
             _final: _prev: {
               v8_oldstable = oldstable.v8;
+              clang11 = nixos2211.clang;
             }
           )
         ];

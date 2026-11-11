@@ -248,6 +248,19 @@
         "url": "https://nixos.org/channels/nixpkgs-unstable/nixexprs.tar.xz"
       }
     },
+    "nixpkgs-2211": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1690939524,
+        "narHash": "sha256-wZ8ktcD7KUPzOMSQXbbuvM2/YS5+sihPqnNymFQ58Mg=",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/22.11/nixos-22.11.4773.ea4c80b39be4/nixexprs.tar.xz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1761765539,
@@ -305,6 +318,7 @@
         "nix-eval-jobs": "nix-eval-jobs",
         "nix2container": "nix2container",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-2211": "nixpkgs-2211",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix"
