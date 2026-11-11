@@ -85,6 +85,7 @@
       substitutions = {
         SHELL_PATH = "${pkgs.bash}/bin/bash";
         TOOLS_PATH = pkgs.lib.makeBinPath [
+          pkgs.bash
           pkgs.coreutils
           pkgs.gnused
           pkgs.perl
