@@ -368,8 +368,42 @@ writeShellApplication {
         fi
         log_info "  ✓ supautils.conf policy loaded (policy_grants set)"
 
+        # 7. multigres_probe must come out of the init manifest with the
+        # attributes the probe relies on: LOGIN, no BYPASSRLS, connection
+        # limit 2, statement_timeout 2s, and the name must be reserved so
+        # non-superusers cannot alter or drop it.
+        local probe_role
+        probe_role=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT rolcanlogin, rolsuper, rolbypassrls, rolconnlimit FROM pg_roles WHERE rolname = 'multigres_probe';\" 2>&1") || true
+        if [[ "$probe_role" != "t|f|f|2" ]]; then
+            log_error "  multigres_probe attributes wrong (got: '$probe_role', want: 't|f|f|2')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is LOGIN NOSUPERUSER NOBYPASSRLS CONNECTION LIMIT 2"
+
+        local probe_timeout
+        probe_timeout=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT setconfig FROM pg_db_role_setting WHERE setrole = 'multigres_probe'::regrole AND setdatabase = 0;\" 2>&1") || true
+        if [[ "$probe_timeout" != "{statement_timeout=2s}" ]]; then
+            log_error "  multigres_probe statement_timeout not set (got: '$probe_timeout')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe statement_timeout = 2s"
+
+        local reserved_roles
+        reserved_roles=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SHOW supautils.reserved_roles;\" 2>&1") || true
+        if ! echo "$reserved_roles" | grep -qw "multigres_probe"; then
+            log_error "  multigres_probe not in supautils.reserved_roles (got: $reserved_roles)"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is in supautils.reserved_roles"
+
         if [[ "$version" == "multigres-orioledb-17" ]]; then
-            # 7. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            # 8. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
             local first_line
             first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
             if [[ "$first_line" != "#!/bin/sh" ]]; then
@@ -378,7 +412,7 @@ writeShellApplication {
             fi
             log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
 
-            # 8. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            # 9. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
             spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
@@ -390,7 +424,7 @@ writeShellApplication {
             fi
             log_info "  ✓ shared_preload_libraries contains orioledb"
 
-            # 9. default_table_access_method must be orioledb
+            # 10. default_table_access_method must be orioledb
             local tam
             tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
