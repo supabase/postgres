@@ -195,6 +195,9 @@ RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.co
 # Generate a single SQL manifest that pgctld runs via --init-db-sql-file after initdb.
 # Creates the postgres and multigres_probe roles, runs init-scripts as postgres
 # (matching migrate.sh), then runs migrations as supabase_admin.
+# multigres_probe is created without a password. pg_hba on a Multigres cluster
+# is scram-sha-256 everywhere, so nothing can log in as it until the deployment
+# sets a verifier after boot. The manifest never touches the password.
 RUN set -e && \
     manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
@@ -273,6 +276,7 @@ COPY --chmod=755 docker/pgctld/pgctld-wrapper.sh /usr/local/bin/pgctld
 ENV POSTGRES_CONFIG_TEMPLATE_PATH=/etc/pgctld-custom/orioledb-postgresql.conf.tmpl
 
 # Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/
+# (same role notes as the variant-17 manifest above).
 RUN set -e && \
     manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
