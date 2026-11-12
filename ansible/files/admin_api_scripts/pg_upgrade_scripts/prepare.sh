@@ -35,12 +35,6 @@ source "$SCRIPT_DIR/common.sh" || {
 	exit 1
 }
 
-# ship_logs reads these variables, and "set -u" would abort the script on an
-# unset variable. Default them to empty (existing values are kept) so that
-# ship_logs can handle the "no reporting key" case itself.
-: "${REPORTING_ANON_KEY:=}"
-: "${REPORTING_PROJECT_REF:=}"
-
 # Runs on every exit (success, explicit "exit 1" or set -e failure).
 #   - success: final message + single upload of the log file
 #   - failure: nothing more is written (the error is already in the log) and
