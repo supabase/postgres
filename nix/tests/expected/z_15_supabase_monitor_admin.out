@@ -1,5 +1,5 @@
 -- supabase_monitor_admin: passwordless, read-only
--- monitoring role (quick_explainer.md,
+-- monitoring role (
 -- migrations/db/init-scripts/00000000000000-initial-schema.sql).
 -- attributes: login, no password, bypassrls, nothing else
 select rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin,
