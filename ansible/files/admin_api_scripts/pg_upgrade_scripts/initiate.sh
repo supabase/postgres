@@ -674,6 +674,8 @@ EOF
 
 			# pg_checksums -e does not verify existing pages. A run over MAX_DURATION fails the upgrade.
 
+			MAX_DURATION="10m"
+			KILL_AFTER="15s"
 			STATUS=0
 			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
 
