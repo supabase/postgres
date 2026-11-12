@@ -56,7 +56,7 @@ jobs:
           fi
 
           # plain assignments so set -e catches a failing substitution; an empty should_run would skip every AMI
-          versions=$(nix run nixpkgs#yq-go -- '.postgres_major[]' ansible/vars.yml)
+          versions=$(nix run --inputs-from . nixpkgs#yq-go -- '.postgres_major[]' ansible/vars.yml)
           include='[]'
           for version in $versions; do
             for target in amd64:x86_64-linux:blacksmith-2vcpu-ubuntu-2404 arm64:aarch64-linux:blacksmith-2vcpu-ubuntu-2404-arm; do

@@ -58,7 +58,7 @@ jobs:
       - name: Build image
         run: |
           mkdir -p image-context/output-cloudimg
-          nix run nixpkgs#zstd -- -d -o image-context/output-cloudimg/packer-cloudimg "$RUNNER_TEMP/disk-image/packer-cloudimg.zst"
+          nix run --inputs-from . nixpkgs#zstd -- -d -o image-context/output-cloudimg/packer-cloudimg "$RUNNER_TEMP/disk-image/packer-cloudimg.zst"
           docker build --platform "linux/$TARGET_ARCH" -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" image-context
 
       - name: configure aws credentials - staging
