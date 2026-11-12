@@ -61,7 +61,7 @@ function clean_system {
 
 	remove_unwanted_files
 
-	# remove passwords in user-data-cloudimg.img (required for Packer login)
+	# remove passwords in user-data-cloudimg (required for Packer login)
 	usermod -p '*' ubuntu
 	usermod -p '*' root
 

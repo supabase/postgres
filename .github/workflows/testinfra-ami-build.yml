@@ -168,7 +168,7 @@ jobs:
           pytest -vv -s testinfra/test_ami_nix.py
 
       # the post-build-hook from install-nix pushes the stamp, so later runs with the same inputs skip this AMI
-      # --no-pure-eval lets the stamp read AMI_ID_FILE; it refuses to build without the tested AMI's ID
+      # --no-pure-eval lets the stamp read STAMP_FILE; it refuses to build without the tested AMI's ID
       - name: Record passing tests in the binary cache
         if: steps.resolve-git-sha.outputs.sha == github.sha
         env:
@@ -177,9 +177,9 @@ jobs:
           SYSTEM: ${{ matrix.system }}
         run: |
           set -euo pipefail
-          AMI_ID_FILE=$RUNNER_TEMP/ami-id
-          printf '%s' "$AMI_ID" >"$AMI_ID_FILE"
-          export AMI_ID_FILE
+          STAMP_FILE=$RUNNER_TEMP/ami-id
+          printf '%s' "$AMI_ID" >"$STAMP_FILE"
+          export STAMP_FILE
           nix build --no-pure-eval --no-link -L ".#packages.$SYSTEM.ami-test-stamp-$POSTGRES_VERSION"
 
       - name: Configure AWS credentials for cleanup
