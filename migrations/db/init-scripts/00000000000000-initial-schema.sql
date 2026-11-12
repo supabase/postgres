@@ -19,6 +19,19 @@ grant create on database postgres to supabase_etl_admin;
 create role supabase_read_only_user with login bypassrls;
 grant pg_read_all_data to supabase_read_only_user;
 
+-- Supabase monitoring user: no password and can only connect via localhost, 
+-- reads every table
+-- bypassing RLS, read-only, owns nothing.
+-- so the name can never be pre-empted: a plain CREATE fails loudly if it exists.
+create role supabase_monitor_admin with login bypassrls connection limit 2;
+grant pg_read_all_data, pg_monitor to supabase_monitor_admin;
+alter role supabase_monitor_admin set default_transaction_read_only = on;
+alter role supabase_monitor_admin set transaction_read_only = on;
+alter role supabase_monitor_admin set search_path = '';
+alter role supabase_monitor_admin set statement_timeout = '3s';
+alter role supabase_monitor_admin set lock_timeout = '3s';
+alter role supabase_monitor_admin set idle_in_transaction_session_timeout = '3s';
+
 -- Extension namespacing
 create schema if not exists extensions;
 create extension if not exists "uuid-ossp"      with schema extensions;

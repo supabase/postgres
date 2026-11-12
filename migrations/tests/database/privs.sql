@@ -27,3 +27,10 @@ SELECT schema_privs_are('extensions', 'service_role', array['USAGE']);
 -- Role memberships
 SELECT is_member_of('pg_read_all_data', 'postgres');
 SELECT is_member_of('pg_signal_backend', 'postgres');
+
+-- read-only monitoring role.
+SELECT isnt_superuser('supabase_monitor_admin');
+SELECT is_member_of('pg_read_all_data', 'supabase_monitor_admin');
+SELECT is_member_of('pg_monitor', 'supabase_monitor_admin');
+SELECT database_privs_are(current_database(), 'supabase_monitor_admin', ARRAY['CONNECT', 'TEMPORARY']);
+SELECT schema_privs_are('public', 'supabase_monitor_admin', array['USAGE']);

@@ -1,0 +1,110 @@
+-- supabase_monitor_admin: passwordless, read-only
+-- monitoring role (quick_explainer.md,
+-- migrations/db/init-scripts/00000000000000-initial-schema.sql)
+-- attributes: login, no password, bypassrls, nothing else
+-- only accessible via localhost
+select rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin,
+       rolreplication, rolbypassrls, rolconnlimit, rolpassword is null as no_password
+from pg_authid where rolname = 'supabase_monitor_admin';
+ rolsuper | rolinherit | rolcreaterole | rolcreatedb | rolcanlogin | rolreplication | rolbypassrls | rolconnlimit | no_password 
+----------+------------+---------------+-------------+-------------+----------------+--------------+--------------+-------------
+ f        | t          | f             | f           | t           | f              | t            |            2 | t
+(1 row)
+
+-- per-role settings (read-only by default, empty search_path, timeouts)
+select unnest(rolconfig) as setting from pg_roles where rolname = 'supabase_monitor_admin' order by 1;
+                setting                 
+----------------------------------------
+ default_transaction_read_only=on
+ idle_in_transaction_session_timeout=3s
+ lock_timeout=3s
+ search_path=""
+ statement_timeout=3s
+ transaction_read_only=on
+(6 rows)
+
+-- memberships: exactly pg_monitor and pg_read_all_data (inherited; the role is
+-- a plain INHERIT role). SET ROLE to them only drops privileges, checked below.
+select roleid::regrole::text as role, admin_option, inherit_option, set_option
+from pg_auth_members where member = 'supabase_monitor_admin'::regrole order by 1;
+       role       | admin_option | inherit_option | set_option 
+------------------+--------------+----------------+------------
+ pg_monitor       | f            | t              | t
+ pg_read_all_data | f            | t              | t
+(2 rows)
+
+-- nobody is a member of it
+select count(*) from pg_auth_members where roleid = 'supabase_monitor_admin'::regrole;
+ count 
+-------
+     0
+(1 row)
+
+-- owns nothing and holds no object-level ACL entries anywhere
+-- keep in mind, the postgres role can assign it access to objects at a later point, but that's fine.
+select count(*) from pg_shdepend
+where refclassid = 'pg_authid'::regclass
+  and refobjid = 'supabase_monitor_admin'::regrole
+  and deptype in ('o', 'a');
+ count 
+-------
+     0
+(1 row)
+
+-- no CREATE on the database
+select has_database_privilege('supabase_monitor_admin', current_database(), 'CREATE');
+ has_database_privilege 
+------------------------
+ f
+(1 row)
+
+-- reads every table regardless of RLS, but cannot write; SET ROLE to a
+-- predefined role only loses privileges (BYPASSRLS stays with supabase_monitor_admin,
+-- so the RLS-protected rows disappear). NOTE: this uses SET SESSION
+-- AUTHORIZATION, which supautils impersonation may block
+create table public.monitor_probe (id int);
+insert into public.monitor_probe values (1), (2);
+alter table public.monitor_probe enable row level security;
+alter table public.monitor_probe force row level security;
+alter table public.monitor_probe owner to postgres;
+set session authorization supabase_monitor_admin;
+select count(*) from public.monitor_probe;
+ count 
+-------
+     2
+(1 row)
+
+insert into public.monitor_probe values (3);
+ERROR:  permission denied for table monitor_probe
+set role pg_read_all_data;
+select count(*) from public.monitor_probe;
+ count 
+-------
+     0
+(1 row)
+
+reset session authorization;
+drop table public.monitor_probe;
+-- reserved role (supautils.conf.j2): the non-superuser postgres role cannot
+-- grant it, modify it, grant to it, or drop it. Same pattern as
+-- supautils_reserved_roles.sql.
+begin;
+set role postgres;
+savepoint s;
+grant supabase_monitor_admin to postgres;
+ERROR:  "supabase_monitor_admin" role memberships are reserved, only superusers can grant them
+rollback to savepoint s;
+alter role supabase_monitor_admin password 'x';
+ERROR:  "supabase_monitor_admin" is a reserved role, only superusers can modify it
+rollback to savepoint s;
+alter role supabase_monitor_admin set search_path = public;
+ERROR:  "supabase_monitor_admin" is a reserved role, only superusers can modify it
+rollback to savepoint s;
+grant authenticated to supabase_monitor_admin;
+ERROR:  "supabase_monitor_admin" is a reserved role, only superusers can modify it
+rollback to savepoint s;
+drop role supabase_monitor_admin;
+ERROR:  "supabase_monitor_admin" is a reserved role, only superusers can modify it
+rollback to savepoint s;
+reset role;
+rollback;
