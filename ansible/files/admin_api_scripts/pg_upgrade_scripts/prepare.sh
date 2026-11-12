@@ -11,9 +11,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0")
 
-# The log file is never truncated: when the script is retried by the caller,
-# each attempt appends to the same file. It is created right away so that it
-# exists even if a later step fails.
+# Each attempt overwrites the log. Failed attempts are shipped before the retry.
 LOG_FILE="/var/log/pg-upgrade-prepare.log"
 touch "$LOG_FILE"
 chmod 640 "$LOG_FILE"
