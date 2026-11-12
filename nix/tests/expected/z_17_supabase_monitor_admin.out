@@ -1,5 +1,4 @@
--- supabase_monitor_admin: passwordless, read-only
--- monitoring role (quick_explainer.md,
+-- supabase_monitor_admin: passwordless, read-only, for monitoring from localhost
 -- migrations/db/init-scripts/00000000000000-initial-schema.sql)
 -- attributes: login, no password, bypassrls, nothing else
 -- only accessible via localhost

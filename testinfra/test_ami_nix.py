@@ -1162,16 +1162,18 @@ def test_supabase_monitor_admin_role_is_passwordless_and_reachable_on_loopback(h
     has no password and relies on the same pg_hba trust rules.
 
     Unlike the other service roles, this role must never be given a password in
-    nix/tools/postgresql_schema.sql or the fixture at the top of this file. 
+    nix/tools/postgresql_schema.sql or the fixture at the top of this file.
     It should only be accessible from localhost.
     """
     ssh = host["ssh"]
-    psql_admin = "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -At -c "
+    psql_admin = (
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -At -c "
+    )
 
     result = run_ssh_command(
         ssh,
         psql_admin
-        + "\"select rolcanlogin, rolpassword is null, rolbypassrls, rolsuper, "
+        + '"select rolcanlogin, rolpassword is null, rolbypassrls, rolsuper, '
         "rolcreaterole, rolcreatedb, rolreplication "
         "from pg_authid where rolname = 'supabase_monitor_admin'\"",
     )
