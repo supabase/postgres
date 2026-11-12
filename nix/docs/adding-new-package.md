@@ -4,9 +4,9 @@
     To see how packages are organized and how `ourExtensions` fits into flake-parts, see [Nix tree structure](./nix-directory-structure.md).
 
 ## Pre-packaging steps
+
 1. Install Nix with the [official installer](https://nix.dev/install-nix)
 2. Create a branch off of `develop`
-
 
 ## C/C++ postgres extensions
 
@@ -45,16 +45,16 @@ stdenv.mkDerivation rec {
 }
 ```
 
-This uses `stdenv.mkDerivation` which is a general nix builder for C and C++ projects (and others). It can auto detect the Makefile, and attempt to use it. ***It's a good practice to not have steps in the Makefile of your project that try to deal with OS specific system paths, or make calls out to the internet, as Nix cannot use these steps to build your project.*** 
+This uses `stdenv.mkDerivation` which is a general nix builder for C and C++ projects (and others). It can auto detect the Makefile, and attempt to use it. _**It's a good practice to not have steps in the Makefile of your project that try to deal with OS specific system paths, or make calls out to the internet, as Nix cannot use these steps to build your project.**_
 
 Your build should produce all of the sql and control files needed for the install phase.
 
 1. Once you have created this file, you can add it to `nix/ext/<yourname>.nix` and edit `nix/packages/postgres.nix` and add it to the `ourExtensions` list.
-2. `git add .` as nix uses git to track changes 
+2. `git add .` as nix uses git to track changes
 3. In your package file, temporarily empty the `hash = "sha256<...>=";` to `hash = "";` and save and `git add .`
-4. Run `nix build .#psql_15.exts.<yourname>`  to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15.exts.<yourname>`. 
+4. Run `nix build .#psql_15.exts.<yourname>` to try to trigger a build, nix will print the calculated sha256 value that you can add back the the `hash` variable, save the file again, and re-run `nix build .#psql_15.exts.<yourname>`.
 5. Add any needed migrations into the `supabase/postgres` migrations directory.
-6. You can then run tests locally to verify that the update of the package succeeded. 
+6. You can then run tests locally to verify that the update of the package succeeded.
 7. Now it's ready for PR review!
 
 ## Extensions written in Rust that use `buildPgrxExtension` builder
@@ -67,10 +67,9 @@ Extensions like:
 
 Are written in Rust, built with `cargo`, and need to use https://github.com/pgcentralfoundation/pgrx to build the extension.
 
-We in turn have a special nix package `builder` which is sourced from `nixpkgs` and called `buildPgrxExtension` 
+We in turn have a special nix package `builder` which is sourced from `nixpkgs` and called `buildPgrxExtension`
 
 A simple example is found in `pg_jsonschema`
-
 
 ```
 { lib, stdenv, fetchFromGitHub, postgresql, buildPgrxExtension_0_11_3, cargo }:
@@ -113,7 +112,7 @@ buildPgrxExtension_0_11_3 rec {
     echo "Creating SQL files for previous versions..."
     current_version="${version}"
     sql_file="$out/share/postgresql/extension/pg_jsonschema--$current_version.sql"
-    
+
     if [ -f "$sql_file" ]; then
       while read -r previous_version; do
         if [ "$(printf '%s\n' "$previous_version" "$current_version" | sort -V | head -n1)" = "$previous_version" ] && [ "$previous_version" != "$current_version" ]; then
@@ -143,18 +142,15 @@ The pgrx version and Rust toolchain are pinned per extension version in `nix/car
 A few things about `buildPgrxExtension`:
 
 * It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
-* It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above 
+* It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above
 * It calculates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
-
 
 ## Post Nix derivation release steps
 
-
-1. You can add and run tests as described in https://github.com/supabase/postgres/blob/develop/nix/docs/adding-tests.md 
-2. You may need to add tests to our test.yml gh action workflow as well.
-3. You can add the package and name and version to `ansible/vars.yml` it is not necessary to add the sha256 hash here, as the package is already built and cached in our release process before these vars are ever run.
-4. to check that all your files will land in the overall build correctly, you can run `nix build .#psql_15.bin` on your machine, and check in `result/bin, result/lib, result/share/postgresql/*` and you should see your lib, .control and sql files there. 
-5. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#start-client -- --version 15` and try to `CREATE EXTENSION <yourname>` and work with it there
-6. Check that your extension works with the `pg_upgrade` process (TODO documentation forthcoming)
-7. Now you are ready to PR the extension
-8. From here, the release process should typically take care of the rest. 
+1. You can add and run tests as described in https://github.com/supabase/postgres/blob/develop/nix/docs/adding-tests.md
+2. You can add the package and name and version to `ansible/vars.yml` it is not necessary to add the sha256 hash here, as the package is already built and cached in our release process before these vars are ever run.
+3. to check that all your files will land in the overall build correctly, you can run `nix build .#psql_15.bin` on your machine, and check in `result/bin, result/lib, result/share/postgresql/*` and you should see your lib, .control and sql files there.
+4. You can also run `nix run .#start-server 15` and in a new terminal window run `nix run .#start-client -- --version 15` and try to `CREATE EXTENSION <yourname>` and work with it there
+5. Check that your extension works with the `pg_upgrade` process (TODO documentation forthcoming)
+6. Now you are ready to PR the extension
+7. From here, the release process should typically take care of the rest.

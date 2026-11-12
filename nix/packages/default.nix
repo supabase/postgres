@@ -1,10 +1,11 @@
 { self, inputs, ... }:
 {
   imports = [
-    ./postgres.nix
-    ./postgres-env.nix
-    ./site-env.nix
     ./extension-catalog.nix
+    ./images.nix
+    ./postgres-env.nix
+    ./postgres.nix
+    ./site-env.nix
   ];
   perSystem =
     {
@@ -45,24 +46,42 @@
         inherit (self'.packages) supabase-groonga;
         inherit (self.supabase) defaults;
       };
-      makeAmiTestStamp =
+      # one port each so the schema checks can also run side by side outside the linux sandbox
+      schemaPorts = {
+        "15" = "5550";
+        "17" = "5551";
+        "orioledb-17" = "5552";
+      };
+      makeSchemaDump =
         version:
-        pkgs.callPackage ./ami-test-stamp.nix {
-          inherit (self'.packages) build-ami;
-          nix-store-paths = self'.packages."nix-store-paths-${version}";
-          postgresMajorVersion = version;
+        pkgs.callPackage ./schema-dump {
+          inherit (self.supabase) defaults;
+          inherit version;
+          port = schemaPorts.${version};
+          postgresql = self'.packages."psql_${version}/bin";
+          startServer = pkgs-lib.makePostgresDevSetup {
+            inherit pkgs;
+            name = "start-postgres-server-schema-${version}";
+            pgroonga = self'.legacyPackages."psql_${version}".exts.pgroonga;
+            extraSubstitutions = {
+              PGSODIUM_GETKEY = "${self'.packages.getkey-script}/bin/pgsodium-getkey";
+              PGSQL_DEFAULT_PORT = schemaPorts.${version};
+            };
+          };
+        };
+      makeSchemaCheck =
+        version:
+        pkgs.callPackage ./schema-check {
+          inherit version;
+          schemaDump = self'.packages."schema-dump-${version}";
         };
     in
     {
       packages = (
         {
-          ami-test-stamp-15 = makeAmiTestStamp "15";
-          ami-test-stamp-17 = makeAmiTestStamp "17";
-          ami-test-stamp-orioledb-17 = makeAmiTestStamp "orioledb-17";
-          build-ami = pkgs.callPackage ./build-ami { packer = self'.packages.packer; };
-          build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
-          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          getkey-script = pkgs.callPackage ./getkey-script { };
+          dbmate-tool = pkgs.callPackage ./dbmate-tool { };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
             psql_17_slim = self'.packages."psql_17_slim/bin";
@@ -95,6 +114,12 @@
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
+          schema-check-15 = makeSchemaCheck "15";
+          schema-check-17 = makeSchemaCheck "17";
+          schema-check-orioledb-17 = makeSchemaCheck "orioledb-17";
+          schema-dump-15 = makeSchemaDump "15";
+          schema-dump-17 = makeSchemaDump "17";
+          schema-dump-orioledb-17 = makeSchemaDump "orioledb-17";
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";

@@ -281,10 +281,9 @@ jobs:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
+  # TODO: remove together with test.yml once the "schema / verify (...)" required status checks
+  # are gone from the develop branch protection, the schema-<version> nix checks replaced it
   schema:
-    needs:
-      - builds-aarch64-linux
-      - builds-x86_64-linux
     uses: $/.github/workflows/test.yml
 
   containers:
@@ -297,6 +296,9 @@ jobs:
   qemu:
     needs: builds-aarch64-linux
     uses: $/.github/workflows/qemu-image-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   check:
     name: CI ✅
@@ -307,7 +309,6 @@ jobs:
       - checks
       - containers
       - qemu
-      - schema
     steps:
       - name: Check dependent job results
         if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
