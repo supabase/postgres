@@ -677,11 +677,8 @@ EOF
 			MAX_DURATION="10m"
 			KILL_AFTER="15s"
 
+			STATUS=0
 			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
-
-			# if everything is fine, $STATUS hasn't been defined,
-			# so we initialize it with 0 because it's a success
-			STATUS=${STATUS:-0}
 
 			# we'll manage ERROR codes down there, to actually log anything
 			# properly, for later diagnostic reading the $LOG_FILE into project
