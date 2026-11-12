@@ -87,11 +87,11 @@ if ! umount_out=$(umount /data 2>&1); then
 	shopt -s nullglob
 
 	QUOTING_STYLE=literal stat -c '%U %N' /proc/[0-9]*/cwd 2>/dev/null |
-    sed -nE 's|^(\S+) /proc/([0-9]+)/cwd -> /data(/.*)?$|\1 \2|p' |
-    while read -r user pid; do
-        comm=$(cat "/proc/$pid/comm" 2>/dev/null) || continue
-        log "user: ${user} pid: ${pid} command: ${comm}"
-    done
+		sed -nE 's|^(\S+) /proc/([0-9]+)/cwd -> /data(/.*)?$|\1 \2|p' |
+		while read -r user pid; do
+			comm=$(cat "/proc/$pid/comm" 2>/dev/null) || continue
+			log "user: ${user} pid: ${pid} command: ${comm}"
+		done || true
 
 	exit 1
 fi
