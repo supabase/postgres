@@ -664,7 +664,7 @@ EOF
 		# (${PGDATAOLD}) is <= 20 Gb
 
 		# 20 gb = 20 x 1024 x 1024 = 20971520
-		MAX_SIZE=20971520
+		MAX_SIZE=$((20 * 1024 * 1024))
 
 		PGDATAOLD_SIZE=$(du -sk "${PGDATAOLD}" | cut -f1)
 
