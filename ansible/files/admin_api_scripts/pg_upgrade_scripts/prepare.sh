@@ -35,28 +35,16 @@ source "$SCRIPT_DIR/common.sh" || {
 	exit 1
 }
 
-# Runs on every exit (success, explicit "exit 1" or set -e failure).
-#   - success: final message + single upload of the log file
-#   - failure: nothing more is written (the error is already in the log) and
-#     nothing is uploaded: the script cannot know whether the caller will
-#     retry, so the caller handles the "gave up" case.
-# The script's exit code is always preserved for the caller.
 on_exit() {
 	local rc=$?
-	trap - EXIT ERR # avoid re-entering the traps from inside this handler
+	trap - EXIT ERR
 
-	if [ "$rc" -eq 0 ]; then
-		log "prepare.sh ended with no errors."
-		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
-	else
-		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
-	fi
+	[ "$rc" -eq 0 ] && log "prepare.sh ended with no errors."
+	ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	exit "$rc"
 }
 trap on_exit EXIT
 
-# Written at every attempt. It is also the marker used above to detect
-# retries, so do not change its wording.
 log "prepare.sh started"
 
 # check that /data is actually mounted
@@ -92,33 +80,18 @@ sync
 # "log" so that it is timestamped like the rest of the log entries.
 if ! umount_out=$(umount /data 2>&1); then
 	log "Unable to unmount /data: $umount_out"
-	# List the processes still using /data ("|| true" so a fuser failure
-	# does not trigger the ERR trap and mask the real cause)
+	# List the processes whose cwd is under /data.
 	log "Processes using /data:"
 
 	# activate nullglob to avoid errors if /proc is not accessible
 	shopt -s nullglob
 
-	# go thru /proc on numeric PIDs
-	for pid_dir in /proc/[0-9]*/; do
-
-		# extract pid from dir name
-		pid="${pid_dir#/proc/}"
-		pid="${pid%/}"
-
-		# secure read from symbolink link cwd
-		if cwd=$(readlink -f "$pid_dir/cwd" 2>/dev/null); then
-			if [[ $cwd == "/data" || $cwd == "/data"/* ]]; then
-				# get user and name of the current command
-				stat_info=$(stat -c "%U" "$pid_dir" 2>/dev/null || true)
-				cmd_info=$(cat "$pid_dir/comm" 2>/dev/null || true)
-
-				if [[ -n $stat_info && -n $cmd_info ]]; then
-					log "user: ${stat_info} pid: ${pid} command: ${cmd_info}"
-				fi
-			fi
-		fi
-	done
+	QUOTING_STYLE=literal stat -c '%U %N' /proc/[0-9]*/cwd 2>/dev/null |
+    sed -nE 's|^(\S+) /proc/([0-9]+)/cwd -> /data(/.*)?$|\1 \2|p' |
+    while read -r user pid; do
+        comm=$(cat "/proc/$pid/comm" 2>/dev/null) || continue
+        log "user: ${user} pid: ${pid} command: ${comm}"
+    done
 
 	exit 1
 fi
