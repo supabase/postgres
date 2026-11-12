@@ -12,10 +12,11 @@ let
       system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
       testLib = import ./lib.nix { inherit self pkgs; };
       versions = self.legacyPackages.${system}.psql_15.exts.${pname}.versions;
+      testPkgs = import self.inputs.nixpkgs-nixos-tests { inherit system; };
     in
-    pkgs.testers.runNixOSTest {
+    testPkgs.testers.runNixOSTest {
       name = pname;
-      nodes.server =
+      containers.server =
         { ... }:
         {
           imports = [
