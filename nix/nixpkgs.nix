@@ -6,7 +6,6 @@
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        permittedInsecurePackages = [ "v8-9.7.106.18" ];
         overlays = [
           # Patch tzdata to 2026f until nixpkgs catches up.
           # Drop once the pinned nixpkgs ships >= 2026f (the assertion below trips):
@@ -97,10 +96,7 @@
           (
             let
               # Provide older versions of packages required by some extensions
-              oldstable = import inputs.nixpkgs-oldstable {
-                inherit system;
-                config.allowUnfree = true;
-              };
+              oldstable = import inputs.nixpkgs-oldstable { inherit system; };
             in
             _final: _prev: {
               v8_oldstable = oldstable.v8;

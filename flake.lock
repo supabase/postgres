@@ -264,6 +264,7 @@
       }
     },
     "nixpkgs-oldstable": {
+      "flake": false,
       "locked": {
         "lastModified": 1712666087,
         "narHash": "sha256-WwjUkWsjlU8iUImbivlYxNyMB1L5YVqE8QotQdL9jWc=",
