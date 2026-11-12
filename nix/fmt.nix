@@ -12,13 +12,6 @@
         shfmt.enable = true;
         shfmt.indent_size = null; # use shfmt's default width (tab)
       };
-
-      settings = {
-        global.excludes = [
-          "*.sum"
-          "vendor/*"
-        ];
-      };
     };
   };
 }
