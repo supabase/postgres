@@ -1,5 +1,6 @@
 {
   awscli2,
+  lib,
   cloud-utils,
   coreutils,
   gitMinimal,
@@ -8,6 +9,20 @@
   writeShellApplication,
   yq,
 }:
+let
+  root = ../../..;
+  qemuSources = lib.fileset.toSource {
+    inherit root;
+    fileset = lib.fileset.unions [
+      (root + "/ansible")
+      (root + "/audit-specs")
+      (root + "/migrations/db")
+      (root + "/packer")
+      ./meta-data
+      ./user-data-cloudimg
+    ];
+  };
+in
 writeShellApplication {
   name = "build-qemu-image";
 
@@ -21,5 +36,7 @@ writeShellApplication {
     yq
   ];
 
-  text = builtins.readFile ./build-qemu-image.sh;
+  text = lib.replaceStrings [ "@qemuSources@" ] [ (toString qemuSources) ] (
+    builtins.readFile ./build-qemu-image.sh
+  );
 }

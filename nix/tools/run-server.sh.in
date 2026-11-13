@@ -159,7 +159,8 @@ else
 fi
 
 # Set environment variables and paths
-export PATH=$BINDIR/bin:$PATH
+# Only the postgres binaries and the tools listed in lib.nix, nothing from the caller
+export PATH=$BINDIR/bin:@TOOLS_PATH@
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PORTNO="${PORTNO:-@PGSQL_DEFAULT_PORT@}"

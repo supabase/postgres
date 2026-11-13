@@ -53,7 +53,6 @@ source "qemu" "cloudimg" {
   disk_size        = "15G"
   format           = "qcow2"
   headless         = true
-  http_directory   = "http"
   iso_checksum     = "file:https://cloud-images.ubuntu.com/minimal/releases/noble/release/SHA256SUMS"
   iso_url          = "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-${var.arch}.img"
   memory           = 4096 # MiB

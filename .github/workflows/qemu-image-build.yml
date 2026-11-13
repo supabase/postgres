@@ -2,10 +2,6 @@ name: Build QEMU image
 
 on:
   workflow_call:
-    secrets:
-      DEV_AWS_ROLE:
-        description: AWS role used to fetch the supa-tripwire archive
-        required: true
     inputs:
       arch:
         description: Guest architecture (amd64 is experimental and publishes only to staging)
@@ -15,6 +11,13 @@ on:
         description: Upload the built disk image as an artifact for the release workflow
         type: boolean
         default: false
+    secrets:
+      DEV_AWS_ROLE:
+        description: AWS role used to fetch the supa-tripwire archive and push the stamp to the Nix binary cache
+        required: true
+      NIX_SIGN_SECRET_KEY:
+        description: Nix signing secret key for the stamp (optional)
+        required: false
     outputs:
       version:
         description: Image tag for this build
@@ -34,6 +37,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   build:
@@ -62,17 +66,53 @@ jobs:
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
+        with:
+          push-to-cache: ${{ !inputs.publish }}
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
+      # Publishing needs the disk image, so only plain test builds can be skipped.
+      # A stamp describes this checkout's packages, so it can't vouch for an image built from another sha.
+      - name: Check for a passing stamp
+        id: stamp
+        env:
+          CACHE_URL: https://nix-postgres-artifacts.s3.amazonaws.com
+          GIT_SHA: ${{ github.sha }}
+          PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          case "$TARGET_ARCH" in
+            amd64) system=x86_64-linux ;;
+            arm64) system=aarch64-linux ;;
+            *) echo "Unsupported architecture: $TARGET_ARCH" >&2; exit 1 ;;
+          esac
+          stamp=$(nix eval --raw ".#packages.$system.qemu-image-stamp-$POSTGRES_MAJOR_VERSION")
+          echo "system=$system" >>"$GITHUB_OUTPUT"
+          cached=false
+          if [[ $PUBLISH != true && $PACKAGES_GIT_SHA == "$GIT_SHA" ]] && nix path-info --store "$CACHE_URL" "$stamp" &>/dev/null; then
+            echo "::notice::image already passed ($stamp), skipping build"
+            cached=true
+          fi
+          echo "cached=$cached" >>"$GITHUB_OUTPUT"
 
       - name: Require non-numeric suffix for manual publish
-        if: inputs.publish && github.event_name == 'workflow_dispatch' && env.TARGET_ARCH == 'arm64'
+        if: steps.stamp.outputs.cached != 'true' && inputs.publish && github.event_name == 'workflow_dispatch' && env.TARGET_ARCH == 'arm64'
         run: |
-          SUFFIX=$(nix run nixpkgs#yq -- -e ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
+          SUFFIX=$(nix run --inputs-from . nixpkgs#yq -- -e ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml | sed -E 's/[0-9\.]+(.*)$/\1/')
           if [[ -z $SUFFIX ]]; then
             echo "Version must include non-numeric characters if published manually."
             exit 1
           fi
 
       - name: Verify QEMU can use KVM
+        if: steps.stamp.outputs.cached != 'true'
         shell: bash
         run: |
           case "$TARGET_ARCH" in
@@ -86,13 +126,8 @@ jobs:
               -m 128M -nodefaults -display none -S -qmp stdio |
             jq -se 'any(.[]; .return.enabled == true)'
 
-      - name: Resolve git sha
-        id: resolve-git-sha
-        uses: $/.github/actions/resolve-git-sha
-        with:
-          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
-
       - name: Build QEMU artifact
+        if: steps.stamp.outputs.cached != 'true'
         env:
           GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: BUILD_QEMU_IMAGE_HW_VIRT_ONLY=1 nix run .#build-qemu-image "$POSTGRES_MAJOR_VERSION" "$TARGET_ARCH"
@@ -100,22 +135,39 @@ jobs:
       - name: Grab release version
         id: process_release_version
         run: |
-          PG_VERSION=$(nix run nixpkgs#yq -- -er ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml)
+          PG_VERSION=$(nix run --inputs-from . nixpkgs#yq -- -er ".postgres_release.postgres$POSTGRES_MAJOR_VERSION" ansible/postgres_release.yml)
           if [[ "$TARGET_ARCH" == amd64 ]]; then
             PG_VERSION="$PG_VERSION-amd64-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           fi
           echo "version=$PG_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build image
+        id: build-image
+        if: steps.stamp.outputs.cached != 'true'
         env:
           IMAGE_TAG: ${{ steps.process_release_version.outputs.version }}
         run: |
-          docker build --platform "linux/$TARGET_ARCH" -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" packer-work-qemu-*
+          docker build --platform "linux/$TARGET_ARCH" -f Dockerfile-kubernetes -t "postgres:$IMAGE_TAG" --iidfile "$RUNNER_TEMP/image-id" packer-work-qemu-*
+          echo "digest=$(sed 's/^sha256://' "$RUNNER_TEMP/image-id")" >>"$GITHUB_OUTPUT"
+
+      # the post-build-hook from install-nix pushes the stamp, so later runs with the same inputs skip this build
+      # --no-pure-eval lets the stamp read STAMP_FILE; it refuses to build without the built image's digest
+      - name: Record passing build in the binary cache
+        if: steps.stamp.outputs.cached != 'true' && !inputs.publish && steps.resolve-git-sha.outputs.sha == github.sha
+        env:
+          DIGEST: ${{ steps.build-image.outputs.digest }}
+          SYSTEM: ${{ steps.stamp.outputs.system }}
+        run: |
+          set -euo pipefail
+          STAMP_FILE=$RUNNER_TEMP/image-digest
+          printf '%s' "$DIGEST" >"$STAMP_FILE"
+          export STAMP_FILE
+          nix build --no-pure-eval --no-link -L ".#packages.$SYSTEM.qemu-image-stamp-$POSTGRES_MAJOR_VERSION"
 
       - name: Compress disk image
-        if: inputs.publish
+        if: steps.stamp.outputs.cached != 'true' && inputs.publish
         run: |
-          nix run nixpkgs#zstd -- -T0 -o "$RUNNER_TEMP/packer-cloudimg.zst" packer-work-qemu-*/output-cloudimg/packer-cloudimg
+          nix run --inputs-from . nixpkgs#zstd -- -T0 -o "$RUNNER_TEMP/packer-cloudimg.zst" packer-work-qemu-*/output-cloudimg/packer-cloudimg
 
       - name: Upload disk image
         if: inputs.publish

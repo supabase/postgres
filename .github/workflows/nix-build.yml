@@ -281,12 +281,6 @@ jobs:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
-  schema:
-    needs:
-      - builds-aarch64-linux
-      - builds-x86_64-linux
-    uses: $/.github/workflows/test.yml
-
   containers:
     needs: builds-aarch64-linux
     uses: $/.github/workflows/docker-image-test.yml
@@ -299,6 +293,7 @@ jobs:
     uses: $/.github/workflows/qemu-image-build.yml
     secrets:
       DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   check:
     name: CI ✅
@@ -309,7 +304,6 @@ jobs:
       - checks
       - containers
       - qemu
-      - schema
     steps:
       - name: Check dependent job results
         if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')

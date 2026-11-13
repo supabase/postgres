@@ -34,7 +34,7 @@ jobs:
             echo "Error: git revision '$rev' not found"
             exit 1
           fi
-          VERSIONS=$(git show "$rev:ansible/vars.yml" | nix run nixpkgs#yq-go -- -e -o=json -I=0 '.postgres_major')
+          VERSIONS=$(git show "$rev:ansible/vars.yml" | nix run --inputs-from . nixpkgs#yq-go -- -e -o=json -I=0 '.postgres_major')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
@@ -70,7 +70,7 @@ jobs:
             file=ansible/vars.yml
           fi
 
-          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
+          VERSION=$(git show "$rev:$file" | nix run --inputs-from . nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
@@ -146,7 +146,7 @@ jobs:
             file=ansible/vars.yml
           fi
 
-          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
+          VERSION=$(git show "$rev:$file" | nix run --inputs-from . nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
