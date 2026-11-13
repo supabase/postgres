@@ -7,7 +7,7 @@
 - name: adminapi - system user
   ansible.builtin.user:
     name: adminapi
-    uid: "{{ 1006 if not qemu else 1007 }}"
+    uid: "{{ uids.adminapi }}"
     group: adminapi
     groups: admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,root,systemd-journal,vector,wal-g
 
@@ -74,6 +74,7 @@
     - { file: "prepare.sh" }
     - { file: "pgsodium_getkey.sh" }
     - { file: "common.sh" }
+    - { file: "start_guard.sh" }
 
 - name: adminapi - create service file
   template:

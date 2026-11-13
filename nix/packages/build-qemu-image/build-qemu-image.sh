@@ -1,5 +1,7 @@
 # shellcheck shell=bash
 
+set -euxo pipefail
+
 # nix-built qemu resolves its libraries via RPATH; an inherited
 # LD_LIBRARY_PATH (e.g. from a devshell) can inject a mismatched glibc and
 # break `qemu-system-* --version`, so drop it.
@@ -45,26 +47,35 @@ if [[ -z ${BUILD_QEMU_IMAGE_HW_VIRT_ONLY:-} ]]; then
 	machine+=:tcg
 fi
 
-workdir=$(mktemp -d packer-work-qemu-XXXXXX)
+# stays in the invoking directory (absolute, since we cd into the sources below) because callers pick up the output from there
+workdir=$(mktemp -d "$PWD/packer-work-qemu-XXXXXX")
 install --mode 444 "$code" "$workdir/ovmf_code.fd"
 install --mode 644 "$vars" "$workdir/ovmf_vars.fd" # qemu writes to the vars pflash during boot
 
 git_sha=${GIT_SHA:-$(git rev-parse HEAD)}
-postgres_version=$(yq -r ".postgres_release[\"postgres$postgres_major_version\"]" ansible/vars.yml)
+system=$([[ $arch == arm64 ]] && echo aarch64-linux || echo x86_64-linux)
+
+nix_store_paths=$(cat "$(nix build --no-link --print-out-paths "github:supabase/postgres/$git_sha#packages.$system.nix-store-paths-$postgres_major_version")")
+
+# packer reads ansible, migrations, etc. relative to the working directory
+cd @qemuSources@
+
+postgres_version=$(yq -er ".postgres_release.postgres$postgres_major_version" ansible/postgres_release.yml)
 
 # Build the cloud-init seed ISO before invoking packer.
-cloud-localds "$workdir/seeds-cloudimg.iso" user-data-cloudimg meta-data
+cloud-localds "$workdir/seeds-cloudimg.iso" nix/packages/build-qemu-image/user-data-cloudimg nix/packages/build-qemu-image/meta-data
 
 export LC_ALL=C.UTF-8
+export PACKER_CACHE_DIR=${PACKER_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/packer} # the sources are read-only, so packer can't keep its default ./packer_cache there
 export TZ=UTC
-packer init qemu.pkr.hcl
+packer init packer/qemu.pkr.hcl
 PACKER_LOG=${PACKER_LOG:-1} packer build \
 	-var "arch=$arch" \
 	-var "cpu=$cpu" \
-	-var "git_sha=$git_sha" \
 	-var "machine=$machine" \
+	-var "nix_store_paths=$nix_store_paths" \
 	-var "postgres-version=$postgres_version" \
 	-var "postgres_major_version=$postgres_major_version" \
 	-var "qemu_binary=$qemu" \
 	-var "workdir=$workdir" \
-	qemu.pkr.hcl
+	packer/qemu.pkr.hcl

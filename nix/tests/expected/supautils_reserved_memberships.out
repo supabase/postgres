@@ -1,0 +1,30 @@
+set role postgres;
+grant pg_read_server_files to postgres;
+ERROR:  "pg_read_server_files" role memberships are reserved, only superusers can grant them
+grant pg_write_server_files to postgres;
+ERROR:  "pg_write_server_files" role memberships are reserved, only superusers can grant them
+grant pg_execute_server_program to postgres;
+ERROR:  "pg_execute_server_program" role memberships are reserved, only superusers can grant them
+grant supabase_admin to postgres;
+ERROR:  "supabase_admin" role memberships are reserved, only superusers can grant them
+grant supabase_auth_admin to postgres;
+ERROR:  "supabase_auth_admin" role memberships are reserved, only superusers can grant them
+grant supabase_storage_admin to postgres;
+ERROR:  "supabase_storage_admin" role memberships are reserved, only superusers can grant them
+grant supabase_read_only_user to postgres;
+ERROR:  "supabase_read_only_user" role memberships are reserved, only superusers can grant them
+grant supabase_realtime_admin to postgres;
+ERROR:  "supabase_realtime_admin" role memberships are reserved, only superusers can grant them
+grant supabase_replication_admin to postgres;
+ERROR:  "supabase_replication_admin" role memberships are reserved, only superusers can grant them
+grant supabase_etl_admin to postgres;
+ERROR:  "supabase_etl_admin" role memberships are reserved, only superusers can grant them
+grant dashboard_user to postgres;
+ERROR:  "dashboard_user" role memberships are reserved, only superusers can grant them
+grant pgbouncer to postgres;
+ERROR:  "pgbouncer" role memberships are reserved, only superusers can grant them
+grant authenticator to postgres;
+ERROR:  "authenticator" role memberships are reserved, only superusers can grant them
+grant pg_write_all_data to postgres;
+ERROR:  "pg_write_all_data" role memberships are reserved, only superusers can grant them
+reset role;

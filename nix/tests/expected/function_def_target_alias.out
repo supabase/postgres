@@ -1,0 +1,32 @@
+-- What changed: pg_get_functiondef(), pg_get_ruledef() and \d+ now always print AS before a target-table alias in UPDATE and DELETE.
+-- So `UPDATE t x` becomes `UPDATE t AS x`.
+-- Without AS, an alias named `set` produced a definition that failed to restore.
+--
+-- Who notices: queries run the same.
+-- Schema-diff tools compare these printed definitions, though.
+-- So `supabase db diff`, `supabase db pull` and migra may report changes to unchanged BEGIN ATOMIC functions and rules right after the upgrade.
+--
+-- Upstream commits: 697e1d3d5 (PG 15.20), 91246c726 (PG 17.12).
+BEGIN;
+CREATE TABLE fdta_tbl (id int, val int);
+CREATE FUNCTION fdta_func() RETURNS void LANGUAGE sql
+BEGIN ATOMIC
+  UPDATE fdta_tbl t SET val = t.val + 1 WHERE t.id = 1;
+  DELETE FROM fdta_tbl d WHERE d.id = 2;
+END;
+SELECT pg_get_functiondef('fdta_func'::regproc);
+              pg_get_functiondef               
+-----------------------------------------------
+ CREATE OR REPLACE FUNCTION public.fdta_func()+
+  RETURNS void                                +
+  LANGUAGE sql                                +
+ BEGIN ATOMIC                                 +
+  UPDATE fdta_tbl AS t SET val = (t.val + 1)  +
+    WHERE (t.id = 1);                         +
+  DELETE FROM fdta_tbl AS d                   +
+    WHERE (d.id = 2);                         +
+ END                                          +
+ 
+(1 row)
+
+ROLLBACK;

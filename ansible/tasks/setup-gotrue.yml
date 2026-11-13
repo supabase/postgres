@@ -13,7 +13,7 @@
 - name: Gotrue - system user
   ansible.builtin.user:
     name: gotrue
-    uid: "{{ 1001 if not qemu else 1002 }}"
+    uid: "{{ uids.gotrue }}"
     group: gotrue
     state: present
 
