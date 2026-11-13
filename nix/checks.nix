@@ -967,7 +967,7 @@
               '';
           collation-version-check =
             let
-              baseline = "glibc-2.40-66";
+              baseline = "glibc-2.42-103";
               check =
                 name: actual:
                 lib.assertMsg (actual == baseline) ''
