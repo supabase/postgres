@@ -113,6 +113,7 @@ in
       "benchmark"
       "big-parallel"
       "nixos-test"
+      "uid-range"
     ];
     config = {
       virtualisation = {
@@ -122,8 +123,24 @@ in
         };
         cores = 6;
       };
+      nix.settings = {
+        experimental-features = [
+          "auto-allocate-uids"
+          "cgroups"
+        ];
+        auto-allocate-uids = true;
+        system-features = [
+          "kvm"
+          "benchmark"
+          "big-parallel"
+          "nixos-test"
+          "uid-range"
+        ];
+      };
     };
   };
+
+  launchd.daemons.linux-builder.environment.QEMU_OPTS = "-cpu host";
 
   nix.distributedBuilds = true;
 

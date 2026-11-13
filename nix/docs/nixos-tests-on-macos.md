@@ -31,7 +31,9 @@ The linux-builder VM is configured with:
 - 8GB RAM
 - 40GB disk
 - Support for both x86_64-linux and aarch64-linux builds
-- The `nixos-test` feature required for running NixOS tests
+- The `nixos-test` and `uid-range` features required for running NixOS tests
+- `auto-allocate-uids` and `cgroups` enabled inside the VM, so builds that need `uid-range` run
+- `-cpu host` passed to QEMU, since the default `-cpu max` breaks PAC-built guest binaries on M4
 
 After setup completes, restart your shell to access the helper commands.
 
@@ -151,6 +153,16 @@ start-linux-builder
 
 The VM is configured as ephemeral, meaning it's recreated fresh on each start.
 This ensures a clean environment but requires re-downloading cached build artifacts.
+
+### QEMU aborts on M4 with macOS 15.2 or later
+
+nixpkgs-unstable's QEMU 11.0.1 aborts during HVF vCPU init on M4.
+If your own nix-darwin config manages the builder, point `virtualisation.qemu.package` at `qemu_kvm` from the `nixos-26.05` branch.
+
+### Using your own nix-darwin config
+
+The setup script applies the `darwin-nixostest` configuration. If you already manage the machine with nix-darwin, copy the `nix.linux-builder` block and the `QEMU_OPTS` line from `nix/hosts/darwin-nixostest/darwin-configuration.nix` instead.
+Add `uid-range` to `nix.linux-builder.supportedFeatures` and to `nix.settings.system-features` inside the builder config.
 
 ### Slow first build
 
