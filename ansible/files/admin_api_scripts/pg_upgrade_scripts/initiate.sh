@@ -414,7 +414,9 @@ EXTRA_NIX_CONF
 		CATALOG_LOCAL="/tmp/nix-catalog-${NIX_FLAKE_VERSION}-psql_${PGVERSION}-${SYSTEM}.json"
 		log "Fetching catalog from: $CATALOG_S3"
 
-		if ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
+		if [ -n "${PG_UPGRADE_STORE_PATH:-}" ]; then
+			jq -n --arg s "$SYSTEM" --arg p "$PG_UPGRADE_STORE_PATH" '{($s): $p}' >"$CATALOG_LOCAL"
+		elif ! aws s3 cp "$CATALOG_S3" "$CATALOG_LOCAL" --region ap-southeast-1; then
 			log "ERROR: Failed to fetch catalog from $CATALOG_S3"
 			false # not exit: let the ERR trap run cleanup
 		fi
