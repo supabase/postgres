@@ -547,6 +547,13 @@
                     exit 1
                   fi
                   log info "Migrations tests completed successfully"
+
+                  log info "Running smoke tests"
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${./tests/smoke}/*.sql; then
+                    log error "Smoke tests failed"
+                    exit 1
+                  fi
+                  log info "Smoke tests completed successfully"
                 fi
               '';
             };
