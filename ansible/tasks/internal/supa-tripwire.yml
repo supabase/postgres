@@ -3,6 +3,7 @@
     url: "{{ lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') }}"
     checksum: "sha256:{{ supa_tripwire_sha256[platform] }}"
     dest: /tmp/supa-tripwire.tar.xz
+    mode: '0600'
     timeout: 120
   register: supa_tripwire_download
   until: supa_tripwire_download is succeeded
@@ -17,8 +18,6 @@
     include: supa-tripwire-v{{ supa_tripwire_release }}-{{ platform }}-linux-musl
     extra_opts:
       - --transform=s/.*/supa-tripwire/
-    owner: root
-    group: root
 
 - name: Set supa-tripwire binary mode
   ansible.builtin.file:
@@ -49,3 +48,8 @@
     name: supa-tripwire
     daemon_reload: true
     enabled: true
+
+- name: Remove supa-tripwire archive
+  ansible.builtin.file:
+    path: /tmp/supa-tripwire.tar.xz
+    state: absent

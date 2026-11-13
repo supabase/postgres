@@ -126,7 +126,6 @@ packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 if [[ -z ${SUPA_TRIPWIRE_URL:-} ]]; then
 	echo "::warning::SUPA_TRIPWIRE_URL is not set, building without supa-tripwire" >&2
 fi
-export SUPA_TRIPWIRE_URL=${SUPA_TRIPWIRE_URL:-}
 
 echo "::group::AMI Build: Stage 1"
 

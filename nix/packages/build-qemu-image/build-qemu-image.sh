@@ -68,7 +68,6 @@ cloud-localds "$workdir/seeds-cloudimg.iso" nix/packages/build-qemu-image/user-d
 if [[ -z ${SUPA_TRIPWIRE_URL:-} ]]; then
 	echo "::warning::SUPA_TRIPWIRE_URL is not set, building without supa-tripwire" >&2
 fi
-export SUPA_TRIPWIRE_URL=${SUPA_TRIPWIRE_URL:-}
 export LC_ALL=C.UTF-8
 export PACKER_CACHE_DIR=${PACKER_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/packer} # the sources are read-only, so packer can't keep its default ./packer_cache there
 export TZ=UTC
