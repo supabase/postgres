@@ -5,10 +5,6 @@ let
   ubuntuReleases = {
     "24.04" = {
       version = "2.39-0ubuntu8.9";
-      checked = [
-        "en_US.UTF-8/UTF-8"
-        "C.UTF-8/UTF-8"
-      ];
       localesDeb = "sha256-+DEO9LpEKEXPXUSlzj1desy2WbrpazoJmQAhMiCc02c=";
       x86_64-linux = {
         arch = "amd64";
@@ -23,8 +19,6 @@ let
     };
     "20.04" = {
       version = "2.31-0ubuntu9.18";
-      # Before 2.35 Debian's C.UTF-8 is not in code point order.
-      checked = [ "en_US.UTF-8/UTF-8" ];
       localesDeb = "sha256-Gz2hU7tttEU+vzVfUrKduEtHO9YxXy/LRery346Zwqw=";
       x86_64-linux = {
         arch = "amd64";
@@ -40,11 +34,7 @@ let
   };
 in
 rec {
-  # The only libc locales AMIs and Docker images ship.
-  shippedLocales = [
-    "en_US.UTF-8/UTF-8"
-    "C.UTF-8/UTF-8"
-  ];
+  checkedLocales = [ "en_US.UTF-8/UTF-8" ];
 
   corpus = pkgs.runCommand "collation-corpus" { nativeBuildInputs = [ pkgs.python3 ]; } ''
     PYTHONIOENCODING=utf-8 python3 ${./corpus.py} > $out
@@ -82,7 +72,7 @@ rec {
         ld=$(find $root -type f \( -name 'ld-linux-*' -o -name 'ld-[0-9]*.so' \) | head -n1)
         mkdir -p $out/usr/lib/locale
         export I18NPATH=$root/usr/share/i18n
-        for entry in ${toString ubuntuReleases.${release}.checked}; do
+        for entry in ${toString checkedLocales}; do
           name=''${entry%%/*}
           $ld --library-path $(dirname $ld) \
             $root/usr/bin/localedef --prefix=$out -c -i ''${name%%.*} -f UTF-8 $name
@@ -95,11 +85,10 @@ rec {
       name,
       glibcPkgs,
       localeArchive,
-      locales,
     }:
     pkgs.runCommand "collation-fingerprints-${name}" { } ''
       export LOCALE_ARCHIVE=${localeArchive}
-      for entry in ${toString locales}; do
+      for entry in ${toString checkedLocales}; do
         name=''${entry%%/*}
         # sort silently falls back to C when the locale is missing.
         [ "$(LC_ALL=$name ${glibcPkgs.glibc.bin}/bin/locale charmap)" = UTF-8 ]
@@ -108,14 +97,14 @@ rec {
     '';
 
   nixpkgsFingerprints =
-    glibcPkgs: locales:
+    glibcPkgs:
     fingerprints {
       name = "nixpkgs-${glibcPkgs.glibc.version}";
-      inherit glibcPkgs locales;
+      inherit glibcPkgs;
       localeArchive = "${
         glibcPkgs.glibcLocales.override {
           allLocales = false;
-          inherit locales;
+          locales = checkedLocales;
         }
       }/lib/locale/locale-archive";
     };
@@ -125,23 +114,20 @@ rec {
     fingerprints {
       name = "ubuntu-${release}-${ubuntuReleases.${release}.version}";
       inherit glibcPkgs;
-      locales = ubuntuReleases.${release}.checked;
       localeArchive = "${ubuntuLocaleArchive release}/usr/lib/locale/locale-archive";
     };
 
   compare =
     old: new:
     pkgs.runCommand "collation-compare-${old.glibc.version}-${new.glibc.version}" { } ''
-      diff ${nixpkgsFingerprints old shippedLocales} ${nixpkgsFingerprints new shippedLocales}
+      diff ${nixpkgsFingerprints old} ${nixpkgsFingerprints new}
       touch $out
     '';
 
   compareUbuntu =
     release: reference: runtime:
     pkgs.runCommand "collation-compare-ubuntu-${release}-${reference.glibc.version}" { } ''
-      diff ${
-        nixpkgsFingerprints reference ubuntuReleases.${release}.checked
-      } ${ubuntuFingerprints release runtime}
+      diff ${nixpkgsFingerprints reference} ${ubuntuFingerprints release runtime}
       touch $out
     '';
 
