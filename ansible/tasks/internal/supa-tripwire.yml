@@ -48,8 +48,3 @@
     name: supa-tripwire
     daemon_reload: true
     enabled: true
-
-- name: Remove supa-tripwire archive
-  ansible.builtin.file:
-    path: /tmp/supa-tripwire.tar.xz
-    state: absent
