@@ -503,7 +503,9 @@
                   --user=supabase_admin \
                   ${builtins.concatStringsSep " " sortedTestList} 2>&1; then
                   log error "pg_regress tests failed"
-                  cat "$out/regression_output/regression.diffs"
+                  echo "----- REGRESSION DIFFS BEGIN (pg_regress) -----"
+                  cat "$out/regression_output/regression.diffs" 2>/dev/null || true
+                  echo "----- REGRESSION DIFFS END -----"
                   exit 1
                 fi
                 log info "pg_regress tests completed successfully"
@@ -531,7 +533,9 @@
                     --user=supabase_admin \
                     ${builtins.concatStringsSep " " isolationSpecList} 2>&1; then
                     log error "pg_isolation_regress tests failed"
+                    echo "----- REGRESSION DIFFS BEGIN (pg_isolation_regress) -----"
                     cat "$out/isolation_output/output_iso/regression.diffs" 2>/dev/null || cat "$out/isolation_output/regression.diffs" 2>/dev/null || true
+                    echo "----- REGRESSION DIFFS END -----"
                     exit 1
                   fi
                   log info "pg_isolation_regress tests completed successfully"
