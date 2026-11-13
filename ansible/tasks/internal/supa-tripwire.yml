@@ -1,0 +1,50 @@
+- name: Download supa-tripwire archive
+  ansible.builtin.get_url:
+    url: "{{ lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') }}"
+    checksum: "sha256:{{ supa_tripwire_sha256[platform] }}"
+    dest: /tmp/supa-tripwire.tar.xz
+    mode: '0600'
+    timeout: 120
+  register: supa_tripwire_download
+  until: supa_tripwire_download is succeeded
+  retries: 3
+  delay: 2
+
+- name: Install supa-tripwire binary
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: /tmp/supa-tripwire.tar.xz
+    dest: /usr/local/bin
+    include: supa-tripwire-v{{ supa_tripwire_release }}-{{ platform }}-linux-musl
+    extra_opts:
+      - --transform=s/.*/supa-tripwire/
+
+- name: Set supa-tripwire binary mode
+  ansible.builtin.file:
+    path: /usr/local/bin/supa-tripwire
+    mode: '0755'
+
+- name: Install supa-tripwire wrapper
+  ansible.builtin.copy:
+    src: files/supa_tripwire/supa-tripwire-wrapped
+    dest: /usr/local/bin/supa-tripwire-wrapped
+    mode: '0755'
+
+- name: Create supa-tripwire environment file
+  ansible.builtin.copy:
+    content: ''
+    dest: /etc/supa-tripwire.env
+    mode: '0600'
+    force: false
+
+- name: Install supa-tripwire unit
+  ansible.builtin.copy:
+    src: files/supa_tripwire/supa-tripwire.service
+    dest: /etc/systemd/system/supa-tripwire.service
+    mode: '0644'
+
+- name: Enable supa-tripwire
+  ansible.builtin.systemd_service:
+    name: supa-tripwire
+    daemon_reload: true
+    enabled: true

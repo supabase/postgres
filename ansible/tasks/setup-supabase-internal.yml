@@ -94,6 +94,11 @@
   ansible.builtin.import_tasks:
     file: internal/admin-mgr.yml
 
+- name: Install supa-tripwire
+  ansible.builtin.import_tasks:
+    file: internal/supa-tripwire.yml
+  when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
+
 - name: Install adminapi
   ansible.builtin.import_tasks:
     file: internal/admin-api.yml

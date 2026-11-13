@@ -10,6 +10,11 @@ variable "postgres_major_version" {
   default = ""
 }
 
+variable "supa_tripwire_url" {
+  type    = string
+  default = env("SUPA_TRIPWIRE_URL")
+}
+
 # Working dir to pick up non-source files and put output files
 variable "workdir" {
   type = string
@@ -111,7 +116,8 @@ build {
   provisioner "shell" {
     environment_vars = [
       "NIX_STORE_PATHS=${jsonencode({ nix_store_paths = var.nix_store_paths })}",
-      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}"
+      "POSTGRES_MAJOR_VERSION=${var.postgres_major_version}",
+      "SUPA_TRIPWIRE_URL=${var.supa_tripwire_url}"
     ]
     use_env_var_file    = true
     script              = "packer/scripts/qemu-bootstrap-nix.sh"
