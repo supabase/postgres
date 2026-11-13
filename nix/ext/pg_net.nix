@@ -68,6 +68,10 @@ let
         + lib.optionalString (version == "0.7.1") ''
           # handle collision with pg_net 0.10.0
           rm sql/pg_net--0.5.1--0.6.sql
+        ''
+        + lib.optionalString (version == "0.20.5") ''
+          # v0.20.5 has no sql changes but ships without an upgrade script
+          touch sql/pg_net--0.20.4--0.20.5.sql
         '';
 
       env.NIX_CFLAGS_COMPILE =
