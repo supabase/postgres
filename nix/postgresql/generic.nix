@@ -12,7 +12,7 @@ let
       zlib,
       readline,
       openssl,
-      icu75,
+      icu75, # Pin ICU to version 75 to maintain collation version 153.120. Changing this is *WILL* cause collation mismatch issues, don't do it!
       lz4,
       zstd,
       systemdLibs,
@@ -24,7 +24,7 @@ let
       replaceVars,
       darwin,
       linux-pam,
-      #orioledb specific
+      # PG17+
       perl,
       bison,
       flex,
@@ -115,8 +115,6 @@ let
         readline
         openssl
         (libxml2.override { python3 = python3; })
-        # Pin ICU to version 75 to maintain collation version 153.120
-        # This prevents collation mismatch warnings when upgrading nixpkgs
         icu75
       ]
       ++ lib.optionals (olderThan "13") [ libxcrypt ]

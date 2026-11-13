@@ -542,8 +542,18 @@
                   log info "CLI variant detected - skipping migrations tests"
                 else
                   log info "Running migrations tests"
-                  log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql; then
+                    log error "Migrations tests failed"
+                    exit 1
+                  fi
                   log info "Migrations tests completed successfully"
+
+                  log info "Running smoke tests"
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${./tests/smoke}/*.sql; then
+                    log error "Smoke tests failed"
+                    exit 1
+                  fi
+                  log info "Smoke tests completed successfully"
                 fi
               '';
             };
