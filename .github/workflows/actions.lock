@@ -92,7 +92,6 @@ workflows:
         - 'aws-actions/amazon-ecr-login@v2.1.7'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
-    '.github/workflows/test.yml': []
     '.github/workflows/testinfra-ami-build.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
