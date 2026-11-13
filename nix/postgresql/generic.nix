@@ -12,18 +12,19 @@ let
       zlib,
       readline,
       openssl,
-      icu75,
+      icu75, # Pin ICU to version 75 to maintain collation version 153.120. Changing this is *WILL* cause collation mismatch issues, don't do it!
       lz4,
       zstd,
       systemdLibs,
       libossp_uuid,
       pkg-config,
       libxml2,
+      tzdata,
       libkrb5,
       replaceVars,
       darwin,
       linux-pam,
-      #orioledb specific
+      # PG17+
       perl,
       bison,
       flex,
@@ -114,8 +115,6 @@ let
         readline
         openssl
         (libxml2.override { python3 = python3; })
-        # Pin ICU to version 75 to maintain collation version 153.120
-        # This prevents collation mismatch warnings when upgrading nixpkgs
         icu75
       ]
       ++ lib.optionals (olderThan "13") [ libxcrypt ]
@@ -163,6 +162,7 @@ let
         (lib.optionalString systemdSupport' "--with-systemd")
         (if stdenv.isDarwin then "--with-uuid=e2fs" else "--with-ossp-uuid")
       ]
+      ++ lib.optionals (!portable) [ "--with-system-tzdata=${tzdata}/share/zoneinfo" ]
       ++ lib.optionals lz4Enabled [ "--with-lz4" ]
       ++ lib.optionals zstdEnabled [ "--with-zstd" ]
       ++ lib.optionals gssSupport [ "--with-gssapi" ]

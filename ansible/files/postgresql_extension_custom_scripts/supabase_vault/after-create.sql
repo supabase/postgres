@@ -1,10 +1,9 @@
 do $$
 declare
-  extversion text;
-  search_path text;
+  saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
+  extversion pg_catalog.text;
 begin
-  search_path := current_setting('search_path');
-  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+  perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
 
   select e.extversion into extversion from pg_extension e where e.extname = 'supabase_vault';
 
@@ -19,5 +18,5 @@ begin
     grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
   end if;
 
-  perform set_config('search_path', search_path, true);
+  perform pg_catalog.set_config('search_path', saved_search_path, true);
 end $$;

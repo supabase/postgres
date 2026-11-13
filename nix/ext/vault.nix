@@ -63,7 +63,7 @@ let
         # Newer sources drop deprecated base scripts (e.g. 0.3.2 removed
         # supabase_vault--0.2.8.sql), so the latest version's sql/ alone
         # can't install every packaged version.
-        if [ -f sql/${pname}--${version}.sql ]; then
+        if [[ -f sql/${pname}--${version}.sql ]]; then
           install -D -t $out/share/postgresql/extension sql/${pname}--${version}.sql
         fi
 
