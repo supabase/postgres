@@ -44,6 +44,11 @@
     cmd: /tmp/aws/install --update
   become: true
 
+- name: AWS CLI - remove installer directory
+  ansible.builtin.file:
+    path: /tmp/aws
+    state: absent
+
 - name: install utilities to manage Amazon EC2 instance storage
   ansible.builtin.apt:
     pkg:

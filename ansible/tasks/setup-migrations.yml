@@ -10,6 +10,11 @@
         - retval['rc'] != 0
       register: 'retval'
 
+    - name: Remove migrations directory
+      ansible.builtin.file:
+        path: '/tmp/migrations'
+        state: absent
+
     - name: Create /root/MIGRATION-AMI file
       ansible.builtin.file:
         path: '/root/MIGRATION-AMI'
