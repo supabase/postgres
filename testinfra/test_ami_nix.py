@@ -1158,7 +1158,7 @@ def test_postgrest_read_only_session_attrs(host):
 
 
 def test_supabase_monitor_admin_role_is_passwordless_and_reachable_on_loopback(host):
-    """supabase_monitor_admin (migrations/db/init-scripts/00000000000000-initial-schema.sql)
+    """supabase_monitor_admin (migrations/db/migrations/20261113000000_supabase_monitor_admin.sql)
     has no password and relies on the same pg_hba trust rules.
 
     Unlike the other service roles, this role must never be given a password in

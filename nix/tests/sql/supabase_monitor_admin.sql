@@ -1,13 +1,12 @@
--- supabase_monitor_admin: passwordless, read-only
--- monitoring role (
--- migrations/db/init-scripts/00000000000000-initial-schema.sql).
+-- supabase_monitor_admin: passwordless, read-only monitoring role
+-- (migrations/db/migrations/20261113000000_supabase_monitor_admin.sql)
 
--- attributes: login, no password, bypassrls, nothing else
+-- attributes: login, no password, bypassrls, no connection limit, nothing else
 select rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin,
        rolreplication, rolbypassrls, rolconnlimit, rolpassword is null as no_password
 from pg_authid where rolname = 'supabase_monitor_admin';
 
--- per-role settings (read-only by default, empty search_path, timeouts)
+-- per-role settings (read-only by default, search_path pg_catalog + pg_temp, timeouts)
 select unnest(rolconfig) as setting from pg_roles where rolname = 'supabase_monitor_admin' order by 1;
 
 -- memberships: exactly pg_monitor and pg_read_all_data
@@ -26,10 +25,9 @@ where refclassid = 'pg_authid'::regclass
 -- no CREATE on the database
 select has_database_privilege('supabase_monitor_admin', current_database(), 'CREATE');
 
--- reads every table regardless of RLS, but cannot write. NOTE: this uses
--- SET SESSION AUTHORIZATION, which a future supautils impersonation guard
--- would block; switch to a probe role with identical grants when that lands
--- (see quick_explainer.md).
+-- reads every table regardless of RLS, but cannot write; SET ROLE to a
+-- predefined role only loses privileges (BYPASSRLS stays with
+-- supabase_monitor_admin, so the RLS-protected rows disappear)
 create table public.monitor_probe (id int);
 insert into public.monitor_probe values (1), (2);
 alter table public.monitor_probe enable row level security;
@@ -38,6 +36,8 @@ alter table public.monitor_probe owner to postgres;
 set session authorization supabase_monitor_admin;
 select count(*) from public.monitor_probe;
 insert into public.monitor_probe values (3);
+set role pg_read_all_data;
+select count(*) from public.monitor_probe;
 reset session authorization;
 drop table public.monitor_probe;
 
