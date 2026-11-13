@@ -1,0 +1,128 @@
+diff --git a/sql/pgsodium--3.1.4--3.1.5.sql b/sql/pgsodium--3.1.4--3.1.5.sql
+index c64d7ae..af43b60 100644
+--- a/sql/pgsodium--3.1.4--3.1.5.sql
++++ b/sql/pgsodium--3.1.4--3.1.5.sql
+@@ -63,47 +63,35 @@ BEGIN
+ 	ELSE
+ 	  body = format(
+ 		$c$
+-		DROP FUNCTION IF EXISTS %s."%s_encrypt_secret_%s"() CASCADE;
++		DROP FUNCTION IF EXISTS %1$s.%2$I() CASCADE;
+ 
+-		CREATE OR REPLACE FUNCTION %s."%s_encrypt_secret_%s"()
++		CREATE OR REPLACE FUNCTION %1$s.%2$I()
+ 		  RETURNS TRIGGER
+ 		  LANGUAGE plpgsql
+-		  AS $t$
+-		BEGIN
+-		%s;
+-		RETURN new;
+-		END;
+-		$t$;
++		  AS %4$L;
+ 
+-		ALTER FUNCTION  %s."%s_encrypt_secret_%s"() OWNER TO %s;
++		ALTER FUNCTION  %1$s.%2$I() OWNER TO %5$s;
+ 
+-		DROP TRIGGER IF EXISTS "%s_encrypt_secret_trigger_%s" ON %s;
++		DROP TRIGGER IF EXISTS %3$I ON %6$s;
+ 
+-		CREATE TRIGGER "%s_encrypt_secret_trigger_%s"
+-		  BEFORE INSERT OR UPDATE OF "%s" ON %s
++		CREATE TRIGGER %3$I
++		  BEFORE INSERT OR UPDATE OF %7$I ON %6$s
+ 		  FOR EACH ROW
+-		  EXECUTE FUNCTION %s."%s_encrypt_secret_%s" ();
++		  EXECUTE FUNCTION %1$s.%2$I ();
+ 		  $c$,
+ 		rule.relnamespace,
+-		rule.relname,
+-		m.attname,
+-		rule.relnamespace,
+-		rule.relname,
+-		m.attname,
+-		pgsodium.encrypted_column(relid, m),
+-		rule.relnamespace,
+-		rule.relname,
+-		m.attname,
++		rule.relname || '_encrypt_secret_' || m.attname,
++		rule.relname || '_encrypt_secret_trigger_' || m.attname,
++		format(
++		  $t$
++		BEGIN
++		%s;
++		RETURN new;
++		END;
++		$t$,
++		  pgsodium.encrypted_column(relid, m)),
+ 		view_owner,
+-		rule.relname,
+-		m.attname,
+-		source_name,
+-		rule.relname,
+-		m.attname,
+-		m.attname,
+ 		source_name,
+-		rule.relnamespace,
+-		rule.relname,
+ 		m.attname
+ 	  );
+ 	  if debug THEN
+diff --git a/sql/pgsodium--3.1.6--3.1.7.sql b/sql/pgsodium--3.1.6--3.1.7.sql
+index 6dd97c9..64d5c7c 100644
+--- a/sql/pgsodium--3.1.6--3.1.7.sql
++++ b/sql/pgsodium--3.1.6--3.1.7.sql
+@@ -133,33 +133,36 @@ BEGIN
+ 	ELSE
+ 	  body = format(
+ 		$c$
+-		DROP FUNCTION IF EXISTS %1$s."%2$s_encrypt_secret_%3$s"() CASCADE;
++		DROP FUNCTION IF EXISTS %1$s.%2$I() CASCADE;
+ 
+-		CREATE OR REPLACE FUNCTION %1$s."%2$s_encrypt_secret_%3$s"()
++		CREATE OR REPLACE FUNCTION %1$s.%2$I()
+ 		  RETURNS TRIGGER
+ 		  LANGUAGE plpgsql
+-		  AS $t$
+-		BEGIN
+-		%4$s;
+-		RETURN new;
+-		END;
+-		$t$;
++		  AS %4$L;
+ 
+-		ALTER FUNCTION  %1$s."%2$s_encrypt_secret_%3$s"() OWNER TO %5$s;
++		ALTER FUNCTION  %1$s.%2$I() OWNER TO %5$s;
+ 
+-		DROP TRIGGER IF EXISTS "%2$s_encrypt_secret_trigger_%3$s" ON %6$s;
++		DROP TRIGGER IF EXISTS %3$I ON %6$s;
+ 
+-		CREATE TRIGGER "%2$s_encrypt_secret_trigger_%3$s"
+-		  BEFORE INSERT OR UPDATE OF "%3$s" ON %6$s
++		CREATE TRIGGER %3$I
++		  BEFORE INSERT OR UPDATE OF %7$I ON %6$s
+ 		  FOR EACH ROW
+-		  EXECUTE FUNCTION %1$s."%2$s_encrypt_secret_%3$s" ();
++		  EXECUTE FUNCTION %1$s.%2$I ();
+ 		  $c$,
+ 		rule.relnamespace,
+-		rule.relname,
+-		m.attname,
+-		pgsodium.encrypted_column(relid, m),
++		rule.relname || '_encrypt_secret_' || m.attname,
++		rule.relname || '_encrypt_secret_trigger_' || m.attname,
++		format(
++		  $t$
++		BEGIN
++		%s;
++		RETURN new;
++		END;
++		$t$,
++		  pgsodium.encrypted_column(relid, m)),
+ 		view_owner,
+-		source_name
++		source_name,
++		m.attname
+ 	  );
+ 	  if debug THEN
+ 		RAISE NOTICE '%', body;
