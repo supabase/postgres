@@ -128,14 +128,9 @@ jobs:
 
       - name: Presign supa-tripwire archive
         if: steps.stamp.outputs.cached != 'true'
-        run: |
-          version=$(nix run --inputs-from . nixpkgs#yq -- -er .supa_tripwire_release ansible/vars.yml)
-          if url=$(nix run --inputs-from . nixpkgs#awscli2 -- s3 presign --region ap-southeast-1 --expires-in 3600 "s3://supabase-internal-artifacts/supa-tripwire/supa-tripwire-v$version-$TARGET_ARCH.tar.xz"); then
-            echo "::add-mask::$url"
-            echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
-          else
-            echo "::warning::could not presign the supa-tripwire archive, building without supa-tripwire"
-          fi
+        uses: $/.github/actions/presign-supa-tripwire
+        with:
+          arch: ${{ env.TARGET_ARCH }}
 
       - name: Build QEMU artifact
         if: steps.stamp.outputs.cached != 'true'

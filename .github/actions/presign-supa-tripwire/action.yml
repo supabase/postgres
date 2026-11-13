@@ -1,0 +1,22 @@
+name: Presign supa-tripwire archive
+description: Exports SUPA_TRIPWIRE_URL for the pinned supa-tripwire archive, or warns and leaves it unset
+
+inputs:
+  arch:
+    description: 'amd64 or arm64'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        ARCH: ${{ inputs.arch }}
+      run: |
+        version=$(nix run --inputs-from . nixpkgs#yq -- -er .supa_tripwire_release ansible/vars.yml)
+        if url=$(nix run --inputs-from . nixpkgs#awscli2 -- s3 presign --region ap-southeast-1 --expires-in 3600 "s3://supabase-internal-artifacts/supa-tripwire/supa-tripwire-v$version-$ARCH.tar.xz"); then
+          echo "::add-mask::$url"
+          echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
+        else
+          echo "::warning::could not presign the supa-tripwire archive, building without supa-tripwire"
+        fi
