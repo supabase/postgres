@@ -94,18 +94,9 @@
   ansible.builtin.import_tasks:
     file: internal/admin-mgr.yml
 
-- name: Install supa-tripwire unit
-  ansible.builtin.copy:
-    src: files/supa_tripwire/supa-tripwire.service
-    dest: /etc/systemd/system/supa-tripwire.service
-    mode: '0644'
-  when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
-
 - name: Install supa-tripwire
-  ansible.builtin.script:
-    cmd: "files/supa_tripwire/install.sh {{ supa_tripwire_release }} {{ platform }} {{ supa_tripwire_sha256[platform] }}"
-  environment:
-    SUPA_TRIPWIRE_URL: "{{ lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') }}"
+  ansible.builtin.import_tasks:
+    file: internal/supa-tripwire.yml
   when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
 
 - name: Install adminapi
