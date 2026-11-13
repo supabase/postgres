@@ -41,6 +41,7 @@ supa_tripwire_release: 0.2.0
 supa_tripwire_sha256:
   amd64: 7d81ce39815d8f1f1732153b753987271f6e9a84838cfdc4e538f44927b746ef
   arm64: cf2e6486d53626fff1312f45500bcacad418dd49eed83560dd58e28a0ec9432d
+# renovate: datasource=github-tags packageName=aws/aws-cli
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
@@ -49,6 +50,7 @@ aws_cli_artifacts:
   arm64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
     checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
+# renovate: datasource=github-releases packageName=envoyproxy/envoy
 envoy_release: 1.28.0
 envoy_artifacts:
   amd64:
@@ -60,6 +62,7 @@ envoy_artifacts:
   hot_restarter:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
     checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
+# renovate: datasource=github-releases packageName=Kong/kong
 kong_release: 2.8.1
 kong_artifacts:
   amd64:
@@ -68,6 +71,7 @@ kong_artifacts:
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
+# renovate: datasource=github-releases packageName=supabase/auth
 gotrue_release: 2.197.0
 gotrue_artifacts:
   amd64:
@@ -84,6 +88,7 @@ mint_cli_artifacts:
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-arm64.tar.xz
     checksum: sha256:13040280f8dfe1155b8460d7f35e6a1e04d0167fdf2867678dfb1b117485c581
+# renovate: datasource=github-releases packageName=PostgREST/postgrest
 postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
@@ -95,6 +100,7 @@ postgrest_artifacts:
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
+# renovate: datasource=github-releases packageName=prometheus-community/postgres_exporter
 postgres_exporter_release: 0.15.0
 postgres_exporter_artifacts:
   amd64:
@@ -103,6 +109,7 @@ postgres_exporter_artifacts:
   arm64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
     checksum: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+# renovate: datasource=github-releases packageName=saltstack/salt
 salt_release: "3007.14" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 salt_artifacts:
   url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
