@@ -97,7 +97,7 @@ postgrest_artifacts:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
 # renovate: datasource=github-releases packageName=prometheus-community/postgres_exporter
-postgres_exporter_release: 0.15.0
+postgres_exporter_release: 0.20.1
 postgres_exporter_artifacts:
   amd64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-amd64.tar.gz"
