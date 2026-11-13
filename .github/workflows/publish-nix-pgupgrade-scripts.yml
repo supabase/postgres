@@ -84,6 +84,7 @@ jobs:
         run: |
           mkdir -p /tmp/pg_upgrade_scripts
           cp -r ansible/files/admin_api_scripts/pg_upgrade_scripts/* /tmp/pg_upgrade_scripts
+          cp migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql /tmp/pg_upgrade_scripts/pg_net_grants.sql
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - staging
@@ -156,6 +157,7 @@ jobs:
         run: |
           mkdir -p /tmp/pg_upgrade_scripts
           cp -r ansible/files/admin_api_scripts/pg_upgrade_scripts/* /tmp/pg_upgrade_scripts
+          cp migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql /tmp/pg_upgrade_scripts/pg_net_grants.sql
           tar -czvf /tmp/pg_upgrade_scripts.tar.gz -C /tmp/ pg_upgrade_scripts
 
       - name: configure aws credentials - prod
