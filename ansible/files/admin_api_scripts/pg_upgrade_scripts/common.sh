@@ -1,8 +1,14 @@
 #! /usr/bin/env bash
 
-# Common functions and variables used by initiate.sh and complete.sh
+# Common functions and variables used by
+# prepare.sh, initiate.sh and complete.sh
 
+#staging/prod
 REPORTING_PROJECT_REF="ihmaxnjpcccasmrbkpvo"
+
+#localdev
+#REPORTING_PROJECT_REF="ditigwgjchkdxjxijzza"
+
 REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"
 
 REPORTING_ANON_KEY=""
