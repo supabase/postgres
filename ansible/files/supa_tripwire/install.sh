@@ -40,30 +40,6 @@ chmod 0755 /usr/local/bin/supa-tripwire-wrapped
 
 [[ -e /etc/supa-tripwire.env ]] || install -m 0600 /dev/null /etc/supa-tripwire.env
 
-cat >/etc/systemd/system/supa-tripwire.service <<'UNIT'
-# /etc/systemd/system/supa-tripwire.service
-[Unit]
-Description=supa-tripwire - Postgres badness monitor
-After=postgresql.service
-
-[Service]
-User=root
-Restart=always
-RestartSec=5
-
-EnvironmentFile=/etc/supa-tripwire.env
-
-ExecStart=/usr/local/bin/supa-tripwire-wrapped
-
-NoNewPrivileges=true
-SecureBits=no-setuid-fixup-locked
-ProtectSystem=strict
-ProtectHome=true
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-
 systemctl daemon-reload || true
 systemctl enable supa-tripwire
 if systemctl is-active --quiet supa-tripwire; then
