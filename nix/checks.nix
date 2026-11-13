@@ -940,12 +940,15 @@
               checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
                 builtins.readFile ./tools/check-glibc-version.nu
               );
-              # supautils is dlopened into already-running legacy pre-nix postgres, so it needs a lower floor than an AMI build.
-              legacyPaths = [
-                self'.legacyPackages.psql_15.exts.supautils
-                self'.legacyPackages.psql_17.exts.supautils
-                self'.legacyPackages."psql_orioledb-17".exts.supautils
-              ];
+              # supautils and pg_net are dlopened into already-running legacy pre-nix postgres, so they need a lower floor than an AMI build.
+              # pg_net.perVersion because the check skips the symlinks in the pg_net buildEnv.
+              legacyPaths =
+                lib.concatMap (pg: [ pg.exts.supautils ] ++ lib.attrValues pg.exts.pg_net.perVersion)
+                  [
+                    self'.legacyPackages.psql_15
+                    self'.legacyPackages.psql_17
+                    self'.legacyPackages."psql_orioledb-17"
+                  ];
               # gatekeeper is dlopened by the base os pam stack; pin it
               pamPaths = [ self'.packages.gatekeeper ];
               # ships to user's development machines, not our fleet
