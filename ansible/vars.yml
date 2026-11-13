@@ -59,7 +59,7 @@ envoy_artifacts:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
     checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
 # renovate: datasource=github-releases packageName=Kong/kong
-kong_release: 2.8.1
+kong_release: 2.8.5
 kong_artifacts:
   amd64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_amd64.deb"
