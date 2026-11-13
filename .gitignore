@@ -23,6 +23,5 @@ __pycache__/
 venv/
 
 #nix related
-common-nix.vars.pkr.hcl
 db/schema.sql
 result*

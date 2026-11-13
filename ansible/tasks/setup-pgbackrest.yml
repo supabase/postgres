@@ -122,7 +122,7 @@
 - name: Install pgBackRest
   when: stage2
   ansible.builtin.shell: |
-    sudo -u pgbackrest bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#pg-backrest"
+    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install {{ nix_store_paths['pg-backrest'] }}
   become: true
   become_user: pgbackrest
   changed_when: true

@@ -1,0 +1,35 @@
+-- Fixes CVE-2026-116303.
+--
+-- What changed: to_json() and to_jsonb() called a user-defined cast function without checking EXECUTE on it.
+-- They now check, like normal cast evaluation.
+--
+-- Who notices: projects that meet both conditions:
+--   - they defined a custom cast to json or jsonb
+--   - they revoked EXECUTE on its function from PUBLIC, for example with a blanket revoke from anon and authenticated
+-- Those roles now get "permission denied for function ..." when they convert the type to JSON.
+-- That includes PostgREST responses.
+-- To fix: grant EXECUTE on the cast function.
+--
+-- Upstream commits: 879c760d8 (PG 15.20), 9520dbea7 (PG 17.12).
+
+BEGIN;
+
+-- Use a separate role because Supabase grants postgres EXECUTE by default.
+CREATE ROLE regress_cast_priv_user NOLOGIN;
+
+CREATE TYPE cast_priv_enum AS ENUM ('a');
+CREATE FUNCTION cast_priv_enum_to_json(cast_priv_enum) RETURNS json
+  LANGUAGE sql IMMUTABLE AS $$ SELECT to_json($1::text) $$;
+CREATE CAST (cast_priv_enum AS json) WITH FUNCTION cast_priv_enum_to_json(cast_priv_enum);
+REVOKE ALL ON FUNCTION cast_priv_enum_to_json(cast_priv_enum) FROM PUBLIC;
+
+SET ROLE regress_cast_priv_user;
+
+-- Must be denied.
+SAVEPOINT s;
+SELECT to_json('a'::cast_priv_enum);
+ROLLBACK TO SAVEPOINT s;
+
+RESET ROLE;
+
+ROLLBACK;

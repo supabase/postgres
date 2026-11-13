@@ -27,4 +27,16 @@ file:
     owner: root
     group: root
     mode: '0644'
+  # eMudhra's emSign ECC Root CA - G3 is distrusted after intermediate CA key
+  # compromise (https://emudhra.we-have-a-problem.com/). Removed in Ubuntu
+  # ca-certificates 20260816ubuntu0.24.04.1.
+  /usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt:
+    exists: false
+  /etc/ssl/certs/emSign_ECC_Root_CA_-_G3.pem:
+    exists: false
+  /etc/ssl/certs/ca-certificates.crt:
+    exists: true
+    contents:
+      # Start of the emSign ECC Root CA - G3 public key
+      - "!djAQBgcqhkjOPQIBBgUrgQQAIgNiAAQjpQy4LRL1KPOxst3iAhKAnjlfSU2fySU0"
   # Note: /etc/ssl/adminapi is created at deploy time, not during AMI build

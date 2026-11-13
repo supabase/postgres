@@ -1,14 +1,15 @@
 {
-  callPackage,
+  lib,
   pkgs,
+  callPackage,
+  clang11,
   rustVersion,
   pgrxVersion,
   makeRustPlatform,
   rust-bin,
-  stdenv,
 }:
 let
-  inherit ((callPackage ./default.nix { inherit rustVersion; })) mkCargoPgrx;
+  inherit ((callPackage ./default.nix { inherit rustVersion rust-bin; })) mkCargoPgrx;
 
   # TODO: drop the fix-cargo.nix import once nixpkgs is bumped past NixOS/nixpkgs#512735
   rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (
@@ -38,20 +39,15 @@ let
     };
 
   bindgenHook =
-    # Fix bindgen error on aarch64-linux for versions using pgrx with bindgen 0.68.1
-    # This affects pgrx 0.6.1 through 0.11.2 which have issues with ARM NEON vector ABI
-    if (builtins.compareVersions "0.11.3" pgrxVersion > 0) then
-      let
-        nixos2211 = (
-          import (builtins.fetchTarball {
-            url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
-            sha256 = "1j7h75a9hwkkm97jicky5rhvzkdwxsv5v46473rl6agvq2sj97y1";
-          }) { inherit (stdenv.hostPlatform) system; }
-        );
-      in
+    # pgrx 0.6.1 through 0.11.2 use old bindgen versions that break with current clang and glibc:
+    # - bindgen 0.60.x panics on how clang 16+ names anonymous structs
+    #   ("(unnamed at /path/file.h:N:M)"), which glibc and macOS SDK headers contain.
+    # - on aarch64-linux, bindgen fails on the ARM NEON vector functions that newer glibc headers declare.
+    # So build them with clang and glibc headers from nixos-22.11, on every platform.
+    if lib.versionOlder pgrxVersion "0.11.3" then
       rustPlatform.bindgenHook.overrideAttrs {
-        libclang = nixos2211.clang.cc.lib;
-        clang = nixos2211.clang;
+        libclang = clang11.cc.lib;
+        clang = clang11;
       }
     else
       rustPlatform.bindgenHook;

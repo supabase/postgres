@@ -58,6 +58,7 @@ Here's a comprehensive overview of the project's directory structure:
 | ansible/playbook.yml | Main Ansible playbook for PostgreSQL/PostgREST/pgbouncer/Auth server setup |
 | ansible/tasks/ | Modular Ansible tasks for specific configuration steps |
 | ansible/files/ | Static files, scripts, and templates used by Ansible |
+| ansible/postgres_release.yml | Packaged Postgres release version per major (Docker/AMI tags) |
 | ansible/vars.yml | AMI version tracking, legacy package version tracking |
 | **migrations/** | Database migration management and upgrade tools |
 | migrations/db/ | Database schema migrations |
@@ -73,7 +74,8 @@ Here's a comprehensive overview of the project's directory structure:
 | testinfra/ | Infrastructure tests using pytest framework |
 | tests/ | General integration test suites |
 | **docs/** | Additional documentation, images, and resources |
-| **ebssurrogate/** | AWS EBS surrogate building for AMI creation |
+| **packer/** | Packer templates and AWS EBS surrogate scripts for AMI creation |
+| packer/{amd64,arm64}.vars.pkr.hcl | Architecture-specific Packer variables (e.g. instance type) |
 | **http/** | HTTP-related configurations and files |
 | **rfcs/** | Request for Comments - design documents and proposals |
 | **db/** | Database-related utilities and configurations |
@@ -81,9 +83,6 @@ Here's a comprehensive overview of the project's directory structure:
 | **Root Config Files** |  |
 | .gitignore | Git ignore patterns |
 | .envrc.recommended | Recommended environment variables for development |
-| amazon-arm64-nix.pkr.hcl | Packer configuration for AWS ARM64 builds |
-| common-nix.vars.pkr.hcl | Common Packer variables |
-| development-arm64.vars.pkr.hcl | ARM development environment variables |
 | CONTRIBUTING.md | Contribution guidelines |
 | README.md | Main project documentation |
 
@@ -136,7 +135,7 @@ nix build .#psql_15/bin
 nix build .#psql_17/bin
 
 # Build a specific extension
-nix build .#psql_17/exts/pg_graphql
+nix build .#psql_17.exts.pg_graphql
 ```
 
 ### Running Tests
@@ -181,9 +180,9 @@ This is the same PostgreSQL build that powers [Supabase](https://supabase.io), b
 
 
 ## Primary Features
-- ✅ Postgres [postgresql-15.19](https://www.postgresql.org/docs/15/index.html)
-- ✅ Postgres [postgresql-17.11](https://www.postgresql.org/docs/17/index.html)
-- ✅ Postgres [orioledb-postgresql-17_22](https://github.com/orioledb/orioledb)
+- ✅ Postgres [postgresql-15.20](https://www.postgresql.org/docs/15/index.html)
+- ✅ Postgres [postgresql-17.12](https://www.postgresql.org/docs/17/index.html)
+- ✅ Postgres [orioledb-postgresql-17_23](https://github.com/orioledb/orioledb)
 - ✅ Ubuntu 24.04 (Noble Numbat).
 - ✅ [wal_level](https://www.postgresql.org/docs/current/runtime-config-wal.html) = logical and [max_replication_slots](https://www.postgresql.org/docs/current/runtime-config-replication.html) = 5. Ready for replication.
 - ✅ [Large Systems Extensions](https://github.com/aws/aws-graviton-getting-started#building-for-graviton-and-graviton2). Enabled for ARM images.

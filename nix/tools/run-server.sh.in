@@ -159,7 +159,8 @@ else
 fi
 
 # Set environment variables and paths
-export PATH=$BINDIR/bin:$PATH
+# Only the postgres binaries and the tools listed in lib.nix, nothing from the caller
+export PATH=$BINDIR/bin:@TOOLS_PATH@
 PGSQL_SUPERUSER=@PGSQL_SUPERUSER@
 PSQL_CONF_FILE=@PSQL_CONF_FILE@
 PORTNO="${PORTNO:-@PGSQL_DEFAULT_PORT@}"
@@ -246,6 +247,11 @@ session_preload_libraries = 'supautils'" \
 -e "$ a output_plugin_libraries = 'pgoutput, test_decoding, wal2json'" \
 -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '$DATDIR/conf.d'|" \
 "$PSQL_CONF_FILE" > "$DATDIR/postgresql.conf"
+
+# summarize_wal is PostgreSQL 17+; PG15 refuses to start on an unknown GUC
+if [ "$VERSION" != "15" ]; then
+    perl -pi -e 's/^#summarize_wal = off/summarize_wal = on/' "$DATDIR/postgresql.conf"
+fi
 
 # Function to configure OrioleDB specific settings
 orioledb_config_items() {

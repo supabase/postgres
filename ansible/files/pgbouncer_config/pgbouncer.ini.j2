@@ -9,6 +9,7 @@
 ;;   client_encoding= datestyle= timezone=
 ;;   pool_size= reserve_pool= max_db_connections=
 ;;   pool_mode= connect_query= application_name=
+
 [databases]
 * = host=localhost auth_user=pgbouncer
 
@@ -32,13 +33,13 @@
 ;* = host=testserver
 
 ;; User-specific configuration
-[users]
 
+[users]
 ;user1 = pool_mode=transaction max_user_connections=10
 
 ;; Configuration section
-[pgbouncer]
 
+[pgbouncer]
 ;;;
 ;;; Administrative settings
 ;;;

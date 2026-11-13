@@ -1,7 +1,6 @@
-name: Testinfra Integration Tests Nix
+name: Testinfra Integration Tests
 
 on:
-  workflow_dispatch:
   workflow_call:
     secrets:
       DEV_AWS_ROLE:
@@ -16,45 +15,80 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ap-southeast-1
+  AWS_REGION: us-east-1
 
 jobs:
+  # Always runs and succeeds (unless eval fails), so callers can require this workflow without it
+  # counting as skipped. build only gets the AMIs whose ami-test-stamp is not in the binary cache yet,
+  # and is skipped entirely when every stamp is cached.
   gen-matrix:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
-      postgres_versions: ${{ steps.set-versions.outputs.postgres_versions }}
+      matrix: ${{ steps.gen-matrix.outputs.matrix }}
+      should_run: ${{ steps.gen-matrix.outputs.should_run }}
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
-      - name: Set PostgreSQL versions
-        id: set-versions
+      - name: Resolve git sha
+        id: resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
+        with:
+          flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
+
+      - name: Generate matrix
+        id: gen-matrix
+        env:
+          CACHE_URL: https://nix-postgres-artifacts.s3.amazonaws.com
+          GIT_SHA: ${{ github.sha }}
+          PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: |
-          VERSIONS=$(nix run nixpkgs#yq-go -- -o=json -I=0 '.postgres_major' ansible/vars.yml)
-          echo "postgres_versions=$VERSIONS" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+
+          # stamps describe this checkout's packages, so they can't vouch for AMIs built from another sha
+          check_cache=true
+          if [[ $PACKAGES_GIT_SHA != "$GIT_SHA" ]]; then
+            echo "::notice::packages come from $PACKAGES_GIT_SHA, not $GIT_SHA: building all AMIs"
+            check_cache=false
+          fi
+
+          # plain assignments so set -e catches a failing substitution; an empty should_run would skip every AMI
+          versions=$(nix run --inputs-from . nixpkgs#yq-go -- '.postgres_major[]' ansible/vars.yml)
+          include='[]'
+          for version in $versions; do
+            for target in amd64:x86_64-linux:blacksmith-2vcpu-ubuntu-2404 arm64:aarch64-linux:blacksmith-2vcpu-ubuntu-2404-arm; do
+              IFS=: read -r arch system runner <<<"$target"
+              stamp=$(nix eval --raw ".#packages.$system.ami-test-stamp-$version")
+              if [[ $check_cache == true ]] && nix path-info --store "$CACHE_URL" "$stamp" &>/dev/null; then
+                echo "::notice::$version-$arch: already passed testinfra ($stamp), skipping"
+                continue
+              fi
+              echo "$version-$arch: building ($stamp)"
+              include=$(jq -c --arg version "$version" --arg arch "$arch" --arg system "$system" --arg runner "$runner" \
+                '. + [{postgres_version: $version, arch: $arch, system: $system, runner: $runner}]' <<<"$include")
+            done
+          done
+
+          matrix=$(jq -c '{include: .}' <<<"$include")
+          should_run=$(jq 'length > 0' <<<"$include")
+          echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
+          echo "should_run=$should_run" >>"$GITHUB_OUTPUT"
 
   build:
     needs: gen-matrix
+    if: needs.gen-matrix.outputs.should_run == 'true'
     strategy:
       fail-fast: false
-      matrix:
-        postgres_version: ${{ fromJson(needs.gen-matrix.outputs.postgres_versions) }}
-        target:
-          - arch: amd64
-            instance_type: c6i.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404
-          - arch: arm64
-            instance_type: c6g.4xlarge
-            runner: blacksmith-2vcpu-ubuntu-2404-arm
-    runs-on: ${{ matrix.target.runner }}
+      matrix: ${{ fromJson(needs.gen-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
 
     steps:
       - name: Checkout Repo
-        uses: supabase/postgres/.github/actions/shared-checkout@HEAD
+        uses: actions/checkout@v7.0.1
 
       - name: Debug AWS role secret
         run: |
@@ -66,43 +100,45 @@ jobs:
           fi
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
           output-credentials: true
           role-duration-seconds: 7200
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
         with:
           push-to-cache: true
-          aws-region: ${{ env.AWS_REGION }}
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
 
       - name: Resolve git sha
         id: resolve-git-sha
-        uses: ./.github/actions/resolve-git-sha
+        uses: $/.github/actions/resolve-git-sha
         with:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Build AMI
         id: build-ami
-        uses: ./.github/actions/build-ami
-        with:
-          ami_name_prefix: "supabase-postgres-${{ github.run_id }}-${{ matrix.target.arch }}"
-          ami_regions: '["${{ env.AWS_REGION }}"]'
-          arch: ${{ matrix.target.arch }}
+        env:
+          AWS_MAX_ATTEMPTS: 10
+          AWS_RETRY_MODE: adaptive
+          arch: ${{ matrix.arch }}
           git_sha: ${{ github.sha }}
           packages_git_sha: ${{ steps.resolve-git-sha.outputs.sha }}
-          instance_type: ${{ matrix.target.instance_type }}
-          postgres_version: ${{ matrix.postgres_version }}
-          region: ${{ env.AWS_REGION }}
+          postgres_major_version: ${{ matrix.postgres_version }}
+        run: |
+          nix run .#build-ami -- \
+            --arch "$arch" \
+            --git-sha "$git_sha" \
+            --packages-git-sha "$packages_git_sha" \
+            --postgres-major-version "$postgres_major_version" \
+            ;
 
       - name: Save AMI disk usage
         env:
-          ARCH: ${{ matrix.target.arch }}
+          ARCH: ${{ matrix.arch }}
           DISK_USAGE_JSON: ${{ steps.build-ami.outputs.disk_usage_json }}
           POSTGRES_VERSION: ${{ matrix.postgres_version }}
         run: >-
@@ -114,15 +150,15 @@ jobs:
           >"ami-disk-usage-$POSTGRES_VERSION-$ARCH.json"
 
       - name: Upload AMI disk usage
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
-          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.target.arch }}
+          name: ami-disk-usage-${{ matrix.postgres_version }}-${{ matrix.arch }}
           path: ami-disk-usage-*.json
           overwrite: true
           retention-days: 1
 
       - name: Run tests
-        timeout-minutes: 10
+        timeout-minutes: 15
         env:
           AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
           EXECUTION_ID: ${{ steps.build-ami.outputs.execution_id }}
@@ -131,25 +167,39 @@ jobs:
           pip3 install boto3 'boto3-stubs[essential]' ec2instanceconnectcli pytest 'pytest-testinfra[paramiko]' requests
           pytest -vv -s testinfra/test_ami_nix.py
 
+      # the post-build-hook from install-nix pushes the stamp, so later runs with the same inputs skip this AMI
+      # --no-pure-eval lets the stamp read STAMP_FILE; it refuses to build without the tested AMI's ID
+      - name: Record passing tests in the binary cache
+        if: steps.resolve-git-sha.outputs.sha == github.sha
+        env:
+          AMI_ID: ${{ steps.build-ami.outputs.stage2_ami_id }}
+          POSTGRES_VERSION: ${{ matrix.postgres_version }}
+          SYSTEM: ${{ matrix.system }}
+        run: |
+          set -euo pipefail
+          STAMP_FILE=$RUNNER_TEMP/ami-id
+          printf '%s' "$AMI_ID" >"$STAMP_FILE"
+          export STAMP_FILE
+          nix build --no-pure-eval --no-link -L ".#packages.$SYSTEM.ami-test-stamp-$POSTGRES_VERSION"
+
       - name: Configure AWS credentials for cleanup
         if: always()
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Cleanup Packer resources
         if: always()
         env:
-          OK_TO_DESTROY: "false"
-        run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.target.arch }}-${{ github.run_id }}"
+          OK_TO_DESTROY: "true"
+        run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
     needs: build
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Download AMI disk usage
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: ami-disk-usage-*
           path: ami-disk-usage

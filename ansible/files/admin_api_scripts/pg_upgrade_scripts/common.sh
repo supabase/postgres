@@ -162,11 +162,12 @@ function ship_logs {
 	HOSTNAME=$(hostname)
 	DERIVED_REF="${HOSTNAME##*-}"
 
-	printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
-	curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
-		-H "apikey: ${REPORTING_ANON_KEY}" \
-		-H 'Content-type: application/json' \
-		-d "$BODY"
+	tail -c 1048576 "${LOG_FILE}" |
+		jq -Rs --arg ref "${DERIVED_REF}" --arg step completion '{ref: $ref, step: $step, content: .}' |
+		curl -sf --max-time 60 -X POST "https://${REPORTING_PROJECT_REF}.supabase.co/rest/v1/error_logs" \
+			-H "apikey: ${REPORTING_ANON_KEY}" \
+			-H 'Content-type: application/json' \
+			--data-binary @-
 }
 
 # Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade

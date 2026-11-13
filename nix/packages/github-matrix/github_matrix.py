@@ -130,10 +130,6 @@ def parse_nix_eval_line(
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
             return Ok(None)
-        if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
-            "system"
-        ] in ("aarch64-darwin"):
-            return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)
     except json.JSONDecodeError as e:
@@ -238,10 +234,9 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. VM packages on Darwin → self-hosted runners
-    2. VM packages on Linux  → 16vcpu blacksmith runners
-    3. Large packages on D/L → 12/32vcpu blacksmith runners
-    5. Default Darwin/Linux  → 6/8vcpu blacksmith runners
+    1. VM packages on Linux  → 16vcpu blacksmith runners
+    2. Large packages on D/L → 12/32vcpu blacksmith runners
+    3. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
 
     system = pkg["system"]
@@ -255,8 +250,6 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
 
     match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
         # kvm
-        case (True, _, "darwin", "aarch64"):
-            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
         case (True, _, "linux", "aarch64"):
             return {"labels": ["arm-native-runner"]}
         case (True, _, "linux", "x86_64"):

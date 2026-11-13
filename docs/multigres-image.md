@@ -99,12 +99,12 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 
 Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cache.md).
 
-### Step 2: Install Nix 2.34.6
+### Step 2: Install Nix
 
-Run the following command to install Nix 2.34.6 (the version used in CI) with the custom configuration:
+Run the following command to install the Nix version used in CI (pinned in `.github/actions/install-nix/setup-nix.sh`) with the custom configuration:
 
 ```bash
-curl -L https://releases.nixos.org/nix/nix-2.34.6/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf.extra
+curl -L https://releases.nixos.org/nix/nix-2.35.3/install | sh -s -- --daemon --yes --nix-extra-conf-file ./nix.conf.extra
 ```
 
 This will install Nix with our build caches pre-configured, which should eliminate substituter-related errors.
@@ -115,7 +115,7 @@ the Nix tools installed on `$PATH` and so that your user shell can see the
 extra settings.
 
 You should now be able to do something like the following; try running these
-same commands on your machine:
+same commands on your machine. Your versions are likely different from the ones shown:
 
 ```
 $ nix --version
@@ -217,7 +217,7 @@ cp /tmp/tmp.<id>/regression_output/results/z_multigres-orioledb-17_*.out nix/tes
 5. run the tests locally with 
   a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
   b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
-6. release the images by incrementing these values in `ansible/vars.yaml` by 1 
+6. release the images by incrementing these values in `ansible/postgres_release.yml` by 1
 
 # Full version strings for each major version
 ```
