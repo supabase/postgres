@@ -34,6 +34,11 @@
   ansible.builtin.apt:
     deb: '/tmp/kong.deb'
 
+- name: Kong - remove deb package
+  ansible.builtin.file:
+    path: '/tmp/kong.deb'
+    state: absent
+
 - name: Kong - ensure it is NOT autoremoved
   ansible.builtin.command:
     cmd: apt-mark manual kong zlib1g*

@@ -34,6 +34,11 @@
     remote_src: true
     src: '/tmp/awscliv2.zip'
 
+- name: AWS CLI - remove archive
+  ansible.builtin.file:
+    path: '/tmp/awscliv2.zip'
+    state: absent
+
 - name: AWS CLI - install
   ansible.builtin.command:
     cmd: /tmp/aws/install --update

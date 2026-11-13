@@ -42,6 +42,11 @@
     deb: /tmp/vector.deb
   become: true
 
+- name: remove Vector package
+  ansible.builtin.file:
+    path: /tmp/vector.deb
+    state: absent
+
 - name: create service files for Vector
   ansible.builtin.template:
     src: 'files/vector.service.j2'

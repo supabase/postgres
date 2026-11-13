@@ -81,6 +81,11 @@
     remote_src: true
     src: '/tmp/postgrest.tar.xz'
 
+- name: PostgREST - remove archive
+  ansible.builtin.file:
+    path: '/tmp/postgrest.tar.xz'
+    state: absent
+
 - name: create directories
   ansible.builtin.file:
     group: 'postgrest'

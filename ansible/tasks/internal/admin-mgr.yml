@@ -15,3 +15,8 @@
     src: /tmp/admin-mgr.tar.gz
     dest: /usr/bin/
     owner: root
+
+- name: Remove admin-mgr archive
+  ansible.builtin.file:
+    path: /tmp/admin-mgr.tar.gz
+    state: absent

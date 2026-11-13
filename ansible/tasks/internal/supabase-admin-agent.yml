@@ -80,6 +80,11 @@
     extra_opts:
       - --strip-components=1
 
+- name: Remove supabase-admin-agent archive
+  ansible.builtin.file:
+    path: /tmp/supabase-admin-agent.tar.gz
+    state: absent
+
 - name: supabase-admin-agent - create symlink
   ansible.builtin.file:
     path: /opt/supabase-admin-agent/supabase-admin-agent

@@ -49,6 +49,11 @@
     dest: /opt
     owner: adminapi
 
+- name: Remove adminapi archive
+  ansible.builtin.file:
+    path: /tmp/adminapi.tar.gz
+    state: absent
+
 - name: adminapi - config dir
   file:
     path: /etc/adminapi

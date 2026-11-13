@@ -46,6 +46,11 @@
     remote_src: true
     src: '/tmp/gotrue.tar.gz'
 
+- name: gotrue - remove archive
+  ansible.builtin.file:
+    path: '/tmp/gotrue.tar.gz'
+    state: absent
+
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
 # - name: gotrue - system dependencies
