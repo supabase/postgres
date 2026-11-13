@@ -27,7 +27,7 @@ select has_database_privilege('supabase_monitor_admin', current_database(), 'CRE
 
 -- reads every table regardless of RLS, but cannot write; SET ROLE to a
 -- predefined role only loses privileges (BYPASSRLS stays with
--- supabase_monitor_admin, so the RLS-protected rows disappear)
+-- supabase_monitor_admin)
 create table public.monitor_probe (id int);
 insert into public.monitor_probe values (1), (2);
 alter table public.monitor_probe enable row level security;
