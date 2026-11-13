@@ -21,22 +21,23 @@ supabase_admin_agent_splay: 30s
 # Checksums can be verified or updated by running:                                                            #
 # nix run .#update-ansible-artifacts                                                                          #
 ###############################################################################################################
-adminapi_release: 0.122.3
+adminapi_release: 0.124.2
 adminapi_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_amd64.tar.gz"
-    checksum: sha256:a0c1aa66ef27201ffbe773e241ff6e3c40a249b74e146213691a5f49c3394fbb
+    checksum: sha256:5d2f1caa69425345acc6b4781f492742e95cc348acee567a5a786fdb9a42f328
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-api/v{{ adminapi_release }}/supabase-admin-api_{{ adminapi_release }}_linux_arm64.tar.gz"
-    checksum: sha256:24b59bd6ed372175a1ec0bff25d4f0986e65b86f3fc27eea38ab06b17cddf22d
-adminmgr_release: 0.49.1
+    checksum: sha256:c8762f6f12af6dd407157f410412f1894c2aabb3194881d64c224d9f193a2ed1
+adminmgr_release: 0.50.0
 adminmgr_artifacts:
   amd64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_amd64.tar.gz"
-    checksum: sha256:4e42214ce35b6431a11595c4c3642376eb17be218620e390d33638a84f69278f
+    checksum: sha256:56f555339136f8cd0c1f1d9c331c3197d00add39996de6821268924c90d3acb4
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
-    checksum: sha256:3477bb0c4dc8e6fea72b1237558cf048de675e211021f9790ef7c134e7452cf3
+    checksum: sha256:175a351a394ced27fec9ae8c9289be8f1f0a4c321732b8cbabaa48fa4cba727f
+# renovate: datasource=github-tags packageName=aws/aws-cli
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
   amd64:
@@ -45,6 +46,7 @@ aws_cli_artifacts:
   arm64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
     checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
+# renovate: datasource=github-releases packageName=envoyproxy/envoy
 envoy_release: 1.28.0
 envoy_artifacts:
   amd64:
@@ -56,6 +58,7 @@ envoy_artifacts:
   hot_restarter:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
     checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
+# renovate: datasource=github-releases packageName=Kong/kong
 kong_release: 2.8.1
 kong_artifacts:
   amd64:
@@ -64,14 +67,24 @@ kong_artifacts:
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
-gotrue_release: 2.190.0
+# renovate: datasource=github-releases packageName=supabase/auth
+gotrue_release: 2.197.0
 gotrue_artifacts:
   amd64:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
-    checksum: sha256:dfe8e2dee872747f60fe10ecec6ee8d368ee4d7eef3acd5af95aa88a2e7e6141
+    url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
+    checksum: sha256:9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3
   arm64:
-    url: "https://github.com/supabase/gotrue/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
-    checksum: sha256:547b80c455f2bbf01a624d0e3bc98c31237ca479d4aa0d236d40678370e34a69
+    url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
+    checksum: sha256:b129d0b32520a975a4f0576eb1b7836b82043997d2d021676ff24cec54eb5381
+mint_cli_release: 0.1.0
+mint_cli_artifacts:
+  amd64:
+    url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-amd64.tar.xz
+    checksum: sha256:dac0ac8faf84f8ab9dfde261c530590f2784f5c3dc91ac364b3b8ec0fd5d6260
+  arm64:
+    url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-arm64.tar.xz
+    checksum: sha256:13040280f8dfe1155b8460d7f35e6a1e04d0167fdf2867678dfb1b117485c581
+# renovate: datasource=github-releases packageName=PostgREST/postgrest
 postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
@@ -83,6 +96,7 @@ postgrest_artifacts:
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
+# renovate: datasource=github-releases packageName=prometheus-community/postgres_exporter
 postgres_exporter_release: 0.15.0
 postgres_exporter_artifacts:
   amd64:
@@ -91,6 +105,7 @@ postgres_exporter_artifacts:
   arm64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
     checksum: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+# renovate: datasource=github-releases packageName=saltstack/salt
 salt_release: "3007.14" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 salt_artifacts:
   url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public

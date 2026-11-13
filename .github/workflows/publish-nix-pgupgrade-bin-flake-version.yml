@@ -1,4 +1,4 @@
-name: Publish nix pg_upgrade_bin flake version
+name: Publish pg_upgrade_bin flake version
 
 on:
   workflow_dispatch:
@@ -34,12 +34,12 @@ jobs:
             echo "Error: git revision '$rev' not found"
             exit 1
           fi
-          VERSIONS=$(git show "$rev:ansible/vars.yml" | nix run nixpkgs#yq-go -- -e -o=json -I=0 '.postgres_major')
+          VERSIONS=$(git show "$rev:ansible/vars.yml" | nix run --inputs-from . nixpkgs#yq-go -- -e -o=json -I=0 '.postgres_major')
           echo "postgres_versions=$VERSIONS" >> $GITHUB_OUTPUT
 
   publish-staging:
     needs: prepare
-    runs-on: large-linux-x86
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
@@ -47,6 +47,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: $/.github/actions/install-nix
 
@@ -67,7 +70,7 @@ jobs:
             file=ansible/vars.yml
           fi
 
-          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
+          VERSION=$(git show "$rev:$file" | nix run --inputs-from . nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 
@@ -110,7 +113,7 @@ jobs:
               *Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>
 
   publish-prod:
-    runs-on: large-linux-x86
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.ref_name == 'develop' || startsWith(github.ref_name, 'release/')
     needs: prepare
     strategy:
@@ -120,6 +123,11 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: $/.github/actions/install-nix
 
       - name: Grab release version
         id: process_release_version
@@ -138,7 +146,7 @@ jobs:
             file=ansible/vars.yml
           fi
 
-          VERSION=$(git show "$rev:$file" | nix run nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
+          VERSION=$(git show "$rev:$file" | nix run --inputs-from . nixpkgs#yq-go -- -er '.postgres_release.postgres${{ matrix.postgres_version }}')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "major_version=$(echo $VERSION | cut -d'.' -f1)" >> "$GITHUB_OUTPUT"
 

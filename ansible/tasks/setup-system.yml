@@ -4,7 +4,7 @@
     - name: Create ubuntu primary group
       ansible.builtin.group:
         name: ubuntu
-        gid: "{{ 1014 if not qemu else 1000 }}"
+        gid: "{{ gids.ubuntu }}"
         state: present
 
     - name: Create ubuntu user supplementary groups # noqa: explicit-identity-id
@@ -19,7 +19,7 @@
     - name: Create ubuntu user
       ansible.builtin.user:
         name: ubuntu
-        uid: "{{ 1007 if not qemu else 1000 }}"
+        uid: "{{ uids.ubuntu }}"
         group: ubuntu
         groups:
           - adm
@@ -114,6 +114,17 @@
         content:
           GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} kho=off"
         dest: /etc/default/grub.d/51-disable-kho.cfg
+        owner: root
+        group: root
+      notify:
+        - Regenerate grub configuration
+
+    # The kernel ignores unknown params, so zswap options are safe on kernels without zswap.
+    - name: Enable zswap
+      ansible.builtin.copy:
+        content:
+          GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} zswap.enabled=1 zswap.compressor=zstd zswap.max_pool_percent=10"
+        dest: /etc/default/grub.d/52-zswap.cfg
         owner: root
         group: root
       notify:

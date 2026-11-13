@@ -7,7 +7,7 @@
 - name: Kong - user
   ansible.builtin.user:
     name: kong
-    uid: "{{ 1004 if not qemu else 1005 }}"
+    uid: "{{ uids.kong }}"
     group: kong
     state: present
 

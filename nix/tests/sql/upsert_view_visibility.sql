@@ -1,0 +1,31 @@
+-- Fixes CVE-2026-16237.
+--
+-- What changed: an upsert (INSERT ... ON CONFLICT DO UPDATE) through a view could overwrite a row that the view's WHERE clause hides.
+-- It now fails with "conflicting row is not visible through view".
+--
+-- Who notices: apps that upsert through a view, for example with supabase-js `.upsert()` or PostgREST.
+-- Say the view only shows a user's own rows.
+-- If the conflicting row is hidden, the upsert used to change it quietly.
+-- Now it fails.
+-- This applies to plain, security_barrier and security_invoker views.
+-- Upserts on visible rows and ON CONFLICT DO NOTHING (`ignoreDuplicates`) work as before.
+--
+-- Upstream commits: 8bbd75721 (PG 15.20), a14aacebe (PG 17.12).
+
+BEGIN;
+
+CREATE TABLE uv_upsert_tab (id int PRIMARY KEY, secret int, vis boolean);
+INSERT INTO uv_upsert_tab VALUES (1, 111, false), (2, 222, true);
+CREATE VIEW uv_upsert_view AS SELECT * FROM uv_upsert_tab WHERE vis;
+
+-- Hidden row: must be rejected.
+SAVEPOINT s;
+INSERT INTO uv_upsert_view VALUES (1, 0, true)
+  ON CONFLICT (id) DO UPDATE SET secret = EXCLUDED.secret RETURNING *;
+ROLLBACK TO SAVEPOINT s;
+
+-- Visible row: still works.
+INSERT INTO uv_upsert_view VALUES (2, 0, true)
+  ON CONFLICT (id) DO UPDATE SET secret = EXCLUDED.secret RETURNING *;
+
+ROLLBACK;

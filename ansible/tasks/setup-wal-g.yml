@@ -36,14 +36,15 @@
   block:
     - name: Install wal-g 2 from nix binary cache
       ansible.builtin.shell:
-        cmd: sudo -u wal-g bash -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-2"
+        cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install {{ nix_store_paths['wal-g-2'] }}
       become: true
+      become_user: wal-g
 
     # Installed alongside v2 (INDATA-904). The /usr/local/bin/wal-g symlink below
     # only points at v3 on orioledb builds; v2 remains the default everywhere else.
     - name: Install wal-g 3 from nix binary cache
       ansible.builtin.shell:
-        cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install github:supabase/postgres/{{ git_commit_sha }}#wal-g-3
+        cmd: . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && nix profile install {{ nix_store_paths['wal-g-3'] }}
       become: true
       become_user: wal-g
 
