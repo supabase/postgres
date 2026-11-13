@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
       - id: args
-        uses: mikefarah/yq@v4.54.1
+        uses: mikefarah/yq@v4.54.2
         with:
           cmd: yq '.postgrest_release' 'ansible/vars.yml'
 

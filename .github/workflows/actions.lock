@@ -51,7 +51,7 @@ workflows:
         - 'docker/setup-buildx-action@v4.4.1'
     '.github/workflows/mirror-postgrest.yml':
         - 'actions/checkout@v7.0.1'
-        - 'mikefarah/yq@v4.54.1'
+        - 'mikefarah/yq@v4.54.2'
     '.github/workflows/mirror.yml':
         - 'akhilerm/tag-push-action@v2.3.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
@@ -92,7 +92,6 @@ workflows:
         - 'aws-actions/amazon-ecr-login@v2.1.7'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
-    '.github/workflows/test.yml': []
     '.github/workflows/testinfra-ami-build.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
@@ -204,9 +203,9 @@ dependencies:
         commit: 'sha1-698a1d4d0ff1794152a93c03ee8ca5e03a310d4e'
         owner_id: 168084
         repo_id: 271813698
-    'mikefarah/yq@v4.54.1':
-        ref: 'v4.54.1'
-        commit: 'sha1-504fc38780cc46be8444ea1b72fb55919fc0bfb0'
+    'mikefarah/yq@v4.54.2':
+        ref: 'v4.54.2'
+        commit: 'sha1-a4330671f17776618660a419ab2531e4f4dc48b6'
         owner_id: 1151925
         repo_id: 43225113
     'pedrolamas/handlebars-action@2995d7eadacbc8f2f6ab8431a01d84a5fa3b8bb4':
