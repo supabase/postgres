@@ -12,13 +12,13 @@ You need:
 Run the setup script to configure nix-darwin with the linux-builder:
 
 ```bash
-nix run .#setup-darwin-linux-builder
+sudo nix run .#setup-darwin-linux-builder
 ```
 
 Note that you don't have to checkout the repository to run the setup, you can run it directly from GitHub:
 
 ```bash
-nix run github:supabase/postgres#setup-darwin-linux-builder
+sudo nix run github:supabase/postgres#setup-darwin-linux-builder
 ```
 
 This command will:
@@ -27,15 +27,38 @@ This command will:
 - Install helper scripts for managing the builder
 
 The linux-builder VM is configured with:
-- 6 CPU cores
-- 8GB RAM
-- 40GB disk
+- 8 CPU cores
+- 24GB RAM
+- 100GB disk
 - Support for both x86_64-linux and aarch64-linux builds
-- The `nixos-test` and `uid-range` features required for running NixOS tests
+- The `nixos-test` feature required for running NixOS tests
+- The `uid-range` feature for builds that request it
 - `auto-allocate-uids` and `cgroups` enabled inside the VM, so builds that need `uid-range` run
 - `-cpu host` passed to QEMU, since the default `-cpu max` breaks PAC-built guest binaries on M4
 
 After setup completes, restart your shell to access the helper commands.
+
+To re-apply the configuration after changing it, run the same `sudo nix run .#setup-darwin-linux-builder` command.
+
+### First install
+
+The builder VM is a Linux system, so the first install needs a Linux builder to build it.
+If setup fails with `platform mismatch, Required system: 'aarch64-linux'`, start the stock builder first:
+
+```bash
+nix run github:NixOS/nixpkgs/nixos-26.05#darwin.linux-builder
+```
+
+Leave it running, then build the configuration through it from another terminal and rerun setup:
+
+```bash
+sudo env NIX_SSHOPTS="-p 31022" nix build .#darwinConfigurations.darwin-nixostest.system --no-link \
+  --builders "ssh-ng://builder@127.0.0.1 aarch64-linux $PWD/keys/builder_ed25519 4 1 kvm,benchmark,big-parallel,nixos-test - <base64 host key>"
+sudo nix run .#setup-darwin-linux-builder
+```
+
+Run the builder from the directory that holds its `keys/` folder.
+The host key is `ssh-keyscan -t ed25519 -p 31022 127.0.0.1` with the comment line removed, fields 2 and 3, base64 encoded.
 
 ## Verify the setup
 
@@ -158,11 +181,6 @@ This ensures a clean environment but requires re-downloading cached build artifa
 
 nixpkgs-unstable's QEMU 11.0.1 aborts during HVF vCPU init on M4.
 If your own nix-darwin config manages the builder, point `virtualisation.qemu.package` at `qemu_kvm` from the `nixos-26.05` branch.
-
-### Using your own nix-darwin config
-
-The setup script applies the `darwin-nixostest` configuration. If you already manage the machine with nix-darwin, copy the `nix.linux-builder` block and the `QEMU_OPTS` line from `nix/hosts/darwin-nixostest/darwin-configuration.nix` instead.
-Add `uid-range` to `nix.linux-builder.supportedFeatures` and to `nix.settings.system-features` inside the builder config.
 
 ### Slow first build
 

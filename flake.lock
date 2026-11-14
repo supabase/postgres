@@ -293,6 +293,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-qemu10": {
+      "locked": {
+        "lastModified": 1794165970,
+        "narHash": "sha256-XuAV2cUwaod3Bt4XFVqiXz3v1w2ex16W6Sv4S7EWres=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ac588ef1c914865dad517b337ea0eb9694a4021c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1767379071,
@@ -320,6 +336,7 @@
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-2211": "nixpkgs-2211",
         "nixpkgs-oldstable": "nixpkgs-oldstable",
+        "nixpkgs-qemu10": "nixpkgs-qemu10",
         "rust-overlay": "rust-overlay",
         "treefmt-nix": "treefmt-nix"
       }
