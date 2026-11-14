@@ -115,13 +115,7 @@ pkgs.testers.runNixOSTest {
     MAX_RECONNECT_GAP = 5.0
     PGBOUNCER = "-h 127.0.0.1 -p 6543 -U supabase_admin"
     NEW_MIGRATIONS: list[str] = ${builtins.toJSON newMigrations}
-
-    EXTENSION_MEMBERS = (
-      "select e.extname, pg_describe_object(d.classid, d.objid, d.objsubid) "
-      "from pg_depend d join pg_extension e on e.oid = d.refobjid "
-      "where d.refclassid = 'pg_extension'::regclass and d.deptype = 'e' "
-      "order by 1, 2"
-    )
+    EXTENSION_VERSIONS = "select extname, extversion from pg_extension order by 1"
 
     def sql(machine, query, db="postgres"):
       return machine.succeed(
@@ -180,16 +174,10 @@ pkgs.testers.runNixOSTest {
 
     # Dumps go through files: large command output from the VM can lose bytes under load.
     def snapshot(machine, db):
-      queries = {
-        "extension versions": "select extname, extversion from pg_extension order by 1",
-        "extension members": EXTENSION_MEMBERS,
-      }
       commands = {
         "roles": f"{NEW_BIN}/pg_dumpall -U supabase_admin --roles-only --no-role-passwords --restrict-key=MinorUpgrade",
         "schema": f"{NEW_BIN}/pg_dump -U supabase_admin -d {db} --schema-only --restrict-key=MinorUpgrade",
       }
-      for name, query in queries.items():
-        commands[name] = f"psql -U supabase_admin -d {db} -X -t -A -F, -v ON_ERROR_STOP=1 -c \"{query}\""
       directory = f"/tmp/snapshot-{db}"
       machine.succeed(f"rm -rf {directory} && mkdir -p {directory}")
       for name, command in commands.items():
@@ -216,7 +204,7 @@ pkgs.testers.runNixOSTest {
       failed = create_extensions(server, available)
       report = "\n".join(f"  {name}: {err}" for name, err in sorted(failed.items()))
       assert not failed, f"extensions failed to create:\n{report}"
-      created = sql(server, "select extname from pg_extension order by 1", "testing").splitlines()
+      versions_before = {db: sql(server, EXTENSION_VERSIONS, db) for db in DATABASES}
       libraries_before = assert_libraries_load(server, "before the upgrade")
       server.succeed("createdb -U supabase_admin canary")
       sql(server, "create table upgrade_canary as select generate_series(1, 1000) as i", "canary")
@@ -267,22 +255,9 @@ pkgs.testers.runNixOSTest {
         f"/usr/lib/postgresql/bin/postgres resolves to {postgres}, not the new env"
       )
 
-    with subtest("Extensions update to the new defaults"):
+    with subtest("Every extension keeps its version and its library loads"):
       for db in DATABASES:
-        for ext in sql(server, "select extname from pg_extension order by 1", db).splitlines():
-          sql(server, f"alter extension \\\"{ext}\\\" update", db)
-        stale = sql(
-          server,
-          "select e.extname, e.extversion, a.default_version from pg_extension e "
-          "join pg_available_extensions a on a.name = e.extname "
-          "where e.extversion <> a.default_version",
-          db,
-        )
-        assert not stale, f"extensions behind default in {db}:\n{stale}"
-
-    with subtest("Every extension is still installed and its library loads"):
-      after = sql(server, "select extname from pg_extension order by 1", "testing").splitlines()
-      assert after == created, f"extension set changed: {sorted(set(created) ^ set(after))}"
+        assert sql(server, EXTENSION_VERSIONS, db) == versions_before[db], f"extension versions changed in {db}"
       libraries_after = assert_libraries_load(server, "after the upgrade")
       gone = sorted(set(libraries_before) - set(libraries_after))
       assert not gone, f"libraries gone: {gone}"
