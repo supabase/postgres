@@ -12,7 +12,7 @@ trap '[ ! -f "$work/pid" ] || kill "$(cat "$work/pid")"; rm -rf "$work"' EXIT
 share=$(dirname "$(dirname "$(command -v qemu-system-aarch64)")")/share/qemu
 install -m 644 "$share/edk2-arm-vars.fd" "$work/vars.fd"
 qemu-img create -q -f qcow2 -F qcow2 -b "$(realpath "$IMAGE")" "$work/disk.qcow2" 30G
-cloud-localds "$work/seed.iso" user-data-cloudimg meta-data
+cloud-localds "$work/seed.iso" nix/packages/build-qemu-image/user-data-cloudimg nix/packages/build-qemu-image/meta-data
 
 qemu-system-aarch64 \
 	-machine "virt,gic-version=max,highmem=on,accel=$accel" -cpu host -smp 4 -m 8192 \
