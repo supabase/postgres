@@ -12,6 +12,11 @@ writeShellApplication {
   text = ''
     set -euo pipefail
 
+    if [[ $EUID -ne 0 ]]; then
+      echo "Run with sudo: sudo nix run .#setup-darwin-linux-builder" >&2
+      exit 1
+    fi
+
     echo "Configuring nix-darwin linux-builder..."
     echo ""
 
@@ -20,7 +25,7 @@ writeShellApplication {
     for file in /etc/nix/nix.conf /etc/bashrc /etc/zshrc; do
       if [[ -f "$file" && ! -L "$file" ]]; then
         echo "  Backing up $file"
-        sudo mv "$file" "$file.before-nix-darwin"
+        mv "$file" "$file.before-nix-darwin"
       fi
     done
     echo ""
@@ -29,7 +34,7 @@ writeShellApplication {
       for file in /etc/nix/nix.conf /etc/bashrc /etc/zshrc; do
         if [[ ! -L "$file" && -f "$file.before-nix-darwin" ]]; then
           echo "  Restoring original $file"
-          sudo mv "$file.before-nix-darwin" "$file"
+          mv "$file.before-nix-darwin" "$file"
         fi
       done
     }
@@ -37,13 +42,13 @@ writeShellApplication {
 
     echo "This will configure your system with:"
     echo "  - NixOS linux-builder VM (ephemeral)"
-    echo "  - 6 cores, 8GB RAM, 40GB disk"
+    echo "  - 8 cores, 24GB RAM, 100GB disk"
     echo "  - Support for x86_64-linux and aarch64-linux builds"
     echo ""
     echo "Running darwin-rebuild switch..."
     echo ""
 
-    sudo darwin-rebuild switch --refresh --flake ${self}#darwin-nixostest
+    darwin-rebuild switch --refresh --flake ${self}#darwin-nixostest
 
     echo ""
     echo "Configuration complete!"

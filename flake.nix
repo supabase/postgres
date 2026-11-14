@@ -31,6 +31,8 @@
     nixpkgs-2211.url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
     nixpkgs-2211.flake = false;
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
+    # unstable's QEMU 11.0.1 aborts in HVF vCPU init on M4 with macOS >= 15.2. 26.05 ships QEMU 10.2.
+    nixpkgs-qemu10.url = "github:NixOS/nixpkgs/nixos-26.05";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
