@@ -9,16 +9,31 @@ You need:
 
 ## Setup
 
-Run the setup script to configure nix-darwin with the linux-builder:
+### 1. Bootstrap with the official builder
+
+The only way to install is to bootstrap with the official builder first.
+The builder VM is a Linux system, and building it needs a Linux builder that does not exist yet.
+Running setup without this step fails with `platform mismatch, Required system: 'aarch64-linux'`.
+
+Start the official builder from the directory where you want its `keys/` folder, and leave it running:
+
+```bash
+nix run github:NixOS/nixpkgs/nixos-26.05#darwin.linux-builder
+```
+
+From another terminal in the repository, build the configuration through it:
+
+```bash
+sudo env NIX_SSHOPTS="-p 31022" nix build .#darwinConfigurations.darwin-nixostest.system --no-link \
+  --builders "ssh-ng://builder@127.0.0.1 aarch64-linux <keys dir>/builder_ed25519 4 1 kvm,benchmark,big-parallel,nixos-test - <base64 host key>"
+```
+
+The host key is the output of `ssh-keyscan -t ed25519 -p 31022 127.0.0.1` without the comment line, fields 2 and 3, base64 encoded.
+
+### 2. Run setup
 
 ```bash
 sudo nix run .#setup-darwin-linux-builder
-```
-
-Note that you don't have to checkout the repository to run the setup, you can run it directly from GitHub:
-
-```bash
-sudo nix run github:supabase/postgres#setup-darwin-linux-builder
 ```
 
 This command will:
@@ -36,29 +51,9 @@ The linux-builder VM is configured with:
 - `auto-allocate-uids` and `cgroups` enabled inside the VM, so builds that need `uid-range` run
 - `-cpu host` passed to QEMU, since the default `-cpu max` breaks PAC-built guest binaries on M4
 
-After setup completes, restart your shell to access the helper commands.
+After setup completes, stop the official builder with Ctrl-C and restart your shell to access the helper commands.
 
-To re-apply the configuration after changing it, run the same `sudo nix run .#setup-darwin-linux-builder` command.
-
-### First install
-
-The builder VM is a Linux system, so the first install needs a Linux builder to build it.
-If setup fails with `platform mismatch, Required system: 'aarch64-linux'`, start the stock builder first:
-
-```bash
-nix run github:NixOS/nixpkgs/nixos-26.05#darwin.linux-builder
-```
-
-Leave it running, then build the configuration through it from another terminal and rerun setup:
-
-```bash
-sudo env NIX_SSHOPTS="-p 31022" nix build .#darwinConfigurations.darwin-nixostest.system --no-link \
-  --builders "ssh-ng://builder@127.0.0.1 aarch64-linux $PWD/keys/builder_ed25519 4 1 kvm,benchmark,big-parallel,nixos-test - <base64 host key>"
-sudo nix run .#setup-darwin-linux-builder
-```
-
-Run the builder from the directory that holds its `keys/` folder.
-The host key is `ssh-keyscan -t ed25519 -p 31022 127.0.0.1` with the comment line removed, fields 2 and 3, base64 encoded.
+To re-apply the configuration after changing it, run step 2 again. Step 1 is only needed on the first install.
 
 ## Verify the setup
 
