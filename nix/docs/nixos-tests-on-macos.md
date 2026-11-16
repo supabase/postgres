@@ -172,11 +172,6 @@ start-linux-builder
 The VM is configured as ephemeral, meaning it's recreated fresh on each start.
 This ensures a clean environment but requires re-downloading cached build artifacts.
 
-### QEMU aborts on M4 with macOS 15.2 or later
-
-nixpkgs-unstable's QEMU 11.0.1 aborts during HVF vCPU init on M4.
-If your own nix-darwin config manages the builder, point `virtualisation.qemu.package` at `qemu_kvm` from the `nixos-26.05` branch.
-
 ### Slow first build
 
 The first NixOS test run may download significant data.

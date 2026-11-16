@@ -1,5 +1,4 @@
 {
-  inputs,
   lib,
   pkgs,
   self,
@@ -116,34 +115,31 @@ in
       "nixos-test"
       "uid-range"
     ];
-    config =
-      { lib, ... }:
-      {
-        virtualisation = {
-          qemu.package = lib.mkForce inputs.nixpkgs-qemu10.legacyPackages.aarch64-darwin.qemu_kvm;
-          darwin-builder = {
-            diskSize = 100 * 1024;
-            memorySize = 24 * 1024;
-          };
-          cores = 8;
+    config = {
+      virtualisation = {
+        darwin-builder = {
+          diskSize = 100 * 1024;
+          memorySize = 24 * 1024;
         };
-        nix.settings = {
-          experimental-features = [
-            "auto-allocate-uids"
-            "cgroups"
-          ];
-          auto-allocate-uids = true;
-          max-jobs = 2;
-          cores = 4;
-          system-features = [
-            "kvm"
-            "benchmark"
-            "big-parallel"
-            "nixos-test"
-            "uid-range"
-          ];
-        };
+        cores = 8;
       };
+      nix.settings = {
+        experimental-features = [
+          "auto-allocate-uids"
+          "cgroups"
+        ];
+        auto-allocate-uids = true;
+        max-jobs = 2;
+        cores = 4;
+        system-features = [
+          "kvm"
+          "benchmark"
+          "big-parallel"
+          "nixos-test"
+          "uid-range"
+        ];
+      };
+    };
   };
 
   launchd.daemons.linux-builder.environment.QEMU_OPTS = "-cpu host";
