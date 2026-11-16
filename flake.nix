@@ -31,7 +31,7 @@
     nixpkgs-2211.url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
     nixpkgs-2211.flake = false;
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
-    # Previous minor release, for upgrade tests. No follows, so outputs hit the binary cache.
+    # Release 17.6.1.178 and 15.14.1.178, the upgrade source for minor upgrade tests.
     postgres-previous-release.url = "github:supabase/postgres/e0ca4193233d226a631d26e4549ca3bae8581ff7";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";
