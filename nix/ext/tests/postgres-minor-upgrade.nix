@@ -7,7 +7,8 @@
 let
   testLib = import ./lib.nix { inherit self pkgs; };
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
-  oldFlake = self.inputs.postgres-previous-release;
+  # Release 17.6.1.178 and 15.14.1.178.
+  oldFlake = builtins.getFlake "github:supabase/postgres/e0ca4193233d226a631d26e4549ca3bae8581ff7?narHash=sha256-9dscdoknHs1BE5kmWixCYWb9dfnM5t9hsMW%2B1Mmj1Kc%3D";
   oldVersion = oldFlake.packages.${system}.postgresql_17.version;
   newVersion = testLib.expectedVersions."17";
   profile = "/nix/var/nix/profiles/per-user/postgres/profile";
