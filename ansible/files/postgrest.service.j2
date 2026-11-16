@@ -8,6 +8,7 @@ StartLimitBurst=0
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/postgrest/generated.env
 # We allow the base config (sent from the worker) to override the generated config
 ExecStartPre=/etc/postgrest/merge.sh /etc/postgrest/generated.conf /etc/postgrest/base.conf
 ExecStart=/opt/postgrest /etc/postgrest/merged.conf
