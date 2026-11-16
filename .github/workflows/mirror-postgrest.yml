@@ -31,7 +31,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: supabase/cli/.github/workflows/mirror-image.yml@e9da2363fa52ccfb1cfb49611cabd8e49cb21577 # v3.0.0-next.16
+    uses: supabase/cli/.github/workflows/mirror-image.yml@d4fc0e5bbd65b3ade802e956d6df1cddab2e65a3 # v3.1.0
     with:
       image: postgrest/postgrest:v${{ needs.version.outputs.postgrest_release }}
     secrets: inherit
