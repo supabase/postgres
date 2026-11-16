@@ -65,8 +65,7 @@ pkgs.testers.runNixOSTest {
       imports = [
         (testLib.makeSupabaseTestConfig {
           majorVersion = "17";
-          postgresPackage = oldPkg;
-          postgresProfile = profile;
+          postgresPackage = "/usr/lib/postgresql";
           postgresConfig = configLink;
         })
       ];
@@ -75,7 +74,26 @@ pkgs.testers.runNixOSTest {
         requires = pkgs.lib.mkForce [ ];
         wants = [ "postgresql.service" ];
       };
+      environment.systemPackages = [ oldPkg ];
       systemd.tmpfiles.rules = [ "L ${configLink} - - - - ${oldConfig}" ];
+      # Mirrors the image bake: bin links are made once and go through the profile.
+      systemd.services.postgres-profile = {
+        requiredBy = [ "postgresql.service" ];
+        before = [ "postgresql.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        path = [ pkgs.pkgsLinux.nix ];
+        script = ''
+          mkdir -p "$(dirname ${profile})"
+          nix-env -p ${profile} --set ${oldPkg}
+          ln -sfn ${profile} /var/lib/postgresql/.nix-profile
+          mkdir -p /usr/lib/postgresql/bin
+          ln -s /var/lib/postgresql/.nix-profile/bin/* /usr/lib/postgresql/bin/
+          ln -s /var/lib/postgresql/.nix-profile/share /usr/lib/postgresql/share
+        '';
+      };
       systemd.services.pgbouncer = {
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {

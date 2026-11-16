@@ -134,41 +134,22 @@ let
       majorVersion,
       postgresPort ? defaultPort,
       postgresPackage ? self.packages.${system}."psql_${majorVersion}/bin",
-      postgresProfile ? null,
       postgresConfig ? processAnsibleConfig { inherit majorVersion; },
     }:
     let
-      postgresBin = if postgresProfile == null then postgresPackage else "/usr/lib/postgresql";
       groongaPackage = self.packages.${system}.supabase-groonga;
       dataDir = "/var/lib/postgresql/data";
       port = toString postgresPort;
 
-      # Runs as root: ensure data directory and, in profile mode, the image layout exist
-      preStartRootScript = pkgs.pkgsLinux.writeShellScript "postgresql-pre-start-root" (
-        ''
-          set -euo pipefail
-          DATA_DIR="${dataDir}"
-          if [ ! -d "$DATA_DIR" ]; then
-            mkdir -p -m 0700 "$DATA_DIR"
-            chown postgres:postgres "$DATA_DIR"
-          fi
-        ''
-        + lib.optionalString (postgresProfile != null) ''
-          if [ ! -e "${postgresProfile}" ]; then
-            mkdir -p "$(dirname "${postgresProfile}")"
-            ${pkgs.pkgsLinux.nix}/bin/nix-env -p "${postgresProfile}" --set ${postgresPackage}
-          fi
-          ln -sfn "${postgresProfile}" /var/lib/postgresql/.nix-profile
-          # Mirrors the image bake: links are made once and go through the profile.
-          if [ ! -d /usr/lib/postgresql/bin ]; then
-            mkdir -p /usr/lib/postgresql/bin
-            for f in /var/lib/postgresql/.nix-profile/bin/*; do
-              ln -s "$f" /usr/lib/postgresql/bin/
-            done
-            ln -s /var/lib/postgresql/.nix-profile/share /usr/lib/postgresql/share
-          fi
-        ''
-      );
+      # Runs as root: ensure data directory exists with correct ownership
+      preStartRootScript = pkgs.pkgsLinux.writeShellScript "postgresql-pre-start-root" ''
+        set -euo pipefail
+        DATA_DIR="${dataDir}"
+        if [ ! -d "$DATA_DIR" ]; then
+          mkdir -p -m 0700 "$DATA_DIR"
+          chown postgres:postgres "$DATA_DIR"
+        fi
+      '';
 
       # Runs as postgres: initdb, config deployment, validation
       initScript = pkgs.pkgsLinux.writeShellScript "postgresql-init" ''
@@ -178,7 +159,7 @@ let
         # Initialize database if it doesn't exist
         if [ ! -f "$DATA_DIR/PG_VERSION" ]; then
           echo "Initializing database at $DATA_DIR"
-          ${postgresBin}/bin/initdb --allow-group-access --data-checksums -U supabase_admin -D "$DATA_DIR"
+          ${postgresPackage}/bin/initdb --allow-group-access --data-checksums -U supabase_admin -D "$DATA_DIR"
         fi
 
         # Deploy processed config files with @dataDir@ substituted
@@ -198,7 +179,7 @@ let
 
         # Validate config
         echo "Validating PostgreSQL configuration..."
-        ${postgresBin}/bin/postgres -C shared_preload_libraries -D "$DATA_DIR"
+        ${postgresPackage}/bin/postgres -C shared_preload_libraries -D "$DATA_DIR"
       '';
 
       dbInitScript = pkgs.pkgsLinux.writeShellScript "supabase-db-init" ''
@@ -207,7 +188,7 @@ let
         # Wait for PostgreSQL to be ready
         echo "Waiting for PostgreSQL to be ready..."
         for i in $(seq 1 60); do
-          if ${postgresBin}/bin/pg_isready -h localhost -p ${port} -q; then
+          if ${postgresPackage}/bin/pg_isready -h localhost -p ${port} -q; then
             echo "PostgreSQL is ready"
             break
           fi
@@ -218,7 +199,7 @@ let
           sleep 1
         done
 
-        PSQL="${postgresBin}/bin/psql"
+        PSQL="${postgresPackage}/bin/psql"
 
         # Create postgres role (matching run-server.sh.in)
         echo "Creating postgres role..."
@@ -280,7 +261,7 @@ let
       networking.firewall.allowedTCPPorts = [ postgresPort ];
 
       # Make PostgreSQL available system-wide
-      environment.systemPackages = [ postgresPackage ];
+      environment.systemPackages = lib.optional (lib.isDerivation postgresPackage) postgresPackage;
 
       # PostgreSQL service (custom, bypassing services.postgresql)
       systemd.services.postgresql = {
@@ -296,7 +277,7 @@ let
             ("+" + preStartRootScript)
             initScript
           ];
-          ExecStart = "${postgresBin}/bin/postgres -D ${dataDir}";
+          ExecStart = "${postgresPackage}/bin/postgres -D ${dataDir}";
           KillMode = "mixed";
           KillSignal = "SIGINT";
           TimeoutStopSec = 90;
