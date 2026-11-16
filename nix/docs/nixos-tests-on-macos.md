@@ -9,34 +9,16 @@ You need:
 
 ## Setup
 
-### 1. Bootstrap with the official builder
-
-The only way to install is to bootstrap with the official builder first.
-The builder VM is a Linux system, and building it needs a Linux builder that does not exist yet.
-Running setup without this step fails with `platform mismatch, Required system: 'aarch64-linux'`.
-
-Start the official builder from the directory where you want its `keys/` folder, and leave it running:
-
-```bash
-nix run github:NixOS/nixpkgs/nixos-26.05#darwin.linux-builder
-```
-
-From another terminal in the repository, build the configuration through it:
-
-```bash
-sudo env NIX_SSHOPTS="-p 31022" nix build .#darwinConfigurations.darwin-nixostest.system --no-link \
-  --builders "ssh-ng://builder@127.0.0.1 aarch64-linux <keys dir>/builder_ed25519 4 1 kvm,benchmark,big-parallel,nixos-test - <base64 host key>"
-```
-
-The host key is the output of `ssh-keyscan -t ed25519 -p 31022 127.0.0.1` without the comment line, fields 2 and 3, base64 encoded.
-
-### 2. Run setup
+Run the setup script to configure nix-darwin with the linux-builder:
 
 ```bash
 sudo nix run .#setup-darwin-linux-builder
 ```
 
-This command will:
+The builder VM is a Linux system, and building it needs a Linux builder.
+If none is configured, the script first bootstraps with the official `nixos-26.05#darwin.linux-builder`, builds the configuration through it, and stops it before switching.
+
+The script will:
 - Back up existing system files (`/etc/nix/nix.conf`, `/etc/bashrc`, `/etc/zshrc`)
 - Configure nix-darwin with the linux-builder VM
 - Install helper scripts for managing the builder
@@ -51,9 +33,9 @@ The linux-builder VM is configured with:
 - `auto-allocate-uids` and `cgroups` enabled inside the VM, so builds that need `uid-range` run
 - `-cpu host` passed to QEMU, since the default `-cpu max` breaks PAC-built guest binaries on M4
 
-After setup completes, stop the official builder with Ctrl-C and restart your shell to access the helper commands.
+After setup completes, restart your shell to access the helper commands.
 
-To re-apply the configuration after changing it, run step 2 again. Step 1 is only needed on the first install.
+To re-apply the configuration after changing it, run the same command. The bootstrap is skipped once a builder exists.
 
 ## Verify the setup
 
