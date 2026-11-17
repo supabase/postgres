@@ -691,13 +691,10 @@ EOF
 				CHECKSUM_FLAG=""
 				;;
 			*)
-				log "adding checksums FAILED with error code ${STATUS}"
+				log "adding checksums FAILED with error code ${STATUS}!"
 				CHECKSUM_FLAG=""
 				;;
 			esac
-
-			# we're here if everything went well with STATUS=0
-			# so now, checksums are enabled on the SOURCE!
 
 		else
 
