@@ -1,3 +1,7 @@
+# This is a no-op workflow that only exists to fire
+# a workflow_run event for public-integration-doorbell.yml.
+# public-integration-doorbell.yml must only ever fire for events that
+# execute the main branch version of the workflow so PRs cannot change the functionality.
 name: integration-trigger
 
 on:
