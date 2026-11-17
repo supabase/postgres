@@ -670,13 +670,13 @@ EOF
 
 		if [[ $PGDATAOLD_SIZE -le $MAX_SIZE ]]; then
 
-			log "9.1 adding checksums to SOURCE PG (<20 Gb)"
+			log "9.1. adding checksums to SOURCE PG (<20 Gb)"
 
 			# pg_checksums -e does not verify existing pages. A run over
 			# MAX_DURATION won't fail the upgrade, and let the database without
 			# checksums enabled
 
-			MAX_DURATION="10m"
+			MAX_DURATION="20s"
 			KILL_AFTER="15s"
 			STATUS=0
 			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
@@ -687,11 +687,11 @@ EOF
 				CHECKSUM_FLAG="--data-checksums"
 				;;
 			124 | 137)
-				log "adding checksums FAILED. Max time (${MAX_DURATION}) reached! Process killed."
+				log "adding checksums FAILED. Max time (${MAX_DURATION}) reached!"
 				CHECKSUM_FLAG=""
 				;;
 			*)
-				log "adding checksum FAILED with Error code ${STATUS}"
+				log "adding checksum FAILED with error code ${STATUS}"
 				CHECKSUM_FLAG=""
 				;;
 			esac
@@ -701,13 +701,13 @@ EOF
 
 		else
 
-			log "9.1 did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+			log "9.1. did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
 
 		fi
 
 	else
 
-		log "9.1 checksums already present on SOURCE"
+		log "9.1. checksums already present on SOURCE"
 
 	fi
 
