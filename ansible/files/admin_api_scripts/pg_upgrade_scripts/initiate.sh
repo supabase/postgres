@@ -676,7 +676,7 @@ EOF
 			# MAX_DURATION won't fail the upgrade, and let the database without
 			# checksums enabled
 
-			MAX_DURATION="20s"
+			MAX_DURATION="10m"
 			KILL_AFTER="15s"
 			STATUS=0
 			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
@@ -691,7 +691,7 @@ EOF
 				CHECKSUM_FLAG=""
 				;;
 			*)
-				log "adding checksum FAILED with error code ${STATUS}"
+				log "adding checksums FAILED with error code ${STATUS}"
 				CHECKSUM_FLAG=""
 				;;
 			esac
