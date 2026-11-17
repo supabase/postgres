@@ -1,0 +1,13 @@
+name: integration-trigger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Integration tests are started by public-integration-doorbell"

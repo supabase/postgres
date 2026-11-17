@@ -1,0 +1,59 @@
+# - Path must match the trust entry in gh-org-manager policy/apps/postgres-integration-doorbell.toml.
+# - Only the default-branch copy of this file can mint a token
+# - Keep it self-contained, no `uses:` unless the policy is updated first
+name: public-integration-doorbell
+
+on:
+  # Disabled: comment-triggered only. Uncomment (and the matching `if:` below) to also run automatically.
+  # workflow_run:
+  #   workflows: [integration-trigger]
+  #   types: [completed]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  ring:
+    # Cheap pre-filters only. The dispatcher enforces the real policy.
+    # A fork could add its own workflow named "integration-trigger", so the payload is just a hint.
+    # if: >-
+    #   (github.event_name == 'workflow_run' &&
+    #    github.event.workflow_run.head_repository.full_name == github.repository) ||
+    #   (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+    #    startsWith(github.event.comment.body, '/integration-test '))
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/integration-test ')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      # If this works, we may want to look at exposing a public mint-token action rather than
+      # duplicate gh-org-manager mint-token action but that's something to discuss with security.
+      - id: mint
+        env:
+          SERVER_URL: https://6bcmt2ap3kmkyzs4wipclhtawm0wkpro.lambda-url.eu-central-1.on.aws/token
+          AUDIENCE: oidc-gh.supabase.internal
+        run: |
+          set -euo pipefail
+          oidc=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUDIENCE" | jq -r .value)
+          echo "::add-mask::$oidc"
+          token=$(curl -sSf -X POST -H "Authorization: Bearer $oidc" -H "Content-Type: application/json" \
+            --fail-with-body \
+            --data '{"app":"public-integration-doorbell","repositories":["integration-test-dispatch"]}' "$SERVER_URL" | jq -r .token)
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+      - env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          PR: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          gh workflow run dispatch.yml --repo supabase/integration-test-dispatch --ref main \
+            -f source_repo="$GITHUB_REPOSITORY" -f event="$EVENT" -f sha="$SHA" \
+            -f branch="$BRANCH" -f pr="$PR" -f comment_id="$COMMENT_ID"
