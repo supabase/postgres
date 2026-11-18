@@ -47,17 +47,17 @@ aws_cli_artifacts:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
     checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
 # renovate: datasource=github-releases packageName=envoyproxy/envoy
-envoy_release: 1.28.0
+envoy_release: 1.40.2
 envoy_artifacts:
   amd64:
     url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-x86_64"
-    checksum: sha256:2639563ce9bc09b1ee6bd4731760b596c8ed1e474cdd83cc9df9364516e14367
+    checksum: sha256:1d64506e25c1844f146162ddb2ece7010fa4e784faddb40a079021491f1f03cc
   arm64:
     url: "https://github.com/envoyproxy/envoy/releases/download/v{{ envoy_release }}/envoy-{{ envoy_release }}-linux-aarch_64"
-    checksum: sha256:eb930e32ab5555643e09d11d490e392d0a790c5a80eb0b0ebacb1046bdbb114d
+    checksum: sha256:b9d6d1e06dd5838a3506de9f4deebad3de9a2ce6cadb87cd76222ca286213baf
   hot_restarter:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
-    checksum: sha256:3a2f9b1056771787eb0304dceb7e42013c6cf1c8e8281ff63f573fa5f258c709
+    checksum: sha256:688cc4219c84b08a2dd5e8a200d270d4ba4e1a00a1c63a3efb6064cb6e60e321
 # renovate: datasource=github-releases packageName=Kong/kong
 kong_release: 2.8.1
 kong_artifacts:
