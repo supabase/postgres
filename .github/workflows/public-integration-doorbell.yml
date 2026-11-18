@@ -50,7 +50,7 @@ jobs:
           echo "::add-mask::$oidc"
           token=$(curl -sSf -X POST -H "Authorization: Bearer $oidc" -H "Content-Type: application/json" \
             --fail-with-body \
-            --data '{"app":"public-integration-doorbell","repositories":["integration-test-dispatch"]}' "$SERVER_URL" | jq -r .token)
+            --data '{"app":"public-integration-doorbell","repositories":["integration-test-dispatch"]}' "$SERVER_URL" | jq -er .token)
           echo "::add-mask::$token"
           echo "token=$token" >> "$GITHUB_OUTPUT"
 
