@@ -84,7 +84,7 @@ mint_cli_artifacts:
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-arm64.tar.xz
     checksum: sha256:13040280f8dfe1155b8460d7f35e6a1e04d0167fdf2867678dfb1b117485c581
-# renovate: datasource=github-releases packageName=PostgREST/postgrest
+# renovate: datasource=github-releases packageName=supabase/postgrest
 postgrest_release: "17.1" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
