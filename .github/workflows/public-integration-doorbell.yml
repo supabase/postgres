@@ -6,7 +6,7 @@ name: public-integration-doorbell
 # NEVER add pull_request or any other event to the trigger set that would cause
 # workflow to execute a modified version in a PR.
 # While the risk is low and the only potential token mint exposure would be a temporary token
-# that could fire dispatch.yml in integration-test-dispatch, 
+# that could fire dispatch.yml in integration-test-dispatch,
 # public-integration-doorbell.yml should only ever fire for events that
 # execute the main branch version of the workflow so PRs cannot change the functionality.
 # For details, see https://app.notion.com/p/supabase/Public-to-Private-Repo-Workflow-Dispatch-4145004b775f8002b05bea63a5c6c0ca#4175004b775f80b39349c844c98d6606
