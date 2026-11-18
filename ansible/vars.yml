@@ -68,7 +68,7 @@ kong_artifacts:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
     checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
 # renovate: datasource=github-releases packageName=supabase/auth
-gotrue_release: 2.197.0
+gotrue_release: 2.198.0
 gotrue_artifacts:
   amd64:
     url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
