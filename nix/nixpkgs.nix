@@ -17,6 +17,7 @@
           (
             final: prev:
             let
+              # renovate: datasource=github-tags packageName=eggert/tz
               version = "2026f";
             in
             {
