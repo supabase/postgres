@@ -59,14 +59,14 @@ envoy_artifacts:
     url: "https://raw.githubusercontent.com/envoyproxy/envoy/v{{ envoy_release }}/restarter/hot-restarter.py"
     checksum: sha256:688cc4219c84b08a2dd5e8a200d270d4ba4e1a00a1c63a3efb6064cb6e60e321
 # renovate: datasource=github-releases packageName=Kong/kong
-kong_release: 2.8.1
+kong_release: 2.8.4
 kong_artifacts:
   amd64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_amd64.deb"
-    checksum: sha256:10d12d23e5890414d666663094d51a42de41f8a9806fbc0baaf9ac4d37794361
+    checksum: sha256:a75174675be22269bf0bf4b806c9f060996120ec9cc6760bcb7ce64475ce7574
   arm64:
     url: "https://packages.konghq.com/public/gateway-28/deb/ubuntu/pool/focal/main/k/ko/kong_{{kong_release}}/kong_{{ kong_release }}_arm64.deb"
-    checksum: sha256:61c13219ef64dac9aeae5ae775411e8cfcd406f068cf3e75d463f916ae6513cb
+    checksum: sha256:b6d7abb3f14ff2f8e6e5a19b9f385cd3856984db238bf738d6f23bc41ae2b386
 # renovate: datasource=github-releases packageName=supabase/auth
 gotrue_release: 2.197.0
 gotrue_artifacts:
