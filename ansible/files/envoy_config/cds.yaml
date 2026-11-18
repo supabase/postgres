@@ -83,4 +83,24 @@ resources:
             budget_percent:
               value: 100
             min_retry_concurrency: 100
-
+  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: db_integrity_agent
+    load_assignment:
+      cluster_name: db_integrity_agent
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 8095
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 10000
+          max_pending_requests: 10000
+          max_requests: 10000
+          retry_budget:
+            budget_percent:
+              value: 100
+            min_retry_concurrency: 100
