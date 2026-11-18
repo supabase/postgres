@@ -4653,7 +4653,7 @@ file:
     filetype: file
   /etc/pgbouncer/pgbouncer.ini:
     exists: true
-    mode: "0700"
+    mode: "0600"
     owner: "1000"
     group: "0"
     filetype: file
@@ -4917,7 +4917,7 @@ file:
     filetype: file
   /etc/salt/gpgkeys:
     exists: true
-    mode: "0755"
+    mode: "0700"
     owner: "993"
     group: "987"
     filetype: directory

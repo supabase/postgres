@@ -43,7 +43,7 @@ else
 				echo
 				continue
 			fi
-			summary=$(grep '^Closure size:' "$file" | tail -1)
+			summary=$(grep '^Closure size:' "$file" | tail -1 || true)
 			echo "<details>"
 			echo "<summary>${system}: ${summary:-changed}</summary>"
 			echo

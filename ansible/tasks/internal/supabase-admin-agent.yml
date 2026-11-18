@@ -25,6 +25,7 @@
     path: /etc/salt/gpgkeys
     owner: root
     group: salt
+    mode: "0700"
     state: directory
 
 - name: give supabase-admin-agent user permissions
