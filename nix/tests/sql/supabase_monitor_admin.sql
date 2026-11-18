@@ -6,7 +6,8 @@ select rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin,
        rolreplication, rolbypassrls, rolconnlimit, rolpassword is null as no_password
 from pg_authid where rolname = 'supabase_monitor_admin';
 
--- per-role settings (read-only by default, search_path pg_catalog + pg_temp, timeouts)
+-- per-role settings (read-only by default, search_path pg_catalog + pg_temp,
+-- timeouts, its own queries not tracked by pg_stat_statements)
 select unnest(rolconfig) as setting from pg_roles where rolname = 'supabase_monitor_admin' order by 1;
 
 -- memberships: exactly pg_monitor and pg_read_all_data
@@ -16,11 +17,36 @@ from pg_auth_members where member = 'supabase_monitor_admin'::regrole order by 1
 -- nobody is a member of it
 select count(*) from pg_auth_members where roleid = 'supabase_monitor_admin'::regrole;
 
--- owns nothing and holds no object-level ACL entries anywhere
+-- owns nothing
 select count(*) from pg_shdepend
 where refclassid = 'pg_authid'::regclass
   and refobjid = 'supabase_monitor_admin'::regrole
-  and deptype in ('o', 'a');
+  and deptype = 'o';
+
+-- object-level privileges: exactly SET on pg_stat_statements.track and
+-- temp_file_limit (not ALTER SYSTEM), and SELECT/EXECUTE on pg_file_settings
+-- (to see read-only mode behind its own per-role
+-- default_transaction_read_only = on). Not the pg_hba.conf / pg_ident.conf
+-- readers: SELECT on those views comes with pg_read_all_data, but EXECUTE on
+-- their functions must stay revoked.
+select pg_describe_object(classid, objid, objsubid) as object
+from pg_shdepend
+where refclassid = 'pg_authid'::regclass
+  and refobjid = 'supabase_monitor_admin'::regrole
+  and deptype = 'a'
+order by 1;
+select p as parameter,
+       has_parameter_privilege('supabase_monitor_admin', p, 'SET') as can_set,
+       has_parameter_privilege('supabase_monitor_admin', p, 'ALTER SYSTEM') as can_alter_system
+from (values ('pg_stat_statements.track'), ('temp_file_limit')) t(p)
+order by 1;
+select v as object,
+       has_table_privilege('supabase_monitor_admin', 'pg_catalog.' || v, 'SELECT') as can_select,
+       has_function_privilege('supabase_monitor_admin', 'pg_catalog.' || f, 'EXECUTE') as can_execute
+from (values ('pg_file_settings', 'pg_show_all_file_settings()'),
+             ('pg_hba_file_rules', 'pg_hba_file_rules()'),
+             ('pg_ident_file_mappings', 'pg_ident_file_mappings()')) t(v, f)
+order by 1;
 
 -- no CREATE on the database
 select has_database_privilege('supabase_monitor_admin', current_database(), 'CREATE');
@@ -40,6 +66,32 @@ set role pg_read_all_data;
 select count(*) from public.monitor_probe;
 reset session authorization;
 drop table public.monitor_probe;
+
+-- it can switch off pg_stat_statements tracking and cap temp files for its
+-- own session (both are otherwise superuser-only: "permission denied to set
+-- parameter")
+set session authorization supabase_monitor_admin;
+set pg_stat_statements.track = none;
+set temp_file_limit = '15MB';
+show pg_stat_statements.track;
+show temp_file_limit;
+reset session authorization;
+reset pg_stat_statements.track;
+reset temp_file_limit;
+
+-- it sees read-only mode as set by manage_readonly_mode.sh through
+-- pg_file_settings, even though its own sessions default to read-only
+alter system set default_transaction_read_only = on;
+set session authorization supabase_monitor_admin;
+select setting, applied from pg_file_settings where name = 'default_transaction_read_only';
+reset session authorization;
+alter system reset default_transaction_read_only;
+set session authorization supabase_monitor_admin;
+select count(*) from pg_file_settings where name = 'default_transaction_read_only';
+-- but it cannot read pg_hba.conf / pg_ident.conf
+select count(*) from pg_hba_file_rules;
+select count(*) from pg_ident_file_mappings;
+reset session authorization;
 
 -- reserved role (supautils.conf.j2): the non-superuser postgres role cannot
 -- grant it, modify it, grant to it, or drop it. Same pattern as

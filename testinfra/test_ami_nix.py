@@ -1182,19 +1182,46 @@ def test_supabase_monitor_admin_role_is_passwordless_and_reachable_on_loopback(h
         f"unexpected supabase_monitor_admin attributes: {result['stdout']!r}"
     )
 
-    # Passwordless loopback login works, and the per-role read-only default
-    # applies to the resulting session.
+    # Passwordless loopback login works, and the per-role defaults apply to
+    # the resulting session: read-only, and its own queries are not tracked
+    # by pg_stat_statements.
     result = run_ssh_command(
         ssh,
         "sudo -u postgres psql -U supabase_monitor_admin -h 127.0.0.1 -d postgres -At "
-        "-c 'select current_user' -c 'show default_transaction_read_only' 2>&1",
+        "-c 'select current_user' -c 'show default_transaction_read_only' "
+        "-c 'show pg_stat_statements.track' 2>&1",
     )
     assert result["succeeded"], (
         "supabase_monitor_admin could not log in over loopback without a password: "
         f"{result['stdout']!r} {result['stderr']!r}"
     )
-    assert result["stdout"].split() == ["supabase_monitor_admin", "on"], (
+    assert result["stdout"].split() == ["supabase_monitor_admin", "on", "none"], (
         f"unexpected session state for supabase_monitor_admin: {result['stdout']!r}"
+    )
+
+    # The monitor may also pass the fleet postgres_exporter's startup options
+    # itself (both parameters are superuser-only without the role's SET
+    # grants), and it reads the system-wide default_transaction_read_only from
+    # pg_file_settings (read-only mode, see manage_readonly_mode.sh), which its
+    # own per-role default hides from SHOW. This image is not in read-only
+    # mode. pg_hba.conf / pg_ident.conf stay unreadable.
+    result = run_ssh_command(
+        ssh,
+        "sudo -u postgres env PGOPTIONS='-c pg_stat_statements.track=none -c temp_file_limit=15MB' "
+        "psql -U supabase_monitor_admin -h 127.0.0.1 -d postgres -At "
+        "-c 'show pg_stat_statements.track' "
+        "-c 'show temp_file_limit' "
+        '-c "select coalesce((select setting from pg_file_settings '
+        "where name = 'default_transaction_read_only' and applied), 'off')\" "
+        "-c \"select has_function_privilege('pg_hba_file_rules()', 'EXECUTE') "
+        "or has_function_privilege('pg_ident_file_mappings()', 'EXECUTE')\" 2>&1",
+    )
+    assert result["succeeded"], (
+        "supabase_monitor_admin could not log in with the exporter's options or "
+        f"read pg_file_settings: {result['stdout']!r} {result['stderr']!r}"
+    )
+    assert result["stdout"].split() == ["none", "15MB", "off", "f"], (
+        f"unexpected monitoring output for supabase_monitor_admin: {result['stdout']!r}"
     )
 
 
