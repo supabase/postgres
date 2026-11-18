@@ -244,14 +244,15 @@ EOF
 # file ends by running the routine, which hands the pg_net grants of anon, authenticated and
 # service_role to postgres. It must run after ALTER USER postgres WITH NOSUPERUSER: while postgres is
 # a superuser its grants are recorded as made by supabase_admin, and the routine refuses to run.
-# The file is put next to the scripts by ansible; the tarball carries it only for the test harness.
-# Fail-soft like execute_patches.
+# The file is put next to the scripts by ansible. Fail-soft like execute_patches.
+# One transaction: without it a failure after the drop of the event trigger would leave the
+# project with no trigger, so every later create extension pg_net would install with no grants.
 function execute_pg_net_grants {
 	local rc=0
 	local sql_file="$SCRIPT_DIR/pg_net_grants.sql"
 
 	if [ -f "$sql_file" ]; then
-		run_sql -v ON_ERROR_STOP=1 -f "$sql_file" || rc=1
+		run_sql -v ON_ERROR_STOP=1 -1 -f "$sql_file" || rc=1
 	else
 		log "WARNING: $sql_file not found"
 		rc=1

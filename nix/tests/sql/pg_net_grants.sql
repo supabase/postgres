@@ -1,6 +1,6 @@
 -- pg_net grants are made by postgres, not supabase_admin, so a customer can revoke anon,
 -- authenticated and service_role themselves. extensions.apply_pg_net_grants() does that. It runs
--- from the migration and from the event trigger on CREATE EXTENSION pg_net.
+-- from the migration and from the event trigger on CREATE and ALTER EXTENSION pg_net.
 -- pg_net here was installed by prime.sql through the event trigger, the path a fresh project takes.
 
 -- who holds what on the net schema and the http functions, and who granted it
@@ -40,7 +40,7 @@ where r.rolname in ('postgres', 'anon', 'authenticated', 'service_role', 'supaba
 group by r.rolname
 order by r.rolname collate "C";
 
--- 1. fresh project: anon, authenticated and service_role have no grant of their own, postgres can
+-- 1. fresh project: anon, authenticated and service_role are granted by postgres, postgres can
 --    grant onward, supabase_functions_admin keeps its grants from supabase_admin
 select * from net_acl;
 select * from net_access;
@@ -52,6 +52,10 @@ select * from net_acl;
 -- 3. existing project: the old event trigger granted the three roles as supabase_admin, and
 --    support revoked anon by hand. authenticated and service_role keep their access, now granted
 --    by postgres. anon gets nothing back
+set role postgres;
+revoke usage on schema net from anon, authenticated, service_role;
+revoke execute on function net.http_get, net.http_post, net.http_delete from anon, authenticated, service_role;
+reset role;
 grant usage on schema net to anon, authenticated, service_role;
 revoke usage on schema net from anon;
 select extensions.apply_pg_net_grants();
@@ -70,6 +74,10 @@ select * from net_acl;
 --    postgres, function security is left alone
 drop extension pg_net;
 create extension pg_net;
+set role postgres;
+revoke usage on schema net from anon, authenticated, service_role;
+revoke execute on function net.http_get, net.http_post, net.http_delete from anon, authenticated, service_role;
+reset role;
 alter function net.http_get security definer;
 alter function net.http_post security definer;
 revoke all on function net.http_get, net.http_post from public;
@@ -85,18 +93,31 @@ where n.nspname = 'net'
   and p.proname in ('http_get', 'http_post', 'http_delete')
 order by p.proname;
 
--- 6. drop and recreate the extension: back to the fresh state
+-- 6. drop and recreate the extension as postgres, the way a project does it. supautils runs the
+--    trigger in a security-restricted context, and the three roles still get the set from postgres.
+set role postgres;
 drop extension pg_net;
 create extension pg_net;
+reset role;
 select * from net_acl;
 
--- 7. anon can still queue a request. PUBLIC covers it until pg_net stops granting PUBLIC
+-- 6.1 a helper the customer replaced is not what runs: the routine drops and recreates it
+set role postgres;
+create or replace function extensions.grant_pg_net_api_access(api_role name, http_functions regprocedure[])
+    returns void language plpgsql as $$ begin raise exception 'customer body ran as %', current_user; end $$;
+reset role;
+select extensions.apply_pg_net_grants();
+select prosecdef, proowner::regrole as owner
+  from pg_proc where oid = 'extensions.grant_pg_net_api_access(name, regprocedure[])'::regprocedure;
+
+-- 7. anon can queue a request with its grants from postgres
 select value as port from test_config where key = 'http_mock_port' \gset
 set role anon;
 select net.http_get('http://localhost:' || :'port' || '/get') is not null as request_queued;
 reset role;
 
--- 8. the tables and the sequence are not touched: everything pg_net grants PUBLIC is still there
+-- 8. PUBLIC loses TRIGGER, REFERENCES and TRUNCATE on the tables, postgres gets TRIGGER and TRUNCATE.
+--    The rest of what pg_net grants PUBLIC is still there
 select relname, grantee, string_agg(privilege_type, ', ' order by privilege_type) as privileges
 from (
     select c.relname,

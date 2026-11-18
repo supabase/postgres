@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
 BEGIN;
-SELECT plan(22);
+SELECT plan(24);
 
 select has_schema('public');
 select has_schema('auth');
@@ -38,6 +38,10 @@ SELECT ok(
 SELECT has_function('extensions', 'apply_pg_net_grants', ARRAY[]::text[],
     'the upgrade ships extensions.apply_pg_net_grants to a project that never had it');
 SELECT is(
+    (SELECT evttags FROM pg_event_trigger WHERE evtname = 'issue_pg_net_access'),
+    ARRAY['CREATE EXTENSION', 'ALTER EXTENSION']::text[],
+    'issue_pg_net_access should fire on ALTER EXTENSION too after the upgrade');
+SELECT is(
     (SELECT string_agg(a.grantee::regrole::text || ' by ' || a.grantor::regrole::text, ', ' ORDER BY a.grantee::regrole::text)
        FROM pg_namespace n, aclexplode(n.nspacl) a
       WHERE n.nspname = 'net' AND a.privilege_type = 'USAGE'
@@ -51,6 +55,12 @@ SELECT is(
         AND a.grantee::regrole::text IN ('anon', 'authenticated', 'service_role')),
     'authenticated by postgres, service_role by postgres',
     'the upgrade hands the net.http_get grants to postgres and does not bring back the revoked anon');
+SELECT is(
+    (SELECT string_agg(g, ', ' ORDER BY g) FROM (SELECT c.relname || ': ' || CASE a.grantee WHEN 0 THEN 'PUBLIC' ELSE a.grantee::regrole::text END AS g
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace, aclexplode(c.relacl) a
+      WHERE n.nspname = 'net' AND c.relkind = 'r' AND a.privilege_type = 'TRIGGER') t),
+    '_http_response: postgres, _http_response: supabase_admin, http_request_queue: postgres, http_request_queue: supabase_admin',
+    'the upgrade takes TRIGGER on the pg_net tables away from PUBLIC and leaves it with postgres');
 SET LOCAL ROLE authenticated;
 SELECT lives_ok(
     $$SELECT net.http_get('http://localhost')$$,

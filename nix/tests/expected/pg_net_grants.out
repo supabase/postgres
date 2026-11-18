@@ -1,6 +1,6 @@
 -- pg_net grants are made by postgres, not supabase_admin, so a customer can revoke anon,
 -- authenticated and service_role themselves. extensions.apply_pg_net_grants() does that. It runs
--- from the migration and from the event trigger on CREATE EXTENSION pg_net.
+-- from the migration and from the event trigger on CREATE and ALTER EXTENSION pg_net.
 -- pg_net here was installed by prime.sql through the event trigger, the path a fresh project takes.
 -- who holds what on the net schema and the http functions, and who granted it
 create temp view net_acl as
@@ -37,29 +37,41 @@ where r.rolname in ('postgres', 'anon', 'authenticated', 'service_role', 'supaba
   and p.proname in ('http_get', 'http_post', 'http_delete')
 group by r.rolname
 order by r.rolname collate "C";
--- 1. fresh project: anon, authenticated and service_role have no grant of their own, postgres can
+-- 1. fresh project: anon, authenticated and service_role are granted by postgres, postgres can
 --    grant onward, supabase_functions_admin keeps its grants from supabase_admin
 select * from net_acl;
    kind   |    name     | privilege_type |         grantee          |    grantor     | is_grantable 
 ----------+-------------+----------------+--------------------------+----------------+--------------
  function | http_delete | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_delete | EXECUTE        | anon                     | postgres       | f
+ function | http_delete | EXECUTE        | authenticated            | postgres       | f
  function | http_delete | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_delete | EXECUTE        | service_role             | postgres       | f
  function | http_delete | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_delete | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_get    | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_get    | EXECUTE        | anon                     | postgres       | f
+ function | http_get    | EXECUTE        | authenticated            | postgres       | f
  function | http_get    | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_get    | EXECUTE        | service_role             | postgres       | f
  function | http_get    | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_get    | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_post   | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_post   | EXECUTE        | anon                     | postgres       | f
+ function | http_post   | EXECUTE        | authenticated            | postgres       | f
  function | http_post   | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_post   | EXECUTE        | service_role             | postgres       | f
  function | http_post   | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_post   | EXECUTE        | supabase_functions_admin | supabase_admin | f
  schema   | net         | USAGE          | PUBLIC                   | supabase_admin | f
+ schema   | net         | USAGE          | anon                     | postgres       | f
+ schema   | net         | USAGE          | authenticated            | postgres       | f
  schema   | net         | USAGE          | postgres                 | supabase_admin | t
+ schema   | net         | USAGE          | service_role             | postgres       | f
  schema   | net         | CREATE         | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
-(17 rows)
+(29 rows)
 
 select * from net_access;
          rolname          | schema_usage | http_execute 
@@ -82,27 +94,43 @@ select * from net_acl;
    kind   |    name     | privilege_type |         grantee          |    grantor     | is_grantable 
 ----------+-------------+----------------+--------------------------+----------------+--------------
  function | http_delete | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_delete | EXECUTE        | anon                     | postgres       | f
+ function | http_delete | EXECUTE        | authenticated            | postgres       | f
  function | http_delete | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_delete | EXECUTE        | service_role             | postgres       | f
  function | http_delete | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_delete | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_get    | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_get    | EXECUTE        | anon                     | postgres       | f
+ function | http_get    | EXECUTE        | authenticated            | postgres       | f
  function | http_get    | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_get    | EXECUTE        | service_role             | postgres       | f
  function | http_get    | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_get    | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_post   | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_post   | EXECUTE        | anon                     | postgres       | f
+ function | http_post   | EXECUTE        | authenticated            | postgres       | f
  function | http_post   | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_post   | EXECUTE        | service_role             | postgres       | f
  function | http_post   | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_post   | EXECUTE        | supabase_functions_admin | supabase_admin | f
  schema   | net         | USAGE          | PUBLIC                   | supabase_admin | f
+ schema   | net         | USAGE          | anon                     | postgres       | f
+ schema   | net         | USAGE          | authenticated            | postgres       | f
  schema   | net         | USAGE          | postgres                 | supabase_admin | t
+ schema   | net         | USAGE          | service_role             | postgres       | f
  schema   | net         | CREATE         | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
-(17 rows)
+(29 rows)
 
 -- 3. existing project: the old event trigger granted the three roles as supabase_admin, and
 --    support revoked anon by hand. authenticated and service_role keep their access, now granted
 --    by postgres. anon gets nothing back
+set role postgres;
+revoke usage on schema net from anon, authenticated, service_role;
+revoke execute on function net.http_get, net.http_post, net.http_delete from anon, authenticated, service_role;
+reset role;
 grant usage on schema net to anon, authenticated, service_role;
 revoke usage on schema net from anon;
 select extensions.apply_pg_net_grants();
@@ -183,6 +211,10 @@ select * from net_acl;
 --    postgres, function security is left alone
 drop extension pg_net;
 create extension pg_net;
+set role postgres;
+revoke usage on schema net from anon, authenticated, service_role;
+revoke execute on function net.http_get, net.http_post, net.http_delete from anon, authenticated, service_role;
+reset role;
 alter function net.http_get security definer;
 alter function net.http_post security definer;
 revoke all on function net.http_get, net.http_post from public;
@@ -249,32 +281,65 @@ order by p.proname;
  http_post   | t
 (3 rows)
 
--- 6. drop and recreate the extension: back to the fresh state
+-- 6. drop and recreate the extension as postgres, the way a project does it. supautils runs the
+--    trigger in a security-restricted context, and the three roles still get the set from postgres.
+set role postgres;
 drop extension pg_net;
 create extension pg_net;
+reset role;
 select * from net_acl;
    kind   |    name     | privilege_type |         grantee          |    grantor     | is_grantable 
 ----------+-------------+----------------+--------------------------+----------------+--------------
  function | http_delete | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_delete | EXECUTE        | anon                     | postgres       | f
+ function | http_delete | EXECUTE        | authenticated            | postgres       | f
  function | http_delete | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_delete | EXECUTE        | service_role             | postgres       | f
  function | http_delete | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_delete | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_get    | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_get    | EXECUTE        | anon                     | postgres       | f
+ function | http_get    | EXECUTE        | authenticated            | postgres       | f
  function | http_get    | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_get    | EXECUTE        | service_role             | postgres       | f
  function | http_get    | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_get    | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_post   | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_post   | EXECUTE        | anon                     | postgres       | f
+ function | http_post   | EXECUTE        | authenticated            | postgres       | f
  function | http_post   | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_post   | EXECUTE        | service_role             | postgres       | f
  function | http_post   | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_post   | EXECUTE        | supabase_functions_admin | supabase_admin | f
  schema   | net         | USAGE          | PUBLIC                   | supabase_admin | f
+ schema   | net         | USAGE          | anon                     | postgres       | f
+ schema   | net         | USAGE          | authenticated            | postgres       | f
  schema   | net         | USAGE          | postgres                 | supabase_admin | t
+ schema   | net         | USAGE          | service_role             | postgres       | f
  schema   | net         | CREATE         | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
-(17 rows)
+(29 rows)
 
--- 7. anon can still queue a request. PUBLIC covers it until pg_net stops granting PUBLIC
+-- 6.1 a helper the customer replaced is not what runs: the routine drops and recreates it
+set role postgres;
+create or replace function extensions.grant_pg_net_api_access(api_role name, http_functions regprocedure[])
+    returns void language plpgsql as $$ begin raise exception 'customer body ran as %', current_user; end $$;
+reset role;
+select extensions.apply_pg_net_grants();
+ apply_pg_net_grants 
+---------------------
+ 
+(1 row)
+
+select prosecdef, proowner::regrole as owner
+  from pg_proc where oid = 'extensions.grant_pg_net_api_access(name, regprocedure[])'::regprocedure;
+ prosecdef |  owner   
+-----------+----------
+ t         | postgres
+(1 row)
+
+-- 7. anon can queue a request with its grants from postgres
 select value as port from test_config where key = 'http_mock_port' \gset
 set role anon;
 select net.http_get('http://localhost:' || :'port' || '/get') is not null as request_queued;
@@ -284,7 +349,8 @@ select net.http_get('http://localhost:' || :'port' || '/get') is not null as req
 (1 row)
 
 reset role;
--- 8. the tables and the sequence are not touched: everything pg_net grants PUBLIC is still there
+-- 8. PUBLIC loses TRIGGER, REFERENCES and TRUNCATE on the tables, postgres gets TRIGGER and TRUNCATE.
+--    The rest of what pg_net grants PUBLIC is still there
 select relname, grantee, string_agg(privilege_type, ', ' order by privilege_type) as privileges
 from (
     select c.relname,
@@ -301,13 +367,15 @@ group by relname, grantee
 order by relname, grantee collate "C";
           relname          |    grantee     |                          privileges                           
 ---------------------------+----------------+---------------------------------------------------------------
- _http_response            | PUBLIC         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ _http_response            | PUBLIC         | DELETE, INSERT, SELECT, UPDATE
+ _http_response            | postgres       | TRIGGER, TRUNCATE
  _http_response            | supabase_admin | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
- http_request_queue        | PUBLIC         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ http_request_queue        | PUBLIC         | DELETE, INSERT, SELECT, UPDATE
+ http_request_queue        | postgres       | TRIGGER, TRUNCATE
  http_request_queue        | supabase_admin | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
  http_request_queue_id_seq | PUBLIC         | SELECT, UPDATE, USAGE
  http_request_queue_id_seq | supabase_admin | SELECT, UPDATE, USAGE
-(6 rows)
+(8 rows)
 
 -- 9. postgres is still a superuser, as it is during an upgrade until complete.sh demotes it. The
 --    routine warns and changes nothing: a grant made now would be recorded as made by supabase_admin
@@ -324,21 +392,33 @@ select * from net_acl;
    kind   |    name     | privilege_type |         grantee          |    grantor     | is_grantable 
 ----------+-------------+----------------+--------------------------+----------------+--------------
  function | http_delete | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_delete | EXECUTE        | anon                     | postgres       | f
+ function | http_delete | EXECUTE        | authenticated            | postgres       | f
  function | http_delete | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_delete | EXECUTE        | service_role             | postgres       | f
  function | http_delete | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_delete | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_get    | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_get    | EXECUTE        | anon                     | postgres       | f
+ function | http_get    | EXECUTE        | authenticated            | postgres       | f
  function | http_get    | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_get    | EXECUTE        | service_role             | postgres       | f
  function | http_get    | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_get    | EXECUTE        | supabase_functions_admin | supabase_admin | f
  function | http_post   | EXECUTE        | PUBLIC                   | supabase_admin | f
+ function | http_post   | EXECUTE        | anon                     | postgres       | f
+ function | http_post   | EXECUTE        | authenticated            | postgres       | f
  function | http_post   | EXECUTE        | postgres                 | supabase_admin | t
+ function | http_post   | EXECUTE        | service_role             | postgres       | f
  function | http_post   | EXECUTE        | supabase_admin           | supabase_admin | f
  function | http_post   | EXECUTE        | supabase_functions_admin | supabase_admin | f
  schema   | net         | USAGE          | PUBLIC                   | supabase_admin | f
+ schema   | net         | USAGE          | anon                     | postgres       | f
+ schema   | net         | USAGE          | authenticated            | postgres       | f
  schema   | net         | USAGE          | postgres                 | supabase_admin | t
+ schema   | net         | USAGE          | service_role             | postgres       | f
  schema   | net         | CREATE         | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_admin           | supabase_admin | f
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
-(17 rows)
+(29 rows)
 
