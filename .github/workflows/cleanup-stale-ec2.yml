@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout scripts
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v6.1.0
         with:
           sparse-checkout: ci
           persist-credentials: false
