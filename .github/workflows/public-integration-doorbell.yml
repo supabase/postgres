@@ -32,6 +32,8 @@ jobs:
     if: >-
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/integration-test ')
+    concurrency:
+      group: doorbell-${{ github.event.issue.number }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
