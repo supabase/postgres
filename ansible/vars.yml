@@ -72,10 +72,10 @@ gotrue_release: 2.198.0
 gotrue_artifacts:
   amd64:
     url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-x86.tar.gz"
-    checksum: sha256:9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3
+    checksum: sha256:5ca93ca47b9daaf23bc601573c57047d4f8aae41e018dde372b2f71056d9a1a5
   arm64:
     url: "https://github.com/supabase/auth/releases/download/v{{ gotrue_release }}/auth-v{{ gotrue_release }}-arm64.tar.gz"
-    checksum: sha256:b129d0b32520a975a4f0576eb1b7836b82043997d2d021676ff24cec54eb5381
+    checksum: sha256:21486cafd47cd3c8ca136680ad49dccb641d262eef4e3442fd09a79fdcc3dace
 mint_cli_release: 0.1.0
 mint_cli_artifacts:
   amd64:
