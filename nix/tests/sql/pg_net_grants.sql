@@ -110,11 +110,21 @@ select extensions.apply_pg_net_grants();
 select prosecdef, proowner::regrole as owner
   from pg_proc where oid = 'extensions.grant_pg_net_api_access(name, regprocedure[])'::regprocedure;
 
--- 7. anon can queue a request with its grants from postgres
+-- 7. anon can queue a request with its grants from postgres. Then wait for the worker to finish
+--    it, so it cannot fire a trigger that a later test plants on the response table
 select value as port from test_config where key = 'http_mock_port' \gset
 set role anon;
-select net.http_get('http://localhost:' || :'port' || '/get') is not null as request_queued;
+select net.http_get('http://localhost:' || :'port' || '/get') as request_id \gset
 reset role;
+select set_config('pg_net_grants.request_id', :'request_id', false) is not null as request_queued;
+do $$
+begin
+    for i in 1..40 loop
+        exit when exists (select from net._http_response where id = current_setting('pg_net_grants.request_id')::bigint);
+        perform pg_sleep(0.25);
+    end loop;
+end;
+$$;
 
 -- 8. PUBLIC loses TRIGGER, REFERENCES and TRUNCATE on the tables, postgres gets TRIGGER and TRUNCATE.
 --    The rest of what pg_net grants PUBLIC is still there
