@@ -3,10 +3,9 @@ let
   inherit (pkgs) lib;
   system = pkgs.pkgsLinux.stdenv.hostPlatform.system;
 
-  expectedVersions = {
-    "15" = "15.19";
-    "17" = "17.11";
-  };
+  expectedVersions = lib.mapAttrs (
+    _: config: config.version
+  ) self.supabase.supportedPostgresVersions.postgres;
 
   defaultPort = 5432;
 
