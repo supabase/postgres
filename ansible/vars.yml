@@ -84,15 +84,15 @@ mint_cli_artifacts:
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/mint-cli/v{{ mint_cli_release }}/mint-cli-v{{ mint_cli_release }}-arm64.tar.xz
     checksum: sha256:13040280f8dfe1155b8460d7f35e6a1e04d0167fdf2867678dfb1b117485c581
-# renovate: datasource=github-releases packageName=PostgREST/postgrest
-postgrest_release: "14.18" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
+# renovate: datasource=github-releases packageName=supabase/postgrest
+postgrest_release: "17.1" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 postgrest_artifacts:
   amd64:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
-    checksum: sha256:98de1c0be7787aea5f5e11a25f303ea0077634d6fc1000b687bfa825fd27d299
+    url: "https://github.com/supabase/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-x86-64.tar.xz"
+    checksum: sha256:8834b6a02bb9c9219ab695456daf1d2ac8b3498b97e8b16fdf984762f15371d4
   arm64:
-    url: "https://github.com/PostgREST/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-ubuntu-aarch64.tar.xz"
-    checksum: sha256:960676de3fb8102393adfff7f74d40aa131b52abe0ba63b6a5594c44c3a67569
+    url: "https://github.com/supabase/postgrest/releases/download/v{{ postgrest_release }}/postgrest-v{{ postgrest_release }}-linux-static-aarch64.tar.xz"
+    checksum: sha256:28732ae16548a76f3145adb5779bd224718334cca9190fd3ee4a28bf20922273
   signingkey:
     url: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
     checksum: sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76
