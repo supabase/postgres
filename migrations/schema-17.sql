@@ -171,7 +171,7 @@ $$;
 CREATE FUNCTION extensions.apply_pg_net_grants() RETURNS void
     LANGUAGE plpgsql
     SET search_path TO 'pg_catalog', 'pg_temp'
-    AS $$
+    AS $_$
 declare
     http_functions regprocedure[];
     http_function regprocedure;
@@ -276,7 +276,7 @@ begin
         end loop;
     end if;
 end;
-$$;
+$_$;
 
 
 --
