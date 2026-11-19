@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload summary
         if: always()
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: cleanup-summary-${{ matrix.region }}
           path: ${{ runner.temp }}/summary.txt
@@ -61,13 +61,13 @@ jobs:
 
     steps:
       - name: Checkout scripts
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v7.0.1
         with:
           sparse-checkout: ci
           persist-credentials: false
 
       - name: Download summaries
-        uses: actions/download-artifact@v4.3.0
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: cleanup-summary-*
           path: summaries

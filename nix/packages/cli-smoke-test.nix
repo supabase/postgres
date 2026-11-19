@@ -148,7 +148,8 @@ writeShellApplication {
         mkdir -p supabase/.temp
 
         # Set component versions - CLI reads these to determine which images to use
-        echo "v$REST_VERSION" > supabase/.temp/rest-version
+        # PostgREST is mirrored to ECR with a -middleware suffix (see mirror-postgrest.yml)
+        echo "v$REST_VERSION-middleware" > supabase/.temp/rest-version
         echo "v$AUTH_VERSION" > supabase/.temp/gotrue-version
         # Use major version so CLI constructs supabase/postgres:$PG_VERSION (our local build)
         echo "$PG_VERSION" > supabase/.temp/postgres-version
