@@ -1,5 +1,5 @@
 ---
 postgres_release:
   postgresorioledb-17: "17.11.0.020-orioledb"
-  postgres17: "17.12.0.001-test-supautils"
-  postgres15: "15.20.0.001-test-supautils"
+  postgres17: "17.12.0.001"
+  postgres15: "15.20.0.001"
