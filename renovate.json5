@@ -3,7 +3,7 @@
   extends: ["config:recommended", "security:only-security-updates"],
   // Commits from this author don't count as edits.
   // It is the checksum refresh workflow, which runs as the sb-postgres-bot app.
-  // Keep it in step with the email in .github/workflows/renovate-refresh-ansible-checksums.yml.
+  // Keep it in step with the email in .github/workflows/renovate-rehash.yml.
   gitIgnoredAuthors: ["306028907+sb-postgres-bot[bot]@users.noreply.github.com"],
   customManagers: [
     {
@@ -59,7 +59,7 @@
       },
     },
     {
-      description: "ansible/vars.yml artifacts: allow regular (non-security) updates. Checksums are refreshed by .github/workflows/renovate-refresh-ansible-checksums.yml",
+      description: "ansible/vars.yml artifacts: allow regular (non-security) updates. Checksums are refreshed by the `renovate-rehash` workflow",
       enabled: true,
       matchFileNames: ["ansible/vars.yml"],
     },
