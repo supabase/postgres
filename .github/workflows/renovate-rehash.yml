@@ -3,7 +3,7 @@ name: Renovate Rehash
 # Renovate bumps a version but cannot work out the new checksum or hash.
 # This workflow refreshes the hashes and checksums for the files the PR changed.
 # It runs `nix run .#rehash`, which decides what to run for each file.
-# It only starts for changes to ansible/vars.yml or a .nix file under nix/.
+# It only starts for changes to ansible/vars.yml, flake.nix or a .nix file under nix/.
 # The job below skips any PR that Renovate did not open.
 # We assume every Renovate PR is a dependency update.
 # It pushes what that command changes to the PR branch.
@@ -28,6 +28,7 @@ on:
   pull_request:
     paths:
       - ansible/vars.yml
+      - flake.nix
       - nix/**.nix
 
 concurrency:

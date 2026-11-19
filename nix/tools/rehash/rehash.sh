@@ -57,11 +57,20 @@ rehash_ansible_artifacts() {
 	done <<<"$changed"
 }
 
+# Renovate changes the commit that flake.nix pins for the multigres input.
+# `nix flake lock` brings flake.lock in line, and only touches the inputs that changed.
+# Then we refresh pgctld's vendorHash, since multigres is pgctld's source.
+rehash_multigres() {
+	nix flake lock
+	nix_update_by_file_name nix/packages/pgctld.nix
+}
+
 if false; then
 	# just here to quiet down some not-so-smart editor tooling
 	false
 	rehash_ansible_artifacts
 	rehash_tzdata
+	rehash_multigres
 	nix_update_by_file_name non-existent
 	exit 1
 fi
@@ -69,6 +78,7 @@ fi
 # Files whose name does not give the package, or that need a different command.
 declare -A table=(
 	['ansible/vars.yml']=rehash_ansible_artifacts
+	['flake.nix']=rehash_multigres
 	['nix/ext/pgroonga/groonga.nix']='nix_update supabase-groonga'
 	['nix/ext/supautils.nix']='nix_update legacyPackages.@system@.psql_17.exts.supautils'
 	['nix/nixpkgs.nix']=rehash_tzdata
