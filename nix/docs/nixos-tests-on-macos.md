@@ -12,28 +12,30 @@ You need:
 Run the setup script to configure nix-darwin with the linux-builder:
 
 ```bash
-nix run .#setup-darwin-linux-builder
+sudo nix run .#setup-darwin-linux-builder
 ```
 
-Note that you don't have to checkout the repository to run the setup, you can run it directly from GitHub:
+The builder VM is a Linux system, and building it needs a Linux builder.
+If none is configured, the script first bootstraps with the official `nixos-26.05#darwin.linux-builder`, builds the configuration through it, and stops it before switching.
 
-```bash
-nix run github:supabase/postgres#setup-darwin-linux-builder
-```
-
-This command will:
+The script will:
 - Back up existing system files (`/etc/nix/nix.conf`, `/etc/bashrc`, `/etc/zshrc`)
 - Configure nix-darwin with the linux-builder VM
 - Install helper scripts for managing the builder
 
 The linux-builder VM is configured with:
-- 6 CPU cores
-- 8GB RAM
-- 40GB disk
+- 8 CPU cores
+- 24GB RAM
+- 100GB disk
 - Support for both x86_64-linux and aarch64-linux builds
 - The `nixos-test` feature required for running NixOS tests
+- The `uid-range` feature for builds that request it
+- `auto-allocate-uids` and `cgroups` enabled inside the VM, so builds that need `uid-range` run
+- `-cpu host` passed to QEMU, since the default `-cpu max` breaks PAC-built guest binaries on M4
 
 After setup completes, restart your shell to access the helper commands.
+
+To re-apply the configuration after changing it, run the same command. The bootstrap is skipped once a builder exists.
 
 ## Verify the setup
 

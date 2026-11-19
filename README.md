@@ -197,7 +197,7 @@ Extension versions are pinned per PostgreSQL major version in
 | Goodie | Version | Description |
 | ------------- | :-------------: | ------------- |
 | [PgBouncer](https://www.pgbouncer.org/) | [1.25.1](http://www.pgbouncer.org/changelog.html#pgbouncer-125x) | Set up Connection Pooling. |
-| [PostgREST](https://postgrest.org/en/stable/) | [v14.18](https://github.com/PostgREST/postgrest/releases/tag/v14.18) | Instantly transform your database into an RESTful API. |
+| [PostgREST](https://postgrest.org/en/latest/) | [v17.1](https://github.com/supabase/postgrest/releases/tag/v17.1) | Instantly transform your database into an RESTful API. |
 | [WAL-G](https://github.com/wal-g/wal-g#wal-g) | [v2.0.1](https://github.com/wal-g/wal-g/releases/tag/v2.0.1), [v3.0.9](https://github.com/wal-g/wal-g/releases/tag/v3.0.9) | Tool for physical database backup and recovery. | -->
 
 
