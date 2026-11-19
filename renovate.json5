@@ -8,11 +8,10 @@
   customManagers: [
     {
       customType: "regex",
-      depNameTemplate: "tzdata",
-      description: "tzdata override version in nix/nixpkgs.nix annotated with a '# renovate:' comment",
-      managerFilePatterns: ["/^nix/nixpkgs\\.nix$/"],
+      description: "Any .nix file. A '# renovate: datasource=... depName=... [packageName=...] [versioning=...]' comment on the line above a 'name = \"value\";' line marks a dependency",
+      managerFilePatterns: ["/\\.nix$/"],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) packageName=(?<packageName>\\S+)\\n\\s*version = "(?<currentValue>[^"]+)";',
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( packageName=(?<packageName>\\S+))?( versioning=(?<versioning>\\S+))?\\n\\s*\\w+ = "(?<currentValue>[^"]+)";',
       ],
     },
     {
@@ -46,22 +45,14 @@
       matchFileNames: ["ansible/vars.yml"],
     },
     {
-      description: "tzdata overlay in nix/nixpkgs.nix: allow regular updates and refresh the tarball hashes",
-      enabled: true,
-      matchDepNames: ["tzdata"],
-      matchFileNames: ["nix/nixpkgs.nix"],
-      postUpgradeTasks: {
-        commands: [
-          'for k in tzdata tzcode; do h=$(nix store prefetch-file --json https://data.iana.org/time-zones/releases/${k}{{{newVersion}}}.tar.gz | jq -r .hash); sed -i "/releases\\/${k}\\${version}/{n;s|hash = \\".*\\"|hash = \\"$h\\"|}" nix/nixpkgs.nix; done',
-        ],
-        executionMode: "update",
-        fileFilters: ["nix/nixpkgs.nix"],
-      },
-    },
-    {
       description: "ansible/vars.yml artifacts: allow regular (non-security) updates. Checksums are refreshed by the `renovate-rehash` workflow",
       enabled: true,
       matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      description: "Annotated dependencies in .nix files: allow regular updates. Source hashes are refreshed by the `renovate-rehash` workflow",
+      enabled: true,
+      matchFileNames: ["**/*.nix"],
     },
     {
       description: "GitHub Actions: regular updates after a cool-off (pins are tracked in .github/workflows/actions.lock)",
