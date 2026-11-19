@@ -107,23 +107,42 @@ in
   nix.linux-builder = {
     enable = true;
     ephemeral = true;
-    maxJobs = 4;
+    maxJobs = 2;
     supportedFeatures = [
       "kvm"
       "benchmark"
       "big-parallel"
       "nixos-test"
+      "uid-range"
     ];
     config = {
       virtualisation = {
         darwin-builder = {
-          diskSize = 40 * 1024;
-          memorySize = 8 * 1024;
+          diskSize = 100 * 1024;
+          memorySize = 24 * 1024;
         };
-        cores = 6;
+        cores = 8;
+      };
+      nix.settings = {
+        experimental-features = [
+          "auto-allocate-uids"
+          "cgroups"
+        ];
+        auto-allocate-uids = true;
+        max-jobs = 2;
+        cores = 4;
+        system-features = [
+          "kvm"
+          "benchmark"
+          "big-parallel"
+          "nixos-test"
+          "uid-range"
+        ];
       };
     };
   };
+
+  launchd.daemons.linux-builder.environment.QEMU_OPTS = "-cpu host";
 
   nix.distributedBuilds = true;
 
