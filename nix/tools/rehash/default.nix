@@ -1,6 +1,7 @@
 {
   gitMinimal,
   gnused,
+  nix-update,
   writeShellApplication,
 }:
 writeShellApplication {
@@ -9,6 +10,7 @@ writeShellApplication {
   runtimeInputs = [
     gitMinimal
     gnused
+    nix-update
   ];
 
   text = builtins.readFile ./rehash.sh;
