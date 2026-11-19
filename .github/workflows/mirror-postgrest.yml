@@ -20,7 +20,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
       - id: args
-        uses: mikefarah/yq@v4.54.1
+        uses: mikefarah/yq@v4.54.3
         with:
           cmd: yq '.postgrest_release' 'ansible/vars.yml'
 
@@ -31,7 +31,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: supabase/cli/.github/workflows/mirror-image.yml@e9da2363fa52ccfb1cfb49611cabd8e49cb21577 # v3.0.0-next.16
+    uses: supabase/cli/.github/workflows/mirror-image.yml@d4fc0e5bbd65b3ade802e956d6df1cddab2e65a3 # v3.1.0
     with:
-      image: postgrest/postgrest:v${{ needs.version.outputs.postgrest_release }}
+      # PostgREST is mirrored to ECR with a -middleware suffix (also updated in cli-smoke-test.nix for the "rest-version")
+      image: supabase/postgrest:v${{ needs.version.outputs.postgrest_release }}-middleware
     secrets: inherit

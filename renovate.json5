@@ -1,6 +1,10 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended", "security:only-security-updates"],
+  // Commits from this author don't count as edits.
+  // It is the checksum refresh workflow, which runs as the sb-postgres-bot app.
+  // Keep it in step with the email in .github/workflows/renovate-refresh-ansible-checksums.yml.
+  gitIgnoredAuthors: ["306028907+sb-postgres-bot[bot]@users.noreply.github.com"],
   customManagers: [
     {
       customType: "regex",
@@ -55,14 +59,9 @@
       },
     },
     {
-      description: "ansible/vars.yml artifacts: allow regular (non-security) updates and refresh checksums",
+      description: "ansible/vars.yml artifacts: allow regular (non-security) updates. Checksums are refreshed by .github/workflows/renovate-refresh-ansible-checksums.yml",
       enabled: true,
       matchFileNames: ["ansible/vars.yml"],
-      postUpgradeTasks: {
-        commands: ["nix run .#update-ansible-artifacts -- {{{depName}}} {{{newVersion}}}"],
-        executionMode: "update",
-        fileFilters: ["ansible/vars.yml"],
-      },
     },
     {
       description: "GitHub Actions: regular updates after a cool-off (pins are tracked in .github/workflows/actions.lock)",
