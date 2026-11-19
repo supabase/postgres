@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+POSTGRES_BIN=$(readlink -f $(which postgres))
+POSTGRES_DIR=$(dirname "$POSTGRES_BIN")
+WRAPPED="$POSTGRES_DIR/.postgres-wrapped"
+
+if [ -f "$WRAPPED" ]; then
+    TARGET="$WRAPPED"
+else
+    TARGET="$POSTGRES_BIN"
+fi
+
+exec /usr/local/bin/supa-tripwire "$TARGET"

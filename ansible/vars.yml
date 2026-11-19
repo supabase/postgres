@@ -37,6 +37,10 @@ adminmgr_artifacts:
   arm64:
     url: "https://supabase-public-artifacts-bucket.s3.amazonaws.com/admin-mgr/v{{ adminmgr_release }}/admin-mgr_{{ adminmgr_release }}_linux_arm64.tar.gz"
     checksum: sha256:03c7ac20600e1040b484f289dd892a4f72cba8e949a96afa5030b4b9fb3f4273
+supa_tripwire_release: 0.3.0
+supa_tripwire_sha256:
+  amd64: 34ae45b30fb9643de35053e16b5afab2cec4e120e8ebdb7a45e0dcb7e2e43333
+  arm64: 114ae6925e1fef0776e7341d04f34a6ea0cf8182e85a17dcc2688e68dc28bbf1
 # renovate: datasource=github-tags packageName=aws/aws-cli
 aws_cli_release: 2.23.11
 aws_cli_artifacts:
