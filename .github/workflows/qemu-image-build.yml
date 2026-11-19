@@ -128,9 +128,12 @@ jobs:
 
       - name: Presign supa-tripwire archive
         if: steps.stamp.outputs.cached != 'true'
-        uses: $/.github/actions/presign-supa-tripwire
-        with:
-          arch: ${{ env.TARGET_ARCH }}
+        env:
+          ARCH: ${{ env.TARGET_ARCH }}
+        run: |
+          url=$(ci/presign-supa-tripwire.sh "$ARCH")
+          echo "::add-mask::$url"
+          echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
 
       - name: Build QEMU artifact
         if: steps.stamp.outputs.cached != 'true'

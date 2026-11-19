@@ -26,7 +26,7 @@
 
 - name: Install supa-tripwire wrapper
   ansible.builtin.copy:
-    src: files/supa_tripwire/supa-tripwire-wrapped
+    src: files/supa-tripwire/supa-tripwire-wrapped
     dest: /usr/local/bin/supa-tripwire-wrapped
     mode: '0755'
 
@@ -39,7 +39,7 @@
 
 - name: Install supa-tripwire unit
   ansible.builtin.copy:
-    src: files/supa_tripwire/supa-tripwire.service
+    src: files/supa-tripwire/supa-tripwire.service
     dest: /etc/systemd/system/supa-tripwire.service
     mode: '0644'
 

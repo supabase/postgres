@@ -120,9 +120,12 @@ jobs:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Presign supa-tripwire archive
-        uses: $/.github/actions/presign-supa-tripwire
-        with:
-          arch: ${{ matrix.arch }}
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          url=$(ci/presign-supa-tripwire.sh "$ARCH")
+          echo "::add-mask::$url"
+          echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
 
       - name: Build AMI
         id: build-ami

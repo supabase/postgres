@@ -83,9 +83,12 @@ jobs:
           flake_input: ${{ vars.GIT_SHA_FROM_FLAKE_INPUT }}
 
       - name: Presign supa-tripwire archive
-        uses: $/.github/actions/presign-supa-tripwire
-        with:
-          arch: ${{ matrix.target.arch }}
+        env:
+          ARCH: ${{ matrix.target.arch }}
+        run: |
+          url=$(ci/presign-supa-tripwire.sh "$ARCH")
+          echo "::add-mask::$url"
+          echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
 
       - name: Build AMI
         id: build-ami
@@ -213,7 +216,7 @@ jobs:
           fi
 
       - name: Create release
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@v3.0.4
         with:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}

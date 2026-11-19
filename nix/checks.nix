@@ -107,9 +107,22 @@
                 };
               };
 
-              # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
+              # Tests to skip for OrioleDB.
               orioleDBSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
+
+                # OrioleDB still uses PostgreSQL 17.11.
+                # drop these skips when it includes the 17.12 fixes.
+                "alter_column_type_rowtype_deps"
+                "bpchar_btree_dedup"
+                "cast_function_execute_privilege"
+                "drop_owned_rls_policy"
+                "function_def_target_alias"
+                "jsonpath_gin_lookup"
+                "partition_prune_range"
+                "to_char_v_overflow"
+                "upsert_rls_conflict_where"
+                "upsert_view_visibility"
               ];
 
               # Helper function to filter SQL files based on version
@@ -187,6 +200,7 @@
                 "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
                 "btree_gist_nan" # needs btree_gist, not in the CLI prime file
                 "hstore_copy_binary" # needs hstore
+                "bpchar_btree_dedup" # needs pageinspect, not in the CLI prime file
                 "pgrst_watch_triggers" # needs dblink, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
