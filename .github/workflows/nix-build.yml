@@ -22,10 +22,20 @@ concurrency:
 
 jobs:
   # Temporary benchmark: times the eval job's nix-eval-jobs run, and logs when each attribute finishes.
+  # The "all" row evaluates every system in one run, like the eval job does today.
+  # The other rows evaluate one system each, on their own runner, to see whether splitting eval by system is faster.
   # This replaces every other CI job, so this commit must not be merged.
   eval-bench:
-    name: eval-bench
+    name: eval-bench (${{ matrix.system }})
     runs-on: blacksmith-32vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        system:
+          - all
+          - x86_64-linux
+          - aarch64-linux
+          - aarch64-darwin
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
@@ -43,8 +53,18 @@ jobs:
           echo "HYPERFINE=$(nix build --no-link --print-out-paths nixpkgs#hyperfine)/bin/hyperfine" >>"$GITHUB_ENV"
 
       - name: Time eval
+        env:
+          SYSTEM: ${{ matrix.system }}
         run: |
           set -euo pipefail
+
+          # Pick the flake outputs to evaluate: every system, or only this row's system.
+          # Attribute names come out the same either way, for example checks.x86_64-linux.foo.
+          if [[ $SYSTEM == all ]]; then
+            select='outputs: { inherit (outputs) checks legacyPackages; }'
+          else
+            select="outputs: { checks.$SYSTEM = outputs.checks.$SYSTEM; legacyPackages.$SYSTEM = outputs.legacyPackages.$SYSTEM; }"
+          fi
 
           # These are the flags github-matrix passes, so the work matches the real eval job.
           # Extra flags given to eval.sh are added to them.
@@ -59,7 +79,7 @@ jobs:
             --option accept-flake-config true \
             --max-memory-size 3072 \
             --workers 32 \
-            --select 'outputs: { inherit (outputs) checks legacyPackages; }' \
+            --select '$select' \
             "\$@" \
             | tee eval.json \
             | jq --unbuffered -r '.attr'
@@ -86,7 +106,7 @@ jobs:
           errors=$(grep -c '"error"' eval.json || true)
 
           {
-            echo "## eval-bench results"
+            echo "## eval-bench results: $SYSTEM"
             echo
             echo "hyperfine ran each variant several times on the same runner."
             echo "Only the first run of with-cache-check starts with an empty store; every later run reuses it."
