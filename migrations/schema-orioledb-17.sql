@@ -179,6 +179,121 @@ $$;
 
 
 --
+-- Name: apply_pg_net_grants(); Type: FUNCTION; Schema: extensions; Owner: -
+--
+
+CREATE FUNCTION extensions.apply_pg_net_grants() RETURNS void
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
+    AS $_$
+declare
+    http_functions regprocedure[];
+    http_function regprocedure;
+    api_role name;
+begin
+    if not exists (select from pg_extension where extname = 'pg_net') then
+        return;
+    end if;
+
+    -- Postgres records a superuser's GRANT as made by the object owner, supabase_admin. The grants
+    -- below would get the wrong grantor and step 2 would then drop the only grant a role has.
+    if exists (select from pg_roles where rolname = 'postgres' and rolsuper) then
+        raise warning 'apply_pg_net_grants: postgres is a superuser, nothing changed';
+        return;
+    end if;
+
+    -- Looked up by name, so a pg_net release that changes an argument list does not break this.
+    select coalesce(array_agg(p.oid::regprocedure order by p.proname), '{}')
+    into http_functions
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'net'
+      and p.proname in ('http_get', 'http_post', 'http_delete');
+
+    -- 1. postgres can grant onward.
+    grant usage on schema net to postgres with grant option;
+    foreach http_function in array http_functions loop
+        execute format('grant execute on function %s to postgres with grant option', http_function);
+    end loop;
+
+    --    pg_net grants ALL on its tables to PUBLIC. TRIGGER there lets any role run code as the
+    --    worker, which connects as postgres. postgres keeps TRIGGER for response handlers and
+    --    TRUNCATE for clearing the queue.
+    revoke trigger, references, truncate on all tables in schema net from public;
+    grant trigger, truncate on all tables in schema net to postgres with grant option;
+
+    -- 2. SET ROLE is not allowed inside CREATE EXTENSION, but a SECURITY DEFINER function owned by
+    --    postgres is, and its grants are postgres's. Dropped and created on every run, so a superuser
+    --    never calls a body the customer changed.
+    drop function if exists extensions.grant_pg_net_api_access(name, regprocedure[]);
+    create function extensions.grant_pg_net_api_access(api_role name, http_functions regprocedure[])
+        returns void
+        language plpgsql
+        security definer
+        set search_path to pg_catalog, pg_temp
+    as $helper$
+    begin
+        execute format('grant usage on schema net to %I', api_role);
+        if http_functions <> '{}' then
+            execute format('grant execute on function %s to %I', array_to_string(http_functions, ', '), api_role);
+        end if;
+    end;
+    $helper$;
+    alter function extensions.grant_pg_net_api_access(name, regprocedure[]) owner to postgres;
+    revoke execute on function extensions.grant_pg_net_api_access(name, regprocedure[]) from public;
+
+    --    On a fresh install, give the three roles USAGE as supabase_admin so the loop below converts
+    --    them like an old project. pg_event_trigger_ddl_commands() only works inside an event trigger,
+    --    so this runs for CREATE EXTENSION pg_net and raises everywhere else. Elsewhere a role without
+    --    USAGE stays without: it may have been revoked (supabase support handling etc.) on purpose.
+    begin
+        perform from pg_event_trigger_ddl_commands() ev
+        join pg_extension e on e.oid = ev.objid
+        where ev.command_tag = 'CREATE EXTENSION' and e.extname = 'pg_net';
+        if found then
+            grant usage on schema net to anon, authenticated, service_role;
+        end if;
+    exception when event_trigger_protocol_violated then
+        null;
+    end;
+
+    --    USAGE on net is the switch. A role that holds it, from supabase_admin before the migration
+    --    or from postgres after, gets the full set from postgres, so an extension update that drops
+    --    and recreates a function is repaired too. Whatever supabase_admin granted the three roles
+    --    goes, so a role support revoked, in full or in part, keeps nothing it cannot revoke itself.
+    for api_role in
+        select distinct g.rolname
+        from pg_namespace n
+        cross join lateral aclexplode(n.nspacl) a
+        join pg_roles g on g.oid = a.grantee
+        where n.nspname = 'net'
+          and a.privilege_type = 'USAGE'
+          and a.grantor in ('supabase_admin'::regrole, 'postgres'::regrole)
+          and g.rolname in ('anon', 'authenticated', 'service_role')
+        order by g.rolname
+    loop
+        perform extensions.grant_pg_net_api_access(api_role, http_functions);
+    end loop;
+    --    The helper added the row the customer can revoke. This removes the row they cannot, the
+    --    one from supabase_admin.
+    revoke usage on schema net from anon, authenticated, service_role;
+    foreach http_function in array http_functions loop
+        execute format('revoke execute on function %s from anon, authenticated, service_role', http_function);
+    end loop;
+
+    -- 3. Database Webhooks run as supabase_functions_admin. Its grants stay with supabase_admin,
+    --    so a customer cannot break them, and it gets them here rather than through PUBLIC.
+    if exists (select from pg_roles where rolname = 'supabase_functions_admin') then
+        grant usage on schema net to supabase_functions_admin;
+        foreach http_function in array http_functions loop
+            execute format('grant execute on function %s to supabase_functions_admin', http_function);
+        end loop;
+    end if;
+end;
+$_$;
+
+
+--
 -- Name: grant_pg_cron_access(); Type: FUNCTION; Schema: extensions; Owner: -
 --
 
@@ -287,47 +402,21 @@ CREATE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
     LANGUAGE plpgsql
     SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
-BEGIN
-  IF EXISTS (
-    SELECT 1
-    FROM pg_event_trigger_ddl_commands() AS ev
-    JOIN pg_extension AS ext
-    ON ev.objid = ext.oid
-    WHERE ext.extname = 'pg_net'
-  )
-  THEN
-    IF NOT EXISTS (
-      SELECT 1
-      FROM pg_roles
-      WHERE rolname = 'supabase_functions_admin'
-    )
-    THEN
-      CREATE USER supabase_functions_admin NOINHERIT CREATEROLE LOGIN NOREPLICATION;
-    END IF;
+begin
+    if not exists (
+        select from pg_event_trigger_ddl_commands() ev
+        join pg_extension e on ev.objid = e.oid
+        where e.extname = 'pg_net'
+    ) then
+        return;
+    end if;
 
-    GRANT USAGE ON SCHEMA net TO supabase_functions_admin, postgres, anon, authenticated, service_role;
+    if not exists (select from pg_roles where rolname = 'supabase_functions_admin') then
+        create user supabase_functions_admin noinherit createrole login noreplication;
+    end if;
 
-    IF EXISTS (
-      SELECT FROM pg_extension
-      WHERE extname = 'pg_net'
-      -- all versions in use on existing projects as of 2025-02-20
-      -- version 0.12.0 onwards don't need these applied
-      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8.0', '0.10.0', '0.11.0')
-    ) THEN
-      ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
-      ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
-
-      ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
-      ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SET search_path = net;
-
-      REVOKE ALL ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
-      REVOKE ALL ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) FROM PUBLIC;
-
-      GRANT EXECUTE ON FUNCTION net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-      GRANT EXECUTE ON FUNCTION net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) TO supabase_functions_admin, postgres, anon, authenticated, service_role;
-    END IF;
-  END IF;
-END;
+    perform extensions.apply_pg_net_grants();
+end;
 $$;
 
 
@@ -835,7 +924,7 @@ CREATE EVENT TRIGGER issue_pg_graphql_access ON ddl_command_end
 --
 
 CREATE EVENT TRIGGER issue_pg_net_access ON ddl_command_end
-         WHEN TAG IN ('CREATE EXTENSION')
+         WHEN TAG IN ('CREATE EXTENSION', 'ALTER EXTENSION')
    EXECUTE FUNCTION extensions.grant_pg_net_access();
 
 
