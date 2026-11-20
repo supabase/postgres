@@ -1,4 +1,3 @@
-
 The effects of these migrations are tested on:
 
 - [nix/tests/sql/auth.out](../../../nix/tests/expected/auth.out)

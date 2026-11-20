@@ -4,10 +4,10 @@ on:
   workflow_call:
     secrets:
       DEV_AWS_ROLE:
-        description: 'AWS role for dev environment'
+        description: "AWS role for dev environment"
         required: true
       NIX_SIGN_SECRET_KEY:
-        description: 'Nix signing secret key'
+        description: "Nix signing secret key"
         required: true
 
 permissions:

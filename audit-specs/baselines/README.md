@@ -5,6 +5,7 @@ This directory contains captured baselines from real machines.
 ## Generating a Baseline
 
 On your target machine:
+
 ```bash
 sudo nix run github:supabase/ubuntu-cis-audit#cis-generate-spec -- baseline.yaml
 ```
@@ -12,6 +13,7 @@ sudo nix run github:supabase/ubuntu-cis-audit#cis-generate-spec -- baseline.yaml
 ## Naming Convention
 
 Use descriptive names that identify the machine type or environment:
+
 - `production-db-baseline.yaml` - Production database server
 - `staging-api-baseline.yaml` - Staging API server
 - `postgres-baseline.yaml` - Standard PostgreSQL server config

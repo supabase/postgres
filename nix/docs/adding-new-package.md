@@ -1,7 +1,7 @@
 # Adding a new extension package
 
 !!! tip "Understanding the Module System"
-    To see how packages are organized and how `ourExtensions` fits into flake-parts, see [Nix tree structure](./nix-directory-structure.md).
+To see how packages are organized and how `ourExtensions` fits into flake-parts, see [Nix tree structure](./nix-directory-structure.md).
 
 ## Pre-packaging steps
 
@@ -61,9 +61,9 @@ Your build should produce all of the sql and control files needed for the instal
 
 Extensions like:
 
-* https://github.com/supabase/postgres/blob/develop/nix/ext/wrappers/default.nix
-* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_graphql/default.nix
-* https://github.com/supabase/postgres/blob/develop/nix/ext/pg_jsonschema/default.nix
+- https://github.com/supabase/postgres/blob/develop/nix/ext/wrappers/default.nix
+- https://github.com/supabase/postgres/blob/develop/nix/ext/pg_graphql/default.nix
+- https://github.com/supabase/postgres/blob/develop/nix/ext/pg_jsonschema/default.nix
 
 Are written in Rust, built with `cargo`, and need to use https://github.com/pgcentralfoundation/pgrx to build the extension.
 
@@ -141,9 +141,9 @@ The pgrx version and Rust toolchain are pinned per extension version in `nix/car
 
 A few things about `buildPgrxExtension`:
 
-* It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
-* It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above
-* It calculates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
+- It doesn't support `buildPhase`, `installPhase` and those are implemented directly in the builder already
+- It mostly just allows `cargo build` to do it's thing, but you may need to set env vars for the build process as seen above
+- It calculates a special `cargoHash` that will be generated after the first in `src` is generated, when running `nix build .#psql_15.exts.<yourname>` to build the extension
 
 ## Post Nix derivation release steps
 

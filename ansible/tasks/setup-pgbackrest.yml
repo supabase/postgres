@@ -21,20 +21,20 @@
   ansible.builtin.lineinfile:
     create: yes
     line: "{{ item }}"
-    mode: '0440'
-    path: '/etc/sudoers.d/pgbackrest'
-    validate: 'visudo -cf %s'
+    mode: "0440"
+    path: "/etc/sudoers.d/pgbackrest"
+    validate: "visudo -cf %s"
   loop:
-    - 'postgres ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
-    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/pgbackrest'
-    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
-    - 'postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/nix'
-    - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /usr/bin/bash'
+    - "postgres ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest"
+    - "postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/pgbackrest"
+    - "postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/bash"
+    - "postgres ALL=(pgbackrest) NOPASSWD: /usr/bin/nix"
+    - "pgbackrest ALL=(pgbackrest) NOPASSWD: /usr/bin/bash"
     # Required for the NewRunnerAs() path: supabase-admin-agent runs the
     # /usr/bin/pgbackrest wrapper as the pgbackrest user, but the wrapper
     # internally calls "sudo -u pgbackrest <real_binary>". Without this entry
     # that inner sudo fails even though the outer caller is already pgbackrest.
-    - 'pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest'
+    - "pgbackrest ALL=(pgbackrest) NOPASSWD: /var/lib/pgbackrest/.nix-profile/bin/pgbackrest"
 
 - name: Create needed directories for pgBackRest
   ansible.legacy.file:
@@ -47,10 +47,10 @@
     # conf.d is setgid (02770) so files written by adminapi (postgres group)
     # automatically inherit the postgres group. Without setgid, pgbackrest
     # (running as the pgbackrest user) cannot read conf files created by adminapi.
-    - {dir: /etc/pgbackrest/conf.d, mode: '02770'}
-    - {dir: /var/lib/pgbackrest}
-    - {dir: /var/spool/pgbackrest}
-    - {dir: /var/log/pgbackrest}
+    - { dir: /etc/pgbackrest/conf.d, mode: "02770" }
+    - { dir: /var/lib/pgbackrest }
+    - { dir: /var/spool/pgbackrest }
+    - { dir: /var/log/pgbackrest }
   loop_control:
     loop_var: backrest_dir
 
@@ -62,7 +62,7 @@
   ansible.builtin.file:
     access_time: preserve
     group: postgres
-    mode: '0660'
+    mode: "0660"
     modification_time: preserve
     owner: pgbackrest
     path: "{{ item }}"
@@ -114,10 +114,10 @@
         esac
       done
       exec sudo -u pgbackrest /var/lib/pgbackrest/.nix-profile/bin/pgbackrest "${sanitized_args[@]}"
-    dest: '/usr/bin/pgbackrest'
-    group: 'root'
-    mode: '0755'
-    owner: 'root'
+    dest: "/usr/bin/pgbackrest"
+    group: "root"
+    mode: "0755"
+    owner: "root"
 
 - name: Install pgBackRest
   when: stage2
@@ -132,14 +132,14 @@
   ansible.legacy.copy:
     group: postgres
     dest: "/etc/pgbackrest/{{ conf_item['path'] }}/{{ conf_item['name'] }}"
-    mode: '0640'
+    mode: "0640"
     owner: pgbackrest
     src: "files/pgbackrest_config/{{ conf_item['name'] }}"
   loop:
-    - {name: computed_globals.conf, path: conf.d}
-    - {name: pgbackrest.conf, path: ''}
-    - {name: repo1_async.conf, path: conf.d}
-    - {name: repo1_encrypted.conf, path: conf.d}
-    - {name: repo1.conf, path: conf.d}
+    - { name: computed_globals.conf, path: conf.d }
+    - { name: pgbackrest.conf, path: "" }
+    - { name: repo1_async.conf, path: conf.d }
+    - { name: repo1_encrypted.conf, path: conf.d }
+    - { name: repo1.conf, path: conf.d }
   loop_control:
     loop_var: conf_item

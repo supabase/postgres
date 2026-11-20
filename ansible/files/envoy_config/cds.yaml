@@ -1,5 +1,5 @@
 resources:
-  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: admin_api
     load_assignment:
       cluster_name: admin_api
@@ -20,7 +20,7 @@ resources:
             budget_percent:
               value: 100
             min_retry_concurrency: 100
-  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: gotrue
     load_assignment:
       cluster_name: gotrue
@@ -41,7 +41,7 @@ resources:
             budget_percent:
               value: 100
             min_retry_concurrency: 100
-  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: postgrest
     load_assignment:
       cluster_name: postgrest
@@ -62,7 +62,7 @@ resources:
             budget_percent:
               value: 100
             min_retry_concurrency: 100
-  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+  - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
     name: postgrest_admin
     load_assignment:
       cluster_name: postgrest_admin
@@ -83,4 +83,3 @@ resources:
             budget_percent:
               value: 100
             min_retry_concurrency: 100
-

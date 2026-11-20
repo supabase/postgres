@@ -1,16 +1,16 @@
 There are basically two types of tests you can add:
 
 - pgTAP based tests, and
-- pg\_regress tests
+- pg_regress tests
 - Migration tests.
 
 In all cases, a number of extensions may be installed into the database for
 use; you can see those in both `/nix/tests/postgresql.conf.in`
 and `/nix/tests/prime.sql` (extensions may be enabled in either place.)
 
-## pg\_regress tests
+## pg_regress tests
 
-pg\_regress tests are in `/nix/tests/sql/` with output in `/nix/tests/expected/`.
+pg_regress tests are in `/nix/tests/sql/` with output in `/nix/tests/expected/`.
 To create a new test, create a new SQL file in `/nix/tests/sql/`.
 
 Next, for each current major version of postgres, we run a "flake check" build one at a time.
@@ -47,7 +47,6 @@ Then you can review the contents of `regression_output/results/new_test.out` to 
 If it does match your expectations, copy the file to `/nix/tests/expected/` and the test will pass on the next run.
 
 If the output does not match your expectations, update the `<new_test>.sql` file, re-run with `nix flake check -L` and try again
-
 
 ## pgTAP tests
 
