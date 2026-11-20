@@ -28,6 +28,7 @@ jobs:
   # counting as skipped. build only gets the AMIs whose ami-test-stamp is not in the binary cache yet,
   # and is skipped entirely when every stamp is cached.
   gen-matrix:
+    name: ☁️Matrix
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
@@ -87,7 +88,8 @@ jobs:
           echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
           echo "should_run=$should_run" >>"$GITHUB_OUTPUT"
 
-  build:
+  ami:
+    name: ☁️${{ matrix.postgres_version }} ${{ matrix.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
     needs: gen-matrix
     if: needs.gen-matrix.outputs.should_run == 'true'
     strategy:
@@ -213,7 +215,8 @@ jobs:
         run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
-    needs: build
+    name: ☁️Disk Usage
+    needs: ami
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Download AMI disk usage

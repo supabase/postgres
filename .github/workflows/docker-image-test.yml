@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   check-changes:
-    name: skippable
+    name: 🐳Changes
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
@@ -41,7 +41,7 @@ jobs:
           base_ref: ${{ github.base_ref }}
 
   docker-image-test:
-    name: Test ${{ matrix.name }}
+    name: 🐳${{ matrix.name }}
     needs: check-changes
     if: needs.check-changes.outputs.should_run == 'true'
     runs-on: large-linux-arm

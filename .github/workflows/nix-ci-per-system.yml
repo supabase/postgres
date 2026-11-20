@@ -21,6 +21,7 @@ on:
 
 jobs:
   eval:
+    name: ❄️Eval
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
       packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
@@ -98,7 +99,7 @@ jobs:
           retention-days: ${{ github.event_name == 'merge_group' && 90 || 1 }}
 
   builds:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
+    name: ❄️🔨${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ inputs.system == 'aarch64-darwin' && '🍎arm' || inputs.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
     needs: eval
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     strategy:
@@ -123,7 +124,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   checks:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
+    name: ❄️🧪${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ inputs.system == 'aarch64-darwin' && '🍎arm' || inputs.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
     needs:
       - eval
       - builds
@@ -176,7 +177,7 @@ jobs:
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   version-diff:
-    name: Package version diff
+    name: 📦Version diff
     if: github.event_name == 'pull_request' && inputs.system != 'aarch64-darwin'
     needs:
       - eval
