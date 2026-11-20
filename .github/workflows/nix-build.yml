@@ -22,6 +22,7 @@ concurrency:
 
 jobs:
   aarch64-darwin:
+    name: 🍎arm
     uses: $/.github/workflows/nix-ci-per-system.yml
     with:
       system: aarch64-darwin
@@ -30,6 +31,7 @@ jobs:
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   aarch64-linux:
+    name: 🐧arm
     uses: $/.github/workflows/nix-ci-per-system.yml
     with:
       system: aarch64-linux
@@ -38,6 +40,7 @@ jobs:
       NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
 
   x86_64-linux:
+    name: 🐧x86
     uses: $/.github/workflows/nix-ci-per-system.yml
     with:
       system: x86_64-linux
@@ -64,7 +67,7 @@ jobs:
           exit 1
 
   version-diff-comment:
-    name: Post package version diff comment
+    name: 📦Post version diff comment
     if: always() && github.event_name == 'pull_request'
     needs:
       - x86_64-linux
