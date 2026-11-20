@@ -95,7 +95,7 @@ jobs:
           retention-days: ${{ github.event_name == 'merge_group' && 90 || 1 }}
 
   builds-aarch64-linux:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs: eval
     runs-on: ${{ matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_linux != null }}
@@ -121,7 +121,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   checks-aarch64-linux:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs:
       - eval
       - builds-aarch64-linux
@@ -149,7 +149,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   builds-aarch64-darwin:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs: eval
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.eval.outputs.packages_matrix).aarch64_darwin != null }}
@@ -175,7 +175,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   checks-aarch64-darwin:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs:
       - eval
       - builds-aarch64-darwin
@@ -203,7 +203,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   builds-x86_64-linux:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs: eval
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     if: ${{ fromJSON(needs.eval.outputs.packages_matrix).x86_64_linux != null }}
@@ -229,7 +229,7 @@ jobs:
           attr: .#${{ matrix.attr }}
 
   checks-x86_64-linux:
-    name: ${{ matrix.name }}${{ matrix.postgresql_version || '' }}
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
     needs:
       - eval
       - builds-x86_64-linux
