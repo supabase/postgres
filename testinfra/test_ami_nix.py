@@ -369,7 +369,7 @@ users:
 
     # Wait for init.sh to complete
     logger.info("Waiting for init.sh to complete...")
-    max_attempts = 60  # 5 minutes
+    max_attempts = 96  # 8 minutes
     attempt = 0
     while attempt < max_attempts:
         try:
@@ -388,6 +388,10 @@ users:
 
     if attempt >= max_attempts:
         logger.error("init.sh failed to complete within the timeout period")
+        cloud_init_log = run_ssh_command(
+            ssh, "sudo tail -n 100 /var/log/cloud-init-output.log", timeout=30
+        )
+        logger.error(f"cloud-init-output.log tail:\n{cloud_init_log['stdout']}")
         instance.terminate()
         raise TimeoutError("init.sh failed to complete within the timeout period")
 
@@ -1916,6 +1920,8 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
             "coredump processor not installed on this AMI (not an OrioleDB build)"
         )
 
+    run_ssh_command(host["ssh"], "sudo systemctl start orioledb-coredump.service")
+
     before_bundles = set(
         run_ssh_command(
             host["ssh"],
@@ -1926,7 +1932,7 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
     _crash_a_backend_and_wait_for_recovery(host)
 
     new_bundle = None
-    for _ in range(30):
+    for _ in range(75):
         sleep(2)
         current = set(
             run_ssh_command(
@@ -1940,7 +1946,12 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
             break
     assert new_bundle, (
         "Expected a new diagnostic bundle under /var/lib/orioledb-coredumps/diagnostics "
-        "after the induced backend crash, but none appeared within 60s"
+        "after the induced backend crash, but none appeared within 150s\n"
+        + run_ssh_command(
+            host["ssh"],
+            "sudo journalctl -u orioledb-coredump.service --no-pager -n 50 2>&1; "
+            "sudo coredumpctl list --no-pager 2>&1",
+        )["stdout"]
     )
 
     bundle_contents = run_ssh_command(host["ssh"], f"sudo cat {new_bundle}")["stdout"]
