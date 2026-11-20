@@ -70,11 +70,11 @@ Options:
 
 ## Version Mapping
 
-| Dockerfile | Version | Test Port | Test Filter | Tests |
-|------------|---------|-----------|-------------|-------|
-| Dockerfile-15 | 15 | 5436 | `z_15_*.sql` + common | 53 |
-| Dockerfile-17 | 17 | 5435 | `z_17_*.sql` + common | 49 |
-| Dockerfile-orioledb-17 | orioledb-17 | 5437 | `z_orioledb-17_*.sql` + common | 47 |
+| Dockerfile             | Version     | Test Port | Test Filter                    | Tests |
+| ---------------------- | ----------- | --------- | ------------------------------ | ----- |
+| Dockerfile-15          | 15          | 5436      | `z_15_*.sql` + common          | 53    |
+| Dockerfile-17          | 17          | 5435      | `z_17_*.sql` + common          | 49    |
+| Dockerfile-orioledb-17 | orioledb-17 | 5437      | `z_orioledb-17_*.sql` + common | 47    |
 
 ## Test Filtering
 
@@ -136,8 +136,8 @@ This script complements `nix flake check` which tests the Nix-built PostgreSQL p
 
 The script automatically patches expected outputs at runtime to handle Docker-specific differences:
 
-| Difference | Affected Tests | Cause |
-|------------|----------------|-------|
+| Difference                        | Affected Tests     | Cause                                                 |
+| --------------------------------- | ------------------ | ----------------------------------------------------- |
 | `$user` → `\$user` in search_path | pgmq, vault, roles | Docker image configuration escapes `$` in search_path |
 
 These patches are applied to a temporary copy of the test files - the original files are never modified.

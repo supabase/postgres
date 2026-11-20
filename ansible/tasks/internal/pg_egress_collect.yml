@@ -12,4 +12,3 @@
 - name: pg_egress_collect - reload systemd
   systemd:
     daemon_reload: yes
-

@@ -29,43 +29,43 @@
 
     - name: Copy PostgreSQL coredump systemd drop-in
       ansible.builtin.copy:
-        dest: '/etc/systemd/system/postgresql.service.d/coredump.conf'
-        group: 'root'
-        mode: '0644'
-        owner: 'root'
-        src: 'files/postgresql_config/coredump.conf'
+        dest: "/etc/systemd/system/postgresql.service.d/coredump.conf"
+        group: "root"
+        mode: "0644"
+        owner: "root"
+        src: "files/postgresql_config/coredump.conf"
 
     - name: Create a systemd system.conf.d dir for the machine-wide coredump default
       ansible.builtin.file:
-        group: 'root'
-        mode: '0755'
-        owner: 'root'
-        path: '/etc/systemd/system.conf.d'
-        state: 'directory'
+        group: "root"
+        mode: "0755"
+        owner: "root"
+        path: "/etc/systemd/system.conf.d"
+        state: "directory"
 
     - name: Copy machine-wide default core limit (postgres is the only exception)
       ansible.builtin.copy:
-        dest: '/etc/systemd/system.conf.d/disable-coredumps-by-default.conf'
-        group: 'root'
-        mode: '0644'
-        owner: 'root'
-        src: 'files/postgresql_config/disable-coredumps-by-default.conf'
+        dest: "/etc/systemd/system.conf.d/disable-coredumps-by-default.conf"
+        group: "root"
+        mode: "0644"
+        owner: "root"
+        src: "files/postgresql_config/disable-coredumps-by-default.conf"
 
     - name: Create a systemd-coredump conf.d dir for PostgreSQL storage limits
       ansible.builtin.file:
-        group: 'root'
-        mode: '0755'
-        owner: 'root'
-        path: '/etc/systemd/coredump.conf.d'
-        state: 'directory'
+        group: "root"
+        mode: "0755"
+        owner: "root"
+        path: "/etc/systemd/coredump.conf.d"
+        state: "directory"
 
     - name: Copy systemd-coredump storage limits
       ansible.builtin.copy:
-        dest: '/etc/systemd/coredump.conf.d/postgres.conf'
-        group: 'root'
-        mode: '0644'
-        owner: 'root'
-        src: 'files/postgresql_config/coredump-storage.conf'
+        dest: "/etc/systemd/coredump.conf.d/postgres.conf"
+        group: "root"
+        mode: "0644"
+        owner: "root"
+        src: "files/postgresql_config/coredump-storage.conf"
 
 # Processing: turns a captured core into a diagnostic bundle.
 - name: Set up PostgreSQL/OrioleDB coredump processing (OrioleDB only)
@@ -76,10 +76,10 @@
       ansible.builtin.copy:
         content: |
           GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT} coredump_filter=0x31"
-        dest: '/etc/default/grub.d/60-coredump-filter.cfg'
-        group: 'root'
-        mode: '0644'
-        owner: 'root'
+        dest: "/etc/default/grub.d/60-coredump-filter.cfg"
+        group: "root"
+        mode: "0644"
+        owner: "root"
       notify:
         - Regenerate grub configuration
 
@@ -95,48 +95,48 @@
 
     - name: Create orioledb-coredumps state/output directories
       ansible.builtin.file:
-        group: 'root'
-        mode: '0700'
-        owner: 'root'
+        group: "root"
+        mode: "0700"
+        owner: "root"
         path: "{{ coredump_processing_item }}"
-        state: 'directory'
+        state: "directory"
       loop:
-        - '/var/lib/orioledb-coredumps'
-        - '/var/lib/orioledb-coredumps/state'
-        - '/var/lib/orioledb-coredumps/diagnostics'
-        - '/var/lib/orioledb-coredumps/quarantine'
+        - "/var/lib/orioledb-coredumps"
+        - "/var/lib/orioledb-coredumps/state"
+        - "/var/lib/orioledb-coredumps/diagnostics"
+        - "/var/lib/orioledb-coredumps/quarantine"
       loop_control:
-        loop_var: 'coredump_processing_item'
+        loop_var: "coredump_processing_item"
 
     - name: Copy PostgreSQL/OrioleDB coredump processor script
       ansible.builtin.copy:
-        dest: '/usr/local/sbin/process-orioledb-coredumps.sh'
-        group: 'root'
-        mode: '0700'
-        owner: 'root'
-        src: 'coredump/process-orioledb-coredumps.sh'
+        dest: "/usr/local/sbin/process-orioledb-coredumps.sh"
+        group: "root"
+        mode: "0700"
+        owner: "root"
+        src: "coredump/process-orioledb-coredumps.sh"
 
     - name: Copy GDB extraction commands (matches orioledb/ci/cmds.gdb)
       ansible.builtin.copy:
-        dest: '/usr/local/sbin/orioledb-coredump-cmds.gdb'
-        group: 'root'
-        mode: '0600'
-        owner: 'root'
-        src: 'coredump/cmds.gdb'
+        dest: "/usr/local/sbin/orioledb-coredump-cmds.gdb"
+        group: "root"
+        mode: "0600"
+        owner: "root"
+        src: "coredump/cmds.gdb"
 
     - name: Copy PostgreSQL/OrioleDB coredump systemd units
       ansible.builtin.copy:
         dest: "/etc/systemd/system/{{ coredump_unit_item }}"
-        group: 'root'
-        mode: '0644'
-        owner: 'root'
+        group: "root"
+        mode: "0644"
+        owner: "root"
         src: "coredump/{{ coredump_unit_item }}"
       loop:
-        - 'orioledb-coredump.path'
-        - 'orioledb-coredump.timer'
-        - 'orioledb-coredump.service'
+        - "orioledb-coredump.path"
+        - "orioledb-coredump.timer"
+        - "orioledb-coredump.service"
       loop_control:
-        loop_var: 'coredump_unit_item'
+        loop_var: "coredump_unit_item"
 
     - name: Reload systemd for coredump processing units
       ansible.builtin.systemd_service:
@@ -146,9 +146,9 @@
       ansible.builtin.systemd_service:
         name: "{{ coredump_enable_item }}"
         enabled: true
-        state: 'started'
+        state: "started"
       loop:
-        - 'orioledb-coredump.path'
-        - 'orioledb-coredump.timer'
+        - "orioledb-coredump.path"
+        - "orioledb-coredump.timer"
       loop_control:
-        loop_var: 'coredump_enable_item'
+        loop_var: "coredump_enable_item"

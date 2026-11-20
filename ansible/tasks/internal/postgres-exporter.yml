@@ -8,7 +8,7 @@
     state: directory
     path: /etc/systemd/system/postgres_exporter.service.d
     owner: root
-    mode: '0700'
+    mode: "0700"
   become: yes
 
 - name: create directories - service files
@@ -17,7 +17,7 @@
     path: /opt/postgres_exporter
     owner: postgres
     group: postgres
-    mode: '0775'
+    mode: "0775"
   become: yes
 
 - name: download postgres exporter
