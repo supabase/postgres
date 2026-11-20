@@ -33,6 +33,8 @@ jobs:
       - name: Install nix
         uses: $/.github/actions/install-nix
         with:
+          # Eval runs about 25 seconds faster without the Nix daemon.
+          single-user: true
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
