@@ -45,6 +45,17 @@ pkgs.testers.runNixOSTest {
     machine.succeed("su postgres -c '${psql_17}/bin/psql -h /tmp -d postgres -c \"select 1\"'")
     machine.succeed("su postgres -c '${psql_17}/bin/pg_ctl -D /tmp/pgdata stop'")
 
+    # site-nix-gc runs to the end and reports what it freed
+    machine.succeed("nix-store --gc")
+    machine.succeed("echo garbage > /tmp/garbage && nix-store --add /tmp/garbage")
+    machine.succeed("nix-env --profile /nix/var/nix/profiles/default --set $(dirname $(dirname $(readlink -f $(command -v nix-env))))")
     machine.succeed("${site-env-17}/bin/activate")
+    machine.succeed("${site-env-17}/bin/site-nix-gc")
+    machine.wait_until_fails("systemctl is-active site-nix-gc", timeout=1800)
+    print(machine.succeed("journalctl -u site-nix-gc --no-pager | grep freed"))
+
+    # without systemd the gc runs in the foreground
+    machine.succeed("mount -t tmpfs none /run/systemd")
+    machine.succeed("${site-env-17}/bin/site-nix-gc 2>&1 | grep freed")
   '';
 }
