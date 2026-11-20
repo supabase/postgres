@@ -67,8 +67,28 @@ class NixEvalError(TypedDict):
     error: str
 
 
+def build_select_expr(flake_outputs: List[str], system: Optional[System]) -> str:
+    """Build the --select expression that picks which flake outputs to evaluate.
+
+    With a system, only that system's part of each output is evaluated.
+    Attribute names stay the same either way, for example checks.x86_64-linux.foo.
+    """
+
+    if system is None:
+        attrs = f"inherit (outputs) {' '.join(flake_outputs)};"
+    else:
+        attrs = " ".join(
+            f"{output}.{system} = outputs.{output}.{system};"
+            for output in flake_outputs
+        )
+    return f"outputs: {{ {attrs} }}"
+
+
 def build_nix_eval_command(
-    max_workers: int, max_memory_size: int, flake_outputs: List[str]
+    max_workers: int,
+    max_memory_size: int,
+    flake_outputs: List[str],
+    system: Optional[System] = None,
 ) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
     nix_eval_cmd = [
@@ -89,9 +109,38 @@ def build_nix_eval_command(
         "--workers",
         str(max_workers),
         "--select",
-        f"outputs: {{ inherit (outputs) {' '.join(flake_outputs)}; }}",
+        build_select_expr(flake_outputs, system),
     ]
     return nix_eval_cmd
+
+
+def select_system_matrices(
+    packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    system: System,
+) -> Tuple[
+    Dict[str, List[GitHubActionPackage]],
+    Dict[str, List[GitHubActionPackage]],
+    List[str],
+]:
+    """Pick one system's packages and checks matrices from the per-system outputs.
+
+    Also returns the other systems that have real jobs.
+    Jobs are grouped by their derivation's system, so an attribute under one system can hold a derivation for another.
+    Those jobs are not in the returned matrices, and no other system's eval sees them, so the caller should fail.
+    """
+    key = system.replace("-", "_")
+    others: List[str] = sorted(
+        {
+            job["system"]
+            for output in (packages_output, checks_output)
+            for other, matrix in output.items()
+            if other != key
+            for job in matrix["include"]
+            if job["attr"] != ""
+        }
+    )
+    return packages_output[key], checks_output[key], others
 
 
 def parse_nix_eval_line(
@@ -302,6 +351,11 @@ def main() -> None:
         help="Store eval json output to file and exit",
     )
     parser.add_argument(
+        "--system",
+        choices=get_args(System),
+        help="Evaluate only this system, and output that system's matrices directly instead of a map of all systems",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
@@ -314,6 +368,7 @@ def main() -> None:
             args.nb_eval_jobs_workers,
             args.max_memory_size,
             args.flake_outputs,
+            args.system,
         )
         nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
         if warnings_list:
@@ -416,11 +471,27 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
-    else:
-        set_output("packages_matrix", json.dumps(gh_output["packages"]))
-        set_output("checks_matrix", json.dumps(gh_output["checks"]))
-        print("Generated GitHub Actions matrix:")
-        json.dumps(gh_output, indent=2)
+    elif args.system:
+        packages, checks, others = select_system_matrices(
+            packages_output,
+            checks_output,
+            args.system,
+        )
+        if others:
+            # These jobs would never be built: they are not in this matrix, and other systems don't evaluate them.
+            others = ", ".join(others)
+            error(
+                f"Evaluated {args.system} but found jobs whose derivations are for {others}. "
+                "No eval builds them, so move them under their own system's outputs.",
+                title="Jobs for another system",
+            )
+            sys.exit(1)
+        gh_output = {"packages": packages, "checks": checks}
+
+    set_output("packages_matrix", json.dumps(gh_output["packages"]))
+    set_output("checks_matrix", json.dumps(gh_output["checks"]))
+    print("Generated GitHub Actions matrix:")
+    json.dumps(gh_output, indent=2)
 
 
 if __name__ == "__main__":
