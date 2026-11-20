@@ -764,11 +764,47 @@ EOF
 	cleanup "complete"
 }
 
+mirror_upgrade_to_console() {
+	local upgrade_pid=$1 start_bytes=$2
+	[ -w /dev/console ] || return 0
+	(
+		trap - ERR EXIT TERM INT
+		set +eEuo pipefail
+		exec </dev/null >/dev/null 2>&1
+
+		tail -c "+$((start_bytes + 1))" -F --pid="$upgrade_pid" "$LOG_FILE" |
+			sed -u 's/^/pg-upgrade: /' >/dev/console &
+
+		last_size=-1
+		quiet=0
+		while kill -0 "$upgrade_pid"; do
+			sleep 60
+			size=$(stat -c %s "$LOG_FILE")
+			if [ "$size" = "$last_size" ]; then
+				quiet=$((quiet + 60))
+			else
+				quiet=0
+				last_size=$size
+			fi
+			if [ "$quiet" -ge 180 ] && [ $(((quiet - 180) % 300)) -eq 0 ]; then
+				{
+					echo "pg-upgrade-watch: log silent for ${quiet}s"
+					ps -eo pid,ppid,etimes,stat,wchan:24,args --forest |
+						awk '/initiate|pg_upgrade|pg_checksums|initdb|pg_ctl|postgres|nix|timeout|systemctl|du |curl/ && !/awk/' |
+						cut -c1-220 | head -30 | sed 's/^/pg-upgrade-watch: /'
+				} >/dev/console
+			fi
+		done
+	) &
+}
+
 trap cleanup ERR
 
 echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+	LOG_START_BYTES=$(stat -c %s "$LOG_FILE" 2>/dev/null || echo 0)
 	initiate_upgrade >>"$LOG_FILE" 2>&1 &
+	mirror_upgrade_to_console "$!" "$LOG_START_BYTES"
 	log "Upgrade initiate job completed"
 else
 	rm -f /tmp/pg-upgrade-status
