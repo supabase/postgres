@@ -254,24 +254,6 @@ jobs:
         with:
           attr: .#${{ matrix.attr }}
 
-  checks:
-    name: Checks ✅
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    needs:
-      - checks-aarch64-darwin
-      - checks-aarch64-linux
-      - checks-x86_64-linux
-    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through
-    # not sure what GH's thinking is there that skipped == passed for the branch protection rule...
-    # insert Mr Incredible meme -> pass is pass, skipped is not passed, PR should not merge
-    if: always()
-    steps:
-      - name: Check dependent job results
-        if: contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') || contains(needs.*.result, 'skipped')
-        run: |
-          jq -rn --argjson needs '${{ toJSON(needs) }}' '$needs|to_entries[]|select(.value.result!="success")|"::error::"+.key+": "+.value.result'
-          exit 1
-
   amis:
     needs:
       - builds-aarch64-linux
@@ -297,11 +279,16 @@ jobs:
 
   check:
     name: CI ✅
+    # must always run, otherwise if any of the needs fail then this is skipped and PR is allowed through
+    # not sure what GH's thinking is there that skipped == passed for the branch protection rule...
+    # insert Mr Incredible meme -> pass is pass, skipped is not passed, PR should not merge
     if: always()
     runs-on: blacksmith-2vcpu-ubuntu-2404
     needs:
       - amis
-      - checks
+      - checks-aarch64-darwin
+      - checks-aarch64-linux
+      - checks-x86_64-linux
       - containers
       - qemu
     steps:
