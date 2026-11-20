@@ -46,6 +46,14 @@
     remote_src: true
     src: "/tmp/gotrue.tar.gz"
 
+- name: gotrue - install platform env file
+  ansible.builtin.copy:
+    src: 'files/auth.d/80_platform.env'
+    dest: '/etc/auth.d/80_platform.env'
+    owner: root
+    group: root
+    mode: '0644'
+
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
 # - name: gotrue - system dependencies
