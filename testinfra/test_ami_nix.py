@@ -1157,6 +1157,74 @@ def test_postgrest_read_only_session_attrs(host):
             print("Warning: Failed to restore PostgreSQL configuration")
 
 
+def test_supabase_monitor_admin_role_is_passwordless_and_reachable_on_loopback(host):
+    """supabase_monitor_admin (migrations/db/migrations/20261113000000_supabase_monitor_admin.sql)
+    has no password and relies on the same pg_hba trust rules.
+
+    Unlike the other service roles, this role must never be given a password in
+    nix/tools/postgresql_schema.sql or the fixture at the top of this file.
+    It should only be accessible from localhost.
+    """
+    ssh = host["ssh"]
+    psql_admin = (
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -At -c "
+    )
+
+    result = run_ssh_command(
+        ssh,
+        psql_admin
+        + '"select rolcanlogin, rolpassword is null, rolbypassrls, rolsuper, '
+        "rolcreaterole, rolcreatedb, rolreplication "
+        "from pg_authid where rolname = 'supabase_monitor_admin'\"",
+    )
+    assert result["succeeded"], result["stderr"]
+    assert result["stdout"].strip() == "t|t|t|f|f|f|f", (
+        f"unexpected supabase_monitor_admin attributes: {result['stdout']!r}"
+    )
+
+    # Passwordless loopback login works, and the per-role defaults apply to
+    # the resulting session: read-only, and its own queries are not tracked
+    # by pg_stat_statements.
+    result = run_ssh_command(
+        ssh,
+        "sudo -u postgres psql -U supabase_monitor_admin -h 127.0.0.1 -d postgres -At "
+        "-c 'select current_user' -c 'show default_transaction_read_only' "
+        "-c 'show pg_stat_statements.track' 2>&1",
+    )
+    assert result["succeeded"], (
+        "supabase_monitor_admin could not log in over loopback without a password: "
+        f"{result['stdout']!r} {result['stderr']!r}"
+    )
+    assert result["stdout"].split() == ["supabase_monitor_admin", "on", "none"], (
+        f"unexpected session state for supabase_monitor_admin: {result['stdout']!r}"
+    )
+
+    # The monitor may also pass the fleet postgres_exporter's startup options
+    # itself (both parameters are superuser-only without the role's SET
+    # grants), and it reads the system-wide default_transaction_read_only from
+    # pg_file_settings (read-only mode, see manage_readonly_mode.sh), which its
+    # own per-role default hides from SHOW. This image is not in read-only
+    # mode. pg_hba.conf / pg_ident.conf stay unreadable.
+    result = run_ssh_command(
+        ssh,
+        "sudo -u postgres env PGOPTIONS='-c pg_stat_statements.track=none -c temp_file_limit=15MB' "
+        "psql -U supabase_monitor_admin -h 127.0.0.1 -d postgres -At "
+        "-c 'show pg_stat_statements.track' "
+        "-c 'show temp_file_limit' "
+        '-c "select coalesce((select setting from pg_file_settings '
+        "where name = 'default_transaction_read_only' and applied), 'off')\" "
+        "-c \"select has_function_privilege('pg_hba_file_rules()', 'EXECUTE') "
+        "or has_function_privilege('pg_ident_file_mappings()', 'EXECUTE')\" 2>&1",
+    )
+    assert result["succeeded"], (
+        "supabase_monitor_admin could not log in with the exporter's options or "
+        f"read pg_file_settings: {result['stdout']!r} {result['stderr']!r}"
+    )
+    assert result["stdout"].split() == ["none", "15MB", "off", "f"], (
+        f"unexpected monitoring output for supabase_monitor_admin: {result['stdout']!r}"
+    )
+
+
 def test_custom_overrides_take_precedence_over_generated_optimizations(host):
     """Verify CLI-managed PostgreSQL config overrides generated optimizations.
 

@@ -11,7 +11,7 @@ User=postgres
 Group=postgres
 Restart=always
 RestartSec=3
-Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_admin pg_stat_statements.track=none application_name=postgres_exporter"
+Environment="DATA_SOURCE_NAME=host=localhost dbname=postgres sslmode=disable user=supabase_monitor_admin pg_stat_statements.track=none application_name=postgres_exporter"
 
 [Install]
 WantedBy=multi-user.target
