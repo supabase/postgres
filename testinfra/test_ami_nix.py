@@ -1956,3 +1956,16 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
         f"Expected the raw core to be deleted after successful processing, but "
         f"/var/lib/systemd/coredump still has:\n{remaining_cores}"
     )
+
+
+def test_supa_tripwire_installed(host):
+    """Verify supa-tripwire is baked into the image and enabled."""
+    binary = run_ssh_command(host["ssh"], "test -x /usr/local/bin/supa-tripwire")
+    assert binary["succeeded"], (
+        "/usr/local/bin/supa-tripwire is missing or not executable"
+    )
+
+    enabled = run_ssh_command(host["ssh"], "systemctl is-enabled supa-tripwire")
+    assert enabled["succeeded"], (
+        f"supa-tripwire is not enabled.\nstdout: {enabled['stdout']}\nstderr: {enabled['stderr']}"
+    )
