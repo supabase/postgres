@@ -1,0 +1,238 @@
+name: Nix CI for one system
+
+# nix-build.yml calls this workflow once per system.
+# Each call evaluates only its own system, then builds and checks what isn't cached yet.
+# A system's builds start as soon as its own eval finishes, without waiting for the other systems.
+
+on:
+  workflow_call:
+    inputs:
+      system:
+        description: Nix system to evaluate, build and check
+        required: true
+        type: string
+    secrets:
+      DEV_AWS_ROLE:
+        description: AWS role for the dev environment
+        required: true
+      NIX_SIGN_SECRET_KEY:
+        description: Key used to sign uploads to the Nix binary cache
+        required: true
+
+jobs:
+  eval:
+    runs-on: blacksmith-32vcpu-ubuntu-2404
+    outputs:
+      packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
+      checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7.0.1
+
+      - name: Install nix
+        uses: $/.github/actions/install-nix
+        with:
+          # Eval runs about 25 seconds faster without the Nix daemon.
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          push-to-cache: true
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          single-user: true
+
+      # Every system uses the same flake inputs, so one system pushing them is enough.
+      - name: Push flake inputs to binary cache
+        if: inputs.system == 'x86_64-linux'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          script=
+          for dir in /etc/nix "$HOME/.config/nix"; do
+            if [[ -x $dir/upload-to-cache.sh ]]; then
+              script=$dir/upload-to-cache.sh
+              break
+            fi
+          done
+          if [[ -z $script ]]; then
+            exit 0
+          fi
+          cmd=()
+          if [[ ! -O $script ]]; then
+            cmd=(sudo -H)
+          fi
+          # xargs appends the store paths as args; the script reads them space-separated from OUT_PATHS
+          # shellcheck disable=SC2016
+          cmd+=(bash -c 'OUT_PATHS=$* exec "$0"' "$script")
+          nix flake archive --json \
+            | jq -r '.inputs | .. | .path? // empty' \
+            | sort -u \
+            | xargs --no-run-if-empty "${cmd[@]}"
+
+      - name: Generate Build Matrix
+        id: gen-matrix
+        env:
+          SYSTEM: ${{ inputs.system }}
+        run: |
+          nix run .#github-matrix -- --system "$SYSTEM" --eval-output=eval.json checks legacyPackages
+          echo eval.json:
+          jq -S . eval.json
+          nix run .#github-matrix -- --system "$SYSTEM" --eval-input checks legacyPackages <eval.json
+
+      - name: Extract drvPaths for version-diff
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          SYSTEM: ${{ inputs.system }}
+        run: |
+          mkdir -p /tmp/drvpaths
+          jq -s --arg sys "$SYSTEM" '
+            [ .[]
+              | select(has("drvPath"))
+              | select(.attr | startswith("legacyPackages.\($sys)."))
+              | {key: (.attr | ltrimstr("legacyPackages.\($sys).")), value: .drvPath} ]
+            | from_entries' eval.json > "/tmp/drvpaths/$SYSTEM.json"
+
+      - name: Upload drvPaths artifact
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: drvpaths-${{ inputs.system }}
+          path: /tmp/drvpaths/${{ inputs.system }}.json
+          retention-days: ${{ github.event_name == 'merge_group' && 90 || 1 }}
+
+  builds:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
+    needs: eval
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.packages_matrix) }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v7.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/install-nix
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  checks:
+    name: ${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ matrix.system }}
+    needs:
+      - eval
+      - builds
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.checks_matrix) }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v7.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/install-nix
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  amis:
+    needs: builds
+    if: inputs.system != 'aarch64-darwin'
+    uses: $/.github/workflows/testinfra-ami-build.yml
+    with:
+      system: ${{ inputs.system }}
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  containers:
+    needs: builds
+    if: inputs.system == 'aarch64-linux'
+    uses: $/.github/workflows/docker-image-test.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  qemu:
+    needs: builds
+    if: inputs.system == 'aarch64-linux'
+    uses: $/.github/workflows/qemu-image-build.yml
+    secrets:
+      DEV_AWS_ROLE: ${{ secrets.DEV_AWS_ROLE }}
+      NIX_SIGN_SECRET_KEY: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+
+  version-diff:
+    name: Package version diff
+    if: github.event_name == 'pull_request' && inputs.system != 'aarch64-darwin'
+    needs:
+      - eval
+      - builds
+    # The diff is a PR comment, not a gate, so a failure here must not fail the system's CI.
+    continue-on-error: true
+    runs-on: ${{ inputs.system == 'aarch64-linux' && 'blacksmith-4vcpu-ubuntu-2404-arm' || 'blacksmith-32vcpu-ubuntu-2404' }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7.0.1
+        with:
+          path: head
+
+      - name: Checkout PR base
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Install nix
+        uses: $/.github/actions/install-nix
+
+      - name: Download head drvPaths
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: drvpaths-${{ inputs.system }}
+          path: /tmp/head-drvpaths
+
+      - name: Diff versions with nvd
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SYSTEM: ${{ inputs.system }}
+        run: |
+          # BASE side comes from the merge queue run that evaluated the base commit
+          run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nix-build.yml --event merge_group --commit "$BASE_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          # Runs from before the per-system split upload one "drvpaths" artifact for both Linux systems.
+          # Drop that fallback once those merge queue artifacts have expired (90 days).
+          found=false
+          if [[ -n $run_id ]]; then
+            for name in "drvpaths-$SYSTEM" drvpaths; do
+              if gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "$name" --dir /tmp/base-drvpaths; then
+                found=true
+                break
+              fi
+            done
+          fi
+          if [[ $found == true ]]; then
+            ./head/ci/version-diff/diff.sh "$SYSTEM"
+          else
+            echo "Baseline unavailable for \`${BASE_SHA:0:9}\`, version diff skipped (no successful merge queue run, or it expired)." >/tmp/diff.txt
+          fi
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: diff-${{ inputs.system }}
+          path: /tmp/diff.txt
+          retention-days: 7
