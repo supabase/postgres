@@ -376,8 +376,56 @@ writeShellApplication {
         fi
         log_info "  ✓ supautils.conf policy loaded (policy_grants set)"
 
+        # 7. multigres_probe must come out of the init manifest closed:
+        # NOLOGIN and no password, so nothing can log in as it until the
+        # deployment enables it. It must also have no BYPASSRLS, connection
+        # limit 2, statement_timeout 2s, a search_path without public, and
+        # pg_stat_statements tracking off so its queries stay out of the
+        # customer's statistics. The name must be reserved so non-superusers
+        # cannot alter or drop it.
+        local probe_role
+        probe_role=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT rolcanlogin, rolsuper, rolbypassrls, rolconnlimit FROM pg_roles WHERE rolname = 'multigres_probe';\" 2>&1") || true
+        if [[ "$probe_role" != "f|f|f|2" ]]; then
+            log_error "  multigres_probe attributes wrong (got: '$probe_role', want: 'f|f|f|2')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is NOLOGIN NOSUPERUSER NOBYPASSRLS CONNECTION LIMIT 2"
+
+        local probe_no_password
+        probe_no_password=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT rolpassword IS NULL FROM pg_authid WHERE rolname = 'multigres_probe';\" 2>&1") || true
+        if [[ "$probe_no_password" != "t" ]]; then
+            log_error "  multigres_probe must have no password after init (got: '$probe_no_password', want: 't')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe has no password"
+
+        local probe_settings
+        local want_settings="pg_stat_statements.track=none|search_path=pg_catalog, pg_temp, multigres|statement_timeout=2s"
+        probe_settings=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT string_agg(c, '|' ORDER BY c) FROM pg_db_role_setting, unnest(setconfig) AS c WHERE setrole = 'multigres_probe'::regrole AND setdatabase = 0;\" 2>&1") || true
+        if [[ "$probe_settings" != "$want_settings" ]]; then
+            log_error "  multigres_probe settings wrong (got: '$probe_settings', want: '$want_settings')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe settings: $want_settings"
+
+        local reserved_roles
+        reserved_roles=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SHOW supautils.reserved_roles;\" 2>&1") || true
+        if ! echo "$reserved_roles" | grep -qw "multigres_probe"; then
+            log_error "  multigres_probe not in supautils.reserved_roles (got: $reserved_roles)"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is in supautils.reserved_roles"
+
         if [[ "$version" == "multigres-orioledb-17" ]]; then
-            # 7. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            # 8. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
             local first_line
             first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
             if [[ "$first_line" != "#!/bin/sh" ]]; then
@@ -386,7 +434,7 @@ writeShellApplication {
             fi
             log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
 
-            # 8. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            # 9. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
             local spl
             spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
@@ -398,7 +446,7 @@ writeShellApplication {
             fi
             log_info "  ✓ shared_preload_libraries contains orioledb"
 
-            # 9. default_table_access_method must be orioledb
+            # 10. default_table_access_method must be orioledb
             local tam
             tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
                 psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
