@@ -9,7 +9,8 @@ SELECT
   s.nspname AS schema,
   c.relname AS object_name,
   acl.grantee::regrole::text AS grantee,
-  acl.privilege_type
+  acl.privilege_type,
+  acl.is_grantable
 FROM pg_class c
 JOIN schema_obj s ON s.oid = c.relnamespace
 CROSS JOIN LATERAL aclexplode(c.relacl) AS acl
@@ -20,50 +21,51 @@ SELECT
   s.nspname AS schema,
   p.proname AS object_name,
   acl.grantee::regrole::text AS grantee,
-  acl.privilege_type
+  acl.privilege_type,
+  acl.is_grantable
 FROM pg_proc p
 JOIN schema_obj s ON s.oid = p.pronamespace
 CROSS JOIN LATERAL aclexplode(p.proacl) AS acl
 ORDER BY object_name, grantee, privilege_type;
- schema |        object_name        |    grantee     | privilege_type 
---------+---------------------------+----------------+----------------
- vault  | _crypto_aead_det_decrypt  | postgres       | EXECUTE
- vault  | _crypto_aead_det_decrypt  | service_role   | EXECUTE
- vault  | _crypto_aead_det_decrypt  | supabase_admin | EXECUTE
- vault  | _crypto_aead_det_encrypt  | supabase_admin | EXECUTE
- vault  | _crypto_aead_det_noncegen | supabase_admin | EXECUTE
- vault  | create_secret             | postgres       | EXECUTE
- vault  | create_secret             | service_role   | EXECUTE
- vault  | create_secret             | supabase_admin | EXECUTE
- vault  | decrypted_secrets         | postgres       | DELETE
- vault  | decrypted_secrets         | postgres       | REFERENCES
- vault  | decrypted_secrets         | postgres       | SELECT
- vault  | decrypted_secrets         | postgres       | TRUNCATE
- vault  | decrypted_secrets         | service_role   | DELETE
- vault  | decrypted_secrets         | service_role   | SELECT
- vault  | decrypted_secrets         | supabase_admin | DELETE
- vault  | decrypted_secrets         | supabase_admin | INSERT
- vault  | decrypted_secrets         | supabase_admin | REFERENCES
- vault  | decrypted_secrets         | supabase_admin | SELECT
- vault  | decrypted_secrets         | supabase_admin | TRIGGER
- vault  | decrypted_secrets         | supabase_admin | TRUNCATE
- vault  | decrypted_secrets         | supabase_admin | UPDATE
- vault  | secrets                   | postgres       | DELETE
- vault  | secrets                   | postgres       | REFERENCES
- vault  | secrets                   | postgres       | SELECT
- vault  | secrets                   | postgres       | TRUNCATE
- vault  | secrets                   | service_role   | DELETE
- vault  | secrets                   | service_role   | SELECT
- vault  | secrets                   | supabase_admin | DELETE
- vault  | secrets                   | supabase_admin | INSERT
- vault  | secrets                   | supabase_admin | REFERENCES
- vault  | secrets                   | supabase_admin | SELECT
- vault  | secrets                   | supabase_admin | TRIGGER
- vault  | secrets                   | supabase_admin | TRUNCATE
- vault  | secrets                   | supabase_admin | UPDATE
- vault  | update_secret             | postgres       | EXECUTE
- vault  | update_secret             | service_role   | EXECUTE
- vault  | update_secret             | supabase_admin | EXECUTE
+ schema |        object_name        |    grantee     | privilege_type | is_grantable 
+--------+---------------------------+----------------+----------------+--------------
+ vault  | _crypto_aead_det_decrypt  | postgres       | EXECUTE        | t
+ vault  | _crypto_aead_det_decrypt  | service_role   | EXECUTE        | f
+ vault  | _crypto_aead_det_decrypt  | supabase_admin | EXECUTE        | f
+ vault  | _crypto_aead_det_encrypt  | supabase_admin | EXECUTE        | f
+ vault  | _crypto_aead_det_noncegen | supabase_admin | EXECUTE        | f
+ vault  | create_secret             | postgres       | EXECUTE        | t
+ vault  | create_secret             | service_role   | EXECUTE        | f
+ vault  | create_secret             | supabase_admin | EXECUTE        | f
+ vault  | decrypted_secrets         | postgres       | DELETE         | t
+ vault  | decrypted_secrets         | postgres       | REFERENCES     | t
+ vault  | decrypted_secrets         | postgres       | SELECT         | t
+ vault  | decrypted_secrets         | postgres       | TRUNCATE       | t
+ vault  | decrypted_secrets         | service_role   | DELETE         | f
+ vault  | decrypted_secrets         | service_role   | SELECT         | f
+ vault  | decrypted_secrets         | supabase_admin | DELETE         | f
+ vault  | decrypted_secrets         | supabase_admin | INSERT         | f
+ vault  | decrypted_secrets         | supabase_admin | REFERENCES     | f
+ vault  | decrypted_secrets         | supabase_admin | SELECT         | f
+ vault  | decrypted_secrets         | supabase_admin | TRIGGER        | f
+ vault  | decrypted_secrets         | supabase_admin | TRUNCATE       | f
+ vault  | decrypted_secrets         | supabase_admin | UPDATE         | f
+ vault  | secrets                   | postgres       | DELETE         | t
+ vault  | secrets                   | postgres       | REFERENCES     | t
+ vault  | secrets                   | postgres       | SELECT         | t
+ vault  | secrets                   | postgres       | TRUNCATE       | t
+ vault  | secrets                   | service_role   | DELETE         | f
+ vault  | secrets                   | service_role   | SELECT         | f
+ vault  | secrets                   | supabase_admin | DELETE         | f
+ vault  | secrets                   | supabase_admin | INSERT         | f
+ vault  | secrets                   | supabase_admin | REFERENCES     | f
+ vault  | secrets                   | supabase_admin | SELECT         | f
+ vault  | secrets                   | supabase_admin | TRIGGER        | f
+ vault  | secrets                   | supabase_admin | TRUNCATE       | f
+ vault  | secrets                   | supabase_admin | UPDATE         | f
+ vault  | update_secret             | postgres       | EXECUTE        | t
+ vault  | update_secret             | service_role   | EXECUTE        | f
+ vault  | update_secret             | supabase_admin | EXECUTE        | f
 (37 rows)
 
 -- vault indexes with owners
