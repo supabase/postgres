@@ -46,10 +46,10 @@ aws_cli_release: 2.42.2
 aws_cli_artifacts:
   amd64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
-    checksum: sha256:d9cad44c58bbf5f43cfccd291d688d5297356608aeaa487ce65c4ac81251f4c7
+    checksum: sha256:eb2181c8f391ee63acbadf53b13a80efe8702cbfef6a7da99a57e60631b47665
   arm64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
-    checksum: sha256:21e74a95c28ba2c9a55e6af215484ab4028500c8dc98b7188a2c9854ba116e8f
+    checksum: sha256:efda2e5d9d01726f47c491a7b006f55611e682a0bdb08f4d65594e27bdc6ab30
 # renovate: datasource=github-releases packageName=envoyproxy/envoy
 envoy_release: 1.40.2
 envoy_artifacts:
